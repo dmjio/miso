@@ -1,0 +1,20 @@
+name:                dirty-miso
+version:             0.1.0.0
+author:              David Johnson
+maintainer:          djohnson.m@gmail.com
+build-type:          Simple
+cabal-version:       >=1.10
+                    
+executable main
+  main-is: Main.hs
+  ghc-options: -Wall
+  hs-source-dirs: src
+  build-depends:   
+                 base
+               , containers
+               , ghcjs-base
+               , ghcjs-dom
+               , text
+               , elerea
+               , transformers
+  default-language:    Haskell2010
