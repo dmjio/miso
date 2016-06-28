@@ -1,9 +1,19 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase        #-}
 
 module Main where
 
+import qualified Data.Map                      as M
 import           Control.Concurrent
 import           Control.Monad
 import           Data.Bool
@@ -12,19 +22,24 @@ import           Data.IORef
 import           Data.List                     (find)
 import           Data.Maybe
 import           Data.Monoid
+
 import qualified Data.Text                     as T
 import           FRP.Elerea.Simple             (externalMulti, transfer, start)
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
 import           GHCJS.DOM.Document            hiding (drop)
 import           GHCJS.DOM.Element             (setAttribute)
-import           GHCJS.DOM.Event               (getType, Event, getTarget)
+import           GHCJS.DOM.Event               (Event, getTarget)
+import qualified GHCJS.DOM.Event               as E
 import           GHCJS.DOM.EventTarget         (addEventListener)
 import           GHCJS.DOM.EventTargetClosures
+import           GHCJS.DOM.HTMLInputElement
 import           GHCJS.DOM.Node
+import           GHCJS.DOM.UIEvent             (getKeyCode)
 import           GHCJS.DOM.Types               hiding (Event)
 import           JavaScript.Web.AnimationFrame
 import           Types
+
 -- import Signal
 
 data Options = Options {
@@ -35,53 +50,58 @@ data Options = Options {
 defaultOptions :: Options
 defaultOptions = Options False False
 
-data Attribute action 
-  = Event String (IO ())
+data Attribute 
+  = Event Options String (E.Event -> IO ())
   | KV Bool T.Text T.Text
 
-instance Show action => Show (Attribute action) where
-  show (Event _ _) = "<action>"
+onWithOptions :: Options -> String -> (E.Event -> IO ()) -> Attribute 
+onWithOptions = Event
+
+on :: String -> (E.Event -> IO ()) -> Attribute 
+on = onWithOptions defaultOptions
+
+instance Show Attribute where
+  show (Event _ name _) = "<event=" ++ name ++ ">"
   show (KV _ k v) = T.unpack $ k <> "=" <> v
 
 type DOMNode = Maybe Node
-
 type Key = Maybe Int
 
-data VTree action =
-    VNode String [ Attribute action ] [ VTree action ] Key DOMNode
+data VTree = 
+    VNode String [ Attribute ] [ VTree ] Key DOMNode
   | VText String DOMNode
   | VEmpty
 
-getChildDOMNodes :: VTree action -> [Node]
+getChildDOMNodes :: VTree -> [Node]
 getChildDOMNodes (VNode _ _ children _ _) = [ node | VNode _ _ _ _ (Just node) <- children ]
 getChildDOMNodes _ = []
 
-getDOMNode :: VTree action -> Maybe Node
+getDOMNode :: VTree -> Maybe Node
 getDOMNode (VNode _ _ _ _ ref) = ref
 getDOMNode _ = Nothing
 
-instance Show action => Show (VTree action) where
+instance Show VTree where
   show VEmpty = "<empty>"
-  show (VNode typ _ children _ _) =
-    "<" ++ typ ++ ">" ++ concatMap show children ++ "</" ++ typ ++ ">"
+  show (VNode typ evts children _ _) =
+    "<" ++ typ ++ ">" ++ show evts ++ concatMap show children ++ "</" ++ typ ++ ">"
   show (VText val _ ) = val
 
-mkNode :: String -> [Attribute action] -> [VTree action] -> VTree action
+mkNode :: String -> [Attribute] -> [VTree] -> VTree
 mkNode name as cs = VNode name as cs Nothing Nothing
 
-text_ :: String -> VTree action
+text_ :: String -> VTree
 text_ = flip VText Nothing
 
-div_ :: [Attribute action] -> [VTree action] -> VTree action
+div_ :: [Attribute] -> [VTree] -> VTree
 div_  = mkNode "div"
 
-btn_ :: [Attribute action] -> [VTree action] -> VTree action
+btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
 
-click_ :: IO () -> Attribute action 
-click_ = Event "click" 
+click_ :: (E.Event -> IO ()) -> Attribute 
+click_ = on "click" 
 
-delegate :: IORef (VTree a) -> Events -> IO ()
+delegate :: IORef VTree -> Events -> IO ()
 delegate ref events = do
   Just doc <- currentDocument
   Just body <- fmap toNode <$> getBody doc
@@ -93,9 +113,10 @@ delegate ref events = do
       f body e = do
         Just target <- getTarget e
         vtree <- readIORef ref
-        eventType <- getType e
+        eventType <- E.getType e
         stack <- buildTargetToBody body (castToNode target)
-        delegateEvent vtree eventType stack
+        print ("got event ->" :: String, eventType)
+        delegateEvent e vtree eventType stack
 
 buildTargetToBody :: Node -> Node -> IO [Node]
 buildTargetToBody body target = f target [target]
@@ -106,13 +127,17 @@ buildTargetToBody body target = f target [target]
             Just parent <- getParentNode currentNode
             f parent (parent:nodes)
 
-delegateEvent :: VTree a -> String -> [Node] -> IO ()
-delegateEvent (VNode _ _ children _ _) eventName = findEvent children 
+delegateEvent :: E.Event -> VTree -> String -> [Node] -> IO ()
+delegateEvent e (VNode _ _ children _ _) eventName = findEvent children 
     where
       findEvent _ [] = pure ()
       findEvent childNodes [y] = 
        forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
-         forM_ (getAction attrs) $ \action -> action
+         forM_ (getAction attrs) $
+           \(Options{..}, action) -> do
+              when stopPropogation $ E.stopPropagation e
+              when preventDefault $ E.preventDefault e
+              action e
 
       findEvent childNodes (y:ys) = 
         forM_ (findNode childNodes y) $ \(VNode _ _ childrenNext _  _) ->
@@ -129,10 +154,10 @@ delegateEvent (VNode _ _ children _ _) eventName = findEvent children
 
       getAction attrs =
         listToMaybe $ do
-          Event evtName action <- attrs
+          Event opts evtName action <- attrs
           guard (evtName == eventName)
-          pure action
-delegateEvent _ _ = const $ pure ()
+          pure (opts, action)
+delegateEvent _ _ _ = const $ pure ()
 
 defaultEvents :: [String] 
 defaultEvents = [
@@ -142,7 +167,7 @@ defaultEvents = [
     "mousemove", "mouseover", "select", "submit"
     ]
 
-initTree :: Show action => VTree action -> IO (VTree action)
+initTree :: VTree -> IO VTree
 initTree initial = do
   Just document <- currentDocument
   Just body <- getBody document
@@ -153,13 +178,13 @@ initTree initial = do
     VEmpty -> pure ()
   pure vdom
 
-diff :: Show action => VTree action -> VTree action -> IO (VTree action)
+diff :: VTree -> VTree -> IO VTree
 diff currentTree newTree = do
   Just document <- currentDocument
   Just body <- fmap toNode <$> getBody document
   go document body currentTree newTree
 
-go :: Show action => Document -> Node -> VTree action -> VTree action -> IO (VTree action)
+go :: Document -> Node -> VTree -> VTree -> IO VTree
 go _ _ VEmpty VEmpty = pure VEmpty
 
 -- Ensure correct initialization (always true if internal)
@@ -180,6 +205,7 @@ go _ parentNode (VText _ ref) VEmpty = do
 -- Make a new element
 go doc parentNode VEmpty (VNode typ attrs children key _) = do
   node@(Just newNode)  <- fmap toNode <$> createElement doc (Just typ)
+  setAttrs newNode attrs
   newChildren <- forM children $ \childNode ->
     go doc newNode VEmpty childNode
   void $ appendChild parentNode node
@@ -219,7 +245,7 @@ go doc parent (VNode typA attrsA childrenA _ (Just ref)) (VNode typB attrsB chil
       node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
       newChildren <- forM childrenB $ \childNode ->
         go doc newNode VEmpty childNode
-      void $ replaceChild parent (Just ref) node
+      void $ replaceChild parent node (Just ref)
       pure $ VNode typB attrsB newChildren keyB node
     True ->
       VNode typB <$> diffAttrs ref attrsA attrsB
@@ -227,29 +253,27 @@ go doc parent (VNode typA attrsA childrenA _ (Just ref)) (VNode typB attrsB chil
                  <*> pure keyB
                  <*> pure (Just ref)
 diffAttrs
-  :: Show action
-  => Node
-  -> [Attribute action]
-  -> [Attribute action]
-  -> IO [Attribute action]
+  :: Node
+  -> [Attribute]
+  -> [Attribute]
+  -> IO [Attribute]
 diffAttrs node as bs = do
    let attrsA = [(k,v) | KV _ k v <- as]
        attrsB = [(k,v) | KV _ k v <- bs]
    when (attrsA /= attrsB) $ setAttrs node bs
    pure bs
 
-setAttrs :: Show action => Node -> [Attribute action] -> IO ()
+setAttrs :: Node -> [Attribute] -> IO ()
 setAttrs node xs =
   forM_ [(k,v) | KV _ k v <- xs] $ \(k,v) ->
     setAttribute (castToElement node) k v
 
 diffChildren
-  :: Show action
-  => Document
+  :: Document
   -> Node
-  -> [VTree action]
-  -> [VTree action]
-  -> IO [VTree action]
+  -> [VTree]
+  -> [VTree]
+  -> IO [VTree]
 diffChildren _ _ [] [] = pure []
 diffChildren doc parent [] (b:bs) = 
   (:) <$> go doc parent VEmpty b
@@ -263,19 +287,20 @@ diffChildren doc parent (a:as) (b:bs) = do
 
 type Events = [ String ]
 
-runSignal :: Show a => Events -> Signal (VTree a) -> IO ()
+runSignal :: Events -> Signal VTree -> IO ()
 runSignal events (Signal s) = do
   ref <- newIORef =<< do initTree $ mkNode "div" [] []
   void . forkIO $ delegate ref events
   emitter <- start s
-  forever $ do
-    _ <- waitForAnimationFrame
-    x <- emitter
-    case x of 
-        Changed [ newTree ] -> 
-          writeIORef ref =<< (`diff` newTree) =<< readIORef ref
+  forever $ 
+    waitForAnimationFrame >>
+      emitter >>= \case
+        Changed [ newTree ] -> do
+          result <- (`diff` newTree) =<< readIORef ref
+          print result
+          writeIORef ref result
         _ -> pure ()
-  
+
 signal :: Show a => a -> IO (Signal a, a -> IO ())
 signal x = do
   (s, writer) <- externalMulti 
@@ -298,23 +323,101 @@ foldp f ini (Signal gen) =
               notChanged = NotChanged . pure
               changed = Changed . pure
 
-data Action = AddOne | SubOne
+data Model = Model {
+    nextTaskNum :: Int
+  , tasks       :: M.Map Int Task 
+  , turnOn      :: Bool
+  } deriving (Show, Eq)
+
+data Task = Task {
+        taskCompleted :: Bool
+      , taskContent :: String
+      } deriving (Show, Eq)
+
+data Action =
+    AddTask String
+  | RemoveTask Int
+  | ToggleCompleted Int Bool
+  | Switch
   deriving (Show)
 
 main :: IO ()
 main = do
-  putStrLn "hi"
-  (sig, send) <- signal AddOne
-  send AddOne
-  let s :: Signal (VTree ()) = view send <$> foldp update (0 :: Int) sig
-  runSignal [ "click" :: String ] s 
+  (sig, send) <- signal Switch
+  runSignal ["keypress", "click"] $
+    view send <$> foldp update (Model 0 mempty False) sig
     where
-      update :: Action -> Int -> Int
-      update AddOne x = x + 1
-      update SubOne x = x - 1
-
-      view send model = div_ [ KV True "style" "background:red;"] [
-            btn_ [ click_ $ send AddOne ] [ text_ "+" ]
-          , text_ (show model)
-          , btn_ [ click_ $ send SubOne ] [ text_ "-" ]
+      update :: Action -> Model -> Model
+      update Switch model = model { turnOn = True }
+      update (ToggleCompleted taskId isCompleted) model =
+        model { tasks = M.adjust modifyTask taskId (tasks model) }
+          where
+            modifyTask task = task { taskCompleted = isCompleted }
+      update (RemoveTask n) model@Model{..} =
+        model { tasks = M.delete n tasks }
+      update (AddTask str) model@Model{..} =
+        model { nextTaskNum = nextTaskNum + 1
+              , tasks = M.insert nextTaskNum (Task False str) tasks
+              }
+      view send Model { .. } = div_ [ ] [
+            h1_ [] [ text_ "todos"]
+          , input_ [ type_ "text"
+                   , placeholder "What needs to be done?"
+                   , autofocus
+                   , on "keypress" $ \e -> do
+                       Just target <- getTarget e
+                       let ele = castToHTMLInputElement target
+                       Just value <- getValue ele
+                       key <- getKeyCode (castToUIEvent e :: UIEvent)
+                       when (key == 13) $ do
+                         setValue ele (Just ("" :: T.Text))
+                         send $ AddTask value
+                   ] [ ]
+          , ul_ [] $ flip map (M.toList tasks) $ \(taskId, Task {..}) ->
+              li_ [] [
+               div_ [] [
+                input_ [ type_ "checkbox"
+                       , on "click" $ \e -> do
+                          Just target <- getTarget e
+                          isChecked <- getChecked (castToHTMLInputElement target)
+                          send $ ToggleCompleted taskId isChecked
+                       ] []
+                , if taskCompleted then
+                  s_ [] [ text_ taskContent ]
+                else
+                  text_ taskContent
+                , btn_ [ on "click" $ const $ send (RemoveTask taskId) ]
+                       [ text_ "x" ]
+                ]
+              ]
           ]
+
+p_ :: [Attribute] -> [VTree] -> VTree
+p_ = mkNode "p" 
+
+s_ :: [Attribute] -> [VTree] -> VTree
+s_ = mkNode "s" 
+
+ul_ :: [Attribute] -> [VTree] -> VTree
+ul_ = mkNode "ul" 
+
+li_ :: [Attribute] -> [VTree] -> VTree
+li_ = mkNode "li" 
+
+h1_ :: [Attribute] -> [VTree] -> VTree
+h1_ = mkNode "h1" 
+
+section_ :: [Attribute] -> [VTree] -> VTree
+section_ = mkNode "section" 
+
+input_ :: [Attribute] -> [VTree] -> VTree
+input_ = mkNode "input" 
+
+type_ :: T.Text -> Attribute 
+type_ = KV True "type"
+
+placeholder :: T.Text -> Attribute 
+placeholder = KV True "placeholder"
+
+autofocus :: Attribute 
+autofocus = KV True "autofocus" mempty
