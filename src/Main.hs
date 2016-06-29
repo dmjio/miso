@@ -23,10 +23,8 @@ import           Data.IORef
 import           Data.List                     (find)
 import           Data.Maybe
 import           Data.Monoid
-
 import qualified Data.Text                     as T
 import           FRP.Elerea.Simple             (externalMulti, transfer, start)
-import           GHC.Ptr
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
 import           GHCJS.DOM.Document            hiding (drop)
@@ -39,7 +37,6 @@ import           GHCJS.DOM.HTMLInputElement
 import           GHCJS.DOM.Node
 import           GHCJS.DOM.Types               hiding (Event)
 import           GHCJS.DOM.UIEvent             (getKeyCode)
-import           GHCJS.Types
 
 import           JavaScript.Web.AnimationFrame
 import           Types
@@ -56,7 +53,7 @@ defaultOptions = Options False False
 
 data Attribute 
   = Event Options String (E.Event -> IO ())
-  | KV Bool T.Text T.Text
+  | KV T.Text T.Text
 
 onWithOptions :: Options -> String -> (E.Event -> IO ()) -> Attribute 
 onWithOptions = Event
@@ -66,31 +63,26 @@ on = onWithOptions defaultOptions
 
 instance Show Attribute where
   show (Event _ name _) = "<event=" ++ name ++ ">"
-  show (KV _ k v) = T.unpack $ k <> "=" <> v
+  show (KV k v) = T.unpack $ k <> "=" <> v
 
-type DOMNode = Maybe (Ptr ())
 type Key = Maybe Int
 
-data VTree = 
-    VNode String [ Attribute ] [ VTree ] Key DOMNode
-  | VText String DOMNode
+type VTree = VTreeBase (Maybe Node)
+
+data VTreeBase a = 
+    VNode String [ Attribute ] [ VTree ] Key a
+  | VText String a
   | VEmpty
-
-toNodeFromPtr :: Ptr () -> Node 
-toNodeFromPtr = Node . fromPtr 
-
-toPtrFromNode :: Node -> Ptr ()
-toPtrFromNode = toPtr . unNode
 
 getChildDOMNodes :: VTree -> [Node]
 getChildDOMNodes (VNode _ _ children _ _) =
-  [ toNodeFromPtr ptr
-  | VNode _ _ _ _ (Just ptr) <- children
+  [ node
+  | VNode _ _ _ _ (Just node) <- children
   ]
 getChildDOMNodes _ = []
 
 getDOMNode :: VTree -> Maybe Node
-getDOMNode (VNode _ _ _ _ ref) = toNodeFromPtr <$> ref
+getDOMNode (VNode _ _ _ _ ref) = ref
 getDOMNode _ = Nothing
 
 instance Show VTree where
@@ -184,8 +176,8 @@ initTree initial = do
   Just body <- getBody document
   vdom <- diff VEmpty initial
   case vdom of
-    VText _ ref -> void $ appendChild body (toNodeFromPtr <$> ref)
-    VNode _ _ _ _ ref -> void $ appendChild body (toNodeFromPtr <$> ref)
+    VText _ ref -> void $ appendChild body ref
+    VNode _ _ _ _ ref -> void $ appendChild body ref
     VEmpty -> pure ()
   pure vdom
 
@@ -206,11 +198,11 @@ go _ _ (VText _ Nothing) _ = Prelude.error "VText not initialized"
 go doc parentNode VEmpty (VText str _) = do
   newTextNode <- createTextNode doc str
   void $ appendChild parentNode newTextNode
-  pure $ VText str (toPtrFromNode . toNode <$> newTextNode)
+  pure $ VText str (toNode <$> newTextNode)
 
 -- Remove a text node
-go _ parentNode (VText _ ref) VEmpty = do
-  void $ removeChild parentNode (toNodeFromPtr <$> ref)
+go _ parentNode (VText _ node) VEmpty = do
+  void $ removeChild parentNode node
   pure VEmpty
 
 -- Make a new element
@@ -220,31 +212,31 @@ go doc parentNode VEmpty (VNode typ attrs children key _) = do
   newChildren <- forM children $ \childNode ->
     go doc newNode VEmpty childNode
   void $ appendChild parentNode node
-  pure $ VNode typ attrs newChildren key (toPtrFromNode <$> node)
+  pure $ VNode typ attrs newChildren key node
 
 -- Remove an element
-go _ parentNode (VNode _ _ _ _ ref) VEmpty = 
-  VEmpty <$ removeChild parentNode (toNodeFromPtr <$> ref)
+go _ parentNode (VNode _ _ _ _ node) VEmpty = 
+  VEmpty <$ removeChild parentNode node
 
 -- Replace an element with a text node
 go doc parentNode (VNode _ _ _ _ ref) (VText str _) = do
   newTextNode <- fmap toNode <$> createTextNode doc str
-  void $ replaceChild parentNode newTextNode (toNodeFromPtr <$> ref)
-  pure $ VText str (toPtrFromNode <$> newTextNode)
+  void $ replaceChild parentNode newTextNode ref
+  pure $ VText str newTextNode
 
 -- Replace a text node with an Element
 go doc parentNode (VText _ ref) (VNode typ attrs children key _) = do
   node@(Just newNode) <- fmap toNode <$> createElement doc (Just typ)
   newChildren <- forM children $ \childNode ->
     go doc newNode VEmpty childNode
-  void $ replaceChild parentNode node (toNodeFromPtr <$> ref)
-  pure $ VNode typ attrs newChildren key (toPtrFromNode <$> node)
+  void $ replaceChild parentNode node ref
+  pure $ VNode typ attrs newChildren key node
 
 -- Replace a text node with a text node
 go _ _ (VText currentStr currRef) (VText newStr _) = do
   when (currentStr /= newStr) $ do
     F.forM_ currRef $ \ref -> do
-      let txt = castToText (toNodeFromPtr ref)
+      let txt = castToText ref
       oldLength <- getLength txt
       replaceData txt 0 oldLength newStr
   pure $ VText newStr currRef
@@ -256,11 +248,11 @@ go doc parent (VNode typA attrsA childrenA _ (Just ref)) (VNode typB attrsB chil
       node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
       newChildren <- forM childrenB $ \childNode ->
         go doc newNode VEmpty childNode
-      void $ replaceChild parent node (toNodeFromPtr <$> Just ref)
-      pure $ VNode typB attrsB newChildren keyB (toPtrFromNode <$> node)
+      void $ replaceChild parent node (Just ref)
+      pure $ VNode typB attrsB newChildren keyB node
     True ->
-      VNode typB <$> diffAttrs (toNodeFromPtr ref) attrsA attrsB
-                 <*> diffChildren doc (toNodeFromPtr ref) childrenA childrenB
+      VNode typB <$> diffAttrs ref attrsA attrsB
+                 <*> diffChildren doc ref childrenA childrenB
                  <*> pure keyB
                  <*> pure (Just ref)
 diffAttrs
@@ -269,14 +261,14 @@ diffAttrs
   -> [Attribute]
   -> IO [Attribute]
 diffAttrs node as bs = do
-   let attrsA = [(k,v) | KV _ k v <- as]
-       attrsB = [(k,v) | KV _ k v <- bs]
+   let attrsA = [(k,v) | KV k v <- as]
+       attrsB = [(k,v) | KV k v <- bs]
    when (attrsA /= attrsB) $ setAttrs node bs
    pure bs
 
 setAttrs :: Node -> [Attribute] -> IO ()
 setAttrs node xs =
-  forM_ [(k,v) | KV _ k v <- xs] $ \(k,v) ->
+  forM_ [(k,v) | KV k v <- xs] $ \(k,v) ->
     setAttribute (castToElement node) k v
 
 diffChildren
@@ -430,10 +422,10 @@ input_ :: [Attribute] -> [VTree] -> VTree
 input_ = mkNode "input" 
 
 type_ :: T.Text -> Attribute 
-type_ = KV True "type"
+type_ = KV "type"
 
 placeholder :: T.Text -> Attribute 
-placeholder = KV True "placeholder"
+placeholder = KV "placeholder"
 
 autofocus :: Attribute 
-autofocus = KV True "autofocus" mempty
+autofocus = KV "autofocus" mempty
