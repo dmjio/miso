@@ -137,7 +137,6 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
        forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
          forM_ (getAction attrs) $
            \(Options{..}, action) -> do
-              putStrLn "made it here..."
               when stopPropogation $ E.stopPropagation e
               when preventDefault $ E.preventDefault e
               action e
@@ -300,7 +299,6 @@ runSignal events (Signal s) = do
       emitter >>= \case
         Changed [ newTree ] -> do
           result <- (`diff` newTree) =<< readIORef ref
-          print result
           writeIORef ref result
         _ -> pure ()
 
