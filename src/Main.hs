@@ -13,6 +13,7 @@
 
 module Main where
 
+-- import           Debug.Trace (traceShow)
 import qualified Data.Map                      as M
 import           Control.Concurrent
 import           Control.Monad
@@ -25,6 +26,7 @@ import           Data.Monoid
 
 import qualified Data.Text                     as T
 import           FRP.Elerea.Simple             (externalMulti, transfer, start)
+import           GHC.Ptr
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
 import           GHCJS.DOM.Document            hiding (drop)
@@ -35,8 +37,10 @@ import           GHCJS.DOM.EventTarget         (addEventListener)
 import           GHCJS.DOM.EventTargetClosures
 import           GHCJS.DOM.HTMLInputElement
 import           GHCJS.DOM.Node
-import           GHCJS.DOM.UIEvent             (getKeyCode)
 import           GHCJS.DOM.Types               hiding (Event)
+import           GHCJS.DOM.UIEvent             (getKeyCode)
+import           GHCJS.Types
+
 import           JavaScript.Web.AnimationFrame
 import           Types
 
@@ -64,7 +68,7 @@ instance Show Attribute where
   show (Event _ name _) = "<event=" ++ name ++ ">"
   show (KV _ k v) = T.unpack $ k <> "=" <> v
 
-type DOMNode = Maybe Node
+type DOMNode = Maybe (Ptr ())
 type Key = Maybe Int
 
 data VTree = 
@@ -72,12 +76,21 @@ data VTree =
   | VText String DOMNode
   | VEmpty
 
+toNodeFromPtr :: Ptr () -> Node 
+toNodeFromPtr = Node . fromPtr 
+
+toPtrFromNode :: Node -> Ptr ()
+toPtrFromNode = toPtr . unNode
+
 getChildDOMNodes :: VTree -> [Node]
-getChildDOMNodes (VNode _ _ children _ _) = [ node | VNode _ _ _ _ (Just node) <- children ]
+getChildDOMNodes (VNode _ _ children _ _) =
+  [ toNodeFromPtr ptr
+  | VNode _ _ _ _ (Just ptr) <- children
+  ]
 getChildDOMNodes _ = []
 
 getDOMNode :: VTree -> Maybe Node
-getDOMNode (VNode _ _ _ _ ref) = ref
+getDOMNode (VNode _ _ _ _ ref) = toNodeFromPtr <$> ref
 getDOMNode _ = Nothing
 
 instance Show VTree where
@@ -97,9 +110,6 @@ div_  = mkNode "div"
 
 btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
-
-click_ :: (E.Event -> IO ()) -> Attribute 
-click_ = on "click" 
 
 delegate :: IORef VTree -> Events -> IO ()
 delegate ref events = do
@@ -135,6 +145,7 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
        forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
          forM_ (getAction attrs) $
            \(Options{..}, action) -> do
+              putStrLn "made it here..."
               when stopPropogation $ E.stopPropagation e
               when preventDefault $ E.preventDefault e
               action e
@@ -173,8 +184,8 @@ initTree initial = do
   Just body <- getBody document
   vdom <- diff VEmpty initial
   case vdom of
-    VText _ ref -> void $ appendChild body ref
-    VNode _ _ _ _ ref -> void $ appendChild body ref
+    VText _ ref -> void $ appendChild body (toNodeFromPtr <$> ref)
+    VNode _ _ _ _ ref -> void $ appendChild body (toNodeFromPtr <$> ref)
     VEmpty -> pure ()
   pure vdom
 
@@ -195,11 +206,11 @@ go _ _ (VText _ Nothing) _ = Prelude.error "VText not initialized"
 go doc parentNode VEmpty (VText str _) = do
   newTextNode <- createTextNode doc str
   void $ appendChild parentNode newTextNode
-  pure $ VText str (toNode <$> newTextNode)
+  pure $ VText str (toPtrFromNode . toNode <$> newTextNode)
 
 -- Remove a text node
 go _ parentNode (VText _ ref) VEmpty = do
-  void $ removeChild parentNode ref  
+  void $ removeChild parentNode (toNodeFromPtr <$> ref)
   pure VEmpty
 
 -- Make a new element
@@ -209,31 +220,31 @@ go doc parentNode VEmpty (VNode typ attrs children key _) = do
   newChildren <- forM children $ \childNode ->
     go doc newNode VEmpty childNode
   void $ appendChild parentNode node
-  pure $ VNode typ attrs newChildren key node
+  pure $ VNode typ attrs newChildren key (toPtrFromNode <$> node)
 
 -- Remove an element
 go _ parentNode (VNode _ _ _ _ ref) VEmpty = 
-  VEmpty <$ removeChild parentNode ref
+  VEmpty <$ removeChild parentNode (toNodeFromPtr <$> ref)
 
 -- Replace an element with a text node
 go doc parentNode (VNode _ _ _ _ ref) (VText str _) = do
   newTextNode <- fmap toNode <$> createTextNode doc str
-  void $ replaceChild parentNode newTextNode ref
-  pure $ VText str newTextNode
+  void $ replaceChild parentNode newTextNode (toNodeFromPtr <$> ref)
+  pure $ VText str (toPtrFromNode <$> newTextNode)
 
 -- Replace a text node with an Element
 go doc parentNode (VText _ ref) (VNode typ attrs children key _) = do
   node@(Just newNode) <- fmap toNode <$> createElement doc (Just typ)
   newChildren <- forM children $ \childNode ->
     go doc newNode VEmpty childNode
-  void $ replaceChild parentNode node ref
-  pure $ VNode typ attrs newChildren key node 
+  void $ replaceChild parentNode node (toNodeFromPtr <$> ref)
+  pure $ VNode typ attrs newChildren key (toPtrFromNode <$> node)
 
 -- Replace a text node with a text node
 go _ _ (VText currentStr currRef) (VText newStr _) = do
   when (currentStr /= newStr) $ do
     F.forM_ currRef $ \ref -> do
-      let txt = castToText ref
+      let txt = castToText (toNodeFromPtr ref)
       oldLength <- getLength txt
       replaceData txt 0 oldLength newStr
   pure $ VText newStr currRef
@@ -245,11 +256,11 @@ go doc parent (VNode typA attrsA childrenA _ (Just ref)) (VNode typB attrsB chil
       node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
       newChildren <- forM childrenB $ \childNode ->
         go doc newNode VEmpty childNode
-      void $ replaceChild parent node (Just ref)
-      pure $ VNode typB attrsB newChildren keyB node
+      void $ replaceChild parent node (toNodeFromPtr <$> Just ref)
+      pure $ VNode typB attrsB newChildren keyB (toPtrFromNode <$> node)
     True ->
-      VNode typB <$> diffAttrs ref attrsA attrsB
-                 <*> diffChildren doc ref childrenA childrenB
+      VNode typB <$> diffAttrs (toNodeFromPtr ref) attrsA attrsB
+                 <*> diffChildren doc (toNodeFromPtr ref) childrenA childrenB
                  <*> pure keyB
                  <*> pure (Just ref)
 diffAttrs
@@ -338,6 +349,7 @@ data Action =
     AddTask String
   | RemoveTask Int
   | ToggleCompleted Int Bool
+  | ToggleAllCompleted
   | Switch
   deriving (Show)
 
@@ -353,8 +365,18 @@ main = do
         model { tasks = M.adjust modifyTask taskId (tasks model) }
           where
             modifyTask task = task { taskCompleted = isCompleted }
-      update (RemoveTask n) model@Model{..} =
-        model { tasks = M.delete n tasks }
+      update (RemoveTask n) model@Model{..} = model { tasks = M.delete n tasks }
+      update ToggleAllCompleted model =
+        case F.length (tasks model) == (F.length $ M.filter (\t -> taskCompleted t == False ) (tasks model)) of
+          True ->
+             model {
+                tasks = M.map (\t -> t { taskCompleted = True }) (tasks model)
+              }
+          False ->
+             model {
+                tasks = M.map (\t -> t { taskCompleted = False }) (tasks model)
+              }
+
       update (AddTask str) model@Model{..} =
         model { nextTaskNum = nextTaskNum + 1
               , tasks = M.insert nextTaskNum (Task False str) tasks
@@ -376,20 +398,14 @@ main = do
           , ul_ [] $ flip map (M.toList tasks) $ \(taskId, Task {..}) ->
               li_ [] [
                div_ [] [
-                input_ [ type_ "checkbox"
-                       , on "click" $ \e -> do
-                          Just target <- getTarget e
-                          isChecked <- getChecked (castToHTMLInputElement target)
-                          send $ ToggleCompleted taskId isChecked
-                       ] []
-                , if taskCompleted then
-                  s_ [] [ text_ taskContent ]
-                else
-                  text_ taskContent
-                , btn_ [ on "click" $ const $ send (RemoveTask taskId) ]
-                       [ text_ "x" ]
+                  if taskCompleted then
+                    s_ [] [ text_ taskContent ]
+                  else
+                    text_ taskContent
+                  , btn_ [ on "click" $ const $ send (RemoveTask taskId) ]
+                         [ text_ "x" ]
                 ]
-              ]
+               ]
           ]
 
 p_ :: [Attribute] -> [VTree] -> VTree
