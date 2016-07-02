@@ -1,98 +1,96 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE LambdaCase          #-}
 
-module Main where
+module Miso where
 
--- import           Debug.Trace (traceShow)
-import qualified Data.Map                      as M
 import           Control.Concurrent
 import           Control.Monad
+import           Data.Aeson                    hiding (Object)
 import           Data.Bool
 import qualified Data.Foldable                 as F
 import           Data.IORef
+import           Data.JSString.Text
 import           Data.List                     (find)
+import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.Monoid
+import qualified Data.Set                      as S
 import qualified Data.Text                     as T
 import           FRP.Elerea.Simple             (externalMulti, transfer, start)
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
-import           GHCJS.DOM.Document            hiding (drop)
-import           GHCJS.DOM.Element             (setAttribute)
+import           GHCJS.DOM.Document            hiding (drop, getLocation)
+import           GHCJS.DOM.Element             (setAttribute, removeAttribute)
 import           GHCJS.DOM.Event               (Event, getTarget)
 import qualified GHCJS.DOM.Event               as E
 import           GHCJS.DOM.EventTarget         (addEventListener)
 import           GHCJS.DOM.EventTargetClosures
-import           GHCJS.DOM.HTMLInputElement
 import           GHCJS.DOM.Node
-import           GHCJS.DOM.Types               hiding (Event)
-import           GHCJS.DOM.UIEvent             (getKeyCode)
-
+import           GHCJS.DOM.Types               hiding (Event, Attr)
+import           GHCJS.Foreign                 hiding (Object)
+import           GHCJS.Marshal
+import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
-import           Types
+import           Prelude                       hiding (repeat)
 
--- import Signal
-
-data Options = Options {
-       stopPropogation :: Bool
-     , preventDefault :: Bool
-     } deriving Show
-
-defaultOptions :: Options
-defaultOptions = Options False False
+import           Miso.Types
 
 data Attribute 
-  = Event Options String (E.Event -> IO ())
-  | KV T.Text T.Text
+  = Event String (Event -> IO ())
+  | Attr T.Text T.Text
+  | Prop T.Text Value
 
-onWithOptions :: Options -> String -> (E.Event -> IO ()) -> Attribute 
-onWithOptions = Event
+on :: String
+   -> (Event -> IO ())
+   -> Attribute  
+on = Event
 
-on :: String -> (E.Event -> IO ()) -> Attribute 
-on = onWithOptions defaultOptions
+instance Eq Attribute where
+  Prop x1 x2 == Prop y1 y2 = x1 == y1 && x2 == y2
+  Event x _ == Event y _ = x == y
+  _ == _                 = False
 
 instance Show Attribute where
-  show (Event _ name _) = "<event=" ++ name ++ ">"
-  show (KV k v) = T.unpack $ k <> "=" <> v
+  show (Event name _) = "<event=" ++ name ++ ">"
+  show (Attr k v) = T.unpack $ k <> "=" <> v
+  show (Prop k v) = T.unpack $ k <> "=" <> T.pack (show v)
 
 type Key = Maybe Int
+type VTree = VTreeBase (Maybe Node) 
 
-type VTree = VTreeBase (Maybe Node)
+getKey :: VTreeBase a -> Maybe Int
+getKey (VNode _ _ _ maybeKey _) = maybeKey
+getKey _ = Nothing
 
-data VTreeBase a = 
-    VNode String [ Attribute ] [ VTree ] Key a
-  | VText String a
-  | VEmpty
+data VTreeBase a where
+  VNode :: String -> [ Attribute ] -> [ VTreeBase a ] -> Maybe Int -> a -> VTreeBase a 
+  VText :: String -> a -> VTreeBase a 
+  VEmpty :: VTreeBase a
 
 getChildDOMNodes :: VTree -> [Node]
 getChildDOMNodes (VNode _ _ children _ _) =
-  [ node
-  | VNode _ _ _ _ (Just node) <- children
-  ]
+  [ node | VNode _ _ _ _ (Just node) <- children ]
 getChildDOMNodes _ = []
 
 getDOMNode :: VTree -> Maybe Node
 getDOMNode (VNode _ _ _ _ ref) = ref
 getDOMNode _ = Nothing
 
-instance Show VTree where
+instance Show (VTreeBase a) where
   show VEmpty = "<empty>"
   show (VNode typ evts children _ _) =
-    "<" ++ typ ++ ">" ++ show evts ++ concatMap show children ++ "</" ++ typ ++ ">"
+    "<" ++ typ ++ ">" ++ show evts ++
+      concatMap show children ++ "\n" ++ "</" ++ typ ++ ">"
   show (VText val _ ) = val
 
 mkNode :: String -> [Attribute] -> [VTree] -> VTree
-mkNode name as cs = VNode name as cs Nothing Nothing
+mkNode name as cs = VNode name as cs (Nothing :: Maybe Int) Nothing
 
 text_ :: String -> VTree
 text_ = flip VText Nothing
@@ -100,11 +98,20 @@ text_ = flip VText Nothing
 div_ :: [Attribute] -> [VTree] -> VTree
 div_  = mkNode "div"
 
+section_ :: [Attribute] -> [VTree] -> VTree
+section_  = mkNode "section"
+
+header_ :: [Attribute] -> [VTree] -> VTree
+header_  = mkNode "header"
+
+footer_ :: [Attribute] -> [VTree] -> VTree
+footer_  = mkNode "footer"
+
 btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
 
-delegate :: IORef VTree -> Events -> IO ()
-delegate ref events = do
+delegator :: IORef VTree -> Events -> IO ()
+delegator ref events = do
   Just doc <- currentDocument
   Just body <- fmap toNode <$> getBody doc
   listener <- eventListenerNew (f body)
@@ -117,7 +124,6 @@ delegate ref events = do
         vtree <- readIORef ref
         eventType <- E.getType e
         stack <- buildTargetToBody body (castToNode target)
-        print ("got event ->" :: String, eventType)
         delegateEvent e vtree eventType stack
 
 buildTargetToBody :: Node -> Node -> IO [Node]
@@ -129,17 +135,13 @@ buildTargetToBody body target = f target [target]
             Just parent <- getParentNode currentNode
             f parent (parent:nodes)
 
-delegateEvent :: E.Event -> VTree -> String -> [Node] -> IO ()
+delegateEvent :: Event -> VTree -> String -> [Node] -> IO ()
 delegateEvent e (VNode _ _ children _ _) eventName = findEvent children 
     where
       findEvent _ [] = pure ()
       findEvent childNodes [y] = 
        forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
-         forM_ (getAction attrs) $
-           \(Options{..}, action) -> do
-              when stopPropogation $ E.stopPropagation e
-              when preventDefault $ E.preventDefault e
-              action e
+         forM_ (getAction attrs) $ \action -> action e
 
       findEvent childNodes (y:ys) = 
         forM_ (findNode childNodes y) $ \(VNode _ _ childrenNext _  _) ->
@@ -156,9 +158,10 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
 
       getAction attrs =
         listToMaybe $ do
-          Event opts evtName action <- attrs
+          Event evtName action <- attrs
           guard (evtName == eventName)
-          pure (opts, action)
+          pure action
+
 delegateEvent _ _ _ = const $ pure ()
 
 defaultEvents :: [String] 
@@ -173,66 +176,66 @@ initTree :: VTree -> IO VTree
 initTree initial = do
   Just document <- currentDocument
   Just body <- getBody document
-  vdom <- diff VEmpty initial
+  vdom <- datch VEmpty initial
   case vdom of
     VText _ ref -> void $ appendChild body ref
     VNode _ _ _ _ ref -> void $ appendChild body ref
     VEmpty -> pure ()
   pure vdom
 
-diff :: VTree -> VTree -> IO VTree
-diff currentTree newTree = do
+datch :: VTree -> VTree -> IO VTree
+datch currentTree newTree = do
   Just document <- currentDocument
   Just body <- fmap toNode <$> getBody document
-  go document body currentTree newTree
+  goDatch document body currentTree newTree
 
-go :: Document -> Node -> VTree -> VTree -> IO VTree
-go _ _ VEmpty VEmpty = pure VEmpty
+goDatch :: Document -> Node -> VTree -> VTree -> IO VTree
+goDatch _ _ VEmpty VEmpty = pure VEmpty
 
 -- Ensure correct initialization (always true if internal)
-go _ _ (VNode _ _ _ _ Nothing) _ = Prelude.error "VNode not initialized"
-go _ _ (VText _ Nothing) _ = Prelude.error "VText not initialized"
+goDatch _ _ (VNode _ _ _ _ Nothing) _ = Prelude.error "VNode not initialized"
+goDatch _ _ (VText _ Nothing) _ = Prelude.error "VText not initialized"
 
 -- Make a new text node
-go doc parentNode VEmpty (VText str _) = do
+goDatch doc parentNode VEmpty (VText str _) = do
   newTextNode <- createTextNode doc str
   void $ appendChild parentNode newTextNode
   pure $ VText str (toNode <$> newTextNode)
 
 -- Remove a text node
-go _ parentNode (VText _ node) VEmpty = do
+goDatch _ parentNode (VText _ node) VEmpty = do
   void $ removeChild parentNode node
   pure VEmpty
 
 -- Make a new element
-go doc parentNode VEmpty (VNode typ attrs children key _) = do
+goDatch doc parentNode VEmpty (VNode typ attrs children key _) = do
   node@(Just newNode)  <- fmap toNode <$> createElement doc (Just typ)
-  setAttrs newNode attrs
+  void $ diffAttrs newNode [] attrs
   newChildren <- forM children $ \childNode ->
-    go doc newNode VEmpty childNode
+    goDatch doc newNode VEmpty childNode
   void $ appendChild parentNode node
   pure $ VNode typ attrs newChildren key node
 
 -- Remove an element
-go _ parentNode (VNode _ _ _ _ node) VEmpty = 
+goDatch _ parentNode (VNode _ _ _ _ node) VEmpty = 
   VEmpty <$ removeChild parentNode node
 
 -- Replace an element with a text node
-go doc parentNode (VNode _ _ _ _ ref) (VText str _) = do
+goDatch doc parentNode (VNode _ _ _ _ ref) (VText str _) = do
   newTextNode <- fmap toNode <$> createTextNode doc str
   void $ replaceChild parentNode newTextNode ref
   pure $ VText str newTextNode
 
 -- Replace a text node with an Element
-go doc parentNode (VText _ ref) (VNode typ attrs children key _) = do
+goDatch doc parentNode (VText _ ref) (VNode typ attrs children key _) = do
   node@(Just newNode) <- fmap toNode <$> createElement doc (Just typ)
   newChildren <- forM children $ \childNode ->
-    go doc newNode VEmpty childNode
+    goDatch doc newNode VEmpty childNode
   void $ replaceChild parentNode node ref
   pure $ VNode typ attrs newChildren key node
 
 -- Replace a text node with a text node
-go _ _ (VText currentStr currRef) (VText newStr _) = do
+goDatch _ _ (VText currentStr currRef) (VText newStr _) = do
   when (currentStr /= newStr) $ do
     F.forM_ currRef $ \ref -> do
       let txt = castToText ref
@@ -241,34 +244,68 @@ go _ _ (VText currentStr currRef) (VText newStr _) = do
   pure $ VText newStr currRef
 
 -- Diff two nodes together
-go doc parent (VNode typA attrsA childrenA _ (Just ref)) (VNode typB attrsB childrenB keyB _) = do
-  case typA == typB of
-    False -> do      
-      node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
-      newChildren <- forM childrenB $ \childNode ->
-        go doc newNode VEmpty childNode
-      void $ replaceChild parent node (Just ref)
-      pure $ VNode typB attrsB newChildren keyB node
-    True ->
+goDatch doc parent
+  (VNode typA attrsA childrenA _ (Just ref))
+  (VNode typB attrsB childrenB keyB _) = do
+ case typA == typB of
+   True ->
       VNode typB <$> diffAttrs ref attrsA attrsB
                  <*> diffChildren doc ref childrenA childrenB
                  <*> pure keyB
                  <*> pure (Just ref)
+   False -> do      
+      node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
+      void $ diffAttrs newNode [] attrsB
+      newChildren <- forM childrenB $ \childNode ->
+        goDatch doc newNode VEmpty childNode
+      void $ replaceChild parent node (Just ref)
+      pure $ VNode typB attrsB newChildren keyB node
+
 diffAttrs
   :: Node
   -> [Attribute]
   -> [Attribute]
   -> IO [Attribute]
-diffAttrs node as bs = do
-   let attrsA = [(k,v) | KV k v <- as]
-       attrsB = [(k,v) | KV k v <- bs]
-   when (attrsA /= attrsB) $ setAttrs node bs
-   pure bs
+diffAttrs node attrsA attrsB = do
+  when (attrsA /= attrsB) $ do
+    diffPropsAndAttrs node attrsA attrsB
+  pure attrsB
 
-setAttrs :: Node -> [Attribute] -> IO ()
-setAttrs node xs =
-  forM_ [(k,v) | KV k v <- xs] $ \(k,v) ->
-    setAttribute (castToElement node) k v
+diffPropsAndAttrs :: Node -> [Attribute] -> [Attribute] -> IO ()
+diffPropsAndAttrs node old new = do
+  obj <- Object <$> toJSVal node
+  let el = castToElement node
+
+      newAttrs = S.fromList [ (k, v) | Attr k v <- new ]
+      oldAttrs = S.fromList [ (k, v) | Attr k v <- old ]
+
+      removeAttrs = oldAttrs `S.difference` newAttrs
+      addAttrs    = newAttrs `S.difference` oldAttrs
+
+      newProps = M.fromList [ (k,v) | Prop k v <- new ]
+      oldProps = M.fromList [ (k,v) | Prop k v <- old ]
+
+      propsToRemove = oldProps `M.difference` newProps
+      propsToAdd    = newProps `M.difference` oldProps
+      propsToDiff   = newProps `M.intersection` oldProps
+
+  forM_ (M.toList propsToRemove) $ \(k, _) -> do
+    setProp (textToJSString k) jsNull obj
+
+  forM_ (M.toList propsToAdd) $ \(k, v) -> do
+    val <- toJSVal v
+    setProp (textToJSString k) val obj
+
+  forM_ (M.toList propsToDiff) $ \(k, _) -> do
+    case (M.lookup k oldProps, M.lookup k newProps) of
+      (Just oldVal, Just newVal) ->
+        when (oldVal /= newVal) $ do
+        val <- toJSVal newVal
+        setProp (textToJSString k) val obj
+      (_, _) -> pure ()
+
+  forM_ removeAttrs $ \(k,_) -> removeAttribute el k 
+  forM_ addAttrs $ \(k,v) -> setAttribute el k v
 
 diffChildren
   :: Document
@@ -278,28 +315,27 @@ diffChildren
   -> IO [VTree]
 diffChildren _ _ [] [] = pure []
 diffChildren doc parent [] (b:bs) = 
-  (:) <$> go doc parent VEmpty b
+  (:) <$> goDatch doc parent VEmpty b
       <*> diffChildren doc parent [] bs
 diffChildren doc parent (a:as) [] = 
-  (:) <$> go doc parent a VEmpty
+  (:) <$> goDatch doc parent a VEmpty
       <*> diffChildren doc parent as [] 
 diffChildren doc parent (a:as) (b:bs) = do
-  (:) <$> go doc parent a b
+  (:) <$> goDatch doc parent a b
       <*> diffChildren doc parent as bs
 
 type Events = [ String ]
 
 runSignal :: Events -> Signal VTree -> IO ()
 runSignal events (Signal s) = do
-  ref <- newIORef =<< do initTree $ mkNode "div" [] []
-  void . forkIO $ delegate ref events
+  vtreeRef <- newIORef =<< initTree VEmpty
+  _ <- forkIO $ delegator vtreeRef events
   emitter <- start s
   forever $ 
     waitForAnimationFrame >>
       emitter >>= \case
         Changed [ newTree ] -> do
-          result <- (`diff` newTree) =<< readIORef ref
-          writeIORef ref result
+          writeIORef vtreeRef =<< (`datch` newTree) =<< readIORef vtreeRef
         _ -> pure ()
 
 signal :: Show a => a -> IO (Signal a, a -> IO ())
@@ -324,79 +360,35 @@ foldp f ini (Signal gen) =
               notChanged = NotChanged . pure
               changed = Changed . pure
 
-data Model = Model {
-    nextTaskNum :: Int
-  , tasks       :: M.Map Int Task 
-  , turnOn      :: Bool
-  } deriving (Show, Eq)
+attr :: T.Text -> T.Text -> Attribute
+attr = Attr
 
-data Task = Task {
-        taskCompleted :: Bool
-      , taskContent :: String
-      } deriving (Show, Eq)
+prop :: ToJSON a => T.Text -> a -> Attribute
+prop k v = Prop k (toJSON v)
 
-data Action =
-    AddTask String
-  | RemoveTask Int
-  | ToggleCompleted Int Bool
-  | ToggleAllCompleted
-  | Switch
-  deriving (Show)
+boolProp :: T.Text -> Bool -> Attribute
+boolProp = prop
 
-main :: IO ()
-main = do
-  (sig, send) <- signal Switch
-  runSignal ["keypress", "click"] $
-    view send <$> foldp update (Model 0 mempty False) sig
-    where
-      update :: Action -> Model -> Model
-      update Switch model = model { turnOn = True }
-      update (ToggleCompleted taskId isCompleted) model =
-        model { tasks = M.adjust modifyTask taskId (tasks model) }
-          where
-            modifyTask task = task { taskCompleted = isCompleted }
-      update (RemoveTask n) model@Model{..} = model { tasks = M.delete n tasks }
-      update ToggleAllCompleted model =
-        case F.length (tasks model) == (F.length $ M.filter (\t -> taskCompleted t == False ) (tasks model)) of
-          True ->
-             model {
-                tasks = M.map (\t -> t { taskCompleted = True }) (tasks model)
-              }
-          False ->
-             model {
-                tasks = M.map (\t -> t { taskCompleted = False }) (tasks model)
-              }
+stringProp :: T.Text -> T.Text -> Attribute
+stringProp = prop
 
-      update (AddTask str) model@Model{..} =
-        model { nextTaskNum = nextTaskNum + 1
-              , tasks = M.insert nextTaskNum (Task False str) tasks
-              }
-      view send Model { .. } = div_ [ ] [
-            h1_ [] [ text_ "todos"]
-          , input_ [ type_ "text"
-                   , placeholder "What needs to be done?"
-                   , autofocus
-                   , on "keypress" $ \e -> do
-                       Just target <- getTarget e
-                       let ele = castToHTMLInputElement target
-                       Just value <- getValue ele
-                       key <- getKeyCode (castToUIEvent e :: UIEvent)
-                       when (key == 13) $ do
-                         setValue ele (Just ("" :: T.Text))
-                         send $ AddTask value
-                   ] [ ]
-          , ul_ [] $ flip map (M.toList tasks) $ \(taskId, Task {..}) ->
-              li_ [] [
-               div_ [] [
-                  if taskCompleted then
-                    s_ [] [ text_ taskContent ]
-                  else
-                    text_ taskContent
-                  , btn_ [ on "click" $ const $ send (RemoveTask taskId) ]
-                         [ text_ "x" ]
-                ]
-               ]
-          ]
+textProp :: T.Text -> T.Text -> Attribute
+textProp = prop
+
+intProp :: T.Text -> Int -> Attribute
+intProp = prop
+
+integerProp :: T.Text -> Int -> Attribute
+integerProp = prop
+
+doubleProp :: T.Text -> Int -> Attribute
+doubleProp = prop
+
+checked_ :: Bool -> Attribute
+checked_ = boolProp "checked"
+
+form_ :: [Attribute] -> [VTree] -> VTree
+form_ = mkNode "form" 
 
 p_ :: [Attribute] -> [VTree] -> VTree
 p_ = mkNode "p" 
@@ -413,17 +405,33 @@ li_ = mkNode "li"
 h1_ :: [Attribute] -> [VTree] -> VTree
 h1_ = mkNode "h1" 
 
-section_ :: [Attribute] -> [VTree] -> VTree
-section_ = mkNode "section" 
-
 input_ :: [Attribute] -> [VTree] -> VTree
 input_ = mkNode "input" 
 
+label_ :: [Attribute] -> [VTree] -> VTree
+label_ = mkNode "label" 
+
+a_ :: [Attribute] -> [VTree] -> VTree
+a_ = mkNode "a" 
+
 type_ :: T.Text -> Attribute 
-type_ = KV "type"
+type_ = attr "type"
+
+href_ :: T.Text -> Attribute 
+href_ = attr "href"
+
+className_ :: T.Text -> Attribute 
+className_ = stringProp "className"
+
+class_ :: T.Text -> Attribute 
+class_ = attr "class"
+
+id_ :: T.Text -> Attribute 
+id_ = attr "id"
 
 placeholder :: T.Text -> Attribute 
-placeholder = KV "placeholder"
+placeholder = attr "placeholder" 
 
-autofocus :: Attribute 
-autofocus = KV "autofocus" mempty
+autofocus :: Bool -> Attribute 
+autofocus = boolProp "autofocus"
+

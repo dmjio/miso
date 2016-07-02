@@ -1,4 +1,4 @@
-module Types where
+module Miso.Types where
 
 import           Control.Applicative
 import qualified FRP.Elerea.Simple   as FRP
