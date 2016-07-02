@@ -8,8 +8,8 @@ cabal-version:       >=1.10
 executable example
   main-is: Example.hs
   ghc-options: -Wall
-  hs-source-dirs: example
-  build-depends: base, dirty-miso, ghcjs-base, containers, ghcjs-dom
+  hs-source-dirs: src
+  build-depends: base, dirty-miso, ghcjs-base, containers, ghcjs-dom, text, aeson, elerea
   default-language:    Haskell2010
 
 library

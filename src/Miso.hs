@@ -109,13 +109,12 @@ footer_  = mkNode "footer"
 
 btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
-
 delegator :: IORef VTree -> Events -> IO ()
 delegator ref events = do
   Just doc <- currentDocument
   Just body <- fmap toNode <$> getBody doc
   listener <- eventListenerNew (f body)
-  forM_ events $ \event -> 
+  forM_ events $ \event ->
     addEventListener body event (Just listener) True
     where
       f :: Node -> Event -> IO ()
@@ -123,6 +122,7 @@ delegator ref events = do
         Just target <- getTarget e
         vtree <- readIORef ref
         eventType <- E.getType e
+--        print ("got event --> " :: String, eventType)
         stack <- buildTargetToBody body (castToNode target)
         delegateEvent e vtree eventType stack
 
@@ -335,7 +335,8 @@ runSignal events (Signal s) = do
     waitForAnimationFrame >>
       emitter >>= \case
         Changed [ newTree ] -> do
-          writeIORef vtreeRef =<< (`datch` newTree) =<< readIORef vtreeRef
+          tree <- (`datch` newTree) =<< readIORef vtreeRef
+          writeIORef vtreeRef tree
         _ -> pure ()
 
 signal :: Show a => a -> IO (Signal a, a -> IO ())
@@ -399,6 +400,12 @@ s_ = mkNode "s"
 ul_ :: [Attribute] -> [VTree] -> VTree
 ul_ = mkNode "ul" 
 
+span_ :: [Attribute] -> [VTree] -> VTree
+span_ = mkNode "span" 
+
+strong_ :: [Attribute] -> [VTree] -> VTree
+strong_ = mkNode "strong" 
+
 li_ :: [Attribute] -> [VTree] -> VTree
 li_ = mkNode "li" 
 
@@ -414,8 +421,14 @@ label_ = mkNode "label"
 a_ :: [Attribute] -> [VTree] -> VTree
 a_ = mkNode "a" 
 
+style_ :: T.Text -> Attribute 
+style_ = attr "style" 
+
 type_ :: T.Text -> Attribute 
 type_ = attr "type"
+
+name_ :: T.Text -> Attribute 
+name_ = attr "name"
 
 href_ :: T.Text -> Attribute 
 href_ = attr "href"
