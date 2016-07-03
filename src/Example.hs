@@ -1,16 +1,24 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import           Control.Monad
+import           Data.Aeson
 import           Data.Bool
 import           Data.Monoid
-import qualified Data.Text         as T
+import qualified Data.Text                  as T
+
+import           GHC.Generics
+
 import           GHCJS.DOM.Event
 import           GHCJS.DOM.HTMLInputElement
+
 import           GHCJS.DOM.UIEvent
+
 
 import           Miso
 
@@ -20,14 +28,20 @@ data Model = Model
   , uid :: Int
   , visibility :: String
   , start :: Bool
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Generic)
 
 data Entry = Entry
   { description :: String
   , completed :: Bool
   , editing :: Bool
   , eid :: Int
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Entry
+instance ToJSON Model
+
+instance FromJSON Entry
+instance FromJSON Model
 
 emptyModel :: Model
 emptyModel = Model
@@ -47,7 +61,7 @@ newEntry desc eid = Entry
   }
 
 data Msg
-  = Start
+  = Start Bool
   | UpdateField String
   | EditingEntry Int Bool
   | UpdateEntry Int String
@@ -61,16 +75,15 @@ data Msg
 
 main :: IO ()
 main = do
-  putStrLn "hi"
-  (sig, send) <- signal Start
-  runSignal ["keydown", "click", "change", "input", "blur", "dblclick"] $
-    view send <$> foldp update emptyModel sig
-
+  m@Model{..} <- pure emptyModel
+  (sig, send) <- signal $ Start (not start)
+  let events = ["keydown", "click", "change", "input", "blur", "dblclick"]
+  runSignal events $ view send <$> foldp update m sig
 
 update :: Msg -> Model -> Model
-update Start model = model { start = True }
+update (Start x) model = model { start = x }
 update Add model@Model{..} = 
-  model { 
+  model {
     uid = uid + 1
   , field = mempty
   , entries = 
@@ -78,6 +91,7 @@ update Add model@Model{..} =
         then entries
         else entries ++ [ newEntry field uid ]
   }
+
 update (UpdateField str) model = model { field = str }
 update (EditingEntry id' isEditing) model@Model{..} = 
   model { entries = newEntries }
@@ -112,20 +126,20 @@ update (CheckAll isCompleted) model@Model{..} =
       newEntries = [ t { completed = isCompleted }
                    | t <- entries
                    ]
-update (ChangeVisibility visibility) model =
-  model { visibility = visibility }
+update (ChangeVisibility v) model =
+  model { visibility = v }
 
 view :: Address -> Model -> VTree
-view send Model{..} = 
+view send m@Model{..} = 
  div_
     [ class_ "todomvc-wrapper"
     , style_ "visibility:hidden;"
     ]
     [ section_
         [ class_ "todoapp" ]
-        [ viewInput send field
+        [ viewInput m send field
         , viewEntries send visibility entries
-        , viewControls send visibility entries
+        , viewControls m send visibility entries
         ]
     , infoFooter
     ]
@@ -165,7 +179,7 @@ viewEntries send visibility entries =
 viewKeyedEntry :: Address -> Entry -> VTree
 viewKeyedEntry = viewEntry
 
-viewEntry :: (Msg -> IO ()) -> Entry -> VTree
+viewEntry :: Address -> Entry -> VTree
 viewEntry send Entry {..} = 
   li_
     [ class_ $ T.intercalate " " $ [ "completed" | completed ] ++ [ "editing" | editing ] ]
@@ -182,7 +196,7 @@ viewEntry send Entry {..} =
             [ text_ description ]
         , btn_
             [ class_ "destroy"
-            , onClick $ send (Delete eid)
+            , onClick $ send (Delete eid) 
             ]
            []
         ]
@@ -201,14 +215,14 @@ viewEntry send Entry {..} =
         []
     ]
 
-viewControls :: Address -> String -> [ Entry ] -> VTree
-viewControls send visibility entries =
+viewControls :: Model -> Address -> String -> [ Entry ] -> VTree
+viewControls model send visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
            ]
       [ viewControlsCount entriesLeft
       , viewControlsFilters send visibility
-      , viewControlsClear send entriesCompleted
+      , viewControlsClear model send entriesCompleted
       ]
   where
     entriesCompleted = length . filter completed $ entries
@@ -223,7 +237,6 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-
 viewControlsFilters :: Address -> String -> VTree
 viewControlsFilters send visibility =
   ul_
@@ -237,25 +250,26 @@ viewControlsFilters send visibility =
 
 visibilitySwap :: Address -> String -> String -> String -> VTree
 visibilitySwap send uri visibility actualVisibility =
-  li_ [ onClick $ send (ChangeVisibility visibility) ]
+  li_ [  ]
       [ a_ [ href_ $ T.pack uri
            , class_ $ T.concat [ "selected" | visibility == actualVisibility ]
+           , onClick $ send (ChangeVisibility visibility)
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Address -> Int -> VTree
-viewControlsClear send entriesCompleted =
+viewControlsClear :: Model -> Address -> Int -> VTree
+viewControlsClear _ send entriesCompleted =
   btn_
     [ class_ "clear-completed"
     , prop "hidden" (entriesCompleted == 0)
-    , onClick $ send DeleteComplete
+    , onClick $ send DeleteComplete 
     ]
     [ text_ $ "Clear completed (" ++ show entriesCompleted ++ ")" ]
 
 type Address = Msg -> IO ()
 
-viewInput :: Address -> String -> VTree
-viewInput send task =
+viewInput :: Model -> Address -> String -> VTree
+viewInput _ send task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
     , input_
@@ -268,15 +282,15 @@ viewInput send task =
             Just target <- fmap castToHTMLInputElement <$> getTarget x
             Just val <- getValue target
             send $ UpdateField val
-        , onEnter $ send Add
+        , onEnter $ send Add 
         ] []
     ]
 
 onEnter :: IO () -> Attribute
 onEnter action = 
   on "keydown" $ \(e :: Event) -> do
-    key <- getKeyCode (castToUIEvent e)
-    when (key == 13) action
+    k <- getKeyCode (castToUIEvent e)
+    when (k == 13) action
 
 onInput :: (Event -> IO ()) -> Miso.Attribute
 onInput = on "input"

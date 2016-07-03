@@ -1,11 +1,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE LambdaCase                #-}
 
 module Miso where
 
@@ -72,6 +72,7 @@ data VTreeBase a where
   VNode :: String -> [ Attribute ] -> [ VTreeBase a ] -> Maybe Int -> a -> VTreeBase a 
   VText :: String -> a -> VTreeBase a 
   VEmpty :: VTreeBase a
+  deriving (Eq)
 
 getChildDOMNodes :: VTree -> [Node]
 getChildDOMNodes (VNode _ _ children _ _) =
@@ -109,6 +110,7 @@ footer_  = mkNode "footer"
 
 btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
+
 delegator :: IORef VTree -> Events -> IO ()
 delegator ref events = do
   Just doc <- currentDocument
@@ -122,7 +124,6 @@ delegator ref events = do
         Just target <- getTarget e
         vtree <- readIORef ref
         eventType <- E.getType e
---        print ("got event --> " :: String, eventType)
         stack <- buildTargetToBody body (castToNode target)
         delegateEvent e vtree eventType stack
 
