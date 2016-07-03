@@ -6,22 +6,18 @@
 {-# LANGUAGE LambdaCase #-}
 module Main where
 
+import           Control.Concurrent
 import           Control.Monad
 import           Data.Aeson                 hiding (Object)
 import           Data.Bool
 import           Data.Monoid
 import qualified Data.Text                  as T
-
 import           GHC.Generics
-
+import           GHCJS.DOM.Element
 import           GHCJS.DOM.Event
 import           GHCJS.DOM.HTMLInputElement
--- import           GHCJS.DOM.Node
+import           GHCJS.DOM.Node
 import           GHCJS.DOM.UIEvent
--- import           GHCJS.Marshal
--- import           JavaScript.Object.Internal
-
-
 import           Miso
 
 data Model = Model
@@ -202,7 +198,15 @@ viewEntry send Entry {..} =
             , onClick $ send (Check eid (not completed))
             ] []
         , label_
-            [ on "dblclick" $ \_ -> send (EditingEntry eid True) ]
+            [ on "dblclick" $ \e -> do
+                Just lbl <- fmap castToNode <$> getTarget e
+                Just p <- getParentNode lbl
+                Just inp <- fmap castToElement <$> getNextSibling p
+                send (EditingEntry eid True)
+                void $ forkIO $ do
+                  threadDelay 100000
+                  focus inp
+            ]
             [ text_ description ]
         , btn_
             [ class_ "destroy"
@@ -288,7 +292,7 @@ viewInput _ send task =
         , autofocus True
         , prop "value" task
         , attr "name" "newTodo"
-        , onInput $ \(x ::Event) -> do
+        , onInput $ \(x :: Event) -> do
             Just target <- fmap castToHTMLInputElement <$> getTarget x
             Just val <- getValue target
             send $ UpdateField val
