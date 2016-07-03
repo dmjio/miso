@@ -7,7 +7,7 @@
 module Main where
 
 import           Control.Monad
-import           Data.Aeson
+import           Data.Aeson                 hiding (Object)
 import           Data.Bool
 import           Data.Monoid
 import qualified Data.Text                  as T
@@ -16,8 +16,10 @@ import           GHC.Generics
 
 import           GHCJS.DOM.Event
 import           GHCJS.DOM.HTMLInputElement
-
+-- import           GHCJS.DOM.Node
 import           GHCJS.DOM.UIEvent
+-- import           GHCJS.Marshal
+-- import           JavaScript.Object.Internal
 
 
 import           Miso
@@ -77,7 +79,7 @@ main :: IO ()
 main = do
   m@Model{..} <- pure emptyModel
   (sig, send) <- signal $ Start (not start)
-  let events = ["keydown", "click", "change", "input", "blur", "dblclick"]
+  let events = ["keydown", "click", "change", "input", "blur", "dblclick" ]
   runSignal events $ view send <$> foldp update m sig
 
 update :: Msg -> Model -> Model
@@ -96,15 +98,16 @@ update (UpdateField str) model = model { field = str }
 update (EditingEntry id' isEditing) model@Model{..} = 
   model { entries = newEntries }
     where
-      newEntries = [ t { editing = isEditing }
-                   | t <- entries, eid t == id'
-                   ]
+      newEntries = filterMap entries (\t -> eid t == id') $
+         \t -> t { editing = isEditing }
+
 update (UpdateEntry id' task) model@Model{..} =
   model { entries = newEntries }
     where
-      newEntries = [ t { description = task }
-                   | t <- entries, eid t == id' 
-                   ]
+      newEntries =
+        filterMap entries ((==id') . eid) $ \t ->
+           t { description = task }
+
 update (Delete id') model@Model{..} =
   model { entries = filter (\t -> eid t /= id') entries }
 
@@ -115,19 +118,26 @@ update (Check id' isCompleted) model@Model{..} =
   model { entries = newEntries }
     where
       newEntries =
-        flip map entries $ \t ->
-          case eid t == id' of
-            True -> t { completed = isCompleted }
-            False -> t 
+        filterMap entries (\t -> eid t == id') $ \t ->
+          t { completed = isCompleted }
 
 update (CheckAll isCompleted) model@Model{..} =
   model { entries = newEntries }
     where
-      newEntries = [ t { completed = isCompleted }
-                   | t <- entries
-                   ]
+      newEntries =
+        filterMap entries (const True) $
+          \t -> t { completed = isCompleted }
+
 update (ChangeVisibility v) model =
   model { visibility = v }
+
+filterMap :: [a] -> (a -> Bool) -> (a -> a) -> [a]
+filterMap xs predicate f = go xs
+  where
+    go [] = []
+    go (y:ys)
+     | predicate y = f y : go ys
+     | otherwise   = y : go ys
 
 view :: Address -> Model -> VTree
 view send m@Model{..} = 
