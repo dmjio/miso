@@ -71,11 +71,19 @@ data Msg
   | ChangeVisibility String
    deriving Show
 
+instance HasConfig Model where
+  getConfig =
+    AppConfig { useStorage = True
+              , storageKey = "todo-mvc"
+              }
+
 main :: IO ()
 main = do
-  m@Model{..} <- pure emptyModel
+  m@Model{..} <- getFromStorage >>= \case
+    Left x -> putStrLn x >> pure emptyModel
+    Right m -> pure m
   (sig, send) <- signal $ Start (not start)
-  let events = ["keydown", "click", "change", "input", "blur", "dblclick" ]
+  let events = [ "keydown", "click", "change", "input", "blur", "dblclick" ] 
   runSignal events $ view send <$> foldp update m sig
 
 update :: Msg -> Model -> Model

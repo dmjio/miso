@@ -33,6 +33,7 @@ library
                  , elerea
                  , ghcjs-base
                  , ghcjs-dom
+                 , string-conversions
                  , text
                  , transformers
   default-language:    Haskell2010

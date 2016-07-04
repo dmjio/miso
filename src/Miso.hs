@@ -22,7 +22,7 @@ import           Data.Maybe
 import           Data.Monoid
 import qualified Data.Set                      as S
 import qualified Data.Text                     as T
-import           FRP.Elerea.Simple             (externalMulti, transfer, start)
+import           FRP.Elerea.Simple             (externalMulti, transfer, start, effectful1)
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
 import           GHCJS.DOM.Document            hiding (drop, getLocation)
@@ -31,6 +31,9 @@ import           GHCJS.DOM.Event               (Event, getTarget)
 import qualified GHCJS.DOM.Event               as E
 import           GHCJS.DOM.EventTarget         (addEventListener)
 import           GHCJS.DOM.EventTargetClosures
+import           GHCJS.DOM.Window              (getLocalStorage)
+import           GHCJS.DOM.Storage             (setItem, getItem)
+
 import           GHCJS.DOM.Node
 import           GHCJS.DOM.Types               hiding (Event, Attr)
 import           GHCJS.Foreign                 hiding (Object)
@@ -39,7 +42,9 @@ import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
 import           Prelude                       hiding (repeat)
 
+import           Data.String.Conversions
 import           Miso.Types
+
 
 data Attribute 
   = Event String (Event -> IO ())
@@ -91,7 +96,7 @@ instance Show (VTreeBase a) where
   show (VText val _ ) = val
 
 mkNode :: String -> [Attribute] -> [VTree] -> VTree
-mkNode name as cs = VNode name as cs (Nothing :: Maybe Int) Nothing
+mkNode name as xs = VNode name as xs (Nothing :: Maybe Int) Nothing
 
 text_ :: String -> VTree
 text_ = flip VText Nothing
@@ -153,8 +158,8 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
         flip find nodes $ \node ->
           getDOMNode node == Just ref
   
-      getVNodesOnly cs = do
-        vnode@VNode{} <- cs
+      getVNodesOnly childs = do
+        vnode@VNode{} <- childs
         pure vnode
 
       getAction attrs =
@@ -268,8 +273,7 @@ diffAttrs
   -> [Attribute]
   -> IO [Attribute]
 diffAttrs node attrsA attrsB = do
-  when (attrsA /= attrsB) $ do
-    diffPropsAndAttrs node attrsA attrsB
+  when (attrsA /= attrsB) $ diffPropsAndAttrs node attrsA attrsB
   pure attrsB
 
 diffPropsAndAttrs :: Node -> [Attribute] -> [Attribute] -> IO ()
@@ -327,6 +331,14 @@ diffChildren doc parent (a:as) (b:bs) = do
 
 type Events = [ String ]
 
+data AppConfig config = AppConfig {
+      useStorage :: Bool
+    , storageKey :: T.Text
+    } 
+
+class ToJSON model => HasConfig model where
+  getConfig :: AppConfig model
+
 runSignal :: Events -> Signal VTree -> IO ()
 runSignal events (Signal s) = do
   vtreeRef <- newIORef =<< initTree VEmpty
@@ -336,8 +348,8 @@ runSignal events (Signal s) = do
     waitForAnimationFrame >>
       emitter >>= \case
         Changed [ newTree ] -> do
-          tree <- (`datch` newTree) =<< readIORef vtreeRef
-          writeIORef vtreeRef tree
+          patchedTree <- (`datch` newTree) =<< readIORef vtreeRef
+          writeIORef vtreeRef patchedTree
         _ -> pure ()
 
 signal :: Show a => a -> IO (Signal a, a -> IO ())
@@ -349,10 +361,37 @@ signal x = do
       toSample [] = NotChanged []
       toSample xs = Changed xs
 
-foldp :: Eq model => (action -> model -> model) -> model -> Signal action -> Signal model
+getFromStorage
+  :: forall model . (FromJSON model, HasConfig model)
+  => IO (Either String model)
+getFromStorage = do
+  let AppConfig _ key = getConfig :: AppConfig model
+  Just w <- currentWindow
+  Just s <- getLocalStorage w
+  maybeVal <- getItem s key
+  pure $ case maybeVal of
+    Nothing -> Left "Not found"
+    Just m -> eitherDecode (cs (m :: T.Text))
+
+setStorage :: HasConfig model => T.Text -> model -> IO ()
+setStorage key m = do
+  Just w <- currentWindow
+  Just s <- getLocalStorage w
+  setItem s (textToJSString key) (cs (encode m) :: T.Text)
+
+foldp :: (HasConfig model, Eq model)
+      => (action -> model -> model) -> model -> Signal action -> Signal model
 foldp f ini (Signal gen) =
-  Signal $ gen >>= transfer (pure [ini]) update
+   Signal $ gen >>= transfer (pure [ini]) update
+                >>= effectful1 saveToStorage
       where
+        saveToStorage :: forall model . HasConfig model => Sample [model] -> IO (Sample [model])
+        saveToStorage (Changed [m]) = do
+          let AppConfig{..} = getConfig :: AppConfig model
+          when useStorage $ void . forkIO $ setStorage storageKey m
+          pure (Changed [m])
+        saveToStorage m = pure m
+
         update (NotChanged _) xs = NotChanged (fromChanged xs)
         update (Changed actions) model = do
           let oldModel : _ = fromChanged model
@@ -360,7 +399,7 @@ foldp f ini (Signal gen) =
           bool (notChanged newModel) (changed newModel) (oldModel /= newModel)
             where
               notChanged = NotChanged . pure
-              changed = Changed . pure
+              changed = Changed . pure        
 
 attr :: T.Text -> T.Text -> Attribute
 attr = Attr
