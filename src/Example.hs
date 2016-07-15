@@ -1,5 +1,6 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,6 +12,7 @@ import           Control.Monad
 import           Data.Aeson                 hiding (Object)
 import           Data.Bool
 import           Data.Monoid
+import           Data.Proxy
 import qualified Data.Text                  as T
 import           GHC.Generics
 import           GHCJS.DOM.Element
@@ -73,9 +75,10 @@ data Msg
 
 instance HasConfig Model where
   getConfig =
-    AppConfig { useStorage = True
-              , storageKey = "todo-mvc"
-              }
+    AppConfig {
+        useStorage = True
+      , storageKey = "todo-mvc"
+      }
 
 main :: IO ()
 main = do
@@ -92,10 +95,7 @@ update Add model@Model{..} =
   model {
     uid = uid + 1
   , field = mempty
-  , entries = 
-      if null field
-        then entries
-        else entries ++ [ newEntry field uid ]
+  , entries = entries ++ [ newEntry field uid | not $ null field ]
   }
 
 update (UpdateField str) model = model { field = str }
@@ -143,7 +143,7 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Address -> Model -> VTree
+view :: Address -> Model -> VTree "click"
 view send m@Model{..} = 
  div_
     [ class_ "todomvc-wrapper"
@@ -158,10 +158,12 @@ view send m@Model{..} =
     , infoFooter
     ]
 
-onClick :: IO () -> Attribute
-onClick = on "click" . const
+data ClickEvent
 
-viewEntries :: Address -> String -> [ Entry ] -> VTree 
+onClick :: IO () -> Attribute "click"
+onClick = on (Proxy :: Proxy "click") . const
+
+viewEntries :: Address -> String -> [ Entry ] -> VTree "click"
 viewEntries send visibility entries =
   section_
     [ class_ "main"
@@ -175,7 +177,7 @@ viewEntries send visibility entries =
         , onClick $ send $ CheckAll (not allCompleted)
         ] []
       , label_
-          [ attr "for" "toggle-all" ]
+          [ attr "for" "toggle-all", attr "draggable" "true" ]
           [ text_ "Mark all as complete" ]
       , ul_ [ class_ "todo-list" ] $
          flip map (filter isVisible entries) $ \t ->
@@ -190,10 +192,10 @@ viewEntries send visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Address -> Entry -> VTree
+viewKeyedEntry :: Address -> Entry -> VTree "click"
 viewKeyedEntry = viewEntry
 
-viewEntry :: Address -> Entry -> VTree
+viewEntry :: Address -> Entry -> VTree "click"
 viewEntry send Entry {..} = 
   li_
     [ class_ $ T.intercalate " " $ [ "completed" | completed ] ++ [ "editing" | editing ] ]
@@ -237,7 +239,7 @@ viewEntry send Entry {..} =
         []
     ]
 
-viewControls :: Model -> Address -> String -> [ Entry ] -> VTree
+viewControls :: Model -> Address -> String -> [ Entry ] -> VTree a
 viewControls model send visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -250,7 +252,7 @@ viewControls model send visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> VTree
+viewControlsCount :: Int -> VTree a
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
      [ strong_ [] [ text_ (show entriesLeft) ]
@@ -259,7 +261,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: Address -> String -> VTree
+viewControlsFilters :: Address -> String -> VTree a
 viewControlsFilters send visibility =
   ul_
     [ class_ "filters" ]
@@ -270,7 +272,7 @@ viewControlsFilters send visibility =
     , visibilitySwap send "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: Address -> String -> String -> String -> VTree
+visibilitySwap :: Address -> String -> String -> String -> VTree a
 visibilitySwap send uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ $ T.pack uri
@@ -279,7 +281,7 @@ visibilitySwap send uri visibility actualVisibility =
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Address -> Int -> VTree
+viewControlsClear :: Model -> Address -> Int -> VTree a
 viewControlsClear _ send entriesCompleted =
   btn_
     [ class_ "clear-completed"
@@ -290,7 +292,9 @@ viewControlsClear _ send entriesCompleted =
 
 type Address = Msg -> IO ()
 
-viewInput :: Model -> Address -> String -> VTree
+type instance EventHandler "input" = Event
+
+viewInput :: Model -> Address -> String -> VTree a
 viewInput _ send task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
@@ -300,7 +304,7 @@ viewInput _ send task =
         , autofocus True
         , prop "value" task
         , attr "name" "newTodo"
-        , onInput $ \(x :: Event) -> do
+        , on (Proxy :: Proxy "input") $ \(x :: Event) -> do
             Just target <- fmap castToHTMLInputElement <$> getTarget x
             Just val <- getValue target
             send $ UpdateField val
@@ -308,19 +312,19 @@ viewInput _ send task =
         ] []
     ]
 
-onEnter :: IO () -> Attribute
+onEnter :: IO () -> Attribute "keydown"
 onEnter action = 
-  on "keydown" $ \(e :: Event) -> do
+  on (Proxy :: Proxy "keydown") $ \(e :: Event) -> do
     k <- getKeyCode (castToUIEvent e)
     when (k == 13) action
 
-onInput :: (Event -> IO ()) -> Miso.Attribute
-onInput = on "input"
+onInput :: (Event -> IO ()) -> Attribute "input"
+onInput = on (Proxy :: Proxy "input")
 
-onBlur :: (Event -> IO ()) -> Attribute
-onBlur = on "blur" 
+onBlur :: (Event -> IO ()) -> Attribute "blur"
+onBlur = on (Proxy :: Proxy "blur")
 
-infoFooter :: VTree
+infoFooter :: VTree a
 infoFooter =
     footer_ [ class_ "info" ]
     [ p_ [] [ text_ "Double-click to edit a todo" ]
@@ -333,3 +337,4 @@ infoFooter =
         , a_ [ href_ "http://todomvc.com" ] [ text_ "TodoMVC" ]
         ]
     ]
+
