@@ -21,8 +21,11 @@
 
 module Miso where
 
-import           Control.Concurrent
+import Control.Concurrent
+
+-- import           Control.Concurrent
 import           Control.Monad
+
 import           Control.Monad.Free
 import           Control.Monad.Free.TH
 import           Data.Aeson                    hiding (Object)
@@ -43,8 +46,8 @@ import           GHC.Ptr
 import           GHC.TypeLits
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
-import           GHCJS.DOM.Document            hiding (drop, getLocation)
-import           GHCJS.DOM.Element             (removeAttribute, setAttribute)
+import           GHCJS.DOM.Document            hiding (drop, getLocation, focus)
+import           GHCJS.DOM.Element             (removeAttribute, setAttribute, focus)
 import           GHCJS.DOM.Event               (Event)
 import qualified GHCJS.DOM.Event               as E
 import           GHCJS.DOM.EventTarget         (addEventListener)
@@ -56,6 +59,7 @@ import qualified GHCJS.DOM.Storage             as S
 import           GHCJS.DOM.Types               hiding (Event, Attr)
 import           GHCJS.DOM.Window              (getLocalStorage)
 import           GHCJS.Foreign                 hiding (Object, Number)
+import qualified GHCJS.Foreign.Internal as Foreign
 import           GHCJS.Marshal
 import           GHCJS.Marshal.Pure
 import qualified GHCJS.Types                   as G
@@ -64,28 +68,37 @@ import           JavaScript.Web.AnimationFrame
 import           Miso.Types
 import           Prelude                       hiding (repeat)
 
-data Action object a = 
-     GetTarget object (object -> a)
-   | GetParent object (object -> a)
-   | GetChildren object (object -> a)
-   | GetItem object Int (Maybe object -> a)
-   | GetNextSibling object (Maybe object -> a)
-   | forall v . FromJSON v => GetField T.Text object (v -> a)
-   | forall v . FromJSON v => GetAction T.Text object (IO v -> a)
+data Action object a where
+  GetTarget :: object -> (object -> a) -> Action object a
+  GetParent :: object -> (object -> a) -> Action object a
+  GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
+  GetChildren ::  object -> (object -> a) -> Action object a
+  GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
+  GetNextSibling :: object -> (Maybe object -> a) -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
+$(makeFreeCon 'GetField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
-$(makeFreeCon 'GetField)
-$(makeFreeCon 'GetAction)
 
-foreign import javascript unsafe "$1[$2]"
-  retrieveAction :: G.JSVal -> G.JSString -> IO (G.JSVal)
+jsToJSON :: FromJSON v => JSType -> G.JSVal -> IO (Maybe v)
+jsToJSON Foreign.Number  g = convertToJSON g
+jsToJSON Foreign.Boolean g = convertToJSON g
+jsToJSON Foreign.Object  g = convertToJSON g
+jsToJSON Foreign.String  g = convertToJSON g
+jsToJSON _ _ = pure Nothing
+
+convertToJSON :: FromJSON v => G.JSVal -> IO (Maybe v)
+convertToJSON g = do
+  Just (val :: Value) <- fromJSVal g
+  case fromJSON val of -- Should *always* be able to decode this
+    Error e -> Prelude.error $ "Error while decoding Value: " <> e
+    Success v -> pure (pure v)
 
 evalEventGrammar :: Grammar G.JSVal a -> IO a
-evalEventGrammar = 
+evalEventGrammar = do
   iterM $ \x ->
     case x of 
       GetTarget obj cb -> do
@@ -93,6 +106,9 @@ evalEventGrammar =
       GetParent obj cb -> do
         Just p <- getParentNode (pFromJSVal obj :: Node)
         cb (pToJSVal p)
+      GetField key obj cb -> do
+        val <- getProp (textToJSString key) (Object obj)
+        cb =<< jsToJSON (jsTypeOf val) val
       GetChildren obj cb -> do
         Just nodeList <- getChildNodes (pFromJSVal obj :: Node)
         cb (pToJSVal nodeList)
@@ -101,26 +117,7 @@ evalEventGrammar =
         cb (fmap pToJSVal result)
       GetNextSibling obj cb -> do
         result <- Node.getNextSibling (pFromJSVal obj :: Node) 
-        cb (fmap pToJSVal result)
-        -- TODO: convert JSVal to object
-      GetField key obj cb -> do
-        val <- getProp (textToJSString key) (Object obj) 
-        cb ( (undefined :: FromJSON v => G.JSVal -> v) val)
-        -- TODO: convert JSVal to FromJSON v => v
-      GetAction key obj cb -> do
-        let val = retrieveAction obj (textToJSString key)
-        cb ( fmap (undefined :: FromJSON v => G.JSVal -> v) val) -- fix undefined
-
-      -- - Just result <- E.getT(toEvent bje)t obj)
-      -- toJSVal esult)
-
-instance HasEvent "keypress" (IO ()) where
-  parseEvent Proxy e = do
-    v <- getTarget e
-    children <- getChildren v
-    Just child <- getItem children 0
-    getAction "focus" child
-        
+        cb $ pToJSVal <$> result
 
 deriving instance Functor (Action object)
 
@@ -129,29 +126,11 @@ type Grammar obj a = Free (Action obj) a
 class HasEvent (eventName :: Symbol) returnType where
   parseEvent :: Proxy eventName -> obj -> Grammar obj returnType
 
-on :: (FromJSON returnType, KnownSymbol eventName, HasEvent eventName returnType)
+on :: (KnownSymbol eventName, HasEvent eventName returnType)
    => Proxy eventName
    -> (returnType -> IO ())
    -> Attribute
 on p = EventHandler (symbolVal p) p
-
-newtype MyKey = MyKey Int deriving FromJSON
-
--- getField :: FromJSON v => T.Text -> obj -> Grammar obj v
--- getField key obj = liftF $ GetField key obj id
-
-
--- getAction :: FromJSON v => T.Text -> obj -> Grammar obj (IO v)
--- getAction key obj  = liftF $ GetAction key obj id
-
--- getParent :: Grammar obj obj
--- getParent = liftF $ GetParent id
-
--- getNextSibling :: Grammar obj obj
--- getNextSibling = liftF $ GetNextSibling id
-
--- getChildren :: Grammar obj [obj]
--- getChildren = liftF $ GetChildren id
 
 data Attribute = forall eventName returnType . HasEvent eventName returnType =>
     EventHandler String (Proxy eventName) (returnType -> IO ())
@@ -295,13 +274,26 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
           pure eh
 delegateEvent _ _ _ = const $ pure ()
 
-defaultEvents :: [String] 
-defaultEvents = [
-    "blur", "change", "click", "dblclick",
-    "focus", "focusin", "focusout", "input", "keydown",
-    "keypress", "keyup", "mousedown", "mouseup",
-    "mousemove", "mouseover", "select", "submit"
-    ]
+defaultEvents :: [ String ]
+defaultEvents = 
+  [ "blur"
+  , "change"
+  , "click"
+  , "dblclick"
+  , "focus"
+  , "focusin"
+  , "focusout"
+  , "input"
+  , "keydown"
+  , "keypress"
+  , "keyup"
+  , "mousedown"
+  , "mouseup"
+  , "mousemove"
+  , "mouseover"
+  , "select"
+  , "submit"
+  ]
 
 initTree :: VTree -> IO (VTree)
 initTree initial = do
@@ -314,7 +306,7 @@ initTree initial = do
     VEmpty -> pure ()
   pure vdom
 
--- copies body first child into vtree, to avoid flickering 
+-- copies body first child into vtree, to avoid flickering
 copyDOMIntoVTree :: Node -> VTree -> IO (VTree)
 copyDOMIntoVTree _ VEmpty = pure VEmpty -- should never get called
 copyDOMIntoVTree node (VText s _) = pure $ VText s (toPtr <$> Just node)
@@ -412,6 +404,13 @@ diffAttrs node attrsA attrsB = do
   when (attrsA /= attrsB) $ diffPropsAndAttrs node attrsA attrsB
   pure attrsB
 
+observables :: M.Map T.Text (Element -> IO ())
+observables = M.fromList [("autofocus", focus)]
+
+dispatchObservable :: T.Text -> Element -> IO ()
+dispatchObservable key el = do
+  F.forM_ (M.lookup key observables) $ \f -> f el
+
 diffPropsAndAttrs :: Node -> [Attribute] -> [Attribute] -> IO ()
 diffPropsAndAttrs node old new = do
   obj <- Object <$> toJSVal node
@@ -443,6 +442,7 @@ diffPropsAndAttrs node old new = do
         when (oldVal /= newVal) $ do
         val <- toJSVal newVal
         setProp (textToJSString k) val obj
+        dispatchObservable k el
       (_, _) -> pure ()
 
   forM_ removeAttrs $ \(k,_) -> removeAttribute el k 
@@ -636,75 +636,3 @@ autofocus = boolProp "autofocus"
 
 template :: VTree
 template = div_  [] []
-
--- data JObject = JValue Value | JAction (IO ())
--- type JSObject = M.Map T.Text JObject
--- type Parser a = Either T.Text a
--- class FromJSObject a where fromObject :: JSObject -> Parser a
--- class ToJVal a where toVal :: JObject -> Either T.Text a
-
--- instance ToJVal a => ToJVal (IO a) where
---   toVal (JAction x) = undefined
---   toVal _ = Left "type mismatch for IO ()"
-
--- instance ToJVal Int where
---   toVal (JValue v) =
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for Int"
-
--- instance ToJVal () where
---   toVal (JValue _) = pure ()
---   toVal _ = Left "type mismatch for ()"
-
--- instance ToJVal Double where
---   toVal (JValue v) =
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for Double"
-
--- instance {-# overlappable #-} FromJSON a => ToJVal [a] where
---   toVal (JValue v) = 
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for Double"
-
--- instance ToJVal String where
---   toVal (JValue v) =
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for string"
-
--- instance ToJVal T.Text where
---   toVal (JValue v) =
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for Text"
-
--- instance ToJVal Bool where
---   toVal (JValue v) =
---     case fromJSON v of
---       Error x -> Left (T.pack x)
---       Success x -> pure x
---   toVal _ = Left "type mismatch for Int"
-
--- (.#) :: ToJVal a => JSObject -> T.Text -> Parser a
--- o .# name =
---   case M.lookup name o of
---     Nothing -> Left $ "Couldn't find " <> name
---     Just x -> toVal x
-
--- data KeyEvent = KeyEvent {
---      code :: Int
---    , name :: String
---    }
-
--- instance FromJSObject KeyEvent where
---   fromObject o =
---     KeyEvent <$> o .# "which"
---              <*> o .# "keyCode"

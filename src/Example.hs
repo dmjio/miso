@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -5,21 +6,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Control.Concurrent
+import           Data.Maybe
 import           Control.Monad
-import           Data.Aeson                 hiding (Object)
+import           Data.Aeson    hiding (Object)
 import           Data.Bool
 import           Data.Monoid
 import           Data.Proxy
-import qualified Data.Text                  as T
+import qualified Data.Text     as T
 import           GHC.Generics
-import           GHCJS.DOM.Element
-import           GHCJS.DOM.Event
-import           GHCJS.DOM.HTMLInputElement
-import           GHCJS.DOM.Node
-import           GHCJS.DOM.UIEvent
 import           Miso
 
 data Model = Model
@@ -35,6 +33,7 @@ data Entry = Entry
   , completed :: Bool
   , editing :: Bool
   , eid :: Int
+  , focussed :: Bool
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Entry
@@ -58,6 +57,7 @@ newEntry desc eid = Entry
   , completed = False
   , editing = False
   , eid = eid
+  , focussed = False
   }
 
 data Msg
@@ -103,7 +103,7 @@ update (EditingEntry id' isEditing) model@Model{..} =
   model { entries = newEntries }
     where
       newEntries = filterMap entries (\t -> eid t == id') $
-         \t -> t { editing = isEditing }
+         \t -> t { editing = isEditing, focussed = isEditing }
 
 update (UpdateEntry id' task) model@Model{..} =
   model { entries = newEntries }
@@ -143,7 +143,7 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Address -> Model -> VTree "click"
+view :: Address -> Model -> VTree
 view send m@Model{..} = 
  div_
     [ class_ "todomvc-wrapper"
@@ -158,12 +158,15 @@ view send m@Model{..} =
     , infoFooter
     ]
 
-data ClickEvent
+data ClickEvent = CE
 
-onClick :: IO () -> Attribute "click"
-onClick = on (Proxy :: Proxy "click") . const
+instance HasEvent "click" ClickEvent where
+  parseEvent _ _ = pure CE
 
-viewEntries :: Address -> String -> [ Entry ] -> VTree "click"
+onClick :: IO () -> Attribute
+onClick action = on (Proxy :: Proxy "click") $ \CE -> action
+
+viewEntries :: Address -> String -> [ Entry ] -> VTree
 viewEntries send visibility entries =
   section_
     [ class_ "main"
@@ -192,13 +195,20 @@ viewEntries send visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Address -> Entry -> VTree "click"
+viewKeyedEntry :: Address -> Entry -> VTree
 viewKeyedEntry = viewEntry
 
-viewEntry :: Address -> Entry -> VTree "click"
+data Nil = Nil
+
+instance HasEvent "dblclick" Nil where
+  parseEvent _ _ = pure Nil
+
+viewEntry :: Address -> Entry -> VTree 
 viewEntry send Entry {..} = 
   li_
-    [ class_ $ T.intercalate " " $ [ "completed" | completed ] ++ [ "editing" | editing ] ]
+    [ class_ $ T.intercalate " " $
+       [ "completed" | completed ] ++ [ "editing" | editing ]
+    ]
     [ div_
         [ class_ "view" ]
         [ input_
@@ -208,14 +218,8 @@ viewEntry send Entry {..} =
             , onClick $ send (Check eid (not completed))
             ] []
         , label_
-            [ on "dblclick" $ \e -> do
-                Just lbl <- fmap castToNode <$> getTarget e
-                Just p <- getParentNode lbl
-                Just inp <- fmap castToElement <$> getNextSibling p
+            [ on (Proxy :: Proxy "dblclick") $ \Nil -> do
                 send (EditingEntry eid True)
-                void $ forkIO $ do
-                  threadDelay 100000
-                  focus inp
             ]
             [ text_ description ]
         , btn_
@@ -228,18 +232,23 @@ viewEntry send Entry {..} =
         [ class_ "edit"
         , prop "value" description
         , name_ "title"
+        , autofocus focussed
         , id_ $ T.pack $ "todo-" ++ show eid
-        , on "input" $ \(e :: Event) -> do
-            Just ele <- fmap castToHTMLInputElement <$> getTarget e
-            Just value <- getValue ele
-            send (UpdateEntry eid value)
-        , on "blur" $ \_ -> send (EditingEntry eid False)
-        , onEnter $ send (EditingEntry eid False )
+        , onInput $ \(Val value) -> send (UpdateEntry eid value)
+        , onBlur $ \Empty -> send (EditingEntry eid False)
+        , onEnter $ send ( EditingEntry eid False )
         ]
         []
     ]
 
-viewControls :: Model -> Address -> String -> [ Entry ] -> VTree a
+instance HasEvent "input" Val where
+  parseEvent _ e = do
+    Just v <- getField "value" =<< getTarget e
+    pure (Val v)
+
+newtype Val = Val String deriving (Show, Eq, FromJSON)
+
+viewControls :: Model -> Address -> String -> [ Entry ] -> VTree
 viewControls model send visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -252,7 +261,7 @@ viewControls model send visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> VTree a
+viewControlsCount :: Int -> VTree
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
      [ strong_ [] [ text_ (show entriesLeft) ]
@@ -261,7 +270,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: Address -> String -> VTree a
+viewControlsFilters :: Address -> String -> VTree 
 viewControlsFilters send visibility =
   ul_
     [ class_ "filters" ]
@@ -272,7 +281,7 @@ viewControlsFilters send visibility =
     , visibilitySwap send "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: Address -> String -> String -> String -> VTree a
+visibilitySwap :: Address -> String -> String -> String -> VTree 
 visibilitySwap send uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ $ T.pack uri
@@ -281,7 +290,7 @@ visibilitySwap send uri visibility actualVisibility =
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Address -> Int -> VTree a
+viewControlsClear :: Model -> Address -> Int -> VTree 
 viewControlsClear _ send entriesCompleted =
   btn_
     [ class_ "clear-completed"
@@ -292,9 +301,7 @@ viewControlsClear _ send entriesCompleted =
 
 type Address = Msg -> IO ()
 
-type instance EventHandler "input" = Event
-
-viewInput :: Model -> Address -> String -> VTree a
+viewInput :: Model -> Address -> String -> VTree 
 viewInput _ send task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
@@ -304,27 +311,39 @@ viewInput _ send task =
         , autofocus True
         , prop "value" task
         , attr "name" "newTodo"
-        , on (Proxy :: Proxy "input") $ \(x :: Event) -> do
-            Just target <- fmap castToHTMLInputElement <$> getTarget x
-            Just val <- getValue target
+        , onInput $ \(Val val) -> do
             send $ UpdateField val
         , onEnter $ send Add 
         ] []
     ]
 
-onEnter :: IO () -> Attribute "keydown"
+newtype KeyEvent = KeyEvent Int
+  deriving (Show, Eq, FromJSON)
+
+instance HasEvent "keydown" KeyEvent where
+  parseEvent Proxy e = do
+    keyCode <- getField "keyCode" e
+    which <- getField "which" e
+    charCode <- getField "charCode" e
+    pure $ head $ catMaybes [ keyCode, which, charCode ]
+
+onEnter :: IO () -> Attribute 
 onEnter action = 
-  on (Proxy :: Proxy "keydown") $ \(e :: Event) -> do
-    k <- getKeyCode (castToUIEvent e)
+  on (Proxy :: Proxy "keydown") $ \(KeyEvent k) -> do
     when (k == 13) action
 
-onInput :: (Event -> IO ()) -> Attribute "input"
+data Empty = Empty
+
+instance HasEvent "blur" Empty where
+  parseEvent _ _ = pure Empty
+
+onInput :: (Val -> IO ()) -> Attribute
 onInput = on (Proxy :: Proxy "input")
 
-onBlur :: (Event -> IO ()) -> Attribute "blur"
+onBlur :: (Empty -> IO ()) -> Attribute
 onBlur = on (Proxy :: Proxy "blur")
 
-infoFooter :: VTree a
+infoFooter :: VTree
 infoFooter =
     footer_ [ class_ "info" ]
     [ p_ [] [ text_ "Double-click to edit a todo" ]
