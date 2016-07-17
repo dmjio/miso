@@ -15,10 +15,13 @@ executable example
                , containers
                , dirty-miso
                , elerea
+               , free
+               , lucid
                , ghcjs-base
-               , string-conversions
                , ghcjs-dom
                , lens
+               , scientific
+               , string-conversions
                , text
   default-language:    Haskell2010
 
@@ -31,8 +34,11 @@ library
                  , bytestring
                  , containers
                  , elerea
+                 , free
+                 , lucid
                  , ghcjs-base
                  , ghcjs-dom
+                 , scientific
                  , string-conversions
                  , text
                  , transformers
