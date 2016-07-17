@@ -21,11 +21,8 @@
 
 module Miso where
 
-import Control.Concurrent
-
--- import           Control.Concurrent
+import           Control.Concurrent
 import           Control.Monad
-
 import           Control.Monad.Free
 import           Control.Monad.Free.TH
 import           Data.Aeson                    hiding (Object)
@@ -59,7 +56,7 @@ import qualified GHCJS.DOM.Storage             as S
 import           GHCJS.DOM.Types               hiding (Event, Attr)
 import           GHCJS.DOM.Window              (getLocalStorage)
 import           GHCJS.Foreign                 hiding (Object, Number)
-import qualified GHCJS.Foreign.Internal as Foreign
+import qualified GHCJS.Foreign.Internal        as Foreign
 import           GHCJS.Marshal
 import           GHCJS.Marshal.Pure
 import qualified GHCJS.Types                   as G
@@ -67,6 +64,9 @@ import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
 import           Miso.Types
 import           Prelude                       hiding (repeat)
+
+import qualified Lucid as L
+import qualified Lucid.Base as L
 
 data Action object a where
   GetTarget :: object -> (object -> a) -> Action object a
@@ -165,8 +165,8 @@ getKey (VNode _ _ _ maybeKey _) = maybeKey
 getKey _ = Nothing
 
 data VTreeBase a where
-  VNode :: String -> [ Attribute ] -> [ VTreeBase a ] -> Maybe Int -> a -> VTreeBase a 
-  VText :: String -> a -> VTreeBase a 
+  VNode :: T.Text -> [ Attribute ] -> [ VTreeBase a ] -> Maybe Int -> a -> VTreeBase a 
+  VText :: T.Text -> a -> VTreeBase a 
   VEmpty :: VTreeBase a
   deriving (Eq)
 
@@ -182,14 +182,14 @@ getDOMNode _ = Nothing
 instance Show (VTreeBase e) where
   show VEmpty = "<empty>"
   show (VNode typ evts children _ _) =
-    "<" ++ typ ++ ">" ++ show evts ++
-      concatMap show children ++ "\n" ++ "</" ++ typ ++ ">"
-  show (VText val _ ) = val
+    "<" ++ T.unpack typ ++ ">" ++ show evts ++
+      concatMap show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
+  show (VText val _ ) = T.unpack val
 
-mkNode :: String -> [Attribute] -> [VTree] -> VTree
+mkNode :: T.Text -> [Attribute] -> [VTree] -> VTree
 mkNode name as xs = VNode name as xs Nothing Nothing
 
-text_ :: String -> VTree
+text_ :: T.Text -> VTree
 text_ = flip VText Nothing
 
 div_ :: [Attribute] -> [VTree] -> VTree
@@ -395,6 +395,17 @@ goDatch doc parent
       void $ replaceChild parent node (fromPtr <$> Just ref)
       pure $ VNode typB attrsB newChildren keyB (toPtr <$> node)
 
+instance L.ToHtml VTree where
+  toHtmlRaw = L.toHtml
+  toHtml VEmpty = Prelude.error "VEmpty for internal use only"
+  toHtml (VText x _) = L.toHtml x
+  toHtml (VNode typ attrs children _ _) =
+    let ele = L.makeElement (toTag typ) (foldMap L.toHtml children)
+    in L.with ele as
+      where
+        as = [ L.makeAttribute k v | Attr k v <- attrs ]
+        toTag = T.toLower
+
 diffAttrs
   :: Node
   -> [Attribute]
@@ -526,7 +537,10 @@ setStorage key m = do
   S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
 
 foldp :: (HasConfig model, Eq model)
-      => (action -> model -> model) -> model -> Signal action -> Signal model
+      => (action -> model -> model)
+      -> model
+      -> Signal action
+      -> Signal model
 foldp f ini (Signal gen) =
    Signal $ gen >>= transfer (pure [ini]) update
                 >>= effectful1 saveToStorage

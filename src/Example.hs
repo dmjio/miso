@@ -1,8 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
@@ -10,10 +10,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Data.Maybe
 import           Control.Monad
 import           Data.Aeson    hiding (Object)
 import           Data.Bool
+import           Data.Maybe
 import           Data.Monoid
 import           Data.Proxy
 import qualified Data.Text     as T
@@ -22,14 +22,14 @@ import           Miso
 
 data Model = Model
   { entries :: [Entry]
-  , field :: String
+  , field :: T.Text
   , uid :: Int
-  , visibility :: String
+  , visibility :: T.Text
   , start :: Bool
   } deriving (Show, Eq, Generic)
 
 data Entry = Entry
-  { description :: String
+  { description :: T.Text
   , completed :: Bool
   , editing :: Bool
   , eid :: Int
@@ -51,7 +51,7 @@ emptyModel = Model
   , start = False
   }
 
-newEntry :: String -> Int -> Entry
+newEntry :: T.Text -> Int -> Entry
 newEntry desc eid = Entry
   { description = desc
   , completed = False
@@ -62,15 +62,15 @@ newEntry desc eid = Entry
 
 data Msg
   = Start Bool
-  | UpdateField String
+  | UpdateField T.Text
   | EditingEntry Int Bool
-  | UpdateEntry Int String
+  | UpdateEntry Int T.Text
   | Add
   | Delete Int
   | DeleteComplete
   | Check Int Bool
   | CheckAll Bool
-  | ChangeVisibility String
+  | ChangeVisibility T.Text
    deriving Show
 
 instance HasConfig Model where
@@ -95,7 +95,7 @@ update Add model@Model{..} =
   model {
     uid = uid + 1
   , field = mempty
-  , entries = entries ++ [ newEntry field uid | not $ null field ]
+  , entries = entries <> [ newEntry field uid | not $ T.null field ]
   }
 
 update (UpdateField str) model = model { field = str }
@@ -166,7 +166,7 @@ instance HasEvent "click" ClickEvent where
 onClick :: IO () -> Attribute
 onClick action = on (Proxy :: Proxy "click") $ \CE -> action
 
-viewEntries :: Address -> String -> [ Entry ] -> VTree
+viewEntries :: Address -> T.Text -> [ Entry ] -> VTree
 viewEntries send visibility entries =
   section_
     [ class_ "main"
@@ -207,7 +207,7 @@ viewEntry :: Address -> Entry -> VTree
 viewEntry send Entry {..} = 
   li_
     [ class_ $ T.intercalate " " $
-       [ "completed" | completed ] ++ [ "editing" | editing ]
+       [ "completed" | completed ] <> [ "editing" | editing ]
     ]
     [ div_
         [ class_ "view" ]
@@ -233,7 +233,7 @@ viewEntry send Entry {..} =
         , prop "value" description
         , name_ "title"
         , autofocus focussed
-        , id_ $ T.pack $ "todo-" ++ show eid
+        , id_ $ "todo-" <> T.pack (show eid)
         , onInput $ \(Val value) -> send (UpdateEntry eid value)
         , onBlur $ \Empty -> send (EditingEntry eid False)
         , onEnter $ send ( EditingEntry eid False )
@@ -246,9 +246,9 @@ instance HasEvent "input" Val where
     Just v <- getField "value" =<< getTarget e
     pure (Val v)
 
-newtype Val = Val String deriving (Show, Eq, FromJSON)
+newtype Val = Val T.Text deriving (Show, Eq, FromJSON)
 
-viewControls :: Model -> Address -> String -> [ Entry ] -> VTree
+viewControls :: Model -> Address -> T.Text -> [ Entry ] -> VTree
 viewControls model send visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -264,13 +264,13 @@ viewControls model send visibility entries =
 viewControlsCount :: Int -> VTree
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
-     [ strong_ [] [ text_ (show entriesLeft) ]
-     , text_ (item_ ++ " left")
+     [ strong_ [] [ text_ $ T.pack (show entriesLeft) ]
+     , text_ (item_ <> " left")
      ]
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: Address -> String -> VTree 
+viewControlsFilters :: Address -> T.Text -> VTree 
 viewControlsFilters send visibility =
   ul_
     [ class_ "filters" ]
@@ -281,10 +281,10 @@ viewControlsFilters send visibility =
     , visibilitySwap send "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: Address -> String -> String -> String -> VTree 
+visibilitySwap :: Address -> T.Text -> T.Text -> T.Text -> VTree 
 visibilitySwap send uri visibility actualVisibility =
   li_ [  ]
-      [ a_ [ href_ $ T.pack uri
+      [ a_ [ href_ uri
            , class_ $ T.concat [ "selected" | visibility == actualVisibility ]
            , onClick $ send (ChangeVisibility visibility)
            ] [ text_ visibility ]
@@ -297,11 +297,11 @@ viewControlsClear _ send entriesCompleted =
     , prop "hidden" (entriesCompleted == 0)
     , onClick $ send DeleteComplete 
     ]
-    [ text_ $ "Clear completed (" ++ show entriesCompleted ++ ")" ]
+    [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
 
 type Address = Msg -> IO ()
 
-viewInput :: Model -> Address -> String -> VTree 
+viewInput :: Model -> Address -> T.Text -> VTree 
 viewInput _ send task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
