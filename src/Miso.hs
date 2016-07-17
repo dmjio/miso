@@ -1,11 +1,9 @@
-{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ExistentialQuantification  #-}
@@ -17,7 +15,6 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Miso where
 
@@ -62,11 +59,10 @@ import           GHCJS.Marshal.Pure
 import qualified GHCJS.Types                   as G
 import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
-import           Miso.Types
-import           Prelude                       hiding (repeat)
-
 import qualified Lucid                         as L
 import qualified Lucid.Base                    as L
+import           Miso.Types
+import           Prelude                       hiding (repeat)
 
 data Action object a where
   GetTarget :: object -> (object -> a) -> Action object a
@@ -98,7 +94,7 @@ convertToJSON :: FromJSON v => G.JSVal -> IO (Maybe v)
 convertToJSON g = do
   Just (val :: Value) <- fromJSVal g
   case fromJSON val of -- Should *always* be able to decode this
-    Error e -> Prelude.error $ "Error while decoding Value: " <> e
+    Error e -> Prelude.error $ "Error while decoding Value: " <> e <> " " <> show val
     Success v -> pure (pure v)
 
 evalEventGrammar :: Grammar G.JSVal a -> IO a
@@ -191,10 +187,10 @@ getDOMNode _ = Nothing
 
 instance Show (VTreeBase e) where
   show VEmpty = "<empty>"
+  show (VText val _ ) = T.unpack val
   show (VNode typ evts children _ _) =
     "<" ++ T.unpack typ ++ ">" ++ show evts ++
       concatMap show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
-  show (VText val _ ) = T.unpack val
 
 mkNode :: T.Text -> [Attribute] -> [VTree] -> VTree
 mkNode name as xs = VNode name as xs Nothing Nothing
