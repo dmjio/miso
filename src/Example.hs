@@ -13,11 +13,10 @@ module Main where
 import           Control.Monad
 import           Data.Aeson    hiding (Object)
 import           Data.Bool
-import           Data.Maybe
 import           Data.Monoid
-import           Data.Proxy
 import qualified Data.Text     as T
 import           GHC.Generics
+
 import           Miso
 
 data Model = Model
@@ -157,14 +156,6 @@ view send m@Model{..} =
     , infoFooter
     ]
 
-data ClickEvent = CE
-
-instance HasEvent "click" ClickEvent where
-  parseEvent _ _ = pure CE
-
-onClick :: IO () -> Attribute
-onClick action = on (Proxy :: Proxy "click") $ \CE -> action
-
 viewEntries :: Address -> T.Text -> [ Entry ] -> VTree
 viewEntries send visibility entries =
   section_
@@ -197,11 +188,6 @@ viewEntries send visibility entries =
 viewKeyedEntry :: Address -> Entry -> VTree
 viewKeyedEntry = viewEntry
 
-data Nil = Nil
-
-instance HasEvent "dblclick" Nil where
-  parseEvent _ _ = pure Nil
-
 viewEntry :: Address -> Entry -> VTree 
 viewEntry send Entry {..} = 
   li_
@@ -214,18 +200,15 @@ viewEntry send Entry {..} =
             [ class_ "toggle"
             , type_ "checkbox"
             , checked_ completed
-            , onClick $ send (Check eid (not completed))
+            , onClick $ send $ Check eid (not completed)
             ] []
         , label_
-            [ on (Proxy :: Proxy "dblclick") $ \Nil -> do
-                send (EditingEntry eid True)
-            ]
+            [ onDoubleClick $ send (EditingEntry eid True) ]
             [ text_ description ]
         , btn_
             [ class_ "destroy"
             , onClick $ send (Delete eid) 
-            ]
-           []
+            ] []
         ]
     , input_
         [ class_ "edit"
@@ -233,19 +216,12 @@ viewEntry send Entry {..} =
         , name_ "title"
         , autofocus focussed
         , id_ $ "todo-" <> T.pack (show eid)
-        , onInput $ \(Val value) -> send (UpdateEntry eid value)
-        , onBlur $ \Empty -> send (EditingEntry eid False)
-        , onEnter $ send ( EditingEntry eid False )
+        , onInput $ \value -> send (UpdateEntry eid value)
+        , onBlur $ send (EditingEntry eid False)
+        , onEnter $ send (EditingEntry eid False)
         ]
         []
     ]
-
-instance HasEvent "input" Val where
-  parseEvent _ e = do
-    Just v <- getField "value" =<< getTarget e
-    pure (Val v)
-
-newtype Val = Val T.Text deriving (Show, Eq, FromJSON)
 
 viewControls :: Model -> Address -> T.Text -> [ Entry ] -> VTree
 viewControls model send visibility entries =
@@ -310,37 +286,15 @@ viewInput _ send task =
         , autofocus True
         , prop "value" task
         , attr "name" "newTodo"
-        , onInput $ \(Val val) -> do
-            send $ UpdateField val
+        , onInput $ \val -> send (UpdateField val)
         , onEnter $ send Add 
         ] []
     ]
 
-newtype KeyEvent = KeyEvent Int
-  deriving (Show, Eq, FromJSON)
-
-instance HasEvent "keydown" KeyEvent where
-  parseEvent Proxy e = do
-    keyCode <- getField "keyCode" e
-    which <- getField "which" e
-    charCode <- getField "charCode" e
-    pure $ head $ catMaybes [ keyCode, which, charCode ]
-
 onEnter :: IO () -> Attribute 
-onEnter action = 
-  on (Proxy :: Proxy "keydown") $ \(KeyEvent k) -> do
+onEnter action =
+  onKeyDown $ \k ->
     when (k == 13) action
-
-data Empty = Empty
-
-instance HasEvent "blur" Empty where
-  parseEvent _ _ = pure Empty
-
-onInput :: (Val -> IO ()) -> Attribute
-onInput = on (Proxy :: Proxy "input")
-
-onBlur :: (Empty -> IO ()) -> Attribute
-onBlur = on (Proxy :: Proxy "blur")
 
 infoFooter :: VTree
 infoFooter =

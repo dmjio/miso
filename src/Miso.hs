@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeOperators    #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -65,8 +65,8 @@ import           JavaScript.Web.AnimationFrame
 import           Miso.Types
 import           Prelude                       hiding (repeat)
 
-import qualified Lucid as L
-import qualified Lucid.Base as L
+import qualified Lucid                         as L
+import qualified Lucid.Base                    as L
 
 data Action object a where
   GetTarget :: object -> (object -> a) -> Action object a
@@ -283,28 +283,6 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
           guard (evtName == eventName)
           pure eh
 delegateEvent _ _ _ = const $ pure ()
-
-defaultEvents :: Events
-defaultEvents = 
-  M.fromList [
-    ("blur", True)
-  , ("change", False)
-  , ("click", False)
-  , ("dblclick", False)
-  , ("focus", False)
-  , ("focusin", False)
-  , ("focusout", False)
-  , ("input", False)
-  , ("keydown", False)
-  , ("keypress", False)
-  , ("keyup", False)
-  , ("mousedown", False)
-  , ("mouseup", False)
-  , ("mousemove", False)
-  , ("mouseover", False)
-  , ("select", False)
-  , ("submit", False)
-  ]
 
 initTree :: VTree -> IO (VTree)
 initTree initial = do
@@ -661,3 +639,114 @@ autofocus = boolProp "autofocus"
 
 template :: VTree
 template = div_  [] []
+
+-- | (EventName, Capture)
+defaultEvents :: Events
+defaultEvents = 
+  M.fromList [
+    ("blur", True)
+  , ("change", False)
+  , ("click", False)
+  , ("dblclick", False)
+  , ("focus", False)
+  , ("input", False)
+  , ("keydown", False)
+  , ("keypress", False)
+  , ("keyup", False)
+  , ("mouseup", False)
+  , ("mousedown", False)
+  , ("mouseenter", False)
+  , ("mouseleave", False)
+  , ("mouseover", False)
+  , ("mouseout", False)
+  , ("submit", False)
+  ]
+
+instance HasEvent "blur" () where parseEvent _ _ = pure ()
+instance HasEvent "change" Bool where parseEvent _ = checkedGrammar
+instance HasEvent "click" () where parseEvent _ _ = pure ()
+instance HasEvent "dblclick" () where parseEvent _ _ = pure ()
+instance HasEvent "focus" () where parseEvent _ _ = pure ()
+instance HasEvent "input" T.Text where parseEvent _ = inputGrammar
+instance HasEvent "keydown" Int where parseEvent Proxy = keyGrammar
+instance HasEvent "keypress" Int where parseEvent Proxy = keyGrammar
+instance HasEvent "keyup" Int where parseEvent Proxy = keyGrammar
+instance HasEvent "mouseup" () where parseEvent _ _ = pure ()
+instance HasEvent "mousedown" () where parseEvent _ _ = pure ()
+instance HasEvent "mouseenter" () where parseEvent _ _ = pure ()
+instance HasEvent "mouseleave" () where parseEvent _ _ = pure ()
+instance HasEvent "mouseover" () where parseEvent _ _ = pure ()
+instance HasEvent "mouseout" () where parseEvent _ _ = pure ()
+instance HasEvent "submit" () where parseEvent _ = preventDefault 
+
+onBlur :: IO () -> Attribute
+onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
+
+onChecked :: (Bool -> IO ()) -> Attribute
+onChecked = on (Proxy :: Proxy "change")
+
+onClick :: IO () -> Attribute
+onClick action = on (Proxy :: Proxy "click") $ \() -> action
+
+onFocus :: IO () -> Attribute
+onFocus action = on (Proxy :: Proxy "focus") $ \() -> action
+
+onDoubleClick :: IO () -> Attribute
+onDoubleClick action = on (Proxy :: Proxy "dblclick") $ \() -> action
+
+onInput :: (T.Text -> IO ()) -> Attribute
+onInput = on (Proxy :: Proxy "input")
+
+onKeyDown :: (Int -> IO ()) -> Attribute
+onKeyDown = on (Proxy :: Proxy "keydown")
+
+onKeyPress :: (Int -> IO ()) -> Attribute
+onKeyPress = on (Proxy :: Proxy "keypress")
+
+onKeyUp :: (Int -> IO ()) -> Attribute
+onKeyUp = on (Proxy :: Proxy "keyup")
+
+onMouseUp :: IO () -> Attribute
+onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
+
+onMouseDown :: IO () -> Attribute
+onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
+
+onMouseEnter :: IO () -> Attribute
+onMouseEnter action = on (Proxy :: Proxy "mouseenter") $ \() -> action
+
+onMouseLeave :: IO () -> Attribute
+onMouseLeave action = on (Proxy :: Proxy "mouseleave") $ \() -> action
+
+onMouseOver :: IO () -> Attribute
+onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
+
+onMouseOut :: IO () -> Attribute
+onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
+
+onSubmit :: IO () -> Attribute
+onSubmit action = on (Proxy :: Proxy "submit") $ \() -> action
+
+inputGrammar :: FromJSON a => obj -> Grammar obj a 
+inputGrammar e = do
+    target <- getTarget e
+    result <- getField "value" target
+    case result of
+      Nothing -> Prelude.error "Couldn't retrieve target input value"
+      Just value -> pure value
+
+checkedGrammar :: FromJSON a => obj -> Grammar obj a 
+checkedGrammar e = do
+    target <- getTarget e
+    result <- getField "checked" target
+    case result of
+      Nothing -> Prelude.error "Couldn't retrieve target checked value"
+      Just value -> pure value
+
+keyGrammar :: FromJSON a => obj -> Grammar obj a 
+keyGrammar e = do   
+    keyCode <- getField "keyCode" e
+    which <- getField "which" e
+    charCode <- getField "charCode" e
+    pure $ head $ catMaybes [ keyCode, which, charCode ]
+
