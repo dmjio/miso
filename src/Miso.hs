@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
@@ -70,6 +70,8 @@ import qualified Lucid.Base as L
 
 data Action object a where
   GetTarget :: object -> (object -> a) -> Action object a
+  PreventDefault :: object -> a -> Action object a
+  StopPropagation :: object -> a -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
   GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
   GetChildren ::  object -> (object -> a) -> Action object a
@@ -82,6 +84,8 @@ $(makeFreeCon 'GetField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
+$(makeFreeCon 'PreventDefault)
+$(makeFreeCon 'StopPropagation)
 
 jsToJSON :: FromJSON v => JSType -> G.JSVal -> IO (Maybe v)
 jsToJSON Foreign.Number  g = convertToJSON g
@@ -111,13 +115,19 @@ evalEventGrammar = do
         cb =<< jsToJSON (jsTypeOf val) val
       GetChildren obj cb -> do
         Just nodeList <- getChildNodes (pFromJSVal obj :: Node)
-        cb (pToJSVal nodeList)
+        cb $ pToJSVal nodeList
       GetItem obj n cb -> do
         result <- item (pFromJSVal obj :: NodeList) (fromIntegral n)
-        cb (fmap pToJSVal result)
+        cb $ pToJSVal <$> result
       GetNextSibling obj cb -> do
         result <- Node.getNextSibling (pFromJSVal obj :: Node) 
         cb $ pToJSVal <$> result
+      StopPropagation obj cb -> do
+        void $ E.stopPropagation (pFromJSVal obj :: E.Event)
+        cb
+      PreventDefault obj cb -> do
+        void $ E.preventDefault (pFromJSVal obj :: E.Event)
+        cb
 
 deriving instance Functor (Action object)
 
@@ -212,8 +222,8 @@ delegator ref events = do
   Just doc <- currentDocument
   Just body <- fmap toNode <$> getBody doc
   listener <- eventListenerNew (f body)
-  forM_ events $ \event ->
-    addEventListener body event (Just listener) True
+  forM_ (M.toList events) $ \(event, capture) ->
+    addEventListener body event (Just listener) capture
     where
       f :: Node -> E.Event -> IO ()
       f body e = do
@@ -274,25 +284,26 @@ delegateEvent e (VNode _ _ children _ _) eventName = findEvent children
           pure eh
 delegateEvent _ _ _ = const $ pure ()
 
-defaultEvents :: [ String ]
+defaultEvents :: Events
 defaultEvents = 
-  [ "blur"
-  , "change"
-  , "click"
-  , "dblclick"
-  , "focus"
-  , "focusin"
-  , "focusout"
-  , "input"
-  , "keydown"
-  , "keypress"
-  , "keyup"
-  , "mousedown"
-  , "mouseup"
-  , "mousemove"
-  , "mouseover"
-  , "select"
-  , "submit"
+  M.fromList [
+    ("blur", True)
+  , ("change", False)
+  , ("click", False)
+  , ("dblclick", False)
+  , ("focus", False)
+  , ("focusin", False)
+  , ("focusout", False)
+  , ("input", False)
+  , ("keydown", False)
+  , ("keypress", False)
+  , ("keyup", False)
+  , ("mousedown", False)
+  , ("mouseup", False)
+  , ("mousemove", False)
+  , ("mouseover", False)
+  , ("select", False)
+  , ("submit", False)
   ]
 
 initTree :: VTree -> IO (VTree)
@@ -486,7 +497,7 @@ diffChildren' doc parent (a:as) (b:bs) = do
   (:) <$> goDatch doc parent a b
       <*> diffChildren doc parent as bs
 
-type Events = [ String ]
+type Events = M.Map T.Text Bool
 
 data AppConfig config = AppConfig {
       useStorage :: Bool

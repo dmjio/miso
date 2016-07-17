@@ -86,8 +86,7 @@ main = do
     Left x -> putStrLn x >> pure emptyModel
     Right m -> pure m
   (sig, send) <- signal $ Start (not start)
-  let events = [ "keydown", "click", "change", "input", "blur", "dblclick" ] 
-  runSignal events $ view send <$> foldp update m sig
+  runSignal defaultEvents $ view send <$> foldp update m sig
 
 update :: Msg -> Model -> Model
 update (Start x) model = model { start = x }
