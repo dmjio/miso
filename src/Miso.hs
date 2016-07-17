@@ -525,7 +525,7 @@ setStorage key m = do
   Just s <- getLocalStorage w
   S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
 
-foldp :: (HasConfig model, Eq model)
+foldp :: (HasConfig model)
       => (action -> model -> model)
       -> model
       -> Signal action
@@ -543,12 +543,8 @@ foldp f ini (Signal gen) =
 
         update (NotChanged _) xs = NotChanged (fromChanged xs)
         update (Changed actions) model = do
-          let oldModel : _ = fromChanged model
-              newModel = foldr f oldModel (reverse actions)
-          bool (notChanged newModel) (changed newModel) (oldModel /= newModel)
-            where
-              notChanged = NotChanged . pure
-              changed = Changed . pure        
+          let [ oldModel ] = fromChanged model
+          Changed [ foldr f oldModel (reverse actions) ]
 
 attr :: T.Text -> T.Text -> Attribute
 attr = Attr

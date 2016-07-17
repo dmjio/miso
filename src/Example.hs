@@ -25,7 +25,7 @@ data Model = Model
   , uid :: Int
   , visibility :: T.Text
   , start :: Bool
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Generic)
 
 data Entry = Entry
   { description :: T.Text
@@ -33,7 +33,7 @@ data Entry = Entry
   , editing :: Bool
   , eid :: Int
   , focussed :: Bool
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Generic)
 
 instance ToJSON Entry
 instance ToJSON Model
@@ -60,7 +60,7 @@ newEntry desc eid = Entry
   }
 
 data Msg
-  = Start Bool
+  = NoOp
   | UpdateField T.Text
   | EditingEntry Int Bool
   | UpdateEntry Int T.Text
@@ -84,11 +84,11 @@ main = do
   m@Model{..} <- getFromStorage >>= \case
     Left x -> putStrLn x >> pure emptyModel
     Right m -> pure m
-  (sig, send) <- signal $ Start (not start)
+  (sig, send) <- signal NoOp
   runSignal defaultEvents $ view send <$> foldp update m sig
 
 update :: Msg -> Model -> Model
-update (Start x) model = model { start = x }
+update NoOp model = model
 update Add model@Model{..} = 
   model {
     uid = uid + 1
