@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,9 +15,9 @@ import           Control.Monad
 import           Data.Aeson    hiding (Object)
 import           Data.Bool
 import           Data.Monoid
+import           Data.Proxy
 import qualified Data.Text     as T
 import           GHC.Generics
-
 import           Miso
 
 data Model = Model
@@ -24,8 +25,8 @@ data Model = Model
   , field :: T.Text
   , uid :: Int
   , visibility :: T.Text
-  , start :: Bool
-  } deriving (Show, Generic)
+  , step :: Bool
+  } deriving (Show, Generic, Eq)
 
 data Entry = Entry
   { description :: T.Text
@@ -33,7 +34,7 @@ data Entry = Entry
   , editing :: Bool
   , eid :: Int
   , focussed :: Bool
-  } deriving (Show, Generic)
+  } deriving (Show, Generic, Eq)
 
 instance ToJSON Entry
 instance ToJSON Model
@@ -47,7 +48,7 @@ emptyModel = Model
   , visibility = "All"
   , field = mempty
   , uid = 0
-  , start = False
+  , step = False
   }
 
 newEntry :: T.Text -> Int -> Entry
@@ -60,7 +61,7 @@ newEntry desc eid = Entry
   }
 
 data Msg
-  = NoOp
+  = Step Bool
   | UpdateField T.Text
   | EditingEntry Int Bool
   | UpdateEntry Int T.Text
@@ -72,23 +73,24 @@ data Msg
   | ChangeVisibility T.Text
    deriving Show
 
-instance HasConfig Model where
-  getConfig =
-    AppConfig {
-        useStorage = True
-      , storageKey = "todo-mvc"
-      }
+stepConfig :: Proxy '[DebugActions, DebugModel, SaveToLocalStorage "todo-mvc"]
+stepConfig = Proxy
+
+getInitialModel :: IO Model
+getInitialModel = do
+ getFromStorage "todo-mvc" >>= \case
+    Left x  -> putStrLn x >> pure emptyModel
+    Right m -> pure m
 
 main :: IO ()
 main = do
-  m@Model{..} <- getFromStorage >>= \case
-    Left x -> putStrLn x >> pure emptyModel
-    Right m -> pure m
-  (sig, send) <- signal NoOp
-  runSignal defaultEvents $ view send <$> foldp update m sig
+  m@Model { step = step } <- getInitialModel
+  (sig, send) <- signal $ Step (not step)
+  runSignal defaultEvents $ view send
+    <$> foldp stepConfig update m sig
 
 update :: Msg -> Model -> Model
-update NoOp model = model
+update (Step step) m = m { step = step }
 update Add model@Model{..} = 
   model {
     uid = uid + 1
@@ -309,4 +311,3 @@ infoFooter =
         , a_ [ href_ "http://todomvc.com" ] [ text_ "TodoMVC" ]
         ]
     ]
-
