@@ -1,3 +1,7 @@
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE DeriveFunctor              #-}
@@ -8,7 +12,6 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -35,7 +38,7 @@ import           Data.Proxy
 import qualified Data.Set                      as S
 import           Data.String.Conversions
 import qualified Data.Text                     as T
-import           FRP.Elerea.Simple             (externalMulti, transfer, start, effectful1)
+import           FRP.Elerea.Simple             (externalMulti, transfer, start, effectful2)
 import           GHC.Ptr
 import           GHC.TypeLits
 import           GHCJS.DOM
@@ -51,7 +54,7 @@ import           GHCJS.DOM.Node                hiding (getNextSibling)
 import           GHCJS.DOM.NodeList            hiding (getLength)
 import qualified GHCJS.DOM.Storage             as S
 import           GHCJS.DOM.Types               hiding (Event, Attr)
-import           GHCJS.DOM.Window              (getLocalStorage)
+import           GHCJS.DOM.Window              (getLocalStorage, getSessionStorage)
 import           GHCJS.Foreign                 hiding (Object, Number)
 import qualified GHCJS.Foreign.Internal        as Foreign
 import           GHCJS.Marshal
@@ -213,12 +216,29 @@ footer_  = mkNode "footer"
 btn_ :: [Attribute] -> [VTree] -> VTree
 btn_ = mkNode "button"
 
-delegator :: IORef (VTree) -> Events -> IO ()
-delegator ref events = do
+class ExtractEvents (events :: [ (Symbol, Bool) ]) where
+  extractEvents :: Proxy events -> [(T.Text, Bool)]
+
+instance (ExtractEvents events, KnownSymbol event) =>
+  ExtractEvents ('(event, 'True) ': events) where
+    extractEvents _ = (eventName, True) : extractEvents (Proxy :: Proxy events)
+      where
+        eventName = T.pack $ symbolVal (Proxy :: Proxy event)
+
+instance ( ExtractEvents events, KnownSymbol event ) =>
+  ExtractEvents ('(event, 'False) ': events) where
+    extractEvents _ = (eventName, False) : extractEvents (Proxy :: Proxy events)
+      where
+        eventName = T.pack $ symbolVal (Proxy :: Proxy event)
+
+instance ExtractEvents '[] where extractEvents = const []
+  
+delegator :: forall events . ExtractEvents events => IORef (VTree) -> Proxy events -> IO ()
+delegator ref Proxy = do
   Just doc <- currentDocument
   Just body <- fmap toNode <$> getBody doc
   listener <- eventListenerNew (f body)
-  forM_ (M.toList events) $ \(event, capture) ->
+  forM_ (extractEvents (Proxy :: Proxy events)) $ \(event, capture) ->
     addEventListener body event (Just listener) capture
     where
       f :: Node -> E.Event -> IO ()
@@ -471,17 +491,9 @@ diffChildren' doc parent (a:as) (b:bs) = do
   (:) <$> goDatch doc parent a b
       <*> diffChildren doc parent as bs
 
-type Events = M.Map T.Text Bool
+type Events = Proxy [(Symbol, Bool)]
 
-data AppConfig config = AppConfig {
-      useStorage :: Bool
-    , storageKey :: T.Text
-    } 
-
-class ToJSON model => HasConfig model where
-  getConfig :: AppConfig model
-
-runSignal :: Events -> Signal (VTree) -> IO ()
+runSignal :: forall e . ExtractEvents e => Proxy e -> Signal (VTree) -> IO ()
 runSignal events (Signal s) = do
   vtreeRef <- newIORef =<< initTree VEmpty
   _ <- forkIO $ delegator vtreeRef events
@@ -504,10 +516,10 @@ signal x = do
       toSample xs = Changed xs
 
 getFromStorage
-  :: forall model . (FromJSON model, HasConfig model)
-  => IO (Either String model)
-getFromStorage = do
-  let AppConfig _ key = getConfig :: AppConfig model
+  :: FromJSON model
+  => T.Text
+  -> IO (Either String model)
+getFromStorage key = do
   Just w <- currentWindow
   Just s <- getLocalStorage w
   maybeVal <- S.getItem s key
@@ -515,32 +527,71 @@ getFromStorage = do
     Nothing -> Left "Not found"
     Just m -> eitherDecode (cs (m :: T.Text))
 
-setStorage :: HasConfig model => T.Text -> model -> IO ()
-setStorage key m = do
-  Just w <- currentWindow
-  Just s <- getLocalStorage w
-  S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
+data DebugModel 
+data DebugActions
+data SaveToLocalStorage (key :: Symbol)
+data SaveToSessionStorage (key :: Symbol)
 
-foldp :: (HasConfig model)
-      => (action -> model -> model)
+instance Show model => ToAction model actions DebugModel where
+  toAction _ _ m = print m
+
+instance Show actions => ToAction model actions DebugActions where
+  toAction _ as _ = print as
+
+instance (ToJSON model, KnownSymbol sym, Show model) =>
+  ToAction model actions (SaveToSessionStorage sym) where
+  toAction _ _ m = do
+    let key = T.pack $ symbolVal (Proxy :: Proxy sym)
+    Just w <- currentWindow
+    Just s <- getSessionStorage w
+    S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
+
+instance (ToJSON model, KnownSymbol sym, Show model) 
+  => ToAction model actions (SaveToLocalStorage sym) where
+  toAction _ _ m = do
+    let key = T.pack $ symbolVal (Proxy :: Proxy sym)
+    Just w <- currentWindow
+    Just s <- getLocalStorage w
+    S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
+
+instance HasAction model action '[] where
+    performActions _ _ _ = pure ()
+
+instance (Nub (c ': cs) ~ (c ': cs), HasAction model action cs, ToAction model action c, Show model)
+  => HasAction model action (c ': cs) where
+    performActions _ as m = 
+      toAction nextAction as m >>
+        performActions nextActions as m
+          where
+            nextAction :: Proxy c; nextActions :: Proxy cs
+            nextActions = Proxy; nextAction = Proxy
+
+class Nub config ~ config => HasAction model action config where
+  performActions :: Proxy config -> [action] -> model -> IO ()
+
+class ToAction model action config where
+  toAction :: Proxy config -> [action] -> model -> IO ()
+
+foldp :: forall model action config . ( HasAction model action config, Eq model )
+      => Proxy config
+      -> (action -> model -> model)
       -> model
       -> Signal action
       -> Signal model
-foldp f ini (Signal gen) =
-   Signal $ gen >>= transfer (pure [ini]) update
-                >>= effectful1 saveToStorage
-      where
-        saveToStorage :: forall model . HasConfig model => Sample [model] -> IO (Sample [model])
-        saveToStorage (Changed [m]) = do
-          let AppConfig{..} = getConfig :: AppConfig model
-          when useStorage $ void . forkIO $ setStorage storageKey m
-          pure (Changed [m])
-        saveToStorage m = pure m
-
+foldp p f ini (Signal gen) = do
+   Signal $ gen >>= \as -> transfer (pure [ini]) update as
+                >>= \ms -> effectful2 (handleEffects p) as ms
+     where
+        handleEffects _ (Changed as) m@(Changed [model]) = 
+          performActions p as model >> pure m
+        handleEffects _ _ m = pure m
         update (NotChanged _) xs = NotChanged (fromChanged xs)
         update (Changed actions) model = do
           let [ oldModel ] = fromChanged model
-          Changed [ foldr f oldModel (reverse actions) ]
+              newModel = foldr f oldModel (reverse actions)
+          case oldModel == newModel of
+            True -> NotChanged [ oldModel ]
+            False -> Changed [ newModel ]
 
 attr :: T.Text -> T.Text -> Attribute
 attr = Attr
@@ -633,26 +684,26 @@ template :: VTree
 template = div_  [] []
 
 -- | (EventName, Capture)
-defaultEvents :: Events
-defaultEvents = 
-  M.fromList [
-    ("blur", True)
-  , ("change", False)
-  , ("click", False)
-  , ("dblclick", False)
-  , ("focus", False)
-  , ("input", False)
-  , ("keydown", False)
-  , ("keypress", False)
-  , ("keyup", False)
-  , ("mouseup", False)
-  , ("mousedown", False)
-  , ("mouseenter", False)
-  , ("mouseleave", False)
-  , ("mouseover", False)
-  , ("mouseout", False)
-  , ("submit", False)
+
+defaultEvents :: Proxy '[
+    '("blur", 'True)
+  , '("change", 'False)
+  , '("click", 'False)
+  , '("dblclick", 'False)
+  , '("focus", 'False)
+  , '("input", 'False)
+  , '("keydown", 'False)
+  , '("keypress", 'False)
+  , '("keyup", 'False)
+  , '("mouseup", 'False)
+  , '("mousedown", 'False)
+  , '("mouseenter", 'False)
+  , '("mouseleave", 'False)
+  , '("mouseover", 'False)
+  , '("mouseout", 'False)
+  , '("submit", 'False)
   ]
+defaultEvents = Proxy 
 
 instance HasEvent "blur" () where parseEvent _ _ = pure ()
 instance HasEvent "change" Bool where parseEvent _ = checkedGrammar
@@ -660,9 +711,9 @@ instance HasEvent "click" () where parseEvent _ _ = pure ()
 instance HasEvent "dblclick" () where parseEvent _ _ = pure ()
 instance HasEvent "focus" () where parseEvent _ _ = pure ()
 instance HasEvent "input" T.Text where parseEvent _ = inputGrammar
-instance HasEvent "keydown" Int where parseEvent Proxy = keyGrammar
-instance HasEvent "keypress" Int where parseEvent Proxy = keyGrammar
-instance HasEvent "keyup" Int where parseEvent Proxy = keyGrammar
+instance HasEvent "keydown" Int where parseEvent _ = keyGrammar
+instance HasEvent "keypress" Int where parseEvent _ = keyGrammar
+instance HasEvent "keyup" Int where parseEvent _ = keyGrammar
 instance HasEvent "mouseup" () where parseEvent _ _ = pure ()
 instance HasEvent "mousedown" () where parseEvent _ _ = pure ()
 instance HasEvent "mouseenter" () where parseEvent _ _ = pure ()
@@ -741,4 +792,10 @@ keyGrammar e = do
     which <- getField "which" e
     charCode <- getField "charCode" e
     pure $ head $ catMaybes [ keyCode, which, charCode ]
+
+type family Nub t where
+  Nub '[]           = '[]
+  Nub '[e]          = '[e]
+  Nub (e ': e ': s) = (e ': s)
+  Nub (e ': f ': s) = e ': Nub (f ': s)
 
