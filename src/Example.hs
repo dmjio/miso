@@ -11,7 +11,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Control.Monad
 import           Data.Aeson    hiding (Object)
 import           Data.Bool
 import           Data.Monoid
@@ -62,6 +61,7 @@ newEntry desc eid = Entry
 
 data Msg
   = Step Bool
+  | NoOp
   | UpdateField T.Text
   | EditingEntry Int Bool
   | UpdateEntry Int T.Text
@@ -86,11 +86,12 @@ main :: IO ()
 main = do
   m@Model { step = step } <- getInitialModel
   (sig, send) <- signal $ Step (not step)
-  runSignal defaultEvents $ view send
-    <$> foldp stepConfig update m sig
+  runSignal defaultEvents send $ 
+    view <$> foldp stepConfig update m sig
 
 update :: Msg -> Model -> Model
 update (Step step) m = m { step = step }
+update NoOp m = m
 update Add model@Model{..} = 
   model {
     uid = uid + 1
@@ -143,23 +144,23 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Address -> Model -> VTree
-view send m@Model{..} = 
+view :: Model -> VTree Msg
+view m@Model{..} = 
  div_
     [ class_ "todomvc-wrapper"
     , style_ "visibility:hidden;"
     ]
     [ section_
         [ class_ "todoapp" ]
-        [ viewInput m send field
-        , viewEntries send visibility entries
-        , viewControls m send visibility entries
+        [ viewInput m field
+        , viewEntries visibility entries
+        , viewControls m visibility entries
         ]
     , infoFooter
     ]
 
-viewEntries :: Address -> T.Text -> [ Entry ] -> VTree
-viewEntries send visibility entries =
+viewEntries :: T.Text -> [ Entry ] -> VTree Msg
+viewEntries visibility entries =
   section_
     [ class_ "main"
     , style_ $ T.pack $ "visibility:" <> cssVisibility <> ";" 
@@ -169,14 +170,14 @@ viewEntries send visibility entries =
         , type_ "checkbox"
         , attr "name" "toggle"
         , checked_ allCompleted
-        , onClick $ send $ CheckAll (not allCompleted)
+        , onClick $ CheckAll (not allCompleted)
         ] []
       , label_
           [ attr "for" "toggle-all", attr "draggable" "true" ]
           [ text_ "Mark all as complete" ]
       , ul_ [ class_ "todo-list" ] $
          flip map (filter isVisible entries) $ \t ->
-           viewKeyedEntry send t
+           viewKeyedEntry t
       ]
   where
     cssVisibility = bool "visible" "hidden" (null entries)
@@ -187,11 +188,11 @@ viewEntries send visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Address -> Entry -> VTree
+viewKeyedEntry :: Entry -> VTree Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Address -> Entry -> VTree 
-viewEntry send Entry {..} = 
+viewEntry :: Entry -> VTree Msg 
+viewEntry Entry {..} = 
   li_
     [ class_ $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
@@ -202,14 +203,14 @@ viewEntry send Entry {..} =
             [ class_ "toggle"
             , type_ "checkbox"
             , checked_ completed
-            , onClick $ send $ Check eid (not completed)
+            , onClick $ Check eid (not completed)
             ] []
         , label_
-            [ onDoubleClick $ send (EditingEntry eid True) ]
+            [ onDoubleClick $ EditingEntry eid True ]
             [ text_ description ]
         , btn_
             [ class_ "destroy"
-            , onClick $ send (Delete eid) 
+            , onClick $ Delete eid
             ] []
         ]
     , input_
@@ -218,27 +219,27 @@ viewEntry send Entry {..} =
         , name_ "title"
         , autofocus focussed
         , id_ $ "todo-" <> T.pack (show eid)
-        , onInput $ \value -> send (UpdateEntry eid value)
-        , onBlur $ send (EditingEntry eid False)
-        , onEnter $ send (EditingEntry eid False)
+        , onInput $ UpdateEntry eid
+        , onBlur $ EditingEntry eid False
+        , onEnter $ EditingEntry eid False
         ]
         []
     ]
 
-viewControls :: Model -> Address -> T.Text -> [ Entry ] -> VTree
-viewControls model send visibility entries =
+viewControls :: Model ->  T.Text -> [ Entry ] -> VTree Msg
+viewControls model visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
            ]
       [ viewControlsCount entriesLeft
-      , viewControlsFilters send visibility
-      , viewControlsClear model send entriesCompleted
+      , viewControlsFilters visibility
+      , viewControlsClear model entriesCompleted
       ]
   where
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> VTree
+viewControlsCount :: Int -> VTree Msg
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
      [ strong_ [] [ text_ $ T.pack (show entriesLeft) ]
@@ -247,39 +248,37 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: Address -> T.Text -> VTree 
-viewControlsFilters send visibility =
+viewControlsFilters :: T.Text -> VTree Msg 
+viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
-    [ visibilitySwap send "#/" "All" visibility
+    [ visibilitySwap "#/" "All" visibility
     , text_ " "
-    , visibilitySwap send "#/active" "Active" visibility
+    , visibilitySwap "#/active" "Active" visibility
     , text_ " "
-    , visibilitySwap send "#/completed" "Completed" visibility
+    , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: Address -> T.Text -> T.Text -> T.Text -> VTree 
-visibilitySwap send uri visibility actualVisibility =
+visibilitySwap :: T.Text -> T.Text -> T.Text -> VTree Msg 
+visibilitySwap uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ uri
            , class_ $ T.concat [ "selected" | visibility == actualVisibility ]
-           , onClick $ send (ChangeVisibility visibility)
+           , onClick (ChangeVisibility visibility)
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Address -> Int -> VTree 
-viewControlsClear _ send entriesCompleted =
+viewControlsClear :: Model -> Int -> VTree Msg 
+viewControlsClear _ entriesCompleted =
   btn_
     [ class_ "clear-completed"
     , prop "hidden" (entriesCompleted == 0)
-    , onClick $ send DeleteComplete 
+    , onClick DeleteComplete 
     ]
     [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
 
-type Address = Msg -> IO ()
-
-viewInput :: Model -> Address -> T.Text -> VTree 
-viewInput _ send task =
+viewInput :: Model -> T.Text -> VTree Msg 
+viewInput _ task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
     , input_
@@ -288,17 +287,16 @@ viewInput _ send task =
         , autofocus True
         , prop "value" task
         , attr "name" "newTodo"
-        , onInput $ \val -> send (UpdateField val)
-        , onEnter $ send Add 
+        , onInput UpdateField
+        , onEnter Add 
         ] []
     ]
 
-onEnter :: IO () -> Attribute 
+onEnter :: Msg -> Attribute Msg 
 onEnter action =
-  onKeyDown $ \k ->
-    when (k == 13) action
+  onKeyDown $ bool NoOp action . (== 13)
 
-infoFooter :: VTree
+infoFooter :: VTree Msg
 infoFooter =
     footer_ [ class_ "info" ]
     [ p_ [] [ text_ "Double-click to edit a todo" ]
