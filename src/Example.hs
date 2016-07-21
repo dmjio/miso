@@ -192,7 +192,7 @@ viewKeyedEntry = viewEntry
 
 viewEntry :: Address -> Entry -> VTree 
 viewEntry send Entry {..} = 
-  li_
+  liKeyed_ (toKey eid)
     [ class_ $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
     ]
