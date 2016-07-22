@@ -1,23 +1,23 @@
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE PolyKinds              #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE DeriveFunctor          #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE ExistentialQuantification  #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE GADTs                      #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE PolyKinds                 #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE DeriveFunctor             #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE LambdaCase                #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 
 module Miso where
 
@@ -156,8 +156,6 @@ instance Show (Attribute action) where
   show (Attr k v) = T.unpack $ k <> "=" <> v
   show (Prop k v) = T.unpack $ k <> "=" <> T.pack (show v)
 
-type Key = Maybe Int
-
 type VTree action = VTreeBase action (Maybe (Ptr ()))
 
 toPtr :: Node -> Ptr ()
@@ -169,12 +167,16 @@ fromPtr = pFromJSVal . G.fromPtr
 toPtrFromEvent :: Event -> Ptr () 
 toPtrFromEvent = G.toPtr . pToJSVal 
 
-getKey :: VTreeBase action a -> Maybe Int
+getKey :: VTreeBase action a -> Maybe Key
 getKey (VNode _ _ _ maybeKey _) = maybeKey
 getKey _ = Nothing
 
+getKeyUnsafe :: VTreeBase action a -> Key
+getKeyUnsafe (VNode _ _ _ (Just key) _) = key
+getKeyUnsafe _ = Prelude.error "Key does not exist"
+
 data VTreeBase action a where
-  VNode :: T.Text -> [ Attribute action ] -> [ VTreeBase action a ] -> Maybe Int -> a -> VTreeBase action a 
+  VNode :: T.Text -> [ Attribute action ] -> [ VTreeBase action a ] -> Maybe Key -> a -> VTreeBase action a 
   VText :: T.Text -> a -> VTreeBase action a 
   VEmpty :: VTreeBase action a
   deriving (Eq)
@@ -197,6 +199,11 @@ instance Show (VTreeBase action e) where
 
 mkNode :: T.Text -> [Attribute action] -> [VTree action] -> VTree action
 mkNode name as xs = VNode name as xs Nothing Nothing
+
+newtype Key = Key T.Text deriving (Show, Eq, Ord)
+
+mkNodeKeyed :: T.Text -> Key -> [Attribute action] -> [VTree action] -> VTree action
+mkNodeKeyed name key as xs = VNode name as xs (Just key) Nothing
 
 text_ :: T.Text -> VTree action
 text_ = flip VText Nothing
@@ -468,6 +475,17 @@ diffPropsAndAttrs node old new = do
   forM_ removeAttrs $ \(k,_) -> removeAttribute el k 
   forM_ addAttrs $ \(k,v) -> setAttribute el k v
 
+isKeyed :: [VTree action] -> Bool
+isKeyed [] = False
+isKeyed (x : _) = hasKey x
+  where
+    hasKey :: VTree action -> Bool
+    hasKey (VNode _ _ _ (Just _) _) = True
+    hasKey _ = False
+
+makeMap :: [VTree action] -> M.Map Key (VTree action)
+makeMap vs = M.fromList [ (key, v) | v@(VNode _ _ _ (Just key) _) <- vs ]
+
 diffChildren 
   :: Document
   -> Node
@@ -475,8 +493,14 @@ diffChildren
   -> [VTree action]
   -> IO [VTree action]
 diffChildren doc parent as bs = do
-  xs <- diffChildren' doc parent as bs
-  pure $ filter (/=VEmpty) xs
+  case isKeyed as of
+    True -> do
+      swappedKids <- swapKids parent (makeMap as) as (makeMap bs) bs
+      xs <- diffChildren' doc parent swappedKids bs
+      pure $ filter (/=VEmpty) xs
+    False -> do
+      xs <- diffChildren' doc parent as bs
+      pure $ filter (/=VEmpty) xs
 
 diffChildren'
   :: Document
@@ -645,6 +669,9 @@ strong_ = mkNode "strong"
 li_ :: [Attribute action] -> [VTree action] -> VTree action
 li_ = mkNode "li" 
 
+liKeyed_ :: Key -> [Attribute action] -> [VTree action] -> VTree action
+liKeyed_ = mkNodeKeyed "li" 
+
 h1_ :: [Attribute action] -> [VTree action] -> VTree action
 h1_ = mkNode "h1" 
 
@@ -802,4 +829,96 @@ type family Nub t where
   Nub '[e]          = '[e]
   Nub (e ': e ': s) = (e ': s)
   Nub (e ': f ': s) = e ': Nub (f ': s)
+
+swapKids
+  :: Node
+  -> M.Map Key (VTree action)
+  -> [ VTree action ]
+  -> M.Map Key (VTree action)
+  -> [ VTree action ]
+  -> IO [ VTree action ]
+swapKids _ _ [] _ [] = pure []
+
+-- | No nodes left, remove all remaining
+swapKids p currentMap (c:ccs) newMap [] = do
+  let VNode _ _ _ _ currentNode = c
+  void $ removeChild p $ fromPtr <$> currentNode
+  swapKids p currentMap ccs newMap []
+
+-- | Add remaining new nodes
+swapKids p currentMap [] newMap (new:nns) = do
+  newNode <- renderNode p new
+  ts <- swapKids p currentMap [] newMap nns
+  pure $ newNode : ts
+
+swapKids p currentMap (c:ccs) newMap (new:nns) = do
+  case getKey c == getKey new of 
+    -- Keys same, continue
+    True -> do
+      ts <- swapKids p currentMap ccs newMap nns
+      pure (c:ts)
+    -- Keys not the same, check if current node has been moved or deleted
+    False -> do
+      case M.lookup (getKeyUnsafe c) newMap of
+        -- Current node has been deleted, remove from DOM
+        Nothing -> do
+          let VNode _ _ _ _ node = c
+          void $ removeChild p $ fromPtr <$> node
+          swapKids p currentMap ccs newMap (new:nns)
+        -- Current node exists, but does new node exist in current map?
+        Just _ -> do
+          let VNode _ _ _ _ currentNode = c
+          case M.lookup (getKeyUnsafe new) currentMap of
+            -- New node, doesn't exist in current map, create new node and insertBefore
+            Nothing -> do
+              newNode@(VNode _ _ _ _  node) <- renderDontAppend new
+              void $ insertBefore p (fromPtr <$> currentNode) (fromPtr <$> node) 
+              ts <- swapKids p currentMap (c:ccs) newMap nns
+              pure $ newNode : ts
+            -- Node has moved, use insertBefore on moved node
+            Just n -> do
+              let VNode _ _ _ _ movedNode = n
+              void $ insertBefore p (fromPtr <$> currentNode) (fromPtr <$> movedNode) 
+              ts <- swapKids p currentMap ccs newMap nns
+              pure $ n : ts 
+
+renderNode :: Node -> VTree action -> IO (VTree action)
+renderNode parent (VNode typ attrs children key _) = do
+  Just doc <- currentDocument
+  Just node <- fmap toNode <$> createElement doc (Just typ)
+  void $ diffAttrs node [] attrs
+  newChildren <- forM children $ \childNode ->
+    goDatch doc node VEmpty childNode
+  void $ appendChild parent (Just node)
+  pure $ VNode typ attrs newChildren key (toPtr <$> Just node)
+renderNode parent (VText str _) = do
+  Just doc <- currentDocument
+  newTextNode <- createTextNode doc str
+  void $ appendChild parent newTextNode
+  pure $ VText str (toPtr <$> toNode <$> newTextNode)
+renderNode _ _ = pure VEmpty
+
+renderDontAppend :: VTree action -> IO (VTree action)
+renderDontAppend (VNode typ attrs children key _) = do
+  Just doc <- currentDocument
+  Just node <- fmap toNode <$> createElement doc (Just typ)
+  void $ diffAttrs node [] attrs
+  newChildren <- forM children $ \childNode ->
+    goDatch doc node VEmpty childNode
+  pure $ VNode typ attrs newChildren key (toPtr <$> Just node)
+renderDontAppend (VText str _) = do
+  Just doc <- currentDocument
+  newTextNode <- createTextNode doc str
+  pure $ VText str (toPtr <$> toNode <$> newTextNode)
+renderDontAppend _ = pure VEmpty
+  
+class ToKey key where toKey :: key -> Key
+instance ToKey String  where toKey = Key . T.pack 
+instance ToKey T.Text  where toKey = Key
+instance ToKey Int where toKey = Key . T.pack . show
+instance ToKey Double where toKey = Key . T.pack . show
+instance ToKey Float where toKey = Key . T.pack . show
+instance ToKey Word where toKey = Key . T.pack . show
+instance ToKey Key where toKey = id
+
 

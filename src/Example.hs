@@ -191,9 +191,8 @@ viewEntries visibility entries =
 viewKeyedEntry :: Entry -> VTree Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Entry -> VTree Msg 
-viewEntry Entry {..} = 
-  li_
+viewEntry :: Entry -> VTree Msg
+viewEntry Entry {..} = liKeyed_ (toKey eid)
     [ class_ $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
     ]
