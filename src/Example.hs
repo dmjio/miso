@@ -1,21 +1,22 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Data.Aeson    hiding (Object)
+import           Data.Aeson   hiding (Object)
 import           Data.Bool
+import           Data.Default
 import           Data.Monoid
 import           Data.Proxy
-import qualified Data.Text     as T
+import qualified Data.Text    as T
 import           GHC.Generics
 import           Miso
 
@@ -73,7 +74,12 @@ data Msg
   | ChangeVisibility T.Text
    deriving Show
 
-stepConfig :: Proxy '[DebugActions, DebugModel, SaveToLocalStorage "todo-mvc"]
+instance Default Msg where def = NoOp
+
+stepConfig :: Proxy '[ DebugActions
+                     , DebugModel
+                     , SaveToLocalStorage "todo-mvc"
+                     ]
 stepConfig = Proxy
 
 getInitialModel :: IO Model
@@ -86,7 +92,7 @@ main :: IO ()
 main = do
   m@Model { step = step } <- getInitialModel
   (sig, send) <- signal $ Step (not step)
-  runSignal defaultEvents send $ 
+  runSignal defaultEvents send $
     view <$> foldp stepConfig update m sig
 
 update :: Msg -> Model -> Model

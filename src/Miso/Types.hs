@@ -1,8 +1,8 @@
 module Miso.Types where
 
 import           Control.Applicative
-import qualified FRP.Elerea.Simple   as FRP
-import           FRP.Elerea.Simple   hiding (Signal)
+import qualified FRP.Elerea.Simple    as FRP
+import           FRP.Elerea.Simple    hiding (Signal)
 
 data Sample a = Changed a | NotChanged a
   deriving (Show, Eq)
