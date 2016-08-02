@@ -19,20 +19,22 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE DeriveAnyClass        #-}
 
 module Miso where
 
 import           Control.Concurrent
 import           Control.Monad
+import           Control.Monad.Fix
 import           Control.Monad.Free
 import           Control.Monad.Free.TH
 import           Data.Aeson                    hiding (Object)
 import           Data.Bool
-import           Data.Default
 import qualified Data.Foldable                 as F
 import           Data.IORef
 import           Data.JSString.Text
-import           Data.List                     (find)
+import           Data.List
+
 import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.Monoid
@@ -40,7 +42,8 @@ import           Data.Proxy
 import qualified Data.Set                      as S
 import           Data.String.Conversions
 import qualified Data.Text                     as T
-import           FRP.Elerea.Simple              (externalMulti, transfer, start, effectful2)
+import           FRP.Elerea.Simple             (externalMulti, start, effectful2, SignalGen, delay)
+import qualified FRP.Elerea.Simple as FRP
 import           GHC.Generics
 import           GHC.Ptr
 import           GHC.TypeLits
@@ -130,6 +133,25 @@ evalEventGrammar = do
       PreventDefault obj cb -> do
         void $ E.preventDefault (pFromJSVal obj :: E.Event)
         cb
+
+data Effect action model 
+  = Effect model (IO action)
+  | NoEffect model
+  deriving (Functor)
+
+getModelFromEffect :: Effect action model -> model
+getModelFromEffect (Effect m _) = m
+getModelFromEffect (NoEffect m) = m
+
+noEffect, noEff :: model -> Effect action model 
+noEff = noEffect
+noEffect = NoEffect
+
+effect :: model -> IO action ->  Effect action model 
+effect = Effect
+
+(<#) :: IO action -> model -> Effect action model 
+action <# model = Effect model action
 
 deriving instance Functor (Action object)
 
@@ -225,7 +247,7 @@ instance Show (VTreeBase action e) where
   show (VText val _ ) = T.unpack val
   show (VNode typ evts children _ _) =
     "<" ++ T.unpack typ ++ ">" ++ show evts ++
-      concatMap show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
+      show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
 
 mkNode :: T.Text -> [Attribute action] -> [VTree action] -> VTree action
 mkNode name as xs = VNode name as Nothing Nothing xs
@@ -559,16 +581,14 @@ runSignal :: forall e action . ExtractEvents e
           -> Signal (VTree action)
           -> IO ()
 runSignal events writer (Signal s) = do
-  putStrLn "oh hey"
   vtreeRef <- newIORef =<< initTree VEmpty
   _ <- forkIO $ delegator writer vtreeRef events 
   emitter <- start s
   forever $ 
     waitForAnimationFrame >>
       emitter >>= \case
-        Changed [ newTree ] -> do
-          patchedTree <- (`datch` newTree) =<< readIORef vtreeRef
-          writeIORef vtreeRef patchedTree
+        Changed [ newTree ] -> 
+          writeIORef vtreeRef =<< (`datch` newTree) =<< readIORef vtreeRef
         _ -> pure ()
 
 signal :: Show a => a -> IO (Signal a, a -> IO ())
@@ -597,14 +617,14 @@ data DebugActions
 data SaveToLocalStorage (key :: Symbol)
 data SaveToSessionStorage (key :: Symbol)
 
-instance ( Show model ) => ToAction model action DebugModel where
+instance Show model => ToAction actions model DebugModel where
   toAction _ _ m = print m
 
-instance (Default actions, Show actions ) => ToAction model actions DebugActions where
+instance Show actions => ToAction actions model DebugActions where
   toAction _ as _ = print as
 
-instance (Default actions, ToJSON model, KnownSymbol sym, Show model) =>
-  ToAction model actions (SaveToSessionStorage sym) where
+instance (ToJSON model, KnownSymbol sym, Show model) =>
+  ToAction actions model (SaveToSessionStorage sym) where
   toAction _ _ m = do
     let key = T.pack $ symbolVal (Proxy :: Proxy sym)
     Just w <- currentWindow
@@ -612,21 +632,21 @@ instance (Default actions, ToJSON model, KnownSymbol sym, Show model) =>
     S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
 
 instance ( ToJSON model, KnownSymbol sym, Show model ) 
-  => ToAction model actions (SaveToLocalStorage sym) where
+  => ToAction actions model (SaveToLocalStorage sym) where
   toAction _ _ m = do
     let key = T.pack $ symbolVal (Proxy :: Proxy sym)
     Just w <- currentWindow
     Just s <- getLocalStorage w
     S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
 
-instance Default action => HasAction model action '[] where
+instance HasAction model action '[] where
     performActions _ _ _ = pure ()
 
 instance ( Nub (e ': es) ~ (e ': es)
-         , HasAction model action es
-         , ToAction model action e
+         , HasAction action model es
+         , ToAction action model e
          , Show model)
-  => HasAction model action (e ': es) where
+  => HasAction action model (e ': es) where
     performActions _ as m = 
       toAction nextAction as m >>
         performActions nextActions as m
@@ -635,38 +655,65 @@ instance ( Nub (e ': es) ~ (e ': es)
             nextActions = Proxy; nextAction = Proxy
 
 class Nub effects ~ effects =>
-  HasAction model action effects
+  HasAction action model effects
     where
       performActions
         :: Proxy effects
-        -> [action]
+        -> action
         -> model
         -> IO ()
 
-class ToAction model action effect where
-  toAction :: Proxy effect -> [action] -> model -> IO ()
+class ToAction action model effect where
+  toAction :: Proxy effect -> action -> model -> IO ()
 
 foldp :: forall model action effects
-      . ( HasAction model action effects, Eq model )
+      . ( HasAction action model effects, Eq model )
       => Proxy effects
-      -> (action -> model -> model)
+      -> (action -> model -> Effect action model)
       -> model
       -> Signal action
       -> Signal model
 foldp p update ini (Signal signalGen) = Signal $ do
-  signalGen >>= \actions -> transfer (pure [ini]) f actions
-            >>= \models -> effectful2 handleEffect actions models
-     where
-       handleEffect (Changed as) mc@(Changed [m]) =
-         performActions p as m >> pure mc
-       handleEffect _ mc = pure mc
-       f (NotChanged _) xs = NotChanged (fromChanged xs)
-       f (Changed actions) model = do
-         let [ oldModel ] = fromChanged model
-             newModel = foldr update oldModel (reverse actions)
-         case oldModel == newModel of
-           True -> NotChanged [ oldModel ]
-           False -> Changed [ newModel ]
+  actions <- signalGen
+  mfix $ \sig -> do
+    modelSignal <- delay startingModel sig
+    effectful2 handleUpdate actions modelSignal
+    where
+      startingModel = NotChanged (pure ini)
+      handleUpdate :: Sample [action] -> Sample [model] -> IO (Sample [model])
+      handleUpdate actions m = goFold p m update actions
+
+goFold 
+  :: (Eq model, HasAction action model effects)
+  => Proxy effects
+  -> Sample [model]
+  -> (action -> model -> Effect action model)
+  -> Sample [action]
+  -> IO (Sample [model])
+goFold _ m _ (NotChanged _) = pure m
+goFold p initialModel update (Changed as) = do
+  F.foldrM f initialModel as
+    where
+      f action model = do
+       let [currentModel] = fromChanged model
+       case update action currentModel of
+          NoEffect m ->
+            case currentModel == m of
+              True -> pure $ Changed [m]
+              False -> do
+                performActions p action m
+                pure $ Changed [m]
+          Effect m eff -> do
+            newAction <- eff
+            goFold p (NotChanged [m]) update (Changed [newAction])
+
+transferIO
+  :: a                 
+  -> (t -> a -> IO a)  
+  -> FRP.Signal t      
+  -> SignalGen (FRP.Signal a)
+transferIO initial f s = mfix $ \sig -> 
+  FRP.effectful2 f s =<< delay initial sig
 
 attr :: T.Text -> T.Text -> Attribute action
 attr = Attr
@@ -762,7 +809,6 @@ template :: VTree action
 template = div_  [] []
 
 -- | (EventName, Capture)
-
 defaultEvents :: Proxy '[
     '("blur", 'True)
   , '("change", 'False)
@@ -967,7 +1013,3 @@ instance ToKey Double where toKey = Key . T.pack . show
 instance ToKey Float where toKey = Key . T.pack . show
 instance ToKey Word where toKey = Key . T.pack . show
 instance ToKey Key where toKey = id
-
-
-
-

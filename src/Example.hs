@@ -13,7 +13,6 @@ module Main where
 
 import           Data.Aeson   hiding (Object)
 import           Data.Bool
-import           Data.Default
 import           Data.Monoid
 import           Data.Proxy
 import qualified Data.Text    as T
@@ -74,11 +73,16 @@ data Msg
   | ChangeVisibility T.Text
    deriving Show
 
-instance Default Msg where def = NoOp
+data DebugVTree
+
+instance ToAction Msg Model DebugVTree where
+  toAction _ action = 
+    print . view . getModelFromEffect . update action 
 
 stepConfig :: Proxy '[ DebugActions
                      , DebugModel
                      , SaveToLocalStorage "todo-mvc"
+                     , DebugVTree
                      ]
 stepConfig = Proxy
 
@@ -92,55 +96,58 @@ main :: IO ()
 main = do
   m@Model { step = step } <- getInitialModel
   (sig, send) <- signal $ Step (not step)
-  runSignal defaultEvents send $
-    view <$> foldp stepConfig update m sig
+  runSignal defaultEvents send $ view <$> foldp stepConfig update m sig
 
-update :: Msg -> Model -> Model
-update (Step step) m = m { step = step }
-update NoOp m = m
+update :: Msg -> Model -> Effect Msg Model 
+update (Step step) m = noEff m { step = step }
+update NoOp m = noEff m
 update Add model@Model{..} = 
-  model {
+  noEff model {
     uid = uid + 1
   , field = mempty
   , entries = entries <> [ newEntry field uid | not $ T.null field ]
   }
 
-update (UpdateField str) model = model { field = str }
+update (UpdateField str) model = noEffect model { field = str }
 update (EditingEntry id' isEditing) model@Model{..} = 
-  model { entries = newEntries }
+  noEff model { entries = newEntries }
     where
       newEntries = filterMap entries (\t -> eid t == id') $
          \t -> t { editing = isEditing, focussed = isEditing }
 
 update (UpdateEntry id' task) model@Model{..} =
-  model { entries = newEntries }
+  noEff model { entries = newEntries }
     where
       newEntries =
         filterMap entries ((==id') . eid) $ \t ->
            t { description = task }
 
 update (Delete id') model@Model{..} =
-  model { entries = filter (\t -> eid t /= id') entries }
+  noEff model { entries = filter (\t -> eid t /= id') entries }
 
 update DeleteComplete model@Model{..} =
-  model { entries = filter (not . completed) entries }
+  noEff model { entries = filter (not . completed) entries }
 
 update (Check id' isCompleted) model@Model{..} =
-  model { entries = newEntries }
+  eff <# model { entries = newEntries }
     where
+      eff = 
+        putStrLn "clicked check" >>
+          pure NoOp
+
       newEntries =
         filterMap entries (\t -> eid t == id') $ \t ->
           t { completed = isCompleted }
 
 update (CheckAll isCompleted) model@Model{..} =
-  model { entries = newEntries }
+  noEff model { entries = newEntries }
     where
       newEntries =
         filterMap entries (const True) $
           \t -> t { completed = isCompleted }
 
 update (ChangeVisibility v) model =
-  model { visibility = v }
+  noEff model { visibility = v }
 
 filterMap :: [a] -> (a -> Bool) -> (a -> a) -> [a]
 filterMap xs predicate f = go xs

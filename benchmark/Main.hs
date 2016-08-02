@@ -6,14 +6,10 @@
 module Main where
 
 import           Control.Monad
--- import           Data.Text                  (Text)
 import qualified Data.Text                  as T
--- import           GHC.Generics
--- import           GHCJS.DOM.Node
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal.Internal
 import           GHCJS.Types
--- import qualified GHCJS.Types                as G
 import           JavaScript.Object
 import           JavaScript.Object.Internal
 import           Miso
@@ -46,24 +42,15 @@ initUpdateCallback = syncCallback2 ContinueAsync updateTree'
 
 updateTree' :: JSVal -> JSVal -> IO ()
 updateTree' currentObj newObj = do
-  putStrLn "curr object.."
   loggin currentObj
-  putStrLn "new obj.."
   loggin newObj
   currVTree <- unsafeGetProp "vtree" (Object currentObj)
-  putStrLn "curr vtree.."
   loggin currVTree
-  Just currentTree@(VNode a b c _ cs) <- fromJSVal currVTree
-  putStrLn "here"
-  print (a,b,c,cs, "here")
-  putStrLn "deserialized"
+  Just currentTree@(VNode _ _ _ _ _) <- fromJSVal currVTree
   resultantTree <- case isNull newObj of
     False -> do
       putStrLn "current tree isn't null"
-      newTree@(VNode _ _ _ _ cs') <- renderTree newObj
-      print (length cs, length cs', "lengths")
-      print (newTree, "newTree")
-      print (currentTree, "currTree")
+      newTree@(VNode _ _ _ _ _) <- renderTree newObj
       currentTree `datch` newTree 
     True -> do
       putStrLn "current tree is null"
