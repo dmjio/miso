@@ -1,4 +1,4 @@
-name:                dirty-miso
+name:                miso
 version:             0.1.0.0
 author:              David Johnson
 maintainer:          djohnson.m@gmail.com
@@ -13,7 +13,7 @@ executable example
                , base
                , bytestring
                , containers
-               , dirty-miso
+               , miso
                , elerea
                , free
                , lucid
@@ -34,7 +34,7 @@ executable benchmark
                , base
                , bytestring
                , containers
-               , dirty-miso
+               , miso
                , elerea
                , free
                , lucid
@@ -69,7 +69,7 @@ Test-Suite tests
     type:             exitcode-stdio-1.0
     main-is:          Main.hs
     hs-source-dirs:   tests
-    build-depends:    dirty-miso
+    build-depends:    miso
                     , base
                     , ghcjs-base
                     , text
