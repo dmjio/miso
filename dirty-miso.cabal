@@ -48,7 +48,7 @@ executable benchmark
 
 library
   exposed-modules: Miso, Miso.Types
-  ghc-options: -Wall
+  ghc-options: -Wall -Werror
   hs-source-dirs: src
   build-depends:   aeson
                  , base

@@ -20,7 +20,6 @@
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE DeriveAnyClass        #-}
-
 module Miso where
 
 import           Control.Concurrent
@@ -42,10 +41,10 @@ import           Data.Proxy
 import qualified Data.Set                      as S
 import           Data.String.Conversions
 import qualified Data.Text                     as T
-import           FRP.Elerea.Simple             (externalMulti, start, effectful2, SignalGen, delay)
-import qualified FRP.Elerea.Simple as FRP
+import           FRP.Elerea.Simple             (externalMulti, start, effectful2, delay)
+
 import           GHC.Generics
-import           GHC.Ptr
+
 import           GHC.TypeLits
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
@@ -180,17 +179,10 @@ data Attribute action = forall eventName returnType . HasEvent eventName returnT
   | Prop T.Text Value
 
 instance ToJSVal (Attribute action) where
-  toJSVal (Prop k v) = do
-    o@(Object obj) <- create
-    toJSVal k >>= \k' -> setProp "pkey" k' o
-    toJSVal v >>= \v' -> setProp "pval" v' o
-    pure obj
+  toJSVal _ = undefined
 
 instance FromJSVal (Attribute action) where
-  fromJSVal o = do
-    k <- fromJSVal =<< getProp "pkey" (Object o)
-    v <- fromJSVal =<< getProp "pval" (Object o)
-    pure $ Prop <$> k <*> v
+  fromJSVal _ = undefined
 
 instance Eq (Attribute action) where
   Prop x1 x2 == Prop y1 y2 = x1 == y1 && x2 == y2
@@ -203,15 +195,6 @@ instance Show (Attribute action) where
   show (Prop k v) = T.unpack $ k <> "=" <> T.pack (show v)
 
 type VTree action = VTreeBase action Node
-
-toPtr :: Node -> Ptr ()
-toPtr = G.toPtr . pToJSVal
-
-fromPtr :: Ptr a -> Node
-fromPtr = pFromJSVal . G.fromPtr
-
-toPtrFromEvent :: Event -> Ptr ()
-toPtrFromEvent = G.toPtr . pToJSVal
 
 getKey :: VTreeBase action a -> Maybe Key
 getKey (VNode _ _ maybeKey _ _) = maybeKey
@@ -232,10 +215,11 @@ data VTreeBase action a where
         -> Maybe a
         -> VTreeBase action a
   VEmpty :: VTreeBase action a
-  deriving (Eq, Generic)
+  deriving (Eq, Generic, Functor)
 
 instance ToJSVal (VTreeBase action Node)
 instance FromJSVal (VTreeBase action Node)
+
 instance ToJSVal Key
 instance FromJSVal Key
 
@@ -714,14 +698,6 @@ goFold p initialModel update (Changed as) = do
           Effect m eff -> do
             newAction <- eff
             goFold p (NotChanged [m]) update (Changed [newAction])
-
-transferIO
-  :: a
-  -> (t -> a -> IO a)
-  -> FRP.Signal t
-  -> SignalGen (FRP.Signal a)
-transferIO initial f s = mfix $ \sig ->
-  FRP.effectful2 f s =<< delay initial sig
 
 attr :: T.Text -> T.Text -> Attribute action
 attr = Attr
