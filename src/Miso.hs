@@ -74,18 +74,22 @@ import           Miso.Types
 import           Prelude                       hiding (repeat)
 
 data Action object a where
-  GetTarget :: object -> (object -> a) -> Action object a
-  PreventDefault :: object -> a -> Action object a
-  StopPropagation :: object -> a -> Action object a
+  GetTarget :: (object -> a) -> Action object a
+  PreventDefault :: a -> Action object a
+  StopPropagation :: a -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
   GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
+  GetEventField  :: FromJSON v => T.Text -> (Maybe v -> a) -> Action object a
   GetChildren ::  object -> (object -> a) -> Action object a
   GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
   GetNextSibling :: object -> (Maybe object -> a) -> Action object a
+  SetEventField :: ToJSON v => T.Text -> v -> a -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
 $(makeFreeCon 'GetField)
+$(makeFreeCon 'GetEventField)
+$(makeFreeCon 'SetEventField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
@@ -106,18 +110,26 @@ convertToJSON g = do
     Error e -> Prelude.error $ "Error while decoding Value: " <> e <> " " <> show val
     Success v -> pure (pure v)
 
-evalEventGrammar :: Grammar G.JSVal a -> IO a
-evalEventGrammar = do
+evalEventGrammar :: Event -> Grammar G.JSVal a -> IO a
+evalEventGrammar e = do
   iterM $ \x ->
-    case x of 
-      GetTarget obj cb -> do
-        cb =<< pToJSVal <$> E.getTarget (pFromJSVal obj :: E.Event)
+    case x of
+      GetTarget cb ->
+        cb =<< pToJSVal <$> E.getTarget e
       GetParent obj cb -> do
         Just p <- getParentNode (pFromJSVal obj :: Node)
         cb (pToJSVal p)
       GetField key obj cb -> do
         val <- getProp (textToJSString key) (Object obj)
         cb =<< jsToJSON (jsTypeOf val) val
+      GetEventField key cb -> do
+        eventVal <- toJSVal e
+        val <- getProp (textToJSString key) (Object eventVal)
+        cb =<< jsToJSON (jsTypeOf val) val
+      SetEventField key val cb -> do
+        eventVal <- toJSVal e
+        jsValue <- toJSVal (toJSON val)
+        setProp (textToJSString key) jsValue (Object eventVal) >> cb
       GetChildren obj cb -> do
         Just nodeList <- getChildNodes (pFromJSVal obj :: Node)
         cb $ pToJSVal nodeList
@@ -125,16 +137,12 @@ evalEventGrammar = do
         result <- item (pFromJSVal obj :: NodeList) (fromIntegral n)
         cb $ pToJSVal <$> result
       GetNextSibling obj cb -> do
-        result <- Node.getNextSibling (pFromJSVal obj :: Node) 
+        result <- Node.getNextSibling (pFromJSVal obj :: Node)
         cb $ pToJSVal <$> result
-      StopPropagation obj cb -> do
-        void $ E.stopPropagation (pFromJSVal obj :: E.Event)
-        cb
-      PreventDefault obj cb -> do
-        void $ E.preventDefault (pFromJSVal obj :: E.Event)
-        cb
+      StopPropagation cb -> E.stopPropagation e >> cb
+      PreventDefault cb -> E.preventDefault e >> cb
 
-data Effect action model 
+data Effect action model
   = Effect model (IO action)
   | NoEffect model
   deriving (Functor)
@@ -143,14 +151,14 @@ getModelFromEffect :: Effect action model -> model
 getModelFromEffect (Effect m _) = m
 getModelFromEffect (NoEffect m) = m
 
-noEffect, noEff :: model -> Effect action model 
+noEffect, noEff :: model -> Effect action model
 noEff = noEffect
 noEffect = NoEffect
 
-effect :: model -> IO action ->  Effect action model 
+effect :: model -> IO action -> Effect action model
 effect = Effect
 
-(<#) :: IO action -> model -> Effect action model 
+(<#) :: IO action -> model -> Effect action model
 action <# model = Effect model action
 
 deriving instance Functor (Action object)
@@ -158,7 +166,7 @@ deriving instance Functor (Action object)
 type Grammar obj a = Free (Action obj) a
 
 class HasEvent (eventName :: Symbol) returnType where
-  parseEvent :: Proxy eventName -> obj -> Grammar obj returnType
+  parseEvent :: Proxy eventName -> Grammar obj returnType
 
 on :: (KnownSymbol eventName, HasEvent eventName returnType)
    => Proxy eventName
@@ -197,13 +205,13 @@ instance Show (Attribute action) where
 type VTree action = VTreeBase action Node
 
 toPtr :: Node -> Ptr ()
-toPtr = G.toPtr . pToJSVal 
+toPtr = G.toPtr . pToJSVal
 
 fromPtr :: Ptr a -> Node
 fromPtr = pFromJSVal . G.fromPtr
 
-toPtrFromEvent :: Event -> Ptr () 
-toPtrFromEvent = G.toPtr . pToJSVal 
+toPtrFromEvent :: Event -> Ptr ()
+toPtrFromEvent = G.toPtr . pToJSVal
 
 getKey :: VTreeBase action a -> Maybe Key
 getKey (VNode _ _ maybeKey _ _) = maybeKey
@@ -219,10 +227,10 @@ data VTreeBase action a where
         -> Maybe Key
         -> Maybe a
         -> [ VTreeBase action a ]
-        -> VTreeBase action a 
+        -> VTreeBase action a
   VText :: T.Text
         -> Maybe a
-        -> VTreeBase action a 
+        -> VTreeBase action a
   VEmpty :: VTreeBase action a
   deriving (Eq, Generic)
 
@@ -289,7 +297,7 @@ instance ( ExtractEvents events, KnownSymbol event ) =>
         eventName = T.pack $ symbolVal (Proxy :: Proxy event)
 
 instance ExtractEvents '[] where extractEvents = const []
-  
+
 delegator
   :: forall action events . ExtractEvents events
   => (action -> IO ())
@@ -327,20 +335,20 @@ runEvent
   -> Proxy eventName
   -> (returnType -> action)
   -> IO ()
-runEvent e writer prox action = 
-  writer =<< action <$> do
-    evalEventGrammar $ parseEvent prox (pToJSVal e)
+runEvent e writer prox action =
+  writer =<< action <$>
+    evalEventGrammar e (parseEvent prox)
 
 delegateEvent :: Event -> (action -> IO ()) -> VTree action -> String -> [Node] -> IO ()
-delegateEvent e writer (VNode _ _ _ _ children) eventName = findEvent children 
+delegateEvent e writer (VNode _ _ _ _ children) eventName = findEvent children
     where
       findEvent _ [] = pure ()
-      findEvent childNodes [y] = 
+      findEvent childNodes [y] =
        forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
          forM_ (getEventHandler attrs) $ \(EventHandler _ prox action) ->
-           runEvent e writer prox action  
+           runEvent e writer prox action
 
-      findEvent childNodes (y:ys) = 
+      findEvent childNodes (y:ys) =
         forM_ (findNode childNodes y) $ \(VNode _ _ _ _ childrenNext) ->
           findEvent childrenNext ys
 
@@ -348,7 +356,7 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName = findEvent children
         let nodes = getVNodesOnly childNodes
         flip find nodes $ \node ->
           getDOMNode node == Just ref
-  
+
       getVNodesOnly childs = do
         vnode@VNode{} <- childs
         pure vnode
@@ -421,7 +429,7 @@ goDatch doc parentNode VEmpty (VNode typ attrs key _ children) = do
   pure $ VNode typ attrs key node newChildren
 
 -- Remove an element
-goDatch _ parentNode (VNode _ _ _ node _) VEmpty = 
+goDatch _ parentNode (VNode _ _ _ node _) VEmpty =
   VEmpty <$ removeChild parentNode node
 
 -- Replace an element with a text node
@@ -457,7 +465,7 @@ goDatch doc parent
                  <*> pure keyB
                  <*> pure (Just ref)
                  <*> diffChildren doc ref childrenA childrenB
-   False -> do      
+   False -> do
       node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
       void $ diffAttrs newNode [] attrsB
       newChildren <- forM childrenB $ \childNode ->
@@ -496,7 +504,7 @@ diffPropsAndAttrs :: Node -> [Attribute action] -> [Attribute action] -> IO ()
 diffPropsAndAttrs node old new = do
   obj <- Object <$> toJSVal node
   let el = castToElement node
-      
+
       newAttrs = S.fromList [ (k, v) | Attr k v <- new ]
       oldAttrs = S.fromList [ (k, v) | Attr k v <- old ]
 
@@ -526,7 +534,7 @@ diffPropsAndAttrs node old new = do
         dispatchObservable k el
       (_, _) -> pure ()
 
-  forM_ removeAttrs $ \(k,_) -> removeAttribute el k 
+  forM_ removeAttrs $ \(k,_) -> removeAttribute el k
   forM_ addAttrs $ \(k,v) -> setAttribute el k v
 
 isKeyed :: [VTree action] -> Bool
@@ -540,7 +548,7 @@ isKeyed (x : _) = hasKey x
 makeMap :: [VTree action] -> M.Map Key (VTree action)
 makeMap vs = M.fromList [ (key, v) | v@(VNode _ _ (Just key) _ _) <- vs ]
 
-diffChildren 
+diffChildren
   :: Document
   -> Node
   -> [VTree action]
@@ -563,12 +571,12 @@ diffChildren'
   -> [VTree action]
   -> IO [VTree action]
 diffChildren' _ _ [] [] = pure []
-diffChildren' doc parent [] (b:bs) = 
+diffChildren' doc parent [] (b:bs) =
   (:) <$> goDatch doc parent VEmpty b
       <*> diffChildren doc parent [] bs
-diffChildren' doc parent (a:as) [] = 
+diffChildren' doc parent (a:as) [] =
   (:) <$> goDatch doc parent a VEmpty
-      <*> diffChildren doc parent as [] 
+      <*> diffChildren doc parent as []
 diffChildren' doc parent (a:as) (b:bs) = do
   (:) <$> goDatch doc parent a b
       <*> diffChildren doc parent as bs
@@ -582,18 +590,18 @@ runSignal :: forall e action . ExtractEvents e
           -> IO ()
 runSignal events writer (Signal s) = do
   vtreeRef <- newIORef =<< initTree VEmpty
-  _ <- forkIO $ delegator writer vtreeRef events 
+  _ <- forkIO $ delegator writer vtreeRef events
   emitter <- start s
-  forever $ 
+  forever $
     waitForAnimationFrame >>
       emitter >>= \case
-        Changed [ newTree ] -> 
+        Changed [ newTree ] ->
           writeIORef vtreeRef =<< (`datch` newTree) =<< readIORef vtreeRef
         _ -> pure ()
 
 signal :: Show a => a -> IO (Signal a, a -> IO ())
 signal x = do
-  (s, writer) <- externalMulti 
+  (s, writer) <- externalMulti
   writer x
   pure (Signal $ fmap toSample <$> s, writer)
     where
@@ -612,7 +620,7 @@ getFromStorage key = do
     Nothing -> Left "Not found"
     Just m -> eitherDecode (cs (m :: T.Text))
 
-data DebugModel 
+data DebugModel
 data DebugActions
 data SaveToLocalStorage (key :: Symbol)
 data SaveToSessionStorage (key :: Symbol)
@@ -631,7 +639,7 @@ instance (ToJSON model, KnownSymbol sym, Show model) =>
     Just s <- getSessionStorage w
     S.setItem s (textToJSString key) (cs (encode m) :: T.Text)
 
-instance ( ToJSON model, KnownSymbol sym, Show model ) 
+instance ( ToJSON model, KnownSymbol sym, Show model )
   => ToAction actions model (SaveToLocalStorage sym) where
   toAction _ _ m = do
     let key = T.pack $ symbolVal (Proxy :: Proxy sym)
@@ -647,7 +655,7 @@ instance ( Nub (e ': es) ~ (e ': es)
          , ToAction action model e
          , Show model)
   => HasAction action model (e ': es) where
-    performActions _ as m = 
+    performActions _ as m =
       toAction nextAction as m >>
         performActions nextActions as m
           where
@@ -683,7 +691,7 @@ foldp p update ini (Signal signalGen) = Signal $ do
       handleUpdate :: Sample [action] -> Sample [model] -> IO (Sample [model])
       handleUpdate actions m = goFold p m update actions
 
-goFold 
+goFold
   :: (Eq model, HasAction action model effects)
   => Proxy effects
   -> Sample [model]
@@ -708,20 +716,20 @@ goFold p initialModel update (Changed as) = do
             goFold p (NotChanged [m]) update (Changed [newAction])
 
 transferIO
-  :: a                 
-  -> (t -> a -> IO a)  
-  -> FRP.Signal t      
+  :: a
+  -> (t -> a -> IO a)
+  -> FRP.Signal t
   -> SignalGen (FRP.Signal a)
-transferIO initial f s = mfix $ \sig -> 
+transferIO initial f s = mfix $ \sig ->
   FRP.effectful2 f s =<< delay initial sig
 
 attr :: T.Text -> T.Text -> Attribute action
 attr = Attr
 
-prop :: ToJSON a => T.Text -> a -> Attribute action 
+prop :: ToJSON a => T.Text -> a -> Attribute action
 prop k v = Prop k (toJSON v)
 
-boolProp :: T.Text -> Bool -> Attribute action 
+boolProp :: T.Text -> Bool -> Attribute action
 boolProp = prop
 
 stringProp :: T.Text -> T.Text -> Attribute action
@@ -743,66 +751,66 @@ checked_ :: Bool -> Attribute action
 checked_ = boolProp "checked"
 
 form_ :: [Attribute action] -> [VTree action] -> VTree action
-form_ = mkNode "form" 
+form_ = mkNode "form"
 
 p_ :: [Attribute action] -> [VTree action] -> VTree action
-p_ = mkNode "p" 
+p_ = mkNode "p"
 
 s_ :: [Attribute action] -> [VTree action] -> VTree action
-s_ = mkNode "s" 
+s_ = mkNode "s"
 
 ul_ :: [Attribute action] -> [VTree action] -> VTree action
-ul_ = mkNode "ul" 
+ul_ = mkNode "ul"
 
 span_ :: [Attribute action] -> [VTree action] -> VTree action
-span_ = mkNode "span" 
+span_ = mkNode "span"
 
 strong_ :: [Attribute action] -> [VTree action] -> VTree action
-strong_ = mkNode "strong" 
+strong_ = mkNode "strong"
 
 li_ :: [Attribute action] -> [VTree action] -> VTree action
-li_ = mkNode "li" 
+li_ = mkNode "li"
 
 liKeyed_ :: Key -> [Attribute action] -> [VTree action] -> VTree action
-liKeyed_ = mkNodeKeyed "li" 
+liKeyed_ = mkNodeKeyed "li"
 
 h1_ :: [Attribute action] -> [VTree action] -> VTree action
-h1_ = mkNode "h1" 
+h1_ = mkNode "h1"
 
 input_ :: [Attribute action] -> [VTree action] -> VTree action
-input_ = mkNode "input" 
+input_ = mkNode "input"
 
 label_ :: [Attribute action] -> [VTree action] -> VTree action
-label_ = mkNode "label" 
+label_ = mkNode "label"
 
 a_ :: [Attribute action] -> [VTree action] -> VTree action
-a_ = mkNode "a" 
+a_ = mkNode "a"
 
-style_ :: T.Text -> Attribute action 
-style_ = attr "style" 
+style_ :: T.Text -> Attribute action
+style_ = attr "style"
 
-type_ :: T.Text -> Attribute action 
+type_ :: T.Text -> Attribute action
 type_ = attr "type"
 
-name_ :: T.Text -> Attribute action 
+name_ :: T.Text -> Attribute action
 name_ = attr "name"
 
-href_ :: T.Text -> Attribute action 
+href_ :: T.Text -> Attribute action
 href_ = attr "href"
 
-className_ :: T.Text -> Attribute action 
+className_ :: T.Text -> Attribute action
 className_ = stringProp "className"
 
-class_ :: T.Text -> Attribute action 
+class_ :: T.Text -> Attribute action
 class_ = attr "class"
 
-id_ :: T.Text -> Attribute action 
+id_ :: T.Text -> Attribute action
 id_ = attr "id"
 
-placeholder :: T.Text -> Attribute action 
-placeholder = attr "placeholder" 
+placeholder :: T.Text -> Attribute action
+placeholder = attr "placeholder"
 
-autofocus :: Bool -> Attribute action 
+autofocus :: Bool -> Attribute action
 autofocus = boolProp "autofocus"
 
 template :: VTree action
@@ -827,24 +835,24 @@ defaultEvents :: Proxy '[
   , '("mouseout", 'False)
   , '("submit", 'False)
   ]
-defaultEvents = Proxy 
+defaultEvents = Proxy
 
-instance HasEvent "blur" () where parseEvent _ _ = pure ()
+instance HasEvent "blur" () where parseEvent _ = pure ()
 instance HasEvent "change" Bool where parseEvent _ = checkedGrammar
-instance HasEvent "click" () where parseEvent _ _ = pure ()
-instance HasEvent "dblclick" () where parseEvent _ _ = pure ()
-instance HasEvent "focus" () where parseEvent _ _ = pure ()
+instance HasEvent "click" () where parseEvent _ = pure ()
+instance HasEvent "dblclick" () where parseEvent _ = pure ()
+instance HasEvent "focus" () where parseEvent _ = pure ()
 instance HasEvent "input" T.Text where parseEvent _ = inputGrammar
 instance HasEvent "keydown" Int where parseEvent _ = keyGrammar
 instance HasEvent "keypress" Int where parseEvent _ = keyGrammar
 instance HasEvent "keyup" Int where parseEvent _ = keyGrammar
-instance HasEvent "mouseup" () where parseEvent _ _ = pure ()
-instance HasEvent "mousedown" () where parseEvent _ _ = pure ()
-instance HasEvent "mouseenter" () where parseEvent _ _ = pure ()
-instance HasEvent "mouseleave" () where parseEvent _ _ = pure ()
-instance HasEvent "mouseover" () where parseEvent _ _ = pure ()
-instance HasEvent "mouseout" () where parseEvent _ _ = pure ()
-instance HasEvent "submit" () where parseEvent _ = preventDefault 
+instance HasEvent "mouseup" () where parseEvent _ = pure ()
+instance HasEvent "mousedown" () where parseEvent _ = pure ()
+instance HasEvent "mouseenter" () where parseEvent _ = pure ()
+instance HasEvent "mouseleave" () where parseEvent _ = pure ()
+instance HasEvent "mouseover" () where parseEvent _ = pure ()
+instance HasEvent "mouseout" () where parseEvent _ = pure ()
+instance HasEvent "submit" () where parseEvent _ = preventDefault
 
 onBlur :: action -> Attribute action
 onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
@@ -894,28 +902,28 @@ onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
 onSubmit :: action -> Attribute action
 onSubmit action = on (Proxy :: Proxy "submit") $ \() -> action
 
-inputGrammar :: FromJSON a => obj -> Grammar obj a 
-inputGrammar e = do
-    target <- getTarget e
-    result <- getField "value" target
-    case result of
-      Nothing -> Prelude.error "Couldn't retrieve target input value"
-      Just value -> pure value
+inputGrammar :: FromJSON a => Grammar obj a
+inputGrammar = do
+  target <- getTarget
+  result <- getField "value" target
+  case result of
+    Nothing -> Prelude.error "Couldn't retrieve target input value"
+    Just value -> pure value
 
-checkedGrammar :: FromJSON a => obj -> Grammar obj a 
-checkedGrammar e = do
-    target <- getTarget e
-    result <- getField "checked" target
-    case result of
-      Nothing -> Prelude.error "Couldn't retrieve target checked value"
-      Just value -> pure value
+checkedGrammar :: FromJSON a => Grammar obj a
+checkedGrammar = do
+  target <- getTarget
+  result <- getField "checked" target
+  case result of
+    Nothing -> Prelude.error "Couldn't retrieve target checked value"
+    Just value -> pure value
 
-keyGrammar :: FromJSON a => obj -> Grammar obj a 
-keyGrammar e = do   
-    keyCode <- getField "keyCode" e
-    which <- getField "which" e
-    charCode <- getField "charCode" e
-    pure $ head $ catMaybes [ keyCode, which, charCode ]
+keyGrammar :: Grammar obj Int
+keyGrammar = do
+  keyCode <- getEventField "keyCode"
+  which <- getEventField "which"
+  charCode <- getEventField "charCode"
+  pure $ head $ catMaybes [ keyCode, which, charCode ]
 
 type family Nub t where
   Nub '[]           = '[]
@@ -945,7 +953,7 @@ swapKids p currentMap [] newMap (new:nns) = do
   pure $ newNode : ts
 
 swapKids p currentMap (c:ccs) newMap (new:nns) = do
-  case getKey c == getKey new of 
+  case getKey c == getKey new of
     -- Keys same, continue
     True -> do
       ts <- swapKids p currentMap ccs newMap nns
@@ -965,7 +973,7 @@ swapKids p currentMap (c:ccs) newMap (new:nns) = do
             -- New node, doesn't exist in current map, create new node and insertBefore
             Nothing -> do
               newNode@(VNode _ _ _ node _) <- renderDontAppend new
-              void $ insertBefore p node currentNode 
+              void $ insertBefore p node currentNode
               ts <- swapKids p currentMap (c:ccs) newMap nns
               pure $ newNode : ts
             -- Node has moved, use insertBefore on moved node
@@ -973,7 +981,7 @@ swapKids p currentMap (c:ccs) newMap (new:nns) = do
               let VNode _ _ _ movedNode _ = n
               void $ insertBefore p currentNode movedNode
               ts <- swapKids p currentMap ccs newMap nns
-              pure $ n : ts 
+              pure $ n : ts
 
 renderNode :: Node -> VTree action -> IO (VTree action)
 renderNode parent (VNode typ attrs key _ children) = do
@@ -1004,9 +1012,9 @@ renderDontAppend (VText str _) = do
   newTextNode <- createTextNode doc str
   pure $ VText str (toNode <$> newTextNode)
 renderDontAppend _ = pure VEmpty
-  
+
 class ToKey key where toKey :: key -> Key
-instance ToKey String  where toKey = Key . T.pack 
+instance ToKey String  where toKey = Key . T.pack
 instance ToKey T.Text  where toKey = Key
 instance ToKey Int where toKey = Key . T.pack . show
 instance ToKey Double where toKey = Key . T.pack . show
