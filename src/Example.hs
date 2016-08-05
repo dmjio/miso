@@ -12,6 +12,7 @@
 module Main where
 
 import           Data.Aeson   hiding (Object)
+import qualified Data.Map as M
 import           Data.Bool
 import           Data.Monoid
 import           Data.Proxy
@@ -161,7 +162,7 @@ view :: Model -> VTree Msg
 view m@Model{..} = 
  div_
     [ class_ "todomvc-wrapper"
-    , style_ "visibility:hidden;"
+    , style_  $ M.singleton "visibility" "hidden" 
     ]
     [ section_
         [ class_ "todoapp" ]
@@ -176,7 +177,7 @@ viewEntries :: T.Text -> [ Entry ] -> VTree Msg
 viewEntries visibility entries =
   section_
     [ class_ "main"
-    , style_ $ T.pack $ "visibility:" <> cssVisibility <> ";" 
+    , style_ $ M.singleton "visibility" cssVisibility
     ]
     [ input_
         [ class_ "toggle-all"

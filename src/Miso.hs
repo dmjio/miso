@@ -798,8 +798,14 @@ label_ = mkNode "label"
 a_ :: [Attribute action] -> [VTree action] -> VTree action
 a_ = mkNode "a"
 
-style_ :: T.Text -> Attribute action
-style_ = attr "style"
+styleRaw_ :: T.Text -> Attribute action
+styleRaw_ = attr "style"
+
+style_ :: M.Map T.Text T.Text -> Attribute action
+style_ = Attr "style" . M.foldrWithKey go mempty
+  where
+    go :: T.Text -> T.Text -> T.Text -> T.Text
+    go k v xs = T.concat [ k, ":", v, ";" ] <> xs
 
 type_ :: T.Text -> Attribute action
 type_ = attr "type"
