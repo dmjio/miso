@@ -187,8 +187,8 @@ onWithOptions options proxy =
   EventHandler options (symbolVal proxy) proxy
 
 data Options = Options {
-    stopPropagation :: Bool
-  , preventDefault :: Bool
+    stopPropagation :: !Bool
+  , preventDefault :: !Bool
   } deriving (Show, Eq)
 
 defaultOptions :: Options
@@ -889,6 +889,13 @@ defaultEvents :: Proxy '[
   , '("mouseleave", 'False)
   , '("mouseover", 'False)
   , '("mouseout", 'False)
+  , '("dragstart", 'False)
+  , '("dragover", 'False)
+  , '("dragend", 'False)
+  , '("dragenter", 'False)
+  , '("dragleave", 'False)
+  , '("drag", 'False)
+  , '("drop", 'False)
   , '("submit", 'False)
   ]
 defaultEvents = Proxy
@@ -908,7 +915,16 @@ instance HasEvent "mouseenter" () where parseEvent _ = pure ()
 instance HasEvent "mouseleave" () where parseEvent _ = pure ()
 instance HasEvent "mouseover" () where parseEvent _ = pure ()
 instance HasEvent "mouseout" () where parseEvent _ = pure ()
+instance HasEvent "dragstart" () where parseEvent _ = pure ()
+instance HasEvent "dragover" () where parseEvent _ = pure ()
+instance HasEvent "dragend" () where parseEvent _ = pure ()
+instance HasEvent "dragenter" () where parseEvent _ = pure ()
+instance HasEvent "dragleave" () where parseEvent _ = pure ()
+instance HasEvent "drag" () where parseEvent _ = pure ()
+instance HasEvent "drop" () where parseEvent _ = pure ()
 instance HasEvent "submit" () where parseEvent _ = pure ()
+
+newtype PreventDefault = PreventDefault Bool deriving (Show, Eq)
 
 onBlur :: action -> Attribute action
 onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
@@ -955,9 +971,34 @@ onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
 onMouseOut :: action -> Attribute action
 onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
 
+onDragStart :: action -> Attribute action
+onDragStart action = on (Proxy :: Proxy "dragstart") $ \() -> action
+
+onDragOver :: PreventDefault -> action -> Attribute action
+onDragOver (PreventDefault prevent) action =
+  onWithOptions defaultOptions{preventDefault = prevent}
+    (Proxy :: Proxy "dragover") $ \() -> action
+
+onDragEnd :: action -> Attribute action
+onDragEnd action = on (Proxy :: Proxy "dragend") $ \() -> action
+
+onDragEnter :: action -> Attribute action
+onDragEnter action = on (Proxy :: Proxy "dragenter") $ \() -> action
+
+onDragLeave :: action -> Attribute action
+onDragLeave action = on (Proxy :: Proxy "dragleave") $ \() -> action
+
+onDrag :: action -> Attribute action
+onDrag action = on (Proxy :: Proxy "drag") $ \() -> action
+
+onDrop :: PreventDefault -> action -> Attribute action
+onDrop (PreventDefault prevent) action =
+  onWithOptions defaultOptions{preventDefault = prevent}
+    (Proxy :: Proxy "drop") $ \() -> action
+
 onSubmit :: action -> Attribute action
 onSubmit action =
-  onWithOptions defaultOptions { preventDefault = True }
+  onWithOptions defaultOptions{preventDefault = True}
     (Proxy :: Proxy "submit") $ \() -> action
 
 inputGrammar :: FromJSON a => Grammar obj a

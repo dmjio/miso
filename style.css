@@ -1,0 +1,78 @@
+body {
+  background-image:  url(green-cup.png);
+  background-repeat: repeat;
+}
+
+.board {
+  width: 35em;
+  height: 35em;
+  border-style: solid;
+  border-color: black;
+  border-width: 3px;
+  margin: 0 auto;
+}
+
+.vertical-flex {
+  display:        flex;
+  flex-direction: column;
+  height:         100%;
+}
+
+.horizontal-flex {
+  width:   100%;
+  display: flex;
+  flex: 0.5;
+}
+
+
+.horizontal-flex:nth-child(2n) .flex-item:nth-child(2n) {
+  background-color: rgb(236, 217, 198);
+}
+
+.horizontal-flex:nth-child(2n+1) .flex-item:nth-child(2n+1) {
+  background-color: rgb(236, 217, 198);
+}
+
+.horizontal-flex:nth-child(2n) .flex-item:nth-child(2n).invalid {
+  background-color: rgba(236, 217, 198, 0.5);
+}
+
+.horizontal-flex:nth-child(2n+1) .flex-item:nth-child(2n+1).invalid {
+  background-color: rgba(236, 217, 198, 0.5);
+}
+
+.horizontal-flex:nth-child(2n) .flex-item:nth-child(2n).hovering {
+  background-color: red;
+}
+
+.horizontal-flex:nth-child(2n+1) .flex-item:nth-child(2n+1).hovering {
+  background-color: red;
+}
+
+.horizontal-flex .flex-item {
+  background-color: rgb(102, 51, 0);
+}
+
+.horizontal-flex .flex-item.invalid {
+  background-color: rgba(102, 51, 0, 0.5);
+}
+
+.horizontal-flex .flex-item.hovering {
+  background-color: red;
+}
+
+.flex-item {
+  display: flex;
+  flex: 0.5;
+  justify-content: center; /* align horizontal */
+  align-items: center; /* align vertical */
+  font-size: 40px;
+}
+
+.palette {
+  width:   100%;
+  display: flex;
+  justify-content: center; /* align horizontal */
+  align-items: center; /* align vertical */
+  font-size: 40px;
+}

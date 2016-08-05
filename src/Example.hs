@@ -106,7 +106,7 @@ main = do
 update :: Msg -> Model -> Effect Msg Model 
 update NoOp m = noEff m
 update (CurrentTime n) m = print n >> pure NoOp <# m
-update Add model@Model{..} = 
+update Add model@Model{..} =
   noEff model {
     uid = uid + 1
   , field = mempty
@@ -114,7 +114,7 @@ update Add model@Model{..} =
   }
 
 update (UpdateField str) model = noEffect model { field = str }
-update (EditingEntry id' isEditing) model@Model{..} = 
+update (EditingEntry id' isEditing) model@Model{..} =
   noEff model { entries = newEntries }
     where
       newEntries = filterMap entries (\t -> eid t == id') $
@@ -136,7 +136,7 @@ update DeleteComplete model@Model{..} =
 update (Check id' isCompleted) model@Model{..} =
   eff <# model { entries = newEntries }
     where
-      eff = 
+      eff =
         putStrLn "clicked check" >>
           pure NoOp
 
@@ -163,7 +163,7 @@ filterMap xs predicate f = go xs
      | otherwise   = y : go ys
 
 view :: Model -> VTree Msg
-view m@Model{..} = 
+view m@Model{..} =
  div_
     [ class_ "todomvc-wrapper"
     , style_  $ M.singleton "visibility" "hidden" 
@@ -265,7 +265,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: T.Text -> VTree Msg 
+viewControlsFilters :: T.Text -> VTree Msg
 viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
@@ -276,7 +276,7 @@ viewControlsFilters visibility =
     , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: T.Text -> T.Text -> T.Text -> VTree Msg 
+visibilitySwap :: T.Text -> T.Text -> T.Text -> VTree Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ uri
@@ -285,16 +285,16 @@ visibilitySwap uri visibility actualVisibility =
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Int -> VTree Msg 
+viewControlsClear :: Model -> Int -> VTree Msg
 viewControlsClear _ entriesCompleted =
   btn_
     [ class_ "clear-completed"
     , prop "hidden" (entriesCompleted == 0)
-    , onClick DeleteComplete 
+    , onClick DeleteComplete
     ]
     [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
 
-viewInput :: Model -> T.Text -> VTree Msg 
+viewInput :: Model -> T.Text -> VTree Msg
 viewInput _ task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
@@ -305,11 +305,11 @@ viewInput _ task =
         , prop "value" task
         , attr "name" "newTodo"
         , onInput UpdateField
-        , onEnter Add 
+        , onEnter Add
         ] []
     ]
 
-onEnter :: Msg -> Attribute Msg 
+onEnter :: Msg -> Attribute Msg
 onEnter action =
   onKeyDown $ bool NoOp action . (== 13)
 

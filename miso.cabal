@@ -6,8 +6,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable example
-  main-is: Example.hs
-  ghc-options: -Wall
+  main-is: Chess.hs
+  ghc-options: -Wall -O2
   hs-source-dirs: src
   build-depends: aeson
                , base
