@@ -25,7 +25,7 @@ module Miso where
 import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.Fix
-import           Control.Monad.Free
+import           Control.Monad.Free.Church
 import           Control.Monad.Free.TH
 import           Data.Aeson                    hiding (Object)
 import           Data.Bool
@@ -162,7 +162,7 @@ action <# model = Effect model action
 
 deriving instance Functor (Action object)
 
-type Grammar obj a = Free (Action obj) a
+type Grammar obj a = F (Action obj) a
 
 class HasEvent (eventName :: Symbol) returnType where
   parseEvent :: Proxy eventName -> Grammar obj returnType
