@@ -35,7 +35,6 @@ import qualified Data.Foldable                 as F
 import           Data.IORef
 import           Data.JSString.Text
 import           Data.List
-
 import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.Monoid
@@ -43,10 +42,9 @@ import           Data.Proxy
 import qualified Data.Set                      as S
 import           Data.String.Conversions
 import qualified Data.Text                     as T
-import           FRP.Elerea.Simple             (externalMulti, start, effectful2, delay)
-
+import qualified FRP.Elerea.Simple             as FRP
+import           FRP.Elerea.Simple             hiding (Signal)
 import           GHC.Generics
-
 import           GHC.TypeLits
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
@@ -62,6 +60,7 @@ import           GHCJS.DOM.NodeList            hiding (getLength)
 import qualified GHCJS.DOM.Storage             as S
 import           GHCJS.DOM.Types               hiding (Event, Attr)
 import           GHCJS.DOM.Window              (getLocalStorage, getSessionStorage)
+
 import           GHCJS.Foreign                 hiding (Object, Number)
 import qualified GHCJS.Foreign.Internal        as Foreign
 import           GHCJS.Marshal
@@ -71,8 +70,10 @@ import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
 import qualified Lucid                         as L
 import qualified Lucid.Base                    as L
-import           Miso.Types
 import           Prelude                       hiding (repeat)
+
+
+type Signal a = SignalGen (FRP.Signal a)
 
 data Action object a where
   GetTarget :: (object -> a) -> Action object a
@@ -155,6 +156,7 @@ effect = Effect
 
 (<#) :: IO action -> model -> Effect action model
 action <# model = Effect model action
+infixl 0 <#
 
 deriving instance Functor (Action object)
 
@@ -608,25 +610,46 @@ runSignal :: forall e action . ExtractEvents e
           -> (action -> IO ())
           -> Signal (VTree action)
           -> IO ()
-runSignal events writer (Signal s) = do
+runSignal events writer s = do
   vtreeRef <- newIORef =<< initTree VEmpty
   _ <- forkIO $ delegator writer vtreeRef events
   emitter <- start s
   forever $
     waitForAnimationFrame >>
-      emitter >>= \case
-        Changed [ newTree ] ->
-          writeIORef vtreeRef =<< (`datch` newTree) =<< readIORef vtreeRef
-        _ -> pure ()
+      emitter >>= 
+        \newTree -> 
+           writeIORef vtreeRef =<<
+              (`datch` newTree) =<<
+                readIORef vtreeRef
 
-signal :: Show a => a -> IO (Signal a, a -> IO ())
-signal x = do
-  (s, writer) <- externalMulti
-  writer x
-  pure (Signal $ fmap toSample <$> s, writer)
-    where
-      toSample [] = NotChanged []
-      toSample xs = Changed xs
+-- Default action, should be identity (mempty) w/o binary associative operator
+signal :: IO (Signal [a], a -> IO ())
+signal = externalMulti
+
+startApp
+  :: (HasAction action model stepConfig, ExtractEvents events)
+  => model
+  -> (model -> VTree action)
+  -> (action -> model -> Effect action model)
+  -> Proxy events
+  -> Proxy stepConfig
+  -> [ Signal [action] ]
+  -> IO ()
+startApp model view update events stepConfig signals = do
+  (sig, send) <- signal
+  runSignal events send $
+    fmap view <$> do
+      foldp stepConfig update model $
+        mergeManyActions (sig : signals)
+
+mergeActions :: Signal [action] -> Signal [action] -> Signal [action]
+mergeActions x y = do
+  signalX <- x
+  signalY <- y
+  pure $ (++) <$> signalX <*> signalY
+
+mergeManyActions :: [ Signal [action] ] -> Signal [action]
+mergeManyActions = foldl1 mergeActions
 
 getFromStorage
   :: FromJSON model
@@ -695,45 +718,40 @@ class ToAction action model effect where
   toAction :: Proxy effect -> action -> model -> IO ()
 
 foldp :: forall model action effects
-      . ( HasAction action model effects, Eq model )
+      . ( HasAction action model effects )
       => Proxy effects
       -> (action -> model -> Effect action model)
       -> model
-      -> Signal action
+      -> Signal [action]
       -> Signal model
-foldp p update ini (Signal signalGen) = Signal $ do
+foldp p update ini signalGen = do
   actions <- signalGen
   mfix $ \sig -> do
-    modelSignal <- delay startingModel sig
+    modelSignal <- delay ini sig
     effectful2 handleUpdate actions modelSignal
     where
-      startingModel = NotChanged (pure ini)
-      handleUpdate :: Sample [action] -> Sample [model] -> IO (Sample [model])
+      handleUpdate :: [action] -> model -> IO model
       handleUpdate actions m = goFold p m update actions
 
 goFold
-  :: (Eq model, HasAction action model effects)
+  :: (HasAction action model effects)
   => Proxy effects
-  -> Sample [model]
+  -> model
   -> (action -> model -> Effect action model)
-  -> Sample [action]
-  -> IO (Sample [model])
-goFold _ m _ (NotChanged _) = pure m
-goFold p initialModel update (Changed as) = do
+  -> [action]
+  -> IO model
+goFold _ m _ [] = pure m
+goFold p initialModel update as = do
   F.foldrM f initialModel as
     where
-      f action model = do
-       let [currentModel] = fromChanged model
-       case update action currentModel of
-          NoEffect m ->
-            case currentModel == m of
-              True -> pure $ Changed [m]
-              False -> do
-                performActions p action m
-                pure $ Changed [m]
+      f action model = 
+       case update action model of
+          NoEffect m -> do
+             performActions p action m
+             pure m
           Effect m eff -> do
             newAction <- eff
-            goFold p (NotChanged [m]) update (Changed [newAction])
+            goFold p m update [newAction]
 
 attr :: T.Text -> T.Text -> Attribute action
 attr = Attr
