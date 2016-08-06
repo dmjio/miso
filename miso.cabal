@@ -4,7 +4,7 @@ author:              David Johnson
 maintainer:          djohnson.m@gmail.com
 build-type:          Simple
 cabal-version:       >=1.10
-                    
+
 executable example
   main-is: Example.hs
   ghc-options: -Wall
@@ -13,13 +13,14 @@ executable example
                , base
                , bytestring
                , containers
-               , miso
                , elerea
                , free
-               , lucid
                , ghcjs-base
                , ghcjs-dom
                , lens
+               , lucid
+               , miso
+               , mtl
                , scientific
                , string-conversions
                , text
@@ -34,13 +35,14 @@ executable benchmark
                , base
                , bytestring
                , containers
-               , miso
                , elerea
                , free
-               , lucid
                , ghcjs-base
                , ghcjs-dom
                , lens
+               , lucid
+               , miso
+               , mtl
                , scientific
                , string-conversions
                , text
@@ -56,9 +58,10 @@ library
                  , containers
                  , elerea
                  , free
-                 , lucid
                  , ghcjs-base
                  , ghcjs-dom
+                 , lucid
+                 , mtl
                  , scientific
                  , string-conversions
                  , text
