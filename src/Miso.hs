@@ -28,7 +28,8 @@ import           Control.Monad
 import           Control.Monad.Fix
 import           Control.Monad.Free.Church
 import           Control.Monad.Free.TH
-import           Data.Aeson                    hiding (Object)
+import           Control.Monad.State
+import           Data.Aeson                    hiding (Object, defaultOptions)
 import           Data.Bool
 import qualified Data.Foldable                 as F
 import           Data.IORef
@@ -75,8 +76,6 @@ import           Prelude                       hiding (repeat)
 
 data Action object a where
   GetTarget :: (object -> a) -> Action object a
-  PreventDefault :: a -> Action object a
-  StopPropagation :: a -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
   GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
   GetEventField  :: FromJSON v => T.Text -> (Maybe v -> a) -> Action object a
@@ -93,8 +92,6 @@ $(makeFreeCon 'SetEventField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
-$(makeFreeCon 'PreventDefault)
-$(makeFreeCon 'StopPropagation)
 
 jsToJSON :: FromJSON v => JSType -> G.JSVal -> IO (Maybe v)
 jsToJSON Foreign.Number  g = convertToJSON g
@@ -139,8 +136,6 @@ evalEventGrammar e = do
       GetNextSibling obj cb -> do
         result <- Node.getNextSibling (pFromJSVal obj :: Node)
         cb $ pToJSVal <$> result
-      StopPropagation cb -> E.stopPropagation e >> cb
-      PreventDefault cb -> E.preventDefault e >> cb
 
 data Effect action model
   = Effect model (IO action)
@@ -172,10 +167,26 @@ on :: (KnownSymbol eventName, HasEvent eventName returnType)
    => Proxy eventName
    -> (returnType -> action)
    -> Attribute action
-on p = EventHandler (symbolVal p) p
+on = onWithOptions defaultOptions
+
+onWithOptions :: (KnownSymbol eventName, HasEvent eventName returnType)
+   => Options
+   -> Proxy eventName
+   -> (returnType -> action)
+   -> Attribute action
+onWithOptions options proxy =
+  EventHandler options (symbolVal proxy) proxy
+
+data Options = Options {
+    stopPropagation :: Bool
+  , preventDefault :: Bool
+  } deriving (Show, Eq)
+
+defaultOptions :: Options
+defaultOptions = Options False False
 
 data Attribute action = forall eventName returnType . HasEvent eventName returnType =>
-    EventHandler String (Proxy eventName) (returnType -> action)
+    EventHandler Options String (Proxy eventName) (returnType -> action)
   | Attr T.Text T.Text
   | Prop T.Text Value
 
@@ -187,11 +198,11 @@ instance FromJSVal (Attribute action) where
 
 instance Eq (Attribute action) where
   Prop x1 x2 == Prop y1 y2 = x1 == y1 && x2 == y2
-  EventHandler x _ _ == EventHandler y _ _ = x == y
+  EventHandler o1 x _ _ == EventHandler o2 y _ _ = x == y && o1 == o2
   _ == _                 = False
 
 instance Show (Attribute action) where
-  show (EventHandler name _ _) = "<event=" <> name <> ">"
+  show (EventHandler _ name _ _) = "<event=" <> name <> ">"
   show (Attr k v) = T.unpack $ k <> "=" <> v
   show (Prop k v) = T.unpack $ k <> "=" <> T.pack (show v)
 
@@ -324,18 +335,40 @@ runEvent e writer prox action =
   writer =<< action <$>
     evalEventGrammar e (parseEvent prox)
 
-delegateEvent :: Event -> (action -> IO ()) -> VTree action -> String -> [Node] -> IO ()
-delegateEvent e writer (VNode _ _ _ _ children) eventName = findEvent children
+delegateEvent :: forall action . Event -> (action -> IO ()) -> VTree action -> String -> [Node] -> IO ()
+delegateEvent e writer (VNode _ _ _ _ children) eventName =
+  void . flip execStateT [] . findEvent children
     where
       findEvent _ [] = pure ()
-      findEvent childNodes [y] =
-       forM_ (findNode childNodes y) $ \(VNode _ attrs _ _ _) ->
-         forM_ (getEventHandler attrs) $ \(EventHandler _ prox action) ->
-           runEvent e writer prox action
+      findEvent childNodes [y] = do
+       stopPropogate <- case findNode childNodes y of
+         Nothing -> pure False
+         Just (VNode _ attrs _ _ _) ->
+           case getEventHandler attrs of
+             Nothing -> pure False
+             Just (EventHandler options _ prox action) -> do
+               when (preventDefault options) $ liftIO (E.preventDefault e)
+               liftIO $ runEvent e writer prox action
+               pure $ stopPropagation options
+             Just _ -> Prelude.error "never called"
+         Just _ -> Prelude.error "never called"
+       get >>= propogateWhileAble stopPropogate
 
       findEvent childNodes (y:ys) =
-        forM_ (findNode childNodes y) $ \(VNode _ _ _ _ childrenNext) ->
+        forM_ (findNode childNodes y) $ \parent@(VNode _ _ _ _ childrenNext) -> do
+          modify (parent:)
           findEvent childrenNext ys
+
+      propogateWhileAble _ [] = pure ()
+      propogateWhileAble True _ = pure ()
+      propogateWhileAble False ((VNode _ attrs _ _ _):xs) =
+        case getEventHandler attrs of
+           Nothing -> propogateWhileAble True xs
+           Just (EventHandler options _ prox action) -> do
+             liftIO $ runEvent e writer prox action
+             propogateWhileAble (stopPropagation options) xs
+           Just _ -> Prelude.error "never called"
+      propogateWhileAble _ _ = Prelude.error "never called"
 
       findNode childNodes ref = do
         let nodes = getVNodesOnly childNodes
@@ -348,7 +381,7 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName = findEvent children
 
       getEventHandler attrs =
        listToMaybe $ do
-          eh@(EventHandler evtName _ _) <- attrs
+          eh@(EventHandler _ evtName _ _) <- attrs
           guard (evtName == eventName)
           pure eh
 delegateEvent _ _ _ _ = const $ pure ()
@@ -829,7 +862,7 @@ instance HasEvent "mouseenter" () where parseEvent _ = pure ()
 instance HasEvent "mouseleave" () where parseEvent _ = pure ()
 instance HasEvent "mouseover" () where parseEvent _ = pure ()
 instance HasEvent "mouseout" () where parseEvent _ = pure ()
-instance HasEvent "submit" () where parseEvent _ = preventDefault
+instance HasEvent "submit" () where parseEvent _ = pure ()
 
 onBlur :: action -> Attribute action
 onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
