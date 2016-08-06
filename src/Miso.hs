@@ -341,7 +341,7 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
     where
       findEvent _ [] = pure ()
       findEvent childNodes [y] = do
-       stopPropogate <- case findNode childNodes y of
+       stopPropagate <- case findNode childNodes y of
          Nothing -> pure False
          Just (VNode _ attrs _ _ _) ->
            case getEventHandler attrs of
@@ -352,7 +352,7 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
                pure $ stopPropagation options
              Just _ -> Prelude.error "never called"
          Just _ -> Prelude.error "never called"
-       get >>= propogateWhileAble stopPropogate
+       get >>= propogateWhileAble stopPropagate
 
       findEvent childNodes (y:ys) =
         forM_ (findNode childNodes y) $ \parent@(VNode _ _ _ _ childrenNext) -> do
@@ -363,8 +363,9 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
       propogateWhileAble True _ = pure ()
       propogateWhileAble False ((VNode _ attrs _ _ _):xs) =
         case getEventHandler attrs of
-           Nothing -> propogateWhileAble True xs
-           Just (EventHandler options _ prox action) -> do
+           Nothing -> do
+             propogateWhileAble False xs
+           Just (EventHandler options name prox action) -> do
              liftIO $ runEvent e writer prox action
              propogateWhileAble (stopPropagation options) xs
            Just _ -> Prelude.error "never called"
@@ -910,7 +911,9 @@ onMouseOut :: action -> Attribute action
 onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
 
 onSubmit :: action -> Attribute action
-onSubmit action = on (Proxy :: Proxy "submit") $ \() -> action
+onSubmit action =
+  onWithOptions defaultOptions { preventDefault = True }
+    (Proxy :: Proxy "submit") $ \() -> action
 
 inputGrammar :: FromJSON a => Grammar obj a
 inputGrammar = do
@@ -935,7 +938,6 @@ keyGrammar = do
   charCode <- getEventField "charCode"
   pure $ head $ catMaybes [ keyCode, which, charCode ]
 
-
 -- | Remove duplicates from a type-level list.
 type family Nub xs where
   Nub '[] = '[]
@@ -946,7 +948,6 @@ type family Remove x xs where
   Remove x '[]       = '[]
   Remove x (x ': ys) =      Remove x ys
   Remove x (y ': ys) = y ': Remove x ys
-
 
 swapKids
   :: Node

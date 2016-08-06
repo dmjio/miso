@@ -4,7 +4,7 @@ author:              David Johnson
 maintainer:          djohnson.m@gmail.com
 build-type:          Simple
 cabal-version:       >=1.10
-                    
+
 executable example
   main-is: Example.hs
   ghc-options: -Wall
