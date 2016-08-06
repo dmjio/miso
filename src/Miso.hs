@@ -365,8 +365,9 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
         case getEventHandler attrs of
            Nothing -> do
              propogateWhileAble False xs
-           Just (EventHandler options name prox action) -> do
+           Just (EventHandler options _ prox action) -> do
              liftIO $ runEvent e writer prox action
+             when (preventDefault options) $ liftIO (E.preventDefault e)
              propogateWhileAble (stopPropagation options) xs
            Just _ -> Prelude.error "never called"
       propogateWhileAble _ _ = Prelude.error "never called"
