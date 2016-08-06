@@ -352,25 +352,25 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
                pure $ stopPropagation options
              Just _ -> Prelude.error "never called"
          Just _ -> Prelude.error "never called"
-       get >>= propogateWhileAble stopPropagate
+       get >>= propagateWhileAble stopPropagate
 
       findEvent childNodes (y:ys) =
         forM_ (findNode childNodes y) $ \parent@(VNode _ _ _ _ childrenNext) -> do
           modify (parent:)
           findEvent childrenNext ys
 
-      propogateWhileAble _ [] = pure ()
-      propogateWhileAble True _ = pure ()
-      propogateWhileAble False ((VNode _ attrs _ _ _):xs) =
+      propagateWhileAble _ [] = pure ()
+      propagateWhileAble True _ = pure ()
+      propagateWhileAble False ((VNode _ attrs _ _ _):xs) =
         case getEventHandler attrs of
            Nothing -> do
-             propogateWhileAble False xs
+             propagateWhileAble False xs
            Just (EventHandler options _ prox action) -> do
              liftIO $ runEvent e writer prox action
              when (preventDefault options) $ liftIO (E.preventDefault e)
-             propogateWhileAble (stopPropagation options) xs
+             propagateWhileAble (stopPropagation options) xs
            Just _ -> Prelude.error "never called"
-      propogateWhileAble _ _ = Prelude.error "never called"
+      propagateWhileAble _ _ = Prelude.error "never called"
 
       findNode childNodes ref = do
         let nodes = getVNodesOnly childNodes
