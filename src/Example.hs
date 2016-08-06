@@ -11,14 +11,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Data.Aeson   hiding (Object)
-import qualified Data.Map as M
+import           Control.Concurrent
+import           Control.Monad
+import           Data.Aeson         hiding (Object)
 import           Data.Bool
+import qualified Data.Map           as M
 import           Data.Monoid
 import           Data.Proxy
-import qualified Data.Text    as T
+import qualified Data.Text          as T
 import           GHC.Generics
 import           Miso
+import           System.Random
 
 data Model = Model
   { entries :: [Entry]
@@ -63,6 +66,7 @@ newEntry desc eid = Entry
 data Msg
   = Step Bool
   | NoOp
+  | CurrentTime Int
   | UpdateField T.Text
   | EditingEntry Int Bool
   | UpdateEntry Int T.Text
@@ -80,28 +84,37 @@ instance ToAction Msg Model DebugVTree where
   toAction _ action = 
     print . view . getModelFromEffect . update action 
 
-stepConfig :: Proxy '[ DebugActions
-                     , DebugModel
-                     , SaveToLocalStorage "todo-mvc"
-                     , DebugVTree
-                     ]
+stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc" ]
 stepConfig = Proxy
 
 getInitialModel :: IO Model
 getInitialModel = do
- getFromStorage "todo-mvc" >>= \case
+  getFromStorage "todo-mvc" >>= \case
     Left x  -> putStrLn x >> pure emptyModel
     Right m -> pure m
 
+-- Example signal to merge with
+timer :: IO (Signal [Int])
+timer = do
+  (sig, writer) <- signal
+  void . forkIO $ forever $ do
+    threadDelay 1000000
+    writer =<< randomRIO (1,10)
+  pure sig
+
+(<$$$>) :: (Functor k, Functor f, Functor g) => (a -> b) -> k (f (g a)) -> k (f (g b))
+(<$$$>) = fmap . fmap . fmap
+
 main :: IO ()
 main = do
-  m@Model { step = step } <- getInitialModel
-  (sig, send) <- signal $ Step (not step)
-  runSignal defaultEvents send $ view <$> foldp stepConfig update m sig
+  m <- getInitialModel
+  timerSignal <- timer
+  startApp m view update defaultEvents stepConfig [ CurrentTime <$$$> timerSignal ]
 
 update :: Msg -> Model -> Effect Msg Model 
 update (Step step) m = noEff m { step = step }
 update NoOp m = noEff m
+update (CurrentTime n) m = print n >> pure NoOp <# m
 update Add model@Model{..} = 
   noEff model {
     uid = uid + 1
