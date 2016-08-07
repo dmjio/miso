@@ -64,8 +64,7 @@ newEntry desc eid = Entry
   }
 
 data Msg
-  = Step Bool
-  | NoOp
+  = NoOp
   | CurrentTime Int
   | UpdateField T.Text
   | EditingEntry Int Bool
@@ -84,7 +83,7 @@ instance ToAction Msg Model DebugVTree where
   toAction _ action = 
     print . view . getModelFromEffect . update action 
 
-stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc" ]
+stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc", DebugActions ]
 stepConfig = Proxy
 
 getInitialModel :: IO Model
@@ -108,11 +107,9 @@ timer = do
 main :: IO ()
 main = do
   m <- getInitialModel
-  timerSignal <- timer
-  startApp m view update defaultEvents stepConfig [ CurrentTime <$$$> timerSignal ]
+  startApp m view update defaultEvents stepConfig []
 
 update :: Msg -> Model -> Effect Msg Model 
-update (Step step) m = noEff m { step = step }
 update NoOp m = noEff m
 update (CurrentTime n) m = print n >> pure NoOp <# m
 update Add model@Model{..} = 
