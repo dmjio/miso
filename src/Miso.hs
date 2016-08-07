@@ -627,7 +627,7 @@ signal :: IO (Signal [a], a -> IO ())
 signal = externalMulti
 
 startApp
-  :: (HasAction action model stepConfig, ExtractEvents events)
+  :: (HasAction action model stepConfig, ExtractEvents events, Eq model)
   => model
   -> (model -> VTree action)
   -> (action -> model -> Effect action model)
@@ -718,7 +718,7 @@ class ToAction action model effect where
   toAction :: Proxy effect -> action -> model -> IO ()
 
 foldp :: forall model action effects
-      . ( HasAction action model effects )
+      . ( HasAction action model effects, Eq model )
       => Proxy effects
       -> (action -> model -> Effect action model)
       -> model
@@ -734,7 +734,7 @@ foldp p update ini signalGen = do
       handleUpdate actions m = goFold p m update actions
 
 goFold
-  :: (HasAction action model effects)
+  :: (HasAction action model effects, Eq model)
   => Proxy effects
   -> model
   -> (action -> model -> Effect action model)
@@ -747,8 +747,11 @@ goFold p initialModel update as = do
       f action model = 
        case update action model of
           NoEffect m -> do
-             performActions p action m
-             pure m
+            case model == m of
+              True -> pure m
+              False -> do
+                performActions p action m
+                pure m
           Effect m eff -> do
             newAction <- eff
             goFold p m update [newAction]
