@@ -75,6 +75,13 @@ import           Prelude                       hiding (repeat)
 
 type Signal a = SignalGen (FRP.Signal a)
 
+data Sample a = Changed a | NotChanged a
+  deriving (Functor, Show)
+
+fromChanged :: Sample a -> a
+fromChanged (Changed x) = x
+fromChanged (NotChanged x) = x
+
 data Action object a where
   GetTarget :: (object -> a) -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
@@ -608,7 +615,7 @@ type Events = Proxy [(Symbol, Bool)]
 runSignal :: forall e action . ExtractEvents e
           => Proxy e
           -> (action -> IO ())
-          -> Signal (VTree action)
+          -> Signal (Sample (VTree action))
           -> IO ()
 runSignal events writer s = do
   vtreeRef <- newIORef =<< initTree VEmpty
@@ -616,8 +623,9 @@ runSignal events writer s = do
   emitter <- start s
   forever $
     waitForAnimationFrame >>
-      emitter >>= 
-        \newTree -> 
+      emitter >>= \case
+        NotChanged _ -> pure ()
+        Changed newTree ->
            writeIORef vtreeRef =<<
               (`datch` newTree) =<<
                 readIORef vtreeRef
@@ -638,7 +646,7 @@ startApp
 startApp model view update events stepConfig signals = do
   (sig, send) <- signal
   runSignal events send $
-    fmap view <$> do
+    fmap (fmap view) <$> do
       foldp stepConfig update model $
         mergeManyActions (sig : signals)
 
@@ -710,12 +718,12 @@ class Nub effects ~ effects =>
     where
       performActions
         :: Proxy effects
-        -> action
+        -> [action]
         -> model
         -> IO ()
 
 class ToAction action model effect where
-  toAction :: Proxy effect -> action -> model -> IO ()
+  toAction :: Proxy effect -> [action] -> model -> IO ()
 
 foldp :: forall model action effects
       . ( HasAction action model effects, Eq model )
@@ -723,38 +731,47 @@ foldp :: forall model action effects
       -> (action -> model -> Effect action model)
       -> model
       -> Signal [action]
-      -> Signal model
+      -> Signal (Sample model)
 foldp p update ini signalGen = do
-  actions <- signalGen
+  isInitialDiff <- execute $ newIORef True
+  actionSignal <- signalGen
   mfix $ \sig -> do
-    modelSignal <- delay ini sig
-    effectful2 handleUpdate actions modelSignal
-    where
-      handleUpdate :: [action] -> model -> IO model
-      handleUpdate actions m = goFold p m update actions
+    modelSignal <- delay (NotChanged ini) sig
+    effectful2 (handleUpdate isInitialDiff) actionSignal modelSignal
+      where
+        handleUpdate :: IORef Bool -> [action] -> Sample model -> IO (Sample model)
+        handleUpdate isInitialDiff actions m = do
+          goFold m update actions >>= \case
+            NotChanged newModel -> do
+              value <- readIORef isInitialDiff
+              case value of
+                True -> do
+                  modifyIORef isInitialDiff (const False)
+                  pure (Changed newModel)
+                False -> pure (NotChanged newModel)
+            Changed newModel -> do
+              performActions p actions newModel
+              pure $ Changed newModel
 
 goFold
-  :: (HasAction action model effects, Eq model)
-  => Proxy effects
-  -> model
+  :: Eq model
+  => Sample model
   -> (action -> model -> Effect action model)
   -> [action]
-  -> IO model
-goFold _ m _ [] = pure m
-goFold p initialModel update as = do
-  F.foldrM f initialModel as
-    where
-      f action model = 
-       case update action model of
-          NoEffect m -> do
-            case model == m of
-              True -> pure m
-              False -> do
-                performActions p action m
-                pure m
-          Effect m eff -> do
-            newAction <- eff
-            goFold p m update [newAction]
+  -> IO (Sample model)
+goFold m _ [] = pure $ NotChanged (fromChanged m)
+goFold initial update as = go initial as
+  where
+    go = F.foldrM f
+    f action model =
+      case update action (fromChanged model) of
+        NoEffect m -> do
+          pure $ case m == fromChanged initial of
+            True -> NotChanged m
+            False -> Changed m
+        Effect m eff -> do
+          newAction <- eff
+          go (NotChanged m) [newAction]
 
 attr :: T.Text -> T.Text -> Attribute action
 attr = Attr

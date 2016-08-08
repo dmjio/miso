@@ -77,12 +77,6 @@ data Msg
   | ChangeVisibility T.Text
    deriving Show
 
-data DebugVTree
-
-instance ToAction Msg Model DebugVTree where
-  toAction _ action = 
-    print . view . getModelFromEffect . update action 
-
 stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc", DebugActions ]
 stepConfig = Proxy
 
