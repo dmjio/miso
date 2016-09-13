@@ -29,7 +29,7 @@ import           Control.Monad.Fix
 import           Control.Monad.Free.Church
 import           Control.Monad.Free.TH
 import           Control.Monad.State
-import           Data.Aeson                    hiding (Object, defaultOptions)
+import           Data.Aeson                    hiding (Object)
 import           Data.Bool
 import qualified Data.Foldable                 as F
 import           Data.IORef
@@ -555,12 +555,14 @@ diffPropsAndAttrs node old new = do
     setProp (textToJSString k) val obj
 
   forM_ (M.toList propsToDiff) $ \(k, _) -> do
+    let kString = textToJSString k
+    Just domVal :: Maybe Value <- fromJSVal =<< getProp kString obj
     case (M.lookup k oldProps, M.lookup k newProps) of
       (Just oldVal, Just newVal) ->
-        when (oldVal /= newVal) $ do
-        val <- toJSVal newVal
-        setProp (textToJSString k) val obj
-        dispatchObservable k el
+        when (oldVal /= newVal && toJSON newVal /= domVal) $ do
+          val <- toJSVal newVal
+          setProp kString val obj
+          dispatchObservable k el
       (_, _) -> pure ()
 
   forM_ removeAttrs $ \(k,_) -> removeAttribute el k
