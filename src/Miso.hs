@@ -274,6 +274,27 @@ text_ = flip VText Nothing
 div_ :: [Attribute action] -> [VTree action] -> VTree action
 div_  = mkNode "div"
 
+table_ :: [Attribute action] -> [VTree action] -> VTree action
+table_  = mkNode "table"
+
+thead_ :: [Attribute action] -> [VTree action] -> VTree action
+thead_  = mkNode "thead"
+
+tbody_ :: [Attribute action] -> [VTree action] -> VTree action
+tbody_  = mkNode "tbody"
+
+tr_ :: [Attribute action] -> [VTree action] -> VTree action
+tr_  = mkNode "tr"
+
+th_ :: [Attribute action] -> [VTree action] -> VTree action
+th_  = mkNode "th"
+
+td_ :: [Attribute action] -> [VTree action] -> VTree action
+td_  = mkNode "td"
+
+tfoot_ :: [Attribute action] -> [VTree action] -> VTree action
+tfoot_  = mkNode "tfoot"
+
 section_ :: [Attribute action] -> [VTree action] -> VTree action
 section_  = mkNode "section"
 
