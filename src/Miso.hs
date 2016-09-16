@@ -85,12 +85,12 @@ fromChanged (NotChanged x) = x
 data Action object a where
   GetTarget :: (object -> a) -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
-  GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
-  GetEventField  :: FromJSON v => T.Text -> (Maybe v -> a) -> Action object a
+  GetField  :: FromJSON v => [T.Text] -> object -> (Maybe v -> a) -> Action object a
+  GetEventField  :: FromJSON v => [T.Text] -> (Maybe v -> a) -> Action object a
   GetChildren ::  object -> (object -> a) -> Action object a
   GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
   GetNextSibling :: object -> (Maybe object -> a) -> Action object a
-  SetEventField :: ToJSON v => T.Text -> v -> a -> Action object a
+  SetEventField :: ToJSON v => [T.Text] -> v -> a -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
@@ -124,17 +124,22 @@ evalEventGrammar e = do
       GetParent obj cb -> do
         Just p <- getParentNode (pFromJSVal obj :: Node)
         cb (pToJSVal p)
-      GetField key obj cb -> do
-        val <- getProp (textToJSString key) (Object obj)
+      GetField fields obj cb -> do
+        val <-
+          foldM (\o field -> getProp (textToJSString field) (Object o))
+            obj fields
         cb =<< jsToJSON (jsTypeOf val) val
-      GetEventField key cb -> do
+      GetEventField fields cb -> do
         eventVal <- toJSVal e
-        val <- getProp (textToJSString key) (Object eventVal)
+        val <-
+          foldM (\o field -> getProp (textToJSString field) (Object o))
+            eventVal fields
         cb =<< jsToJSON (jsTypeOf val) val
-      SetEventField key val cb -> do
+      SetEventField keys val cb -> do
         eventVal <- toJSVal e
         jsValue <- toJSVal (toJSON val)
-        setProp (textToJSString key) jsValue (Object eventVal) >> cb
+        setProp (textToJSString $ T.intercalate "." keys)
+          jsValue (Object eventVal) >> cb
       GetChildren obj cb -> do
         Just nodeList <- getChildNodes (pFromJSVal obj :: Node)
         cb $ pToJSVal nodeList
@@ -1025,7 +1030,7 @@ onSubmit action =
 inputGrammar :: FromJSON a => Grammar obj a
 inputGrammar = do
   target <- getTarget
-  result <- getField "value" target
+  result <- getField ["value"] target
   case result of
     Nothing -> Prelude.error "Couldn't retrieve target input value"
     Just value -> pure value
@@ -1033,16 +1038,16 @@ inputGrammar = do
 checkedGrammar :: FromJSON a => Grammar obj a
 checkedGrammar = do
   target <- getTarget
-  result <- getField "checked" target
+  result <- getField ["checked"] target
   case result of
     Nothing -> Prelude.error "Couldn't retrieve target checked value"
     Just value -> pure value
 
 keyGrammar :: Grammar obj Int
 keyGrammar = do
-  keyCode <- getEventField "keyCode"
-  which <- getEventField "which"
-  charCode <- getEventField "charCode"
+  keyCode <- getEventField ["keyCode"]
+  which <- getEventField ["which"]
+  charCode <- getEventField ["charCode"]
   pure $ head $ catMaybes [ keyCode, which, charCode ]
 
 -- | Remove duplicates from a type-level list.
