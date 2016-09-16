@@ -91,6 +91,7 @@ data Action object a where
   GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
   GetNextSibling :: object -> (Maybe object -> a) -> Action object a
   SetEventField :: ToJSON v => [T.Text] -> v -> a -> Action object a
+  Apply :: (ToJSON v, FromJSON k) => object -> T.Text -> [v] -> (Maybe k -> a) -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
@@ -100,6 +101,7 @@ $(makeFreeCon 'SetEventField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
+$(makeFreeCon 'Apply)
 
 jsToJSON :: FromJSON v => JSType -> G.JSVal -> IO (Maybe v)
 jsToJSON Foreign.Number  g = convertToJSON g
@@ -115,10 +117,17 @@ convertToJSON g = do
     Error e -> Prelude.error $ "Error while decoding Value: " <> e <> " " <> show val
     Success v -> pure (pure v)
 
+foreign import javascript unsafe "$1[$2].apply(this, $3)"
+  apply' :: G.JSVal -> G.JSString -> G.JSVal -> IO G.JSVal
+
 evalEventGrammar :: Event -> Grammar G.JSVal a -> IO a
 evalEventGrammar e = do
   iterM $ \x ->
     case x of
+      Apply obj fname args cb ->
+        toJSVal (toJSON <$> args)
+          >>= apply' obj (textToJSString fname)
+            >>= convertToJSON >>= cb
       GetTarget cb ->
         cb =<< pToJSVal <$> E.getTarget e
       GetParent obj cb -> do
