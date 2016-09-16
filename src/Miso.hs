@@ -29,7 +29,7 @@ import           Control.Monad.Fix
 import           Control.Monad.Free.Church
 import           Control.Monad.Free.TH
 import           Control.Monad.State
-import           Data.Aeson                    hiding (Object, defaultOptions)
+import           Data.Aeson                    hiding (Object)
 import           Data.Bool
 import qualified Data.Foldable                 as F
 import           Data.IORef
