@@ -68,9 +68,11 @@ import           GHCJS.Marshal.Pure
 import qualified GHCJS.Types                   as G
 import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
-import qualified Lucid                         as L
-import qualified Lucid.Base                    as L
+-- import qualified Lucid                         as L
+-- import qualified Lucid.Base                    as L
 import           Prelude                       hiding (repeat)
+
+import qualified Data.Vector as V
 
 
 type Signal a = SignalGen (FRP.Signal a)
@@ -145,6 +147,9 @@ evalEventGrammar e = do
         result <- Node.getNextSibling (pFromJSVal obj :: Node)
         cb $ pToJSVal <$> result
 
+newtype View node action =
+  View { runView :: IO (VTreeBase node action) }
+
 data Effect action model
   = Effect model (IO action)
   | NoEffect model
@@ -215,7 +220,7 @@ instance Show (Attribute action) where
   show (Attr k v) = T.unpack $ k <> "=" <> v
   show (Prop k v) = T.unpack $ k <> "=" <> T.pack (show v)
 
-type VTree action = VTreeBase action Node
+type VTree action = VTreeBase Node action
 
 getKey :: VTreeBase action a -> Maybe Key
 getKey (VNode _ _ maybeKey _ _) = maybeKey
@@ -225,86 +230,76 @@ getKeyUnsafe :: VTreeBase action a -> Key
 getKeyUnsafe (VNode _ _ (Just key) _ _) = key
 getKeyUnsafe _ = Prelude.error "Key does not exist"
 
-data VTreeBase action a where
+data VTreeBase node action where
   VNode :: T.Text
         -> [ Attribute action ]
         -> Maybe Key
-        -> Maybe a
-        -> [ VTreeBase action a ]
-        -> VTreeBase action a
+        -> IORef (Maybe node)
+        -> V.Vector (VTreeBase node action)
+        -> VTreeBase node action
   VText :: T.Text
-        -> Maybe a
-        -> VTreeBase action a
-  VEmpty :: VTreeBase action a
-  deriving (Eq, Generic, Functor)
-
-instance ToJSVal (VTreeBase action Node)
-instance FromJSVal (VTreeBase action Node)
+        -> IORef (Maybe node)
+        -> VTreeBase node action
 
 instance ToJSVal Key
 instance FromJSVal Key
 
 newtype Key = Key T.Text deriving (Show, Eq, Ord, Generic)
 
-getChildDOMNodes :: VTree action -> [Node]
-getChildDOMNodes (VNode _ _ _ _ children) =
-  [ node | VNode _ _ _ (Just node) _ <- children ]
-getChildDOMNodes _ = []
-
-getDOMNode :: VTree action -> Maybe Node
-getDOMNode (VNode _ _ _ ref _) = ref
-getDOMNode _ = Nothing
-
 instance Show (VTreeBase action e) where
-  show VEmpty = "<empty>"
   show (VText val _ ) = T.unpack val
   show (VNode typ evts children _ _) =
     "<" ++ T.unpack typ ++ ">" ++ show evts ++
       show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
 
-mkNode :: T.Text -> [Attribute action] -> [VTree action] -> VTree action
-mkNode name as xs = VNode name as Nothing Nothing xs
+mkNode :: T.Text -> [Attribute action] -> [View node action] -> View node action
+mkNode name as xs = mkNodeKeyed name Nothing as xs
 
-mkNodeKeyed :: T.Text -> Key -> [Attribute action] -> [VTree action] -> VTree action
-mkNodeKeyed name key as xs = VNode name as (Just key) Nothing xs
+mkNodeKeyed :: T.Text -> Maybe Key -> [Attribute action] -> [View node action] -> View node action
+mkNodeKeyed name key as xs = View $ do
+  ref <- newIORef Nothing
+  kids <- traverse runView xs
+  pure $ VNode name as key ref (V.fromList kids)
 
-text_ :: T.Text -> VTree action
-text_ = flip VText Nothing
+text_ :: T.Text -> View node action
+text_ txt = View $ do
+  ref <- newIORef Nothing
+  pure $ VText txt ref
 
-div_ :: [Attribute action] -> [VTree action] -> VTree action
+div_ :: [Attribute action] -> [View node action] -> View node action
 div_  = mkNode "div"
 
-table_ :: [Attribute action] -> [VTree action] -> VTree action
+table_ :: [Attribute action] -> [View node action] -> View node action
 table_  = mkNode "table"
 
-thead_ :: [Attribute action] -> [VTree action] -> VTree action
+thead_ :: [Attribute action] -> [View node action] -> View node action
 thead_  = mkNode "thead"
 
-tbody_ :: [Attribute action] -> [VTree action] -> VTree action
+tbody_ :: [Attribute action] -> [View node action] -> View node action
 tbody_  = mkNode "tbody"
 
-tr_ :: [Attribute action] -> [VTree action] -> VTree action
+tr_ :: [Attribute action] -> [View node action] -> View node action
 tr_  = mkNode "tr"
 
-th_ :: [Attribute action] -> [VTree action] -> VTree action
+th_ :: [Attribute action] -> [View node action] -> View node action
 th_  = mkNode "th"
 
-td_ :: [Attribute action] -> [VTree action] -> VTree action
+td_ :: [Attribute action] -> [View node action] -> View node action
 td_  = mkNode "td"
 
-tfoot_ :: [Attribute action] -> [VTree action] -> VTree action
+tfoot_ :: [Attribute action] -> [View node action] -> View node action
 tfoot_  = mkNode "tfoot"
 
-section_ :: [Attribute action] -> [VTree action] -> VTree action
+section_ :: [Attribute action] -> [View node action] -> View node action
 section_  = mkNode "section"
 
-header_ :: [Attribute action] -> [VTree action] -> VTree action
+header_ :: [Attribute action] -> [View node action] -> View node action
 header_  = mkNode "header"
 
-footer_ :: [Attribute action] -> [VTree action] -> VTree action
+footer_ :: [Attribute action] -> [View node action] -> View node action
 footer_  = mkNode "footer"
 
-btn_ :: [Attribute action] -> [VTree action] -> VTree action
+btn_ :: [Attribute action] -> [View node action] -> View node action
 btn_ = mkNode "button"
 
 class ExtractEvents (events :: [ (Symbol, Bool) ]) where
@@ -365,27 +360,34 @@ runEvent e writer prox action =
   writer =<< action <$>
     evalEventGrammar e (parseEvent prox)
 
-delegateEvent :: forall action . Event -> (action -> IO ()) -> VTree action -> String -> [Node] -> IO ()
+delegateEvent
+  :: forall action . Event
+  -> (action -> IO ())
+  -> VTree action
+  -> String -> [Node] -> IO ()
 delegateEvent e writer (VNode _ _ _ _ children) eventName =
   void . flip execStateT [] . findEvent children
     where
       findEvent _ [] = pure ()
       findEvent childNodes [y] = do
-       stopPropagate <- case findNode childNodes y of
-         Nothing -> pure False
-         Just (VNode _ attrs _ _ _) ->
-           case getEventHandler attrs of
-             Nothing -> pure False
-             Just (EventHandler options _ prox action) -> do
-               when (preventDefault options) $ liftIO (E.preventDefault e)
-               liftIO $ runEvent e writer prox action
-               pure $ stopPropagation options
-             Just _ -> Prelude.error "never called"
-         Just _ -> Prelude.error "never called"
+       stopPropagate <- do
+         result <- liftIO $ findNode childNodes y
+         case result of
+           Nothing -> pure False
+           Just (VNode _ attrs _ _ _) ->
+             case getEventHandler attrs of
+               Nothing -> pure False
+               Just (EventHandler options _ prox action) -> do
+                 when (preventDefault options) $ liftIO (E.preventDefault e)
+                 liftIO $ runEvent e writer prox action
+                 pure $ stopPropagation options
+               Just _ -> Prelude.error "never called"
+           Just _ -> Prelude.error "never called"
        get >>= propagateWhileAble stopPropagate
 
-      findEvent childNodes (y:ys) =
-        forM_ (findNode childNodes y) $ \parent@(VNode _ _ _ _ childrenNext) -> do
+      findEvent childNodes (y:ys) = do
+        result <- liftIO $ findNode childNodes y
+        forM_ result $ \parent@(VNode _ _ _ _ childrenNext) -> do
           modify (parent:)
           findEvent childrenNext ys
 
@@ -402,14 +404,17 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
            Just _ -> Prelude.error "never called"
       propagateWhileAble _ _ = Prelude.error "never called"
 
-      findNode childNodes ref = do
-        let nodes = getVNodesOnly childNodes
-        flip find nodes $ \node ->
-          getDOMNode node == Just ref
-
-      getVNodesOnly childs = do
-        vnode@VNode{} <- childs
-        pure vnode
+      findNode :: V.Vector (VTree a) -> Node -> IO (Maybe (VTree a))
+      findNode childNodes targetNode = do
+          vec <- flip V.filterM childNodes $
+             \vnode ->
+               case isVNode vnode of
+                 True -> do
+                   let VNode _ _ _ ref _ = vnode
+                   Just val <- liftIO $ readIORef ref
+                   pure $ val == targetNode
+                 False -> pure False
+          pure $ (V.!?) vec 0
 
       getEventHandler attrs =
        listToMaybe $ do
@@ -418,130 +423,120 @@ delegateEvent e writer (VNode _ _ _ _ children) eventName =
           pure eh
 delegateEvent _ _ _ _ = const $ pure ()
 
-initTree :: VTree action -> IO (VTree action)
-initTree initial = do
-  Just document <- currentDocument
-  Just body <- getBody document
-  vdom <- datch VEmpty initial
-  case vdom of
-    VText _ ref -> void $ appendChild body ref
-    VNode _ _ _ ref _ -> void $ appendChild body ref
-    VEmpty -> pure ()
-  pure vdom
+isVNode :: VTree a -> Bool
+isVNode (VText _ _) = False
+isVNode _ = True
+
+initTree :: VTree action -> IO ()
+initTree initial = datch Nothing (Just initial)
 
 -- copies body first child into vtree, to avoid flickering
-copyDOMIntoVTree :: Node -> VTree action -> IO (VTree action)
-copyDOMIntoVTree _ VEmpty = pure VEmpty -- should never get called
-copyDOMIntoVTree node (VText s _) = pure $ VText s (Just node)
-copyDOMIntoVTree node (VNode name attrs key _ children) = do
-  xs <- forM (zip [0 :: Int ..] children) $ \(index, childNode) -> do
-          Just childNodes <- getChildNodes node
-          Just child <- item childNodes (fromIntegral index)
-          copyDOMIntoVTree child childNode
-  pure $ VNode name attrs key (Just node) xs
+-- copyDOMIntoView :: Node -> View action -> IO (View action)
+-- copyDOMIntoView _ VEmpty = pure VEmpty -- should never get called
+-- copyDOMIntoView node (VText s _) = pure $ VText s (Just node)
+-- copyDOMIntoView node (VNode name attrs key _ children) = do
+--   xs <- forM (zip [0 :: Int ..] children) $ \(index, childNode) -> do
+--           Just childNodes <- getChildNodes node
+--           Just child <- item childNodes (fromIntegral index)
+--           copyDOMIntoView child childNode
+--   pure $ VNode name attrs key (Just node) xs
 
-datch :: VTree action -> VTree action -> IO (VTree action)
+datch :: Maybe (VTree action) -> Maybe (VTree action) -> IO ()
 datch currentTree newTree = do
   Just document <- currentDocument
   Just body <- fmap toNode <$> getBody document
   goDatch document body currentTree newTree
 
-datchWithParent :: Node -> VTree action -> VTree action -> IO (VTree action)
-datchWithParent node currentTree newTree = do
-  Just document <- currentDocument
-  goDatch document node currentTree newTree
-
-goDatch :: Document -> Node -> VTree action -> VTree action -> IO (VTree action)
-goDatch _ _ VEmpty VEmpty = pure VEmpty
-
--- Ensure correct initialization (always true if internal)
-goDatch _ _ (VNode _ _ _ Nothing _) _ = Prelude.error "VNode not initialized"
-goDatch _ _ (VText _ Nothing) _ = Prelude.error "VText not initialized"
-
 -- Make a new text node
-goDatch doc parentNode VEmpty (VText str _) = do
+goDatch
+  :: Document
+  -> Node
+  -> Maybe (VTreeBase Node action)
+  -> Maybe (VTreeBase Node action)
+  -> IO ()
+goDatch _ _ Nothing Nothing = pure ()
+goDatch doc parentNode Nothing (Just (VText str newRef)) = do
   newTextNode <- createTextNode doc str
   void $ appendChild parentNode newTextNode
-  pure $ VText str (toNode <$> newTextNode)
+  writeIORef newRef (castToNode <$> newTextNode)
 
 -- Remove a text node
-goDatch _ parentNode (VText _ node) VEmpty = do
-  void $ removeChild parentNode node
-  pure VEmpty
+goDatch _ parentNode (Just (VText _ ref)) Nothing = do
+  void $ removeChild parentNode =<< readIORef ref
 
 -- Make a new element
-goDatch doc parentNode VEmpty (VNode typ attrs key _ children) = do
-  node@(Just newNode)  <- fmap toNode <$> createElement doc (Just typ)
+goDatch doc parentNode Nothing (Just (VNode typ attrs _ ref children)) = do
+  node@(Just newNode) <- fmap toNode <$> createElement doc (Just typ)
+  writeIORef ref node
   void $ diffAttrs newNode [] attrs
-  newChildren <- forM children $ \childNode ->
-    goDatch doc newNode VEmpty childNode
+  forM_ children $ \childNode ->
+    goDatch doc newNode Nothing (Just childNode)
   void $ appendChild parentNode node
-  pure $ VNode typ attrs key node newChildren
 
 -- Remove an element
-goDatch _ parentNode (VNode _ _ _ node _) VEmpty =
-  VEmpty <$ removeChild parentNode node
+goDatch _ parentNode (Just (VNode _ _ _ ref _)) Nothing =
+  void $ removeChild parentNode =<< readIORef ref
 
 -- Replace an element with a text node
-goDatch doc parentNode (VNode _ _ _ ref _) (VText str _) = do
+goDatch doc parentNode (Just (VNode _ _ _ currentRef _)) (Just (VText str newRef)) = do
+  currentNode <- readIORef currentRef
   newTextNode <- fmap toNode <$> createTextNode doc str
-  void $ replaceChild parentNode newTextNode ref
-  pure $ VText str newTextNode
+  writeIORef newRef (castToNode <$> newTextNode)
+  void $ replaceChild parentNode newTextNode currentNode
 
 -- Replace a text node with an Element
-goDatch doc parentNode (VText _ ref) (VNode typ attrs key _ children) = do
+goDatch doc parentNode (Just (VText _ currentRef)) (Just (VNode typ _ _ newRef children)) = do
   node@(Just newNode) <- fmap toNode <$> createElement doc (Just typ)
-  newChildren <- forM children $ \childNode ->
-    goDatch doc newNode VEmpty childNode
-  void $ replaceChild parentNode node ref
-  pure $ VNode typ attrs key node newChildren
+  writeIORef newRef node
+  forM_ children $ \childNode ->
+    goDatch doc newNode Nothing (Just childNode)
+  void $ replaceChild parentNode node =<< readIORef currentRef
 
 -- Replace a text node with a text node
-goDatch _ _ (VText currentStr currRef) (VText newStr _) = do
+goDatch _ _ (Just (VText currentStr currRef)) (Just (VText newStr newRef)) = do
+  Just currentNode <- readIORef currRef
+  writeIORef newRef (Just currentNode)
   when (currentStr /= newStr) $ do
-    F.forM_ currRef $ \ref -> do
-      let txt = castToText ref
-      oldLength <- getLength txt
-      replaceData txt 0 oldLength newStr
-  pure $ VText newStr currRef
+    let txt = castToText currentNode
+    oldLength <- getLength txt
+    replaceData txt 0 oldLength newStr
 
 -- Diff two nodes together
 goDatch doc parent
-  (VNode typA attrsA _ (Just ref) childrenA)
-  (VNode typB attrsB keyB _ childrenB) = do
+  (Just (VNode typA attrsA _ currentRef childrenA))
+  (Just (VNode typB attrsB _ newRef childrenB)) = do
  case typA == typB of
-   True ->
-      VNode typB <$> diffAttrs ref attrsA attrsB
-                 <*> pure keyB
-                 <*> pure (Just ref)
-                 <*> diffChildren doc ref childrenA childrenB
+   True -> do
+      Just currentNode <- readIORef currentRef
+      writeIORef newRef $ Just currentNode
+      diffAttrs currentNode attrsA attrsB
+      diffChildren doc currentNode childrenA childrenB
    False -> do
       node@(Just newNode) <- fmap toNode <$> createElement doc (Just typB)
+      writeIORef newRef node
       void $ diffAttrs newNode [] attrsB
-      newChildren <- forM childrenB $ \childNode ->
-        goDatch doc newNode VEmpty childNode
-      void $ replaceChild parent node (Just ref)
-      pure $ VNode typB attrsB keyB node newChildren
+      forM_ childrenB $ \childNode ->
+        goDatch doc newNode Nothing (Just childNode)
+      void $ replaceChild parent node =<< readIORef currentRef
 
-instance L.ToHtml (VTreeBase action a) where
-  toHtmlRaw = L.toHtml
-  toHtml VEmpty = Prelude.error "VEmpty for internal use only"
-  toHtml (VText x _) = L.toHtml x
-  toHtml (VNode typ attrs _ _ children) =
-    let ele = L.makeElement (toTag typ) (foldMap L.toHtml children)
-    in L.with ele as
-      where
-        as = [ L.makeAttribute k v | Attr k v <- attrs ]
-        toTag = T.toLower
+-- instance L.ToHtml (View action a) where
+--   toHtmlRaw = L.toHtml
+--   toHtml VEmpty = Prelude.error "VEmpty for internal use only"
+--   toHtml (VText x _) = L.toHtml x
+--   toHtml (VNode typ attrs _ _ children) =
+--     let ele = L.makeElement (toTag typ) (foldMap L.toHtml children)
+--     in L.with ele as
+--       where
+--         as = [ L.makeAttribute k v | Attr k v <- attrs ]
+--         toTag = T.toLower
 
 diffAttrs
   :: Node
   -> [Attribute action]
   -> [Attribute action]
-  -> IO [Attribute action]
+  -> IO ()
 diffAttrs node attrsA attrsB = do
   when (attrsA /= attrsB) $ diffPropsAndAttrs node attrsA attrsB
-  pure attrsB
 
 observables :: M.Map T.Text (Element -> IO ())
 observables = M.fromList [("autofocus", focus)]
@@ -592,7 +587,7 @@ isKeyed [] = False
 isKeyed (x : _) = hasKey x
   where
     hasKey :: VTree action -> Bool
-    hasKey (VNode _ _ _ (Just _) _) = True
+    hasKey (VNode _ _ (Just _) _ _) = True
     hasKey _ = False
 
 makeMap :: [VTree action] -> M.Map Key (VTree action)
@@ -601,55 +596,67 @@ makeMap vs = M.fromList [ (key, v) | v@(VNode _ _ (Just key) _ _) <- vs ]
 diffChildren
   :: Document
   -> Node
-  -> [VTree action]
-  -> [VTree action]
-  -> IO [VTree action]
+  -> V.Vector (VTree action)
+  -> V.Vector (VTree action)
+  -> IO ()
 diffChildren doc parent as bs = do
-  case isKeyed as of
-    True -> do
-      swappedKids <- swapKids parent (makeMap as) as (makeMap bs) bs
-      xs <- diffChildren' doc parent swappedKids bs
-      pure $ filter (/=VEmpty) xs
-    False -> do
-      xs <- diffChildren' doc parent as bs
-      pure $ filter (/=VEmpty) xs
+  diffChildren' doc parent as bs
+  -- case isKeyed as of
+  --   True -> do
+  --     swappedKids <- swapKids parent (makeMap as) as (makeMap bs) bs
+  --     diffChildren' doc parent swappedKids bs
+  --   False -> diffChildren' doc parent as bs
 
 diffChildren'
   :: Document
   -> Node
-  -> [VTree action]
-  -> [VTree action]
-  -> IO [VTree action]
-diffChildren' _ _ [] [] = pure []
-diffChildren' doc parent [] (b:bs) =
-  (:) <$> goDatch doc parent VEmpty b
-      <*> diffChildren doc parent [] bs
-diffChildren' doc parent (a:as) [] =
-  (:) <$> goDatch doc parent a VEmpty
-      <*> diffChildren doc parent as []
-diffChildren' doc parent (a:as) (b:bs) = do
-  (:) <$> goDatch doc parent a b
-      <*> diffChildren doc parent as bs
+  -> V.Vector (VTree action)
+  -> V.Vector (VTree action)
+  -> IO ()
+diffChildren' doc parent current new =
+  case (V.null current, V.null new) of
+    (True, True) -> pure ()
+    (True, False) -> do
+      let b = V.head new
+          bs = V.tail new
+      goDatch doc parent Nothing (Just b)
+      diffChildren doc parent V.empty bs
+    (False, True) -> do
+      let a = V.head current
+          as = V.tail current
+      goDatch doc parent (Just a) Nothing
+      diffChildren doc parent as V.empty
+    (False, False) -> do
+      let a = V.head current
+          as = V.tail current
+          b = V.head new
+          bs = V.tail new
+      goDatch doc parent (Just a) (Just b)
+      diffChildren doc parent as bs
 
 type Events = Proxy [(Symbol, Bool)]
 
 runSignal :: forall e action . ExtractEvents e
           => Proxy e
           -> (action -> IO ())
-          -> Signal (Sample (VTree action))
+          -> Signal (Sample (View Node action))
           -> IO ()
 runSignal events writer s = do
-  vtreeRef <- newIORef =<< initTree VEmpty
-  _ <- forkIO $ delegator writer vtreeRef events
   emitter <- start s
+  Changed initialTree <- emitter
+  iTree <- runView initialTree
+  initTree iTree
+  vtreeRef <- newIORef iTree
+  _ <- forkIO $ delegator writer vtreeRef events
   forever $
     waitForAnimationFrame >>
       emitter >>= \case
         NotChanged _ -> pure ()
-        Changed newTree ->
-           writeIORef vtreeRef =<<
-              (`datch` newTree) =<<
-                readIORef vtreeRef
+        Changed newTree -> do
+          nT <- runView newTree
+          currentTree <- readIORef vtreeRef
+          Just currentTree `datch` Just nT
+          writeIORef vtreeRef nT
 
 -- Default action, should be identity (mempty) w/o binary associative operator
 signal :: IO (Signal [a], a -> IO ())
@@ -658,7 +665,7 @@ signal = externalMulti
 startApp
   :: (HasAction action model stepConfig, ExtractEvents events, Eq model)
   => model
-  -> (model -> VTree action)
+  -> (model -> View Node action)
   -> (action -> model -> Effect action model)
   -> Proxy events
   -> Proxy stepConfig
@@ -666,10 +673,11 @@ startApp
   -> IO ()
 startApp model view update events stepConfig signals = do
   (sig, send) <- signal
-  runSignal events send $
-    fmap (fmap view) <$> do
-      foldp stepConfig update model $
-        mergeManyActions (sig : signals)
+  runSignal events send $ do
+    fmap (fmap (fmap view)) <$> foldp stepConfig update model $
+      mergeManyActions (sig : signals)
+
+-- Signal (Sample (VTree action))
 
 mergeActions :: Signal [action] -> Signal [action] -> Signal [action]
 mergeActions x y = do
@@ -821,40 +829,40 @@ doubleProp = prop
 checked_ :: Bool -> Attribute action
 checked_ = boolProp "checked"
 
-form_ :: [Attribute action] -> [VTree action] -> VTree action
+form_ :: [Attribute action] -> [View node action] -> View node action
 form_ = mkNode "form"
 
-p_ :: [Attribute action] -> [VTree action] -> VTree action
+p_ :: [Attribute action] -> [View node action] -> View node action
 p_ = mkNode "p"
 
-s_ :: [Attribute action] -> [VTree action] -> VTree action
+s_ :: [Attribute action] -> [View node action] -> View node action
 s_ = mkNode "s"
 
-ul_ :: [Attribute action] -> [VTree action] -> VTree action
+ul_ :: [Attribute action] -> [View node action] -> View node action
 ul_ = mkNode "ul"
 
-span_ :: [Attribute action] -> [VTree action] -> VTree action
+span_ :: [Attribute action] -> [View node action] -> View node action
 span_ = mkNode "span"
 
-strong_ :: [Attribute action] -> [VTree action] -> VTree action
+strong_ :: [Attribute action] -> [View node action] -> View node action
 strong_ = mkNode "strong"
 
-li_ :: [Attribute action] -> [VTree action] -> VTree action
+li_ :: [Attribute action] -> [View node action] -> View node action
 li_ = mkNode "li"
 
-liKeyed_ :: Key -> [Attribute action] -> [VTree action] -> VTree action
-liKeyed_ = mkNodeKeyed "li"
+liKeyed_ :: Key -> [Attribute action] -> [View node action] -> View node action
+liKeyed_ = mkNodeKeyed "li" . pure
 
-h1_ :: [Attribute action] -> [VTree action] -> VTree action
+h1_ :: [Attribute action] -> [View node action] -> View node action
 h1_ = mkNode "h1"
 
-input_ :: [Attribute action] -> [VTree action] -> VTree action
+input_ :: [Attribute action] -> [View node action] -> View node action
 input_ = mkNode "input"
 
-label_ :: [Attribute action] -> [VTree action] -> VTree action
+label_ :: [Attribute action] -> [View node action] -> View node action
 label_ = mkNode "label"
 
-a_ :: [Attribute action] -> [VTree action] -> VTree action
+a_ :: [Attribute action] -> [View node action] -> View node action
 a_ = mkNode "a"
 
 styleRaw_ :: T.Text -> Attribute action
@@ -890,7 +898,7 @@ placeholder = attr "placeholder"
 autofocus :: Bool -> Attribute action
 autofocus = boolProp "autofocus"
 
-template :: VTree action
+template :: View node action
 template = div_  [] []
 
 -- | (EventName, Capture)
@@ -1056,87 +1064,87 @@ type family Remove x xs where
   Remove x (x ': ys) =      Remove x ys
   Remove x (y ': ys) = y ': Remove x ys
 
-swapKids
-  :: Node
-  -> M.Map Key (VTree action)
-  -> [ VTree action ]
-  -> M.Map Key (VTree action)
-  -> [ VTree action ]
-  -> IO [ VTree action ]
-swapKids _ _ [] _ [] = pure []
+-- swapKids
+--   :: Node
+--   -> M.Map Key (VTree action)
+--   -> [ VTree action ]
+--   -> M.Map Key (VTree action)
+--   -> [ VTree action ]
+--   -> IO [ VTree action ]
+-- swapKids _ _ [] _ [] = pure []
 
--- | No nodes left, remove all remaining
-swapKids p currentMap (c:ccs) newMap [] = do
-  let VNode _ _ _ currentNode _ = c
-  void $ removeChild p currentNode
-  swapKids p currentMap ccs newMap []
+-- -- | No nodes left, remove all remaining
+-- swapKids p currentMap (c:ccs) newMap [] = do
+--   let VNode _ _ _ currentNode _ = c
+--   void $ removeChild p currentNode
+--   swapKids p currentMap ccs newMap []
 
--- | Add remaining new nodes
-swapKids p currentMap [] newMap (new:nns) = do
-  newNode <- renderNode p new
-  ts <- swapKids p currentMap [] newMap nns
-  pure $ newNode : ts
+-- -- | Add remaining new nodes
+-- swapKids p currentMap [] newMap (new:nns) = do
+--   newNode <- renderNode p new
+--   ts <- swapKids p currentMap [] newMap nns
+--   pure $ newNode : ts
 
-swapKids p currentMap (c:ccs) newMap (new:nns) = do
-  case getKey c == getKey new of
-    -- Keys same, continue
-    True -> do
-      ts <- swapKids p currentMap ccs newMap nns
-      pure (c:ts)
-    -- Keys not the same, check if current node has been moved or deleted
-    False -> do
-      case M.lookup (getKeyUnsafe c) newMap of
-        -- Current node has been deleted, remove from DOM
-        Nothing -> do
-          let VNode _ _ _ node _ = c
-          void $ removeChild p node
-          swapKids p currentMap ccs newMap (new:nns)
-        -- Current node exists, but does new node exist in current map?
-        Just _ -> do
-          let VNode _ _ _ currentNode _ = c
-          case M.lookup (getKeyUnsafe new) currentMap of
-            -- New node, doesn't exist in current map, create new node and insertBefore
-            Nothing -> do
-              newNode@(VNode _ _ _ node _) <- renderDontAppend new
-              void $ insertBefore p node currentNode
-              ts <- swapKids p currentMap (c:ccs) newMap nns
-              pure $ newNode : ts
-            -- Node has moved, use insertBefore on moved node
-            Just n -> do
-              let VNode _ _ _ movedNode _ = n
-              void $ insertBefore p currentNode movedNode
-              ts <- swapKids p currentMap ccs newMap nns
-              pure $ n : ts
+-- swapKids p currentMap (c:ccs) newMap (new:nns) = do
+--   case getKey c == getKey new of
+--     -- Keys same, continue
+--     True -> do
+--       ts <- swapKids p currentMap ccs newMap nns
+--       pure (c:ts)
+--     -- Keys not the same, check if current node has been moved or deleted
+--     False -> do
+--       case M.lookup (getKeyUnsafe c) newMap of
+--         -- Current node has been deleted, remove from DOM
+--         Nothing -> do
+--           let VNode _ _ _ node _ = c
+--           void $ removeChild p node
+--           swapKids p currentMap ccs newMap (new:nns)
+--         -- Current node exists, but does new node exist in current map?
+--         Just _ -> do
+--           let VNode _ _ _ currentNode _ = c
+--           case M.lookup (getKeyUnsafe new) currentMap of
+--             -- New node, doesn't exist in current map, create new node and insertBefore
+--             Nothing -> do
+--               newNode@(VNode _ _ _ node _) <- renderDontAppend new
+--               void $ insertBefore p node currentNode
+--               ts <- swapKids p currentMap (c:ccs) newMap nns
+--               pure $ newNode : ts
+--             -- Node has moved, use insertBefore on moved node
+--             Just n -> do
+--               let VNode _ _ _ movedNode _ = n
+--               void $ insertBefore p currentNode movedNode
+--               ts <- swapKids p currentMap ccs newMap nns
+--               pure $ n : ts
 
-renderNode :: Node -> VTree action -> IO (VTree action)
-renderNode parent (VNode typ attrs key _ children) = do
+renderNode :: Node -> VTree action -> IO ()
+renderNode parent (VNode typ attrs _ ref children) = do
   Just doc <- currentDocument
   Just node <- fmap toNode <$> createElement doc (Just typ)
+  writeIORef ref (Just node)
   void $ diffAttrs node [] attrs
-  newChildren <- forM children $ \childNode ->
-    goDatch doc node VEmpty childNode
+  forM_ children $ \childNode ->
+    goDatch doc node Nothing (Just childNode)
   void $ appendChild parent (Just node)
-  pure $ VNode typ attrs key (Just node) newChildren
-renderNode parent (VText str _) = do
+
+renderNode parent (VText str ref) = do
   Just doc <- currentDocument
   newTextNode <- createTextNode doc str
+  writeIORef ref (castToNode <$> newTextNode)
   void $ appendChild parent newTextNode
-  pure $ VText str (toNode <$> newTextNode)
-renderNode _ _ = pure VEmpty
 
-renderDontAppend :: VTree action -> IO (VTree action)
-renderDontAppend (VNode typ attrs key _ children) = do
+renderDontAppend :: VTree action -> IO ()
+renderDontAppend (VNode typ attrs _ ref children) = do
   Just doc <- currentDocument
   Just node <- fmap toNode <$> createElement doc (Just typ)
+  writeIORef ref (Just node)
   void $ diffAttrs node [] attrs
-  newChildren <- forM children $ \childNode ->
-    goDatch doc node VEmpty childNode
-  pure $ VNode typ attrs key (Just node) newChildren
-renderDontAppend (VText str _) = do
+  forM_ children $ \childNode ->
+    goDatch doc node Nothing (Just childNode)
+renderDontAppend (VText str ref) = do
   Just doc <- currentDocument
   newTextNode <- createTextNode doc str
-  pure $ VText str (toNode <$> newTextNode)
-renderDontAppend _ = pure VEmpty
+  writeIORef ref (castToNode <$> newTextNode)
+
 
 class ToKey key where toKey :: key -> Key
 instance ToKey String  where toKey = Key . T.pack

@@ -25,29 +25,30 @@ executable example
                , scientific
                , string-conversions
                , text
+               , vector
   default-language:    Haskell2010
 
-executable benchmark
-  main-is: Main.hs
-  ghc-options: -Wall
-  hs-source-dirs: benchmark
-  js-sources: jsbits/bundle.js
-  build-depends: aeson
-               , base
-               , bytestring
-               , containers
-               , elerea
-               , free
-               , ghcjs-base
-               , ghcjs-dom
-               , lens
-               , lucid
-               , miso
-               , mtl
-               , scientific
-               , string-conversions
-               , text
-  default-language: Haskell2010
+-- executable benchmark
+--   main-is: Main.hs
+--   ghc-options: -Wall
+--   hs-source-dirs: benchmark
+--   js-sources: jsbits/bundle.js
+--   build-depends: aeson
+--                , base
+--                , bytestring
+--                , containers
+--                , elerea
+--                , free
+--                , ghcjs-base
+--                , ghcjs-dom
+--                , lens
+--                , lucid
+--                , miso
+--                , mtl
+--                , scientific
+--                , string-conversions
+--                , text
+--   default-language: Haskell2010
 
 library
   exposed-modules: Miso
@@ -67,6 +68,7 @@ library
                  , string-conversions
                  , text
                  , transformers
+                 , vector
   default-language:    Haskell2010
 
 Test-Suite tests
@@ -79,5 +81,6 @@ Test-Suite tests
                     , ghcjs-dom
                     , miso
                     , text
+                    , vector
     default-language: Haskell2010
     ghc-options:      -Wall -threaded -rtsopts

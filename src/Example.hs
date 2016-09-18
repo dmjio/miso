@@ -11,8 +11,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Control.Concurrent
-import           Control.Monad
+-- import           Control.Concurrent
+-- import           Control.Monad
 import           Data.Aeson         hiding (Object)
 import           Data.Bool
 import qualified Data.Map           as M
@@ -21,7 +21,7 @@ import           Data.Proxy
 import qualified Data.Text          as T
 import           GHC.Generics
 import           Miso
-import           System.Random
+-- import           System.Random
 
 data Model = Model
   { entries :: [Entry]
@@ -87,26 +87,26 @@ getInitialModel = do
     Right m -> pure m
 
 -- Example signal to merge with
-timer :: IO (Signal [Int])
-timer = do
-  (sig, writer) <- signal
-  void . forkIO $ forever $ do
-    threadDelay 1000000
-    writer =<< randomRIO (1,10)
-  pure sig
+-- timer :: IO (Signal [Int])
+-- timer = do
+--   (sig, writer) <- signal
+--   void . forkIO $ forever $ do
+--     threadDelay 1000000
+--     writer =<< randomRIO (1,10)
+--   pure sig
 
-(<$$$>) :: (Functor k, Functor f, Functor g) => (a -> b) -> k (f (g a)) -> k (f (g b))
-(<$$$>) = fmap . fmap . fmap
+-- (<$$$>) :: (Functor k, Functor f, Functor g) => (a -> b) -> k (f (g a)) -> k (f (g b))
+-- (<$$$>) = fmap . fmap . fmap
 
 main :: IO ()
 main = do
   m <- getInitialModel
   startApp m view update defaultEvents stepConfig []
 
-update :: Msg -> Model -> Effect Msg Model 
+update :: Msg -> Model -> Effect Msg Model
 update NoOp m = noEff m
 update (CurrentTime n) m = print n >> pure NoOp <# m
-update Add model@Model{..} = 
+update Add model@Model{..} =
   noEff model {
     uid = uid + 1
   , field = mempty
@@ -114,7 +114,7 @@ update Add model@Model{..} =
   }
 
 update (UpdateField str) model = noEffect model { field = str }
-update (EditingEntry id' isEditing) model@Model{..} = 
+update (EditingEntry id' isEditing) model@Model{..} =
   noEff model { entries = newEntries }
     where
       newEntries = filterMap entries (\t -> eid t == id') $
@@ -136,7 +136,7 @@ update DeleteComplete model@Model{..} =
 update (Check id' isCompleted) model@Model{..} =
   eff <# model { entries = newEntries }
     where
-      eff = 
+      eff =
         putStrLn "clicked check" >>
           pure NoOp
 
@@ -162,11 +162,11 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Model -> VTree Msg
-view m@Model{..} = 
+view :: Model -> View node Msg
+view m@Model{..} =
  div_
     [ class_ "todomvc-wrapper"
-    , style_  $ M.singleton "visibility" "hidden" 
+    , style_  $ M.singleton "visibility" "hidden"
     ]
     [ section_
         [ class_ "todoapp" ]
@@ -177,7 +177,7 @@ view m@Model{..} =
     , infoFooter
     ]
 
-viewEntries :: T.Text -> [ Entry ] -> VTree Msg
+viewEntries :: T.Text -> [ Entry ] -> View node Msg
 viewEntries visibility entries =
   section_
     [ class_ "main"
@@ -206,10 +206,10 @@ viewEntries visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Entry -> VTree Msg
+viewKeyedEntry :: Entry -> View node Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Entry -> VTree Msg
+viewEntry :: Entry -> View node Msg
 viewEntry Entry {..} = liKeyed_ (toKey eid)
     [ class_ $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
@@ -243,7 +243,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         []
     ]
 
-viewControls :: Model ->  T.Text -> [ Entry ] -> VTree Msg
+viewControls :: Model ->  T.Text -> [ Entry ] -> View node Msg
 viewControls model visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -256,7 +256,7 @@ viewControls model visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> VTree Msg
+viewControlsCount :: Int -> View node Msg
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
      [ strong_ [] [ text_ $ T.pack (show entriesLeft) ]
@@ -265,7 +265,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: T.Text -> VTree Msg 
+viewControlsFilters :: T.Text -> View node Msg
 viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
@@ -276,7 +276,7 @@ viewControlsFilters visibility =
     , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: T.Text -> T.Text -> T.Text -> VTree Msg 
+visibilitySwap :: T.Text -> T.Text -> T.Text -> View node Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ uri
@@ -285,16 +285,16 @@ visibilitySwap uri visibility actualVisibility =
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Int -> VTree Msg 
+viewControlsClear :: Model -> Int -> View node Msg
 viewControlsClear _ entriesCompleted =
   btn_
     [ class_ "clear-completed"
     , prop "hidden" (entriesCompleted == 0)
-    , onClick DeleteComplete 
+    , onClick DeleteComplete
     ]
     [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
 
-viewInput :: Model -> T.Text -> VTree Msg 
+viewInput :: Model -> T.Text -> View node Msg
 viewInput _ task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
@@ -305,15 +305,15 @@ viewInput _ task =
         , prop "value" task
         , attr "name" "newTodo"
         , onInput UpdateField
-        , onEnter Add 
+        , onEnter Add
         ] []
     ]
 
-onEnter :: Msg -> Attribute Msg 
+onEnter :: Msg -> Attribute Msg
 onEnter action =
   onKeyDown $ bool NoOp action . (== 13)
 
-infoFooter :: VTree Msg
+infoFooter :: View node Msg
 infoFooter =
     footer_ [ class_ "info" ]
     [ p_ [] [ text_ "Double-click to edit a todo" ]
