@@ -77,7 +77,7 @@ data Msg
   | ChangeVisibility T.Text
    deriving Show
 
-stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc", DebugActions ]
+stepConfig :: Proxy '[]
 stepConfig = Proxy
 
 getInitialModel :: IO Model
