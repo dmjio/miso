@@ -39,9 +39,9 @@ import qualified Data.Map                      as M
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Proxy
--- import qualified Data.Set                      as S
 import           Data.String.Conversions
 import qualified Data.Text                     as T
+import qualified Data.Vector                   as V
 import qualified FRP.Elerea.Simple             as FRP
 import           FRP.Elerea.Simple             hiding (Signal)
 import           GHC.Generics
@@ -60,7 +60,6 @@ import           GHCJS.DOM.NodeList            hiding (getLength)
 import qualified GHCJS.DOM.Storage             as S
 import           GHCJS.DOM.Types               hiding (Event, Attr)
 import           GHCJS.DOM.Window              (getLocalStorage, getSessionStorage)
-
 import           GHCJS.Foreign                 hiding (Object, Number)
 import qualified GHCJS.Foreign.Internal        as Foreign
 import           GHCJS.Marshal
@@ -68,12 +67,7 @@ import           GHCJS.Marshal.Pure
 import qualified GHCJS.Types                   as G
 import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
--- import qualified Lucid                         as L
--- import qualified Lucid.Base                    as L
 import           Prelude                       hiding (repeat)
-
-import qualified Data.Vector as V
-
 
 type Signal a = SignalGen (FRP.Signal a)
 
@@ -147,8 +141,8 @@ evalEventGrammar e = do
         result <- Node.getNextSibling (pFromJSVal obj :: Node)
         cb $ pToJSVal <$> result
 
-newtype View node action =
-  View { runView :: IO (VTreeBase node action) }
+newtype View action =
+  View { runView :: forall node . IO (VTreeBase node action) }
 
 data Effect action model
   = Effect model (IO action)
@@ -251,10 +245,10 @@ instance Show (VTreeBase action e) where
     "<" ++ T.unpack typ ++ ">" ++ show evts ++
       show children ++ "\n" ++ "</" ++ T.unpack typ ++ ">"
 
-mkNode :: T.Text -> [Attribute action] -> [View node action] -> View node action
+mkNode :: T.Text -> [Attribute action] -> [View action] -> View action
 mkNode name as xs = mkNodeKeyed name Nothing as xs
 
-mkNodeKeyed :: T.Text -> Maybe Key -> [Attribute action] -> [View node action] -> View node action
+mkNodeKeyed :: T.Text -> Maybe Key -> [Attribute action] -> [View action] -> View action
 mkNodeKeyed name key as xs = View $ do
   ref <- newIORef Nothing
   kids <- traverse runView xs
@@ -264,45 +258,45 @@ mkNodeKeyed name key as xs = View $ do
       props = V.fromList [ p | P p@(Prop _ _) <- as ]
       evts = V.fromList [ e | E e@EventHandler{} <- as ]
 
-text_ :: T.Text -> View node action
+text_ :: T.Text -> View action
 text_ txt = View $ do
   ref <- newIORef Nothing
   pure $ VText txt ref
 
-div_ :: [Attribute action] -> [View node action] -> View node action
+div_ :: [Attribute action] -> [View action] -> View action
 div_  = mkNode "div"
 
-table_ :: [Attribute action] -> [View node action] -> View node action
+table_ :: [Attribute action] -> [View action] -> View action
 table_  = mkNode "table"
 
-thead_ :: [Attribute action] -> [View node action] -> View node action
+thead_ :: [Attribute action] -> [View action] -> View action
 thead_  = mkNode "thead"
 
-tbody_ :: [Attribute action] -> [View node action] -> View node action
+tbody_ :: [Attribute action] -> [View action] -> View action
 tbody_  = mkNode "tbody"
 
-tr_ :: [Attribute action] -> [View node action] -> View node action
+tr_ :: [Attribute action] -> [View action] -> View action
 tr_  = mkNode "tr"
 
-th_ :: [Attribute action] -> [View node action] -> View node action
+th_ :: [Attribute action] -> [View action] -> View action
 th_  = mkNode "th"
 
-td_ :: [Attribute action] -> [View node action] -> View node action
+td_ :: [Attribute action] -> [View action] -> View action
 td_  = mkNode "td"
 
-tfoot_ :: [Attribute action] -> [View node action] -> View node action
+tfoot_ :: [Attribute action] -> [View action] -> View action
 tfoot_  = mkNode "tfoot"
 
-section_ :: [Attribute action] -> [View node action] -> View node action
+section_ :: [Attribute action] -> [View action] -> View action
 section_  = mkNode "section"
 
-header_ :: [Attribute action] -> [View node action] -> View node action
+header_ :: [Attribute action] -> [View action] -> View action
 header_  = mkNode "header"
 
-footer_ :: [Attribute action] -> [View node action] -> View node action
+footer_ :: [Attribute action] -> [View action] -> View action
 footer_  = mkNode "footer"
 
-btn_ :: [Attribute action] -> [View node action] -> View node action
+btn_ :: [Attribute action] -> [View action] -> View action
 btn_ = mkNode "button"
 
 class ExtractEvents (events :: [ (Symbol, Bool) ]) where
@@ -639,7 +633,7 @@ type Events = Proxy [(Symbol, Bool)]
 runSignal :: forall e action . ExtractEvents e
           => Proxy e
           -> (action -> IO ())
-          -> Signal (Sample (View Node action))
+          -> Signal (Sample (View action))
           -> IO ()
 runSignal events writer s = do
   emitter <- start s
@@ -665,7 +659,7 @@ signal = externalMulti
 startApp
   :: (HasAction action model stepConfig, ExtractEvents events, Eq model)
   => model
-  -> (model -> View Node action)
+  -> (model -> View action)
   -> (action -> model -> Effect action model)
   -> Proxy events
   -> Proxy stepConfig
@@ -676,8 +670,6 @@ startApp model view update events stepConfig signals = do
   runSignal events send $ do
     fmap (fmap (fmap view)) <$> foldp stepConfig update model $
       mergeManyActions (sig : signals)
-
--- Signal (Sample (VTree action))
 
 mergeActions :: Signal [action] -> Signal [action] -> Signal [action]
 mergeActions x y = do
@@ -829,40 +821,40 @@ doubleProp = prop
 checked_ :: Bool -> Attribute action
 checked_ = boolProp "checked"
 
-form_ :: [Attribute action] -> [View node action] -> View node action
+form_ :: [Attribute action] -> [View action] -> View action
 form_ = mkNode "form"
 
-p_ :: [Attribute action] -> [View node action] -> View node action
+p_ :: [Attribute action] -> [View action] -> View action
 p_ = mkNode "p"
 
-s_ :: [Attribute action] -> [View node action] -> View node action
+s_ :: [Attribute action] -> [View action] -> View action
 s_ = mkNode "s"
 
-ul_ :: [Attribute action] -> [View node action] -> View node action
+ul_ :: [Attribute action] -> [View action] -> View action
 ul_ = mkNode "ul"
 
-span_ :: [Attribute action] -> [View node action] -> View node action
+span_ :: [Attribute action] -> [View action] -> View action
 span_ = mkNode "span"
 
-strong_ :: [Attribute action] -> [View node action] -> View node action
+strong_ :: [Attribute action] -> [View action] -> View action
 strong_ = mkNode "strong"
 
-li_ :: [Attribute action] -> [View node action] -> View node action
+li_ :: [Attribute action] -> [View action] -> View action
 li_ = mkNode "li"
 
-liKeyed_ :: Key -> [Attribute action] -> [View node action] -> View node action
+liKeyed_ :: Key -> [Attribute action] -> [View action] -> View action
 liKeyed_ = mkNodeKeyed "li" . pure
 
-h1_ :: [Attribute action] -> [View node action] -> View node action
+h1_ :: [Attribute action] -> [View action] -> View action
 h1_ = mkNode "h1"
 
-input_ :: [Attribute action] -> [View node action] -> View node action
+input_ :: [Attribute action] -> [View action] -> View action
 input_ = mkNode "input"
 
-label_ :: [Attribute action] -> [View node action] -> View node action
+label_ :: [Attribute action] -> [View action] -> View action
 label_ = mkNode "label"
 
-a_ :: [Attribute action] -> [View node action] -> View node action
+a_ :: [Attribute action] -> [View action] -> View action
 a_ = mkNode "a"
 
 styleRaw_ :: T.Text -> Attribute action
@@ -898,7 +890,7 @@ placeholder = attr "placeholder"
 autofocus :: Bool -> Attribute action
 autofocus = boolProp "autofocus"
 
-template :: View node action
+template :: View action
 template = div_  [] []
 
 -- | (EventName, Capture)

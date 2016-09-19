@@ -11,8 +11,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
--- import           Control.Concurrent
--- import           Control.Monad
 import           Data.Aeson         hiding (Object)
 import           Data.Bool
 import qualified Data.Map           as M
@@ -21,7 +19,6 @@ import           Data.Proxy
 import qualified Data.Text          as T
 import           GHC.Generics
 import           Miso
--- import           System.Random
 
 data Model = Model
   { entries :: [Entry]
@@ -85,18 +82,6 @@ getInitialModel = do
   getFromStorage "todo-mvc" >>= \case
     Left x  -> putStrLn x >> pure emptyModel
     Right m -> pure m
-
--- Example signal to merge with
--- timer :: IO (Signal [Int])
--- timer = do
---   (sig, writer) <- signal
---   void . forkIO $ forever $ do
---     threadDelay 1000000
---     writer =<< randomRIO (1,10)
---   pure sig
-
--- (<$$$>) :: (Functor k, Functor f, Functor g) => (a -> b) -> k (f (g a)) -> k (f (g b))
--- (<$$$>) = fmap . fmap . fmap
 
 main :: IO ()
 main = do
