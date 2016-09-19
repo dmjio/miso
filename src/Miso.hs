@@ -422,16 +422,14 @@ isVNode _ = True
 initTree :: VTree action -> IO ()
 initTree initial = datch Nothing (Just initial)
 
--- copies body first child into vtree, to avoid flickering
--- copyDOMIntoView :: Node -> View action -> IO (View action)
--- copyDOMIntoView _ VEmpty = pure VEmpty -- should never get called
--- copyDOMIntoView node (VText s _) = pure $ VText s (Just node)
--- copyDOMIntoView node (VNode name attrs key _ children) = do
---   xs <- forM (zip [0 :: Int ..] children) $ \(index, childNode) -> do
---           Just childNodes <- getChildNodes node
---           Just child <- item childNodes (fromIntegral index)
---           copyDOMIntoView child childNode
---   pure $ VNode name attrs key (Just node) xs
+copyDOMIntoView :: Node -> VTree action -> IO ()
+copyDOMIntoView node (VText _ ref) = writeIORef ref (Just node)
+copyDOMIntoView node (VNode _ _ _ _ _ ref children) =
+  flip V.imapM_ children $ \index childNode -> do
+    Just childNodes <- getChildNodes node
+    Just child <- item childNodes (fromIntegral index)
+    writeIORef ref (Just child)
+    copyDOMIntoView child childNode
 
 datch :: Maybe (VTree action) -> Maybe (VTree action) -> IO ()
 datch currentTree newTree = do
@@ -439,7 +437,6 @@ datch currentTree newTree = do
   Just body <- fmap toNode <$> getBody document
   goDatch document body currentTree newTree
 
--- Make a new text node
 goDatch
   :: Document
   -> Node

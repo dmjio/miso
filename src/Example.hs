@@ -147,7 +147,7 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Model -> View node Msg
+view :: Model -> View Msg
 view m@Model{..} =
  div_
     [ class_ "todomvc-wrapper"
@@ -162,7 +162,7 @@ view m@Model{..} =
     , infoFooter
     ]
 
-viewEntries :: T.Text -> [ Entry ] -> View node Msg
+viewEntries :: T.Text -> [ Entry ] -> View Msg
 viewEntries visibility entries =
   section_
     [ class_ "main"
@@ -191,10 +191,10 @@ viewEntries visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Entry -> View node Msg
+viewKeyedEntry :: Entry -> View Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Entry -> View node Msg
+viewEntry :: Entry -> View Msg
 viewEntry Entry {..} = liKeyed_ (toKey eid)
     [ class_ $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
@@ -228,7 +228,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         []
     ]
 
-viewControls :: Model ->  T.Text -> [ Entry ] -> View node Msg
+viewControls :: Model ->  T.Text -> [ Entry ] -> View Msg
 viewControls model visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -241,7 +241,7 @@ viewControls model visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> View node Msg
+viewControlsCount :: Int -> View Msg
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
      [ strong_ [] [ text_ $ T.pack (show entriesLeft) ]
@@ -250,7 +250,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: T.Text -> View node Msg
+viewControlsFilters :: T.Text -> View Msg
 viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
@@ -261,7 +261,7 @@ viewControlsFilters visibility =
     , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: T.Text -> T.Text -> T.Text -> View node Msg
+visibilitySwap :: T.Text -> T.Text -> T.Text -> View Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ uri
@@ -270,7 +270,7 @@ visibilitySwap uri visibility actualVisibility =
            ] [ text_ visibility ]
       ]
 
-viewControlsClear :: Model -> Int -> View node Msg
+viewControlsClear :: Model -> Int -> View Msg
 viewControlsClear _ entriesCompleted =
   btn_
     [ class_ "clear-completed"
@@ -279,7 +279,7 @@ viewControlsClear _ entriesCompleted =
     ]
     [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
 
-viewInput :: Model -> T.Text -> View node Msg
+viewInput :: Model -> T.Text -> View Msg
 viewInput _ task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text_ "todos" ]
@@ -298,7 +298,7 @@ onEnter :: Msg -> Attribute Msg
 onEnter action =
   onKeyDown $ bool NoOp action . (== 13)
 
-infoFooter :: View node Msg
+infoFooter :: View Msg
 infoFooter =
     footer_ [ class_ "info" ]
     [ p_ [] [ text_ "Double-click to edit a todo" ]
