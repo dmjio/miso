@@ -72,7 +72,6 @@ import qualified Lucid                         as L
 import qualified Lucid.Base                    as L
 import           Prelude                       hiding (repeat)
 
-
 type Signal a = SignalGen (FRP.Signal a)
 
 data Sample a = Changed a | NotChanged a
@@ -85,12 +84,13 @@ fromChanged (NotChanged x) = x
 data Action object a where
   GetTarget :: (object -> a) -> Action object a
   GetParent :: object -> (object -> a) -> Action object a
-  GetField  :: FromJSON v => T.Text -> object -> (Maybe v -> a) -> Action object a
-  GetEventField  :: FromJSON v => T.Text -> (Maybe v -> a) -> Action object a
+  GetField  :: FromJSON v => [T.Text] -> object -> (Maybe v -> a) -> Action object a
+  GetEventField  :: FromJSON v => [T.Text] -> (Maybe v -> a) -> Action object a
   GetChildren ::  object -> (object -> a) -> Action object a
   GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
   GetNextSibling :: object -> (Maybe object -> a) -> Action object a
-  SetEventField :: ToJSON v => T.Text -> v -> a -> Action object a
+  SetEventField :: ToJSON v => [T.Text] -> v -> a -> Action object a
+  ApplyOnEvent :: FromJSON v => [T.Text] -> [Value] -> (Maybe v -> a) -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
@@ -100,6 +100,7 @@ $(makeFreeCon 'SetEventField)
 $(makeFreeCon 'GetChildren)
 $(makeFreeCon 'GetItem)
 $(makeFreeCon 'GetNextSibling)
+$(makeFreeCon 'ApplyOnEvent)
 
 jsToJSON :: FromJSON v => JSType -> G.JSVal -> IO (Maybe v)
 jsToJSON Foreign.Number  g = convertToJSON g
@@ -115,26 +116,40 @@ convertToJSON g = do
     Error e -> Prelude.error $ "Error while decoding Value: " <> e <> " " <> show val
     Success v -> pure (pure v)
 
+foreign import javascript unsafe "$1.apply(this, $2)"
+  apply' :: G.JSVal -> G.JSVal -> IO G.JSVal
+
 evalEventGrammar :: Event -> Grammar G.JSVal a -> IO a
 evalEventGrammar e = do
   iterM $ \x ->
     case x of
+      ApplyOnEvent fields args cb -> do
+         eventVal <- toJSVal e
+         let folder o field = getProp (textToJSString field) (Object o)
+         func <- foldM folder eventVal fields
+         result <- apply' func  =<< toJSVal args
+         cb =<< convertToJSON result
       GetTarget cb ->
         cb =<< pToJSVal <$> E.getTarget e
       GetParent obj cb -> do
         Just p <- getParentNode (pFromJSVal obj :: Node)
         cb (pToJSVal p)
-      GetField key obj cb -> do
-        val <- getProp (textToJSString key) (Object obj)
+      GetField fields obj cb -> do
+        val <-
+          foldM (\o field -> getProp (textToJSString field) (Object o))
+            obj fields
         cb =<< jsToJSON (jsTypeOf val) val
-      GetEventField key cb -> do
+      GetEventField fields cb -> do
         eventVal <- toJSVal e
-        val <- getProp (textToJSString key) (Object eventVal)
+        val <-
+          foldM (\o field -> getProp (textToJSString field) (Object o))
+            eventVal fields
         cb =<< jsToJSON (jsTypeOf val) val
-      SetEventField key val cb -> do
+      SetEventField keys val cb -> do
         eventVal <- toJSVal e
         jsValue <- toJSVal (toJSON val)
-        setProp (textToJSString key) jsValue (Object eventVal) >> cb
+        setProp (textToJSString $ T.intercalate "." keys)
+          jsValue (Object eventVal) >> cb
       GetChildren obj cb -> do
         Just nodeList <- getChildNodes (pFromJSVal obj :: Node)
         cb $ pToJSVal nodeList
@@ -576,13 +591,15 @@ diffPropsAndAttrs node old new = do
     setProp (textToJSString k) val obj
 
   forM_ (M.toList propsToDiff) $ \(k, _) -> do
-    case (M.lookup k oldProps, M.lookup k newProps) of
-      (Just oldVal, Just newVal) ->
-        when (oldVal /= newVal) $ do
-        val <- toJSVal newVal
-        setProp (textToJSString k) val obj
-        dispatchObservable k el
-      (_, _) -> pure ()
+     let kString = textToJSString k
+     Just domVal :: Maybe Value <- fromJSVal =<< getProp kString obj
+     case (M.lookup k oldProps, M.lookup k newProps) of
+       (Just oldVal, Just newVal) -> do
+        when (oldVal /= newVal && toJSON newVal /= domVal) $ do
+           val <- toJSVal newVal
+           setProp kString val obj
+           dispatchObservable k el
+       (_, _) -> pure ()
 
   forM_ removeAttrs $ \(k,_) -> removeAttribute el k
   forM_ addAttrs $ \(k,v) -> setAttribute el k v
@@ -1025,7 +1042,7 @@ onSubmit action =
 inputGrammar :: FromJSON a => Grammar obj a
 inputGrammar = do
   target <- getTarget
-  result <- getField "value" target
+  result <- getField ["value"] target
   case result of
     Nothing -> Prelude.error "Couldn't retrieve target input value"
     Just value -> pure value
@@ -1033,16 +1050,16 @@ inputGrammar = do
 checkedGrammar :: FromJSON a => Grammar obj a
 checkedGrammar = do
   target <- getTarget
-  result <- getField "checked" target
+  result <- getField ["checked"] target
   case result of
     Nothing -> Prelude.error "Couldn't retrieve target checked value"
     Just value -> pure value
 
 keyGrammar :: Grammar obj Int
 keyGrammar = do
-  keyCode <- getEventField "keyCode"
-  which <- getEventField "which"
-  charCode <- getEventField "charCode"
+  keyCode <- getEventField ["keyCode"]
+  which <- getEventField ["which"]
+  charCode <- getEventField ["charCode"]
   pure $ head $ catMaybes [ keyCode, which, charCode ]
 
 -- | Remove duplicates from a type-level list.
