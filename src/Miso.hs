@@ -72,7 +72,6 @@ import qualified Lucid                         as L
 import qualified Lucid.Base                    as L
 import           Prelude                       hiding (repeat)
 
-
 type Signal a = SignalGen (FRP.Signal a)
 
 data Sample a = Changed a | NotChanged a
@@ -592,13 +591,15 @@ diffPropsAndAttrs node old new = do
     setProp (textToJSString k) val obj
 
   forM_ (M.toList propsToDiff) $ \(k, _) -> do
-    case (M.lookup k oldProps, M.lookup k newProps) of
-      (Just oldVal, Just newVal) ->
-        when (oldVal /= newVal) $ do
-        val <- toJSVal newVal
-        setProp (textToJSString k) val obj
-        dispatchObservable k el
-      (_, _) -> pure ()
+     let kString = textToJSString k
+     Just domVal :: Maybe Value <- fromJSVal =<< getProp kString obj
+     case (M.lookup k oldProps, M.lookup k newProps) of
+       (Just oldVal, Just newVal) -> do
+        when (oldVal /= newVal && toJSON newVal /= domVal) $ do
+           val <- toJSVal newVal
+           setProp kString val obj
+           dispatchObservable k el
+       (_, _) -> pure ()
 
   forM_ removeAttrs $ \(k,_) -> removeAttribute el k
   forM_ addAttrs $ \(k,v) -> setAttribute el k v
