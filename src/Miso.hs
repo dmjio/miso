@@ -90,7 +90,7 @@ data Action object a where
   GetItem :: object -> Int -> (Maybe object -> a) -> Action object a
   GetNextSibling :: object -> (Maybe object -> a) -> Action object a
   SetEventField :: ToJSON v => [T.Text] -> v -> a -> Action object a
-  ApplyOnEvent :: FromJSON v => [T.Text] -> [T.Text] -> (Maybe v -> a) -> Action object a
+  ApplyOnEvent :: FromJSON v => [T.Text] -> [Value] -> (Maybe v -> a) -> Action object a
 
 $(makeFreeCon 'GetTarget)
 $(makeFreeCon 'GetParent)
