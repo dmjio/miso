@@ -19,6 +19,7 @@ import           Data.Proxy
 import qualified Data.Text          as T
 import           GHC.Generics
 import           Miso
+import           Miso.Html
 
 data Model = Model
   { entries :: [Entry]
@@ -86,7 +87,7 @@ getInitialModel = do
 main :: IO ()
 main = do
   m <- getInitialModel
-  startApp m view update defaultEvents stepConfig []
+  startApp m view update defaultSettings
 
 update :: Msg -> Model -> Effect Msg Model
 update NoOp m = noEff m
