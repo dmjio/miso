@@ -26,7 +26,6 @@ data Model = Model
   , field :: T.Text
   , uid :: Int
   , visibility :: T.Text
-  , step :: Bool
   } deriving (Show, Generic, Eq)
 
 data Entry = Entry
@@ -49,7 +48,6 @@ emptyModel = Model
   , visibility = "All"
   , field = mempty
   , uid = 0
-  , step = False
   }
 
 newEntry :: T.Text -> Int -> Entry
