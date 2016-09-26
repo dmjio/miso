@@ -44,7 +44,7 @@ import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
 import qualified Data.Vector.Mutable           as MV
 import qualified FRP.Elerea.Simple             as FRP
-import           FRP.Elerea.Simple             hiding (Signal)
+import           FRP.Elerea.Simple
 import           GHC.TypeLits
 import           GHCJS.DOM
 import           GHCJS.DOM.CharacterData
@@ -69,8 +69,6 @@ import           JavaScript.Object.Internal
 import           JavaScript.Web.AnimationFrame
 import           Miso.Html
 import           Prelude                       hiding (repeat)
-
-type Signal a = SignalGen (FRP.Signal a)
 
 data Sample a = Changed a | NotChanged a
   deriving (Functor, Show)
@@ -545,13 +543,13 @@ runSignal :: forall e action . ExtractEvents e
 runSignal events writer gen =
  forever =<< start (initialize gen writer events)
 
-signal :: IO (Signal [a], a -> IO ())
+signal :: IO (SignalGen (Signal [a]), a -> IO ())
 signal = externalMulti
 
 data Settings (events :: [(Symbol,Bool)]) (stepConfig :: [k]) (action :: *) =
    Settings { events :: Proxy events
             , stepConfig :: Proxy stepConfig
-            , extraSignals :: [ Signal [ action ] ]
+            , extraSignals :: [ SignalGen (Signal [ action ]) ]
             }
 
 defaultSettings :: Settings DefaultEvents DefaultStepConfig action
@@ -570,13 +568,16 @@ startApp model view update Settings{..} = do
     fmap (fmap (fmap view)) <$> foldp stepConfig update model $
       mergeManyActions (sig : extraSignals)
 
-mergeActions :: Signal [action] -> Signal [action] -> Signal [action]
+mergeActions
+  :: SignalGen (Signal [action])
+  -> SignalGen (Signal [action])
+  -> SignalGen (Signal [action])
 mergeActions x y = do
   signalX <- x
   signalY <- y
   pure $ (++) <$> signalX <*> signalY
 
-mergeManyActions :: [ Signal [action] ] -> Signal [action]
+mergeManyActions :: [ SignalGen (Signal [action]) ] -> SignalGen (Signal [action])
 mergeManyActions = foldl1 mergeActions
 
 getFromStorage
@@ -656,8 +657,8 @@ foldp :: forall model action effects
       => Proxy effects
       -> (action -> model -> Effect action model)
       -> model
-      -> Signal [action]
-      -> Signal (Sample model)
+      -> SignalGen (Signal [action])
+      -> SignalGen (Signal (Sample model))
 foldp p update ini signalGen = do
   isInitialDiff <- execute $ newIORef True
   actionSignal <- signalGen
@@ -743,22 +744,26 @@ type family Remove x xs where
 --   :: Document
 --   -> Node
 --   -> M.Map Key (VTree action)
---   -> V.Vector  (VTree action)
+--   -> MV.IOVector  (VTree action)
 --   -> M.Map Key (VTree action)
---   -> V.Vector  (VTree action)
+--   -> MV.IOVector  (VTree action)
 --   -> IO ()
 -- swapKids doc p currentMap cs newMap ns = do
---   case (V.null cs, V.null ns) of
+--   case (MV.null cs, MV.null ns) of
 --     (True, True) -> pure () -- | None, skip
---     (False, True) -> pure () -- | No nodes left, remove all remaining
--- --      goDatch doc p (Just (V.head cs)) Nothing
--- --      swapKids doc p currentMap (V.tail cs) newMap V.empty
+--     (False, True) -> do -- | No nodes left, remove all remaining
+--       c <- MV.unsafeRead cs 0
+--       let css = MV.unsafeTail cs
+--       goDatch doc p (Just (V.head css)) Nothing
+--       swapKids doc p currentMap (V.tail cs) newMap V.empty
 --     (True, False) -> pure ()
--- --      goDatch doc p Nothing $ Just (V.head ns)
--- --      swapKids doc p currentMap V.empty newMap (V.tail ns)
+--       goDatch doc p Nothing $ Just (V.head ns)
+--       swapKids doc p currentMap V.empty newMap (V.tail ns)
 --     (False, False) -> do
---       let (c, css) = (V.head &&& V.tail) cs
---           (n, nss) = (V.head &&& V.tail) ns
+--       c <- MV.unsafeRead cs 0
+--       let css = MV.unsafeTail cs
+--       n <- MV.unsafeRead ns 0
+--       let nss = MV.unsafeTail ns
 --       case getKeyUnsafe c == getKeyUnsafe n of
 --         True -> -- Keys same, continue
 --           swapKids doc p currentMap css newMap nss
@@ -766,13 +771,13 @@ type family Remove x xs where
 --           case M.lookup (getKeyUnsafe c) newMap of
 --             -- Current node has been deleted, remove from DOM
 --             Nothing -> do
---               let VNode _ _ _ _ _ ref _ = c
+--               let ref = vNode c
 --               void $ removeChild p =<< readIORef ref
 --               swapKids doc p currentMap css newMap ns
 --             -- Current node exists, but does new node exist in current map?
 --             Just _ -> do
---               let VNode _ _ _ _ _ currentRef _ = c
---                   VNode ntyp _ _ _ _ newRef _  = n
+--               let currentRef = vNode c
+--                   VNode ntyp _ _ _ _ _ _ newRef _  = n
 --               case M.lookup (getKeyUnsafe n) currentMap of
 --                 -- New node, doesn't exist in current map, create new node and insertBefore
 --                 Nothing -> do
@@ -782,7 +787,7 @@ type family Remove x xs where
 --                   swapKids doc p currentMap cs newMap nss
 --                  -- Node has moved, use insertBefore on moved node
 --                 Just foundNode -> do
---                   let VNode _ _ _ _ _ movedNode _ = foundNode
+--                   let VNode _ _ _ _ _ _ _ movedNode _ = foundNode
 --                   mNode <- readIORef movedNode
 --                   cNode <- readIORef currentRef
 --                   void $ insertBefore p cNode mNode
