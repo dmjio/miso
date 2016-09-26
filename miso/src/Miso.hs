@@ -43,7 +43,6 @@ import qualified Data.String.Conversions       as CS
 import qualified Data.Text                     as T
 import qualified Data.Vector                   as V
 import qualified Data.Vector.Mutable           as MV
-import qualified FRP.Elerea.Simple             as FRP
 import           FRP.Elerea.Simple
 import           GHC.TypeLits
 import           GHCJS.DOM
@@ -205,7 +204,8 @@ delegateEvent
   :: forall action . Event
   -> (action -> IO ())
   -> VTree action
-  -> T.Text -> [Node] -> IO ()
+  -> T.Text
+  -> [Node] -> IO ()
 delegateEvent e writer vnode eventName = do
   void . flip execStateT [] . findEvent (vChildren vnode)
     where
@@ -215,7 +215,7 @@ delegateEvent e writer vnode eventName = do
          result <- liftIO $ findNode childNodes y
          case result of
            Nothing -> pure False
-           Just VText{..} -> pure False
+           Just VText {..} -> pure False
            Just VNode { vEvents = Events events } -> do
              case M.lookup eventName events of
                Nothing -> pure False
@@ -239,7 +239,7 @@ delegateEvent e writer vnode eventName = do
           Nothing ->
             propagateWhileAble False xs
           Just (EventHandler options prox action) -> do
-            liftIO $ runEvent e writer prox action
+            liftIO $ do runEvent e writer prox action
             when (preventDefault options) $ liftIO (E.preventDefault e)
             propagateWhileAble (stopPropagation options) xs
 
@@ -402,7 +402,7 @@ diffCss node (CSS current) (CSS new) = do
     case M.lookup currentKey new of
       Nothing -> do
         styleObj <- Object <$> getProp "style" obj
-        jv <- toJSVal (mempty :: String)
+        jv <- toJSVal (mempty :: T.Text)
         setProp (textToJSString currentKey) jv styleObj
       Just newVal ->
         when (newVal /= currentVal) $ do
@@ -467,22 +467,7 @@ diffChildren
   -> MV.IOVector (VTree action)
   -> MV.IOVector (VTree action)
   -> IO ()
-diffChildren doc parent as bs =
-  diffChildren' doc parent as bs
-  -- case isKeyed as of
-  --   True -> do
-  --     swapKids doc parent (makeMap as) as (makeMap bs) bs
-  --     diffChildren' doc parent as bs
-  --   False ->
-  --     diffChildren' doc parent as bs
-
-diffChildren'
-  :: Document
-  -> Node
-  -> MV.IOVector (VTree action)
-  -> MV.IOVector (VTree action)
-  -> IO ()
-diffChildren' doc parent current new = do
+diffChildren doc parent current new = do
   case (MV.null current, MV.null new) of
     (False, True) -> do
       a <- MV.unsafeRead current 0
@@ -511,37 +496,36 @@ getHeadAndTail xs = do
 type Events = Proxy [(Symbol, Bool)]
 
 initialize
-  :: forall action events . ExtractEvents events
-  => SignalGen (FRP.Signal (Sample (View action)))
+  :: forall events action . ExtractEvents events
+  => Proxy events
   -> (action -> IO ())
-  -> Proxy events
-  -> SignalGen (FRP.Signal ())
-initialize gen writer events = do
+  -> SignalGen (Signal (Sample (View action)))
+  -> SignalGen (Signal ())
+initialize events writer gen = do
   sig <- gen
   Changed initialTree <- snapshot sig
   vtreeRef <- execute $ do
     iTree <- runView initialTree
     initTree iTree
-    vtreeRef <- newIORef iTree
-    void $ forkIO $ delegator writer vtreeRef events
-    pure vtreeRef
+    newIORef iTree
+  execute $ void . forkIO $ delegator writer vtreeRef events
   flip effectful1 sig $ \tree -> do
-    void $ waitForAnimationFrame
-    case tree of
-      NotChanged _ -> pure ()
-      Changed newTree -> do
-        nT <- runView newTree
-        currentTree <- readIORef vtreeRef
-        Just currentTree `datch` Just nT
-        writeIORef vtreeRef nT
+     case tree of
+       NotChanged _ -> pure ()
+       Changed newTree -> do
+          newTree <- runView newTree
+          currentTree <- readIORef vtreeRef
+          Just currentTree `datch` Just newTree
+          writeIORef vtreeRef newTree
 
 runSignal :: forall e action . ExtractEvents e
           => Proxy e
           -> (action -> IO ())
-          -> FRP.SignalGen (FRP.Signal (Sample (View action)))
+          -> SignalGen (Signal (Sample (View action)))
           -> IO ()
-runSignal events writer gen =
- forever =<< start (initialize gen writer events)
+runSignal events writer gen = do
+  step <- start $ initialize events writer gen
+  forever $ waitForAnimationFrame >> step
 
 signal :: IO (SignalGen (Signal [a]), a -> IO ())
 signal = externalMulti
@@ -739,58 +723,3 @@ type family Remove x xs where
   Remove x '[]       = '[]
   Remove x (x ': ys) =      Remove x ys
   Remove x (y ': ys) = y ': Remove x ys
-
--- swapKids
---   :: Document
---   -> Node
---   -> M.Map Key (VTree action)
---   -> MV.IOVector  (VTree action)
---   -> M.Map Key (VTree action)
---   -> MV.IOVector  (VTree action)
---   -> IO ()
--- swapKids doc p currentMap cs newMap ns = do
---   case (MV.null cs, MV.null ns) of
---     (True, True) -> pure () -- | None, skip
---     (False, True) -> do -- | No nodes left, remove all remaining
---       c <- MV.unsafeRead cs 0
---       let css = MV.unsafeTail cs
---       goDatch doc p (Just (V.head css)) Nothing
---       swapKids doc p currentMap (V.tail cs) newMap V.empty
---     (True, False) -> pure ()
---       goDatch doc p Nothing $ Just (V.head ns)
---       swapKids doc p currentMap V.empty newMap (V.tail ns)
---     (False, False) -> do
---       c <- MV.unsafeRead cs 0
---       let css = MV.unsafeTail cs
---       n <- MV.unsafeRead ns 0
---       let nss = MV.unsafeTail ns
---       case getKeyUnsafe c == getKeyUnsafe n of
---         True -> -- Keys same, continue
---           swapKids doc p currentMap css newMap nss
---         False -> do -- Keys not the same, check if current node has been moved or deleted
---           case M.lookup (getKeyUnsafe c) newMap of
---             -- Current node has been deleted, remove from DOM
---             Nothing -> do
---               let ref = vNode c
---               void $ removeChild p =<< readIORef ref
---               swapKids doc p currentMap css newMap ns
---             -- Current node exists, but does new node exist in current map?
---             Just _ -> do
---               let currentRef = vNode c
---                   VNode ntyp _ _ _ _ _ _ newRef _  = n
---               case M.lookup (getKeyUnsafe n) currentMap of
---                 -- New node, doesn't exist in current map, create new node and insertBefore
---                 Nothing -> do
---                   Just newNode <- fmap castToNode <$> createElement doc (Just ntyp)
---                   writeIORef newRef (Just newNode)
---                   void $ insertBefore p (Just newNode) =<< readIORef currentRef
---                   swapKids doc p currentMap cs newMap nss
---                  -- Node has moved, use insertBefore on moved node
---                 Just foundNode -> do
---                   let VNode _ _ _ _ _ _ _ movedNode _ = foundNode
---                   mNode <- readIORef movedNode
---                   cNode <- readIORef currentRef
---                   void $ insertBefore p cNode mNode
---                   writeIORef currentRef mNode
---                   writeIORef movedNode cNode
---                   swapKids doc p currentMap css newMap ns
