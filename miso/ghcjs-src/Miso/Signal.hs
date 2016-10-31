@@ -7,16 +7,12 @@ module Miso.Signal
   , signal
   ) where
 
--- import           Control.Concurrent
--- import           Control.Monad
-import           Control.Monad.Fix
-import qualified Data.Foldable                 as F
--- import           Data.IORef
-import           Data.Proxy
-import           FRP.Elerea.Simple
--- import           JavaScript.Web.AnimationFrame
--- import           Miso.Html.Internal
-import           Miso.Types
+import Control.Concurrent
+import Control.Monad
+import Control.Monad.Fix
+import Data.Proxy
+import FRP.Elerea.Simple
+import Miso.Types
 
 mergeSignals
   :: SignalGen (Signal [action])
@@ -47,7 +43,7 @@ foldp p update ini signalGen writer = do
     effectful2 handleUpdate actionSignal modelSignal
       where
         handleUpdate actions m = do
-          goFold m update actions writer >>= \case
+          goFold (fromChanged m) update actions writer >>= \case
             NotChanged newModel ->
               pure $ NotChanged newModel
             Changed newModel -> do
@@ -56,25 +52,21 @@ foldp p update ini signalGen writer = do
 
 goFold
   :: forall model action . Eq model
-  => Sample model
+  => model
   -> (action -> model -> Effect action model)
   -> [action]
   -> (action -> IO ())
   -> IO (Sample model)
-goFold m _ [] _ = pure $ NotChanged (fromChanged m)
-goFold initialModel update as _ = go initialModel as
+goFold initialModel update actions writer = go initialModel actions
   where
-    go = F.foldrM f
-    f action model =
-      case update action (fromChanged model) of
-        NoEffect m -> do
-          pure $ case m == fromChanged initialModel of
-            True -> NotChanged m
-            False -> Changed m
+    go model [] | model == initialModel = pure (NotChanged model)
+                | otherwise = pure (Changed model)
+    go model (a:as) = do
+      case update a model of
+        NoEffect m -> go m as
         Effect m eff -> do
---          void . forkIO $ writer =<< eff
-          newAction <- eff
-          go (NotChanged m) [newAction]
+          void . forkIO $ writer =<< eff
+          go m as
 
 fromChanged :: Sample a -> a
 fromChanged (Changed x) = x
