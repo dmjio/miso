@@ -3,7 +3,7 @@ module Miso.Event.Interpreter where
 
 import           Control.Monad.Free.Church
 import qualified Data.Aeson                 as A
-import           Data.Aeson                 hiding (Value(..))
+import           Data.Aeson                 hiding (Value(..), Object)
 import           Data.Monoid
 import qualified GHCJS.DOM.Event            as E
 import           GHCJS.DOM.EventTarget
@@ -16,6 +16,7 @@ import           GHCJS.Marshal.Pure
 import           GHCJS.Types
 import           JavaScript.Object
 import           JavaScript.Object.Internal
+import           JavaScript.Array.Internal
 import           Miso.Html.Types.Event
 
 evalEventGrammar :: JSVal -> Grammar a -> IO a
@@ -48,6 +49,13 @@ evalEventGrammar e = do
        GetNextSibling obj cb -> do
          result <- Node.getNextSibling (pFromJSVal obj :: Node)
          cb $ pToJSVal <$> result
+       ApplyFunction obj str xs cb ->
+         cb =<< convertToJSON
+            =<< apply (Object obj) str
+            =<< fromList <$> mapM toJSVal (map toJSON xs)
+
+foreign import javascript unsafe "$r = $1[$2].apply(this, $3);"
+  apply :: Object -> JSString -> JSArray -> IO JSVal
 
 jsToJSON :: FromJSON v => Foreign.JSType -> JSVal -> IO (Maybe v)
 jsToJSON Foreign.Number  g = convertToJSON g

@@ -35,6 +35,12 @@ data Action a where
   GetItem :: MisoVal -> Int -> (Maybe MisoVal -> a) -> Action a
   GetNextSibling :: MisoVal -> (Maybe MisoVal -> a) -> Action a
   SetEventField :: ToJSON v => MisoString -> v -> a -> Action a
+  ApplyFunction :: (ToJSON args, FromJSON result)
+                => MisoVal
+                -> MisoString
+                -> [args]
+                -> (Maybe result -> a)
+                -> Action a
 
 deriving instance Functor Action
 
@@ -94,3 +100,10 @@ $(makeFreeCon 'GetItem)
 -- > node.nextSibling;
 --
 $(makeFreeCon 'GetNextSibling)
+
+-- | Executes function on object
+--
+-- > node['f'].apply(this, ["arg1", "arg2"])
+--
+$(makeFreeCon 'ApplyFunction)
+
