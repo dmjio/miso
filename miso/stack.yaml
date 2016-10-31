@@ -1,0 +1,15 @@
+compiler-check: match-exact
+resolver: nightly-2016-04-17
+compiler: ghcjs-0.2.0.820160417_ghc-7.10.3
+
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.0.820160417_ghc-7.10.3:
+        url: "https://tolysz.org/ghcjs/nightly-2016-04-17-820160417.tar.gz"
+
+extra-deps:
+  - elerea-2.9.0
+
+packages:
+ - location: '.'

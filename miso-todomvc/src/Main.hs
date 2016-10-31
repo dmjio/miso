@@ -1,3 +1,4 @@
+{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -11,24 +12,25 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
 
-import           Control.Concurrent
-import           Control.Monad
 import           Data.Aeson         hiding (Object)
 import           Data.Bool
+import qualified Data.JSString      as J
+import qualified Data.JSString.Text as J
 import qualified Data.Map           as M
 import           Data.Monoid
 import           Data.Proxy
+import           Data.String
 import qualified Data.Text          as T
 import           GHC.Generics
+-- import           GHC.TypeLits
+import           GHCJS.Marshal
 import           Miso
-import           System.Random
 
 data Model = Model
   { entries :: [Entry]
   , field :: T.Text
   , uid :: Int
   , visibility :: T.Text
-  , step :: Bool
   } deriving (Show, Generic, Eq)
 
 data Entry = Entry
@@ -45,13 +47,15 @@ instance ToJSON Model
 instance FromJSON Entry
 instance FromJSON Model
 
+js :: T.Text -> J.JSString
+js = J.textToJSString
+
 emptyModel :: Model
 emptyModel = Model
   { entries = []
   , visibility = "All"
   , field = mempty
   , uid = 0
-  , step = False
   }
 
 newEntry :: T.Text -> Int -> Entry
@@ -75,38 +79,36 @@ data Msg
   | Check Int Bool
   | CheckAll Bool
   | ChangeVisibility T.Text
-   deriving Show
+   deriving (Show, Generic)
 
-stepConfig :: Proxy '[ SaveToLocalStorage "todo-mvc", DebugActions ]
+instance ToJSVal Msg
+instance FromJSVal Msg
+
+stepConfig :: Proxy '[]
 stepConfig = Proxy
 
-getInitialModel :: IO Model
-getInitialModel = do
-  getFromStorage "todo-mvc" >>= \case
-    Left x  -> putStrLn x >> pure emptyModel
-    Right m -> pure m
+-- getInitialModel :: IO Model
+-- getInitialModel = do
+--   getFromStorage "todo-mvc" >>= \case
+--     Left x  -> putStrLn x >> pure emptyModel
+--     Right m -> pure m
 
--- Example signal to merge with
-timer :: IO (Signal [Int])
-timer = do
-  (sig, writer) <- signal
-  void . forkIO $ forever $ do
-    threadDelay 1000000
-    writer =<< randomRIO (1,10)
-  pure sig
-
-(<$$$>) :: (Functor k, Functor f, Functor g) => (a -> b) -> k (f (g a)) -> k (f (g b))
-(<$$$>) = fmap . fmap . fmap
+events' :: Proxy '[ '("click", 'False)
+                  , '("keypress", 'False)
+                  , '("keydown", 'False)
+                  , '("keyup", 'False)
+                  ]
+events' = Proxy
 
 main :: IO ()
 main = do
-  m <- getInitialModel
-  startApp m view update defaultEvents stepConfig []
+--  m <- getInitialModel
+  startApp emptyModel view update defaultSettings
 
-update :: Msg -> Model -> Effect Msg Model 
+update :: Msg -> Model -> Effect Msg Model
 update NoOp m = noEff m
 update (CurrentTime n) m = print n >> pure NoOp <# m
-update Add model@Model{..} = 
+update Add model@Model{..} =
   noEff model {
     uid = uid + 1
   , field = mempty
@@ -114,7 +116,7 @@ update Add model@Model{..} =
   }
 
 update (UpdateField str) model = noEffect model { field = str }
-update (EditingEntry id' isEditing) model@Model{..} = 
+update (EditingEntry id' isEditing) model@Model{..} =
   noEff model { entries = newEntries }
     where
       newEntries = filterMap entries (\t -> eid t == id') $
@@ -136,7 +138,7 @@ update DeleteComplete model@Model{..} =
 update (Check id' isCompleted) model@Model{..} =
   eff <# model { entries = newEntries }
     where
-      eff = 
+      eff =
         putStrLn "clicked check" >>
           pure NoOp
 
@@ -162,11 +164,11 @@ filterMap xs predicate f = go xs
      | predicate y = f y : go ys
      | otherwise   = y : go ys
 
-view :: Model -> VTree Msg
-view m@Model{..} = 
+view :: Model -> View Msg
+view m@Model{..} =
  div_
     [ class_ "todomvc-wrapper"
-    , style_  $ M.singleton "visibility" "hidden" 
+    , style_  $ M.singleton "visibility" "hidden"
     ]
     [ section_
         [ class_ "todoapp" ]
@@ -177,7 +179,7 @@ view m@Model{..} =
     , infoFooter
     ]
 
-viewEntries :: T.Text -> [ Entry ] -> VTree Msg
+viewEntries :: T.Text -> [ Entry ] -> View Msg
 viewEntries visibility entries =
   section_
     [ class_ "main"
@@ -192,7 +194,7 @@ viewEntries visibility entries =
         ] []
       , label_
           [ attr "for" "toggle-all", attr "draggable" "true" ]
-          [ text_ "Mark all as complete" ]
+          [ text "Mark all as complete" ]
       , ul_ [ class_ "todo-list" ] $
          flip map (filter isVisible entries) $ \t ->
            viewKeyedEntry t
@@ -206,12 +208,12 @@ viewEntries visibility entries =
         "Active" -> not completed
         _ -> True
 
-viewKeyedEntry :: Entry -> VTree Msg
+viewKeyedEntry :: Entry -> View Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Entry -> VTree Msg
+viewEntry :: Entry -> View Msg
 viewEntry Entry {..} = liKeyed_ (toKey eid)
-    [ class_ $ T.intercalate " " $
+    [ class_ $ J.textToJSString $ T.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
     ]
     [ div_
@@ -224,8 +226,8 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
             ] []
         , label_
             [ onDoubleClick $ EditingEntry eid True ]
-            [ text_ description ]
-        , btn_
+            [ text $ J.textToJSString description ]
+        , button_
             [ class_ "destroy"
             , onClick $ Delete eid
             ] []
@@ -234,8 +236,8 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         [ class_ "edit"
         , prop "value" description
         , name_ "title"
-        , autofocus focussed
-        , id_ $ "todo-" <> T.pack (show eid)
+        , autofocus_ focussed
+        , id_ $ "todo-" <> fromString (show eid)
         , onInput $ UpdateEntry eid
         , onBlur $ EditingEntry eid False
         , onEnter $ EditingEntry eid False
@@ -243,7 +245,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         []
     ]
 
-viewControls :: Model ->  T.Text -> [ Entry ] -> VTree Msg
+viewControls :: Model ->  T.Text -> [ Entry ] -> View Msg
 viewControls model visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -256,73 +258,73 @@ viewControls model visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> VTree Msg
+viewControlsCount :: Int -> View Msg
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
-     [ strong_ [] [ text_ $ T.pack (show entriesLeft) ]
-     , text_ (item_ <> " left")
+     [ strong_ [] [ text $ fromString (show entriesLeft) ]
+     , text (item_ <> " left")
      ]
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: T.Text -> VTree Msg 
+viewControlsFilters :: T.Text -> View Msg
 viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
     [ visibilitySwap "#/" "All" visibility
-    , text_ " "
+    , text " "
     , visibilitySwap "#/active" "Active" visibility
-    , text_ " "
+    , text " "
     , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: T.Text -> T.Text -> T.Text -> VTree Msg 
+visibilitySwap :: T.Text -> T.Text -> T.Text -> View Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
-      [ a_ [ href_ uri
-           , class_ $ T.concat [ "selected" | visibility == actualVisibility ]
+      [ a_ [ href_ (js uri)
+           , class_ $ mconcat [ "selected" | visibility == actualVisibility ]
            , onClick (ChangeVisibility visibility)
-           ] [ text_ visibility ]
+           ] [ text (js visibility) ]
       ]
 
-viewControlsClear :: Model -> Int -> VTree Msg 
+viewControlsClear :: Model -> Int -> View Msg
 viewControlsClear _ entriesCompleted =
-  btn_
+  button_
     [ class_ "clear-completed"
     , prop "hidden" (entriesCompleted == 0)
-    , onClick DeleteComplete 
+    , onClick DeleteComplete
     ]
-    [ text_ $ "Clear completed (" <> T.pack (show entriesCompleted) <> ")" ]
+    [ text $ "Clear completed (" <> fromString (show entriesCompleted) <> ")" ]
 
-viewInput :: Model -> T.Text -> VTree Msg 
+viewInput :: Model -> T.Text -> View Msg
 viewInput _ task =
   header_ [ class_ "header" ]
-    [ h1_ [] [ text_ "todos" ]
+    [ h1_ [] [ text "todos" ]
     , input_
         [ class_ "new-todo"
-        , placeholder "What needs to be done?"
-        , autofocus True
+        , placeholder_ "What needs to be done?"
+        , autofocus_ True
         , prop "value" task
         , attr "name" "newTodo"
         , onInput UpdateField
-        , onEnter Add 
+        , onEnter Add
         ] []
     ]
 
-onEnter :: Msg -> Attribute Msg 
+onEnter :: Msg -> Attribute Msg
 onEnter action =
   onKeyDown $ bool NoOp action . (== 13)
 
-infoFooter :: VTree Msg
+infoFooter :: View Msg
 infoFooter =
     footer_ [ class_ "info" ]
-    [ p_ [] [ text_ "Double-click to edit a todo" ]
+    [ p_ [] [ text "Double-click to edit a todo" ]
     , p_ []
-        [ text_ "Written by "
-        , a_ [ href_ "https://github.com/dmjio" ] [ text_ "David Johnson" ]
+        [ text "Written by "
+        , a_ [ href_ "https://github.com/dmjio" ] [ text "David Johnson" ]
         ]
     , p_ []
-        [ text_ "Part of "
-        , a_ [ href_ "http://todomvc.com" ] [ text_ "TodoMVC" ]
+        [ text "Part of "
+        , a_ [ href_ "http://todomvc.com" ] [ text "TodoMVC" ]
         ]
     ]
