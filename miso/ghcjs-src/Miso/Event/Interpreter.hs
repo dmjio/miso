@@ -50,11 +50,11 @@ evalEventGrammar e = do
          result <- Node.getNextSibling (pFromJSVal obj :: Node)
          cb $ pToJSVal <$> result
        ApplyFunction obj str xs cb ->
-         cb =<< convertToJSON
+         cb =<< (\val -> jsToJSON (Foreign.jsTypeOf val) val)
             =<< apply (Object obj) str
             =<< fromList <$> mapM toJSVal (map toJSON xs)
 
-foreign import javascript unsafe "$r = $1[$2].apply(this, $3);"
+foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
   apply :: Object -> JSString -> JSArray -> IO JSVal
 
 jsToJSON :: FromJSON v => Foreign.JSType -> JSVal -> IO (Maybe v)
