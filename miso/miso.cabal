@@ -46,20 +46,19 @@ library
   hs-source-dirs: src
   build-depends:   aeson
                  , base > 4.7 && < 5.0
+                 , bytestring
                  , containers
                  , free
                  , text
-                 , elerea
   if impl(ghcjs)
     hs-source-dirs: ghcjs-src
-    build-depends: ghcjs-base, elerea, ghcjs-dom
+    build-depends: ghcjs-base, elerea, ghcjs-dom == 0.2.3.1
     js-sources:
       jsbits/diff.js
       jsbits/delegate.js
       jsbits/isomorphic.js
     exposed-modules:
       Miso
-      Miso.Concurrent
       Miso.Effect
       Miso.Event
       Miso.Event.Delegate
@@ -73,6 +72,8 @@ library
       Miso.Storage
       Miso.TypeLevel
       Miso.Types
+    other-modules:
+      Miso.Concurrent
   else
     build-depends: lucid
                  , vector

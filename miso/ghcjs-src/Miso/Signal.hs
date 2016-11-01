@@ -13,6 +13,7 @@ import Control.Monad.Fix
 import Data.Proxy
 import FRP.Elerea.Simple
 import Miso.Types
+import Miso.Concurrent ( Notify (..), notifier )
 
 mergeSignals
   :: SignalGen (Signal [action])
@@ -27,7 +28,9 @@ mergeManySignals :: [ SignalGen (Signal [action]) ] -> SignalGen (Signal [action
 mergeManySignals = foldl1 mergeSignals
 
 signal :: IO (SignalGen (Signal [a]), a -> IO ())
-signal = externalMulti
+signal = do
+  (source, sink) <- externalMulti
+  pure (source, \action -> sink action >> notify notifier)
 
 foldp :: ( HasAction action model effects, Eq model )
       => Proxy effects

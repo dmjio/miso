@@ -29,6 +29,7 @@ import Miso.Html
 import Miso.Isomorphic
 import Miso.Signal
 import Miso.Types                    hiding (ToAction)
+import Miso.Concurrent ( Notify (..), notifier )
 
 startApp
   :: ( HasAction action model stepConfig
@@ -40,7 +41,6 @@ startApp
        -> Settings (events :: [(Symbol, Bool)]) stepConfig action
        -> IO ()
 startApp initialModel view update Settings{..} = do
-  Notify {..} <- createNotify
   (sig, writer) <- signal
   let mergedSignals = mergeManySignals (sig : extraSignals)
   -- If isomorphic, then copy the dom into the `initialTree`, forego initial diff
@@ -59,7 +59,7 @@ startApp initialModel view update Settings{..} = do
   -- /end delegator fork
   step <- start $ foldp stepConfig update initialModel mergedSignals writer
   forever $ do
-    draw >> step >>= \case
+    draw notifier >> step >>= \case
       NotChanged _ -> pure ()
       Changed changedModel -> do
         -- Can we perform caching here?

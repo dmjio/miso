@@ -1,7 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Miso.Concurrent ( Notify (..), createNotify )where
+module Miso.Concurrent ( Notify (..), createNotify, notifier )where
 
 import Control.Concurrent.MVar
+import System.IO.Unsafe
+
+notifier :: Notify
+{-# NOINLINE notifier #-}
+notifier = unsafePerformIO createNotify
 
 data Notify = Notify {
     draw :: IO ()
