@@ -69,6 +69,9 @@ library
       Miso.Observable
       -- Miso.Router
       Miso.Settings
+      Miso.Mouse
+      Miso.Window
+      Miso.FFI
       Miso.Signal
       Miso.Storage
       Miso.TypeLevel
