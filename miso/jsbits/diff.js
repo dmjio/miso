@@ -48,7 +48,7 @@ function populate (c, n) {
             , css : null
             , children : []
 	    }
-  diffAttrs (c.attrs, n.attrs, n.domRef);
+  diffAttrs (c.attrs, n.attrs, n.domRef, n.ns === "svg");
   diffProps (c.props, n.props, n.domRef);
   diffCss (c.css, n.css, n.domRef);
   diffChildren (c.children, n.children, n.domRef);
@@ -66,7 +66,7 @@ function diffVNodes (c, n, parent) {
   }
 }
 
-function diffAttrs (cAttrs, nAttrs, node) {
+function diffAttrs (cAttrs, nAttrs, node, isSVG) {
     var result;
     /* is current prop in new prop list? */
     for (var c in cAttrs) {
@@ -76,14 +76,21 @@ function diffAttrs (cAttrs, nAttrs, node) {
 	node.removeAttribute(c);
       } else {
        var domProp = node[c];
-       if (result !== cAttrs[c] && result !== domProp)
-         node.setAttribute(c, result);
+        if (result !== cAttrs[c] && result !== domProp) {
+            if (c === "href" && isSVG)
+              node.setAttributeNS("http://www.w3.org/1999/xlink", c, result);
+	    else
+	      node.setAttribute(c, result);
+         }
       }
     }
     /* add remaining */
      for (var n in nAttrs) {
        if (cAttrs && cAttrs[n]) continue;
-       node.setAttribute(n, nAttrs[n]);
+       if (n === "href" && isSVG)
+          node.setAttributeNS("http://www.w3.org/1999/xlink", n, nAttrs[n]);
+       else
+          node.setAttribute(n, nAttrs[n]);
      }
 }
 
@@ -137,7 +144,7 @@ function diffChildren (cs, ns, parent) {
 function createNode (obj, parent) {
   if (obj.type === "vnode") {
       obj.domRef = obj.ns === "svg"
-	  ? document.createElementNS("http://svgnamespace", obj.tag)
+	  ? document.createElementNS("http://www.w3.org/2000/svg", obj.tag)
 	  : document.createElement(obj.tag);
     populate (null, obj);
   } else {
@@ -145,3 +152,4 @@ function createNode (obj, parent) {
   }
   parent.appendChild(obj.domRef);
 }
+
