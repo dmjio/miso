@@ -29,7 +29,6 @@ import Miso.Html
 import Miso.Isomorphic
 import Miso.Signal
 import Miso.Types                    hiding (ToAction)
-import Miso.Concurrent ( Notify (..), notifier )
 
 startApp
   :: ( HasAction action model stepConfig
@@ -55,7 +54,7 @@ startApp initialModel view update Settings{..} = do
   vTreeRef <- newIORef initialVTree
 
   -- Begin listening for events in the virtual dom
-  void . forkIO $ delegator writer vTreeRef events notify
+  void . forkIO $ delegator writer vTreeRef events (notify notifier)
   -- /end delegator fork
   step <- start $ foldp stepConfig update initialModel mergedSignals writer
   forever $ do
