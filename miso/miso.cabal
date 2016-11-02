@@ -48,6 +48,7 @@ library
                  , base > 4.7 && < 5.0
                  , bytestring
                  , containers
+                 , string-conversions
                  , free
                  , text
   if impl(ghcjs)
