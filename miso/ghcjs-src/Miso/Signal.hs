@@ -5,45 +5,50 @@ module Miso.Signal
   , mergeManySignals
   , foldp
   , signal
+  , start
   ) where
 
-import Control.Concurrent
-import Control.Monad
-import Control.Monad.Fix
-import Data.Proxy
-import FRP.Elerea.Simple
-import Miso.Types
-import Miso.Concurrent ( Notify (..), notifier )
+import           Control.Concurrent
+import           Control.Monad
+import           Control.Monad.Fix
+import           Data.Proxy
+import qualified FRP.Elerea.Simple  as E
+
+import           Miso.Concurrent    ( Notify (..), notifier )
+import           Miso.Types
 
 mergeSignals
-  :: SignalGen (Signal [action])
-  -> SignalGen (Signal [action])
-  -> SignalGen (Signal [action])
-mergeSignals x y = do
+  :: Signal action
+  -> Signal action
+  -> Signal action
+mergeSignals (SignalCore x) (SignalCore y) = SignalCore $ do
   signalX <- x
   signalY <- y
   pure $ (++) <$> signalX <*> signalY
 
-mergeManySignals :: [ SignalGen (Signal [action]) ] -> SignalGen (Signal [action])
+mergeManySignals :: [ Signal action ] -> Signal action
 mergeManySignals = foldl1 mergeSignals
 
-signal :: IO (SignalGen (Signal [a]), a -> IO ())
+start :: SignalCore f a -> IO (IO (f a))
+start (SignalCore s) = E.start s
+
+signal :: IO (Signal a, a -> IO ())
 signal = do
-  (source, sink) <- externalMulti
-  pure (source, \action -> sink action >> notify notifier)
+  (source, sink) <- E.externalMulti
+  pure (SignalCore source, \action -> sink action >> notify notifier)
 
 foldp :: ( HasAction action model effects, Eq model )
       => Proxy effects
       -> (action -> model -> Effect action model)
       -> model
-      -> SignalGen (Signal [action])
+      -> Signal action
       -> (action -> IO ())
-      -> SignalGen (Signal (Sample model))
-foldp p update ini signalGen writer = do
+      -> SignalCore Sample model
+foldp p update ini (SignalCore signalGen) writer = SignalCore $ do
   actionSignal <- signalGen
   mfix $ \sig -> do
-    modelSignal <- delay (NotChanged ini) sig
-    effectful2 handleUpdate actionSignal modelSignal
+    modelSignal <- E.delay (NotChanged ini) sig
+    E.effectful2 handleUpdate actionSignal modelSignal
       where
         handleUpdate actions m = do
           goFold (fromChanged m) update actions writer >>= \case

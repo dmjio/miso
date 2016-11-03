@@ -3,14 +3,13 @@
 module Miso.Event.Delegate where
 
 import qualified Data.Foldable          as F
+import qualified Data.Map as M
 import           Data.IORef
-import           Data.Proxy
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Types
 import           JavaScript.Object.Internal
 import           Miso.Html.Internal
-import           Miso.Types
 
 foreign import javascript unsafe "delegate($1, $2, $3);"
   delegateEvent
@@ -20,19 +19,16 @@ foreign import javascript unsafe "delegate($1, $2, $3);"
      -> IO ()
 
 delegator
-  :: forall action events . ( ExtractEvents events, FromJSVal action )
+  :: forall action . FromJSVal action
   => (action -> IO ())
   -> IORef (VTree action)
-  -> Proxy events
+  -> M.Map JSString Bool
   -> IO ()
-  -> IO ()
-delegator writer vtreeRef prox notify = do
-  evts <- toJSVal $ extractEvents prox
+delegator writer vtreeRef es = do
+  evts <- toJSVal (M.toList es)
   getVTreeFromRef <- syncCallback' $ do
     VTree (Object val) <- readIORef vtreeRef
     pure val
-  cb <- asyncCallback1 $ \e -> do
+  cb <- asyncCallback1 $ \e ->
     flip F.forM_ writer =<< fromJSVal e
-    notify
   delegateEvent evts getVTreeFromRef cb
-

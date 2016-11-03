@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ForeignFunctionInterface  #-}
 module Miso.Storage
@@ -19,36 +20,32 @@ module Miso.Storage
   , sessionStorageLength
   ) where
 
+import Control.Monad
 import Data.Aeson              hiding (Object, String)
 import Data.JSString
-import Data.JSString.Text
-import Data.String.Conversions
-import GHCJS.Foreign
 import GHCJS.Types
-import Miso.Html.Internal
-import Unsafe.Coerce
+import GHCJS.Marshal
 
 getLocalStorage, getSessionStorage ::
-  FromJSON model => MisoString -> IO (Either String model)
+  FromJSON model => JSString -> IO (Either String model)
 getStorageCommon
-  :: (Monad m, FromJSON b) => (t -> m JSVal) -> t -> m (Either String b)
+  :: FromJSON b => (t -> IO JSVal) -> t -> IO (Either String b)
 getStorageCommon f key = do
-  result <- f key
-  pure $ case jsTypeOf result of
-    Object -> Left "Not found"
-    String -> eitherDecode . cs $ textFromJSString (unsafeCoerce result)
-    _ -> Left "Unknown JS type, cannot decode"
+  result :: Maybe Value <- fromJSVal =<< f key
+  pure $ case fromJSON <$> result of
+    Nothing -> Left "Not Found"
+    Just y -> case y of
+      Error x -> Left x
+      Success x -> Right x
 getSessionStorage = getStorageCommon getItemSS
 getLocalStorage = getStorageCommon getItemLS
 
 setLocalStorage, setSessionStorage ::
-  ToJSON model => MisoString -> model -> IO ()
-setLocalStorage key model = setItemLS key val
-  where
-    val = textToJSString $ cs (encode model)
-setSessionStorage key model = setItemSS key val
-  where
-    val = textToJSString $ cs (encode model)
+  ToJSON model => JSString -> model -> IO ()
+setLocalStorage key model =
+  setItemLS key =<< do stringify <=< toJSVal $ toJSON model
+setSessionStorage key model =
+  setItemSS key =<< do stringify <=< toJSVal $ toJSON model
 
 foreign import javascript unsafe "$r = window.localStorage.getItem($1);"
   getItemLS :: JSString -> IO JSVal
@@ -74,8 +71,11 @@ foreign import javascript unsafe "$r = window.localStorage.length;"
 foreign import javascript unsafe "$r = window.sessionStorage.length;"
   sessionStorageLength :: IO Int
 
-foreign import javascript unsafe "window.localStorage.clear()"
+foreign import javascript unsafe "window.localStorage.clear();"
   clearLocalStorage :: IO ()
 
-foreign import javascript unsafe "window.sessionStorage.clear()"
+foreign import javascript unsafe "window.sessionStorage.clear();"
   clearSessionStorage :: IO ()
+
+foreign import javascript unsafe "$r = JSON.stringify($1);"
+ stringify :: JSVal -> IO JSString

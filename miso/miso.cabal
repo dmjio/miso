@@ -25,7 +25,7 @@ executable main
   main-is: Main.hs
   hs-source-dirs: exe
   ghc-options: -Wall
-  build-depends: miso, ghcjs-base, base
+  build-depends: miso, ghcjs-base, base, containers
   default-language: Haskell2010
 
 library
@@ -48,12 +48,11 @@ library
                  , base > 4.7 && < 5.0
                  , bytestring
                  , containers
-                 , string-conversions
                  , free
                  , text
   if impl(ghcjs)
     hs-source-dirs: ghcjs-src
-    build-depends: ghcjs-base, elerea, ghcjs-dom == 0.2.3.1
+    build-depends: ghcjs-base, elerea, containers
     js-sources:
       jsbits/diff.js
       jsbits/delegate.js
@@ -66,12 +65,13 @@ library
       Miso.Event.Interpreter
       Miso.Html.Diff
       Miso.Isomorphic
-      Miso.Observable
       -- Miso.Router
       Miso.Settings
+      Miso.Keyboard
       Miso.Mouse
       Miso.Window
       Miso.FFI
+      Miso.FPS
       Miso.Signal
       Miso.Storage
       Miso.TypeLevel
@@ -79,8 +79,7 @@ library
     other-modules:
       Miso.Concurrent
   else
-    build-depends: lucid
-                 , vector
+    build-depends: lucid, vector
     hs-source-dirs: ghc-src
     exposed-modules:  Miso.Event
   default-language: Haskell2010

@@ -1,0 +1,13 @@
+resolver: lts-7.2
+compiler: ghcjs-0.2.1.9007002_ghc-8.0.1
+compiler-check: match-exact
+
+setup-info:
+  ghcjs:
+    source:
+      ghcjs-0.2.1.9007002_ghc-8.0.1:
+          url: http://ghcjs.tolysz.org/ghc-8.0-2016-10-01-lts-7.2-9007002.tar.gz
+          sha1: a41ae415328e2b257d40724d13d1386390c26322
+
+extra-deps:
+ - elerea-2.9.0

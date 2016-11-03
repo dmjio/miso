@@ -1,16 +1,40 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Miso.Event where
 
-import Data.Proxy
-import Miso.Types
-import Miso.Html.Types.Event
-import Miso.Html.String
+import qualified Data.Map              as M
+import           GHCJS.Marshal
+import           GHCJS.Types
+import           Miso.Html.String
+import           Miso.Html.Types.Event
 
-import GHCJS.Marshal
-
-defaultEvents :: Proxy DefaultEvents
-defaultEvents = Proxy
+defaultEvents :: M.Map JSString Bool
+defaultEvents = M.fromList [
+    ("blur", True)
+  , ("change", False)
+  , ("click", False)
+  , ("dblclick", False)
+  , ("focus", False)
+  , ("input", False)
+  , ("keydown", False)
+  , ("keypress", False)
+  , ("keyup", False)
+  , ("mouseup", False)
+  , ("mousedown", False)
+  , ("mouseenter", False)
+  , ("mouseleave", False)
+  , ("mouseover", False)
+  , ("mouseout", False)
+  , ("dragstart", False)
+  , ("dragover", False)
+  , ("dragend", False)
+  , ("dragenter", False)
+  , ("dragleave", False)
+  , ("drag", False)
+  , ("drop", False)
+  , ("submit", False)
+  ]
 
 -- | `EventHandler` object action
 data EventHandler action =
