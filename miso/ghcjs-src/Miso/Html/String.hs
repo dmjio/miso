@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,7 +22,11 @@ module Miso.Html.String (
 import Data.Aeson
 import Data.JSString
 import Data.JSString.Text
+import GHCJS.Marshal
 import GHCJS.Types
+import System.IO.Unsafe
+
+import Miso.FFI
 
 type MisoVal = JSVal
 
@@ -40,3 +45,6 @@ misoIntercalate = intercalate
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
 
+-- | `FromJSON` for `MisoString`
+instance FromJSON MisoString where
+  parseJSON x = pure $ unsafePerformIO $ stringify' =<< toJSVal x

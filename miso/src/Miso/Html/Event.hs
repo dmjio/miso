@@ -69,7 +69,7 @@ import           Data.String
 #else
 #endif
 import           Data.Proxy
-import qualified Data.Text             as T
+
 import           GHC.TypeLits
 
 import           Miso.Event
@@ -146,8 +146,8 @@ instance HasEvent "dblclick" ()   where parseEvent _ = pure ()
 -- | Listens on "focus" event, returns `()`
 instance HasEvent "focus" ()      where parseEvent _ = pure ()
 
--- | Listens on "input" event, returns `T.Text` from  `event.target.value`
-instance HasEvent "input" T.Text  where parseEvent _ = inputGrammar
+-- | Listens on "input" event, returns `MisoString` from  `event.target.value`
+instance HasEvent "input" MisoString  where parseEvent _ = inputGrammar
 
 -- | Listens on "keydown" event, returns `Int` from `keyCode`, `which` or `charCode`
 instance HasEvent "keydown" Int   where parseEvent _ = keyGrammar
@@ -267,7 +267,7 @@ onDoubleClick :: ToAction action => action -> Attribute action
 onDoubleClick action = on (Proxy :: Proxy "dblclick") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
-onInput :: ToAction action => (T.Text -> action) -> Attribute action
+onInput :: ToAction action => (MisoString -> action) -> Attribute action
 onInput = on (Proxy :: Proxy "input")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown

@@ -38,16 +38,16 @@ evalEventGrammar e = do
        GetNextSibling obj cb ->
          cb . nullableToMaybe =<<
            Nullable <$> getProp "nextSibling" (Object obj)
-       ApplyFunction obj str xs cb ->
+       Apply obj str xs cb ->
          cb =<< convertToJSON
-            =<< apply (Object obj) str
+            =<< applyFunction (Object obj) str
             =<< fromList <$> mapM toJSVal (map toJSON xs)
 
 foreign import javascript unsafe "$r = $1[$2]"
   item :: JSVal -> Int -> IO JSVal
 
 foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
-  apply :: Object -> JSString -> JSArray -> IO JSVal
+  applyFunction :: Object -> JSString -> JSArray -> IO JSVal
 
 convertToJSON :: FromJSON v => JSVal -> IO (Maybe v)
 convertToJSON g = do
