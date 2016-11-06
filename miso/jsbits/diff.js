@@ -62,7 +62,7 @@ function diffVNodes (c, n, parent) {
     /* check if svg here... render? */
     n.domRef = document.createElement(n.tag)
     populate (null, n);
-    parent.replaceChild (c.domRef, n.domRef);
+    parent.replaceChild (n.domRef, c.domRef);
   }
 }
 
