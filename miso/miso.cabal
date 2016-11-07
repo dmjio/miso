@@ -76,6 +76,7 @@ library
       Miso.Storage
       Miso.TypeLevel
       Miso.Types
+      Miso.XHR
     other-modules:
       Miso.Concurrent
   else
