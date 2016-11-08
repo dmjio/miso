@@ -13,3 +13,5 @@ foreign import javascript unsafe "window.removeEventListener($1, $2);"
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
 
+foreign import javascript unsafe "console.log($1);"
+  consoleLog :: JSVal -> IO ()
