@@ -6,6 +6,7 @@ module Miso.Signal
   , foldp
   , signal
   , start
+  , defaultSignal
   ) where
 
 import           Control.Concurrent
@@ -13,6 +14,7 @@ import           Control.Monad
 import           Control.Monad.Fix
 import           Data.Proxy
 import qualified FRP.Elerea.Simple  as E
+import           System.IO.Unsafe
 
 import           Miso.Concurrent    ( Notify (..), notifier )
 import           Miso.Types
@@ -42,16 +44,15 @@ foldp :: ( HasAction action model effects, Eq model )
       -> (action -> model -> Effect action model)
       -> model
       -> Signal action
-      -> (action -> IO ())
       -> SignalCore Sample model
-foldp p update ini (SignalCore signalGen) writer = SignalCore $ do
+foldp p update ini (SignalCore signalGen) = SignalCore $ do
   actionSignal <- signalGen
   mfix $ \sig -> do
     modelSignal <- E.delay (NotChanged ini) sig
     E.effectful2 handleUpdate actionSignal modelSignal
       where
         handleUpdate actions m = do
-          goFold (fromChanged m) update actions writer >>= \case
+          goFold (fromChanged m) update actions >>= \case
             NotChanged newModel ->
               pure $ NotChanged newModel
             Changed newModel -> do
@@ -63,9 +64,8 @@ goFold
   => model
   -> (action -> model -> Effect action model)
   -> [action]
-  -> (action -> IO ())
   -> IO (Sample model)
-goFold initialModel update actions writer = go initialModel actions
+goFold initialModel update actions = go initialModel actions
   where
     go model [] | model == initialModel = pure (NotChanged model)
                 | otherwise = pure (Changed model)
@@ -73,9 +73,14 @@ goFold initialModel update actions writer = go initialModel actions
       case update a model of
         NoEffect m -> go m as
         Effect m eff -> do
+          let (_, writer) = defaultSignal
           void . forkIO $ writer =<< eff
           go m as
 
 fromChanged :: Sample a -> a
 fromChanged (Changed x) = x
 fromChanged (NotChanged x) = x
+
+defaultSignal :: (Signal a, a -> IO ())
+{-# NOINLINE defaultSignal #-}
+defaultSignal = unsafePerformIO signal
