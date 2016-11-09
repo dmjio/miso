@@ -25,11 +25,10 @@ import Miso.Html.Types
 import Miso.Isomorphic
 import Miso.Settings
 import Miso.Signal
-import Miso.Types                    hiding (ToAction)
+import Miso.Types
 
 startApp
   :: ( HasAction action model stepConfig
-     , ToAction action
      , Eq model
      ) => model
        -> (model -> View action)
@@ -37,21 +36,18 @@ startApp
        -> Settings stepConfig action
        -> IO ()
 startApp initialModel view update Settings{..} = do
-  (sig, writer) <- signal
-  let mergedSignals = mergeManySignals (sig : extraSignals)
+  let mergedSignals = mergeManySignals (fst defaultSignal : extraSignals)
   -- If isomorphic, then copy the dom into the `initialTree`, forego initial diff
   initialVTree <- runView (view initialModel)
   -- Draw initial tree, where isomorphic should be used, remove initial diff?
   if useIsomorphic
-    then do
-      copyDOMIntoVTree initialVTree
-    else do
-      Nothing `diff` (Just initialVTree)
+    then copyDOMIntoVTree initialVTree
+    else Nothing `diff` (Just initialVTree)
   vTreeRef <- newIORef initialVTree
   -- Begin listening for events in the virtual dom
-  void . forkIO $ delegator writer vTreeRef events
+  void . forkIO $ delegator vTreeRef events
   -- /end delegator fork
-  step <- start $ foldp stepConfig update initialModel mergedSignals writer
+  step <- start $ foldp stepConfig update initialModel mergedSignals
   forever $ do
     draw notifier >> step >>= \case
       NotChanged _ -> pure ()
@@ -62,4 +58,3 @@ startApp initialModel view update Settings{..} = do
         void $ waitForAnimationFrame
         Just oldVTree `diff` Just newVTree
         writeIORef vTreeRef newVTree
-

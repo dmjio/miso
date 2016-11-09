@@ -73,7 +73,6 @@ import qualified Data.Text             as T
 import           GHC.TypeLits
 
 import           Miso.Event
-import           Miso.Html.Internal
 import           Miso.Html.Types
 import           Miso.Html.Types.Event
 
@@ -91,7 +90,6 @@ class HasEvent (eventName :: Symbol) returnType where
 onWithOptions
    :: ( HasEvent eventName returnType
       , KnownSymbol eventName
-      , ToAction action
       )
    => Options
    -> Proxy eventName
@@ -114,7 +112,6 @@ onWithOptions _ _ _ = E EventHandler
 --
 on :: ( HasEvent eventName returnType
       , KnownSymbol eventName
-      , ToAction action
       )
    => Proxy eventName
    -> (returnType -> action)
@@ -247,97 +244,97 @@ instance HasEvent "scroll" () where parseEvent _ = pure ()
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/Events/blur>
 --
-onBlur :: ToAction action => action -> Attribute action
+onBlur :: action -> Attribute action
 onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChecked :: ToAction action => (Bool -> action) -> Attribute action
+onChecked :: (Bool -> action) -> Attribute action
 onChecked = on (Proxy :: Proxy "change")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClick :: ToAction action => action -> Attribute action
+onClick :: action -> Attribute action
 onClick action = on (Proxy :: Proxy "click") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
-onFocus :: ToAction action => action -> Attribute action
+onFocus :: action -> Attribute action
 onFocus action = on (Proxy :: Proxy "focus") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
-onDoubleClick :: ToAction action => action -> Attribute action
+onDoubleClick :: action -> Attribute action
 onDoubleClick action = on (Proxy :: Proxy "dblclick") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
-onInput :: ToAction action => (T.Text -> action) -> Attribute action
+onInput :: (T.Text -> action) -> Attribute action
 onInput = on (Proxy :: Proxy "input")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
-onKeyDown :: ToAction action => (Int -> action) -> Attribute action
+onKeyDown :: (Int -> action) -> Attribute action
 onKeyDown = on (Proxy :: Proxy "keydown")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-onKeyPress :: ToAction action => (Int -> action) -> Attribute action
+onKeyPress :: (Int -> action) -> Attribute action
 onKeyPress = on (Proxy ::Proxy "keypress")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keyup
-onKeyUp :: ToAction action => (Int -> action) -> Attribute action
+onKeyUp :: (Int -> action) -> Attribute action
 onKeyUp = on (Proxy :: Proxy "keyup")
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseup
-onMouseUp :: ToAction action => action -> Attribute action
+onMouseUp :: action -> Attribute action
 onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mousedown
-onMouseDown :: ToAction action => action -> Attribute action
+onMouseDown :: action -> Attribute action
 onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseenter
-onMouseEnter :: ToAction action => action -> Attribute action
+onMouseEnter :: action -> Attribute action
 onMouseEnter action = on (Proxy :: Proxy "mouseenter") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseleave
-onMouseLeave :: ToAction action => action -> Attribute action
+onMouseLeave :: action -> Attribute action
 onMouseLeave action = on (Proxy :: Proxy "mouseleave") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseover
-onMouseOver :: ToAction action => action -> Attribute action
+onMouseOver :: action -> Attribute action
 onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseout
-onMouseOut :: ToAction action => action -> Attribute action
+onMouseOut :: action -> Attribute action
 onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
-onDragStart :: ToAction action => action -> Attribute action
+onDragStart :: action -> Attribute action
 onDragStart action = on (Proxy :: Proxy "dragstart") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
-onDragOver :: ToAction action => action -> Attribute action
+onDragOver :: action -> Attribute action
 onDragOver action = on (Proxy :: Proxy "dragover") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
-onDragEnd :: ToAction action => action -> Attribute action
+onDragEnd :: action -> Attribute action
 onDragEnd action = on (Proxy :: Proxy "dragend") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
-onDragEnter :: ToAction action => action -> Attribute action
+onDragEnter :: action -> Attribute action
 onDragEnter action = on (Proxy :: Proxy "dragenter") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
-onDragLeave :: ToAction action => action -> Attribute action
+onDragLeave :: action -> Attribute action
 onDragLeave action = on (Proxy :: Proxy "dragleave") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
-onDrag :: ToAction action => action -> Attribute action
+onDrag :: action -> Attribute action
 onDrag action = on (Proxy :: Proxy "drag") $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDrop :: ToAction action => AllowDrop -> action -> Attribute action
+onDrop :: AllowDrop -> action -> Attribute action
 onDrop (AllowDrop allowDrop) action =
   onWithOptions defaultOptions { preventDefault = allowDrop }
     (Proxy :: Proxy "drop") (\() -> action)
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
-onSubmit :: ToAction action => action -> Attribute action
+onSubmit :: action -> Attribute action
 onSubmit action =
   onWithOptions defaultOptions { preventDefault = True }
     (Proxy :: Proxy "submit") $ \() -> action

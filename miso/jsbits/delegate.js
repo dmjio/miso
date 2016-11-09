@@ -1,19 +1,18 @@
 /* event delegation algorithm */
-function delegate(events, getVTree, writer) {
+function delegate(events, getVTree) {
     for (var event in events) {
 	document.body.addEventListener(events[event][0], function(e) {
             delegateEvent ( e
                           , getVTree()
-                          , writer
                           , buildTargetToBody(document.body, e.target, []).reverse()
                           , []
                           );
-	}, events[event][1]);
+	     }, events[event][1]);
     }
 }
 
 / * Accumulate parent stack as well for propogation */
-function delegateEvent (event, obj, writer, stack, parentStack) {
+function delegateEvent (event, obj, stack, parentStack) {
 
     /* base case, not found */
     if (!stack.length) return;
@@ -25,10 +24,9 @@ function delegateEvent (event, obj, writer, stack, parentStack) {
           if (obj.children[o].type === "vtext") continue;
           delegateEvent ( event
                         , obj.children[o]
-                        , writer
-			, stack.slice(1)
+                        , stack.slice(1)
                         , parentStack
-			);
+			                  );
        }
     }
 
@@ -39,9 +37,9 @@ function delegateEvent (event, obj, writer, stack, parentStack) {
 	      var eventObj = obj.events[event.type],
 		  options = eventObj.options;
             if (options.preventDefault) event.preventDefault();
-            writer(eventObj.runEvent(event));
+          eventObj.runEvent(event);
 	    if (!options.stopPropagation)
-	     propogateWhileAble (parentStack.reverse(), event, writer);
+	     propogateWhileAble (parentStack.reverse(), event);
           }
 	}
     }
@@ -56,13 +54,13 @@ function buildTargetToBody (body, target, stack) {
     return stack;
 }
 
-function propogateWhileAble (parentStack, event, writer) {
+function propogateWhileAble (parentStack, event) {
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i].events[event.type]) {
       var eventObj = parentStack[i].events[event.type],
           options = eventObj.options;
         if (options.preventDefault) event.preventDefault();
-        writer(eventObj.runEvent(event));
+        eventObj.runEvent(event);
   	if (options.stopPropagation) break;
     }
   }

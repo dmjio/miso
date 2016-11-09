@@ -6,15 +6,11 @@ module Main where
 
 import Data.String
 import GHC.Generics
-import GHCJS.Marshal
 
 import Miso
 
 data Action = Add | Sub
   deriving (Generic, Show)
-
-instance ToJSVal Action
-instance FromJSVal Action
 
 main :: IO ()
 main = startApp emptyModel view update defaultSettings

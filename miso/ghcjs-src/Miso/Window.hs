@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Miso.Window where
 
-
 import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 
