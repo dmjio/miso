@@ -4,7 +4,6 @@
 module Miso.Event where
 
 import qualified Data.Map              as M
-import           GHCJS.Marshal
 import           GHCJS.Types
 import           Miso.Html.String
 import           Miso.Html.Types.Event
@@ -38,8 +37,8 @@ defaultEvents = M.fromList [
 
 -- | `EventHandler` object action
 data EventHandler action =
-  forall returnType . (ToJSVal action, FromJSVal action)
-    => EventHandler {
+  forall returnType
+    . EventHandler {
         eventOptions :: Options
       , eventName :: MisoString
       , eventGrammar :: Grammar returnType

@@ -32,7 +32,6 @@ module Miso.Html.Internal (
   , NS     (..)
   -- * String type
   , MisoString
-  , ToAction
   , MisoVal
   ) where
 
@@ -45,8 +44,6 @@ import qualified Lucid.Base          as L
 
 import           Miso.Html.Types
 import           Miso.Html.String
-
-type ToAction a = (() ~ ())
 
 -- | Virtual DOM implemented as a Rose `Vector`.
 --   Used for diffing, patching and event delegation.

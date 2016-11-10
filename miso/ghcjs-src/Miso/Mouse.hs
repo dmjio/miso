@@ -25,5 +25,6 @@ mouseSignal = do
     sink (x,y)
   let startMouse = windowAddEventListener "mousemove" cb
       stopMouse = windowRemoveEventListener "mousemove" cb
+  startMouse
   pure Mouse {..}
 

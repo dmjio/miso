@@ -35,7 +35,6 @@ module Miso.Html.Internal (
   -- * Helpers for interacting with Object
   , set
   , MisoVal
-  , ToAction
   ) where
 
 import           Control.Monad
@@ -55,8 +54,7 @@ import           Miso.Event.Interpreter
 import           Miso.Html.String
 import           Miso.Html.Types
 import           Miso.Html.Types.Event
-
-type ToAction a = (ToJSVal a, FromJSVal a)
+import           Miso.Signal
 
 -- | Virtual DOM implemented as a JavaScript `Object`
 --   Used for diffing, patching and event delegation.
@@ -104,8 +102,9 @@ node ns tag key attrs kids = View $ do
             do eventHandlerObject@(Object o) <- create
                jsOptions <- toJSVal options
                setProp "options" jsOptions eventHandlerObject
-               cb <- jsval <$> (syncCallback1' $ \e -> do
-                 toJSVal =<< f <$> evalEventGrammar e grammar)
+               cb <- jsval <$> (asyncCallback1 $ \e -> do
+                 let (_, writer) = defaultSignal
+                 writer =<< f <$> evalEventGrammar e grammar)
                setProp "runEvent" cb eventHandlerObject
                setProp eventName o eventObject
         set "attrs" ao vtree
