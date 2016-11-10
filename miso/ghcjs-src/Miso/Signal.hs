@@ -7,6 +7,7 @@ module Miso.Signal
   , signal
   , start
   , defaultSignal
+  , fromChanged
   ) where
 
 import           Control.Concurrent
