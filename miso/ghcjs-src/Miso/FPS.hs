@@ -1,59 +1,69 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Miso.FPS where
+module Miso.FPS ( FPS (..), startFPS ) where
 
-import Control.Concurrent
-import Control.Monad
-import JavaScript.Web.AnimationFrame
+import           Control.Concurrent
+import           Control.Monad
+import           Data.IORef
+import           Data.JSString                 (JSString)
+import qualified Data.JSString                 as JS
+import           Data.String
+import           JavaScript.Web.AnimationFrame
 
-import Miso.Signal
-import Miso.Types
-
-import Numeric
+import           Miso.Event.Delegate
+import           Miso.Html
+import           Miso.Html.Diff
+import           Miso.Signal
+import           Miso.Types
 
 data FPS = FPS {
-   fps :: Signal Double
- }
+    fps      :: Double
+  , fpsString :: JSString
+  , previous :: Double
+  , elapsed  :: Double
+  , frame :: Integer
+  } deriving (Show, Eq)
 
-fpsSignal :: IO FPS
-fpsSignal = do
-  ref <- newMVar []
-  (fps, sink) <- signal
-  startFRP ref sink
-  pure FPS {..}
+startFPS
+  :: ( HasAction action model stepConfig
+     , Eq model
+     ) => model
+       -> (FPS -> model -> View action)
+       -> (action -> model -> Effect action model)
+       -> Settings stepConfig action
+       -> IO ()
+startFPS initialModel view update Settings{..} = do
+  fpsRef <- initFPS
+  let mergedSignals = mergeManySignals (fst defaultSignal : extraSignals)
+  initialFPS <- readIORef fpsRef
+  initialVTree <- runView (view initialFPS initialModel)
+  Nothing `diff` (Just initialVTree)
+  vTreeRef <- newIORef initialVTree
+  void . forkIO $ delegator vTreeRef events
+  step <- start $ foldp stepConfig update initialModel mergedSignals
+  forever $ do
+    fps <- updateFPS fpsRef
+    step >>= \model -> do
+      newVTree <- runView $ view fps (fromChanged model)
+      oldVTree <- readIORef vTreeRef
+      Just oldVTree `diff` Just newVTree
+      writeIORef vTreeRef newVTree
 
-startFRP :: MVar [Double]
-         -> (Double -> IO a)
-         -> IO ()
-startFRP ref sink = void . forkIO . forever $ do
-    current <- waitForAnimationFrame
-    result <- readMVar ref
-    if length result == 150
-      then do
-        modifyMVar_ ref $ \xs -> do
-          let newWindow = current : init xs
-          newWindow <$ sink (getFPS newWindow)
-      else
-        if length result < 150
-          then do
-            modifyMVar_ ref $ \xs -> pure (current : xs)
-          else do
-            putStrLn "shouldn't get here.."
-            print (length result)
-            pure ()
+initFPS :: IO (IORef FPS)
+initFPS = newIORef $ FPS 0.0 mempty 0.0 0.0 0
 
-secs :: Int -> Int
-secs = (*1000000)
-
-diffs :: [Double] -> [Double]
-diffs times = zipWith subtract (tail times) times
-
-avg :: [Double] -> Double
-avg xs = sum xs / fromIntegral (length xs)
-
-getFPS :: [Double] -> Double
-getFPS xs =
-  let x = recip . (/1000) . avg . diffs $ xs
-  in read $ showFFloat (Just 2) x ""
+updateFPS :: IORef FPS -> IO FPS
+updateFPS ref = do
+  new <- waitForAnimationFrame
+  FPS {..} <- readIORef ref
+  let newFPS = FPS {
+       fps = 1000 / elapsed
+     , elapsed = new - previous
+     , previous = new
+     , frame = frame + 1
+     , fpsString = JS.take 5 $ fromString $ show fps
+     }
+  writeIORef ref newFPS
+  pure newFPS
 
 
