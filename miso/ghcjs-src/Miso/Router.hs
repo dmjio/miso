@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -6,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
-
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 module Miso.Router where
 
 import qualified Data.ByteString.Char8 as BS
@@ -20,14 +22,14 @@ import           Network.URI
 import           Servant.API
 import           Web.HttpApiData
 
+import           Miso.Html hiding (text)
+
 -- | Router terminator.
 -- The 'HasRouter' instance for 'View' finalizes the router.
 --
 -- Example:
 --
 -- > type MyApi = "books" :> Capture "bookId" Int :> View
-data View = View
-  deriving Show
 
 -- | 'Location' is used to split the path and query of a URI into components.
 data Location = Location
@@ -101,9 +103,13 @@ instance (HasRouter sublayout, KnownSymbol path)
     (Proxy :: Proxy path)
     (route (Proxy :: Proxy sublayout) a page)
 
-instance HasRouter View where
-  type RouteT View a = a
+instance HasRouter (View a) where
+  type RouteT (View a) x = x
   route _ _ = RPage
+
+instance HasLink (View a) where
+  type MkLink (View a) = MkLink (Get '[] ())
+  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
 
 -- | Use a handler to route a 'Location'.
 -- Normally 'runRoute' should be used instead, unless you want custom
@@ -118,10 +124,8 @@ runRouteLoc loc layout page =
 -- All handlers must, in the end, return @m a@.
 -- 'routeLoc' will choose a route and return its result.
 runRoute :: forall layout a. HasRouter layout
-         => String -> Proxy layout -> RouteT layout a -> Either RoutingError a
-runRoute uriString layout page = case uriToLocation <$> parseURIReference uriString of
-  Nothing -> Left FailFatal
-  Just loc -> runRouteLoc loc layout page
+         => URI -> Proxy layout -> RouteT layout a -> Either RoutingError a
+runRoute uri layout page = runRouteLoc (uriToLocation uri) layout page
 
 -- | Use a computed 'Router' to route a 'Location'.
 routeLoc :: Location -> Router a -> Either RoutingError a

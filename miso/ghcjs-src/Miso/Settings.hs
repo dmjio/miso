@@ -16,5 +16,5 @@ defaultSettings = Settings defaultEvents (Proxy :: Proxy '[]) [] False
 emptySettings :: Settings DefaultStepConfig action
 emptySettings = Settings mempty (Proxy :: Proxy '[]) [] False
 
-debugSettings :: Settings '[DebugActions] action
-debugSettings = Settings defaultEvents (Proxy :: Proxy '[DebugActions]) [] False
+debugSettings :: Settings '[DebugActions, DebugModel] action
+debugSettings = Settings defaultEvents (Proxy :: Proxy '[DebugActions, DebugModel]) [] False
