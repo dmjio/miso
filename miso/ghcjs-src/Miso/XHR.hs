@@ -30,9 +30,6 @@ data ResponseType
   | UnknownXHRType
   deriving (Show, Eq)
 
-main :: IO ()
-main = putStrLn "hi"
-
 newtype XHR = XHR JSVal
 
 foreign import javascript unsafe "$r = new XMLHttpRequest();"
