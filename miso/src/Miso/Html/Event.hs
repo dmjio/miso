@@ -344,24 +344,19 @@ onSubmit action =
 inputGrammar :: FromJSON a => Grammar a
 inputGrammar = do
   target <- getTarget
-  result <- getField "value" target
-  case result of
-    Nothing -> Prelude.error "Couldn't retrieve target input value"
-    Just value -> pure value
+  Just value <- getField "value" target
+  stringify value
 
 -- | Retrieves "checked" field in `Grammar`
-checkedGrammar :: FromJSON a => Grammar a
+checkedGrammar :: Grammar Bool
 checkedGrammar = do
-  target <- getTarget
-  result <- getField "checked" target
-  case result of
-    Nothing -> Prelude.error "Couldn't retrieve target checked value"
-    Just value -> pure value
+  Just checked <- getField "checked" =<< getTarget
+  stringify checked
 
 -- | Retrieves either "keyCode", "which" or "charCode" field in `Grammar`
 keyGrammar :: Grammar Int
 keyGrammar = do
-  keyCode <- getEventField "keyCode"
-  which <- getEventField "which"
-  charCode <- getEventField "charCode"
-  pure $ head $ catMaybes [ keyCode, which, charCode ]
+  keyCode <- getField "keyCode" =<< getEvent
+  which <- getField "which" =<< getEvent
+  charCode <- getField "charCode" =<< getEvent
+  stringify $ head $ catMaybes [ keyCode, which, charCode ]
