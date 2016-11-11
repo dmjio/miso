@@ -27,20 +27,17 @@ import Miso.Html.String
 
 -- | Grammar for purely handling events
 data Action a where
+  GetEvent :: (MisoVal -> a) -> Action a
   GetTarget :: (MisoVal -> a) -> Action a
   GetParent :: MisoVal -> (MisoVal -> a) -> Action a
-  GetField :: FromJSON v => MisoString -> MisoVal -> (Maybe v -> a) -> Action a
-  GetEventField :: FromJSON v => MisoString -> (Maybe v -> a) -> Action a
+  GetField :: MisoString -> MisoVal -> (Maybe MisoVal -> a) -> Action a
   GetChildren :: MisoVal -> (MisoVal -> a) -> Action a
   GetItem :: MisoVal -> Int -> (Maybe MisoVal -> a) -> Action a
-  GetNextSibling :: MisoVal -> (Maybe MisoVal -> a) -> Action a
-  SetEventField :: ToJSON v => MisoString -> v -> a -> Action a
-  Apply :: (ToJSON args, FromJSON result)
-        => MisoVal
-        -> MisoString
-        -> [args]
-        -> (Maybe result -> a)
-        -> Action a
+  GetNextSibling :: MisoVal -> (MisoVal -> a) -> Action a
+  Stringify :: FromJSON v => MisoVal -> (v -> a) -> Action a
+  ConsoleLog :: MisoVal -> (() -> a) -> Action a
+  SetField :: ToJSON v => MisoString -> v -> a -> Action a
+  Apply :: MisoVal -> MisoString -> [Value] -> (MisoVal -> a) -> Action a
 
 deriving instance Functor Action
 
@@ -52,6 +49,12 @@ data Options = Options {
 
 -- | Type def. for event handler DSL
 type Grammar a = F Action a
+
+-- | Retrieve event
+--
+-- > function (e) { return e; }
+--
+$(makeFreeCon 'GetEvent)
 
 -- | Retrieve target
 --
@@ -71,17 +74,11 @@ $(makeFreeCon 'GetParent)
 --
 $(makeFreeCon 'GetField)
 
--- | Returns field from event object
---
--- > function (e) { return e.field; }
---
-$(makeFreeCon 'GetEventField)
-
 -- | Assigns field on event object
 --
 -- > function (e) { e.field = value; }
 --
-$(makeFreeCon 'SetEventField)
+$(makeFreeCon 'SetField)
 
 -- | Retrieves children
 --
@@ -107,3 +104,14 @@ $(makeFreeCon 'GetNextSibling)
 --
 $(makeFreeCon 'Apply)
 
+-- | Logs to console
+--
+-- > console.log(o);
+--
+$(makeFreeCon 'ConsoleLog)
+
+-- | Logs to console
+--
+-- > JSON.stringify(o);
+--
+$(makeFreeCon 'Stringify)
