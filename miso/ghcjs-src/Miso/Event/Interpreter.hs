@@ -21,7 +21,7 @@ evalEventGrammar e = do
        GetTarget cb ->
          cb =<< getProp "target" (Object e)
        GetParent obj cb -> do
-         cb =<< getProp "parent" (Object obj)
+         cb =<< getProp "parentNode" (Object obj)
        GetField key obj cb ->
          cb =<< convertToJSON
             =<< getProp key (Object obj)
