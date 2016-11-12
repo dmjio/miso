@@ -27,14 +27,15 @@ evalEventGrammar e = do
          setProp key jsValue (Object e) >> cb
        GetChildren obj cb ->
          cb =<< getProp "childNodes" (Object obj)
-       GetItem obj n cb -> 
+       GetItem obj n cb ->
          cb . nullableToMaybe =<< Nullable <$> item obj n
        Stringify val cb -> do
-         Just v <- fromJSVal val
-         case fromJSON v of
+         Just v <- fmap fromJSON <$> fromJSVal val
+         case v of
            Error err -> error $ "Decode failure: " ++ err
            Success s -> cb s
-       ConsoleLog o cb -> cb =<< Miso.FFI.consoleLog o
+       ConsoleLog o cb -> do
+         cb =<< Miso.FFI.consoleLog o
        GetNextSibling obj cb ->
          cb =<< getProp "nextSibling" (Object obj)
        Apply obj str xs cb ->

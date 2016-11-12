@@ -24,7 +24,6 @@ executable main
     buildable: False
   main-is: Main.hs
   hs-source-dirs: exe
-  ghc-options: -Wall
   build-depends:
     aeson,
     base,

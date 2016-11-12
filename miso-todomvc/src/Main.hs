@@ -1,40 +1,34 @@
-{-# LANGUAGE PolyKinds                  #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE LambdaCase           #-}
 module Main where
 
-import           Data.Aeson         hiding (Object)
+import           Data.Aeson       hiding (Object)
 import           Data.Bool
-import qualified Data.JSString      as J
-import qualified Data.JSString.Text as J
-import qualified Data.Map           as M
+import qualified Data.Map         as M
 import           Data.Monoid
 import           Data.Proxy
 import           Data.String
-import qualified Data.Text          as T
 import           GHC.Generics
--- import           GHC.TypeLits
-import           GHCJS.Marshal
+
 import           Miso
+import qualified Miso.Html.String as S
+import           Miso.Storage
+
+default (MisoString)
 
 data Model = Model
   { entries :: [Entry]
-  , field :: T.Text
+  , field :: MisoString
   , uid :: Int
-  , visibility :: T.Text
+  , visibility :: MisoString
   } deriving (Show, Generic, Eq)
 
 data Entry = Entry
-  { description :: T.Text
+  { description :: MisoString
   , completed :: Bool
   , editing :: Bool
   , eid :: Int
@@ -47,9 +41,6 @@ instance ToJSON Model
 instance FromJSON Entry
 instance FromJSON Model
 
-js :: T.Text -> J.JSString
-js = J.textToJSString
-
 emptyModel :: Model
 emptyModel = Model
   { entries = []
@@ -58,7 +49,7 @@ emptyModel = Model
   , uid = 0
   }
 
-newEntry :: T.Text -> Int -> Entry
+newEntry :: MisoString -> Int -> Entry
 newEntry desc eid = Entry
   { description = desc
   , completed = False
@@ -70,40 +61,27 @@ newEntry desc eid = Entry
 data Msg
   = NoOp
   | CurrentTime Int
-  | UpdateField T.Text
+  | UpdateField MisoString
   | EditingEntry Int Bool
-  | UpdateEntry Int T.Text
+  | UpdateEntry Int MisoString
   | Add
   | Delete Int
   | DeleteComplete
   | Check Int Bool
   | CheckAll Bool
-  | ChangeVisibility T.Text
+  | ChangeVisibility MisoString
    deriving (Show, Generic)
 
-instance ToJSVal Msg
-instance FromJSVal Msg
-
-stepConfig :: Proxy '[]
-stepConfig = Proxy
-
--- getInitialModel :: IO Model
--- getInitialModel = do
---   getFromStorage "todo-mvc" >>= \case
---     Left x  -> putStrLn x >> pure emptyModel
---     Right m -> pure m
-
-events' :: Proxy '[ '("click", 'False)
-                  , '("keypress", 'False)
-                  , '("keydown", 'False)
-                  , '("keyup", 'False)
-                  ]
-events' = Proxy
+getInitialModel :: IO Model
+getInitialModel = do
+  getLocalStorage "todo-mvc" >>= \case
+    Left x  -> putStrLn x >> pure emptyModel
+    Right m -> pure m
 
 main :: IO ()
 main = do
---  m <- getInitialModel
-  startApp emptyModel view update defaultSettings
+  m <- getInitialModel
+  startApp m view update debugSettings
 
 update :: Msg -> Model -> Effect Msg Model
 update NoOp m = noEff m
@@ -112,7 +90,7 @@ update Add model@Model{..} =
   noEff model {
     uid = uid + 1
   , field = mempty
-  , entries = entries <> [ newEntry field uid | not $ T.null field ]
+  , entries = entries <> [ newEntry field uid | not $ S.null field ]
   }
 
 update (UpdateField str) model = noEffect model { field = str }
@@ -179,7 +157,7 @@ view m@Model{..} =
     , infoFooter
     ]
 
-viewEntries :: T.Text -> [ Entry ] -> View Msg
+viewEntries :: MisoString -> [ Entry ] -> View Msg
 viewEntries visibility entries =
   section_
     [ class_ "main"
@@ -213,7 +191,7 @@ viewKeyedEntry = viewEntry
 
 viewEntry :: Entry -> View Msg
 viewEntry Entry {..} = liKeyed_ (toKey eid)
-    [ class_ $ J.textToJSString $ T.intercalate " " $
+    [ class_ $ S.intercalate " " $
        [ "completed" | completed ] <> [ "editing" | editing ]
     ]
     [ div_
@@ -226,7 +204,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
             ] []
         , label_
             [ onDoubleClick $ EditingEntry eid True ]
-            [ text $ J.textToJSString description ]
+            [ text description ]
         , button_
             [ class_ "destroy"
             , onClick $ Delete eid
@@ -245,7 +223,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         []
     ]
 
-viewControls :: Model ->  T.Text -> [ Entry ] -> View Msg
+viewControls :: Model ->  MisoString -> [ Entry ] -> View Msg
 viewControls model visibility entries =
   footer_  [ class_ "footer"
            , prop "hidden" (null entries)
@@ -267,7 +245,7 @@ viewControlsCount entriesLeft =
   where
     item_ = bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: T.Text -> View Msg
+viewControlsFilters :: MisoString -> View Msg
 viewControlsFilters visibility =
   ul_
     [ class_ "filters" ]
@@ -278,13 +256,13 @@ viewControlsFilters visibility =
     , visibilitySwap "#/completed" "Completed" visibility
     ]
 
-visibilitySwap :: T.Text -> T.Text -> T.Text -> View Msg
+visibilitySwap :: MisoString -> MisoString -> MisoString -> View Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
-      [ a_ [ href_ (js uri)
+      [ a_ [ href_ uri
            , class_ $ mconcat [ "selected" | visibility == actualVisibility ]
            , onClick (ChangeVisibility visibility)
-           ] [ text (js visibility) ]
+           ] [ text visibility ]
       ]
 
 viewControlsClear :: Model -> Int -> View Msg
@@ -296,7 +274,7 @@ viewControlsClear _ entriesCompleted =
     ]
     [ text $ "Clear completed (" <> fromString (show entriesCompleted) <> ")" ]
 
-viewInput :: Model -> T.Text -> View Msg
+viewInput :: Model -> MisoString -> View Msg
 viewInput _ task =
   header_ [ class_ "header" ]
     [ h1_ [] [ text "todos" ]
@@ -325,6 +303,6 @@ infoFooter =
         ]
     , p_ []
         [ text "Part of "
-        , a_ [ href_ "http://todomvc.com" ] [ text "TodoMVC" ]
+        , a_ [ href_ "http://todomvc.com" ] [ text $ fromString "TodoMVC" ]
         ]
     ]

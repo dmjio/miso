@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -8,19 +10,29 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Html.String ( MisoString, misoPack, misoIntercalate, MisoVal ) where
+module Miso.Html.String ( ToMisoString(..), MisoString, module Data.Text, MisoVal ) where
 
-import Data.Text
+import           Data.Aeson
+import qualified Data.ByteString         as B
+import qualified Data.ByteString.Lazy    as BL
+import           Data.Text
+import qualified Data.Text               as T
+import qualified Data.Text.Encoding      as T
+import qualified Data.Text.Lazy          as LT
+import qualified Data.Text.Lazy.Encoding as LT
 
+-- Unit, since event handler grammar cannot be evaluated on server
 type MisoVal = ()
 
 -- | String type swappable based on compiler
 type MisoString = Text
 
--- | Pack specialized for miso
-misoPack :: String -> Text
-misoPack = pack
-
--- | intercalate specialized for `MisoString`
-misoIntercalate :: MisoString -> [MisoString] -> MisoString
-misoIntercalate = intercalate
+class ToMisoString str where toMisoString :: str -> MisoString
+instance ToMisoString MisoString where toMisoString = id
+instance ToMisoString String where toMisoString = T.pack
+instance ToMisoString LT.Text where toMisoString = LT.toStrict
+instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
+instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
+instance ToMisoString Value where
+  toMisoString (String x) = toMisoString x
+  toMisoString x = toMisoString . encode $ x

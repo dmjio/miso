@@ -29,12 +29,11 @@ module Miso.Html.Internal (
   , ToKey  (..)
   -- * Namespace
   , NS     (..)
-  -- * String type
+  -- * String module
+  , MisoVal
   , MisoString
-  , misoPack
   -- * Helpers for interacting with Object
   , set
-  , MisoVal
   ) where
 
 import           Control.Monad
@@ -133,11 +132,11 @@ data NS
   deriving (Show, Eq)
 
 -- | `VText` creation
-text :: MisoString -> View action
+text :: ToMisoString str => str -> View action
 text t = View $ do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
-  set "text" t vtree
+  set "text" (toMisoString t) vtree
   pure $ VTree vtree
 
 -- | Key for specific children patch
@@ -153,12 +152,12 @@ instance ToKey MisoString where toKey = Key
 -- | Convert `Text` to `Key`
 instance ToKey T.Text where toKey = Key . textToJSString
 -- | Convert `String` to `Key`
-instance ToKey String where toKey = Key . misoPack
+instance ToKey String where toKey = Key . pack
 -- | Convert `Int` to `Key`
-instance ToKey Int where toKey = Key . misoPack . show
+instance ToKey Int where toKey = Key . pack . show
 -- | Convert `Double` to `Key`
-instance ToKey Double where toKey = Key . misoPack . show
+instance ToKey Double where toKey = Key . pack . show
 -- | Convert `Float` to `Key`
-instance ToKey Float where toKey = Key . misoPack . show
+instance ToKey Float where toKey = Key . pack . show
 -- | Convert `Word` to `Key`
-instance ToKey Word where toKey = Key . misoPack . show
+instance ToKey Word where toKey = Key . pack . show

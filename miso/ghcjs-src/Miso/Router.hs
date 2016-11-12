@@ -148,7 +148,7 @@ routeLoc loc r = case r of
       Nothing -> Left FailFatal
       Just x -> routeLoc loc $ f (Just x)
   RQueryParams sym f -> maybe (Left FailFatal) (routeLoc loc . f) $ do
-    ps <- sequence $ snd <$> filter
+    ps <- sequence $ snd <$> Prelude.filter
       (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
     sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
   RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of

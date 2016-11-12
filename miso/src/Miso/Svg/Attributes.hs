@@ -272,7 +272,7 @@ module Miso.Svg.Attributes
 
 import Miso.Html.Attr
 import Miso.Html.Types
-import Miso.Html.String
+import Miso.Html.String hiding (filter)
 
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accent-height>
 accentHeight ::  MisoString -> Attribute action
