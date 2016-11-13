@@ -1,29 +1,23 @@
-{-# LANGUAGE NamedFieldPuns    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Main where
-
-import Data.String
-import GHC.Generics
 
 import Miso
 
+default (MisoString)
+
 data Action = Add | Sub
-  deriving (Generic, Show)
 
 main :: IO ()
-main = startApp emptyModel view update defaultSettings
+main = startApp 0 view update defaultSettings
   where
-    emptyModel :: Int
-    emptyModel = 0
-
     update Add m = noEff ( m + 1 )
     update Sub m = noEff ( m - 1 )
 
 view :: Int -> View Action
 view x = div_ [] [
    button_ [ onClick Add ] [ text "+" ]
- , text $ fromString (show x)
+ , text $ show x
  , button_ [ onClick Sub ] [ text "-" ]
  ]

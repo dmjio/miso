@@ -5,7 +5,6 @@ module Miso.FPS ( FPS (..), startFPS ) where
 import           Control.Concurrent
 import           Control.Monad
 import           Data.IORef
-import           Data.JSString                 (JSString)
 import qualified Data.JSString                 as JS
 import           Data.String
 import           JavaScript.Web.AnimationFrame
@@ -18,7 +17,7 @@ import           Miso.Types
 
 data FPS = FPS {
     fps      :: Double
-  , fpsString :: JSString
+  , fpsString :: MisoString
   , previous :: Double
   , elapsed  :: Double
   , frame :: Integer

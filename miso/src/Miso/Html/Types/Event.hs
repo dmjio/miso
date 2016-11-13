@@ -110,7 +110,7 @@ $(makeFreeCon 'Apply)
 --
 $(makeFreeCon 'ConsoleLog)
 
--- | Logs to console
+-- | Converts a `JSVal` to a `(FromJSON a => Result a)`
 --
 -- > JSON.stringify(o);
 --

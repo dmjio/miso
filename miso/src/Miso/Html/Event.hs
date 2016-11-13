@@ -74,7 +74,7 @@ import           GHC.TypeLits
 
 import           Miso.Event
 import           Miso.Html.Types
-import           Miso.Html.String
+import           Miso.Html.String hiding (filter, head)
 import           Miso.Html.Types.Event
 
 -- | Class for constructing pure event handlers

@@ -31,8 +31,7 @@ module Miso.Html.Internal (
   -- * Namespace
   , NS     (..)
   -- * String type
-  , MisoString
-  , MisoVal
+  , module Miso.Html.String
   ) where
 
 import qualified Data.Map            as M
@@ -43,7 +42,7 @@ import qualified Lucid               as L
 import qualified Lucid.Base          as L
 
 import           Miso.Html.Types
-import           Miso.Html.String
+import           Miso.Html.String hiding (map)
 
 -- | Virtual DOM implemented as a Rose `Vector`.
 --   Used for diffing, patching and event delegation.
@@ -110,8 +109,8 @@ node vNs vType vKey as xs =
   in View VNode {..}
 
 -- | `VText` creation
-text :: MisoString -> View action
-text x = View (VText x)
+text :: ToMisoString str => str -> View action
+text x = View $ VText (toMisoString x)
 
 -- | Key for specific children patch
 newtype Key = Key MisoString
