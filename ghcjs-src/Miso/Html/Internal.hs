@@ -30,7 +30,6 @@ module Miso.Html.Internal (
   -- * Namespace
   , NS     (..)
   -- * String module
-  , MisoVal
   , MisoString
   -- * Helpers for interacting with Object
   , set

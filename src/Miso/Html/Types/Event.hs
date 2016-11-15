@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -26,20 +27,20 @@ import GHC.Generics
 import Miso.String
 
 -- | Grammar for purely handling events
-data Action a where
-  GetEvent :: (MisoVal -> a) -> Action a
-  GetTarget :: (MisoVal -> a) -> Action a
-  GetParent :: MisoVal -> (MisoVal -> a) -> Action a
-  GetField :: MisoString -> MisoVal -> (Maybe MisoVal -> a) -> Action a
-  GetChildren :: MisoVal -> (MisoVal -> a) -> Action a
-  GetItem :: MisoVal -> Int -> (Maybe MisoVal -> a) -> Action a
-  GetNextSibling :: MisoVal -> (MisoVal -> a) -> Action a
-  Stringify :: FromJSON v => MisoVal -> (v -> a) -> Action a
-  ConsoleLog :: MisoVal -> (() -> a) -> Action a
-  SetField :: ToJSON v => MisoString -> v -> a -> Action a
-  Apply :: MisoVal -> MisoString -> [Value] -> (MisoVal -> a) -> Action a
+data Action o a where
+  GetEvent :: (o -> a) -> Action o a
+  GetTarget :: (o -> a) -> Action o a
+  GetParent :: o -> (o -> a) -> Action o a
+  GetField :: MisoString -> o -> (Maybe o -> a) -> Action o a
+  GetChildren :: o -> (o -> a) -> Action o a
+  GetItem :: o -> Int -> (Maybe o -> a) -> Action o a
+  GetNextSibling :: o -> (o -> a) -> Action o a
+  Stringify :: FromJSON v => o -> (v -> a) -> Action o a
+  ConsoleLog :: o -> (() -> a) -> Action o a
+  SetField :: ToJSON v => MisoString -> v -> a -> Action o a
+  Apply :: o -> MisoString -> [Value] -> (o -> a) -> Action o a
 
-deriving instance Functor Action
+deriving instance Functor (Action o)
 
 -- | Options
 data Options = Options {
@@ -48,7 +49,7 @@ data Options = Options {
 } deriving (Show, Eq, Generic)
 
 -- | Type def. for event handler DSL
-type Grammar a = F Action a
+type Grammar a = forall o . F (Action o) a
 
 -- | Retrieve event
 --
