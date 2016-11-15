@@ -30,8 +30,7 @@ function replaceElementWithText (c, n, parent) {
 }
 
 function replaceTextWithElement (c, n, parent) {
-  /* check for svg here... make a render function? */
-  n.domRef = document.createElement (n.tag);
+  createElement (n);
   parent.replaceChild (n.domRef, c.domRef);
 }
 
@@ -59,9 +58,7 @@ function diffVNodes (c, n, parent) {
     n.domRef = c.domRef;
     populate (c, n);
   } else {
-    /* check if svg here... render? */
-    n.domRef = document.createElement(n.tag)
-    populate (null, n);
+    createElement(n);
     parent.replaceChild (n.domRef, c.domRef);
   }
 }
@@ -141,15 +138,16 @@ function diffChildren (cs, ns, parent) {
       diff (cs[i], ns[i], parent);
 }
 
+function createElement (obj) {
+  obj.domRef = obj.ns === "svg"
+        ? document.createElementNS("http://www.w3.org/2000/svg", obj.tag)
+	: document.createElement(obj.tag);
+  populate (null, obj);
+}
+
 function createNode (obj, parent) {
-  if (obj.type === "vnode") {
-      obj.domRef = obj.ns === "svg"
-	  ? document.createElementNS("http://www.w3.org/2000/svg", obj.tag)
-	  : document.createElement(obj.tag);
-    populate (null, obj);
-  } else {
-    obj.domRef = document.createTextNode(obj.text);
-  }
+  if (obj.type === "vnode") createElement(obj);
+  else obj.domRef = document.createTextNode(obj.text);
   parent.appendChild(obj.domRef);
 }
 
