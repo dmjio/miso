@@ -15,7 +15,6 @@
 ----------------------------------------------------------------------------
 module Miso.String (
     MisoString
-  , MisoVal
   , module Data.JSString
   , ToMisoString (..)
   ) where
@@ -29,10 +28,6 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
-
-import           GHCJS.Types
-
-type MisoVal = JSVal
 
 -- | String type swappable based on compiler
 type MisoString = JSString

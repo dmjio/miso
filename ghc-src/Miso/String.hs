@@ -10,7 +10,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.String ( ToMisoString(..), MisoString, module Data.Text, MisoVal ) where
+module Miso.String ( ToMisoString(..), MisoString, module Data.Text ) where
 
 import           Data.Aeson
 import qualified Data.ByteString         as B
@@ -20,9 +20,6 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
-
--- Unit, since event handler grammar cannot be evaluated on server
-type MisoVal = ()
 
 -- | String type swappable based on compiler
 type MisoString = Text

@@ -13,7 +13,7 @@ import           GHCJS.Nullable
 import           Miso.FFI
 import           Miso.Html.Types.Event
 
-evalEventGrammar :: JSVal -> Grammar a -> IO a
+evalEventGrammar :: JSVal -> F (Action JSVal) a -> IO a
 evalEventGrammar e = do
    iterM $ \x ->
      case x of
