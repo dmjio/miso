@@ -14,260 +14,260 @@
 ----------------------------------------------------------------------------
 module Miso.Svg.Attributes
   ( -- * Regular attributes
-    accentHeight
-  , accelerate
-  , accumulate
-  , additive
-  , alphabetic
-  , allowReorder
-  , amplitude
-  , arabicForm
-  , ascent
-  , attributeName
-  , attributeType
-  , autoReverse
-  , azimuth
-  , baseFrequency
-  , baseProfile
-  , bbox
-  , begin
-  , bias
-  , by
-  , calcMode
-  , capHeight
-  , class'
-  , clipPathUnits
-  , contentScriptType
-  , contentStyleType
-  , cx
-  , cy
-  , d
-  , decelerate
-  , descent
-  , diffuseConstant
-  , divisor
-  , dur
-  , dx
-  , dy
-  , edgeMode
-  , elevation
-  , end
-  , exponent
-  , externalResourcesRequired
-  , filterRes
-  , filterUnits
-  , format
-  , from
-  , fx
-  , fy
-  , g1
-  , g2
-  , glyphName
-  , glyphRef
-  , gradientTransform
-  , gradientUnits
-  , hanging
-  , height
-  , horizAdvX
-  , horizOriginX
-  , horizOriginY
-  , id
-  , ideographic
-  , in'
-  , in2
-  , intercept
-  , k
-  , k1
-  , k2
-  , k3
-  , k4
-  , kernelMatrix
-  , kernelUnitLength
-  , keyPoints
-  , keySplines
-  , keyTimes
-  , lang
-  , lengthAdjust
-  , limitingConeAngle
-  , local
-  , markerHeight
-  , markerUnits
-  , markerWidth
-  , maskContentUnits
-  , maskUnits
-  , mathematical
-  , max
-  , media
-  , method
-  , min
-  , mode
-  , name
-  , numOctaves
-  , offset
-  , operator
-  , order
-  , orient
-  , orientation
-  , origin
-  , overlinePosition
-  , overlineThickness
-  , panose1
-  , path
-  , pathLength
-  , patternContentUnits
-  , patternTransform
-  , patternUnits
-  , pointOrder
-  , points
-  , pointsAtX
-  , pointsAtY
-  , pointsAtZ
-  , preserveAlpha
-  , preserveAspectRatio
-  , primitiveUnits
-  , r
-  , radius
-  , refX
-  , refY
-  , renderingIntent
-  , repeatCount
-  , repeatDur
-  , requiredExtensions
-  , requiredFeatures
-  , restart
-  , result
-  , rotate
-  , rx
-  , ry
-  , scale
-  , seed
-  , slope
-  , spacing
-  , specularConstant
-  , specularExponent
-  , speed
-  , spreadMethod
-  , startOffset
-  , stdDeviation
-  , stemh
-  , stemv
-  , stitchTiles
-  , strikethroughPosition
-  , strikethroughThickness
-  , string
-  , style
-  , surfaceScale
-  , systemLanguage
-  , tableValues
-  , target
-  , targetX
-  , targetY
-  , textLength
-  , title
-  , to
-  , transform
-  , type'
-  , u1
-  , u2
-  , underlinePosition
-  , underlineThickness
-  , unicode
-  , unicodeRange
-  , unitsPerEm
-  , vAlphabetic
-  , vHanging
-  , vIdeographic
-  , vMathematical
-  , values
-  , version
-  , vertAdvY
-  , vertOriginX
-  , vertOriginY
-  , viewBox
-  , viewTarget
-  , width
-  , widths
-  , x
-  , xHeight
-  , x1
-  , x2
-  , xChannelSelector
-  , xlinkActuate
-  , xlinkArcrole
-  , xlinkHref
-  , xlinkRole
-  , xlinkShow
-  , xlinkTitle
-  , xlinkType
-  , xmlBase
-  , xmlLang
-  , xmlSpace
-  , y
-  , y1
-  , y2
-  , yChannelSelector
-  , z
-  , zoomAndPan
-  -- * Presentation attributes
-  , alignmentBaseline
-  , baselineShift
-  , clipPath
-  , clipRule
-  , clip
-  , colorInterpolationFilters
-  , colorInterpolation
-  , colorProfile
-  , colorRendering
-  , color
-  , cursor
-  , direction
-  , display
-  , dominantBaseline
-  , enableBackground
-  , fillOpacity
-  , fillRule
-  , fill
-  , filter
-  , floodColor
-  , floodOpacity
-  , fontFamily
-  , fontSizeAdjust
-  , fontSize
-  , fontStretch
-  , fontStyle
-  , fontVariant
-  , fontWeight
-  , glyphOrientationHorizontal
-  , glyphOrientationVertical
-  , imageRendering
-  , kerning
-  , letterSpacing
-  , lightingColor
-  , markerEnd
-  , markerMid
-  , markerStart
-  , mask
-  , opacity
-  , overflow
-  , pointerEvents
-  , shapeRendering
-  , stopColor
-  , stopOpacity
-  , strokeDasharray
-  , strokeDashoffset
-  , strokeLinecap
-  , strokeLinejoin
-  , strokeMiterlimit
-  , strokeOpacity
-  , strokeWidth
-  , stroke
-  , textAnchor
-  , textDecoration
-  , textRendering
-  , unicodeBidi
-  , visibility
-  , wordSpacing
-  , writingMode
+    accentHeight_
+  , accelerate_
+  , accumulate_
+  , additive_
+  , alphabetic_
+  , allowReorder_
+  , amplitude_
+  , arabicForm_
+  , ascent_
+  , attributeName_
+  , attributeType_
+  , autoReverse_
+  , azimuth_
+  , baseFrequency_
+  , baseProfile_
+  , bbox_
+  , begin_
+  , bias_
+  , by_
+  , calcMode_
+  , capHeight_
+  , class_'
+  , clipPathUnits_
+  , contentScriptType_
+  , contentStyleType_
+  , cx_
+  , cy_
+  , d_
+  , decelerate_
+  , descent_
+  , diffuseConstant_
+  , divisor_
+  , dur_
+  , dx_
+  , dy_
+  , edgeMode_
+  , elevation_
+  , end_
+  , exponent_
+  , externalResourcesRequired_
+  , filterRes_
+  , filterUnits_
+  , format_
+  , from_
+  , fx_
+  , fy_
+  , g1_
+  , g2_
+  , glyphName_
+  , glyphRef_
+  , gradientTransform_
+  , gradientUnits_
+  , hanging_
+  , height_
+  , horizAdvX_
+  , horizOriginX_
+  , horizOriginY_
+  , id_
+  , ideographic_
+  , in_'
+  , in2_
+  , intercept_
+  , k_
+  , k1_
+  , k2_
+  , k3_
+  , k4_
+  , kernelMatrix_
+  , kernelUnitLength_
+  , keyPoints_
+  , keySplines_
+  , keyTimes_
+  , lang_
+  , lengthAdjust_
+  , limitingConeAngle_
+  , local_
+  , markerHeight_
+  , markerUnits_
+  , markerWidth_
+  , maskContentUnits_
+  , maskUnits_
+  , mathematical_
+  , max_
+  , media_
+  , method_
+  , min_
+  , mode_
+  , name_
+  , numOctaves_
+  , offset_
+  , operator_
+  , order_
+  , orient_
+  , orientation_
+  , origin_
+  , overlinePosition_
+  , overlineThickness_
+  , panose1_
+  , path_
+  , pathLength_
+  , patternContentUnits_
+  , patternTransform_
+  , patternUnits_
+  , pointOrder_
+  , points_
+  , pointsAtX_
+  , pointsAtY_
+  , pointsAtZ_
+  , preserveAlpha_
+  , preserveAspectRatio_
+  , primitiveUnits_
+  , r_
+  , radius_
+  , refX_
+  , refY_
+  , renderingIntent_
+  , repeatCount_
+  , repeatDur_
+  , requiredExtensions_
+  , requiredFeatures_
+  , restart_
+  , result_
+  , rotate_
+  , rx_
+  , ry_
+  , scale_
+  , seed_
+  , slope_
+  , spacing_
+  , specularConstant_
+  , specularExponent_
+  , speed_
+  , spreadMethod_
+  , startOffset_
+  , stdDeviation_
+  , stemh_
+  , stemv_
+  , stitchTiles_
+  , strikethroughPosition_
+  , strikethroughThickness_
+  , string_
+  , style_
+  , surfaceScale_
+  , systemLanguage_
+  , tableValues_
+  , target_
+  , targetX_
+  , targetY_
+  , textLength_
+  , title_
+  , to_
+  , transform_
+  , type_'
+  , u1_
+  , u2_
+  , underlinePosition_
+  , underlineThickness_
+  , unicode_
+  , unicodeRange_
+  , unitsPerEm_
+  , vAlphabetic_
+  , vHanging_
+  , vIdeographic_
+  , vMathematical_
+  , values_
+  , version_
+  , vertAdvY_
+  , vertOriginX_
+  , vertOriginY_
+  , viewBox_
+  , viewTarget_
+  , width_
+  , widths_
+  , x_
+  , xHeight_
+  , x1_
+  , x2_
+  , xChannelSelector_
+  , xlinkActuate_
+  , xlinkArcrole_
+  , xlinkHref_
+  , xlinkRole_
+  , xlinkShow_
+  , xlinkTitle_
+  , xlinkType_
+  , xmlBase_
+  , xmlLang_
+  , xmlSpace_
+  , y_
+  , y1_
+  , y2_
+  , yChannelSelector_
+  , z_
+  , zoomAndPan_
+  -- * Presentation_ attributes
+  , alignmentBaseline_
+  , baselineShift_
+  , clipPath_
+  , clipRule_
+  , clip_
+  , colorInterpolationFilters_
+  , colorInterpolation_
+  , colorProfile_
+  , colorRendering_
+  , color_
+  , cursor_
+  , direction_
+  , display_
+  , dominantBaseline_
+  , enableBackground_
+  , fillOpacity_
+  , fillRule_
+  , fill_
+  , filter_
+  , floodColor_
+  , floodOpacity_
+  , fontFamily_
+  , fontSizeAdjust_
+  , fontSize_
+  , fontStretch_
+  , fontStyle_
+  , fontVariant_
+  , fontWeight_
+  , glyphOrientationHorizontal_
+  , glyphOrientationVertical_
+  , imageRendering_
+  , kerning_
+  , letterSpacing_
+  , lightingColor_
+  , markerEnd_
+  , markerMid_
+  , markerStart_
+  , mask_
+  , opacity_
+  , overflow_
+  , pointerEvents_
+  , shapeRendering_
+  , stopColor_
+  , stopOpacity_
+  , strokeDasharray_
+  , strokeDashoffset_
+  , strokeLinecap_
+  , strokeLinejoin_
+  , strokeMiterlimit_
+  , strokeOpacity_
+  , strokeWidth_
+  , stroke_
+  , textAnchor_
+  , textDecoration_
+  , textRendering_
+  , unicodeBidi_
+  , visibility_
+  , wordSpacing_
+  , writingMode_
   ) where
 
 import Miso.Html.Attr
@@ -275,761 +275,761 @@ import Miso.Html.Types
 import Miso.String hiding (filter)
 
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accent-height>
-accentHeight ::  MisoString -> Attribute action
-accentHeight = attr "accentHeight"
+accentHeight_ ::  MisoString -> Attribute action
+accentHeight_ = attr "accentHeight"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accelerate>
-accelerate ::  MisoString -> Attribute action
-accelerate = attr "accelerate"
+accelerate_ ::  MisoString -> Attribute action
+accelerate_ = attr "accelerate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accumulate>
-accumulate ::  MisoString -> Attribute action
-accumulate = attr "accumulate"
+accumulate_ ::  MisoString -> Attribute action
+accumulate_ = attr "accumulate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/additive>
-additive ::  MisoString -> Attribute action
-additive = attr "additive"
+additive_ ::  MisoString -> Attribute action
+additive_ = attr "additive"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alphabetic>
-alphabetic ::  MisoString -> Attribute action
-alphabetic = attr "alphabetic"
+alphabetic_ ::  MisoString -> Attribute action
+alphabetic_ = attr "alphabetic"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/allowReorder>
-allowReorder ::  MisoString -> Attribute action
-allowReorder = attr "allowReorder"
+allowReorder_ ::  MisoString -> Attribute action
+allowReorder_ = attr "allowReorder"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/amplitude>
-amplitude ::  MisoString -> Attribute action
-amplitude = attr "amplitude"
+amplitude_ ::  MisoString -> Attribute action
+amplitude_ = attr "amplitude"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/arabicForm>
-arabicForm ::  MisoString -> Attribute action
-arabicForm = attr "arabicForm"
+arabicForm_ ::  MisoString -> Attribute action
+arabicForm_ = attr "arabicForm"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ascent>
-ascent ::  MisoString -> Attribute action
-ascent = attr "ascent"
+ascent_ ::  MisoString -> Attribute action
+ascent_ = attr "ascent"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/attributeName>
-attributeName ::  MisoString -> Attribute action
-attributeName = attr "attributeName"
+attributeName_ ::  MisoString -> Attribute action
+attributeName_ = attr "attributeName"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/attributeType>
-attributeType ::  MisoString -> Attribute action
-attributeType = attr "attributeType"
+attributeType_ ::  MisoString -> Attribute action
+attributeType_ = attr "attributeType"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/autoReverse>
-autoReverse ::  MisoString -> Attribute action
-autoReverse = attr "autoReverse"
+autoReverse_ ::  MisoString -> Attribute action
+autoReverse_ = attr "autoReverse"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/azimuth>
-azimuth ::  MisoString -> Attribute action
-azimuth = attr "azimuth"
+azimuth_ ::  MisoString -> Attribute action
+azimuth_ = attr "azimuth"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/baseFrequency>
-baseFrequency ::  MisoString -> Attribute action
-baseFrequency = attr "baseFrequency"
+baseFrequency_ ::  MisoString -> Attribute action
+baseFrequency_ = attr "baseFrequency"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/baseProfile>
-baseProfile ::  MisoString -> Attribute action
-baseProfile = attr "baseProfile"
+baseProfile_ ::  MisoString -> Attribute action
+baseProfile_ = attr "baseProfile"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/bbox>
-bbox ::  MisoString -> Attribute action
-bbox = attr "bbox"
+bbox_ ::  MisoString -> Attribute action
+bbox_ = attr "bbox"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/begin>
-begin ::  MisoString -> Attribute action
-begin = attr "begin"
+begin_ ::  MisoString -> Attribute action
+begin_ = attr "begin"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/bias>
-bias ::  MisoString -> Attribute action
-bias = attr "bias"
+bias_ ::  MisoString -> Attribute action
+bias_ = attr "bias"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/by>
-by ::  MisoString -> Attribute action
-by = attr "by"
+by_ ::  MisoString -> Attribute action
+by_ = attr "by"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/calcMode>
-calcMode ::  MisoString -> Attribute action
-calcMode = attr "calcMode"
+calcMode_ ::  MisoString -> Attribute action
+calcMode_ = attr "calcMode"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/capHeight>
-capHeight ::  MisoString -> Attribute action
-capHeight = attr "capHeight"
+capHeight_ ::  MisoString -> Attribute action
+capHeight_ = attr "capHeight"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/class>
-class' ::  MisoString -> Attribute action
-class' = attr "class"
+class_' ::  MisoString -> Attribute action
+class_' = attr "class"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/clipPathUnits>
-clipPathUnits ::  MisoString -> Attribute action
-clipPathUnits = attr "clipPathUnits"
+clipPathUnits_ ::  MisoString -> Attribute action
+clipPathUnits_ = attr "clipPathUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/contentScriptType>
-contentScriptType ::  MisoString -> Attribute action
-contentScriptType = attr "contentScriptType"
+contentScriptType_ ::  MisoString -> Attribute action
+contentScriptType_ = attr "contentScriptType"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/contentStyleType>
-contentStyleType ::  MisoString -> Attribute action
-contentStyleType = attr "contentStyleType"
+contentStyleType_ ::  MisoString -> Attribute action
+contentStyleType_ = attr "contentStyleType"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/cx>
-cx ::  MisoString -> Attribute action
-cx = attr "cx"
+cx_ ::  MisoString -> Attribute action
+cx_ = attr "cx"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/cy>
-cy ::  MisoString -> Attribute action
-cy = attr "cy"
+cy_ ::  MisoString -> Attribute action
+cy_ = attr "cy"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d>
-d ::  MisoString -> Attribute action
-d = attr "d"
+d_ ::  MisoString -> Attribute action
+d_ = attr "d"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/decelerate>
-decelerate ::  MisoString -> Attribute action
-decelerate = attr "decelerate"
+decelerate_ ::  MisoString -> Attribute action
+decelerate_ = attr "decelerate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/descent>
-descent ::  MisoString -> Attribute action
-descent = attr "descent"
+descent_ ::  MisoString -> Attribute action
+descent_ = attr "descent"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/diffuseConstant>
-diffuseConstant ::  MisoString -> Attribute action
-diffuseConstant = attr "diffuseConstant"
+diffuseConstant_ ::  MisoString -> Attribute action
+diffuseConstant_ = attr "diffuseConstant"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/divisor>
-divisor ::  MisoString -> Attribute action
-divisor = attr "divisor"
+divisor_ ::  MisoString -> Attribute action
+divisor_ = attr "divisor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/dur>
-dur ::  MisoString -> Attribute action
-dur = attr "dur"
+dur_ ::  MisoString -> Attribute action
+dur_ = attr "dur"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/dx>
-dx ::  MisoString -> Attribute action
-dx = attr "dx"
+dx_ ::  MisoString -> Attribute action
+dx_ = attr "dx"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/dy>
-dy ::  MisoString -> Attribute action
-dy = attr "dy"
+dy_ ::  MisoString -> Attribute action
+dy_ = attr "dy"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/edgeMode>
-edgeMode ::  MisoString -> Attribute action
-edgeMode = attr "edgeMode"
+edgeMode_ ::  MisoString -> Attribute action
+edgeMode_ = attr "edgeMode"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/elevation>
-elevation ::  MisoString -> Attribute action
-elevation = attr "elevation"
+elevation_ ::  MisoString -> Attribute action
+elevation_ = attr "elevation"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/end>
-end ::  MisoString -> Attribute action
-end = attr "end"
+end_ ::  MisoString -> Attribute action
+end_ = attr "end"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/exponent>
-exponent ::  MisoString -> Attribute action
-exponent = attr "exponent"
+exponent_ ::  MisoString -> Attribute action
+exponent_ = attr "exponent"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/externalResourcesRequired>
-externalResourcesRequired ::  MisoString -> Attribute action
-externalResourcesRequired = attr "externalResourcesRequired"
+externalResourcesRequired_ ::  MisoString -> Attribute action
+externalResourcesRequired_ = attr "externalResourcesRequired"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/filterRes>
-filterRes ::  MisoString -> Attribute action
-filterRes = attr "filterRes"
+filterRes_ ::  MisoString -> Attribute action
+filterRes_ = attr "filterRes"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/filterUnits>
-filterUnits ::  MisoString -> Attribute action
-filterUnits = attr "filterUnits"
+filterUnits_ ::  MisoString -> Attribute action
+filterUnits_ = attr "filterUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/format>
-format ::  MisoString -> Attribute action
-format = attr "format"
+format_ ::  MisoString -> Attribute action
+format_ = attr "format"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/from>
-from ::  MisoString -> Attribute action
-from = attr "from"
+from_ ::  MisoString -> Attribute action
+from_ = attr "from"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fx>
-fx ::  MisoString -> Attribute action
-fx = attr "fx"
+fx_ ::  MisoString -> Attribute action
+fx_ = attr "fx"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fy>
-fy ::  MisoString -> Attribute action
-fy = attr "fy"
+fy_ ::  MisoString -> Attribute action
+fy_ = attr "fy"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/g1>
-g1 ::  MisoString -> Attribute action
-g1 = attr "g1"
+g1_ ::  MisoString -> Attribute action
+g1_ = attr "g1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/g2>
-g2 ::  MisoString -> Attribute action
-g2 = attr "g2"
+g2_ ::  MisoString -> Attribute action
+g2_ = attr "g2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/glyphName>
-glyphName ::  MisoString -> Attribute action
-glyphName = attr "glyphName"
+glyphName_ ::  MisoString -> Attribute action
+glyphName_ = attr "glyphName"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/glyphRef>
-glyphRef ::  MisoString -> Attribute action
-glyphRef = attr "glyphRef"
+glyphRef_ ::  MisoString -> Attribute action
+glyphRef_ = attr "glyphRef"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/gradientTransform>
-gradientTransform ::  MisoString -> Attribute action
-gradientTransform = attr "gradientTransform"
+gradientTransform_ ::  MisoString -> Attribute action
+gradientTransform_ = attr "gradientTransform"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/gradientUnits>
-gradientUnits ::  MisoString -> Attribute action
-gradientUnits = attr "gradientUnits"
+gradientUnits_ ::  MisoString -> Attribute action
+gradientUnits_ = attr "gradientUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/hanging>
-hanging ::  MisoString -> Attribute action
-hanging = attr "hanging"
+hanging_ ::  MisoString -> Attribute action
+hanging_ = attr "hanging"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/height>
-height ::  MisoString -> Attribute action
-height = attr "height"
+height_ ::  MisoString -> Attribute action
+height_ = attr "height"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/horizAdvX>
-horizAdvX ::  MisoString -> Attribute action
-horizAdvX = attr "horizAdvX"
+horizAdvX_ ::  MisoString -> Attribute action
+horizAdvX_ = attr "horizAdvX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/horizOriginX>
-horizOriginX ::  MisoString -> Attribute action
-horizOriginX = attr "horizOriginX"
+horizOriginX_ ::  MisoString -> Attribute action
+horizOriginX_ = attr "horizOriginX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/horizOriginY>
-horizOriginY ::  MisoString -> Attribute action
-horizOriginY = attr "horizOriginY"
+horizOriginY_ ::  MisoString -> Attribute action
+horizOriginY_ = attr "horizOriginY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/id>
-id ::  MisoString -> Attribute action
-id = attr "id"
+id_ ::  MisoString -> Attribute action
+id_ = attr "id"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ideographic>
-ideographic ::  MisoString -> Attribute action
-ideographic = attr "ideographic"
+ideographic_ ::  MisoString -> Attribute action
+ideographic_ = attr "ideographic"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/in>
-in' ::  MisoString -> Attribute action
-in' = attr "in"
+in_' ::  MisoString -> Attribute action
+in_' = attr "in"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/in2>
-in2 ::  MisoString -> Attribute action
-in2 = attr "in2"
+in2_ ::  MisoString -> Attribute action
+in2_ = attr "in2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/intercept>
-intercept ::  MisoString -> Attribute action
-intercept = attr "intercept"
+intercept_ ::  MisoString -> Attribute action
+intercept_ = attr "intercept"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/k>
-k ::  MisoString -> Attribute action
-k = attr "k"
+k_ ::  MisoString -> Attribute action
+k_ = attr "k"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/k1>
-k1 ::  MisoString -> Attribute action
-k1 = attr "k1"
+k1_ ::  MisoString -> Attribute action
+k1_ = attr "k1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/k2>
-k2 ::  MisoString -> Attribute action
-k2 = attr "k2"
+k2_ ::  MisoString -> Attribute action
+k2_ = attr "k2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/k3>
-k3 ::  MisoString -> Attribute action
-k3 = attr "k3"
+k3_ ::  MisoString -> Attribute action
+k3_ = attr "k3"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/k4>
-k4 ::  MisoString -> Attribute action
-k4 = attr "k4"
+k4_ ::  MisoString -> Attribute action
+k4_ = attr "k4"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/kernelMatrix>
-kernelMatrix ::  MisoString -> Attribute action
-kernelMatrix = attr "kernelMatrix"
+kernelMatrix_ ::  MisoString -> Attribute action
+kernelMatrix_ = attr "kernelMatrix"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/kernelUnitLength>
-kernelUnitLength ::  MisoString -> Attribute action
-kernelUnitLength = attr "kernelUnitLength"
+kernelUnitLength_ ::  MisoString -> Attribute action
+kernelUnitLength_ = attr "kernelUnitLength"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/keyPoints>
-keyPoints ::  MisoString -> Attribute action
-keyPoints = attr "keyPoints"
+keyPoints_ ::  MisoString -> Attribute action
+keyPoints_ = attr "keyPoints"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/keySplines>
-keySplines ::  MisoString -> Attribute action
-keySplines = attr "keySplines"
+keySplines_ ::  MisoString -> Attribute action
+keySplines_ = attr "keySplines"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/keyTimes>
-keyTimes ::  MisoString -> Attribute action
-keyTimes = attr "keyTimes"
+keyTimes_ ::  MisoString -> Attribute action
+keyTimes_ = attr "keyTimes"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/lang>
-lang ::  MisoString -> Attribute action
-lang = attr "lang"
+lang_ ::  MisoString -> Attribute action
+lang_ = attr "lang"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/lengthAdjust>
-lengthAdjust ::  MisoString -> Attribute action
-lengthAdjust = attr "lengthAdjust"
+lengthAdjust_ ::  MisoString -> Attribute action
+lengthAdjust_ = attr "lengthAdjust"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/limitingConeAngle>
-limitingConeAngle ::  MisoString -> Attribute action
-limitingConeAngle = attr "limitingConeAngle"
+limitingConeAngle_ ::  MisoString -> Attribute action
+limitingConeAngle_ = attr "limitingConeAngle"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/local>
-local ::  MisoString -> Attribute action
-local = attr "local"
+local_ ::  MisoString -> Attribute action
+local_ = attr "local"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerHeight>
-markerHeight ::  MisoString -> Attribute action
-markerHeight = attr "markerHeight"
+markerHeight_ ::  MisoString -> Attribute action
+markerHeight_ = attr "markerHeight"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerUnits>
-markerUnits ::  MisoString -> Attribute action
-markerUnits = attr "markerUnits"
+markerUnits_ ::  MisoString -> Attribute action
+markerUnits_ = attr "markerUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerWidth>
-markerWidth ::  MisoString -> Attribute action
-markerWidth = attr "markerWidth"
+markerWidth_ ::  MisoString -> Attribute action
+markerWidth_ = attr "markerWidth"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/maskContentUnits>
-maskContentUnits ::  MisoString -> Attribute action
-maskContentUnits = attr "maskContentUnits"
+maskContentUnits_ ::  MisoString -> Attribute action
+maskContentUnits_ = attr "maskContentUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/maskUnits>
-maskUnits ::  MisoString -> Attribute action
-maskUnits = attr "maskUnits"
+maskUnits_ ::  MisoString -> Attribute action
+maskUnits_ = attr "maskUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/mathematical>
-mathematical ::  MisoString -> Attribute action
-mathematical = attr "mathematical"
+mathematical_ ::  MisoString -> Attribute action
+mathematical_ = attr "mathematical"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/max>
-max ::  MisoString -> Attribute action
-max = attr "max"
+max_ ::  MisoString -> Attribute action
+max_ = attr "max"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/media>
-media ::  MisoString -> Attribute action
-media = attr "media"
+media_ ::  MisoString -> Attribute action
+media_ = attr "media"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/method>
-method ::  MisoString -> Attribute action
-method = attr "method"
+method_ ::  MisoString -> Attribute action
+method_ = attr "method"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/min>
-min ::  MisoString -> Attribute action
-min = attr "min"
+min_ ::  MisoString -> Attribute action
+min_ = attr "min"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/mode>
-mode ::  MisoString -> Attribute action
-mode = attr "mode"
+mode_ ::  MisoString -> Attribute action
+mode_ = attr "mode"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/name>
-name ::  MisoString -> Attribute action
-name = attr "name"
+name_ ::  MisoString -> Attribute action
+name_ = attr "name"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/numOctaves>
-numOctaves ::  MisoString -> Attribute action
-numOctaves = attr "numOctaves"
+numOctaves_ ::  MisoString -> Attribute action
+numOctaves_ = attr "numOctaves"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/offset>
-offset ::  MisoString -> Attribute action
-offset = attr "offset"
+offset_ ::  MisoString -> Attribute action
+offset_ = attr "offset"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/operator>
-operator ::  MisoString -> Attribute action
-operator = attr "operator"
+operator_ ::  MisoString -> Attribute action
+operator_ = attr "operator"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/order>
-order ::  MisoString -> Attribute action
-order = attr "order"
+order_ ::  MisoString -> Attribute action
+order_ = attr "order"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/orient>
-orient ::  MisoString -> Attribute action
-orient = attr "orient"
+orient_ ::  MisoString -> Attribute action
+orient_ = attr "orient"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/orientation>
-orientation ::  MisoString -> Attribute action
-orientation = attr "orientation"
+orientation_ ::  MisoString -> Attribute action
+orientation_ = attr "orientation"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/origin>
-origin ::  MisoString -> Attribute action
-origin = attr "origin"
+origin_ ::  MisoString -> Attribute action
+origin_ = attr "origin"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/overlinePosition>
-overlinePosition ::  MisoString -> Attribute action
-overlinePosition = attr "overlinePosition"
+overlinePosition_ ::  MisoString -> Attribute action
+overlinePosition_ = attr "overlinePosition"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/overlineThickness>
-overlineThickness ::  MisoString -> Attribute action
-overlineThickness = attr "overlineThickness"
+overlineThickness_ ::  MisoString -> Attribute action
+overlineThickness_ = attr "overlineThickness"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/panose1>
-panose1 ::  MisoString -> Attribute action
-panose1 = attr "panose1"
+panose1_ ::  MisoString -> Attribute action
+panose1_ = attr "panose1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/path>
-path ::  MisoString -> Attribute action
-path = attr "path"
+path_ ::  MisoString -> Attribute action
+path_ = attr "path"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pathLength>
-pathLength ::  MisoString -> Attribute action
-pathLength = attr "pathLength"
+pathLength_ ::  MisoString -> Attribute action
+pathLength_ = attr "pathLength"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/patternContentUnits>
-patternContentUnits ::  MisoString -> Attribute action
-patternContentUnits = attr "patternContentUnits"
+patternContentUnits_ ::  MisoString -> Attribute action
+patternContentUnits_ = attr "patternContentUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/patternTransform>
-patternTransform ::  MisoString -> Attribute action
-patternTransform = attr "patternTransform"
+patternTransform_ ::  MisoString -> Attribute action
+patternTransform_ = attr "patternTransform"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/patternUnits>
-patternUnits ::  MisoString -> Attribute action
-patternUnits = attr "patternUnits"
+patternUnits_ ::  MisoString -> Attribute action
+patternUnits_ = attr "patternUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pointOrder>
-pointOrder ::  MisoString -> Attribute action
-pointOrder = attr "pointOrder"
+pointOrder_ ::  MisoString -> Attribute action
+pointOrder_ = attr "pointOrder"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/points>
-points ::  MisoString -> Attribute action
-points = attr "points"
+points_ ::  MisoString -> Attribute action
+points_ = attr "points"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pointsAtX>
-pointsAtX ::  MisoString -> Attribute action
-pointsAtX = attr "pointsAtX"
+pointsAtX_ ::  MisoString -> Attribute action
+pointsAtX_ = attr "pointsAtX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pointsAtY>
-pointsAtY ::  MisoString -> Attribute action
-pointsAtY = attr "pointsAtY"
+pointsAtY_ ::  MisoString -> Attribute action
+pointsAtY_ = attr "pointsAtY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pointsAtZ>
-pointsAtZ ::  MisoString -> Attribute action
-pointsAtZ = attr "pointsAtZ"
+pointsAtZ_ ::  MisoString -> Attribute action
+pointsAtZ_ = attr "pointsAtZ"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAlpha>
-preserveAlpha ::  MisoString -> Attribute action
-preserveAlpha = attr "preserveAlpha"
+preserveAlpha_ ::  MisoString -> Attribute action
+preserveAlpha_ = attr "preserveAlpha"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/preserveAspectRatio>
-preserveAspectRatio ::  MisoString -> Attribute action
-preserveAspectRatio = attr "preserveAspectRatio"
+preserveAspectRatio_ ::  MisoString -> Attribute action
+preserveAspectRatio_ = attr "preserveAspectRatio"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/primitiveUnits>
-primitiveUnits ::  MisoString -> Attribute action
-primitiveUnits = attr "primitiveUnits"
+primitiveUnits_ ::  MisoString -> Attribute action
+primitiveUnits_ = attr "primitiveUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/r>
-r ::  MisoString -> Attribute action
-r = attr "r"
+r_ ::  MisoString -> Attribute action
+r_ = attr "r"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/radius>
-radius ::  MisoString -> Attribute action
-radius = attr "radius"
+radius_ ::  MisoString -> Attribute action
+radius_ = attr "radius"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/refX>
-refX ::  MisoString -> Attribute action
-refX = attr "refX"
+refX_ ::  MisoString -> Attribute action
+refX_ = attr "refX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/refY>
-refY ::  MisoString -> Attribute action
-refY = attr "refY"
+refY_ ::  MisoString -> Attribute action
+refY_ = attr "refY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/renderingIntent>
-renderingIntent ::  MisoString -> Attribute action
-renderingIntent = attr "renderingIntent"
+renderingIntent_ ::  MisoString -> Attribute action
+renderingIntent_ = attr "renderingIntent"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/repeatCount>
-repeatCount ::  MisoString -> Attribute action
-repeatCount = attr "repeatCount"
+repeatCount_ ::  MisoString -> Attribute action
+repeatCount_ = attr "repeatCount"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/repeatDur>
-repeatDur ::  MisoString -> Attribute action
-repeatDur = attr "repeatDur"
+repeatDur_ ::  MisoString -> Attribute action
+repeatDur_ = attr "repeatDur"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/requiredExtensions>
-requiredExtensions ::  MisoString -> Attribute action
-requiredExtensions = attr "requiredExtensions"
+requiredExtensions_ ::  MisoString -> Attribute action
+requiredExtensions_ = attr "requiredExtensions"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/requiredFeatures>
-requiredFeatures ::  MisoString -> Attribute action
-requiredFeatures = attr "requiredFeatures"
+requiredFeatures_ ::  MisoString -> Attribute action
+requiredFeatures_ = attr "requiredFeatures"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/restart>
-restart ::  MisoString -> Attribute action
-restart = attr "restart"
+restart_ ::  MisoString -> Attribute action
+restart_ = attr "restart"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/result>
-result ::  MisoString -> Attribute action
-result = attr "result"
+result_ ::  MisoString -> Attribute action
+result_ = attr "result"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/rotate>
-rotate ::  MisoString -> Attribute action
-rotate = attr "rotate"
+rotate_ ::  MisoString -> Attribute action
+rotate_ = attr "rotate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/rx>
-rx ::  MisoString -> Attribute action
-rx = attr "rx"
+rx_ ::  MisoString -> Attribute action
+rx_ = attr "rx"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/ry>
-ry ::  MisoString -> Attribute action
-ry = attr "ry"
+ry_ ::  MisoString -> Attribute action
+ry_ = attr "ry"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/scale>
-scale ::  MisoString -> Attribute action
-scale = attr "scale"
+scale_ ::  MisoString -> Attribute action
+scale_ = attr "scale"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/seed>
-seed ::  MisoString -> Attribute action
-seed = attr "seed"
+seed_ ::  MisoString -> Attribute action
+seed_ = attr "seed"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/slope>
-slope ::  MisoString -> Attribute action
-slope = attr "slope"
+slope_ ::  MisoString -> Attribute action
+slope_ = attr "slope"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/spacing>
-spacing ::  MisoString -> Attribute action
-spacing = attr "spacing"
+spacing_ ::  MisoString -> Attribute action
+spacing_ = attr "spacing"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/specularConstant>
-specularConstant ::  MisoString -> Attribute action
-specularConstant = attr "specularConstant"
+specularConstant_ ::  MisoString -> Attribute action
+specularConstant_ = attr "specularConstant"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/specularExponent>
-specularExponent ::  MisoString -> Attribute action
-specularExponent = attr "specularExponent"
+specularExponent_ ::  MisoString -> Attribute action
+specularExponent_ = attr "specularExponent"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/speed>
-speed ::  MisoString -> Attribute action
-speed = attr "speed"
+speed_ ::  MisoString -> Attribute action
+speed_ = attr "speed"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/spreadMethod>
-spreadMethod ::  MisoString -> Attribute action
-spreadMethod = attr "spreadMethod"
+spreadMethod_ ::  MisoString -> Attribute action
+spreadMethod_ = attr "spreadMethod"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/startOffset>
-startOffset ::  MisoString -> Attribute action
-startOffset = attr "startOffset"
+startOffset_ ::  MisoString -> Attribute action
+startOffset_ = attr "startOffset"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stdDeviation>
-stdDeviation ::  MisoString -> Attribute action
-stdDeviation = attr "stdDeviation"
+stdDeviation_ ::  MisoString -> Attribute action
+stdDeviation_ = attr "stdDeviation"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stemh>
-stemh ::  MisoString -> Attribute action
-stemh = attr "stemh"
+stemh_ ::  MisoString -> Attribute action
+stemh_ = attr "stemh"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stemv>
-stemv ::  MisoString -> Attribute action
-stemv = attr "stemv"
+stemv_ ::  MisoString -> Attribute action
+stemv_ = attr "stemv"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stitchTiles>
-stitchTiles ::  MisoString -> Attribute action
-stitchTiles = attr "stitchTiles"
+stitchTiles_ ::  MisoString -> Attribute action
+stitchTiles_ = attr "stitchTiles"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strikethroughPosition>
-strikethroughPosition ::  MisoString -> Attribute action
-strikethroughPosition = attr "strikethroughPosition"
+strikethroughPosition_ ::  MisoString -> Attribute action
+strikethroughPosition_ = attr "strikethroughPosition"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strikethroughThickness>
-strikethroughThickness ::  MisoString -> Attribute action
-strikethroughThickness = attr "strikethroughThickness"
+strikethroughThickness_ ::  MisoString -> Attribute action
+strikethroughThickness_ = attr "strikethroughThickness"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/string>
-string ::  MisoString -> Attribute action
-string = attr "string"
+string_ ::  MisoString -> Attribute action
+string_ = attr "string"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/style>
-style ::  MisoString -> Attribute action
-style = attr "style"
+style_ ::  MisoString -> Attribute action
+style_ = attr "style"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/surfaceScale>
-surfaceScale ::  MisoString -> Attribute action
-surfaceScale = attr "surfaceScale"
+surfaceScale_ ::  MisoString -> Attribute action
+surfaceScale_ = attr "surfaceScale"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/systemLanguage>
-systemLanguage ::  MisoString -> Attribute action
-systemLanguage = attr "systemLanguage"
+systemLanguage_ ::  MisoString -> Attribute action
+systemLanguage_ = attr "systemLanguage"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/tableValues>
-tableValues ::  MisoString -> Attribute action
-tableValues = attr "tableValues"
+tableValues_ ::  MisoString -> Attribute action
+tableValues_ = attr "tableValues"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/target>
-target ::  MisoString -> Attribute action
-target = attr "target"
+target_ ::  MisoString -> Attribute action
+target_ = attr "target"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/targetX>
-targetX ::  MisoString -> Attribute action
-targetX = attr "targetX"
+targetX_ ::  MisoString -> Attribute action
+targetX_ = attr "targetX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/targetY>
-targetY ::  MisoString -> Attribute action
-targetY = attr "targetY"
+targetY_ ::  MisoString -> Attribute action
+targetY_ = attr "targetY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/textLength>
-textLength ::  MisoString -> Attribute action
-textLength = attr "textLength"
+textLength_ ::  MisoString -> Attribute action
+textLength_ = attr "textLength"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/title>
-title ::  MisoString -> Attribute action
-title = attr "title"
+title_ ::  MisoString -> Attribute action
+title_ = attr "title"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/to>
-to ::  MisoString -> Attribute action
-to = attr "to"
+to_ ::  MisoString -> Attribute action
+to_ = attr "to"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform>
-transform ::  MisoString -> Attribute action
-transform = attr "transform"
+transform_ ::  MisoString -> Attribute action
+transform_ = attr "transform"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/type>
-type' ::  MisoString -> Attribute action
-type' = attr "type"
+type_' ::  MisoString -> Attribute action
+type_' = attr "type"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/u1>
-u1 ::  MisoString -> Attribute action
-u1 = attr "u1"
+u1_ ::  MisoString -> Attribute action
+u1_ = attr "u1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/u2>
-u2 ::  MisoString -> Attribute action
-u2 = attr "u2"
+u2_ ::  MisoString -> Attribute action
+u2_ = attr "u2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/underlinePosition>
-underlinePosition ::  MisoString -> Attribute action
-underlinePosition = attr "underlinePosition"
+underlinePosition_ ::  MisoString -> Attribute action
+underlinePosition_ = attr "underlinePosition"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/underlineThickness>
-underlineThickness ::  MisoString -> Attribute action
-underlineThickness = attr "underlineThickness"
+underlineThickness_ ::  MisoString -> Attribute action
+underlineThickness_ = attr "underlineThickness"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/unicode>
-unicode ::  MisoString -> Attribute action
-unicode = attr "unicode"
+unicode_ ::  MisoString -> Attribute action
+unicode_ = attr "unicode"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/unicodeRange>
-unicodeRange ::  MisoString -> Attribute action
-unicodeRange = attr "unicodeRange"
+unicodeRange_ ::  MisoString -> Attribute action
+unicodeRange_ = attr "unicodeRange"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/unitsPerEm>
-unitsPerEm ::  MisoString -> Attribute action
-unitsPerEm = attr "unitsPerEm"
+unitsPerEm_ ::  MisoString -> Attribute action
+unitsPerEm_ = attr "unitsPerEm"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vAlphabetic>
-vAlphabetic ::  MisoString -> Attribute action
-vAlphabetic = attr "vAlphabetic"
+vAlphabetic_ ::  MisoString -> Attribute action
+vAlphabetic_ = attr "vAlphabetic"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vHanging>
-vHanging ::  MisoString -> Attribute action
-vHanging = attr "vHanging"
+vHanging_ ::  MisoString -> Attribute action
+vHanging_ = attr "vHanging"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vIdeographic>
-vIdeographic ::  MisoString -> Attribute action
-vIdeographic = attr "vIdeographic"
+vIdeographic_ ::  MisoString -> Attribute action
+vIdeographic_ = attr "vIdeographic"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vMathematical>
-vMathematical ::  MisoString -> Attribute action
-vMathematical = attr "vMathematical"
+vMathematical_ ::  MisoString -> Attribute action
+vMathematical_ = attr "vMathematical"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/values>
-values ::  MisoString -> Attribute action
-values = attr "values"
+values_ ::  MisoString -> Attribute action
+values_ = attr "values"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/version>
-version ::  MisoString -> Attribute action
-version = attr "version"
+version_ ::  MisoString -> Attribute action
+version_ = attr "version"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vertAdvY>
-vertAdvY ::  MisoString -> Attribute action
-vertAdvY = attr "vertAdvY"
+vertAdvY_ ::  MisoString -> Attribute action
+vertAdvY_ = attr "vertAdvY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vertOriginX>
-vertOriginX ::  MisoString -> Attribute action
-vertOriginX = attr "vertOriginX"
+vertOriginX_ ::  MisoString -> Attribute action
+vertOriginX_ = attr "vertOriginX"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vertOriginY>
-vertOriginY ::  MisoString -> Attribute action
-vertOriginY = attr "vertOriginY"
+vertOriginY_ ::  MisoString -> Attribute action
+vertOriginY_ = attr "vertOriginY"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox>
-viewBox ::  MisoString -> Attribute action
-viewBox = attr "viewBox"
+viewBox_ ::  MisoString -> Attribute action
+viewBox_ = attr "viewBox"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewTarget>
-viewTarget ::  MisoString -> Attribute action
-viewTarget = attr "viewTarget"
+viewTarget_ ::  MisoString -> Attribute action
+viewTarget_ = attr "viewTarget"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/width>
-width ::  MisoString -> Attribute action
-width = attr "width"
+width_ ::  MisoString -> Attribute action
+width_ = attr "width"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/widths>
-widths ::  MisoString -> Attribute action
-widths = attr "widths"
+widths_ ::  MisoString -> Attribute action
+widths_ = attr "widths"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/x>
-x ::  MisoString -> Attribute action
-x = attr "x"
+x_ ::  MisoString -> Attribute action
+x_ = attr "x"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xHeight>
-xHeight ::  MisoString -> Attribute action
-xHeight = attr "xHeight"
+xHeight_ ::  MisoString -> Attribute action
+xHeight_ = attr "xHeight"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/x1>
-x1 ::  MisoString -> Attribute action
-x1 = attr "x1"
+x1_ ::  MisoString -> Attribute action
+x1_ = attr "x1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/x2>
-x2 ::  MisoString -> Attribute action
-x2 = attr "x2"
+x2_ ::  MisoString -> Attribute action
+x2_ = attr "x2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xChannelSelector>
-xChannelSelector ::  MisoString -> Attribute action
-xChannelSelector = attr "xChannelSelector"
+xChannelSelector_ ::  MisoString -> Attribute action
+xChannelSelector_ = attr "xChannelSelector"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkActuate>
-xlinkActuate ::  MisoString -> Attribute action
-xlinkActuate = attr "xlinkActuate"
+xlinkActuate_ ::  MisoString -> Attribute action
+xlinkActuate_ = attr "xlinkActuate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkArcrole>
-xlinkArcrole ::  MisoString -> Attribute action
-xlinkArcrole = attr "xlinkArcrole"
+xlinkArcrole_ ::  MisoString -> Attribute action
+xlinkArcrole_ = attr "xlinkArcrole"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkHref>
-xlinkHref ::  MisoString -> Attribute action
-xlinkHref = attr "xlinkHref"
+xlinkHref_ ::  MisoString -> Attribute action
+xlinkHref_ = attr "xlinkHref"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkRole>
-xlinkRole ::  MisoString -> Attribute action
-xlinkRole = attr "xlinkRole"
+xlinkRole_ ::  MisoString -> Attribute action
+xlinkRole_ = attr "xlinkRole"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkShow>
-xlinkShow ::  MisoString -> Attribute action
-xlinkShow = attr "xlinkShow"
+xlinkShow_ ::  MisoString -> Attribute action
+xlinkShow_ = attr "xlinkShow"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkTitle>
-xlinkTitle ::  MisoString -> Attribute action
-xlinkTitle = attr "xlinkTitle"
+xlinkTitle_ ::  MisoString -> Attribute action
+xlinkTitle_ = attr "xlinkTitle"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlinkType>
-xlinkType ::  MisoString -> Attribute action
-xlinkType = attr "xlinkType"
+xlinkType_ ::  MisoString -> Attribute action
+xlinkType_ = attr "xlinkType"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xmlBase>
-xmlBase ::  MisoString -> Attribute action
-xmlBase = attr "xmlBase"
+xmlBase_ ::  MisoString -> Attribute action
+xmlBase_ = attr "xmlBase"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xmlLang>
-xmlLang ::  MisoString -> Attribute action
-xmlLang = attr "xmlLang"
+xmlLang_ ::  MisoString -> Attribute action
+xmlLang_ = attr "xmlLang"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xmlSpace>
-xmlSpace ::  MisoString -> Attribute action
-xmlSpace = attr "xmlSpace"
+xmlSpace_ ::  MisoString -> Attribute action
+xmlSpace_ = attr "xmlSpace"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/y>
-y ::  MisoString -> Attribute action
-y = attr "y"
+y_ ::  MisoString -> Attribute action
+y_ = attr "y"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/y1>
-y1 ::  MisoString -> Attribute action
-y1 = attr "y1"
+y1_ ::  MisoString -> Attribute action
+y1_ = attr "y1"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/y2>
-y2 ::  MisoString -> Attribute action
-y2 = attr "y2"
+y2_ ::  MisoString -> Attribute action
+y2_ = attr "y2"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/yChannelSelector>
-yChannelSelector ::  MisoString -> Attribute action
-yChannelSelector = attr "yChannelSelector"
+yChannelSelector_ ::  MisoString -> Attribute action
+yChannelSelector_ = attr "yChannelSelector"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/z>
-z ::  MisoString -> Attribute action
-z = attr "z"
+z_ ::  MisoString -> Attribute action
+z_ = attr "z"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/zoomAndPan>
-zoomAndPan ::  MisoString -> Attribute action
-zoomAndPan = attr "zoomAndPan"
+zoomAndPan_ ::  MisoString -> Attribute action
+zoomAndPan_ = attr "zoomAndPan"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/alignmentBaseline>
-alignmentBaseline ::  MisoString -> Attribute action
-alignmentBaseline = attr "alignmentBaseline"
+alignmentBaseline_ ::  MisoString -> Attribute action
+alignmentBaseline_ = attr "alignmentBaseline"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/baselineShift>
-baselineShift ::  MisoString -> Attribute action
-baselineShift = attr "baselineShift"
+baselineShift_ ::  MisoString -> Attribute action
+baselineShift_ = attr "baselineShift"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/clipPath>
-clipPath ::  MisoString -> Attribute action
-clipPath = attr "clipPath"
+clipPath_ ::  MisoString -> Attribute action
+clipPath_ = attr "clipPath"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/clipRule>
-clipRule ::  MisoString -> Attribute action
-clipRule = attr "clipRule"
+clipRule_ ::  MisoString -> Attribute action
+clipRule_ = attr "clipRule"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/clip>
-clip ::  MisoString -> Attribute action
-clip = attr "clip"
+clip_ ::  MisoString -> Attribute action
+clip_ = attr "clip"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/colorInterpolationFilters>
-colorInterpolationFilters ::  MisoString -> Attribute action
-colorInterpolationFilters = attr "colorInterpolationFilters"
+colorInterpolationFilters_ ::  MisoString -> Attribute action
+colorInterpolationFilters_ = attr "colorInterpolationFilters"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/colorInterpolation>
-colorInterpolation ::  MisoString -> Attribute action
-colorInterpolation = attr "colorInterpolation"
+colorInterpolation_ ::  MisoString -> Attribute action
+colorInterpolation_ = attr "colorInterpolation"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/colorProfile>
-colorProfile ::  MisoString -> Attribute action
-colorProfile = attr "colorProfile"
+colorProfile_ ::  MisoString -> Attribute action
+colorProfile_ = attr "colorProfile"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/colorRendering>
-colorRendering ::  MisoString -> Attribute action
-colorRendering = attr "colorRendering"
+colorRendering_ ::  MisoString -> Attribute action
+colorRendering_ = attr "colorRendering"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color>
-color ::  MisoString -> Attribute action
-color = attr "color"
+color_ ::  MisoString -> Attribute action
+color_ = attr "color"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/cursor>
-cursor ::  MisoString -> Attribute action
-cursor = attr "cursor"
+cursor_ ::  MisoString -> Attribute action
+cursor_ = attr "cursor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/direction>
-direction ::  MisoString -> Attribute action
-direction = attr "direction"
+direction_ ::  MisoString -> Attribute action
+direction_ = attr "direction"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/display>
-display ::  MisoString -> Attribute action
-display = attr "display"
+display_ ::  MisoString -> Attribute action
+display_ = attr "display"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/dominantBaseline>
-dominantBaseline ::  MisoString -> Attribute action
-dominantBaseline = attr "dominantBaseline"
+dominantBaseline_ ::  MisoString -> Attribute action
+dominantBaseline_ = attr "dominantBaseline"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/enableBackground>
-enableBackground ::  MisoString -> Attribute action
-enableBackground = attr "enableBackground"
+enableBackground_ ::  MisoString -> Attribute action
+enableBackground_ = attr "enableBackground"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fillOpacity>
-fillOpacity ::  MisoString -> Attribute action
-fillOpacity = attr "fillOpacity"
+fillOpacity_ ::  MisoString -> Attribute action
+fillOpacity_ = attr "fillOpacity"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fillRule>
-fillRule ::  MisoString -> Attribute action
-fillRule = attr "fillRule"
+fillRule_ ::  MisoString -> Attribute action
+fillRule_ = attr "fillRule"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fill>
-fill ::  MisoString -> Attribute action
-fill = attr "fill"
+fill_ ::  MisoString -> Attribute action
+fill_ = attr "fill"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/filter>
-filter ::  MisoString -> Attribute action
-filter = attr "filter"
+filter_ ::  MisoString -> Attribute action
+filter_ = attr "filter"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/floodColor>
-floodColor ::  MisoString -> Attribute action
-floodColor = attr "floodColor"
+floodColor_ ::  MisoString -> Attribute action
+floodColor_ = attr "floodColor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/floodOpacity>
-floodOpacity ::  MisoString -> Attribute action
-floodOpacity = attr "floodOpacity"
+floodOpacity_ ::  MisoString -> Attribute action
+floodOpacity_ = attr "floodOpacity"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontFamily>
-fontFamily ::  MisoString -> Attribute action
-fontFamily = attr "fontFamily"
+fontFamily_ ::  MisoString -> Attribute action
+fontFamily_ = attr "fontFamily"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontSizeAdjust>
-fontSizeAdjust ::  MisoString -> Attribute action
-fontSizeAdjust = attr "fontSizeAdjust"
+fontSizeAdjust_ ::  MisoString -> Attribute action
+fontSizeAdjust_ = attr "fontSizeAdjust"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontSize>
-fontSize ::  MisoString -> Attribute action
-fontSize = attr "fontSize"
+fontSize_ ::  MisoString -> Attribute action
+fontSize_ = attr "fontSize"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontStretch>
-fontStretch ::  MisoString -> Attribute action
-fontStretch = attr "fontStretch"
+fontStretch_ ::  MisoString -> Attribute action
+fontStretch_ = attr "fontStretch"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontStyle>
-fontStyle ::  MisoString -> Attribute action
-fontStyle = attr "fontStyle"
+fontStyle_ ::  MisoString -> Attribute action
+fontStyle_ = attr "fontStyle"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontVariant>
-fontVariant ::  MisoString -> Attribute action
-fontVariant = attr "fontVariant"
+fontVariant_ ::  MisoString -> Attribute action
+fontVariant_ = attr "fontVariant"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fontWeight>
-fontWeight ::  MisoString -> Attribute action
-fontWeight = attr "fontWeight"
+fontWeight_ ::  MisoString -> Attribute action
+fontWeight_ = attr "fontWeight"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/glyphOrientationHorizontal>
-glyphOrientationHorizontal ::  MisoString -> Attribute action
-glyphOrientationHorizontal = attr "glyphOrientationHorizontal"
+glyphOrientationHorizontal_ ::  MisoString -> Attribute action
+glyphOrientationHorizontal_ = attr "glyphOrientationHorizontal"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/glyphOrientationVertical>
-glyphOrientationVertical ::  MisoString -> Attribute action
-glyphOrientationVertical = attr "glyphOrientationVertical"
+glyphOrientationVertical_ ::  MisoString -> Attribute action
+glyphOrientationVertical_ = attr "glyphOrientationVertical"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/imageRendering>
-imageRendering ::  MisoString -> Attribute action
-imageRendering = attr "imageRendering"
+imageRendering_ ::  MisoString -> Attribute action
+imageRendering_ = attr "imageRendering"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/kerning>
-kerning ::  MisoString -> Attribute action
-kerning = attr "kerning"
+kerning_ ::  MisoString -> Attribute action
+kerning_ = attr "kerning"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/letterSpacing>
-letterSpacing ::  MisoString -> Attribute action
-letterSpacing = attr "letterSpacing"
+letterSpacing_ ::  MisoString -> Attribute action
+letterSpacing_ = attr "letterSpacing"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/lightingColor>
-lightingColor ::  MisoString -> Attribute action
-lightingColor = attr "lightingColor"
+lightingColor_ ::  MisoString -> Attribute action
+lightingColor_ = attr "lightingColor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerEnd>
-markerEnd ::  MisoString -> Attribute action
-markerEnd = attr "markerEnd"
+markerEnd_ ::  MisoString -> Attribute action
+markerEnd_ = attr "markerEnd"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerMid>
-markerMid ::  MisoString -> Attribute action
-markerMid = attr "markerMid"
+markerMid_ ::  MisoString -> Attribute action
+markerMid_ = attr "markerMid"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/markerStart>
-markerStart ::  MisoString -> Attribute action
-markerStart = attr "markerStart"
+markerStart_ ::  MisoString -> Attribute action
+markerStart_ = attr "markerStart"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/mask>
-mask ::  MisoString -> Attribute action
-mask = attr "mask"
+mask_ ::  MisoString -> Attribute action
+mask_ = attr "mask"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/opacity>
-opacity ::  MisoString -> Attribute action
-opacity = attr "opacity"
+opacity_ ::  MisoString -> Attribute action
+opacity_ = attr "opacity"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/overflow>
-overflow ::  MisoString -> Attribute action
-overflow = attr "overflow"
+overflow_ ::  MisoString -> Attribute action
+overflow_ = attr "overflow"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pointerEvents>
-pointerEvents ::  MisoString -> Attribute action
-pointerEvents = attr "pointerEvents"
+pointerEvents_ ::  MisoString -> Attribute action
+pointerEvents_ = attr "pointerEvents"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/shapeRendering>
-shapeRendering ::  MisoString -> Attribute action
-shapeRendering = attr "shapeRendering"
+shapeRendering_ ::  MisoString -> Attribute action
+shapeRendering_ = attr "shapeRendering"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stopColor>
-stopColor ::  MisoString -> Attribute action
-stopColor = attr "stopColor"
+stopColor_ ::  MisoString -> Attribute action
+stopColor_ = attr "stopColor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stopOpacity>
-stopOpacity ::  MisoString -> Attribute action
-stopOpacity = attr "stopOpacity"
+stopOpacity_ ::  MisoString -> Attribute action
+stopOpacity_ = attr "stopOpacity"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeDasharray>
-strokeDasharray ::  MisoString -> Attribute action
-strokeDasharray = attr "strokeDasharray"
+strokeDasharray_ ::  MisoString -> Attribute action
+strokeDasharray_ = attr "strokeDasharray"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeDashoffset>
-strokeDashoffset ::  MisoString -> Attribute action
-strokeDashoffset = attr "strokeDashoffset"
+strokeDashoffset_ ::  MisoString -> Attribute action
+strokeDashoffset_ = attr "strokeDashoffset"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeLinecap>
-strokeLinecap ::  MisoString -> Attribute action
-strokeLinecap = attr "strokeLinecap"
+strokeLinecap_ ::  MisoString -> Attribute action
+strokeLinecap_ = attr "strokeLinecap"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeLinejoin>
-strokeLinejoin ::  MisoString -> Attribute action
-strokeLinejoin = attr "strokeLinejoin"
+strokeLinejoin_ ::  MisoString -> Attribute action
+strokeLinejoin_ = attr "strokeLinejoin"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeMiterlimit>
-strokeMiterlimit ::  MisoString -> Attribute action
-strokeMiterlimit = attr "strokeMiterlimit"
+strokeMiterlimit_ ::  MisoString -> Attribute action
+strokeMiterlimit_ = attr "strokeMiterlimit"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeOpacity>
-strokeOpacity ::  MisoString -> Attribute action
-strokeOpacity = attr "strokeOpacity"
+strokeOpacity_ ::  MisoString -> Attribute action
+strokeOpacity_ = attr "strokeOpacity"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/strokeWidth>
-strokeWidth ::  MisoString -> Attribute action
-strokeWidth = attr "strokeWidth"
+strokeWidth_ ::  MisoString -> Attribute action
+strokeWidth_ = attr "strokeWidth"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/stroke>
-stroke ::  MisoString -> Attribute action
-stroke = attr "stroke"
+stroke_ ::  MisoString -> Attribute action
+stroke_ = attr "stroke"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/textAnchor>
-textAnchor ::  MisoString -> Attribute action
-textAnchor = attr "textAnchor"
+textAnchor_ ::  MisoString -> Attribute action
+textAnchor_ = attr "textAnchor"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/textDecoration>
-textDecoration ::  MisoString -> Attribute action
-textDecoration = attr "textDecoration"
+textDecoration_ ::  MisoString -> Attribute action
+textDecoration_ = attr "textDecoration"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/textRendering>
-textRendering ::  MisoString -> Attribute action
-textRendering = attr "textRendering"
+textRendering_ ::  MisoString -> Attribute action
+textRendering_ = attr "textRendering"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/unicodeBidi>
-unicodeBidi ::  MisoString -> Attribute action
-unicodeBidi = attr "unicodeBidi"
+unicodeBidi_ ::  MisoString -> Attribute action
+unicodeBidi_ = attr "unicodeBidi"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/visibility>
-visibility ::  MisoString -> Attribute action
-visibility = attr "visibility"
+visibility_ ::  MisoString -> Attribute action
+visibility_ = attr "visibility"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/wordSpacing>
-wordSpacing ::  MisoString -> Attribute action
-wordSpacing = attr "wordSpacing"
+wordSpacing_ ::  MisoString -> Attribute action
+wordSpacing_ = attr "wordSpacing"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/writingMode>
-writingMode ::  MisoString -> Attribute action
-writingMode = attr "writingMode"
+writingMode_ ::  MisoString -> Attribute action
+writingMode_ = attr "writingMode"
