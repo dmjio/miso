@@ -10,6 +10,7 @@ copyright:           Copyright (c) 2016 David M. Johnson
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.22
+synopsis: Miso: Micro-isomorphic UI framework
 description:
             .
             <<http://tinyurl.com/hrfpjjy>>
@@ -76,7 +77,7 @@ library
       Miso
       Miso.Effect
       Miso.Effect.Storage
-      Miso.Effect.XHR      
+      Miso.Effect.XHR
       Miso.Event
       Miso.FPS
       Miso.Settings
