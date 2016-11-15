@@ -15,7 +15,7 @@
 --
 -- intView :: Int -> View IntAction
 -- intView n = svg_ [ height_ "100", width "100" ] [
---    circle_ [ cx "50", cy "50", r "40", stroke "green", stroke-width "4", fill "yellow" ] []
+--    circle_ [ cx_ "50", cy_ "50", r_ "40", stroke_ "green", strokeWidth_ "4", fill_ "yellow" ] []
 --  ]
 -- @
 --
@@ -31,7 +31,7 @@ module Miso.Svg
    ) where
 
 import Miso.Svg.Attributes
-import Miso.Svg.Combinator hiding ( filter, path, title, mask
-                                  , glyphRef, clipPath, colorProfile
-                                  , cursor, style )
+import Miso.Svg.Combinator hiding ( filter_, path_, title_, mask_
+                                  , glyphRef_, clipPath_, colorProfile_
+                                  , cursor_, style_ )
 import Miso.Svg.Events
