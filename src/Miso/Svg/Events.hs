@@ -38,78 +38,79 @@ module Miso.Svg.Events
   ) where
 
 import Data.Proxy
-import Miso.Html.Event    (onClick, on)
-import Miso.Html.Types
+import Miso.Html.Event    (onClick)
+import Miso.Html.Internal
+import Miso.Types
 
 -- | onBegin event
-onBegin :: action -> Attribute action
+onBegin :: Action model -> Attribute model
 onBegin action = on (Proxy :: Proxy "begin") $ \() -> action
 
 -- | onEnd event
-onEnd :: action -> Attribute action
+onEnd :: Action model -> Attribute model
 onEnd action = on (Proxy :: Proxy "end") $ \() -> action
 
 -- | onRepeat event
-onRepeat :: action -> Attribute action
+onRepeat :: Action model -> Attribute model
 onRepeat action = on (Proxy :: Proxy "repeat") $ \() -> action
 
 -- | onAbort event
-onAbort :: action -> Attribute action
+onAbort :: Action model -> Attribute model
 onAbort action = on (Proxy :: Proxy "abort") $ \() -> action
 
 -- | onError event
-onError :: action -> Attribute action
+onError :: Action model -> Attribute model
 onError action = on (Proxy :: Proxy "error") $ \() -> action
 
 -- | onResize event
-onResize :: action -> Attribute action
+onResize :: Action model -> Attribute model
 onResize action = on (Proxy :: Proxy "resize") $ \() -> action
 
 -- | onScroll event
-onScroll :: action -> Attribute action
+onScroll :: Action model -> Attribute model
 onScroll action = on (Proxy :: Proxy "scroll") $ \() -> action
 
 -- | onLoad event
-onLoad :: action -> Attribute action
+onLoad :: Action model -> Attribute model
 onLoad action = on (Proxy :: Proxy "load") $ \() -> action
 
 -- | onUnload event
-onUnload :: action -> Attribute action
+onUnload :: Action model -> Attribute model
 onUnload action = on (Proxy :: Proxy "unload") $ \() -> action
 
 -- | onZoom event
-onZoom :: action -> Attribute action
+onZoom :: Action model -> Attribute model
 onZoom action = on (Proxy :: Proxy "zoom") $ \() -> action
 
 -- | onActivate event
-onActivate :: action -> Attribute action
+onActivate :: Action model -> Attribute model
 onActivate action = on (Proxy :: Proxy "activate") $ \() -> action
 
 -- | onFocusIn event
-onFocusIn :: action -> Attribute action
+onFocusIn :: Action model -> Attribute model
 onFocusIn action = on (Proxy :: Proxy "focusin") $ \() -> action
 
 -- | onFocusOut event
-onFocusOut :: action -> Attribute action
+onFocusOut :: Action model -> Attribute model
 onFocusOut action = on (Proxy :: Proxy "focusout") $ \() -> action
 
 -- | onMouseDown event
-onMouseDown :: action -> Attribute action
+onMouseDown :: Action model -> Attribute model
 onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
 -- | onMouseMove event
-onMouseMove :: action -> Attribute action
+onMouseMove :: Action model -> Attribute model
 onMouseMove action = on (Proxy :: Proxy "mousemove") $ \() -> action
 
 -- | onMouseOut event
-onMouseOut :: action -> Attribute action
+onMouseOut :: Action model -> Attribute model
 onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
 
 -- | onMouseOver event
-onMouseOver :: action -> Attribute action
+onMouseOver :: Action model -> Attribute model
 onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
 
 -- | onMouseUp event
-onMouseUp :: action -> Attribute action
+onMouseUp :: Action model -> Attribute model
 onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
 
 

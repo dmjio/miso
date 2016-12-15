@@ -25,49 +25,39 @@ executable main
     buildable: False
   main-is: Main.hs
   hs-source-dirs: exe
-  build-depends:
-    aeson,
-    base,
-    containers,
-    ghcjs-base,
-    miso,
-    network-uri,
-    servant
+  build-depends:aeson,
+                base,
+                containers,
+                ghcjs-base,
+                miso
+                -- network-uri
   default-language: Haskell2010
 
 library
   exposed-modules:
     Miso.Html
-    Miso.Html.Attr
-    Miso.Html.CSS
-    Miso.Html.Combinator
+    Miso.Html.Element
     Miso.Html.Event
-    Miso.Html.Types.Event
     Miso.Html.Internal
     Miso.Html.Property
-    Miso.Html.Types
-    Miso.String
     Miso.Svg
-    Miso.Svg.Combinator
-    Miso.Router
+    Miso.Svg.Element
+    -- Miso.Router
   ghc-options: -Wall
   hs-source-dirs: src
-  build-depends:
-     aeson,
-     base > 4.7 && < 5.0,
-     bytestring,
-     containers,
-     free,
-     text,
-     network-uri,
-     http-api-data,
-     http-types,
-     servant
+  build-depends:aeson,
+                base > 4.7 && < 5.0,
+                bytestring,
+                containers,
+                network-uri,
+                text,
+     -- http-api-data,
+     http-types
+     -- servant
   if impl(ghcjs)
     hs-source-dirs: ghcjs-src
     build-depends:
       ghcjs-base,
-      elerea,
       containers
     js-sources:
       jsbits/diff.js
@@ -75,27 +65,20 @@ library
       jsbits/isomorphic.js
     exposed-modules:
       Miso
-      Miso.Effect
       Miso.Effect.Storage
       Miso.Effect.XHR
-      Miso.Event
       Miso.FPS
-      Miso.Settings
-      Miso.Signal
-      Miso.Signal.Internal
-      Miso.Signal.History
-      Miso.Signal.Keyboard
-      Miso.Signal.Mouse
-      Miso.Signal.WebSocket
-      Miso.Signal.Window
+      Miso.Subscription.History
+      Miso.Subscription.Keyboard
+      Miso.Subscription.Mouse
+      Miso.Subscription.WebSocket
+      Miso.Subscription.Window
       Miso.Types
     other-modules:
       Miso.Concurrent
       Miso.Event.Delegate
-      Miso.Event.Interpreter
-      Miso.Html.Diff
+      Miso.Diff
       Miso.FFI
-      Miso.Isomorphic
   else
     build-depends:
       lucid,

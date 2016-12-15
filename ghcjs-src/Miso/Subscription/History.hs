@@ -3,13 +3,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
-module Miso.Signal.History where
+module Miso.Subscription.History where
 
 import Data.JSString
 import GHCJS.Foreign.Callback
 import Network.URI
-
-import Miso.Signal
 import Miso.Types
 
 foreign import javascript unsafe "window.history.go($1);"
@@ -27,7 +25,7 @@ foreign import javascript unsafe "$r = window.location.pathname;"
 foreign import javascript unsafe "$r = window.location.search;"
   getSearch :: IO JSString
 
-foreign import javascript unsafe "window.onpopstate = $1;"
+foreign import javascript unsafe "window.addEventListener('popstate', $1);"
   onPopState :: Callback (IO ()) -> IO ()
 
 foreign import javascript unsafe "window.history.pushState(null, null, $1);"
@@ -53,27 +51,24 @@ getURI = do
       <*> do unpack <$> getSearch
       <*> pure mempty
 
-newtype URL = URL String
-  deriving (Show, Eq)
+newtype URL = URL String deriving (Show, Eq)
 
 newtype PopStateEvent = PopStateEvent { unPopStateEvent :: URI }
   deriving (Show, Eq)
 
-data History = History {
-    pathSignal :: Signal PopStateEvent
-  , goTo :: URI -> IO ()
+-- DMJ: goTo or pushState?
+data History m = History {
+    goTo :: URI -> IO ()
   , replaceTo :: URI -> IO ()
   , back :: IO ()
   , forward :: IO ()
   , go :: Int -> IO ()
   , initialPath :: URI
+  , popStateSubscription :: (PopStateEvent -> Action m) -> Sub m -- DMJ: should this be in the data type?
   }
 
-historySignal :: IO History
+historySignal :: IO (History m)
 historySignal = do
-  (pathSignal, sink) <- signal
-  onPopState =<< do
-    asyncCallback $ sink =<< PopStateEvent <$> getURI
   initialPath <- getURI
   pure History {
     goTo = \uri -> do
@@ -88,9 +83,12 @@ historySignal = do
       replaceTo' newUri
   , back = back'
   , forward = forward'
-  , go = \n -> go' n
-  , pathSignal = pathSignal
+  , go = go'
   , initialPath = initialPath
+  , popStateSubscription = \f sink ->
+      onPopState =<< do
+        ps <- PopStateEvent <$> getURI
+        asyncCallback $ sink (f ps)
   }
 
 

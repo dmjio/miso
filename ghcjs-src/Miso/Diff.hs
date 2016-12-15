@@ -1,4 +1,4 @@
-module Miso.Html.Diff ( diff ) where
+module Miso.Diff ( diff ) where
 
 import GHCJS.Foreign.Internal     hiding (Object)
 import GHCJS.Types

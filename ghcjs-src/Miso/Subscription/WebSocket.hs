@@ -5,9 +5,8 @@
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Miso.Signal.WebSocket where
+module Miso.Subscription.WebSocket where
 
-import Control.Concurrent.MVar
 import Control.Monad
 import Data.Aeson
 import Data.Maybe
@@ -22,7 +21,6 @@ import Prelude                           hiding (map)
 import Unsafe.Coerce
 
 import Miso.FFI
-import Miso.Signal.Internal
 import Miso.Types
 
 --- | WebSocket connection state
@@ -91,9 +89,12 @@ data MessageData m
   | ArrayBufferData ArrayBuffer
   | JSON (Either String m)
 
+websocketSub' :: FromJSON m => (WebSocketEvent m -> Action m) -> Sub m
+websocketSub' _ _ = undefined
+--  createCallback =<<
+
 data WebSocket m = WebSocket {
-     websocket       :: FromJSON m => Signal (WebSocketEvent m)
-   , close           :: Maybe Int -> Maybe JSString -> IO ()
+     close           :: Maybe Int -> Maybe JSString -> IO ()
    , sendJson        :: ToJSON m => m -> IO ()
    , sendBlob        :: Blob -> IO ()
    , sendArrayBuffer :: ArrayBuffer -> IO ()
@@ -102,74 +103,72 @@ data WebSocket m = WebSocket {
    }
 
 webSocketSignal :: FromJSON m => IO (WebSocket m)
-webSocketSignal = do
-  (source, sink) <- signal
-  cb <- createCallback sink
-  mvar <- newMVar Nothing
-  pure WebSocket {
-    websocket = source
-  , close = \code reason ->
-      modifyMVar_ mvar $ \maybeSocket ->
-        case maybeSocket of
-          Nothing -> pure Nothing
-          Just socket -> do
-            closeSocket socket code reason
-            pure (Just socket)
- , sendJson = \value ->
-      modifyMVar_ mvar $ \maybeSocket ->
-        case maybeSocket of
-          Nothing -> pure Nothing
-          Just socket -> do
-            getSocketState socket >>= \case
-              Open -> do
-                sendJson' socket value
-                pure (Just socket)
-              _ -> pure (Just socket)
- , sendBlob = \value ->
-      modifyMVar_ mvar $ \maybeSocket ->
-        case maybeSocket of
-          Nothing -> pure Nothing
-          Just socket -> do
-            getSocketState socket >>= \case
-              Open -> do
-                sendBlob' socket value
-                pure (Just socket)
-              _ -> pure (Just socket)
- , sendArrayBuffer = \value ->
-      modifyMVar_ mvar $ \maybeSocket ->
-        case maybeSocket of
-          Nothing -> pure Nothing
-          Just socket -> do
-            getSocketState socket >>= \case
-              Open -> do
-                sendArrayBuffer' socket value
-                pure (Just socket)
-              _ -> pure (Just socket)
- , connect = \(URL url') (Protocols ps) ->
-      modifyMVar_ mvar $ \maybeSocket ->
-        case maybeSocket of
-          Nothing -> do
-            socket <- createWebSocket url' ps
-            initCallback socket cb
-            pure $ Just socket
-          Just socket -> do
-            result <- getSocketState socket
-            case result of
-              Closing -> do
-                newSocket <- createWebSocket url' ps
-                initCallback newSocket cb
-                pure $ Just newSocket
-              Closed -> do
-                newSocket <- createWebSocket url' ps
-                initCallback newSocket cb
-                pure $ Just newSocket
-              _ -> pure $ Just socket
- , getState = do
-      result <- readMVar mvar
-      case result of
-        Nothing -> pure NotConnected
-        Just socket -> getSocketState socket
-  }
+webSocketSignal = undefined
+ --  cb <- createCallback sink
+ --  mvar <- newMVar Nothing
+ --  pure WebSocket {
+ --    close = \code reason ->
+ --      modifyMVar_ mvar $ \maybeSocket ->
+ --        case maybeSocket of
+ --          Nothing -> pure Nothing
+ --          Just socket -> do
+ --            closeSocket socket code reason
+ --            pure (Just socket)
+ -- , sendJson = \value ->
+ --      modifyMVar_ mvar $ \maybeSocket ->
+ --        case maybeSocket of
+ --          Nothing -> pure Nothing
+ --          Just socket -> do
+ --            getSocketState socket >>= \case
+ --              Open -> do
+ --                sendJson' socket value
+ --                pure (Just socket)
+ --              _ -> pure (Just socket)
+ -- , sendBlob = \value ->
+ --      modifyMVar_ mvar $ \maybeSocket ->
+ --        case maybeSocket of
+ --          Nothing -> pure Nothing
+ --          Just socket -> do
+ --            getSocketState socket >>= \case
+ --              Open -> do
+ --                sendBlob' socket value
+ --                pure (Just socket)
+ --              _ -> pure (Just socket)
+ -- , sendArrayBuffer = \value ->
+ --      modifyMVar_ mvar $ \maybeSocket ->
+ --        case maybeSocket of
+ --          Nothing -> pure Nothing
+ --          Just socket -> do
+ --            getSocketState socket >>= \case
+ --              Open -> do
+ --                sendArrayBuffer' socket value
+ --                pure (Just socket)
+ --              _ -> pure (Just socket)
+ -- , connect = \(URL url') (Protocols ps) ->
+ --      modifyMVar_ mvar $ \maybeSocket ->
+ --        case maybeSocket of
+ --          Nothing -> do
+ --            socket <- createWebSocket url' ps
+ --            initCallback socket cb
+ --            pure $ Just socket
+ --          Just socket -> do
+ --            result <- getSocketState socket
+ --            case result of
+ --              Closing -> do
+ --                newSocket <- createWebSocket url' ps
+ --                initCallback newSocket cb
+ --                pure $ Just newSocket
+ --              Closed -> do
+ --                newSocket <- createWebSocket url' ps
+ --                initCallback newSocket cb
+ --                pure $ Just newSocket
+ --              _ -> pure $ Just socket
+ -- , getState = do
+ --      result <- readMVar mvar
+ --      case result of
+ --        Nothing -> pure NotConnected
+ --        Just socket -> getSocketState socket
+ --  }
 
 foreign import javascript unsafe "$1.close($2,$3)"
   closeSocket' :: Socket -> Int -> JSString -> IO ()

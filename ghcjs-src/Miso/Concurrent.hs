@@ -1,24 +1,42 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Miso.Concurrent ( Notify (..), createNotify, notifier )where
+module Miso.Concurrent (
+    Notify (..)
+  , newNotify
+  , EventWriter (..)
+  , newEventWriter
+  ) where
 
 import Control.Concurrent.MVar
-import System.IO.Unsafe
+import Control.Concurrent
+import Control.Monad
+import Miso.Types
 
-notifier :: Notify
-{-# NOINLINE notifier #-}
-notifier = unsafePerformIO createNotify
+data EventWriter m = EventWriter {
+    writeEvent :: Action m -> IO ()
+  , getEvent :: IO (Action m)
+  }
+
+newEventWriter :: IO () -> IO (EventWriter m)
+newEventWriter notify' = do
+  chan <- newChan
+  pure $ EventWriter (write chan) (readChan chan)
+    where
+      write chan event =
+        void . forkIO $ do
+          writeChan chan event
+          notify'
 
 data Notify = Notify {
-    draw :: IO ()
+    wait :: IO ()
   , notify :: IO ()
   }
 
-createNotify :: IO Notify
-createNotify = do
+newNotify :: IO Notify
+newNotify = do
   skipChan <- newSkipChan
   pure $ Notify
-    (getSkipChan skipChan)
-    (putSkipChan skipChan ())
+   (getSkipChan skipChan)
+   (putSkipChan skipChan ())
 
 data SkipChan a =
   SkipChan (MVar (a, [MVar ()])) (MVar ())
@@ -41,4 +59,3 @@ getSkipChan (SkipChan main sem) = do
   (v, sems) <- takeMVar main
   putMVar main (v, sem:sems)
   return v
-

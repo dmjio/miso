@@ -42,19 +42,15 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html
-   (  module Miso.Html.Attr
-    , module Miso.Html.Combinator
-    , module Miso.Html.CSS
+   (  module Miso.Html.Element
     , module Miso.Html.Event
     , module Miso.Html.Internal
     , module Miso.Html.Property
-    , module Miso.Html.Types
+    , module Miso.Types
    ) where
 
-import Miso.Html.Attr
-import Miso.Html.Combinator hiding (form_)
-import Miso.Html.CSS
+import Miso.Html.Element hiding (form_)
 import Miso.Html.Event
 import Miso.Html.Internal
 import Miso.Html.Property
-import Miso.Html.Types
+import Miso.Types

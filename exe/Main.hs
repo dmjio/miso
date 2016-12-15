@@ -1,23 +1,28 @@
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 module Main where
 
 import Miso
-
-default (MisoString)
-
-data Action = Add | Sub
+import Miso.Subscription.Mouse
 
 main :: IO ()
-main = startApp 0 view update defaultSettings
+main = startApp (Model (0,0)) view [ mouseSub toSub ] defaultEvents
   where
-    update Add m = noEff ( m + 1 )
-    update Sub m = noEff ( m - 1 )
+    toSub coords m = m { coords = coords }
 
-view :: Int -> View Action
-view x = div_ [] [
-   button_ [ onClick Add ] [ text "+" ]
- , text $ show x
- , button_ [ onClick Sub ] [ text "-" ]
+data Model = Model {
+      coords :: (Int, Int)
+    } deriving Eq
+
+view :: Model -> View Model
+view Model{..} = div_ [] [
+   text (show coords)
  ]
+

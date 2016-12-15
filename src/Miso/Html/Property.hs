@@ -15,8 +15,7 @@
 ----------------------------------------------------------------------------
 module Miso.Html.Property
  (   -- * Construction
-     prop
-   , textProp
+     textProp
    , stringProp
    , boolProp
    , intProp
@@ -117,14 +116,8 @@ module Miso.Html.Property
    , scoped_
    ) where
 
-import           Data.Aeson
+import           Miso.Html.Internal
 
-import           Miso.Html.Types
-import           Miso.String
-
--- | Constructs a property on a `VNode`, used to set fields on a DOM Node
-prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = P k (toJSON v)
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
 boolProp = prop
@@ -138,7 +131,7 @@ textProp = prop
 intProp ::  MisoString -> Int -> Attribute action
 intProp = prop
 -- | Set field to `Integer` value
-integerProp ::  MisoString -> Integer -> Attribute action
+integerProp ::  MisoString -> Int -> Attribute action
 integerProp = prop
 -- | Set field to `Double` value
 doubleProp ::  MisoString -> Double -> Attribute action

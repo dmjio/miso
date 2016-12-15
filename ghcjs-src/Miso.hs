@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds       #-}
@@ -5,57 +6,67 @@
 module Miso
   ( startApp
   , module Miso.Html
-  , module Miso.Html.Types
-  , module Miso.Types
-  , module Miso.Settings
-  , module Miso.Effect
-  , module Miso.Signal
   ) where
 
-import Control.Concurrent
-import Control.Monad
-import Data.IORef
-import JavaScript.Web.AnimationFrame
+import           Control.Concurrent
+import           Control.Monad
+import qualified Data.Sequence as S
+import           Data.Sequence ((|>))
+import qualified Data.Foldable                 as F
+import           Data.Function
+import qualified Data.Map                      as M
+import           JavaScript.Web.AnimationFrame
 
-import Miso.Concurrent
-import Miso.Effect
-import Miso.Event.Delegate
-import Miso.Html
-import Miso.Html.Diff
-import Miso.Html.Types
-import Miso.Isomorphic
-import Miso.Settings
-import Miso.Signal
-import Miso.Types
+import           Miso.Concurrent
+import           Miso.Event.Delegate
+import           Miso.Html
+import           Miso.Diff
 
 startApp
-  :: ( HasAction action model stepConfig
-     , Eq model
-     ) => model
-       -> (model -> View action)
-       -> (action -> model -> Effect action model)
-       -> Settings stepConfig action
-       -> IO ()
-startApp initialModel view update Settings{..} = do
-  let mergedSignals = mergeManySignals (fst defaultSignal : extraSignals)
-  -- If isomorphic, then copy the dom into the `initialTree`, forego initial diff
-  initialVTree <- runView (view initialModel)
-  -- Draw initial tree, where isomorphic should be used, remove initial diff?
-  if useIsomorphic
-    then copyDOMIntoVTree initialVTree
-    else Nothing `diff` (Just initialVTree)
-  vTreeRef <- newIORef initialVTree
+  :: Eq model
+  => model
+  -> (model -> View model)
+  -> [ Sub model ]
+  -> M.Map MisoString Bool
+  -> IO ()
+startApp initialModel view subs events = do
+  let initialView = view initialModel
+  -- init empty Model
+  modelMVar <- newMVar initialModel
+  -- init empty actions
+  actionsMVar <- newMVar S.empty
+  -- init Notifier
+  Notify {..} <- newNotify
+  -- init EventWriter
+  EventWriter {..} <- newEventWriter notify
+  -- init Subs
+  forM_ subs (writeEvent &)
+  -- init event application thread
+  void . forkIO . forever $ do
+    action <- getEvent
+    modifyMVar_ actionsMVar $ \actions ->
+      pure (actions |> action)
+  -- Create virtual dom, perform initial diff
+  initialVTree <- flip runView writeEvent initialView
+  Nothing `diff` (Just initialVTree)
+  viewMVar <- newMVar initialVTree
   -- Begin listening for events in the virtual dom
-  void . forkIO $ delegator vTreeRef events
-  -- /end delegator fork
-  step <- start $ foldp stepConfig update initialModel mergedSignals
-  forever $ do
-    draw notifier >> step >>= \case
-      NotChanged _ -> pure ()
-      Changed changedModel -> do
-        -- Can we perform caching here?
-        newVTree <- runView $ view changedModel
-        oldVTree <- readIORef vTreeRef
+  delegator viewMVar events
+  -- Program loop, blocking on SkipChan
+  forever $ wait >> do
+    -- Apply actions to model
+    shouldDraw <-
+      modifyMVar actionsMVar $ \actions -> do
+        shouldDraw <- modifyMVar modelMVar $ \oldModel ->
+          let newModel = F.foldl' (&) oldModel actions
+              shouldDraw = oldModel /= newModel
+          in pure (newModel, shouldDraw)
+        pure (S.empty, shouldDraw)
+    when shouldDraw $ do
+      newVTree <-
+        flip runView writeEvent
+          =<< view <$> readMVar modelMVar
+      modifyMVar_ viewMVar $ \oldVTree -> do
         void $ waitForAnimationFrame
         Just oldVTree `diff` Just newVTree
-        writeIORef vTreeRef newVTree
+        pure newVTree

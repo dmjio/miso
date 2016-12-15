@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Html.Combinator
+-- Module      :  Miso.Html.Element
 -- Copyright   :  (C) 2016-2017 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Html.Combinator
+module Miso.Html.Element
   ( -- * Construct an Element
       nodeHtml
     , nodeHtmlKeyed
@@ -129,7 +129,6 @@ module Miso.Html.Combinator
     , menu_
     ) where
 
-import           Miso.Html.Types ( Attribute )
 import           Miso.Html.Internal
 
 -- | Used to construct `VNode`'s in `View`

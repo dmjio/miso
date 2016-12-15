@@ -2,8 +2,8 @@
 {-# LANGUAGE RankNTypes          #-}
 module Miso.Event.Delegate where
 
-import qualified Data.Map as M
-import           Data.IORef
+import           Control.Concurrent.MVar
+import qualified Data.Map                   as M
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Types
@@ -17,12 +17,12 @@ foreign import javascript unsafe "delegate($1, $2);"
      -> IO ()
 
 delegator
-  :: IORef (VTree action)
+  :: MVar (VTree action)
   -> M.Map JSString Bool
   -> IO ()
 delegator vtreeRef es = do
   evts <- toJSVal (M.toList es)
   getVTreeFromRef <- syncCallback' $ do
-    VTree (Object val) <- readIORef vtreeRef
+    VTree (Object val) <- readMVar vtreeRef
     pure val
   delegateEvent evts getVTreeFromRef

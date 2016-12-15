@@ -4,8 +4,10 @@ module Miso.FFI where
 import Data.Aeson
 import Data.JSString
 import GHCJS.Foreign.Callback
-import GHCJS.Types
 import GHCJS.Marshal
+import GHCJS.Types
+import JavaScript.Array
+import Miso.Html.Internal
 
 foreign import javascript unsafe "window.addEventListener($1, $2);"
   windowAddEventListener :: JSString -> Callback (JSVal -> IO ()) -> IO ()
@@ -36,3 +38,12 @@ parse jval = do
   pure $ case fromJSON val of
     Success x -> Right x
     Error y -> Left y
+
+foreign import javascript unsafe "$r = $1[$2]"
+  item :: JSVal -> Int -> IO JSVal
+
+foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
+  applyFunction :: JSVal -> JSString -> JSArray -> IO JSVal
+
+foreign import javascript unsafe "copyDOMIntoVTree($1);"
+  copyDOMIntoVTree :: VTree a -> IO ()
