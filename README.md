@@ -23,19 +23,16 @@ import Miso
 
 default (MisoString)
 
-data Action = Add | Sub
-
 main :: IO ()
-main = startApp 0 view update defaultSettings
+main = startApp model view defaultSettings
   where
-    update Add m = noEff ( m + 1 )
-    update Sub m = noEff ( m - 1 )
+    model :: Int = 0
 
 view :: Int -> View Action
 view x = div_ [] [
-   button_ [ onClick_ Add ] [ text_ "+" ]
- , text_ $ show x
- , button_ [ onClick_ Sub ] [ text_ "-" ]
+   button_ [ onClick_ (+1) ] [ text_ "+" ]
+ , text_ (show x)
+ , button_ [ onClick_ $ subtract 1 ] [ text_ "-" ]
  ]
 ```
 ## Examples
