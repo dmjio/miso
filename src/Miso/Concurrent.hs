@@ -9,11 +9,10 @@ module Miso.Concurrent (
 import Control.Concurrent.MVar
 import Control.Concurrent
 import Control.Monad
-import Miso.Types
 
-data EventWriter m = EventWriter {
-    writeEvent :: Action m -> IO ()
-  , getEvent :: IO (Action m)
+data EventWriter action = EventWriter {
+    writeEvent :: action -> IO ()
+  , getEvent :: IO action
   }
 
 newEventWriter :: IO () -> IO (EventWriter m)
@@ -59,3 +58,4 @@ getSkipChan (SkipChan main sem) = do
   (v, sems) <- takeMVar main
   putMVar main (v, sem:sems)
   return v
+

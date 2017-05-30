@@ -56,108 +56,104 @@ module Miso.Html.Event
   , onDrop
   ) where
 
-import           Data.Proxy (Proxy (..))
-import           Miso.Html.Internal ( Attribute, on, onWithOptions, MisoString )
-import           Miso.Types ( AllowDrop (..)
-                            , Action
-                            , defaultOptions
-                            , Options (..) )
+import Miso.Html.Internal ( Attribute, on, onWithOptions, MisoString )
+import Miso.Event
 
 -- | `blur` event defined with custom options
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/Events/blur>
 --
-onBlur :: Action model -> Attribute model
-onBlur action = on (Proxy :: Proxy "blur") $ \() -> action
+onBlur :: action -> Attribute action
+onBlur action = on "blur" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChecked :: (Bool -> Action model) -> Attribute model
-onChecked = on (Proxy :: Proxy "change")
+onChecked :: (Checked -> action) -> Attribute action
+onChecked = on "change" checkedDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
-onClick :: Action model -> Attribute model
-onClick action = on (Proxy :: Proxy "click") $ \() -> action
+onClick :: action -> Attribute action
+onClick action = on "click" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
-onFocus :: Action model -> Attribute model
-onFocus action = on (Proxy :: Proxy "focus") $ \() -> action
+onFocus :: action -> Attribute action
+onFocus action = on "focus" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
-onDoubleClick :: Action model -> Attribute model
-onDoubleClick action = on (Proxy :: Proxy "dblclick") $ \() -> action
+onDoubleClick :: action -> Attribute action
+onDoubleClick action = on "dblclick" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
-onInput :: (MisoString -> Action model) -> Attribute model
-onInput = on (Proxy :: Proxy "input")
+onInput :: (MisoString -> action) -> Attribute action
+onInput = on "input" valueDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
-onKeyDown :: (Int -> Action model) -> Attribute model
-onKeyDown = on (Proxy :: Proxy "keydown")
+onKeyDown :: (KeyCode -> action) -> Attribute action
+onKeyDown = on "keydown" keycodeDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-onKeyPress :: (Int -> Action model) -> Attribute model
-onKeyPress = on (Proxy ::Proxy "keypress")
+onKeyPress :: (KeyCode -> action) -> Attribute action
+onKeyPress = on "keypress" keycodeDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keyup
-onKeyUp :: (Int -> Action model) -> Attribute model
-onKeyUp = on (Proxy :: Proxy "keyup")
+onKeyUp :: (KeyCode -> action) -> Attribute action
+onKeyUp = on "keyup" keycodeDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseup
-onMouseUp :: Action model -> Attribute model
-onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
+onMouseUp :: action -> Attribute action
+onMouseUp action = on "mouseup" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mousedown
-onMouseDown :: Action model -> Attribute model
-onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
+onMouseDown :: action -> Attribute action
+onMouseDown action = on "mousedown" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseenter
-onMouseEnter :: Action model -> Attribute model
-onMouseEnter action = on (Proxy :: Proxy "mouseenter") $ \() -> action
+onMouseEnter :: action -> Attribute action
+onMouseEnter action = on "mouseenter" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseleave
-onMouseLeave :: Action model -> Attribute model
-onMouseLeave action = on (Proxy :: Proxy "mouseleave") $ \() -> action
+onMouseLeave :: action -> Attribute action
+onMouseLeave action = on "mouseleave" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseover
-onMouseOver :: Action model -> Attribute model
-onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
+onMouseOver :: action -> Attribute action
+onMouseOver action = on "mouseover" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/mouseout
-onMouseOut :: Action model -> Attribute model
-onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
+onMouseOut :: action -> Attribute action
+onMouseOut action = on "mouseout" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
-onDragStart :: Action model -> Attribute model
-onDragStart action = on (Proxy :: Proxy "dragstart") $ \() -> action
+onDragStart :: action -> Attribute action
+onDragStart action = on "dragstart" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
-onDragOver :: Action model -> Attribute model
-onDragOver action = on (Proxy :: Proxy "dragover") $ \() -> action
+onDragOver :: action -> Attribute action
+onDragOver action = on "dragover" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
-onDragEnd :: Action model -> Attribute model
-onDragEnd action = on (Proxy :: Proxy "dragend") $ \() -> action
+onDragEnd :: action -> Attribute action
+onDragEnd action = on "dragend" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
-onDragEnter :: Action model -> Attribute model
-onDragEnter action = on (Proxy :: Proxy "dragenter") $ \() -> action
+onDragEnter :: action -> Attribute action
+onDragEnter action = on "dragenter" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
-onDragLeave :: Action model -> Attribute model
-onDragLeave action = on (Proxy :: Proxy "dragleave") $ \() -> action
+onDragLeave :: action -> Attribute action
+onDragLeave action = on "dragleave" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
-onDrag :: Action model -> Attribute model
-onDrag action = on (Proxy :: Proxy "drag") $ \() -> action
+onDrag :: action -> Attribute action
+onDrag action = on "drag" emptyDecoder $ \() -> action
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDrop :: AllowDrop -> Action model -> Attribute model
+onDrop :: AllowDrop -> action -> Attribute action
 onDrop (AllowDrop allowDrop) action =
   onWithOptions defaultOptions { preventDefault = allowDrop }
-    (Proxy :: Proxy "drop") (\() -> action)
+    "drop" emptyDecoder (\() -> action)
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
-onSubmit :: Action model -> Attribute model
+onSubmit :: action -> Attribute action
 onSubmit action =
   onWithOptions defaultOptions { preventDefault = True }
-    (Proxy :: Proxy "submit") $ \() -> action
+    "submit" emptyDecoder $ \() -> action

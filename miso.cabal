@@ -15,7 +15,7 @@ description:
             .
             <<http://tinyurl.com/hrfpjjy>>
             .
-            Miso (micro-isomorphic), is an isomorphic Haskell front-end framework featuring a virtual-dom, fast hand-rolled javascript diffing / patching algorithm, event delegation, event batching, SVG support, and an extensible Signal-based FRP system. Inspired by elm and redux, miso currently supports WebSocket, Window, Mouse, History and KeysDown signals. `IO` and other effects (such as `XHR`) can be introduced into the system via the `Effect` data type inside the `update` function. Isomorphic Routing is is made possible with servant. Minimal dependencies.
+            Miso is a Haskell front-end framework featuring a virtual-dom, fast hand-rolled javascript diffing / patching algorithm, event delegation, event batching, SVG support, and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril, Miso currently supports WebSocket, Window, Mouse, History and KeysDown subscriptions. `IO` and other effects (such as `XHR`) can be introduced into the system via the `Effect` data type inside the `update` function. Pre-rendered templates and shared server-routing are made possible with servant. Minimal dependencies.
             .
              <http://hackage.haskell.org/package/miso>
             .
@@ -25,37 +25,35 @@ executable main
     buildable: False
   main-is: Main.hs
   hs-source-dirs: exe
-  build-depends:aeson,
-                base,
-                containers,
-                ghcjs-base,
-                miso
-                -- network-uri
-  default-language: Haskell2010
+  build-depends:
+    base,
+    miso
+  default-language:
+    Haskell2010
 
 library
   exposed-modules:
     Miso.Html
     Miso.Html.Element
-    Miso.Html.Event
     Miso.Html.Internal
     Miso.Html.Property
     Miso.Svg
     Miso.Svg.Element
-    -- Miso.Router
+    Miso.Event
+    Miso.Event.Decoder
+    Miso.Event.Types
   ghc-options: -Wall
   hs-source-dirs: src
-  build-depends:aeson,
-                base > 4.7 && < 5.0,
-                bytestring,
-                containers,
-                network-uri,
-                text,
-     -- http-api-data,
-     http-types
-     -- servant
+  build-depends:
+    aeson,
+    base,
+    bytestring,
+    network-uri,
+    containers,
+    text
   if impl(ghcjs)
-    hs-source-dirs: ghcjs-src
+    hs-source-dirs:
+      ghcjs-src
     build-depends:
       ghcjs-base,
       containers
@@ -65,25 +63,26 @@ library
       jsbits/isomorphic.js
     exposed-modules:
       Miso
+      Miso.Effect
       Miso.Effect.Storage
       Miso.Effect.XHR
+      Miso.Effect.DOM
       Miso.FPS
       Miso.Subscription.History
       Miso.Subscription.Keyboard
       Miso.Subscription.Mouse
       Miso.Subscription.WebSocket
       Miso.Subscription.Window
-      Miso.Types
     other-modules:
       Miso.Concurrent
-      Miso.Event.Delegate
       Miso.Diff
       Miso.FFI
   else
     build-depends:
       lucid,
       vector
-    hs-source-dirs: ghc-src
+    hs-source-dirs:
+      ghc-src
     exposed-modules:
       Miso.Event
   default-language: Haskell2010

@@ -37,81 +37,81 @@ module Miso.Svg.Events
   , onMouseUp
   ) where
 
-import Data.Proxy
-import Miso.Html.Event    (onClick)
+
+import Miso.Event 
+import Miso.Html.Event (onClick)
 import Miso.Html.Internal
-import Miso.Types
 
 -- | onBegin event
-onBegin :: Action model -> Attribute model
-onBegin action = on (Proxy :: Proxy "begin") $ \() -> action
+onBegin :: action -> Attribute action
+onBegin action = on "begin" emptyDecoder $ \() -> action
 
 -- | onEnd event
-onEnd :: Action model -> Attribute model
-onEnd action = on (Proxy :: Proxy "end") $ \() -> action
+onEnd :: action -> Attribute action
+onEnd action = on "end" emptyDecoder $ \() -> action
 
 -- | onRepeat event
-onRepeat :: Action model -> Attribute model
-onRepeat action = on (Proxy :: Proxy "repeat") $ \() -> action
+onRepeat :: action -> Attribute action
+onRepeat action = on "repeat" emptyDecoder $ \() -> action
 
 -- | onAbort event
-onAbort :: Action model -> Attribute model
-onAbort action = on (Proxy :: Proxy "abort") $ \() -> action
+onAbort :: action -> Attribute action
+onAbort action = on "abort" emptyDecoder $ \() -> action
 
 -- | onError event
-onError :: Action model -> Attribute model
-onError action = on (Proxy :: Proxy "error") $ \() -> action
+onError :: action -> Attribute action
+onError action = on "error" emptyDecoder $ \() -> action
 
 -- | onResize event
-onResize :: Action model -> Attribute model
-onResize action = on (Proxy :: Proxy "resize") $ \() -> action
+onResize :: action -> Attribute action
+onResize action = on "resize" emptyDecoder $ \() -> action
 
 -- | onScroll event
-onScroll :: Action model -> Attribute model
-onScroll action = on (Proxy :: Proxy "scroll") $ \() -> action
+onScroll :: action -> Attribute action
+onScroll action = on "scroll" emptyDecoder $ \() -> action
 
 -- | onLoad event
-onLoad :: Action model -> Attribute model
-onLoad action = on (Proxy :: Proxy "load") $ \() -> action
+onLoad :: action -> Attribute action
+onLoad action = on "load" emptyDecoder $ \() -> action
 
 -- | onUnload event
-onUnload :: Action model -> Attribute model
-onUnload action = on (Proxy :: Proxy "unload") $ \() -> action
+onUnload :: action -> Attribute action
+onUnload action = on "unload" emptyDecoder $ \() -> action
 
 -- | onZoom event
-onZoom :: Action model -> Attribute model
-onZoom action = on (Proxy :: Proxy "zoom") $ \() -> action
+onZoom :: action -> Attribute action
+onZoom action = on "zoom" emptyDecoder $ \() -> action
 
 -- | onActivate event
-onActivate :: Action model -> Attribute model
-onActivate action = on (Proxy :: Proxy "activate") $ \() -> action
+onActivate :: action -> Attribute action
+onActivate action = on "activate" emptyDecoder $ \() -> action
 
 -- | onFocusIn event
-onFocusIn :: Action model -> Attribute model
-onFocusIn action = on (Proxy :: Proxy "focusin") $ \() -> action
+onFocusIn :: action -> Attribute action
+onFocusIn action = on "focusin" emptyDecoder $ \() -> action
 
 -- | onFocusOut event
-onFocusOut :: Action model -> Attribute model
-onFocusOut action = on (Proxy :: Proxy "focusout") $ \() -> action
+onFocusOut :: action -> Attribute action
+onFocusOut action = on "focusout" emptyDecoder $ \() -> action
 
 -- | onMouseDown event
-onMouseDown :: Action model -> Attribute model
-onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
+onMouseDown :: action -> Attribute action
+onMouseDown action = on "mousedown" emptyDecoder $ \() -> action
 -- | onMouseMove event
-onMouseMove :: Action model -> Attribute model
-onMouseMove action = on (Proxy :: Proxy "mousemove") $ \() -> action
+onMouseMove :: action -> Attribute action
+onMouseMove action = on "mousemove" emptyDecoder $ \() -> action
 
 -- | onMouseOut event
-onMouseOut :: Action model -> Attribute model
-onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
+onMouseOut :: action -> Attribute action
+onMouseOut action = on "mouseout" emptyDecoder $ \() -> action
 
 -- | onMouseOver event
-onMouseOver :: Action model -> Attribute model
-onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
+onMouseOver :: action -> Attribute action
+onMouseOver action = on "mouseover" emptyDecoder $ \() -> action
 
 -- | onMouseUp event
-onMouseUp :: Action model -> Attribute model
-onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
+onMouseUp :: action -> Attribute action
+onMouseUp action = on "mouseup" emptyDecoder $ \() -> action
 
 
 

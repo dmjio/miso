@@ -42,15 +42,13 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html
-   (  module Miso.Html.Element
-    , module Miso.Html.Event
-    , module Miso.Html.Internal
-    , module Miso.Html.Property
-    , module Miso.Types
+   ( module Miso.Html.Element
+   , module Miso.Html.Event
+   , module Miso.Html.Internal
+   , module Miso.Html.Property
    ) where
 
-import Miso.Html.Element hiding (form_)
+import Miso.Html.Element hiding (form_) 
 import Miso.Html.Event
 import Miso.Html.Internal
 import Miso.Html.Property
-import Miso.Types

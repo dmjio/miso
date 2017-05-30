@@ -5,31 +5,36 @@
 {-# LANGUAGE KindSignatures  #-}
 module Miso
   ( startApp
+  , module Miso.Event
   , module Miso.Html
+  , module Miso.Effect
   ) where
 
 import           Control.Concurrent
 import           Control.Monad
-import qualified Data.Sequence as S
-import           Data.Sequence ((|>))
-import qualified Data.Foldable                 as F
 import           Data.Function
-import qualified Data.Map                      as M
+import qualified Data.Map as M
+import           Data.Sequence ((|>))
+import qualified Data.Sequence as S
 import           JavaScript.Web.AnimationFrame
+import           Data.IORef
 
 import           Miso.Concurrent
-import           Miso.Event.Delegate
 import           Miso.Html
+import           Miso.FFI
 import           Miso.Diff
+import           Miso.Effect
+import           Miso.Event
 
 startApp
   :: Eq model
   => model
-  -> (model -> View model)
-  -> [ Sub model ]
+  -> (action -> model -> Effect model action)
+  -> (model -> View action)
+  -> [ Sub action ]
   -> M.Map MisoString Bool
   -> IO ()
-startApp initialModel view subs events = do
+startApp initialModel update view subs events = do
   let initialView = view initialModel
   -- init empty Model
   modelMVar <- newMVar initialModel
@@ -44,29 +49,41 @@ startApp initialModel view subs events = do
   -- init event application thread
   void . forkIO . forever $ do
     action <- getEvent
-    modifyMVar_ actionsMVar $ \actions ->
+    modifyMVar_ actionsMVar $! \actions ->
       pure (actions |> action)
   -- Create virtual dom, perform initial diff
   initialVTree <- flip runView writeEvent initialView
   Nothing `diff` (Just initialVTree)
-  viewMVar <- newMVar initialVTree
+  viewRef <- newIORef initialVTree
   -- Begin listening for events in the virtual dom
-  delegator viewMVar events
+  delegator viewRef events
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model
     shouldDraw <-
-      modifyMVar actionsMVar $ \actions -> do
-        shouldDraw <- modifyMVar modelMVar $ \oldModel ->
-          let newModel = F.foldl' (&) oldModel actions
-              shouldDraw = oldModel /= newModel
-          in pure (newModel, shouldDraw)
+      modifyMVar actionsMVar $! \actions -> do
+        shouldDraw <- modifyMVar modelMVar $! \oldModel -> do
+          newModel <- foldM (foldEffects writeEvent update) oldModel actions
+          pure (newModel, oldModel /= newModel)
         pure (S.empty, shouldDraw)
     when shouldDraw $ do
       newVTree <-
         flip runView writeEvent
           =<< view <$> readMVar modelMVar
-      modifyMVar_ viewMVar $ \oldVTree -> do
-        void $ waitForAnimationFrame
-        Just oldVTree `diff` Just newVTree
-        pure newVTree
+      oldVTree <- readIORef viewRef
+      void $ waitForAnimationFrame
+      Just oldVTree `diff` Just newVTree
+      atomicWriteIORef viewRef newVTree
+
+foldEffects
+  :: (action -> IO ())
+  -> (action -> model -> Effect model action)
+  -> model
+  -> action
+  -> IO model
+foldEffects sink update model action =
+  case update action model of
+    NoEffect newModel -> pure newModel
+    Effect newModel eff -> do
+      void . forkIO . sink =<< eff
+      pure newModel

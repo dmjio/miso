@@ -8,7 +8,8 @@ module Miso.Subscription.History where
 import Data.JSString
 import GHCJS.Foreign.Callback
 import Network.URI
-import Miso.Types
+
+import Miso.Html.Internal ( Sub )
 
 foreign import javascript unsafe "window.history.go($1);"
   go' :: Int -> IO ()
@@ -57,14 +58,14 @@ newtype PopStateEvent = PopStateEvent { unPopStateEvent :: URI }
   deriving (Show, Eq)
 
 -- DMJ: goTo or pushState?
-data History m = History {
+data History action = History {
     goTo :: URI -> IO ()
   , replaceTo :: URI -> IO ()
   , back :: IO ()
   , forward :: IO ()
   , go :: Int -> IO ()
   , initialPath :: URI
-  , popStateSubscription :: (PopStateEvent -> Action m) -> Sub m -- DMJ: should this be in the data type?
+  , popStateSubscription :: (PopStateEvent -> action) -> Sub action
   }
 
 historySignal :: IO (History m)

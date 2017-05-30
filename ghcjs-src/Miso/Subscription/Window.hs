@@ -8,14 +8,14 @@ import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
 import Miso.FFI
-import Miso.Types
+import Miso.Html.Internal ( Sub )
 
-windowSub :: (Coords -> Action m) -> Sub m
-windowSub f sink = do
+windowSub :: ((Int, Int) -> action) -> Sub action
+windowSub f = \sink ->
   windowAddEventListener "resize" =<< do
     asyncCallback1 $ \windowEvent -> do
       target <- getProp "target" (Object windowEvent)
       Just w <- fromJSVal =<< getProp "innerWidth" (Object target)
       Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
-      sink . f $ (w,h)
+      sink $ f (w,h)
 

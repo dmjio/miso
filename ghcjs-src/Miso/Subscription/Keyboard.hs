@@ -5,14 +5,14 @@ module Miso.Subscription.Keyboard where
 
 import           Control.Concurrent
 import           Data.Set
-import qualified Data.Set                   as S
+import qualified Data.Set as S
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           JavaScript.Object
 import           JavaScript.Object.Internal
 
 import           Miso.FFI
-import           Miso.Types
+import           Miso.Html.Internal ( Sub )
 
 data Arrows = Arrows {
    arrowX :: Int
@@ -38,9 +38,9 @@ toArrows set =
         (_,_) -> 0
  }
 
--- | Returns signals for Keyboard
-keyboardSignal :: (Set Int -> Action m) -> Sub m
-keyboardSignal f sink = do
+-- | Returns subscription for Keyboard
+keyboardSub :: (Set Int -> action) -> Sub action
+keyboardSub f sink = do
   keySetRef <- newMVar mempty
   windowAddEventListener "keyup" =<< keyUpCallback keySetRef
   windowAddEventListener "keydown" =<< keyDownCallback keySetRef

@@ -16,12 +16,12 @@ import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 import GHCJS.Types
 import JavaScript.TypedArray.ArrayBuffer
-import JavaScript.Web.Blob.Internal      hiding (close)
-import Prelude                           hiding (map)
+import JavaScript.Web.Blob.Internal hiding (close)
+import Prelude hiding (map)
 import Unsafe.Coerce
 
 import Miso.FFI
-import Miso.Types
+import Miso.Html.Internal ( Sub )
 
 --- | WebSocket connection state
 data State
@@ -89,7 +89,7 @@ data MessageData m
   | ArrayBufferData ArrayBuffer
   | JSON (Either String m)
 
-websocketSub' :: FromJSON m => (WebSocketEvent m -> Action m) -> Sub m
+websocketSub' :: FromJSON action => (WebSocketEvent action -> action) -> Sub action
 websocketSub' _ _ = undefined
 --  createCallback =<<
 

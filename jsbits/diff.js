@@ -131,8 +131,11 @@ function diffProps (cProps, nProps, node) {
    }
 }
 
+function hasKey (cs) {
+    return cs && cs[0] && cs[0].key;
+}
+
 function diffChildren (cs, ns, parent) {
-   //  if (!cs.length && !ns.length) return;
     var longest = ns.length > cs.length ? ns.length : cs.length;
     for (var i = 0; i < longest; i++)
       diff (cs[i], ns[i], parent);

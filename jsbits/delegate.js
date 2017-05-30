@@ -45,7 +45,6 @@ function delegateEvent (event, obj, stack, parentStack) {
     }
 }
 
-
 function buildTargetToBody (body, target) {
     var stack = [];
     while (body !== target) {
@@ -65,4 +64,14 @@ function propogateWhileAble (parentStack, event) {
   	if (options.stopPropagation) break;
     }
   }
+}
+
+/* Convert event to JSON at a specific location in the DOM tree*/
+function objectToJSON (at, obj) {
+    for (var i in at) obj = obj[i];
+    var newObj = {};
+    for (var i in obj)
+	if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
+	    newObj[i] = obj[i];
+    return (newObj);
 }

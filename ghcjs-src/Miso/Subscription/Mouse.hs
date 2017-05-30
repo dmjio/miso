@@ -7,10 +7,10 @@ import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
 
-import Miso.Types
 import Miso.FFI
+import Miso.Html.Internal ( Sub )
 
-mouseSub :: (Coords -> Action m) -> Sub m
+mouseSub :: ((Int,Int) -> action) -> Sub action
 mouseSub f = \sink -> do
   windowAddEventListener "mousemove" =<< do
     asyncCallback1 $ \mouseEvent -> do
