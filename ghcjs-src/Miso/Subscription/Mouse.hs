@@ -10,8 +10,8 @@ import JavaScript.Object.Internal
 import Miso.FFI
 import Miso.Html.Internal ( Sub )
 
-mouseSub :: ((Int,Int) -> action) -> Sub action
-mouseSub f = \sink -> do
+mouseSub :: ((Int,Int) -> action) -> Sub action model
+mouseSub f _ = \sink -> do
   windowAddEventListener "mousemove" =<< do
     asyncCallback1 $ \mouseEvent -> do
       Just x <- fromJSVal =<< getProp "clientX" (Object mouseEvent)

@@ -10,8 +10,8 @@ import JavaScript.Object.Internal
 import Miso.FFI
 import Miso.Html.Internal ( Sub )
 
-windowSub :: ((Int, Int) -> action) -> Sub action
-windowSub f = \sink ->
+windowSub :: ((Int, Int) -> action) -> Sub action model
+windowSub f _ = \sink ->
   windowAddEventListener "resize" =<< do
     asyncCallback1 $ \windowEvent -> do
       target <- getProp "target" (Object windowEvent)

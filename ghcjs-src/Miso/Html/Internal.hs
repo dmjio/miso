@@ -73,7 +73,7 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import           Miso.String
 
-type Sub a = (a -> IO ()) -> IO ()
+type Sub a m = IO m -> (a -> IO ()) -> IO ()
 
 -- | Virtual DOM implemented as a JavaScript `Object`
 --   Used for diffing, patching and event delegation.

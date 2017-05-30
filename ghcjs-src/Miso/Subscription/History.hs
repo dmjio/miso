@@ -58,17 +58,17 @@ newtype PopStateEvent = PopStateEvent { unPopStateEvent :: URI }
   deriving (Show, Eq)
 
 -- DMJ: goTo or pushState?
-data History action = History {
+data History action model = History {
     goTo :: URI -> IO ()
   , replaceTo :: URI -> IO ()
   , back :: IO ()
   , forward :: IO ()
   , go :: Int -> IO ()
   , initialPath :: URI
-  , popStateSubscription :: (PopStateEvent -> action) -> Sub action
+  , popStateSubscription :: (PopStateEvent -> action) -> Sub action model
   }
 
-historySignal :: IO (History m)
+historySignal :: IO (History a m)
 historySignal = do
   initialPath <- getURI
   pure History {
@@ -86,7 +86,7 @@ historySignal = do
   , forward = forward'
   , go = go'
   , initialPath = initialPath
-  , popStateSubscription = \f sink ->
+  , popStateSubscription = \f _ sink ->
       onPopState =<< do
         ps <- PopStateEvent <$> getURI
         asyncCallback $ sink (f ps)

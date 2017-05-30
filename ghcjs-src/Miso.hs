@@ -12,7 +12,6 @@ module Miso
 
 import           Control.Concurrent
 import           Control.Monad
-import           Data.Function
 import qualified Data.Map as M
 import           Data.Sequence ((|>))
 import qualified Data.Sequence as S
@@ -31,7 +30,7 @@ startApp
   => model
   -> (action -> model -> Effect model action)
   -> (model -> View action)
-  -> [ Sub action ]
+  -> [ Sub action model ]
   -> M.Map MisoString Bool
   -> IO ()
 startApp initialModel update view subs events = do
@@ -45,7 +44,8 @@ startApp initialModel update view subs events = do
   -- init EventWriter
   EventWriter {..} <- newEventWriter notify
   -- init Subs
-  forM_ subs (writeEvent &)
+  forM_ subs $ \sub ->
+    sub (readMVar modelMVar) writeEvent
   -- init event application thread
   void . forkIO . forever $ do
     action <- getEvent

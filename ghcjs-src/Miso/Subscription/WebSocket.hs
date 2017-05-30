@@ -89,7 +89,10 @@ data MessageData m
   | ArrayBufferData ArrayBuffer
   | JSON (Either String m)
 
-websocketSub' :: FromJSON action => (WebSocketEvent action -> action) -> Sub action
+websocketSub'
+  :: FromJSON action
+  => (WebSocketEvent action -> action)
+  -> Sub action model
 websocketSub' _ _ = undefined
 --  createCallback =<<
 

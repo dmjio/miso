@@ -39,8 +39,8 @@ toArrows set =
  }
 
 -- | Returns subscription for Keyboard
-keyboardSub :: (Set Int -> action) -> Sub action
-keyboardSub f sink = do
+keyboardSub :: (Set Int -> action) -> Sub action model
+keyboardSub f _ sink = do
   keySetRef <- newMVar mempty
   windowAddEventListener "keyup" =<< keyUpCallback keySetRef
   windowAddEventListener "keydown" =<< keyDownCallback keySetRef
