@@ -5,8 +5,12 @@ module Miso.Effect.DOM
 
 import Miso.String
 
-foreign import javascript unsafe "document.getElementById($1).focus();"
+-- | Fails silently if no element found
+-- Analgous to `document.getElementById(id).focus()`
+foreign import javascript unsafe "callFocus($1);"
   focus :: MisoString -> IO ()
 
-foreign import javascript unsafe "document.getElementById($1).blur();"
+-- | Fails silently if no element found
+-- Analgous to `document.getElementById(id).blur()`
+foreign import javascript unsafe "callBlur($1);"
   blur :: MisoString -> IO ()

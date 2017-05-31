@@ -68,6 +68,7 @@ library
       jsbits/diff.js
       jsbits/delegate.js
       jsbits/isomorphic.js
+      jsbits/util.js
     exposed-modules:
       Miso
       Miso.Effect
