@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Svg.Attributes
+-- Module      :  Miso.Svg.Attribute
 -- Copyright   :  (C) 2016-2017 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
@@ -12,7 +12,7 @@
 -- <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute>
 --
 ----------------------------------------------------------------------------
-module Miso.Svg.Attributes
+module Miso.Svg.Attribute
   ( -- * Regular attributes
     accentHeight_
   , accelerate_
@@ -270,9 +270,11 @@ module Miso.Svg.Attributes
   , writingMode_
   ) where
 
-import Miso.Html.Attr
-import Miso.Html.Types
-import Miso.String hiding (filter)
+import Miso.Html.Internal ( MisoString, Attribute )
+import Miso.Html.Property ( textProp )
+
+attr :: MisoString -> MisoString -> Attribute action
+attr = textProp
 
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/accent-height>
 accentHeight_ ::  MisoString -> Attribute action

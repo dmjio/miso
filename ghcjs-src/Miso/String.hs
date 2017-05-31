@@ -52,4 +52,3 @@ instance ToMisoString LT.Text where toMisoString = lazyTextToJSString
 instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
 instance ToMisoString Value where toMisoString = toMisoString . encode 
-

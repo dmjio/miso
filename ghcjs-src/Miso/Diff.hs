@@ -1,4 +1,4 @@
-module Miso.Html.Diff ( diff ) where
+module Miso.Diff ( diff ) where
 
 import GHCJS.Foreign.Internal     hiding (Object)
 import GHCJS.Types
@@ -6,7 +6,7 @@ import JavaScript.Object
 import JavaScript.Object.Internal
 import Miso.Html.Internal
 
-diff :: Maybe (VTree a) -> Maybe (VTree a) -> IO ()
+diff :: Maybe VTree -> Maybe VTree -> IO ()
 diff current new = do
   body <- getBody
   case (current, new) of
@@ -18,7 +18,7 @@ diff current new = do
     (Just (VTree current'), Nothing) -> do
       diff' current' (Object jsNull) body
 
-foreign import javascript unsafe "$r = document.body"
+foreign import javascript unsafe "$r = document.body;"
   getBody :: IO JSVal
 
 foreign import javascript unsafe "diff($1, $2, $3);"

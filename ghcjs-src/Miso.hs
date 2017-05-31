@@ -1,61 +1,91 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE KindSignatures  #-}
 module Miso
   ( startApp
-  , module Miso.Html
-  , module Miso.Html.Types
-  , module Miso.Types
-  , module Miso.Settings
   , module Miso.Effect
-  , module Miso.Signal
+  , module Miso.Event
+  , module Miso.Html
+  , module Miso.Subscription
   ) where
 
-import Control.Concurrent
-import Control.Monad
-import Data.IORef
-import JavaScript.Web.AnimationFrame
+import           Control.Concurrent
+import           Control.Monad
+import           Data.IORef
+import qualified Data.Map as M
+import           Data.Sequence ((|>))
+import qualified Data.Sequence as S
+import           JavaScript.Web.AnimationFrame
 
-import Miso.Concurrent
-import Miso.Effect
-import Miso.Event.Delegate
-import Miso.Html
-import Miso.Html.Diff
-import Miso.Html.Types
-import Miso.Isomorphic
-import Miso.Settings
-import Miso.Signal
-import Miso.Types
+import           Miso.Concurrent
+import           Miso.Diff
+import           Miso.Effect
+import           Miso.Event
+import           Miso.FFI
+import           Miso.Html
+import           Miso.Subscription
 
 startApp
-  :: ( HasAction action model stepConfig
-     , Eq model
-     ) => model
-       -> (model -> View action)
-       -> (action -> model -> Effect action model)
-       -> Settings stepConfig action
-       -> IO ()
-startApp initialModel view update Settings{..} = do
-  let mergedSignals = mergeManySignals (fst defaultSignal : extraSignals)
-  -- If isomorphic, then copy the dom into the `initialTree`, forego initial diff
-  initialVTree <- runView (view initialModel)
-  -- Draw initial tree, where isomorphic should be used, remove initial diff?
-  if useIsomorphic
-    then copyDOMIntoVTree initialVTree
-    else Nothing `diff` (Just initialVTree)
-  vTreeRef <- newIORef initialVTree
+  :: Eq model
+  => model
+  -> (action -> model -> Effect model action)
+  -> (model -> View action)
+  -> [ Sub action model ]
+  -> M.Map MisoString Bool
+  -> IO ()
+startApp initialModel update view subs events = do
+  let initialView = view initialModel
+  -- init empty Model
+  modelMVar <- newMVar initialModel
+  -- init empty actions
+  actionsMVar <- newMVar S.empty
+  -- init Notifier
+  Notify {..} <- newNotify
+  -- init EventWriter
+  EventWriter {..} <- newEventWriter notify
+  -- init Subs
+  forM_ subs $ \sub ->
+    sub (readMVar modelMVar) writeEvent
+  -- init event application thread
+  void . forkIO . forever $ do
+    action <- getEvent
+    modifyMVar_ actionsMVar $! \actions ->
+      pure (actions |> action)
+  -- Create virtual dom, perform initial diff
+  initialVTree <- flip runView writeEvent initialView
+  Nothing `diff` (Just initialVTree)
+  viewRef <- newIORef initialVTree
   -- Begin listening for events in the virtual dom
-  void . forkIO $ delegator vTreeRef events
-  -- /end delegator fork
-  step <- start $ foldp stepConfig update initialModel mergedSignals
-  forever $ do
-    draw notifier >> step >>= \case
-      NotChanged _ -> pure ()
-      Changed changedModel -> do
-        -- Can we perform caching here?
-        newVTree <- runView $ view changedModel
-        oldVTree <- readIORef vTreeRef
-        void $ waitForAnimationFrame
-        Just oldVTree `diff` Just newVTree
-        writeIORef vTreeRef newVTree
+  delegator viewRef events
+  -- Program loop, blocking on SkipChan
+  forever $ wait >> do
+    -- Apply actions to model
+    shouldDraw <-
+      modifyMVar actionsMVar $! \actions -> do
+        shouldDraw <- modifyMVar modelMVar $! \oldModel -> do
+          newModel <- foldM (foldEffects writeEvent update) oldModel actions
+          pure (newModel, oldModel /= newModel)
+        pure (S.empty, shouldDraw)
+    when shouldDraw $ do
+      newVTree <-
+        flip runView writeEvent
+          =<< view <$> readMVar modelMVar
+      oldVTree <- readIORef viewRef
+      void $ waitForAnimationFrame
+      Just oldVTree `diff` Just newVTree
+      atomicWriteIORef viewRef newVTree
+
+foldEffects
+  :: (action -> IO ())
+  -> (action -> model -> Effect model action)
+  -> model
+  -> action
+  -> IO model
+foldEffects sink update model action =
+  case update action model of
+    NoEffect newModel -> pure newModel
+    Effect newModel eff -> do
+      void . forkIO . sink =<< eff
+      pure newModel

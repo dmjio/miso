@@ -1,3 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -21,6 +28,7 @@ module Miso.Html.Internal (
     VTree  (..)
   , View   (..)
   , ToView (..)
+  , Attribute (..)
   -- * Smart `View` constructors
   , node
   , text
@@ -29,42 +37,54 @@ module Miso.Html.Internal (
   , ToKey  (..)
   -- * Namespace
   , NS     (..)
-  -- * String module
-  , MisoString
-  -- * Helpers for interacting with Object
-  , set
+  -- * Setting properties on virtual DOM nodes
+  , prop
+  -- * Setting css
+  , style_
+  -- * Handling events
+  , on
+  , onWithOptions
+  -- * String
+  , module Miso.String
+  -- * Events
+  , defaultEvents
+  -- * Subscription type
+  , Sub
   ) where
 
 import           Control.Monad
+import           Data.Aeson hiding (Object)
+import           Data.Aeson.Types (parseEither)
+import           Data.Monoid
 import           Data.JSString
 import           Data.JSString.Text
-import qualified Data.Text                  as T
-import           GHC.Generics
+import qualified Data.Map as M
+import qualified Data.Text as T
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           JavaScript.Array.Internal  (fromList)
+import           JavaScript.Array.Internal (fromList)
 import           JavaScript.Object
 import           JavaScript.Object.Internal (Object (Object))
 
-import           Miso.Event
-import           Miso.Event.Interpreter
+import           Miso.Event.Decoder
+import           Miso.Event.Types
 import           Miso.String
-import           Miso.Html.Types
-import           Miso.Html.Types.Event
-import           Miso.Signal
+
+type Sub a m = IO m -> (a -> IO ()) -> IO ()
 
 -- | Virtual DOM implemented as a JavaScript `Object`
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
-newtype VTree action = VTree { getTree :: Object }
+newtype VTree = VTree { getTree :: Object }
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-newtype View action = View { runView :: IO (VTree action) }
+newtype View action = View {
+  runView :: (action -> IO ()) -> IO VTree
+}
 
 -- | Convenience class for using View
-class ToView v where
-  toView :: v -> View action
+class ToView v where toView :: v -> View m
 
 set :: ToJSVal v => JSString -> v -> Object -> IO ()
 set k v obj = toJSVal v >>= \x -> setProp k x obj
@@ -73,52 +93,36 @@ set k v obj = toJSVal v >>= \x -> setProp k x obj
 node :: NS
      -> MisoString
      -> Maybe Key
-     -> [Attribute action]
-     -> [View action]
-     -> View action
-node ns tag key attrs kids = View $ do
-  vtree <- create
-  set "type" ("vnode" :: JSString) vtree
-  set "ns" ns vtree
-  set "tag" tag vtree
-  set "key" key vtree
-  setAttrs vtree
-  flip (set "children") vtree =<< setKids
-  pure $ VTree vtree
+     -> [Attribute m]
+     -> [View m]
+     -> View m
+node ns tag key attrs kids = View $ \sink -> do
+  vnode <- create
+  cssObj <- jsval <$> create
+  propsObj <- jsval <$> create
+  eventObj <- jsval <$> create
+  set "css" cssObj vnode
+  set "props" propsObj vnode
+  set "events" eventObj vnode
+  set "type" ("vnode" :: JSString) vnode
+  set "ns" ns vnode
+  set "tag" tag vnode
+  set "key" key vnode
+  setAttrs vnode sink
+  flip (set "children") vnode =<< setKids sink
+  pure $ VTree vnode
     where
-      setAttrs vtree = do
-        [ attrObject@(Object ao),
-          propObject@(Object po),
-          cssObject@(Object co),
-          eventObject@(Object eo)
-          ] <- replicateM 4 create
-        forM_ attrs $ \case
-          A k v -> set k v attrObject
-          P k v -> set k v propObject
-          C k v -> set k v cssObject
-          E (EventHandler options eventName grammar f) ->
-            do eventHandlerObject@(Object o) <- create
-               jsOptions <- toJSVal options
-               setProp "options" jsOptions eventHandlerObject
-               cb <- jsval <$> (asyncCallback1 $ \e -> do
-                 let (_, writer) = defaultSignal
-                 writer =<< f <$> evalEventGrammar e grammar)
-               setProp "runEvent" cb eventHandlerObject
-               setProp eventName o eventObject
-        set "attrs" ao vtree
-        set "props" po vtree
-        set "css" co vtree
-        set "events" eo vtree
+      setAttrs vnode sink =
+        forM_ attrs $ \(Attribute attr) ->
+          attr sink vnode
 
-      setKids =
+      setKids sink =
         jsval . fromList <$>
           fmap (jsval . getTree) <$>
-            traverse runView kids
+            traverse (flip runView sink) kids
 
 instance ToJSVal Options
-
-instance ToJSVal Key where
-  toJSVal (Key x) = toJSVal x
+instance ToJSVal Key where toJSVal (Key x) = toJSVal x
 
 instance ToJSVal NS where
   toJSVal SVG  = toJSVal ("svg" :: JSString)
@@ -131,16 +135,14 @@ data NS
   deriving (Show, Eq)
 
 -- | `VText` creation
-text :: ToMisoString str => str -> View action
-text t = View $ do
+text :: ToMisoString str => str -> View m
+text t = View . const $ do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
   set "text" (toMisoString t) vtree
   pure $ VTree vtree
 
--- | Key for specific children patch
-newtype Key = Key { getKey :: MisoString }
-  deriving (Show, Eq, Ord, Generic)
+newtype Key = Key MisoString
 
 -- | Convert type into Key, ensure `Key` is unique
 class ToKey key where toKey :: key -> Key
@@ -160,3 +162,65 @@ instance ToKey Double where toKey = Key . pack . show
 instance ToKey Float where toKey = Key . pack . show
 -- | Convert `Word` to `Key`
 instance ToKey Word where toKey = Key . pack . show
+
+-- | `View` Attributes to annotate DOM, converted into `Events`, `Props`, `Attrs` and `CSS`
+newtype Attribute action = Attribute ((action -> IO ()) -> Object -> IO ())
+
+-- | Constructs a property on a `VNode`, used to set fields on a DOM Node
+prop :: ToJSVal a => MisoString -> a -> Attribute action
+prop k v = Attribute . const $ \n -> do
+  val <- toJSVal v
+  o <- getProp ("props" :: MisoString) n
+  set k val (Object o)
+
+-- | For defining delegated events with options
+--
+-- > let clickHandler = on "click" $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+on :: MisoString
+   -> Decoder r
+   -> (r -> action)
+   -> Attribute action
+on = onWithOptions defaultOptions
+
+foreign import javascript unsafe "$r = objectToJSON($1,$2);"
+  objectToJSON
+    :: JSVal -- ^ decodeAt :: [JSString]
+    -> JSVal -- ^ object with impure references to the DOM
+    -> IO JSVal
+
+onWithOptions
+  :: Options
+  -> MisoString
+  -> Decoder r
+  -> (r -> action)
+  -> Attribute action
+onWithOptions options eventName Decoder{..} toAction =
+  Attribute $ \sink n -> do
+   eventObj <- getProp "events" n
+   eventHandlerObject@(Object eo) <- create
+   jsOptions <- toJSVal options
+   decodeAtVal <- toJSVal decodeAt
+   cb <- jsval <$> (asyncCallback1 $ \e -> do
+        -- DMJ: This breaks on 8.x (FromJSVal Value instance)
+       Just (v :: Value) <- fromJSVal =<< objectToJSON decodeAtVal e
+       case parseEither decoder v of
+         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+         Right r -> sink (toAction r))
+   setProp "runEvent" cb eventHandlerObject
+   setProp "options" jsOptions eventHandlerObject
+   setProp eventName eo (Object eventObj)
+
+-- | Constructs `CSS` for a DOM Element
+--
+-- > import qualified Data.Map as M
+-- > div_ [ style_  $ M.singleton "background" "red" ] [ ]
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS>
+--
+style_ :: M.Map MisoString MisoString -> Attribute action
+style_ m = Attribute . const $ \n -> do
+   cssObj <- getProp "css" n
+   forM_ (M.toList m) $ \(k,v) ->
+     setProp k (jsval v) (Object cssObj)

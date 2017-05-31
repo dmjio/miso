@@ -24,6 +24,8 @@ import           Web.HttpApiData
 
 import           Miso.Html hiding (text)
 
+-- | DMJ: Why is this shared ? Only API type should be shared
+
 -- | Router terminator.
 -- The 'HasRouter' instance for 'View' finalizes the router.
 --

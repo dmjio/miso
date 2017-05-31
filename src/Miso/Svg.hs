@@ -25,13 +25,13 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Svg
-   ( module Miso.Svg.Combinator
-   , module Miso.Svg.Attributes
-   , module Miso.Svg.Events
+   ( module Miso.Svg.Element
+   , module Miso.Svg.Attribute
+   , module Miso.Svg.Event
    ) where
 
-import Miso.Svg.Attributes
-import Miso.Svg.Combinator hiding ( filter_, path_, title_, mask_
-                                  , glyphRef_, clipPath_, colorProfile_
-                                  , cursor_, style_ )
-import Miso.Svg.Events
+import Miso.Svg.Attribute
+import Miso.Svg.Element hiding ( filter_, path_, title_, mask_
+                               , glyphRef_, clipPath_, colorProfile_
+                               , cursor_, style_ )
+import Miso.Svg.Event

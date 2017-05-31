@@ -12,7 +12,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Svg.Events
+module Miso.Svg.Event
   ( -- * Animation event handlers
     onBegin
   , onEnd
@@ -37,80 +37,80 @@ module Miso.Svg.Events
   , onMouseUp
   ) where
 
-import Data.Proxy
-import Miso.Html.Event    (onClick, on)
-import Miso.Html.Types
+import Miso.Event 
+import Miso.Html.Event (onClick)
+import Miso.Html.Internal
 
 -- | onBegin event
 onBegin :: action -> Attribute action
-onBegin action = on (Proxy :: Proxy "begin") $ \() -> action
+onBegin action = on "begin" emptyDecoder $ \() -> action
 
 -- | onEnd event
 onEnd :: action -> Attribute action
-onEnd action = on (Proxy :: Proxy "end") $ \() -> action
+onEnd action = on "end" emptyDecoder $ \() -> action
 
 -- | onRepeat event
 onRepeat :: action -> Attribute action
-onRepeat action = on (Proxy :: Proxy "repeat") $ \() -> action
+onRepeat action = on "repeat" emptyDecoder $ \() -> action
 
 -- | onAbort event
 onAbort :: action -> Attribute action
-onAbort action = on (Proxy :: Proxy "abort") $ \() -> action
+onAbort action = on "abort" emptyDecoder $ \() -> action
 
 -- | onError event
 onError :: action -> Attribute action
-onError action = on (Proxy :: Proxy "error") $ \() -> action
+onError action = on "error" emptyDecoder $ \() -> action
 
 -- | onResize event
 onResize :: action -> Attribute action
-onResize action = on (Proxy :: Proxy "resize") $ \() -> action
+onResize action = on "resize" emptyDecoder $ \() -> action
 
 -- | onScroll event
 onScroll :: action -> Attribute action
-onScroll action = on (Proxy :: Proxy "scroll") $ \() -> action
+onScroll action = on "scroll" emptyDecoder $ \() -> action
 
 -- | onLoad event
 onLoad :: action -> Attribute action
-onLoad action = on (Proxy :: Proxy "load") $ \() -> action
+onLoad action = on "load" emptyDecoder $ \() -> action
 
 -- | onUnload event
 onUnload :: action -> Attribute action
-onUnload action = on (Proxy :: Proxy "unload") $ \() -> action
+onUnload action = on "unload" emptyDecoder $ \() -> action
 
 -- | onZoom event
 onZoom :: action -> Attribute action
-onZoom action = on (Proxy :: Proxy "zoom") $ \() -> action
+onZoom action = on "zoom" emptyDecoder $ \() -> action
 
 -- | onActivate event
 onActivate :: action -> Attribute action
-onActivate action = on (Proxy :: Proxy "activate") $ \() -> action
+onActivate action = on "activate" emptyDecoder $ \() -> action
 
 -- | onFocusIn event
 onFocusIn :: action -> Attribute action
-onFocusIn action = on (Proxy :: Proxy "focusin") $ \() -> action
+onFocusIn action = on "focusin" emptyDecoder $ \() -> action
 
 -- | onFocusOut event
 onFocusOut :: action -> Attribute action
-onFocusOut action = on (Proxy :: Proxy "focusout") $ \() -> action
+onFocusOut action = on "focusout" emptyDecoder $ \() -> action
 
 -- | onMouseDown event
 onMouseDown :: action -> Attribute action
-onMouseDown action = on (Proxy :: Proxy "mousedown") $ \() -> action
+onMouseDown action = on "mousedown" emptyDecoder $ \() -> action
 -- | onMouseMove event
 onMouseMove :: action -> Attribute action
-onMouseMove action = on (Proxy :: Proxy "mousemove") $ \() -> action
+onMouseMove action = on "mousemove" emptyDecoder $ \() -> action
 
 -- | onMouseOut event
 onMouseOut :: action -> Attribute action
-onMouseOut action = on (Proxy :: Proxy "mouseout") $ \() -> action
+onMouseOut action = on "mouseout" emptyDecoder $ \() -> action
 
 -- | onMouseOver event
 onMouseOver :: action -> Attribute action
-onMouseOver action = on (Proxy :: Proxy "mouseover") $ \() -> action
+onMouseOver action = on "mouseover" emptyDecoder $ \() -> action
 
 -- | onMouseUp event
 onMouseUp :: action -> Attribute action
-onMouseUp action = on (Proxy :: Proxy "mouseup") $ \() -> action
+onMouseUp action = on "mouseup" emptyDecoder $ \() -> action
 
 
 

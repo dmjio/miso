@@ -36,19 +36,16 @@ function replaceTextWithElement (c, n, parent) {
 
 function populate (c, n) {
     if (!c) c = {
-	      attrs : null
-            , props : null
-            , css : null
-            , children : []
+	      props : null
+	    , css : null
+	    , children : []
 	    }
     if (!n) n = {
-	      attrs : null
-            , props : null
-            , css : null
-            , children : []
+	      props : null
+	    , css : null
+	    , children : []
 	    }
-  diffAttrs (c.attrs, n.attrs, n.domRef, n.ns === "svg");
-  diffProps (c.props, n.props, n.domRef);
+  diffProps (c.props, n.props, n.domRef, n.ns === "svg");
   diffCss (c.css, n.css, n.domRef);
   diffChildren (c.children, n.children, n.domRef);
 }
@@ -63,32 +60,56 @@ function diffVNodes (c, n, parent) {
   }
 }
 
-function diffAttrs (cAttrs, nAttrs, node, isSVG) {
-    var result;
-    /* is current prop in new prop list? */
-    for (var c in cAttrs) {
-      result = nAttrs[c];
-      if (!result) {
-	/* current key is not in node */
-	node.removeAttribute(c);
-      } else {
-       var domProp = node[c];
-        if (result !== cAttrs[c] && result !== domProp) {
-            if (c === "href" && isSVG)
-              node.setAttributeNS("http://www.w3.org/1999/xlink", c, result);
-	    else
-	      node.setAttribute(c, result);
-         }
-      }
+function diffProps (cProps, nProps, node, isSvg) {
+    var result, newProp, domProp;
+    /* Is current prop in new prop list? */
+    for (var c in cProps) {
+	newProp = nProps[c];
+	 /* If current property no longer exists, remove it */
+	 if (!newProp) {
+	     /* current key is not in node, remove it from DOM, if SVG, remove attribute */
+	     if (isSvg || !(c in node))
+	       node.removeAttribute(c, cProps[c]);
+	     else
+	       node[c] = null;
+	  } else {
+	   /* Already on DOM from previous diff, continue */
+	   if (newProp === cProps[c]) continue;
+	   domProp = node[c];
+	   /* Value in new prop map, not in old, but already pre-populated on DOM, potentially from server-prerendering, continue */
+	   if (newProp === domProp) continue;
+	   if (isSvg) {
+	     if (c === "href")
+		node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+	     else if (c === "className" || c === "class")
+		node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
+	     else
+		node.setAttribute(c, newProp);
+	    } else if (n in node) {
+		node[c] = newProp;
+	     } else {
+	       node.setAttribute(c, newProp);
+	   }
+       }
     }
-    /* add remaining */
-     for (var n in nAttrs) {
-       if (cAttrs && cAttrs[n]) continue;
-       if (n === "href" && isSVG)
-          node.setAttributeNS("http://www.w3.org/1999/xlink", n, nAttrs[n]);
-       else
-          node.setAttribute(n, nAttrs[n]);
-     }
+      /* add remaining */
+      for (var n in nProps) {
+	  if (cProps && cProps[n]) continue;
+	  newProp = nProps[n];
+	  /* Only add new properties, skip (continue) if they already exist in current property map */
+	  if (isSvg) {
+	    if (n === "href")
+	       node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+	    else if (n === "className" || n === "class")
+	       node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
+	    else
+	       node.setAttribute(n, newProp);
+	  } else if (n in node) {
+	     node[n] = nProps[n];
+	  } else {
+	     node.setAttribute(n, newProp);
+	 }
+      }
 }
 
 function diffCss (cCss, nCss, node) {
@@ -110,29 +131,11 @@ function diffCss (cCss, nCss, node) {
   }
 }
 
-function diffProps (cProps, nProps, node) {
-    var result;
-    /* is current prop in new prop list? */
-    for (var c in cProps) {
-     result = nProps[c];
-     if (!result) {
-	/* current key is not in node */
-       node[c] = null;
-     } else {
-       var domProp = node[c];
-       if (result !== cProps[c] && result != domProp)
-	node[c] = result;
-     }
-    }
-    /* add remaining */
-      for (var n in nProps) {
-        if (cProps && cProps[n]) continue;
-        node[n] = nProps[n];
-   }
+function hasKey (cs) {
+    return cs && cs[0] && cs[0].key;
 }
 
 function diffChildren (cs, ns, parent) {
-   //  if (!cs.length && !ns.length) return;
     var longest = ns.length > cs.length ? ns.length : cs.length;
     for (var i = 0; i < longest; i++)
       diff (cs[i], ns[i], parent);

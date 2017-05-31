@@ -1,19 +1,25 @@
 module Miso.Effect (
-      noEffect
-    , noEff
-    , effect
-    , (<#)
-    ) where
+  module Miso.Effect.Storage
+, module Miso.Effect.XHR
+, module Miso.Effect.DOM
+, Effect (..)
+, noEff
+, (<#)
+) where
 
-import Miso.Types
+import Miso.Effect.Storage
+import Miso.Effect.XHR
+import Miso.Effect.DOM
 
-noEffect, noEff :: model -> Effect action model
-noEff = noEffect
-noEffect = NoEffect
+-- | Capturing effects in update actions
+data Effect model action
+  = NoEffect model
+  | Effect model (IO action)
 
-effect :: model -> IO action -> Effect action model
-effect = Effect
+-- | `NoEffect` smart constructor
+noEff :: model -> Effect model action
+noEff = NoEffect
 
-(<#) :: IO action -> model -> Effect action model
-action <# model = Effect model action
-infixl 0 <#
+-- | `Effect` smart constructor
+(<#) :: model -> IO action -> Effect model action
+(<#) = Effect

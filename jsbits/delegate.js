@@ -4,14 +4,14 @@ function delegate(events, getVTree) {
 	document.body.addEventListener(events[event][0], function(e) {
             delegateEvent ( e
                           , getVTree()
-                          , buildTargetToBody(document.body, e.target, []).reverse()
+                          , buildTargetToBody(document.body, e.target)
                           , []
                           );
 	     }, events[event][1]);
     }
 }
 
-/ * Accumulate parent stack as well for propogation */
+/ * Accumulate parent stack as well for propagation */
 function delegateEvent (event, obj, stack, parentStack) {
 
     /* base case, not found */
@@ -19,7 +19,7 @@ function delegateEvent (event, obj, stack, parentStack) {
 
     /* stack not length 1, recurse */
     else if (stack.length > 1) {
-      if (obj.domRef === stack[0]) parentStack.push(obj);
+      if (obj.domRef === stack[0]) parentStack.unshift(obj);
 	for (var o = 0; o < obj.children.length; o++) {
           if (obj.children[o].type === "vtext") continue;
           delegateEvent ( event
@@ -39,16 +39,16 @@ function delegateEvent (event, obj, stack, parentStack) {
             if (options.preventDefault) event.preventDefault();
           eventObj.runEvent(event);
 	    if (!options.stopPropagation)
-	     propogateWhileAble (parentStack.reverse(), event);
+	     propogateWhileAble (parentStack, event);
           }
 	}
     }
 }
 
-
-function buildTargetToBody (body, target, stack) {
+function buildTargetToBody (body, target) {
+    var stack = [];
     while (body !== target) {
-      stack.push (target);
+      stack.unshift (target);
       target = target.parentNode;
     }
     return stack;
@@ -64,4 +64,14 @@ function propogateWhileAble (parentStack, event) {
   	if (options.stopPropagation) break;
     }
   }
+}
+
+/* Convert event to JSON at a specific location in the DOM tree*/
+function objectToJSON (at, obj) {
+    for (var i in at) obj = obj[i];
+    var newObj = {};
+    for (var i in obj)
+	if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
+	    newObj[i] = obj[i];
+    return (newObj);
 }

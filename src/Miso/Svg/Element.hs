@@ -2,14 +2,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Svg.Combinator
+-- Module      :  Miso.Svg.Element
 -- Copyright   :  (C) 2016-2017 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Svg.Combinator
+module Miso.Svg.Element
   ( -- * HTML Embedding
     svg_
   , foreignObject_
@@ -103,10 +103,8 @@ module Miso.Svg.Combinator
   , view_
   ) where
 
-import qualified Prelude         as P
-
-import           Miso.Html.Types
-import           Miso.Html.Internal (MisoString, node, View, NS(..))
+import           Miso.Html.Internal hiding (style_)
+import qualified Prelude            as P
 
 -- | Used to construct a `VNode` with namespace "svg"
 --

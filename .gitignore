@@ -1,3 +1,4 @@
 /.stack-work/
-result
+result*
 /node_modules/
+dist
