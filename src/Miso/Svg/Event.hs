@@ -12,7 +12,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Svg.Events
+module Miso.Svg.Event
   ( -- * Animation event handlers
     onBegin
   , onEnd
@@ -36,7 +36,6 @@ module Miso.Svg.Events
   , onMouseOver
   , onMouseUp
   ) where
-
 
 import Miso.Event 
 import Miso.Html.Event (onClick)

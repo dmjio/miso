@@ -6,6 +6,7 @@
 {-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE OverloadedStrings    #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Internal
@@ -20,29 +21,36 @@ module Miso.Html.Internal (
     VTree  (..)
   , View   (..)
   , ToView (..)
+  , Attribute (..)
   -- * Smart `View` constructors
   , node
   , text
   -- * Key patch internals
   , Key    (..)
   , ToKey  (..)
-  , getKey
-  , getKeyUnsafe
   -- * Namespace
   , NS     (..)
-  -- * String type
+  -- * Setting properties on virtual DOM nodes
+  , prop
+  -- * Setting CSS
+  , style_
+  -- * Handling events
+  , on
+  , onWithOptions
+  -- * String
   , module Miso.String
   ) where
 
-import qualified Data.Map            as M
-import           Data.Text           (Text)
-import qualified Data.Text           as T
-import qualified Data.Vector         as V
-import qualified Lucid               as L
-import qualified Lucid.Base          as L
-
-import           Miso.Html.Types
+import           Data.Aeson
+import qualified Data.Map as M
+import           Data.Monoid
+import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Vector as V
+import qualified Lucid as L
+import qualified Lucid.Base as L
 import           Miso.String hiding (map)
+import           Miso.Event
 
 -- | Virtual DOM implemented as a Rose `Vector`.
 --   Used for diffing, patching and event delegation.
@@ -51,7 +59,6 @@ data VTree model where
   VNode :: { vType :: Text -- ^ Element type (i.e. "div", "a", "p")
            , vNs :: NS -- ^ HTML or SVG
            , vProps :: Props -- ^ Fields present on DOM Node
-           , vAttrs :: Attrs -- ^ Key value pairs present on HTML
            , vCss :: CSS -- ^ Styles
            , vKey :: Maybe Key -- ^ Key used for child swap patch
            , vChildren :: V.Vector (VTree model) -- ^ Child nodes
@@ -70,10 +77,23 @@ instance L.ToHtml (VTree model) where
     let ele = L.makeElement (toTag vType) kids
     in L.with ele as
       where
-        Attrs xs = vAttrs
-        as = [ L.makeAttribute k v | (k,v) <- M.toList xs ]
+        Props xs = vProps
+        as = [ L.makeAttribute k v'
+             | (k,v) <- M.toList xs
+             , let v' = toHtmlFromJSON v
+             ]
         toTag = T.toLower
         kids = foldMap L.toHtml vChildren
+
+-- | Helper for turning JSON into Text
+-- Object, Array and Null are kind of non-sensical here
+toHtmlFromJSON :: Value -> Text
+toHtmlFromJSON (String t) = t
+toHtmlFromJSON (Number t) = pack (show t)
+toHtmlFromJSON (Bool b) = if b then "true" else "false"
+toHtmlFromJSON Null = "null"
+toHtmlFromJSON (Object o) = pack (show o)
+toHtmlFromJSON (Array a) = pack (show a)
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 newtype View model = View { runView :: VTree model }
@@ -111,16 +131,6 @@ text x = View $ VText (toMisoString x)
 -- | Key for specific children patch
 newtype Key = Key MisoString
   deriving (Show, Eq, Ord)
-
--- | Key lookup
-getKey :: VTree model -> Maybe Key
-getKey (VNode _ _ _ _ _ maybeKey _) = maybeKey
-getKey _ = Nothing
-
--- | Unsafe Key extraction
-getKeyUnsafe :: VTree model -> Key
-getKeyUnsafe (VNode _ _ _ _ _ (Just key) _) = key
-getKeyUnsafe _ = Prelude.error "Key does not exist"
 
 -- | Convert type into Key, ensure `Key` is unique
 class ToKey key where toKey :: key -> Key
@@ -160,7 +170,19 @@ newtype AllowDrop = AllowDrop Bool
 prop :: ToJSON a => MisoString -> a -> Attribute model
 prop k v = P k (toJSON v)  
 
-on _ _ = E ()  
+on :: MisoString
+   -> Decoder r
+   -> (r -> action)
+   -> Attribute action
+on _ _ _ = E ()
+
+onWithOptions
+   :: Options
+   -> MisoString
+   -> Decoder r
+   -> (r -> action)
+   -> Attribute action
+onWithOptions _ _ _ _ = E ()
 
 -- | Constructs `CSS` for a DOM Element
 --
@@ -174,11 +196,3 @@ style_ = C "style" . M.foldrWithKey go mempty
   where
     go :: MisoString -> MisoString -> MisoString -> MisoString
     go k v xs = mconcat [ k, ":", v, ";" ] <> xs
-
-
--- | Constructs raw `CSS` for a DOM Element
---
--- > div_ [ styleRaw_ "background:red;" ] [ ]
---
-styleRaw_ :: MisoString -> Attribute action
-styleRaw_ = C "style"

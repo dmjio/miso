@@ -16,5 +16,9 @@ let
   };
   nixpkgs = import pkgs { inherit config; };
   miso-ghc = nixpkgs.haskell.packages.ghc802.callPackage ./miso.nix { };
-in nixpkgs.haskell.packages.ghcjs.callPackage ./miso.nix { }
+  miso-ghcjs = nixpkgs.haskell.packages.ghcjs.callPackage ./miso.nix { };
+in with nixpkgs.haskell.lib; {
+  miso-ghc = buildFromSdist miso-ghc;
+  miso-ghcjs = buildFromSdist miso-ghcjs;
+}
 

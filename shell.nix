@@ -1,1 +1,0 @@
-(import ./default.nix {}).env

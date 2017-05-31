@@ -5,25 +5,27 @@
 {-# LANGUAGE KindSignatures  #-}
 module Miso
   ( startApp
+  , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
-  , module Miso.Effect
+  , module Miso.Subscription
   ) where
 
 import           Control.Concurrent
 import           Control.Monad
+import           Data.IORef
 import qualified Data.Map as M
 import           Data.Sequence ((|>))
 import qualified Data.Sequence as S
 import           JavaScript.Web.AnimationFrame
-import           Data.IORef
 
 import           Miso.Concurrent
-import           Miso.Html
-import           Miso.FFI
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
+import           Miso.FFI
+import           Miso.Html
+import           Miso.Subscription
 
 startApp
   :: Eq model

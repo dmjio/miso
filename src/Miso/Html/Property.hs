@@ -141,7 +141,8 @@ doubleProp = prop
 -- > div_ [ classList_ [ ("empty", null items) ] [ ]
 --
 classList_ ::  [(MisoString, Bool)] -> Attribute action
-classList_ xs = textProp "class" $ intercalate " " [ t | (t, True) <- xs ]
+classList_ xs =
+  textProp "class" $ intercalate (" " :: MisoString) [ t | (t, True) <- xs ]
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/title>
 title_ ::  MisoString -> Attribute action
 title_ = textProp "title"

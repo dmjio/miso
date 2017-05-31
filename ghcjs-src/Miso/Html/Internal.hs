@@ -45,9 +45,7 @@ module Miso.Html.Internal (
   , on
   , onWithOptions
   -- * String
-  , MisoString
-  , module Data.JSString
-  , ToMisoString (..)
+  , module Miso.String
   -- * Events
   , defaultEvents
   -- * Subscription type
@@ -180,7 +178,7 @@ prop k v = Attribute . const $ \n -> do
 -- > let clickHandler = on "click" $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
-on :: (Show r, FromJSON r) => MisoString
+on :: MisoString
    -> Decoder r
    -> (r -> action)
    -> Attribute action
@@ -193,7 +191,7 @@ foreign import javascript unsafe "$r = objectToJSON($1,$2);"
     -> IO JSVal
 
 onWithOptions
-  :: (FromJSON r, Show r) => Options
+  :: Options
   -> MisoString
   -> Decoder r
   -> (r -> action)
