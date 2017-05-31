@@ -10,7 +10,7 @@ copyright:           Copyright (c) 2016 David M. Johnson
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.22
-synopsis: Micro-isomorphic UI framework
+synopsis:            Haskell front-end framework
 description:
             .
             <<http://tinyurl.com/hrfpjjy>>

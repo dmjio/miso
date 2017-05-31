@@ -6,7 +6,7 @@
 <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1" target="_blank"><img src="https://img.shields.io/badge/IRC-%23haskell--miso-1e72ff.svg?style=flat"  height="20"></a>
 [![Slack Status](https://haskell-miso-slack.herokuapp.com/badge.svg)](https://haskell-miso-slack.herokuapp.com)
 
-**Miso** (micro-isomorphic), is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, fast hand-rolled javascript diffing / patching algorithm, event delegation, event batching, event handler DSL, SVG support, and an extensible Subscription-based system. Inspired by [elm](http://elm-lang.org/) and [redux](http://redux.js.org/), miso currently supports WebSocket, Window, Mouse, History and KeysDown subscriptions. `IO` and other effects (such as `XHR`) can be introduced into the system via the `effect` function type inside `HasEvent` instances Isomorphic routing is is made possible with [servant](http://haskell-servant.readthedocs.io/en/stable/). *Miso* makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
+**Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, fast hand-rolled javascript diffing / patching algorithm, event delegation, event batching, SVG support, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril), Miso currently supports WebSocket, Window, Mouse, History and KeysDown subscriptions. `IO` and other effects (such as `XHR`) can be introduced into the system via the `Effect action model` data type. *Miso* makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
 
 ## Setting up
  - Cabal
@@ -15,26 +15,34 @@
 
 ## Getting Started
 ```haskell
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-module Main where
-
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 import Miso
 
-default (MisoString)
+type Model = Int
 
 main :: IO ()
-main = startApp model view defaultSettings
+main = startApp model update view subs defaultEvents
   where
-    model :: Int = 0
+    model = 0
+    subs = []
+
+update :: Action -> Model -> Effect Model Action
+update AddOne m = noEff (m + 1)
+update SubtractOne m = noEff (m + 1)
+
+data Action
+  = AddOne
+  | SubtractOne
+  deriving (Show, Eq)
 
 view :: Int -> View Action
 view x = div_ [] [
-   button_ [ onClick_ (+1) ] [ text_ "+" ]
- , text_ (show x)
- , button_ [ onClick_ $ subtract 1 ] [ text_ "-" ]
+   button_ [ onClick AddOne ] [ text "+" ]
+ , text (show x)
+ , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
-```
+ ```
 ## Examples
   - TodoMVC
     - Link: <link goes here>
