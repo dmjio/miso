@@ -14,6 +14,7 @@ module Miso
 import           Control.Concurrent
 import           Control.Monad
 import           Data.IORef
+import           Data.List
 import qualified Data.Map as M
 import           Data.Sequence ((|>))
 import qualified Data.Sequence as S
@@ -24,7 +25,7 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
-import           Miso.Html
+import           Miso.Html hiding (foldl')
 import           Miso.Subscription
 
 startApp
@@ -38,7 +39,7 @@ startApp
 startApp initialModel update view subs events = do
   let initialView = view initialModel
   -- init empty Model
-  modelMVar <- newMVar initialModel
+  modelRef <- newIORef initialModel
   -- init empty actions
   actionsMVar <- newMVar S.empty
   -- init Notifier
@@ -47,7 +48,7 @@ startApp initialModel update view subs events = do
   EventWriter {..} <- newEventWriter notify
   -- init Subs
   forM_ subs $ \sub ->
-    sub (readMVar modelMVar) writeEvent
+    sub (readIORef modelRef) writeEvent
   -- init event application thread
   void . forkIO . forever $ do
     action <- getEvent
@@ -64,14 +65,15 @@ startApp initialModel update view subs events = do
     -- Apply actions to model
     shouldDraw <-
       modifyMVar actionsMVar $! \actions -> do
-        shouldDraw <- modifyMVar modelMVar $! \oldModel -> do
-          newModel <- foldM (foldEffects writeEvent update) oldModel actions
-          pure (newModel, oldModel /= newModel)
+        (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel ->
+          let (newModel, effects) = foldl' (foldEffects writeEvent update) (oldModel, pure ()) actions
+          in (newModel, (oldModel /= newModel, effects))
+        effects
         pure (S.empty, shouldDraw)
     when shouldDraw $ do
       newVTree <-
         flip runView writeEvent
-          =<< view <$> readMVar modelMVar
+          =<< view <$> readIORef modelRef 
       oldVTree <- readIORef viewRef
       void $ waitForAnimationFrame
       Just oldVTree `diff` Just newVTree
@@ -80,12 +82,11 @@ startApp initialModel update view subs events = do
 foldEffects
   :: (action -> IO ())
   -> (action -> model -> Effect model action)
-  -> model
-  -> action
-  -> IO model
-foldEffects sink update model action =
+  -> (model, IO ()) -> action -> (model, IO ())
+foldEffects sink update = \(model, as) action ->
   case update action model of
-    NoEffect newModel -> pure newModel
-    Effect newModel eff -> do
-      void . forkIO . sink =<< eff
-      pure newModel
+    NoEffect newModel -> (newModel, as)
+    Effect newModel eff -> (newModel, newAs)
+      where
+        newAs = as >> do void . forkIO . sink =<< eff
+      
