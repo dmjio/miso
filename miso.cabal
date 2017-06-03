@@ -82,6 +82,7 @@ library
       Miso.Subscription.Mouse
       Miso.Subscription.WebSocket
       Miso.Subscription.Window
+      Miso.Types
     other-modules:
       Miso.Diff
       Miso.FFI

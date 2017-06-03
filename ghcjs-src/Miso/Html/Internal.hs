@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -71,6 +71,7 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import           Miso.String
 
+-- | Type def for constructing event subscriptions
 type Sub a m = IO m -> (a -> IO ()) -> IO ()
 
 -- | Virtual DOM implemented as a JavaScript `Object`
@@ -142,6 +143,9 @@ text t = View . const $ do
   set "text" (toMisoString t) vtree
   pure $ VTree vtree
 
+-- | For use with child reconciliaton algorithm
+-- Keys must be unique. Failure to satisfy this invariant
+-- gives undefined behavior at runtime.
 newtype Key = Key MisoString
 
 -- | Convert type into Key, ensure `Key` is unique
@@ -173,9 +177,9 @@ prop k v = Attribute . const $ \n -> do
   o <- getProp ("props" :: MisoString) n
   set k val (Object o)
 
--- | For defining delegated events with options
+-- | For defining delegated events
 --
--- > let clickHandler = on "click" $ \() -> Action
+-- > let clickHandler = on "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 on :: MisoString
@@ -190,6 +194,11 @@ foreign import javascript unsafe "$r = objectToJSON($1,$2);"
     -> JSVal -- ^ object with impure references to the DOM
     -> IO JSVal
 
+-- | For defining delegated events with options
+--
+-- > let clickHandler = on defaultOptions "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
 onWithOptions
   :: Options
   -> MisoString

@@ -1,15 +1,79 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeFamilies #-}
-module Miso.Subscription.History where
+{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeFamilies      #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Subscription.History
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
+module Miso.Subscription.History
+  ( getURI
+  , pushURI
+  , replaceURI
+  , back
+  , forward
+  , go
+  , uriSub
+  ) where
 
-import Data.JSString
+import Miso.String
 import GHCJS.Foreign.Callback
-import Network.URI
-
+import Network.URI hiding (path)
 import Miso.Html.Internal ( Sub )
+
+-- | Retrieves current URI of page
+getURI :: IO URI
+{-# INLINE getURI #-}
+getURI = do
+  URI <$> pure mempty
+      <*> pure Nothing
+      <*> do unpack <$> getPathName
+      <*> do unpack <$> getSearch
+      <*> pure mempty
+
+-- | Pushes a new URI onto the History stack
+pushURI :: URI -> IO ()
+{-# INLINE pushURI #-}
+pushURI uri = pushStateNoModel uri { uriPath = path }
+  where
+    path | uriPath uri == mempty = "/"
+         | otherwise = uriPath uri
+
+-- | Replaces current URI on stack
+replaceURI :: URI -> IO ()
+{-# INLINE replaceURI #-}
+replaceURI uri = replaceTo' uri { uriPath = path }
+  where
+    path | uriPath uri == mempty = "/"
+         | otherwise = uriPath uri
+
+-- | Navigates backwards
+back :: IO ()
+{-# INLINE back #-}
+back = back'
+
+-- | Navigates forwards
+forward :: IO ()
+{-# INLINE forward #-}
+forward = forward'
+
+-- | Jumps to a specific position in history
+go :: Int -> IO ()
+{-# INLINE go #-}
+go = go'
+
+-- | Subscription for `popState` events, from the History API
+uriSub :: (URI -> action) -> Sub action model
+uriSub = \f _ sink ->
+  onPopState =<< do
+     ps <- f <$> getURI
+     asyncCallback $ sink ps
 
 foreign import javascript unsafe "window.history.go($1);"
   go' :: Int -> IO ()
@@ -42,54 +106,3 @@ pushStateNoModel = pushStateNoModel' . pack . show
 replaceTo' :: URI -> IO ()
 {-# INLINE replaceTo' #-}
 replaceTo' = replaceState' . pack . show
-
-getURI :: IO URI
-{-# INLINE getURI #-}
-getURI = do
-  URI <$> pure mempty
-      <*> pure Nothing
-      <*> do unpack <$> getPathName
-      <*> do unpack <$> getSearch
-      <*> pure mempty
-
-newtype URL = URL String deriving (Show, Eq)
-
-newtype PopStateEvent = PopStateEvent { unPopStateEvent :: URI }
-  deriving (Show, Eq)
-
--- DMJ: goTo or pushState?
-data History action model = History {
-    goTo :: URI -> IO ()
-  , replaceTo :: URI -> IO ()
-  , back :: IO ()
-  , forward :: IO ()
-  , go :: Int -> IO ()
-  , initialPath :: URI
-  , popStateSubscription :: (PopStateEvent -> action) -> Sub action model
-  }
-
-historySignal :: IO (History a m)
-historySignal = do
-  initialPath <- getURI
-  pure History {
-    goTo = \uri -> do
-      let newUri = if uriPath uri == mempty
-                     then uri { uriPath = "/" }
-                     else uri
-      pushStateNoModel newUri
-  , replaceTo = \uri -> do
-      let newUri = if uriPath uri == mempty
-                     then uri { uriPath = "/" }
-                     else uri
-      replaceTo' newUri
-  , back = back'
-  , forward = forward'
-  , go = go'
-  , initialPath = initialPath
-  , popStateSubscription = \f _ sink ->
-      onPopState =<< do
-        ps <- PopStateEvent <$> getURI
-        asyncCallback $ sink (f ps)
-  }
-
-

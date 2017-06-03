@@ -42,6 +42,7 @@ instance FromJSON MisoString where
     withText "Not a valid string" $ \x ->
       pure (toMisoString x)
 
+-- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
 

@@ -1,16 +1,3 @@
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE StandaloneDeriving    #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html
@@ -23,22 +10,21 @@
 -- Example usage:
 --
 -- @
--- import Miso.Html
--- import qualified Data.Text as T
+-- import Miso
 --
 -- data IntAction = Add | Subtract
 --
 -- intView :: Int -> View IntAction
 -- intView n = div_ [ class_ "main" ] [
 --    btn_ [ onClick Add ] [ text_ "+" ]
---  , text_ $ T.pack (show n)
+--  , text_ $ pack (show n)
 --  , btn_ [ onClick Subtract ] [ text_ "-" ]
 --  ]
 -- @
 --
--- More information on how to use `miso` and `miso-html` is available on the miso wiki:
+-- More information on how to use `miso` is available on GitHub
 --
--- <http://github.com/haskell-miso/miso/wiki>
+-- <http://github.com/dmjio/miso>
 --
 ----------------------------------------------------------------------------
 module Miso.Html
@@ -48,7 +34,7 @@ module Miso.Html
    , module Miso.Html.Property
    ) where
 
-import Miso.Html.Element hiding (form_) 
+import Miso.Html.Element
 import Miso.Html.Event
 import Miso.Html.Internal
-import Miso.Html.Property
+import Miso.Html.Property hiding (form_)

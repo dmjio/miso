@@ -1,23 +1,33 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE KindSignatures  #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE KindSignatures      #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso
   ( startApp
+  , App (..)
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
+  , module Miso.Types
   ) where
 
 import           Control.Concurrent
 import           Control.Monad
 import           Data.IORef
 import           Data.List
-import qualified Data.Map as M
-import           Data.Sequence ((|>))
-import qualified Data.Sequence as S
+import           Data.Sequence                 ((|>))
+import qualified Data.Sequence                 as S
 import           JavaScript.Web.AnimationFrame
 
 import           Miso.Concurrent
@@ -25,21 +35,16 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
-import           Miso.Html hiding (foldl')
+import           Miso.Html                     hiding (foldl')
 import           Miso.Subscription
+import           Miso.Types
 
-startApp
-  :: Eq model
-  => model
-  -> (action -> model -> Effect model action)
-  -> (model -> View action)
-  -> [ Sub action model ]
-  -> M.Map MisoString Bool
-  -> IO ()
-startApp initialModel update view subs events = do
-  let initialView = view initialModel
+-- | Runs a miso application
+startApp :: Eq model => App model action -> IO ()
+startApp App {..} = do
+  let initialView = view model
   -- init empty Model
-  modelRef <- newIORef initialModel
+  modelRef <- newIORef model
   -- init empty actions
   actionsMVar <- newMVar S.empty
   -- init Notifier
@@ -66,14 +71,16 @@ startApp initialModel update view subs events = do
     shouldDraw <-
       modifyMVar actionsMVar $! \actions -> do
         (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel ->
-          let (newModel, effects) = foldl' (foldEffects writeEvent update) (oldModel, pure ()) actions
+          let (newModel, effects) =
+                foldl' (foldEffects writeEvent update)
+                  (oldModel, pure ()) actions
           in (newModel, (oldModel /= newModel, effects))
         effects
         pure (S.empty, shouldDraw)
     when shouldDraw $ do
       newVTree <-
         flip runView writeEvent
-          =<< view <$> readIORef modelRef 
+          =<< view <$> readIORef modelRef
       oldVTree <- readIORef viewRef
       void $ waitForAnimationFrame
       Just oldVTree `diff` Just newVTree
