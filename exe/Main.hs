@@ -10,36 +10,47 @@
 {-# LANGUAGE ExtendedDefaultRules      #-}
 module Main where
 
-import Miso
-import Miso.Subscription.Mouse
-
-default (MisoString)
+import qualified Data.Set          as S
+import           Miso
 
 main :: IO ()
-main = startApp emptyModel update view [ mouseSub HandleMouse ] defaultEvents
+main = startApp App {..}
+  where
+    model = Model (0,0) (0,0) mempty 0
+    events = defaultEvents
+    subs = [ mouseSub HandleMouse
+           , keyboardSub HandleKeys
+           , windowSub HandleWindow
+           ]
+    update = updateModel
+    view = appView
 
-emptyModel :: Model
-emptyModel = Model (0,0) 0
-
-update :: Action -> Model -> Effect Model Action
-update (HandleMouse newCoords) model = noEff newModel
+updateModel :: Action -> Model -> Effect Model Action
+updateModel (HandleMouse newCoords) model = noEff newModel
   where
     newModel = model { coords = newCoords }
-update AddOne model@Model{..} = noEff model { val = val + 1 }
-update SubOne model@Model{..} = noEff model { val = val - 1 }
-update Id model = noEff model
-update (Focus id') model =
+updateModel (HandleKeys newKeys) model = noEff newModel
+  where
+    newModel = model { keys = newKeys }
+updateModel (HandleWindow newWindow) model = noEff newModel
+  where
+    newModel = model { window = newWindow }
+updateModel AddOne model@Model{..} = noEff model { val = val + 1 }
+updateModel SubOne model@Model{..} = noEff model { val = val - 1 }
+updateModel Id model = noEff model
+updateModel (Focus id') model =
   model <# do
     focus id'
     pure Id
-
-update (Blur id') model =
+updateModel (Blur id') model =
   model <# do
     blur id'
     pure Id
 
 data Action
   = HandleMouse (Int, Int)
+  | HandleKeys (S.Set Int)
+  | HandleWindow (Int,Int)
   | AddOne
   | SubOne
   | Focus MisoString
@@ -48,12 +59,16 @@ data Action
 
 data Model = Model {
    coords :: (Int, Int)
+ , window :: (Int, Int)
+ , keys :: S.Set Int
  , val :: Int
 } deriving (Show, Eq)
 
-view :: Model -> View Action
-view Model{..} = div_ [] [
-   text (show coords)
+appView :: Model -> View Action
+appView Model{..} = div_ [] [
+   div_ [ ] [ text (show coords) ]
+ , div_ [ ] [ text (show keys) ]
+ , div_ [ ] [ text (show window) ]
  , div_ [ ] [
        button_ [ onClick AddOne ] [ text (pack "+") ]
      , text (show val)

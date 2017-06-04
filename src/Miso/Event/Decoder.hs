@@ -1,5 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Event.Decoder
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Event.Decoder
   ( -- * Decoder
     Decoder (..)

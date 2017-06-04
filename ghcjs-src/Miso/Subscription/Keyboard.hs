@@ -1,9 +1,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE OverloadedStrings   #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Subscription.Keyboard
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Subscription.Keyboard where
 
-import           Control.Concurrent
+import           Data.IORef
 import           Data.Set
 import qualified Data.Set as S
 import           GHCJS.Foreign.Callback
@@ -14,15 +23,17 @@ import           JavaScript.Object.Internal
 import           Miso.FFI
 import           Miso.Html.Internal ( Sub )
 
+-- | type for arrow keys currently pressed
+--  37 left arrow  ( x = -1 )
+--  38 up arrow    ( y =  1 )
+--  39 right arrow ( x =  1 )
+--  40 down arrow  ( y = -1 )
 data Arrows = Arrows {
    arrowX :: Int
  , arrowY :: Int
  } deriving (Show, Eq)
 
--- | 37 left arrow  ( x = -1 )
---   38 up arrow    ( y =  1 )
---   39 right arrow ( x =  1 )
---   40 down arrow  ( y = -1 )
+-- | Helper function to convert keys currently pressed to `Arrow`
 toArrows :: Set Int -> Arrows
 toArrows set =
   Arrows {
@@ -41,20 +52,23 @@ toArrows set =
 -- | Returns subscription for Keyboard
 keyboardSub :: (Set Int -> action) -> Sub action model
 keyboardSub f _ sink = do
-  keySetRef <- newMVar mempty
+  keySetRef <- newIORef mempty
   windowAddEventListener "keyup" =<< keyUpCallback keySetRef
   windowAddEventListener "keydown" =<< keyDownCallback keySetRef
     where
       keyDownCallback keySetRef = do
         asyncCallback1 $ \keyDownEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)
-          modifyMVar_ keySetRef $ \keys -> do
-            let newKeys = S.insert key keys
-            newKeys <$ sink (f newKeys)
+          newKeys <- atomicModifyIORef' keySetRef $ \keys ->
+             let new = S.insert key keys
+             in (new, new)
+          sink (f newKeys)
 
       keyUpCallback keySetRef = do
         asyncCallback1 $ \keyUpEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
-          modifyMVar_ keySetRef $ \keys -> do
-            let newKeys = S.delete key keys
-            newKeys <$ sink (f newKeys)
+          newKeys <- atomicModifyIORef' keySetRef $ \keys ->
+             let new = S.delete key keys
+             in (new, new)
+          sink (f newKeys)
+

@@ -10,7 +10,11 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.String ( ToMisoString(..), MisoString, module Data.Text ) where
+module Miso.String
+  ( ToMisoString (..)
+  , MisoString
+  , module Data.Text
+  ) where
 
 import           Data.Aeson
 import qualified Data.ByteString         as B
@@ -24,6 +28,7 @@ import qualified Data.Text.Lazy.Encoding as LT
 -- | String type swappable based on compiler
 type MisoString = Text
 
+-- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where toMisoString :: str -> MisoString
 instance ToMisoString MisoString where toMisoString = id
 instance ToMisoString String where toMisoString = T.pack

@@ -10,8 +10,8 @@
 -- Example usage:
 --
 -- @
+-- import Miso
 -- import Miso.Svg
--- import qualified Data.Text as T
 --
 -- intView :: Int -> View IntAction
 -- intView n = svg_ [ height_ "100", width "100" ] [
@@ -19,9 +19,9 @@
 --  ]
 -- @
 --
--- More information on how to use `miso` and `miso-html` is available on the miso wiki:
+-- More information on how to use `miso` is available on GitHub
 --
--- <http://github.com/haskell-miso/miso/wiki>
+-- <http://github.com/dmjio/miso>
 --
 ----------------------------------------------------------------------------
 module Miso.Svg
@@ -30,8 +30,8 @@ module Miso.Svg
    , module Miso.Svg.Event
    ) where
 
-import Miso.Svg.Attribute
-import Miso.Svg.Element hiding ( filter_, path_, title_, mask_
+import Miso.Svg.Attribute hiding ( filter_, path_, title_, mask_
                                , glyphRef_, clipPath_, colorProfile_
                                , cursor_, style_ )
+import Miso.Svg.Element
 import Miso.Svg.Event

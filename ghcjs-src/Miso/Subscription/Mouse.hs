@@ -1,5 +1,14 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Subscription.Mouse
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Subscription.Mouse (mouseSub) where
 
 import GHCJS.Foreign.Callback
@@ -10,6 +19,8 @@ import JavaScript.Object.Internal
 import Miso.FFI
 import Miso.Html.Internal ( Sub )
 
+-- | Captures mouse coordinates as they occur and writes them to
+-- an event sink
 mouseSub :: ((Int,Int) -> action) -> Sub action model
 mouseSub f _ = \sink -> do
   windowAddEventListener "mousemove" =<< do

@@ -1,53 +1,126 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
-module Miso.FFI where
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.FFI
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
+module Miso.FFI
+   ( windowAddEventListener
+   , windowRemoveEventListener
+   , windowInnerHeight
+   , windowInnerWidth
+   , now
+   , consoleLog
+   , stringify
+   , parse
+   , copyDOMIntoVTree
+   , delegator
+   , item
+   , jsvalToValue
+   ) where
 
-import           Data.Aeson hiding (Object)
+import           Control.Monad
+import           Control.Monad.Trans.Maybe
+import qualified Data.Aeson                 as AE
+import           Data.Aeson                 hiding (Object)
+import qualified Data.HashMap.Strict        as H
 import           Data.IORef
 import           Data.JSString
-import qualified Data.Map as M
+import qualified Data.JSString.Text         as JSS
+import qualified Data.Map                   as M
+import           Data.Scientific
+import qualified Data.Vector                as V
 import           GHCJS.Foreign.Callback
+import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           JavaScript.Array
-import           JavaScript.Object.Internal
+import qualified JavaScript.Object.Internal as OI
 import           Miso.Html.Internal
 
+-- | Convert JSVal to Maybe `Value`
+jsvalToValue :: JSVal -> IO (Maybe Value)
+jsvalToValue r = do
+  case jsonTypeOf r of
+    JSONNull -> return (Just Null)
+    JSONInteger -> liftM (AE.Number . flip scientific 0 . (toInteger :: Int -> Integer))
+         <$> fromJSVal r
+    JSONFloat -> liftM (AE.Number . (fromFloatDigits :: Double -> Scientific))
+         <$> fromJSVal r
+    JSONBool -> liftM AE.Bool <$> fromJSVal r
+    JSONString -> liftM AE.String <$> fromJSVal r
+    JSONArray -> liftM (Array . V.fromList) <$> fromJSVal r
+    JSONObject -> do
+        Just props <- fromJSVal =<< getKeys (OI.Object r)
+        runMaybeT $ do
+            propVals <- forM props $ \p -> do
+              v <- MaybeT (fromJSVal =<< OI.getProp p (OI.Object r))
+              return (JSS.textFromJSString p, v)
+            return (AE.Object (H.fromList propVals))
+
+-- | Retrieves keys
+foreign import javascript unsafe "$r = Object.keys($1);"
+  getKeys :: OI.Object -> IO JSVal
+
+-- | Adds event listener to window
 foreign import javascript unsafe "window.addEventListener($1, $2);"
   windowAddEventListener :: JSString -> Callback (JSVal -> IO ()) -> IO ()
 
+-- | Removes event listener from window
 foreign import javascript unsafe "window.removeEventListener($1, $2);"
   windowRemoveEventListener :: JSString -> Callback (JSVal -> IO ()) -> IO ()
 
+-- | Retrieves inner height
+foreign import javascript unsafe "$r = window.innerHeight;"
+  windowInnerHeight :: IO Int
+
+-- | Retrieves outer height
+foreign import javascript unsafe "$r = window.innerWidth;"
+  windowInnerWidth :: IO Int
+
+-- | Retrieve high performance time stamp
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
 
+-- | Console-logging
 foreign import javascript unsafe "console.log($1);"
   consoleLog :: JSVal -> IO ()
 
+-- | Converts a JS object into a JSON string
 foreign import javascript unsafe "$r = JSON.stringify($1);"
   stringify' :: JSVal -> IO JSString
 
 foreign import javascript unsafe "$r = JSON.parse($1);"
   parse' :: JSVal -> IO JSVal
 
+-- | Converts a JS object into a JSON string
 stringify :: ToJSON json => json -> IO JSString
 {-# INLINE stringify #-}
 stringify j = stringify' =<< toJSVal (toJSON j)
 
+-- | Parses a JSString
 parse :: FromJSON json => JSVal -> IO (Either String json)
 {-# INLINE parse #-}
 parse jval = do
-  Just val <- fromJSVal =<< parse' jval
+  Just val <- jsvalToValue =<< parse' jval
   pure $ case fromJSON val of
     Success x -> Right x
     Error y -> Left y
 
+-- | Indexing into a JS object
 foreign import javascript unsafe "$r = $1[$2];"
-  item :: JSVal -> Int -> IO JSVal
+  item :: JSVal -> JSString -> IO JSVal
 
-foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
-  applyFunction :: JSVal -> JSString -> JSArray -> IO JSVal
+-- -- | Function application
+-- foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
+--   applyFunction :: JSVal -> JSString -> JSArray -> IO JSVal
 
+-- | Copies DOM pointers into virtual dom
+-- entry point into isomorphic javascript
 foreign import javascript unsafe "copyDOMIntoVTree($1);"
   copyDOMIntoVTree :: VTree -> IO ()
 
@@ -57,6 +130,7 @@ foreign import javascript unsafe "delegate($1, $2);"
      -> Callback (IO JSVal)       -- ^ Virtual DOM callback
      -> IO ()
 
+-- | Entry point for event delegation
 delegator
   :: IORef VTree
   -> M.Map JSString Bool
@@ -64,7 +138,6 @@ delegator
 delegator vtreeRef es = do
   evts <- toJSVal (M.toList es)
   getVTreeFromRef <- syncCallback' $ do
-    VTree (Object val) <- readIORef vtreeRef
+    VTree (OI.Object val) <- readIORef vtreeRef
     pure val
   delegateEvent evts getVTreeFromRef
- 

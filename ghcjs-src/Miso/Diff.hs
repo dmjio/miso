@@ -1,3 +1,12 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Diff
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Diff ( diff ) where
 
 import GHCJS.Foreign.Internal     hiding (Object)
@@ -6,6 +15,7 @@ import JavaScript.Object
 import JavaScript.Object.Internal
 import Miso.Html.Internal
 
+-- | Entry point for diffing / patching algorithm
 diff :: Maybe VTree -> Maybe VTree -> IO ()
 diff current new = do
   body <- getBody

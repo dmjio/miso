@@ -170,12 +170,22 @@ newtype AllowDrop = AllowDrop Bool
 prop :: ToJSON a => MisoString -> a -> Attribute model
 prop k v = P k (toJSON v)  
 
+-- | For defining delegated events
+--
+-- > let clickHandler = on "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
 on :: MisoString
    -> Decoder r
    -> (r -> action)
    -> Attribute action
 on _ _ _ = E ()
 
+-- | For defining delegated events with options
+--
+-- > let clickHandler = on defaultOptions "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
 onWithOptions
    :: Options
    -> MisoString

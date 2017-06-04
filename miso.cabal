@@ -26,6 +26,7 @@ executable main
   main-is: Main.hs
   hs-source-dirs: exe
   build-depends:
+    aeson,
     base,
     containers,
     miso
@@ -55,15 +56,19 @@ library
     aeson,
     base,
     bytestring,
-    network-uri,
     containers,
+    network-uri,
     text
   if impl(ghcjs)
     hs-source-dirs:
       ghcjs-src
     build-depends:
       ghcjs-base,
-      containers
+      containers,
+      scientific,
+      unordered-containers,
+      transformers,
+      vector
     js-sources:
       jsbits/diff.js
       jsbits/delegate.js
@@ -82,6 +87,8 @@ library
       Miso.Subscription.Mouse
       Miso.Subscription.WebSocket
       Miso.Subscription.Window
+      Miso.Subscription.SSE
+      Miso.Types
     other-modules:
       Miso.Diff
       Miso.FFI
