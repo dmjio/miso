@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.SSE
@@ -11,20 +12,22 @@
 ----------------------------------------------------------------------------
 module Miso.Subscription.SSE where
 
+import Data.Aeson
 import GHCJS.Foreign.Callback
 import GHCJS.Types
-
-import Miso.String
+import Miso.FFI
 import Miso.Html.Internal     ( Sub )
+import Miso.String
 
 -- | Server-sent events Subscription
-sseSub :: MisoString -> (SSE -> action) -> Sub action model
+sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action model
 sseSub url f _ = \sink -> do
   es <- newEventSource url
   onMessage es =<< do
     asyncCallback1 $ \val -> do
-      s <- SSEMessage <$> getData val
-      sink $ f s
+      getData val >>= parse >>= \case
+        Left k -> error k
+        Right x -> sink $ f (SSEMessage x)
   onError es =<< do
     asyncCallback $
       sink (f SSEError)
@@ -33,14 +36,14 @@ sseSub url f _ = \sink -> do
       sink (f SSEClose)
 
 -- | Server-sent events data
-data SSE
-  = SSEMessage MisoString
+data SSE message
+  = SSEMessage message
   | SSEClose
   | SSEError
   deriving (Show, Eq)
 
 foreign import javascript unsafe "$r = $1.data;"
-  getData :: JSVal -> IO JSString
+  getData :: JSVal -> IO JSVal
 
 newtype EventSource = EventSource JSVal
 

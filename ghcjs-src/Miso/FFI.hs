@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
@@ -20,17 +21,50 @@ module Miso.FFI
    , copyDOMIntoVTree
    , delegator
    , item
+   , jsvalToValue
    ) where
 
+import           Control.Monad
+import           Control.Monad.Trans.Maybe
+import qualified Data.Aeson                 as AE
 import           Data.Aeson                 hiding (Object)
+import qualified Data.HashMap.Strict        as H
 import           Data.IORef
 import           Data.JSString
+import qualified Data.JSString.Text         as JSS
 import qualified Data.Map                   as M
+import           Data.Scientific
+import qualified Data.Vector                as V
 import           GHCJS.Foreign.Callback
+import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           JavaScript.Object.Internal
+import qualified JavaScript.Object.Internal as OI
 import           Miso.Html.Internal
+
+-- | Convert JSVal to Maybe `Value`
+jsvalToValue :: JSVal -> IO (Maybe Value)
+jsvalToValue r = do
+  case jsonTypeOf r of
+    JSONNull -> return (Just Null)
+    JSONInteger -> liftM (AE.Number . flip scientific 0 . (toInteger :: Int -> Integer))
+         <$> fromJSVal r
+    JSONFloat -> liftM (AE.Number . (fromFloatDigits :: Double -> Scientific))
+         <$> fromJSVal r
+    JSONBool -> liftM AE.Bool <$> fromJSVal r
+    JSONString -> liftM AE.String <$> fromJSVal r
+    JSONArray -> liftM (Array . V.fromList) <$> fromJSVal r
+    JSONObject -> do
+        Just props <- fromJSVal =<< getKeys (OI.Object r)
+        runMaybeT $ do
+            propVals <- forM props $ \p -> do
+              v <- MaybeT (fromJSVal =<< OI.getProp p (OI.Object r))
+              return (JSS.textFromJSString p, v)
+            return (AE.Object (H.fromList propVals))
+
+-- | Retrieves keys
+foreign import javascript unsafe "$r = Object.keys($1);"
+  getKeys :: OI.Object -> IO JSVal
 
 -- | Adds event listener to window
 foreign import javascript unsafe "window.addEventListener($1, $2);"
@@ -72,7 +106,7 @@ stringify j = stringify' =<< toJSVal (toJSON j)
 parse :: FromJSON json => JSVal -> IO (Either String json)
 {-# INLINE parse #-}
 parse jval = do
-  Just val <- fromJSVal =<< parse' jval
+  Just val <- jsvalToValue =<< parse' jval
   pure $ case fromJSON val of
     Success x -> Right x
     Error y -> Left y
@@ -104,6 +138,6 @@ delegator
 delegator vtreeRef es = do
   evts <- toJSVal (M.toList es)
   getVTreeFromRef <- syncCallback' $ do
-    VTree (Object val) <- readIORef vtreeRef
+    VTree (OI.Object val) <- readIORef vtreeRef
     pure val
   delegateEvent evts getVTreeFromRef
