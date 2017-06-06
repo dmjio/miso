@@ -59,6 +59,10 @@ startApp App {..} = do
     action <- getEvent
     modifyMVar_ actionsMVar $! \actions ->
       pure (actions |> action)
+  -- Hack to get around `BlockedIndefinitelyOnMVar` exception
+  -- that occurs when no event handlers are present on a template
+  -- and `notify` is no longer in scope
+  void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
   -- Create virtual dom, perform initial diff
   initialVTree <- flip runView writeEvent initialView
   Nothing `diff` (Just initialVTree)
