@@ -18,9 +18,9 @@ module Miso.Subscription.WebSocket
   ( WebSocket (..)
   , URL (..)
   , Protocols (..)
+  , SocketState (..)
   , websocketSub
   , send
-  , close
   , connect
   , getSocketState
   ) where
@@ -34,18 +34,17 @@ import GHC.Generics
 import GHCJS.Foreign.Callback
 import GHCJS.Marshal
 import GHCJS.Types
-import JavaScript.TypedArray.ArrayBuffer
-import JavaScript.Web.Blob.Internal      hiding (close)
-import Miso.FFI
-import Miso.Html.Internal                ( Sub )
-import Miso.String
-import Prelude                           hiding (map)
+import Prelude                hiding (map)
 import System.IO.Unsafe
+
+import Miso.FFI
+import Miso.Html.Internal     ( Sub )
+import Miso.String
 
 -- | WebSocket connection messages
 data WebSocket action
   = WebSocketMessage action
-  | WebSocketClose
+  | WebSocketClose CloseCode WasClean Reason
   | WebSocketOpen
   | WebSocketError MisoString
 
@@ -75,37 +74,27 @@ websocketSub (URL u) (Protocols ps) f _ sink = do
         =<< Just <$> createWebSocket u ps
   onOpen socket =<< do
     asyncCallback $ do
-      putStrLn "opened"
       sink (f WebSocketOpen)
   onMessage socket =<< do
     asyncCallback1 $ \v -> do
       d <- parse =<< getData v
       sink $ f (WebSocketMessage d)
   onClose socket =<< do
-    asyncCallback $ do
-      putStrLn "closed"
-      sink (f WebSocketClose)
+    asyncCallback1 $ \e -> do
+      code <- codeToCloseCode <$> getCode e
+      reason <- getReason e
+      clean <- wasClean e
+      sink $ f (WebSocketClose code clean reason)
   onError socket =<< do
     asyncCallback1 $ \v -> do
-      putStrLn "error"
       d <- parse =<< getData v
       sink $ f (WebSocketError d)
 
 send :: ToJSON a => a -> IO ()
 {-# INLINE send #-}
 send x = do
-  putStrLn "reading socket"
   Just socket <- readIORef websocket
-  putStrLn "got socket"
   sendJson' socket x
-
-close :: Maybe Int -> Maybe JSString -> IO ()
-{-# INLINE close #-}
-close value reason = do
-  Just ws <- readIORef websocket
-  closeSocket' ws
-    (fromMaybe 1000 value)
-    (fromMaybe mempty reason)
 
 connect :: URL -> Protocols -> IO ()
 {-# INLINE connect #-}
@@ -122,27 +111,9 @@ newtype URL = URL MisoString
 newtype Protocols = Protocols [MisoString]
   deriving (Show, Eq)
 
-foreign import javascript unsafe "$1.close($2,$3)"
-  closeSocket' :: Socket -> Int -> JSString -> IO ()
+newtype WasClean = WasClean Bool deriving (Show, Eq)
 
-closeSocket :: Socket -> Maybe Int -> Maybe JSString -> IO ()
-{-# INLINE closeSocket #-}
-closeSocket ws value reason =
-  closeSocket' ws
-    (fromMaybe 1000 value)
-    (fromMaybe mempty reason)
-
-foreign import javascript unsafe "$1.binaryType === 'blob' ? 0 : 1"
-  binaryType' :: Socket -> IO Int
-
-foreign import javascript unsafe "$1.bufferedAmount"
-  bufferedAmount :: Socket -> IO Int
-
-foreign import javascript unsafe "$1.extensions"
-  extensions :: Socket -> IO JSString
-
-foreign import javascript unsafe "$1.url"
-  url :: Socket -> IO JSString
+newtype Reason = Reason MisoString deriving (Show, Eq)
 
 foreign import javascript unsafe "$r = new WebSocket($1, $2);"
   createWebSocket' :: JSString -> JSVal -> IO Socket
@@ -150,28 +121,23 @@ foreign import javascript unsafe "$r = new WebSocket($1, $2);"
 foreign import javascript unsafe "$r = $1.readyState;"
   getSocketState' :: Socket -> IO Int
 
+data SocketState
+  = CONNECTING -- ^ 0
+  | OPEN       -- ^ 1
+  | CLOSING    -- ^ 2
+  | CLOSED     -- ^ 3
+  deriving (Show, Eq, Ord, Enum)
+
+getSocketState :: IO SocketState
 getSocketState = do
   Just ws <- readIORef websocket
-  getSocketState' ws
+  toEnum <$> getSocketState' ws
 
 foreign import javascript unsafe "$1.send($2);"
   send' :: Socket -> JSString -> IO ()
 
 sendJson' :: ToJSON json => Socket -> json -> IO ()
 sendJson' socket m = send' socket =<< stringify m
-
-foreign import javascript unsafe "$1.send($2);"
-  sendArrayBuffer' :: Socket -> ArrayBuffer -> IO ()
-
-foreign import javascript unsafe "$1.send($2);"
-  sendBlob' :: Socket -> Blob -> IO ()
-
-foreign import javascript unsafe "$r = $1.protocol;"
-  protocol :: Socket -> IO JSString
-
--- getSocketState :: Socket -> IO State
--- {-# INLINE getSocketState #-}
--- getSocketState s = toEnum <$> getSocketState' s
 
 createWebSocket :: JSString -> [JSString] -> IO Socket
 {-# INLINE createWebSocket #-}
@@ -182,7 +148,7 @@ foreign import javascript unsafe "$1.onopen = $2"
   onOpen :: Socket -> Callback (IO ()) -> IO ()
 
 foreign import javascript unsafe "$1.onclose = $2"
-  onClose :: Socket -> Callback (IO ()) -> IO ()
+  onClose :: Socket -> Callback (JSVal -> IO ()) -> IO ()
 
 foreign import javascript unsafe "$1.onmessage = $2"
   onMessage :: Socket -> Callback (JSVal -> IO ()) -> IO ()
@@ -190,62 +156,17 @@ foreign import javascript unsafe "$1.onmessage = $2"
 foreign import javascript unsafe "$1.onerror = $2"
   onError :: Socket -> Callback (JSVal -> IO ()) -> IO ()
 
-foreign import javascript unsafe "$r = $1.type"
-  getType :: JSVal -> IO JSString
-
 foreign import javascript unsafe "$r = $1.data"
   getData :: JSVal -> IO JSVal
 
-foreign import javascript unsafe "$r = typeof $1;"
-  typeOf :: JSVal -> IO JSString
+foreign import javascript unsafe "$r = $1.wasClean"
+  wasClean :: JSVal -> IO WasClean
 
-foreign import javascript unsafe "$r = $1 instanceof Blob"
-  isBlob :: JSVal -> IO Bool
+foreign import javascript unsafe "$r = $1.code"
+  getCode :: JSVal -> IO Int
 
-foreign import javascript unsafe "$r = $1 instanceof ArrayBuffer"
-  isArrayBuffer :: JSVal -> IO Bool
-
--- | Note, you can only 'send' if an open event has been received
--- createCallback
---   :: FromJSON m
---   => (WebSocket m -> IO ())
---   -> IO (Callback (JSVal -> IO ()))
--- createCallback sink =
---   asyncCallback1 $ \o -> getType o >>= flip go o
---    where
---      go "open" _ = sink OpenEvent
---      go "message" o = do
---        dat <- getData o
---        typ <- typeOf dat
---        case typ of
---          "object" -> do
---             blob <- isBlob o
---             when blob $ sink $ Message $ BlobData (SomeBlob dat)
---             arrayBuffer <- isArrayBuffer o
---             when arrayBuffer $
---               sink $ MessageEvent $ ArrayBufferData (unsafeCoerce o)
---          "string" -> do
---             result <- parse dat
---             sink $ MessageEvent (JSON result)
---          _ -> pure ()
---      go "error" _ = sink ErrorEvent
---      go "close" o = do
---        code <- getCode o
---        sink =<< CloseEvent
---             <$> pure code
---             <*> pure (codeToCloseCode code)
---             <*> getReason o
---             <*> wasClean o
---      go _ _ = pure ()
-
--- foreign import javascript unsafe "$r = $1.wasClean"
---   wasClean :: JSVal -> IO WasClean
-
--- foreign import javascript unsafe "$r = $1.code"
---   getCode :: JSVal -> IO Code
-
--- foreign import javascript unsafe "$r = $1.reason"
---   getReason :: JSVal -> IO Reason
+foreign import javascript unsafe "$r = $1.reason"
+  getReason :: JSVal -> IO Reason
 
 newtype Socket = Socket JSVal
 
@@ -286,22 +207,21 @@ data CloseCode
 instance ToJSVal CloseCode
 instance FromJSVal CloseCode
 
-
--- codeToCloseCode :: Code -> CloseCode
--- codeToCloseCode (Code x) = go x
---   where
---     go 1000 = CLOSE_NORMAL
---     go 1001 = CLOSE_GOING_AWAY
---     go 1002 = CLOSE_PROTOCOL_ERROR
---     go 1003 = CLOSE_UNSUPPORTED
---     go 1005 = CLOSE_NO_STATUS
---     go 1006 = CLOSE_ABNORMAL
---     go 1007 = Unsupported_Data
---     go 1008 = Policy_Violation
---     go 1009 = CLOSE_TOO_LARGE
---     go 1010 = Missing_Extension
---     go 1011 = Internal_Error
---     go 1012 = Service_Restart
---     go 1013 = Try_Again_Later
---     go 1015 = TLS_Handshake
---     go n    = OtherCode n
+codeToCloseCode :: Int -> CloseCode
+codeToCloseCode = go
+  where
+    go 1000 = CLOSE_NORMAL
+    go 1001 = CLOSE_GOING_AWAY
+    go 1002 = CLOSE_PROTOCOL_ERROR
+    go 1003 = CLOSE_UNSUPPORTED
+    go 1005 = CLOSE_NO_STATUS
+    go 1006 = CLOSE_ABNORMAL
+    go 1007 = Unsupported_Data
+    go 1008 = Policy_Violation
+    go 1009 = CLOSE_TOO_LARGE
+    go 1010 = Missing_Extension
+    go 1011 = Internal_Error
+    go 1012 = Service_Restart
+    go 1013 = Try_Again_Later
+    go 1015 = TLS_Handshake
+    go n    = OtherCode n
