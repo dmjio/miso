@@ -36,7 +36,7 @@ function delegateEvent (event, obj, stack, parentStack) {
           if (obj.events[event.type]) {
 	      var eventObj = obj.events[event.type],
 		  options = eventObj.options;
-            if (options.preventDefault) event.preventDefault();
+              if (options.preventDefault) event.preventDefault();
           eventObj.runEvent(event);
 	    if (!options.stopPropagation)
 	     propogateWhileAble (parentStack, event);

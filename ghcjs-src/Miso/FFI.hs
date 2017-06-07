@@ -103,13 +103,13 @@ stringify :: ToJSON json => json -> IO JSString
 stringify j = stringify' =<< toJSVal (toJSON j)
 
 -- | Parses a JSString
-parse :: FromJSON json => JSVal -> IO (Either String json)
+parse :: FromJSON json => JSVal -> IO json
 {-# INLINE parse #-}
 parse jval = do
   Just val <- jsvalToValue =<< parse' jval
-  pure $ case fromJSON val of
-    Success x -> Right x
-    Error y -> Left y
+  case fromJSON val of
+    Success x -> pure x
+    Error y -> error y
 
 -- | Indexing into a JS object
 foreign import javascript unsafe "$r = $1[$2];"
