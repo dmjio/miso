@@ -100,4 +100,3 @@ foldEffects sink update = \(model, as) action ->
     Effect newModel eff -> (newModel, newAs)
       where
         newAs = as >> do void . forkIO . sink =<< eff
-      

@@ -1,84 +1,87 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE ExtendedDefaultRules      #-}
+{-# LANGUAGE ExtendedDefaultRules       #-}
 module Main where
 
-import qualified Data.Set          as S
-import           Miso
+import Data.Aeson
+import GHC.Generics
+import Miso
 
 main :: IO ()
 main = startApp App {..}
   where
-    model = Model (0,0) (0,0) mempty 0
+    model = Model Ok
     events = defaultEvents
-    subs = [ mouseSub HandleMouse
-           , keyboardSub HandleKeys
-           , windowSub HandleWindow
-           ]
+    subs = [ websocketSub uri prots HandleWebSocket ]
     update = updateModel
     view = appView
 
+uri = URL "ws://echo.websocket.org"
+prots = Protocols [ ]
+
+
 updateModel :: Action -> Model -> Effect Model Action
-updateModel (HandleMouse newCoords) model = noEff newModel
+updateModel (HandleWebSocket (WebSocketMessage m)) model = noEff newModel
   where
-    newModel = model { coords = newCoords }
-updateModel (HandleKeys newKeys) model = noEff newModel
-  where
-    newModel = model { keys = newKeys }
-updateModel (HandleWindow newWindow) model = noEff newModel
-  where
-    newModel = model { window = newWindow }
-updateModel AddOne model@Model{..} = noEff model { val = val + 1 }
-updateModel SubOne model@Model{..} = noEff model { val = val - 1 }
+    newModel = model { msg = m }
+updateModel SendOk model =
+  model <# do
+    send Ok >> pure Id
+updateModel SendHello model =
+  model <# do
+    send Hello >> pure Id
+updateModel CloseSocket model =
+  model <# do
+    putStrLn "closing..."
+    close Nothing Nothing >> pure Id
+updateModel GetStatus model =
+  model <# do
+    putStrLn "socket state"
+    print =<< getSocketState
+    pure Id
+updateModel ConnectSocket model =
+  model <# do
+    connect uri prots >> pure Id
 updateModel Id model = noEff model
-updateModel (Focus id') model =
-  model <# do
-    focus id'
-    pure Id
-updateModel (Blur id') model =
-  model <# do
-    blur id'
-    pure Id
+updateModel _ model = noEff model
+
+data Message
+  = Hello
+  | Goodbye
+  | Ok
+  deriving (Eq, Show, Generic)
+
+instance ToJSON Message
+instance FromJSON Message
 
 data Action
-  = HandleMouse (Int, Int)
-  | HandleKeys (S.Set Int)
-  | HandleWindow (Int,Int)
-  | AddOne
-  | SubOne
-  | Focus MisoString
-  | Blur MisoString
+  = HandleWebSocket (WebSocket Message)
+  | SendOk
+  | SendHello
+  | CloseSocket
+  | ConnectSocket
+  | GetStatus
   | Id
 
 data Model = Model {
-   coords :: (Int, Int)
- , window :: (Int, Int)
- , keys :: S.Set Int
- , val :: Int
+  msg :: Message
 } deriving (Show, Eq)
 
 appView :: Model -> View Action
 appView Model{..} = div_ [] [
-   div_ [ ] [ text (show coords) ]
- , div_ [ ] [ text (show keys) ]
- , div_ [ ] [ text (show window) ]
- , div_ [ ] [
-       button_ [ onClick AddOne ] [ text (pack "+") ]
-     , text (show val)
-     , button_ [ onClick SubOne ] [ text (pack "-") ]
-   ]
- , div_ [ ] [
-       button_ [ onClick (Focus "input") ] [ text $ pack "focus on input" ]
-     , input_ [ type_ "text", id_ "input", autofocus_ True ] []
-     , button_ [ onClick (Blur "input") ] [ text $ pack "blur input"]
-     ]
+   div_ [ ] [ text (show msg) ]
+ , button_ [ onClick SendOk ] [ text (pack "say hi") ]
+ , button_ [ onClick SendHello ] [ text (pack "say hello") ]
+ , button_ [ onClick CloseSocket ] [ text (pack "close") ]
+ , button_ [ onClick ConnectSocket ] [ text (pack "connect") ]
+ , button_ [ onClick GetStatus ] [ text (pack "get status") ]
  ]
-
 

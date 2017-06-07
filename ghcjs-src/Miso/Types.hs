@@ -28,3 +28,4 @@ data App model action = App
   , events :: M.Map MisoString Bool
   -- ^ List of delegated events that the body element will listen for
   }
+
