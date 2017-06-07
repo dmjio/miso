@@ -38,10 +38,6 @@ updateModel SendOk model =
 updateModel SendHello model =
   model <# do
     send Hello >> pure Id
-updateModel CloseSocket model =
-  model <# do
-    putStrLn "closing..."
-    close Nothing Nothing >> pure Id
 updateModel GetStatus model =
   model <# do
     putStrLn "socket state"
@@ -50,6 +46,9 @@ updateModel GetStatus model =
 updateModel ConnectSocket model =
   model <# do
     connect uri prots >> pure Id
+updateModel Alert model =
+  model <# do
+    alert "sup" >> pure Id
 updateModel Id model = noEff model
 updateModel _ model = noEff model
 
@@ -66,9 +65,8 @@ data Action
   = HandleWebSocket (WebSocket Message)
   | SendOk
   | SendHello
-  | CloseSocket
-  | ConnectSocket
   | GetStatus
+  | Alert
   | Id
 
 data Model = Model {
@@ -80,8 +78,7 @@ appView Model{..} = div_ [] [
    div_ [ ] [ text (show msg) ]
  , button_ [ onClick SendOk ] [ text (pack "say hi") ]
  , button_ [ onClick SendHello ] [ text (pack "say hello") ]
- , button_ [ onClick CloseSocket ] [ text (pack "close") ]
- , button_ [ onClick ConnectSocket ] [ text (pack "connect") ]
  , button_ [ onClick GetStatus ] [ text (pack "get status") ]
+ , button_ [ onClick Alert ] [ text (pack "alert") ]
  ]
 
