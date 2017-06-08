@@ -44,8 +44,6 @@ module Miso.Html.Internal (
   -- * Handling events
   , on
   , onWithOptions
-  -- * String
-  , module Miso.String
   -- * Events
   , defaultEvents
   -- * Subscription type
@@ -53,7 +51,7 @@ module Miso.Html.Internal (
   ) where
 
 import           Control.Monad
-import           Data.Aeson hiding (Object)
+-- import           Data.Aeson hiding (Object)
 import           Data.Aeson.Types (parseEither)
 import           Data.Monoid
 import           Data.JSString
@@ -70,6 +68,7 @@ import           JavaScript.Object.Internal (Object (Object))
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import           Miso.String
+import           Miso.FFI
 
 -- | Type def for constructing event subscriptions
 type Sub a m = IO m -> (a -> IO ()) -> IO ()
@@ -212,8 +211,7 @@ onWithOptions options eventName Decoder{..} toAction =
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
    cb <- jsval <$> (asyncCallback1 $ \e -> do
-        -- DMJ: This breaks on 8.x (FromJSVal Value instance)
-       Just (v :: Value) <- fromJSVal =<< objectToJSON decodeAtVal e
+       Just v <- jsvalToValue =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
          Right r -> sink (toAction r))

@@ -20,14 +20,24 @@ description:
              <http://hackage.haskell.org/package/miso>
             .
 
-executable main
-  if !impl(ghcjs)
+extra-source-files:
+  examples/todo-mvc/index.html
+
+flag examples
+  default:
+    False
+  description:
+    Builds Miso's examples
+
+executable todo-mvc
+  if !impl(ghcjs) || !flag(examples)
     buildable: False
-  main-is: Main.hs
-  hs-source-dirs: exe
+  main-is:
+    Main.hs
+  hs-source-dirs:
+    examples/todo-mvc
   build-depends:
     aeson,
-    base,
     containers,
     miso
   default-language:
@@ -54,7 +64,7 @@ library
   hs-source-dirs: src
   build-depends:
     aeson,
-    base,
+    base < 5,
     bytestring,
     containers,
     network-uri,
@@ -92,6 +102,7 @@ library
     other-modules:
       Miso.Diff
       Miso.FFI
+      Miso.Delegate
   else
     build-depends:
       lucid,

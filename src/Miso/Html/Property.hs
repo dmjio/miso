@@ -117,6 +117,7 @@ module Miso.Html.Property
    ) where
 
 import           Miso.Html.Internal
+import           Miso.String
 
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
@@ -381,4 +382,4 @@ autofocus_ = boolProp "autofocus"
 -- | Set "className" property
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 class_ ::  MisoString -> Attribute action
-class_ = textProp "className"
+class_ = textProp "class"

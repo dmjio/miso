@@ -56,8 +56,9 @@ module Miso.Html.Event
   , onDrop
   ) where
 
-import Miso.Html.Internal ( Attribute, on, onWithOptions, MisoString )
+import Miso.Html.Internal ( Attribute, on, onWithOptions )
 import Miso.Event
+import Miso.String (MisoString)
 
 -- | `blur` event defined with custom options
 --

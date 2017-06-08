@@ -104,6 +104,7 @@ module Miso.Svg.Element
   ) where
 
 import           Miso.Html.Internal hiding (style_)
+import           Miso.String        (MisoString)
 import qualified Prelude            as P
 
 -- | Used to construct a `VNode` with namespace "svg"

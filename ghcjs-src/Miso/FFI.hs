@@ -19,9 +19,9 @@ module Miso.FFI
    , stringify
    , parse
    , copyDOMIntoVTree
-   , delegator
    , item
    , jsvalToValue
+   , delegateEvent
    ) where
 
 import           Control.Monad
@@ -29,10 +29,8 @@ import           Control.Monad.Trans.Maybe
 import qualified Data.Aeson                 as AE
 import           Data.Aeson                 hiding (Object)
 import qualified Data.HashMap.Strict        as H
-import           Data.IORef
 import           Data.JSString
 import qualified Data.JSString.Text         as JSS
-import qualified Data.Map                   as M
 import           Data.Scientific
 import qualified Data.Vector                as V
 import           GHCJS.Foreign.Callback
@@ -40,7 +38,6 @@ import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
-import           Miso.Html.Internal
 
 -- | Convert JSVal to Maybe `Value`
 jsvalToValue :: JSVal -> IO (Maybe Value)
@@ -115,14 +112,10 @@ parse jval = do
 foreign import javascript unsafe "$r = $1[$2];"
   item :: JSVal -> JSString -> IO JSVal
 
--- -- | Function application
--- foreign import javascript unsafe "$r = $1[$2].apply($1, $3);"
---   applyFunction :: JSVal -> JSString -> JSArray -> IO JSVal
-
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
 foreign import javascript unsafe "copyDOMIntoVTree($1);"
-  copyDOMIntoVTree :: VTree -> IO ()
+  copyDOMIntoVTree :: JSVal -> IO ()
 
 foreign import javascript unsafe "delegate($1, $2);"
   delegateEvent
@@ -130,14 +123,3 @@ foreign import javascript unsafe "delegate($1, $2);"
      -> Callback (IO JSVal)       -- ^ Virtual DOM callback
      -> IO ()
 
--- | Entry point for event delegation
-delegator
-  :: IORef VTree
-  -> M.Map JSString Bool
-  -> IO ()
-delegator vtreeRef es = do
-  evts <- toJSVal (M.toList es)
-  getVTreeFromRef <- syncCallback' $ do
-    VTree (OI.Object val) <- readIORef vtreeRef
-    pure val
-  delegateEvent evts getVTreeFromRef

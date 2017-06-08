@@ -34,10 +34,10 @@ import           Miso.Concurrent
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
-import           Miso.FFI
-import           Miso.Html                     hiding (foldl')
+import           Miso.Html
 import           Miso.Subscription
 import           Miso.Types
+import           Miso.Delegate
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> IO ()
