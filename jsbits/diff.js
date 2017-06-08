@@ -66,7 +66,7 @@ function diffProps (cProps, nProps, node, isSvg) {
 	     if (isSvg || !(c in node))
 	       node.removeAttribute(c, cProps[c]);
 	     else
-	       node[c] = null;
+	       node[c] = "";
 	  } else {
 	   /* Already on DOM from previous diff, continue */
 	   if (newProp === cProps[c]) continue;

@@ -14,6 +14,7 @@ module Miso.Types
 import qualified Data.Map           as M
 import           Miso.Effect
 import           Miso.Html.Internal
+import           Miso.String
 
 -- | Application entry point
 data App model action = App
