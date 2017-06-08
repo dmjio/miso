@@ -37,6 +37,7 @@ executable todo-mvc
   hs-source-dirs:
     examples/todo-mvc
   build-depends:
+    base < 5,
     aeson,
     containers,
     miso
