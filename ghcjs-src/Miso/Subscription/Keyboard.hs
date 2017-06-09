@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -60,7 +61,7 @@ keyboardSub f _ sink = do
         asyncCallback1 $ \keyDownEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)
           newKeys <- atomicModifyIORef' keySetRef $ \keys ->
-             let new = S.insert key keys
+             let !new = S.insert key keys
              in (new, new)
           sink (f newKeys)
 
@@ -68,7 +69,7 @@ keyboardSub f _ sink = do
         asyncCallback1 $ \keyUpEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
           newKeys <- atomicModifyIORef' keySetRef $ \keys ->
-             let new = S.delete key keys
+             let !new = S.delete key keys
              in (new, new)
           sink (f newKeys)
 
