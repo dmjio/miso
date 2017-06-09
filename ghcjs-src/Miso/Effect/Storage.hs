@@ -29,11 +29,12 @@ module Miso.Effect.Storage
   , sessionStorageLength
   ) where
 
-import Control.Monad
-import Data.Aeson              hiding (Object, String)
+import Data.Aeson     hiding (Object, String)
 import Data.JSString
+import GHCJS.Nullable
 import GHCJS.Types
-import GHCJS.Marshal
+
+import Miso.FFI
 
 -- | Retrieve local storage
 getLocalStorage, getSessionStorage ::
@@ -41,35 +42,44 @@ getLocalStorage, getSessionStorage ::
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
-  :: FromJSON b => (t -> IO JSVal) -> t -> IO (Either String b)
+  :: FromJSON b => (t -> IO (Maybe JSVal)) -> t -> IO (Either String b)
 getStorageCommon f key = do
-  result :: Maybe Value <- fromJSVal =<< f key
-  pure $ case result of
-    Nothing -> Left "Not Found"
-    Just Null -> Left "Not Found"
-    Just j ->
-      case fromJSON j of
-        Error x -> Left x
-        Success x -> Right x
+  result :: Maybe JSVal <- f key
+  case result of
+    Nothing -> pure $ Left "Not Found"
+    Just v -> do
+      r :: Maybe Value <- jsvalToValue v
+      case r of
+        Nothing -> pure $ Left "Couldn't parse JSVal into Value"
+        Just x ->
+          pure $ case fromJSON x of
+            Success x' -> pure x'
+            Error y -> Left y
+
 -- | Retrieve session storage
-getSessionStorage = getStorageCommon getItemSS
+getSessionStorage =
+  getStorageCommon $ \t -> do
+    r <- getItemSS t
+    pure (nullableToMaybe r)
 -- | Retrieve local storage
-getLocalStorage = getStorageCommon getItemLS
+getLocalStorage = getStorageCommon $ \t -> do
+    r <- getItemLS t
+    pure (nullableToMaybe r)
 
 setLocalStorage, setSessionStorage ::
   ToJSON model => JSString -> model -> IO ()
 -- | Set local storage
 setLocalStorage key model =
-  setItemLS key =<< do stringify <=< toJSVal $ toJSON model
+  setItemLS key =<< stringify model
 -- | Set session storage
 setSessionStorage key model =
-  setItemSS key =<< do stringify <=< toJSVal $ toJSON model
+  setItemSS key =<< stringify model
 
 foreign import javascript unsafe "$r = window.localStorage.getItem($1);"
-  getItemLS :: JSString -> IO JSVal
+  getItemLS :: JSString -> IO (Nullable JSVal)
 
 foreign import javascript unsafe "$r = window.sessionStorage.getItem($1);"
-  getItemSS :: JSString -> IO JSVal
+  getItemSS :: JSString -> IO (Nullable JSVal)
 
 -- | Removes item from local storage by key name
 foreign import javascript unsafe "window.localStorage.removeItem($1);"
@@ -100,6 +110,3 @@ foreign import javascript unsafe "window.localStorage.clear();"
 -- | Clears session storage
 foreign import javascript unsafe "window.sessionStorage.clear();"
   clearSessionStorage :: IO ()
-
-foreign import javascript unsafe "$r = JSON.stringify($1);"
- stringify :: JSVal -> IO JSString

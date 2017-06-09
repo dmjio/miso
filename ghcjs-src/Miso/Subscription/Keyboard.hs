@@ -11,7 +11,13 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Subscription.Keyboard where
+module Miso.Subscription.Keyboard
+  ( -- * Types
+    Arrows (..)
+    -- * Subscriptions
+  , arrowsSub
+  , keyboardSub
+  ) where
 
 import           Data.IORef
 import           Data.Set
@@ -49,6 +55,9 @@ toArrows set =
         (False, True) -> 1
         (_,_) -> 0
  }
+
+arrowsSub :: (Arrows -> action) -> Sub action model
+arrowsSub = keyboardSub . (. toArrows)
 
 -- | Returns subscription for Keyboard
 keyboardSub :: (Set Int -> action) -> Sub action model

@@ -117,7 +117,7 @@ module Miso.Html.Property
    ) where
 
 import           Miso.Html.Internal
-import           Miso.String
+import           Miso.String (MisoString, intercalate)
 
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
