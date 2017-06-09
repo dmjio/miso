@@ -132,7 +132,7 @@ function hasKey (cs) {
 
 function diffChildren (cs, ns, parent) {
     var longest = ns.length > cs.length ? ns.length : cs.length;
-    if (hasKey(cs)) syncChildren (cs, ns, parent);
+//    if (hasKey(cs)) syncChildren (cs, ns, parent);
     for (var i = 0; i < longest; i++) diff (cs[i], ns[i], parent);
 }
 

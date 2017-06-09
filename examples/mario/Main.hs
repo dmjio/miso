@@ -3,11 +3,12 @@
 {-# LANGUAGE MultiWayIf        #-}
 module Main where
 
-import Miso
-import Data.Monoid
-import Miso.String
-import Data.Function
-import qualified Data.Map as M
+import           Data.Function
+import qualified Data.Map      as M
+import           Data.Monoid
+
+import           Miso
+import           Miso.String
 
 data Action
   = GetArrows Arrows
@@ -26,7 +27,7 @@ main = do
     update = updateMario
     view   = display
     events = defaultEvents
-    subs   = [ keyboardSub (GetArrows . toArrows)
+    subs   = [ arrowsSub GetArrows
              , windowSub WindowCoords
              ]
 
@@ -108,6 +109,7 @@ walk Arrows{..} m@Model{..} =
 display :: Model -> View action
 display m@Model{..} = marioImage
   where
+    (h,w) = window
     verb = if | y > 0 -> "jump"
               | vx /= 0 -> "walk"
               | otherwise -> "stand"
@@ -117,8 +119,8 @@ display m@Model{..} = marioImage
     src  = "imgs/"<> verb <> "/" <> d <> ".gif"
     groundY = 62 - (fromIntegral (fst window) / 2)
     marioImage =
-      div_ [ height_ (pack (show (fst window)))
-           , height_ (pack (show (snd window)))
+      div_ [ height_ $ pack (show h)
+           , height_ $ pack (show w)
            ] [ img_ [ height_ "37"
                     , width_ "37"
                     , src_ src
@@ -127,7 +129,7 @@ display m@Model{..} = marioImage
 
 marioStyle :: Model -> Double -> M.Map MisoString MisoString
 marioStyle Model {..} gy =
-  M.fromList [ ("transform", matrix x (y + gy) )
+  M.fromList [ ("transform", matrix x $ abs (y + gy) )
              , ("display", "block")
              ]
 
@@ -136,5 +138,5 @@ matrix x y =
   "matrix(1,0,0,1,"
      <> pack (show x)
      <> ","
-     <> pack (show (abs y))
+     <> pack (show y)
      <> ")"

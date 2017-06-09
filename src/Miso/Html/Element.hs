@@ -130,7 +130,7 @@ module Miso.Html.Element
     ) where
 
 import           Miso.Html.Internal
-import           Miso.String
+import           Miso.String (MisoString)
 
 -- | Used to construct `VNode`'s in `View`
 nodeHtml :: MisoString -> [Attribute action] -> [View action] -> View action
