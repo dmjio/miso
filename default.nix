@@ -25,6 +25,5 @@ let
   miso-ghcjs8 = nixpkgs.haskell.packages.ghcjsHEAD.callPackage ./miso.nix { };
 in with nixpkgs.haskell.lib; {
   miso-ghc = buildFromSdist miso-ghc;
-  miso-ghcjs = buildFromSdist miso-ghcjs;
-#  miso-ghcjs8 = buildFromSdist miso-ghcjs8;
+  miso-ghcjs = buildFromSdist (enableCabalFlag miso-ghcjs "examples");
 }
