@@ -36,6 +36,12 @@ flag examples
   description:
     Builds Miso's examples
 
+flag tests
+  default:
+    False
+  description:
+    Builds Miso's tests
+
 executable todo-mvc
   if !impl(ghcjs) || !flag(examples)
     buildable: False
@@ -64,6 +70,31 @@ executable mario
     miso
   default-language:
     Haskell2010
+
+executable tests
+  if !impl(ghcjs) || !flag(tests)
+    buildable: False
+  hs-source-dirs:
+    tests
+  main-is:
+    Main.hs
+  build-depends:
+    base < 5,
+    miso,
+    hspec,
+    hspec-core,
+    ghcjs-base
+
+executable runner
+  if impl(ghcjs) || !flag(tests)
+    buildable: False
+  hs-source-dirs:
+    scripts
+  main-is:
+    Main.hs
+  build-depends:
+    base < 5,
+    process
 
 library
   exposed-modules:
