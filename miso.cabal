@@ -84,19 +84,12 @@ executable tests
     hspec,
     hspec-core,
     ghcjs-base
-
-executable runner
-  if impl(ghcjs) || !flag(tests)
-    buildable: False
-  hs-source-dirs:
-    scripts
-  main-is:
-    Main.hs
-  build-depends:
-    base < 5,
-    process
+  default-language:
+    Haskell2010
 
 library
+  default-language:
+    Haskell2010
   exposed-modules:
     Miso.Html
     Miso.Html.Element
@@ -113,8 +106,10 @@ library
   other-modules:
     Miso.Concurrent
     Miso.Html.Internal
-  ghc-options: -Wall
-  hs-source-dirs: src
+  ghc-options:
+    -Wall
+  hs-source-dirs:
+    src
   build-depends:
     aeson,
     base < 5,
@@ -162,7 +157,6 @@ library
       vector
     hs-source-dirs:
       ghc-src
-  default-language: Haskell2010
 
 source-repository head
    type: git

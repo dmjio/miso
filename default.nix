@@ -23,8 +23,8 @@ let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
   inherit (nixpkgs.lib) overrideDerivation;
-  inherit (nixpkgs) phantomjs;
-  miso-ghc = enableCabalFlag (ghc802.callPackage ./miso.nix { }) "tests";
+  inherit (nixpkgs) phantomjs2;
+  miso-ghc = ghc802.callPackage ./miso.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso.nix { }).overrideDerivation (drv: {
     doCheck = true;
     doHaddock = true;
@@ -35,7 +35,7 @@ let
     '';
     checkPhase = ''
       export PATH=$PATH:${phantomjs2}/bin
-      ${miso-ghc}/bin/runner dist/build/tests/tests.jsexe/all.js
+      phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
   miso-ghcjs8 = ghcjsHEAD.callPackage ./miso.nix { };
