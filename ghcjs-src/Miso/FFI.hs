@@ -27,18 +27,21 @@ module Miso.FFI
 
 import           Control.Monad
 import           Control.Monad.Trans.Maybe
-import qualified Data.Aeson                 as AE
-import           Data.Aeson                 hiding (Object)
-import qualified Data.HashMap.Strict        as H
+import qualified Data.Aeson as AE
+import           Data.Aeson hiding (Object)
+import qualified Data.HashMap.Strict as H
 import           Data.JSString
-import qualified Data.JSString.Text         as JSS
+import qualified Data.JSString.Text as JSS
 import           Data.Scientific
-import qualified Data.Vector                as V
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Vector as V
 import           GHCJS.Foreign.Callback
 import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
+import           Unsafe.Coerce
 
 -- | Convert JSVal to Maybe `Value`
 jsvalToValue :: JSVal -> IO (Maybe Value)
@@ -53,7 +56,7 @@ jsvalToValue r = do
     JSONString -> liftM AE.String <$> fromJSVal r
     JSONArray -> liftM (Array . V.fromList) <$> fromJSVal r
     JSONObject -> do
-        Just props <- fromJSVal =<< getKeys (OI.Object r)
+        Just props<- fromJSVal =<< getKeys (OI.Object r)
         runMaybeT $ do
             propVals <- forM props $ \p -> do
               v <- MaybeT (fromJSVal =<< OI.getProp p (OI.Object r))
@@ -104,7 +107,8 @@ stringify j = stringify' =<< toJSVal (toJSON j)
 parse :: FromJSON json => JSVal -> IO json
 {-# INLINE parse #-}
 parse jval = do
-  Just val <- jsvalToValue =<< parse' jval
+  k <- parse' jval
+  Just val <- jsvalToValue k
   case fromJSON val of
     Success x -> pure x
     Error y -> error y
@@ -120,7 +124,7 @@ foreign import javascript unsafe "copyDOMIntoVTree($1);"
 
 foreign import javascript unsafe "delegate($1, $2);"
   delegateEvent
-     :: JSVal                     -- ^ Events
-     -> Callback (IO JSVal)       -- ^ Virtual DOM callback
+     :: JSVal               -- ^ Events
+     -> Callback (IO JSVal) -- ^ Virtual DOM callback
      -> IO ()
 

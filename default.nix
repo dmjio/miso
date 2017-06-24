@@ -1,4 +1,4 @@
-{ pkgs ? <nixpkgs> }:
+{ pkgs ? <nixpkgs>, tests ? false, haddock ? false }:
 let
   config = {
     allowBroken = true;
@@ -23,15 +23,18 @@ let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
   inherit (nixpkgs.lib) overrideDerivation;
-  inherit (nixpkgs) phantomjs2;
-  miso-ghc = ghc802.callPackage ./miso.nix { };
-  miso-ghcjs = (ghcjs.callPackage ./miso.nix { }).overrideDerivation (drv: {
-    doCheck = true;
-    doHaddock = true;
+  inherit (nixpkgs) phantomjs2 closurecompiler;
+  miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
+  miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
+    doCheck = tests;
+    doHaddock = haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/examples/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
+      ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
+      rm $out/bin/todo-mvc.jsexe/all.js
+      mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
     '';
     checkPhase = ''
       export PATH=$PATH:${phantomjs2}/bin
