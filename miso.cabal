@@ -170,4 +170,4 @@ library
 
 source-repository head
    type: git
-   location: https://github.com/miso-haskell/miso.git
+   location: https://github.com/dmjio/miso.git
