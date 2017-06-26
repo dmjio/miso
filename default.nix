@@ -44,10 +44,12 @@ let
   miso-ghcjs8 = ghcjsHEAD.callPackage ./miso.nix { };
   result = {
     miso-ghcjs = buildFromSdist (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
+    miso-ghc = buildFromSdist miso-ghc;
   };
 in nixpkgs.runCommand "miso" result ''
-     mkdir -p $out/{lib,share/doc,examples}
+     mkdir -p $out/{lib,doc,examples}
      cp -r ${result.miso-ghcjs}/bin/* $out/examples
      cp -r ${result.miso-ghcjs}/lib/* $out/lib
-     cp -r ${result.miso-ghcjs}/share/doc/* $out/share/doc/
+     cp -r ${result.miso-ghcjs}/share/doc/* $out/doc/
+     cp -r ${result.miso-ghc}/share/doc/* $out/doc/
    ''
