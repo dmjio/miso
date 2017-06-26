@@ -71,6 +71,21 @@ executable mario
   default-language:
     Haskell2010
 
+executable simple
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  main-is:
+    Main.hs
+  hs-source-dirs:
+    exe
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    miso
+  default-language:
+    Haskell2010
+
 executable tests
   if !impl(ghcjs) || !flag(tests)
     buildable: False
@@ -79,6 +94,7 @@ executable tests
   main-is:
     Main.hs
   build-depends:
+    aeson,
     base < 5,
     miso,
     hspec,
@@ -125,6 +141,7 @@ library
       containers,
       scientific,
       unordered-containers,
+      servant,
       transformers,
       vector
     js-sources:
@@ -138,7 +155,6 @@ library
       Miso.Effect.Storage
       Miso.Effect.XHR
       Miso.Effect.DOM
-      Miso.FPS
       Miso.Subscription
       Miso.Subscription.History
       Miso.Subscription.Keyboard

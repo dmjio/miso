@@ -1,10 +1,15 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+
 
 module Main where
 
 import Test.Hspec (it, hspec, describe, shouldSatisfy, shouldBe, Spec)
 import Test.Hspec.Core.Runner (hspecResult, Summary(..))
+import Data.Aeson
+
+import Miso
 
 main :: IO ()
 main = do
@@ -12,10 +17,21 @@ main = do
   phantomExit summaryFailures
 
 tests :: Spec
-tests =
-  describe "Miso tests" $ do
-    it "1 + 1 = 2" $ do
-      1 + 1 `shouldBe` 2
+tests = do
+  storageTests
+
+storageTests :: Spec
+storageTests = describe "Storage tests" $ do
+  it "should write to and read from local storage" $ do
+    let obj = object [ "foo" .= ("bar" :: String) ]
+    setLocalStorage "foo" obj
+    Right r <- getLocalStorage "foo"
+    r `shouldBe` obj
+  it "should write to and read from session storage" $ do
+    let obj = object [ "foo" .= ("bar" :: String) ]
+    setSessionStorage "foo" obj
+    Right r <- getLocalStorage "foo"
+    r `shouldBe` obj
 
 phantomExit :: Int -> IO ()
 phantomExit x

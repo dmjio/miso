@@ -33,15 +33,12 @@ import qualified Data.HashMap.Strict as H
 import           Data.JSString
 import qualified Data.JSString.Text as JSS
 import           Data.Scientific
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import           GHCJS.Foreign.Callback
 import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
-import           Unsafe.Coerce
 
 -- | Convert JSVal to Maybe `Value`
 jsvalToValue :: JSVal -> IO (Maybe Value)
