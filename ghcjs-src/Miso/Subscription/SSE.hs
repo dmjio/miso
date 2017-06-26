@@ -10,7 +10,12 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Subscription.SSE where
+module Miso.Subscription.SSE
+ ( -- * Subscription
+   sseSub
+   -- * Types
+ , SSE (..)
+ ) where
 
 import Data.Aeson
 import GHCJS.Foreign.Callback
