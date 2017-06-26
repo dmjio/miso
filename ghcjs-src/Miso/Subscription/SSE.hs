@@ -10,7 +10,12 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Subscription.SSE where
+module Miso.Subscription.SSE
+ ( -- * Subscription
+   sseSub
+   -- * Types
+ , SSE (..)
+ ) where
 
 import Data.Aeson
 import GHCJS.Foreign.Callback
@@ -25,9 +30,8 @@ sseSub url f _ = \sink -> do
   es <- newEventSource url
   onMessage es =<< do
     asyncCallback1 $ \val -> do
-      getData val >>= parse >>= \case
-        Left k -> error k
-        Right x -> sink $ f (SSEMessage x)
+      getData val >>= parse >>= \x -> do
+        sink $ f (SSEMessage x)
   onError es =<< do
     asyncCallback $
       sink (f SSEError)

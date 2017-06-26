@@ -1,84 +1,31 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE ExtendedDefaultRules       #-}
-module Main where
-
-import Data.Aeson
-import GHC.Generics
 import Miso
+
+type Model = Int
 
 main :: IO ()
 main = startApp App {..}
   where
-    model = Model Ok
-    events = defaultEvents
-    subs = [ websocketSub uri prots HandleWebSocket ]
+    model  = 0
     update = updateModel
-    view = appView
-
-uri = URL "ws://echo.websocket.org"
-prots = Protocols [ ]
-
+    view   = viewModel
+    events = defaultEvents
+    subs   = []
 
 updateModel :: Action -> Model -> Effect Model Action
-updateModel (HandleWebSocket (WebSocketMessage m)) model = noEff newModel
-  where
-    newModel = model { msg = m }
-updateModel SendOk model =
-  model <# do
-    send Ok >> pure Id
-updateModel SendHello model =
-  model <# do
-    send Hello >> pure Id
-updateModel GetStatus model =
-  model <# do
-    putStrLn "socket state"
-    print =<< getSocketState
-    pure Id
-updateModel ConnectSocket model =
-  model <# do
-    connect uri prots >> pure Id
-updateModel Alert model =
-  model <# do
-    alert "sup" >> pure Id
-updateModel Id model = noEff model
-updateModel _ model = noEff model
-
-data Message
-  = Hello
-  | Goodbye
-  | Ok
-  deriving (Eq, Show, Generic)
-
-instance ToJSON Message
-instance FromJSON Message
+updateModel AddOne m = noEff (m + 1)
+updateModel SubtractOne m = noEff (m + 1)
 
 data Action
-  = HandleWebSocket (WebSocket Message)
-  | SendOk
-  | SendHello
-  | GetStatus
-  | Alert
-  | Id
+  = AddOne
+  | SubtractOne
+  deriving (Show, Eq)
 
-data Model = Model {
-  msg :: Message
-} deriving (Show, Eq)
-
-appView :: Model -> View Action
-appView Model{..} = div_ [] [
-   div_ [ ] [ text (show msg) ]
- , button_ [ onClick SendOk ] [ text (pack "say hi") ]
- , button_ [ onClick SendHello ] [ text (pack "say hello") ]
- , button_ [ onClick GetStatus ] [ text (pack "get status") ]
- , button_ [ onClick Alert ] [ text (pack "alert") ]
+viewModel :: Int -> View Action
+viewModel x = div_ [] [
+   button_ [ onClick AddOne ] [ text "+" ]
+ , text (show x)
+ , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
-

@@ -104,7 +104,7 @@ function diffProps (cProps, nProps, node, isSvg) {
 	  } else {
 	     node.setAttribute(n, newProp);
 	 }
-      }
+     }
 }
 
 function diffCss (cCss, nCss, node) {
@@ -165,7 +165,8 @@ function syncChildren (os, ns, parent) {
     , nLast
     , oFirst
     , oLast
-    , LIS;
+    , LIS
+    , temp;
     for (;;) {
 	 /* check base case, first > last for both new and old
 	   [ ] -- old children empty (fully-swapped)
@@ -183,9 +184,9 @@ function syncChildren (os, ns, parent) {
 	if (oldFirstIndex > oldLastIndex) {
 	    var node = createNodeDontAppend(nFirst);
 	    /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-	       Otherwise, it will insert node.domRef before oLast.domRef.
-	     */
+	       Otherwise, it will insert node.domRef before oLast.domRef. */
 	    parent.insertBefore(node.domRef, oLast ? oLast.domRef : null);
+	    os.splice(newFirstIndex, 0, nFirst);
 	    newFirstIndex++;
 	    continue;
 	}
@@ -194,9 +195,13 @@ function syncChildren (os, ns, parent) {
 	   -> [ ] <- new children
 	*/
 	else if (newFirstIndex > newLastIndex) {
-	    parent.removeChild(oFirst.domRef);
-	    oldFirstIndex++;
-	    continue;
+	    tmp = oldLastIndex - oldFirstIndex;
+	    while (tmp >= 0) {
+	      parent.removeChild(os[oldFirstIndex].domRef);
+	      os.splice(oldFirstIndex, 1);
+	      tmp--;
+	    }
+	    break;
 	}
 	/* happy path, everything aligns, we continue
 	   -> oldFirstIndex -> [ a b c ] <- oldLastIndex
@@ -204,12 +209,10 @@ function syncChildren (os, ns, parent) {
 	   check if nFirst and oFirst align, if so, check nLast and oLast
 	*/
 	else if (oFirst.key === nFirst.key) {
-	    nFirst.domRef = oFirst.domRef;
 	    newFirstIndex++;
 	    oldFirstIndex++;
 	    continue;
 	} else if (oLast.key === nLast.key) {
-	    oLast.domRef = nLast.domRef;
 	    newLastIndex--;
 	    oldLastIndex--;
 	    continue;
@@ -222,8 +225,6 @@ function syncChildren (os, ns, parent) {
 	    var nextSib = oFirst.domRef.nextSibling;
 	    parent.insertBefore(oFirst.domRef, oLast.domRef);
 	    parent.insertBefore(nextSib, oLast.domRef);
-	    nFirst.domRef = oFirst.domRef;
-	    nLast.domRef = oLast.domRef;
 	    newFirstIndex++;
 	    oldFirstIndex++;
 	    oldLastIndex--;
@@ -233,29 +234,25 @@ function syncChildren (os, ns, parent) {
 
 	/* or just one could be swapped (d's align here)
 	   -> [ d b g ] <- old children
-	   -> [ a k d ] <- new children */
-	/* what do we do here? */
-	else if (oFirst.key === nLast.key) {
-	  continue;
-	}
-	/* what do we do here?
+	   -> [ a k d ] <- new children
 	   on either side (e's align here)
 	   -> [ e b c ] <- old children
 	   -> [ b c e ] <- new children */
-	else if (oLast.key === nFirst.key) {
-	    continue;
-	}
+
+	/* For now, the above case is handled in the "you're screwed case" below. */
+
 	/* The "you're screwed" case, nothing aligns, pull the ripcord, do something more fancy
 	   This can happen when the list is sorted, for example.
 	   -> [ a e c ] <- old children
 	   -> [ b e d ] <- new children
 	*/
+
 	else {
+	    var P = [], I = {}, i = 0, nLen = newLastIndex - newFirstIndex, oLen = oldLastIndex - oldFirstIndex,
+		foundKey, last = -1, moved = false, newNodeIndex, removedNodes = 0;
 	    /* Create array with length of new children list */
-	    var P = [], I = {}, i = 0, nLen = newLastIndex - newFirstIndex, oLen = oldLastIndex - oldFirstIndex
-	      , foundKey, last = -1, moved = false, newNodeIndex, removedNodes = 0;
 	    /* -1 means a new node should be inserted */
-	    for (i = pLen; i > 0; i--) P.append(-1);
+	    for (i = nLen; i > 0; i--) P.append(-1);
 	    /* Create index I that maps keys with node positions of the remaining nodes from the new children */
 	    for (i = newFirstIndex; i <= newLastIndex; i++) I[ns[i].key] = i;
 	    /* Iterate over old nodes with Index, check if we can find node with same key in index */
@@ -277,7 +274,7 @@ function syncChildren (os, ns, parent) {
 
 		    /* First check if last seen node position is larger than current node position */
 		    if (last > newNodeIndex) moved = true;
-		    /* Update last seen to  */
+		    /* Update last seen */
 		    last = newNodeIndex;
 		}
 	    }
@@ -287,7 +284,7 @@ function syncChildren (os, ns, parent) {
 		/* Find minimum number of moves if `moved` flag is on, or insert new nodes if the length is changed. */
 		LIS = lis(P);
 		lisIndex = LIS.length - 1;
-		while (nLen > -1, nLen--) {
+		while (nLen > -1) {
 		    if (P[lisIndex] === nLen) {
 			listIndex--;
 			continue;
@@ -297,8 +294,7 @@ function syncChildren (os, ns, parent) {
 			ns[nLen].domRef = os[P[nLen]].domRef;
 			parent.insertBefore(ns[nLen].domRef, os[nLen].domRef);
 		    }
-
-
+		    nLen--;
 		}
 	    } else if (!moved) {
 		/* When moved flag is off, we don't need to find LIS, and we just

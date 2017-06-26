@@ -15,10 +15,12 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.WebSocket
-  ( WebSocket (..)
-  , URL (..)
-  , Protocols (..)
+  ( -- * Types
+    WebSocket   (..)
+  , URL         (..)
+  , Protocols   (..)
   , SocketState (..)
+    -- * Subscription
   , websocketSub
   , send
   , connect
@@ -55,6 +57,7 @@ websocket = unsafePerformIO (newIORef Nothing)
 secs :: Int -> Int
 secs = (*1000000)
 
+-- | WebSocket subscription
 websocketSub
   :: FromJSON m
   => URL
@@ -90,12 +93,14 @@ websocketSub (URL u) (Protocols ps) f _ sink = do
       d <- parse =<< getData v
       sink $ f (WebSocketError d)
 
+-- | Sends message to a websocket server
 send :: ToJSON a => a -> IO ()
 {-# INLINE send #-}
 send x = do
   Just socket <- readIORef websocket
   sendJson' socket x
 
+-- | Connects to a websocket server
 connect :: URL -> Protocols -> IO ()
 {-# INLINE connect #-}
 connect (URL url') (Protocols ps) = do
@@ -128,6 +133,7 @@ data SocketState
   | CLOSED     -- ^ 3
   deriving (Show, Eq, Ord, Enum)
 
+-- | Retrieves current status of `WebSocket`
 getSocketState :: IO SocketState
 getSocketState = do
   Just ws <- readIORef websocket

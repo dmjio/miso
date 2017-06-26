@@ -11,7 +11,7 @@ function delegate(events, getVTree) {
     }
 }
 
-/ * Accumulate parent stack as well for propagation */
+/* Accumulate parent stack as well for propagation */
 function delegateEvent (event, obj, stack, parentStack) {
 
     /* base case, not found */

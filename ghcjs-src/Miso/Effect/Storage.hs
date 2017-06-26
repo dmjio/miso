@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE ForeignFunctionInterface  #-}
+{-# LANGUAGE LambdaCase                #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect.Storage
@@ -48,13 +49,10 @@ getStorageCommon f key = do
   case result of
     Nothing -> pure $ Left "Not Found"
     Just v -> do
-      r :: Maybe Value <- jsvalToValue v
-      case r of
-        Nothing -> pure $ Left "Couldn't parse JSVal into Value"
-        Just x ->
-          pure $ case fromJSON x of
-            Success x' -> pure x'
-            Error y -> Left y
+      r <- parse v
+      pure $ case fromJSON r of
+        Success x -> Right x
+        Error y -> Left y
 
 -- | Retrieve session storage
 getSessionStorage =

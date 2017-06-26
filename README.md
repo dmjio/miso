@@ -6,54 +6,50 @@
 <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1" target="_blank"><img src="https://img.shields.io/badge/IRC-%23haskell--miso-1e72ff.svg?style=flat"  height="20"></a>
 [![Slack Status](https://haskell-miso-slack.herokuapp.com/badge.svg)](https://haskell-miso-slack.herokuapp.com)
 
-**Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, fast hand-rolled javascript diffing / patching algorithm, event delegation, event batching, SVG support, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril), Miso currently supports WebSocket, Window, Mouse, History and KeysDown subscriptions. `IO` and other effects (such as `XHR`) can be introduced into the system via the `Effect action model` data type. *Miso* makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
+**Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). `IO` and other effects (like `XHR`) can be introduced into the system via the `Effect` data type. *Miso* makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
 
-## Setting up
- - Cabal
- - Stack
- - Nix
+## Examples
+  - TodoMVC
+    - [Link](http://miso-todomvc.bitballoon.com/)
+    - [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
+  - Mario
+    - [Link](https://s3.amazonaws.com/aws-website-mario-5u38b/index.html)
+    - [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+
+## Documentation
+  - [GHCJS](https://d10z4r8eai3cm9.cloudfront.net/)
+  - [GHC](https://d1f745wtmyhj66.cloudfront.net/)
 
 ## Getting Started
 ```haskell
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 import Miso
 
 type Model = Int
 
 main :: IO ()
-main = startApp model update view subs defaultEvents
+main = startApp App {..}
   where
-    model = 0
-    subs = []
+    model  = 0
+    update = updateModel
+    view   = viewModel
+    events = defaultEvents
+    subs   = []
 
-update :: Action -> Model -> Effect Model Action
-update AddOne m = noEff (m + 1)
-update SubtractOne m = noEff (m + 1)
+updateModel :: Action -> Model -> Effect Model Action
+updateModel AddOne m = noEff (m + 1)
+updateModel SubtractOne m = noEff (m + 1)
 
 data Action
   = AddOne
   | SubtractOne
   deriving (Show, Eq)
 
-view :: Int -> View Action
-view x = div_ [] [
+viewModel :: Int -> View Action
+viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
  , text (show x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
  ```
-## Examples
-  - TodoMVC
-    - Link: <link goes here>
-	- Source: <link goes here>
-
-## Hackage Docs
-  - Link: <link goes here>
-
-## Why isomorphic?
-https://strongloop.com/strongblog/node-js-react-isomorphic-javascript-why-it-matters/
-
-## FAQ
-
-
