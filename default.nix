@@ -1,4 +1,4 @@
-{ pkgs ? <nixpkgs>, tests ? false, haddock ? false }:
+{ pkgs ? <nixpkgs> }:
 let
   config = {
     allowBroken = true;
@@ -26,8 +26,6 @@ let
   inherit (nixpkgs) phantomjs2 closurecompiler;
   miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
-    doCheck = tests;
-    doHaddock = haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
@@ -41,10 +39,11 @@ let
       phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
-  miso-ghcjs8 = ghcjsHEAD.callPackage ./miso.nix { };
+  miso-ghcjs8 = ghcjsHEAD.callPackage ./miso-ghcjs.nix { };
   result = {
     miso-ghcjs = buildFromSdist (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildFromSdist miso-ghc;
+    miso-ghcjs8 = buildFromSdist miso-ghcjs8;
   };
 in nixpkgs.runCommand "miso" result ''
      mkdir -p $out/{lib,doc,examples}
@@ -52,4 +51,5 @@ in nixpkgs.runCommand "miso" result ''
      cp -r ${result.miso-ghcjs}/lib/* $out/lib
      cp -r ${result.miso-ghcjs}/share/doc/* $out/doc/
      cp -r ${result.miso-ghc}/share/doc/* $out/doc/
+     cp -r ${result.miso-ghcjs8}/share/doc/* $out/doc/
    ''
