@@ -1,0 +1,8 @@
+language: nix
+
+before_install:
+ - nix-channel --list
+ - nix-channel --update
+
+script:
+ - nix-build --arg tests true --arg haddock true
