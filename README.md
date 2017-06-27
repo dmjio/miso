@@ -1,4 +1,4 @@
-:ramen: <center>miso</center>
+:ramen: miso
 ======================
 ![Hackage](https://img.shields.io/hackage/v/miso.svg)
 ![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-green.svg)
@@ -7,7 +7,7 @@
 [![Slack Status](https://haskell-miso-slack.herokuapp.com/badge.svg)](https://haskell-miso-slack.herokuapp.com)
 ![Build Status](https://api.travis-ci.org/dmjio/miso.svg?branch=master)
 
-**Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). `IO` and other effects (like `XHR`) can be introduced into the system via the `Effect` data type. *Miso* makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
+**Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). `IO` and other effects (like `XHR`) can be introduced into the system via the `Effect` data type. Miso makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
 
 ## Examples
   - TodoMVC
@@ -24,7 +24,6 @@
 ## Getting Started
 ```haskell
 {-# LANGUAGE RecordWildCards #-}
-
 module Main where
 
 import Miso
@@ -49,7 +48,7 @@ data Action
   | SubtractOne
   deriving (Show, Eq)
 
-viewModel :: Int -> View Action
+viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
  , text (show x)
