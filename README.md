@@ -19,7 +19,7 @@
 
 ## Documentation
   - [GHCJS](https://d10z4r8eai3cm9.cloudfront.net/)
-  - [GHC](https://d1f745wtmyhj66.cloudfront.net/)
+  - [GHC](http://hackage.haskell.org/package/miso)
 
 ## Getting Started
 ```haskell
