@@ -1,6 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
+module Main where
+
 import Miso
 
 type Model = Int
@@ -16,7 +16,7 @@ main = startApp App {..}
 
 updateModel :: Action -> Model -> Effect Model Action
 updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m + 1)
+updateModel SubtractOne m = noEff (m - 1)
 
 data Action
   = AddOne
