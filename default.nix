@@ -20,7 +20,7 @@ let
     };
   };
   nixpkgs = import pkgs { inherit config; };
-  inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag;
+  inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
   inherit (nixpkgs.lib) overrideDerivation;
   inherit (nixpkgs) phantomjs2 closurecompiler;
@@ -45,6 +45,7 @@ let
   result = {
     miso-ghcjs = buildFromSdist (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildFromSdist miso-ghc;
+    release = sdistTarball miso-ghc;
   };
 in nixpkgs.runCommand "miso" result ''
      mkdir -p $out/{lib,doc,examples}
