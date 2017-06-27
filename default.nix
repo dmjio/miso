@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, tests ? false, haddock ? false }:
+{ nixpkgs ? import <nixpkgs> {}, tests ? true, haddock ? true }:
 let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
