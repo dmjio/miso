@@ -1,25 +1,5 @@
-{ pkgs ? <nixpkgs>, tests ? false, haddock ? false }:
+{ nixpkgs ? import <nixpkgs> {}, tests ? false, haddock ? false }:
 let
-  config = {
-    allowBroken = true;
-    packageOverrides = pkgs: {
-      haskell = pkgs.haskell // {
-	packages = pkgs.haskell.packages // {
-	  ghcjs = pkgs.haskell.packages.ghcjs.override {
-	     overrides = self: super: with pkgs.haskell.lib; {
-		lucid = addBuildDepend super.lucid super.semigroups;
-	     };
-	  };
-	  ghcjsHEAD = pkgs.haskell.packages.ghcjsHEAD.override {
-	     overrides = self: super: with pkgs.haskell.lib; {
-		lucid = addBuildDepend super.lucid super.semigroups;
-	     };
-	  };
-	};
-      };
-    };
-  };
-  nixpkgs = import pkgs { inherit config; };
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
   inherit (nixpkgs.lib) overrideDerivation;
