@@ -1,8 +1,10 @@
 language: nix
 
-before_install:
- - nix-channel --list
- - nix-channel --update
+install:
+  - cat /etc/nix/nix.conf > ~/nix.conf
+  - echo "binary-caches = https://cache.nixos.org https://hydra.angeldsis.com" > ~/nix.conf
+  - export NIX_CONF_DIR=~
+  - cat ~/nix.conf
 
 script:
  - nix-build --arg tests true --arg haddock true
