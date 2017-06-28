@@ -5,7 +5,7 @@
 }:
 mkDerivation {
   pname = "miso";
-  version = "0.1.0.2";
+  version = "0.1.0.3";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
@@ -14,7 +14,7 @@ mkDerivation {
     text transformers unordered-containers vector hspec hspec-core servant
     http-types http-api-data
   ];
-  homepage = "http://github.com/miso-haskell/miso";
+  homepage = "http://github.com/dmjio/miso";
   description = "Haskell front-end framework";
   license = stdenv.lib.licenses.bsd3;
 }
