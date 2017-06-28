@@ -1,11 +1,11 @@
 :ramen: miso
 ======================
-![Hackage](https://img.shields.io/hackage/v/miso.svg)
-![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-green.svg)
-![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)
-<a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1" target="_blank"><img src="https://img.shields.io/badge/IRC-%23haskell--miso-1e72ff.svg?style=flat"  height="20"></a>
+[![Hackage](https://img.shields.io/hackage/v/miso.svg?style=flat)](http://hackage.haskell.org/package/miso)
+[![Haskell Programming Language](https://img.shields.io/badge/language-Haskell-green.svg)](https://haskell.org)
+[![BSD3 License](http://img.shields.io/badge/license-BSD3-brightgreen.svg)](https://github.com/dmjio/miso/blob/master/LICENSE)
+[![IRC #haskell-miso](https://img.shields.io/badge/IRC-%23haskell--miso-1e72ff.svg?style=flat)](https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1)
 [![Slack Status](https://haskell-miso-slack.herokuapp.com/badge.svg)](https://haskell-miso-slack.herokuapp.com)
-![Build Status](https://api.travis-ci.org/dmjio/miso.svg?branch=master)
+[![Build Status](https://travis-ci.org/dmjio/miso.svg?branch=master)](https://travis-ci.org/dmjio/miso)
 
 **Miso** is a small [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). `IO` and other effects (like `XHR`) can be introduced into the system via the `Effect` data type. Miso makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
 
