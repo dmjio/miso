@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, containers, lucid
-, network-uri, stdenv, text, vector
+, stdenv, text, vector
 }:
 mkDerivation {
   pname = "miso";
@@ -8,7 +8,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers lucid network-uri text vector
+    aeson base bytestring containers lucid text vector
   ];
   homepage = "http://github.com/miso-haskell/miso";
   description = "Haskell front-end framework";
