@@ -1,11 +1,11 @@
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE OverloadedStrings    #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect.XHR
@@ -23,8 +23,6 @@ import JavaScript.Web.XMLHttpRequest
 import Miso.String
 import Servant.API
 
-type Path = String
-
 -- | Still a WIP, use ghcjs-base XHR for now, or other
 
 -- | Intermediate type for accumulation
@@ -41,7 +39,8 @@ class HasXHR api where
     -> RouteInfo
     -> XHR api
 
-type Result a = Either MisoString a
+-- | Result of using `XHR`
+type Result a = IO (Either MisoString a)
 
 -- | Verb
 instance {-# OVERLAPPABLE #-}
@@ -75,6 +74,7 @@ instance {-# OVERLAPPING #-}
     --                  }
 
 
+-- | `Headers`, with `NoContent`
 instance {-# OVERLAPPING #-}
   ( BuildHeadersTo ls, ReflectMethod method
   ) => HasXHR (Verb method status cts (Headers ls NoContent)) where

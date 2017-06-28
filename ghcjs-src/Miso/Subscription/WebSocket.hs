@@ -20,6 +20,9 @@ module Miso.Subscription.WebSocket
   , URL         (..)
   , Protocols   (..)
   , SocketState (..)
+  , CloseCode   (..)
+  , WasClean    (..)
+  , Reason      (..)
     -- * Subscription
   , websocketSub
   , send
@@ -110,14 +113,18 @@ connect (URL url') (Protocols ps) = do
     socket <- createWebSocket url' ps
     atomicWriteIORef websocket (Just socket)
 
+-- | URL of Websocket server
 newtype URL = URL MisoString
   deriving (Show, Eq)
 
+-- | Protocols for Websocket connection
 newtype Protocols = Protocols [MisoString]
   deriving (Show, Eq)
 
+-- | Wether or not the connection closed was done so cleanly
 newtype WasClean = WasClean Bool deriving (Show, Eq)
 
+-- | Reason for closed connection
 newtype Reason = Reason MisoString deriving (Show, Eq)
 
 foreign import javascript unsafe "$r = new WebSocket($1, $2);"
@@ -126,6 +133,7 @@ foreign import javascript unsafe "$r = new WebSocket($1, $2);"
 foreign import javascript unsafe "$r = $1.readyState;"
   getSocketState' :: Socket -> IO Int
 
+-- | `SocketState` corresponding to current WebSocket connection
 data SocketState
   = CONNECTING -- ^ 0
   | OPEN       -- ^ 1
@@ -176,7 +184,8 @@ foreign import javascript unsafe "$r = $1.reason"
 
 newtype Socket = Socket JSVal
 
---- | https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+-- | Code corresponding to a closed connection
+-- https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
 data CloseCode
   = CLOSE_NORMAL
    -- ^ 1000, Normal closure; the connection successfully completed whatever purpose for which it was created.

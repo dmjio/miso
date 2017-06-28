@@ -56,6 +56,7 @@ toArrows set =
         (_,_) -> 0
  }
 
+-- | Maps `Arrows` onto a Keyboard subscription
 arrowsSub :: (Arrows -> action) -> Sub action model
 arrowsSub = keyboardSub . (. toArrows)
 

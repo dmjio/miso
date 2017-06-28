@@ -149,13 +149,13 @@ instance ToKey Float  where toKey = Key . T.pack . show
 -- | Convert `Word` to `Key`
 instance ToKey Word   where toKey = Key . T.pack . show
 
--- | Fields that a DOM node contains
+-- | Properties
 newtype Props = Props (M.Map MisoString Value)
 
--- | Individual CSS property diffing
+-- | CSS
 newtype CSS = CSS (M.Map MisoString MisoString)
 
--- | `View` Attributes to annotate DOM, converted into `Events`, `Props`, `Attrs` and `CSS`
+-- | `View` Attributes to annotate DOM, converted into Events, Props, Attrs and CSS
 data Attribute model
   = C MisoString MisoString
   | P MisoString Value
@@ -168,7 +168,7 @@ newtype AllowDrop = AllowDrop Bool
 
 -- | Constructs a property on a `VNode`, used to set fields on a DOM Node
 prop :: ToJSON a => MisoString -> a -> Attribute model
-prop k v = P k (toJSON v)  
+prop k v = P k (toJSON v)
 
 -- | For defining delegated events
 --
@@ -183,7 +183,7 @@ on _ _ _ = E ()
 
 -- | For defining delegated events with options
 --
--- > let clickHandler = on defaultOptions "click" emptyDecoder $ \() -> Action
+-- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
@@ -194,7 +194,7 @@ onWithOptions
    -> Attribute action
 onWithOptions _ _ _ _ = E ()
 
--- | Constructs `CSS` for a DOM Element
+-- | Constructs CSS for a DOM Element
 --
 -- > import qualified Data.Map as M
 -- > div_ [ style_  $ M.singleton "background" "red" ] [ ]

@@ -119,6 +119,8 @@ foreign import javascript unsafe "$r = $1[$2];"
 foreign import javascript unsafe "copyDOMIntoVTree($1);"
   copyDOMIntoVTree :: JSVal -> IO ()
 
+-- | Event delegation FFI, routes events received on body through the virtual dom
+-- Invokes event handler when found
 foreign import javascript unsafe "delegate($1, $2);"
   delegateEvent
      :: JSVal               -- ^ Events

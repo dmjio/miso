@@ -9,6 +9,15 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Router
+-- Copyright   :  (C) 2016-2017 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Router where
 
 import qualified Data.ByteString.Char8 as BS
@@ -66,22 +75,26 @@ class HasRouter layout where
   -- | Transform a route handler into a 'Router'.
   route :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
 
+-- | Alternative
 instance (HasRouter x, HasRouter y) => HasRouter (x :<|> y) where
   type RouteT (x :<|> y) a = RouteT x a :<|> RouteT y a
   route _ (a :: Proxy a) ((x :: RouteT x a) :<|> (y :: RouteT y a))
     = RChoice (route (Proxy :: Proxy x) a x) (route (Proxy :: Proxy y) a y)
 
+-- | Capture
 instance (HasRouter sublayout, FromHttpApiData x) =>
   HasRouter (Capture sym x :> sublayout) where
   type RouteT (Capture sym x :> sublayout) a = x -> RouteT sublayout a
   route _ a f = RCapture (route (Proxy :: Proxy sublayout) a . f)
 
+-- | QueryParam
 instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
          => HasRouter (QueryParam sym x :> sublayout) where
   type RouteT (QueryParam sym x :> sublayout) a = Maybe x -> RouteT sublayout a
   route _ a f = RQueryParam (Proxy :: Proxy sym)
     (route (Proxy :: Proxy sublayout) a . f)
 
+-- | QueryParams
 instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
          => HasRouter (QueryParams sym x :> sublayout) where
   type RouteT (QueryParams sym x :> sublayout) a = [x] -> RouteT sublayout a
@@ -89,6 +102,7 @@ instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
     (Proxy :: Proxy sym)
     (route (Proxy :: Proxy sublayout) a . f)
 
+-- | QueryFlag
 instance (HasRouter sublayout, KnownSymbol sym)
          => HasRouter (QueryFlag sym :> sublayout) where
   type RouteT (QueryFlag sym :> sublayout) a = Bool -> RouteT sublayout a
@@ -96,6 +110,7 @@ instance (HasRouter sublayout, KnownSymbol sym)
     (Proxy :: Proxy sym)
     (route (Proxy :: Proxy sublayout) a . f)
 
+-- | Path
 instance (HasRouter sublayout, KnownSymbol path)
          => HasRouter (path :> sublayout) where
   type RouteT (path :> sublayout) a = RouteT sublayout a
@@ -103,10 +118,12 @@ instance (HasRouter sublayout, KnownSymbol path)
     (Proxy :: Proxy path)
     (route (Proxy :: Proxy sublayout) a page)
 
+-- | View
 instance HasRouter (View a) where
   type RouteT (View a) x = x
   route _ _ = RPage
 
+-- | Link
 instance HasLink (View a) where
   type MkLink (View a) = MkLink (Get '[] ())
   toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
