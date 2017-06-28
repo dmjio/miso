@@ -91,6 +91,7 @@ module Miso.Html.Element
     , output_
     , progress_
     , meter_
+    , center_
     -- * Audio and Video
     , audio_
     , video_
@@ -323,6 +324,9 @@ progress_ = nodeHtml "progress"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meter
 meter_ :: [Attribute action] -> [View action] -> View action
 meter_ = nodeHtml "meter"
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/center
+center_ :: [Attribute action] -> [View action] -> View action
+center_ = nodeHtml "center"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/audio
 audio_ :: [Attribute action] -> [View action] -> View action
 audio_ = nodeHtml "audio"
