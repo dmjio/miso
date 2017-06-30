@@ -5,11 +5,11 @@ function diff (currentObj, newObj, parent) {
   else if (currentObj && !newObj) parent.removeChild (currentObj.domRef);
   else {
     if (currentObj.type === "vtext") {
-      if (newObj.type === "vnode") replaceElementWithText (currentObj, newObj, parent);
+      if (newObj.type === "vnode") replaceTextWithElement (currentObj, newObj, parent);
       else diffTextNodes (currentObj, newObj);
     } else {
       if (newObj.type === "vnode") diffVNodes (currentObj, newObj, parent);
-      else replaceTextWithElement (currentObj, newObj, parent);
+      else replaceElementWithText (currentObj, newObj, parent);
     }
   }
 }
