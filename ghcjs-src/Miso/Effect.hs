@@ -14,6 +14,7 @@ module Miso.Effect (
 , Effect (..)
 , noEff
 , (<#)
+, (#>)
 ) where
 
 import Miso.Effect.Storage
@@ -32,3 +33,7 @@ noEff = NoEffect
 -- | `Effect` smart constructor
 (<#) :: model -> IO action -> Effect model action
 (<#) = Effect
+
+-- | `Effect` smart constructor, flipped
+(#>) :: IO action -> model -> Effect model action
+(#>) = flip (<#)
