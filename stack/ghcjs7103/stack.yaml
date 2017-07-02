@@ -8,6 +8,3 @@ setup-info:
       ghcjs-0.2.0.9006020_ghc-7.10.3:
          url: http://ghcjs.tolysz.org/lts-6.20-9006020.tar.gz
          sha1: a6cea90cd8121eee3afb201183c6e9bd6bacd94a
-
-extra-deps:
- - elerea-2.9.0
