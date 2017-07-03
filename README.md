@@ -11,11 +11,16 @@
 
 ## Examples
   - TodoMVC
-    - [Link](http://miso-todomvc.bitballoon.com/)
+    - [Link](https://d3u8rq3uy5wnb9.cloudfront.net/)
     - [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
   - Mario
-    - [Link](https://s3.amazonaws.com/aws-website-mario-5u38b/index.html)
+    - [Link](https://dfhxhtlu1tq0x.cloudfront.net/)
     - [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+ - SVG
+    - [Link](https://d2dwfl7f3j7of0.cloudfront.net/)
+ - Simple
+    - [Link](https://dco9lhtzw9c6i.cloudfront.net)
+    - [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
 
 ## Documentation
   - [GHCJS](https://d10z4r8eai3cm9.cloudfront.net/)
