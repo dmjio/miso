@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE CPP                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect.XHR
@@ -91,13 +92,15 @@ instance (ToHttpApiData a, HasXHR api, KnownSymbol sym) => HasXHR (Capture sym a
   type XHR (Capture sym a :> api) = a -> XHR api
   xhrWithRoute Proxy _ (_ :: a) = undefined
 
+#if MIN_VERSION_servant(0,8,1)
 -- | CaptureAll
 instance (KnownSymbol capture, ToHttpApiData a, HasXHR sublayout)
    => HasXHR (CaptureAll capture a :> sublayout) where
   type XHR (CaptureAll capture a :> sublayout) = [a] -> XHR sublayout
   xhrWithRoute Proxy _ _ = undefined
     -- xhrWithRoute (Proxy :: Proxy sublayout)
-      -- (foldl' (flip appendToPath) req ps)
+    --   (foldl' (flip appendToPath) req ps)
+#endif
 
 -- | Path (done)
 instance (HasXHR api, KnownSymbol sym) => HasXHR (sym :> api) where
