@@ -1,7 +1,7 @@
 { nixpkgs ? import <nixpkgs> {}, tests ? true, haddock ? true }:
 let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball;
-  inherit (nixpkgs.haskell.packages) ghc802 ghcjs ghcjsHEAD;
+  inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
   inherit (nixpkgs.lib) overrideDerivation;
   inherit (nixpkgs) phantomjs2 closurecompiler;
   miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
@@ -21,7 +21,6 @@ let
       phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
-  miso-ghcjs8 = ghcjsHEAD.callPackage ./miso.nix { };
   result = {
     miso-ghcjs = buildFromSdist (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildFromSdist miso-ghc;
