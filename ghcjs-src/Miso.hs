@@ -14,7 +14,7 @@
 ----------------------------------------------------------------------------
 module Miso
   ( startApp
-  , module Miso.Effect
+    module Miso.Effect
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
