@@ -37,65 +37,69 @@ flag tests
     Builds Miso's tests
 
 executable todo-mvc
-  if !impl(ghcjs) || !flag(examples)
-    buildable: False
   main-is:
     Main.hs
-  hs-source-dirs:
-    examples/todo-mvc
-  build-depends:
-    base < 5,
-    aeson,
-    containers,
-    miso
-  default-language:
-    Haskell2010
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/todo-mvc
+    build-depends:
+      base < 5,
+      aeson,
+      containers,
+      miso
+    default-language:
+      Haskell2010
 
 executable mario
-  if !impl(ghcjs) || !flag(examples)
-    buildable: False
   main-is:
     Main.hs
-  hs-source-dirs:
-    examples/mario
-  build-depends:
-    base < 5,
-    containers,
-    miso
-  default-language:
-    Haskell2010
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/mario
+    build-depends:
+      base < 5,
+      containers,
+      miso
+    default-language:
+      Haskell2010
 
 executable simple
+  main-is:
+    Main.hs
   if !impl(ghcjs) || !flag(examples)
     buildable: False
-  main-is:
-    Main.hs
-  hs-source-dirs:
-    exe
-  build-depends:
-    aeson,
-    base < 5,
-    containers,
-    miso
-  default-language:
-    Haskell2010
+  else
+    hs-source-dirs:
+      exe
+    build-depends:
+      aeson,
+      base < 5,
+      containers,
+      miso
+    default-language:
+      Haskell2010
 
 executable tests
-  if !impl(ghcjs) || !flag(tests)
-    buildable: False
-  hs-source-dirs:
-    tests
   main-is:
     Main.hs
-  build-depends:
-    aeson,
-    base < 5,
-    miso,
-    hspec,
-    hspec-core,
-    ghcjs-base
-  default-language:
-    Haskell2010
+  if !impl(ghcjs) || !flag(tests)
+    buildable: False
+  else
+    hs-source-dirs:
+      tests
+    build-depends:
+      aeson,
+      base < 5,
+      miso,
+      hspec,
+      hspec-core,
+      ghcjs-base
+    default-language:
+      Haskell2010
 
 library
   default-language:
