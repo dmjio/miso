@@ -15,8 +15,8 @@ module Miso.Concurrent (
   , newEventWriter
   ) where
 
-import Control.Concurrent.MVar
-import Control.Concurrent
+import Control.Concurrent hiding (readChan)
+import Control.Concurrent.BoundedChan
 import Control.Monad
 
 -- | Concurrent API for receiving events and writing to an event sink
@@ -28,12 +28,12 @@ data EventWriter action = EventWriter {
 -- | Creates a new `EventWriter`
 newEventWriter :: IO () -> IO (EventWriter m)
 newEventWriter notify' = do
-  chan <- newChan
+  chan <- newBoundedChan 50
   pure $ EventWriter (write chan) (readChan chan)
     where
       write chan event =
         void . forkIO $ do
-          writeChan chan event
+          void $ tryWriteChan chan $! event
           notify'
 
 -- | Concurrent API for `SkipChan` implementation
@@ -45,30 +45,8 @@ data Notify = Notify {
 -- | Create a new `Notify`
 newNotify :: IO Notify
 newNotify = do
-  skipChan <- newSkipChan
+  mvar <- newMVar ()
   pure $ Notify
-   (getSkipChan skipChan)
-   (putSkipChan skipChan ())
-
-data SkipChan a =
-  SkipChan (MVar (a, [MVar ()])) (MVar ())
-
-newSkipChan :: IO (SkipChan a)
-newSkipChan = do
-  sem <- newEmptyMVar
-  main <- newMVar (undefined, [sem])
-  return (SkipChan main sem)
-
-putSkipChan :: SkipChan a -> a -> IO ()
-putSkipChan (SkipChan main _) v = do
-  (_, sems) <- takeMVar main
-  putMVar main (v, [])
-  mapM_ (\sem -> putMVar sem ()) sems
-
-getSkipChan :: SkipChan a -> IO a
-getSkipChan (SkipChan main sem) = do
-  takeMVar sem
-  (v, sems) <- takeMVar main
-  putMVar main (v, sem:sems)
-  return v
+   (takeMVar mvar)
+   (() <$ do tryPutMVar mvar $! ())
 

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE MultiWayIf        #-}
+{-# LANGUAGE BangPatterns      #-}
 module Main where
 
 import           Data.Function
@@ -11,9 +12,9 @@ import           Miso
 import           Miso.String
 
 data Action
-  = GetArrows Arrows
-  | Time Double
-  | WindowCoords (Int,Int)
+  = GetArrows !Arrows
+  | Time !Double
+  | WindowCoords !(Int,Int)
 
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
@@ -32,15 +33,15 @@ main = do
              ]
 
 data Model = Model
-    { x :: Double
-    , y :: Double
-    , vx :: Double
-    , vy :: Double
-    , dir :: Direction
-    , time :: Double
-    , delta :: Double
-    , arrows :: Arrows
-    , window :: (Int,Int)
+    { x :: !Double
+    , y :: !Double
+    , vx :: !Double
+    , vy :: !Double
+    , dir :: !Direction
+    , time :: !Double
+    , delta :: !Double
+    , arrows :: !Arrows
+    , window :: !(Int,Int)
     } deriving (Show, Eq)
 
 data Direction

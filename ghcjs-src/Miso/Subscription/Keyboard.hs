@@ -36,8 +36,8 @@ import           Miso.Html.Internal ( Sub )
 --  39 right arrow ( x =  1 )
 --  40 down arrow  ( y = -1 )
 data Arrows = Arrows {
-   arrowX :: Int
- , arrowY :: Int
+   arrowX :: !Int
+ , arrowY :: !Int
  } deriving (Show, Eq)
 
 -- | Helper function to convert keys currently pressed to `Arrow`

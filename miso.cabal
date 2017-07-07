@@ -128,6 +128,7 @@ library
     aeson,
     base < 5,
     bytestring,
+    BoundedChan,
     containers,
     text
   if impl(ghcjs)
