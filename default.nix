@@ -1,6 +1,6 @@
 { nixpkgs ? import <nixpkgs> {}, tests ? true, haddock ? true }:
 let
-  inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball;
+  inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
   inherit (nixpkgs.lib) overrideDerivation;
   inherit (nixpkgs) phantomjs2 closurecompiler;
@@ -22,9 +22,9 @@ let
     '';
   });
   result = {
-    miso-ghcjs = buildFromSdist (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
-    miso-ghc = buildFromSdist miso-ghc;
-    release = sdistTarball miso-ghc;
+    miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
+    miso-ghc = buildStrictly miso-ghc;
+    release = sdistTarball (buildStrictly miso-ghc);
     s3 = nixpkgs.writeScriptBin "s3.sh" ''
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
