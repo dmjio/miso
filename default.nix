@@ -28,7 +28,7 @@ let
     s3 = nixpkgs.writeScriptBin "s3.sh" ''
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
-       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/share/doc/x86_64-osx-ghcjs-0.2.0-ghc7_10_3/miso-0.1.3.0/html/ s3://aws-website-miso-ghcjs-1yv32/
+       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/share/doc/x86_64-osx-ghcjs-0.2.0-ghc7_10_3/*/html/ s3://aws-website-miso-ghcjs-1yv32/
     '';
   };
 in nixpkgs.runCommand "miso" result ''
