@@ -4,7 +4,7 @@
   <img width=10% src="https://emojipedia-us.s3.amazonaws.com/thumbs/240/apple/96/steaming-bowl_1f35c.png">
    </a>
 <p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> front-end framework</p>
-</p> 
+</p>
 
 <p align="center">
   <a href="https://haskell-miso-slack.herokuapp.com">
@@ -34,19 +34,19 @@
 
 ## Examples
   - TodoMVC
-    - [Link](https://d3u8rq3uy5wnb9.cloudfront.net/)
+    - [Link](https://todo-mvc.haskell-miso.org/)
     - [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
   - Mario
-    - [Link](https://dfhxhtlu1tq0x.cloudfront.net/)
+    - [Link](https://mario.haskell-miso.org/)
     - [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
  - SVG
-    - [Link](https://d2dwfl7f3j7of0.cloudfront.net/)
+    - [Link](https://svg.haskell-miso.org/)
  - Simple
-    - [Link](https://dco9lhtzw9c6i.cloudfront.net)
+    - [Link](https://simple.haskell-miso.org/)
     - [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
 
-## Documentation
-  - [GHCJS](https://d10z4r8eai3cm9.cloudfront.net/)
+## Haddocks
+  - [GHCJS](https://haddocks.haskell-miso.org/)
   - [GHC](http://hackage.haskell.org/package/miso)
 
 ## Getting Started
