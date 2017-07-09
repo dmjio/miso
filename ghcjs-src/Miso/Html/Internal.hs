@@ -195,7 +195,7 @@ foreign import javascript unsafe "$r = objectToJSON($1,$2);"
 
 -- | For defining delegated events with options
 --
--- > let clickHandler = on defaultOptions "click" emptyDecoder $ \() -> Action
+-- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
