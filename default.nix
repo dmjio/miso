@@ -2,7 +2,8 @@
 let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
-  inherit (nixpkgs.lib) overrideDerivation;
+  inherit (nixpkgs.lib) overrideDerivation optionalString;
+  inherit (nixpkgs.stdenv) isDarwin;
   inherit (nixpkgs) phantomjs2 closurecompiler;
   miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
@@ -16,7 +17,7 @@ let
       rm $out/bin/todo-mvc.jsexe/all.js
       mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
     '';
-    checkPhase = ''
+    checkPhase = optionalString (!isDarwin) ''
       export PATH=$PATH:${phantomjs2}/bin
       phantomjs dist/build/tests/tests.jsexe/all.js
     '';
