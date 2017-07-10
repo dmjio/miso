@@ -39,6 +39,9 @@
   - Mario
     - [Link](https://mario.haskell-miso.org/)
     - [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+ - Websocket
+    - [Link](https://websocket.haskell-miso.org/)
+    - [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
  - SVG
     - [Link](https://svg.haskell-miso.org/)
  - Simple
