@@ -17,6 +17,7 @@ description:
 extra-source-files:
   README.md
   examples/todo-mvc/index.html
+  examples/websocket/index.html
   examples/mario/imgs/jump/right.gif
   examples/mario/imgs/jump/left.gif
   examples/mario/imgs/stand/right.gif
@@ -45,8 +46,24 @@ executable todo-mvc
     hs-source-dirs:
       examples/todo-mvc
     build-depends:
-      base < 5,
       aeson,
+      base < 5,
+      containers,
+      miso
+    default-language:
+      Haskell2010
+
+executable websocket
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/websocket
+    build-depends:
+      aeson,
+      base < 5,
       containers,
       miso
     default-language:
