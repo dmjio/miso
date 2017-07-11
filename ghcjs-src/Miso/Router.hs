@@ -18,7 +18,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Router where
+module Miso.Router ( runRoute, RoutingError(..) ) where
 
 import qualified Data.ByteString.Char8 as BS
 import           Data.Proxy

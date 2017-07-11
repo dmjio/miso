@@ -20,12 +20,17 @@ module Miso.Subscription.History
   , forward
   , go
   , uriSub
+  , URI (..)
   ) where
 
-import Miso.String
+import Control.Concurrent
+import Control.Monad
 import GHCJS.Foreign.Callback
-import Network.URI hiding (path)
-import Miso.Html.Internal ( Sub )
+import Miso.Concurrent
+import Miso.Html.Internal     ( Sub )
+import Miso.String
+import Network.URI            hiding (path)
+import System.IO.Unsafe
 
 -- | Retrieves current URI of page
 getURI :: IO URI
@@ -40,7 +45,7 @@ getURI = do
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> IO ()
 {-# INLINE pushURI #-}
-pushURI uri = pushStateNoModel uri { uriPath = path }
+pushURI uri = pushStateNoModel uri { uriPath = path } >> notify chan
   where
     path | uriPath uri == mempty = "/"
          | otherwise = uriPath uri
@@ -48,7 +53,7 @@ pushURI uri = pushStateNoModel uri { uriPath = path }
 -- | Replaces current URI on stack
 replaceURI :: URI -> IO ()
 {-# INLINE replaceURI #-}
-replaceURI uri = replaceTo' uri { uriPath = path }
+replaceURI uri = replaceTo' uri { uriPath = path } >> notify chan
   where
     path | uriPath uri == mempty = "/"
          | otherwise = uriPath uri
@@ -66,14 +71,21 @@ forward = forward'
 -- | Jumps to a specific position in history
 go :: Int -> IO ()
 {-# INLINE go #-}
-go = go'
+go n = go' n
+
+chan :: Notify
+{-# NOINLINE chan #-}
+chan = unsafePerformIO newNotify
 
 -- | Subscription for `popState` events, from the History API
 uriSub :: (URI -> action) -> Sub action model
-uriSub = \f _ sink ->
+uriSub = \f _ sink -> do
+  void.forkIO.forever $ do
+    wait chan >> do
+      sink =<< f <$> getURI
   onPopState =<< do
-     ps <- f <$> getURI
-     asyncCallback $ sink ps
+     asyncCallback $ do
+      sink =<< f <$> getURI
 
 foreign import javascript unsafe "window.history.go($1);"
   go' :: Int -> IO ()
@@ -101,8 +113,12 @@ foreign import javascript unsafe "window.history.replaceState(null, null, $1);"
 
 pushStateNoModel :: URI -> IO ()
 {-# INLINE pushStateNoModel #-}
-pushStateNoModel = pushStateNoModel' . pack . show
+pushStateNoModel u = do
+  pushStateNoModel' . pack . show $ u
+  notify chan
 
 replaceTo' :: URI -> IO ()
 {-# INLINE replaceTo' #-}
-replaceTo' = replaceState' . pack . show
+replaceTo' u = do
+  replaceState' . pack . show $ u
+  notify chan
