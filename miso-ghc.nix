@@ -3,7 +3,7 @@
 }:
 mkDerivation {
   pname = "miso";
-  version = "0.1.4.0";
+  version = "0.1.5.0";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
@@ -11,6 +11,6 @@ mkDerivation {
     aeson base bytestring containers lucid text vector BoundedChan
   ];
   homepage = "http://github.com/dmjio/miso";
-  description = "Haskell front-end framework";
+  description = "A tasty Haskell front-end framework";
   license = stdenv.lib.licenses.bsd3;
 }
