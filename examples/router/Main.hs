@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -16,6 +17,13 @@ data Model
     -- ^ current URI of application
   } deriving (Eq, Show)
 
+-- | HasURI typeclass
+instance HasURI Model where
+  lensURI = makeLens getter setter
+    where
+      getter = uri
+      setter = \m u -> m { uri = u }
+
 -- | Action
 data Action
   = HandleURI URI
@@ -26,8 +34,8 @@ data Action
 -- | Main entry point
 main :: IO ()
 main = do
-  currentRoute <- getURI
-  startApp App { model = Model currentRoute, ..}
+  currentURI <- getCurrentURI
+  startApp App { model = Model currentURI, ..}
   where
     update = updateModel
     events = defaultEvents
@@ -45,17 +53,16 @@ updateModel _ m = noEff m
 
 -- | View function, with routing
 viewModel :: Model -> View Action
-viewModel Model {..} =
-  case runRoute uri (Proxy :: Proxy API) handlers of
-    Left _ -> the404
-    Right v -> v
+viewModel model@Model {..} = view
   where
+    view = either (const the404) id result
+    result = runRoute (Proxy :: Proxy API) handlers model
     handlers = about :<|> home
-    home = div_ [] [
+    home (_ :: Model) = div_ [] [
         div_ [] [ text "home" ]
       , button_ [ onClick goAbout ] [ text "go about" ]
       ]
-    about = div_ [] [
+    about (_ :: Model) = div_ [] [
         div_ [] [ text "about" ]
       , button_ [ onClick goHome ] [ text "go home" ]
       ]
@@ -65,8 +72,8 @@ viewModel Model {..} =
       ]
 
 -- | Type-level routes
-type API = About :<|> Home
-type Home = View Action
+type API   = About :<|> Home
+type Home  = View Action
 type About = "about" :> View Action
 
 -- | Type-safe links used in `onClick` event handlers to route the application

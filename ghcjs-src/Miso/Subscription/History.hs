@@ -13,7 +13,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.History
-  ( getURI
+  ( getCurrentURI
   , pushURI
   , replaceURI
   , back
@@ -31,6 +31,11 @@ import Miso.Html.Internal     ( Sub )
 import Miso.String
 import Network.URI            hiding (path)
 import System.IO.Unsafe
+
+-- | Retrieves current URI of page
+getCurrentURI :: IO URI
+{-# INLINE getCurrentURI #-}
+getCurrentURI = getURI
 
 -- | Retrieves current URI of page
 getURI :: IO URI
