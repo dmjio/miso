@@ -55,38 +55,86 @@
   - [GHCJS](https://haddocks.haskell-miso.org/)
   - [GHC](http://hackage.haskell.org/package/miso)
 
-## Getting Started
+## Example application
 ```haskell
+-- | Haskell language pragmas
 {-# LANGUAGE RecordWildCards #-}
 
+-- | Haskell module declaration
 module Main where
 
+-- | Miso framework import
 import Miso
 
+-- | Type synonym for a `miso` model
 type Model = Int
 
-main :: IO ()
-main = startApp App {..}
-  where
-    model  = 0
-    update = updateModel
-    view   = viewModel
-    events = defaultEvents
-    subs   = []
-
-updateModel :: Action -> Model -> Effect Model Action
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
-
+-- | Sum type for application events
 data Action
   = AddOne
   | SubtractOne
   deriving (Show, Eq)
 
+-- | Main entry point for a miso application
+main :: IO ()
+main = startApp App {..}
+  where
+    model  = 0   		-- initial model
+    update = updateModel	-- update function
+    view   = viewModel		-- view function
+    events = defaultEvents	-- default delegated events
+    subs   = []			-- empty subscription list
+
+-- | Update function to step model, optionally introduce a side-effect
+updateModel :: Action -> Model -> Effect Model Action
+updateModel AddOne m = noEff (m + 1)
+updateModel SubtractOne m = noEff (m - 1)
+
+-- | Create a virtual DOM (`View`) from
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
  , text (show x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
- ```
+```
+
+## Building examples
+
+The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
+```
+git clone https://github.com/dmjio/miso && cd miso && nix-build
+```
+
+This will build all examples and documentation into a folder named `result`
+```
+➜  miso git:(master) ✗ tree result -d
+result
+|-- doc
+|   |-- x86_64-osx-ghc-8.0.2
+|   |   `-- miso-0.1.5.0
+|   |       `-- html
+|   |           `-- src
+|   `-- x86_64-osx-ghcjs-0.2.0-ghc7_10_3
+|       `-- miso-0.1.5.0
+|           `-- html
+|               `-- src
+|-- examples
+|   |-- mario.jsexe
+|   |   `-- imgs
+|   |       |-- jump
+|   |       |-- stand
+|   |       `-- walk
+|   |-- router.jsexe
+|   |-- simple.jsexe
+|   |-- tests.jsexe
+|   |-- todo-mvc.jsexe
+|   `-- websocket.jsexe
+```
+
+To see examples, we recommend hosting them with a webserver
+
+```
+cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
+Serving HTTP on 0.0.0.0 port 8000 ...
+```
