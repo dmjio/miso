@@ -4,7 +4,13 @@ let
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
   inherit (nixpkgs.lib) overrideDerivation optionalString;
   inherit (nixpkgs.stdenv) isDarwin;
-  inherit (nixpkgs) phantomjs2 closurecompiler;
+  inherit (nixpkgs) phantomjs2 closurecompiler writeScriptBin fetchFromGitHub;
+  nixFromStack = import (fetchFromGitHub {
+    owner = "dmjio";
+    repo = "nixFromStack";
+    rev = "e6edf8bfc4dd37398637c2f4b9a39d5d2784e9df";
+    sha256 = "17v2r8mafk30c3djlh04vvg954x3wq3snk4dc54wb9gi8acqhxsk";
+  }) { pkgs = nixpkgs; };
   miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
     doCheck = tests && !isDarwin;
@@ -23,7 +29,13 @@ let
       phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
+  gen = x: writeScriptBin "stack-gen-${x}" ''
+    cp ./stack/${x}/stack.yaml .
+    ${nixFromStack}/bin/nixFromStack --compiler ghcjs --no-check --no-haddock +RTS -N -RTS > ./stack/${x}/stackage-packages.nix
+  '';
   result = {
+    stack-gen-ghcjs7103 = gen "ghcjs7103";
+    stack-gen-ghcjs801 = gen "ghcjs801";
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildStrictly miso-ghc;
     release = sdistTarball (buildStrictly miso-ghc);
