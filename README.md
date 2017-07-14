@@ -57,7 +57,7 @@
 
 ## Example application
 ```haskell
--- | Haskell language pragmas
+-- | Haskell language pragma
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Haskell module declaration
@@ -66,7 +66,7 @@ module Main where
 -- | Miso framework import
 import Miso
 
--- | Type synonym for a `miso` model
+-- | Type synonym for an application model
 type Model = Int
 
 -- | Sum type for application events
@@ -75,7 +75,7 @@ data Action
   | SubtractOne
   deriving (Show, Eq)
 
--- | Main entry point for a miso application
+-- | Entry point for a miso application
 main :: IO ()
 main = startApp App {..}
   where
@@ -85,12 +85,12 @@ main = startApp App {..}
     events = defaultEvents	-- default delegated events
     subs   = []			-- empty subscription list
 
--- | Update function to step model, optionally introduce a side-effect
+-- | Steps model, optionally introduce side-effects
 updateModel :: Action -> Model -> Effect Model Action
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 
--- | Create a virtual DOM (`View`) from
+-- | Constructs a virtual DOM from an application model
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
