@@ -43,7 +43,7 @@ getURI :: IO URI
 getURI = do
   URI <$> pure mempty
       <*> pure Nothing
-      <*> do unpack <$> getPathName
+      <*> do Prelude.drop 1 . unpack <$> getPathName
       <*> do unpack <$> getSearch
       <*> pure mempty
 

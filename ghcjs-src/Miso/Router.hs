@@ -190,7 +190,10 @@ routeLoc loc r m = case r of
     p:paths -> if p == T.pack (symbolVal sym)
       then routeLoc (loc { locPath = paths }) a m
       else Left Fail
-  RPage a -> Right a
+  RPage a ->
+    case locPath loc of
+      [] -> Right a
+      _ -> Left Fail
 
 -- | Convert a 'URI' to a 'Location'.
 uriToLocation :: URI -> Location

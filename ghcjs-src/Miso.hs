@@ -13,7 +13,8 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso
-  ( startApp
+  ( miso
+  , startApp
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -28,6 +29,7 @@ import           Data.IORef
 import           Data.List
 import           Data.Sequence                 ((|>))
 import qualified Data.Sequence                 as S
+import qualified JavaScript.Object.Internal    as OI
 import           JavaScript.Web.AnimationFrame
 
 import           Miso.Concurrent
@@ -39,39 +41,40 @@ import           Miso.Html
 import           Miso.Router
 import           Miso.Subscription
 import           Miso.Types
+import           Miso.FFI
 
--- | Runs a miso application
-startApp :: Eq model => App model action -> IO ()
-startApp App {..} = do
-  let initialView = view model
-  -- init empty Model
-  modelRef <- newIORef model
-  -- init empty actions
-  actionsMVar <- newMVar S.empty
+-- | Helper function to abstract out common functionality between `startApp` and `miso`
+common
+  :: Eq model
+  => App model action
+  -> model
+  -> ((action -> IO ()) -> IO (IORef VTree))
+  -> IO b
+common App {..} m getView = do
   -- init Notifier
   Notify {..} <- newNotify
   -- init EventWriter
   EventWriter {..} <- newEventWriter notify
+  -- init empty Model
+  modelRef <- newIORef m
+  -- init empty actions
+  actionsMVar <- newMVar S.empty
   -- init Subs
   forM_ subs $ \sub ->
     sub (readIORef modelRef) writeEvent
   -- init event application thread
   void . forkIO . forever $ do
-    newAction <- getEvent
+    action <- getEvent
     modifyMVar_ actionsMVar $! \actions ->
-      pure (actions |> newAction)
+      pure (actions |> action)
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
   void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
-  -- Create virtual dom, perform initial diff
-  initialVTree <- flip runView writeEvent initialView
-  Nothing `diff` (Just initialVTree)
-  viewRef <- newIORef initialVTree
+  -- Retrieves reference view
+  viewRef <- getView writeEvent
   -- Begin listening for events in the virtual dom
   delegator viewRef events
-  -- Process initial action of application
-  writeEvent initialAction
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model
@@ -93,6 +96,31 @@ startApp App {..} = do
       Just oldVTree `diff` Just newVTree
       atomicWriteIORef viewRef newVTree
 
+-- | Runs an isomorphic miso application
+-- Assumes the pre-rendered DOM is already present
+miso :: (HasURI model, Eq model) => App model action -> IO ()
+miso app@App{..} = do
+  uri <- getCurrentURI
+  let modelWithUri = setURI uri model
+  common app model $ \writeEvent -> do
+    let initialView = view modelWithUri
+    VTree (OI.Object iv) <- flip runView writeEvent initialView
+    -- Initial diff can be bypassed, just copy DOM into VTree
+    copyDOMIntoVTree iv
+    let initialVTree = VTree (OI.Object iv)
+    -- Create virtual dom, perform initial diff
+    newIORef initialVTree
+
+-- | Runs a miso application
+startApp :: Eq model => App model action -> IO ()
+startApp app@App {..} =
+  common app model $ \writeEvent -> do
+    let initialView = view model
+    initialVTree <- flip runView writeEvent initialView
+    Nothing `diff` (Just initialVTree)
+    newIORef initialVTree
+
+-- | Helper
 foldEffects
   :: (action -> IO ())
   -> (action -> model -> Effect model action)

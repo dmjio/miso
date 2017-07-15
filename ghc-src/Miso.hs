@@ -15,7 +15,9 @@
 module Miso
   ( module Miso.Event
   , module Miso.Html
+  , module Miso.TypeLevel
   ) where
 
 import           Miso.Event
 import           Miso.Html
+import           Miso.TypeLevel
