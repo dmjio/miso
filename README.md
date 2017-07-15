@@ -91,12 +91,12 @@ main = startApp App {..}
     events = defaultEvents	-- default delegated events
     subs   = []			-- empty subscription list
 
--- | Steps model, optionally introduce side-effects
+-- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Model Action
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 
--- | Constructs a virtual DOM from an application model
+-- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
@@ -118,11 +118,11 @@ This will build all examples and documentation into a folder named `result`
 result
 |-- doc
 |   |-- x86_64-osx-ghc-8.0.2
-|   |   `-- miso-0.1.5.0
+|   |   `-- miso-0.2.0.0
 |   |       `-- html
 |   |           `-- src
 |   `-- x86_64-osx-ghcjs-0.2.0-ghc7_10_3
-|       `-- miso-0.1.5.0
+|       `-- miso-0.2.0.0
 |           `-- html
 |               `-- src
 |-- examples
