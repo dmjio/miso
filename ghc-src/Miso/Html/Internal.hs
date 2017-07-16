@@ -1,4 +1,5 @@
 {-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE RankNTypes           #-}
@@ -7,6 +8,7 @@
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE UndecidableInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Internal
@@ -42,35 +44,38 @@ module Miso.Html.Internal (
   ) where
 
 import           Data.Aeson
-import qualified Data.Map as M
+import qualified Data.Map    as M
 import           Data.Monoid
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Proxy
+import           Data.Text   (Text)
+import qualified Data.Text   as T
 import qualified Data.Vector as V
-import qualified Lucid as L
-import qualified Lucid.Base as L
-import           Miso.String hiding (map)
+import qualified Lucid       as L
+import qualified Lucid.Base  as L
+import           Servant.API
+
 import           Miso.Event
+import           Miso.String hiding (map)
 
 -- | Virtual DOM implemented as a Rose `Vector`.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
-data VTree model where
+data VTree action where
   VNode :: { vType :: Text -- ^ Element type (i.e. "div", "a", "p")
            , vNs :: NS -- ^ HTML or SVG
            , vProps :: Props -- ^ Fields present on DOM Node
            , vCss :: CSS -- ^ Styles
            , vKey :: Maybe Key -- ^ Key used for child swap patch
-           , vChildren :: V.Vector (VTree model) -- ^ Child nodes
-           } -> VTree model
+           , vChildren :: V.Vector (VTree action) -- ^ Child nodes
+           } -> VTree action
   VText :: { vText :: Text -- ^ TextNode content
-           } -> VTree model
+           } -> VTree action
 
-instance Show (VTree model) where
+instance Show (VTree action) where
   show = show . L.toHtml
 
 -- | Converting `VTree` to Lucid's `L.Html`
-instance L.ToHtml (VTree model) where
+instance L.ToHtml (VTree action) where
   toHtmlRaw = L.toHtml
   toHtml (VText x) = L.toHtml x
   toHtml VNode{..} =
@@ -96,17 +101,22 @@ toHtmlFromJSON (Object o) = pack (show o)
 toHtmlFromJSON (Array a) = pack (show a)
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-newtype View model = View { runView :: VTree model }
+newtype View action = View { runView :: VTree action }
+
+-- | For constructing type-safe links
+instance HasLink (View a) where
+  type MkLink (View a) = MkLink (Get '[] ())
+  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
 
 -- | Convenience class for using View
-class ToView v where toView :: v -> View model
+class ToView v where toView :: v -> View action
 
 -- | Show `View`
-instance Show (View model) where
+instance Show (View action) where
   show (View xs) = show xs
 
 -- | Converting `View` to Lucid's `L.Html`
-instance L.ToHtml (View model) where
+instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
   toHtml (View xs) = L.toHtml xs
 
@@ -117,7 +127,7 @@ data NS
   deriving (Show, Eq)
 
 -- | `VNode` creation
-node :: NS -> MisoString -> Maybe Key -> [Attribute model] -> [View model] -> View model
+node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
 node vNs vType vKey as xs =
   let vProps  = Props  $ M.fromList [ (k,v) | P k v <- as ]
       vCss    = CSS    $ M.fromList [ (k,v) | C k v <- as ]
@@ -125,7 +135,7 @@ node vNs vType vKey as xs =
   in View VNode {..}
 
 -- | `VText` creation
-text :: ToMisoString str => str -> View model
+text :: ToMisoString str => str -> View action
 text x = View $ VText (toMisoString x)
 
 -- | Key for specific children patch
@@ -156,7 +166,7 @@ newtype Props = Props (M.Map MisoString Value)
 newtype CSS = CSS (M.Map MisoString MisoString)
 
 -- | `View` Attributes to annotate DOM, converted into Events, Props, Attrs and CSS
-data Attribute model
+data Attribute action
   = C MisoString MisoString
   | P MisoString Value
   | E ()
@@ -167,7 +177,7 @@ newtype AllowDrop = AllowDrop Bool
   deriving (Show, Eq)
 
 -- | Constructs a property on a `VNode`, used to set fields on a DOM Node
-prop :: ToJSON a => MisoString -> a -> Attribute model
+prop :: ToJSON a => MisoString -> a -> Attribute action
 prop k v = P k (toJSON v)
 
 -- | For defining delegated events
