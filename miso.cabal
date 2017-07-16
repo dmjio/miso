@@ -139,6 +139,7 @@ library
   default-language:
     Haskell2010
   exposed-modules:
+    Miso
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event
@@ -185,7 +186,6 @@ library
       jsbits/isomorphic.js
       jsbits/util.js
     exposed-modules:
-      Miso
       Miso.Effect
       Miso.Effect.Storage
       Miso.Effect.XHR
