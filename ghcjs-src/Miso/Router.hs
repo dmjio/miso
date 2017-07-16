@@ -137,11 +137,6 @@ instance HasRouter m (View a) where
   type RouteT m (View a) x = m -> x
   route _ _ a m = RPage (a m)
 
--- | Link
-instance HasLink (View a) where
-  type MkLink (View a) = MkLink (Get '[] ())
-  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
-
 -- | Use a handler to route a 'Location'.
 -- Normally 'runRoute' should be used instead, unless you want custom
 -- handling of string failing to parse as 'URI'.

@@ -1,19 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP                #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE LambdaCase            #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# OPTIONS_GHC -fno-warn-orphans  #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Internal
@@ -51,19 +52,20 @@ module Miso.Html.Internal (
   ) where
 
 import           Control.Monad
--- import           Data.Aeson hiding (Object)
-import           Data.Aeson.Types (parseEither)
-import           Data.Monoid
+import           Data.Aeson.Types           (parseEither)
 import           Data.JSString
 import           Data.JSString.Text
-import qualified Data.Map as M
-import qualified Data.Text as T
+import qualified Data.Map                   as M
+import           Data.Monoid
+import           Data.Proxy
+import qualified Data.Text                  as T
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           JavaScript.Array.Internal (fromList)
+import           JavaScript.Array.Internal  (fromList)
 import           JavaScript.Object
 import           JavaScript.Object.Internal (Object (Object))
+import           Servant.API
 
 import           Miso.Event.Decoder
 import           Miso.Event.Types
@@ -82,6 +84,11 @@ newtype VTree = VTree { getTree :: Object }
 newtype View action = View {
   runView :: (action -> IO ()) -> IO VTree
 }
+
+-- | For constructing type-safe links
+instance HasLink (View a) where
+  type MkLink (View a) = MkLink (Get '[] ())
+  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
 
 -- | Convenience class for using View
 class ToView v where toView :: v -> View m
