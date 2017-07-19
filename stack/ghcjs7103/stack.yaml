@@ -2,6 +2,10 @@ resolver: lts-6.20
 compiler: ghcjs-0.2.0.9006020_ghc-7.10.3
 compiler-check: match-exact
 
+packages:
+ - '.'
+extra-deps: []
+
 setup-info:
   ghcjs:
     source:
