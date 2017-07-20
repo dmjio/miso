@@ -78,7 +78,7 @@ data Msg
    deriving Show
 
 main :: IO ()
-main = startApp App{..}
+main = startApp App { initialAction = NoOp, ..}
   where
     model  = emptyModel
     update = updateModel

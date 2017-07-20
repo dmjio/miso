@@ -28,5 +28,7 @@ data App model action = App
   -- ^ List of subscriptions to run during application lifetime
   , events :: M.Map MisoString Bool
   -- ^ List of delegated events that the body element will listen for
+  , initialAction :: action
+  -- ^ Initial action that is run after the application has loaded
   }
 

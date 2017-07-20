@@ -21,7 +21,7 @@ import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
 main :: IO ()
-main = startApp App {..}
+main = startApp App { initialAction = Id, ..}
   where
     model = Model mempty mempty
     events = defaultEvents

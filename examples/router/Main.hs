@@ -35,7 +35,7 @@ data Action
 main :: IO ()
 main = do
   currentURI <- getCurrentURI
-  startApp App { model = Model currentURI, ..}
+  startApp App { model = Model currentURI, initialAction = NoOp, ..}
   where
     update = updateModel
     events = defaultEvents
