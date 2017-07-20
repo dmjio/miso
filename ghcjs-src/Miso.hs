@@ -57,9 +57,9 @@ startApp App {..} = do
     sub (readIORef modelRef) writeEvent
   -- init event application thread
   void . forkIO . forever $ do
-    action <- getEvent
+    newAction <- getEvent
     modifyMVar_ actionsMVar $! \actions ->
-      pure (actions |> action)
+      pure (actions |> newAction)
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
@@ -70,6 +70,8 @@ startApp App {..} = do
   viewRef <- newIORef initialVTree
   -- Begin listening for events in the virtual dom
   delegator viewRef events
+  -- Process initial action of application
+  writeEvent initialAction
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model

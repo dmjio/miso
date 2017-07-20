@@ -82,22 +82,28 @@ type Model = Int
 data Action
   = AddOne
   | SubtractOne
+  | NoOp
+  | SayHelloWorld
   deriving (Show, Eq)
 
 -- | Entry point for a miso application
 main :: IO ()
 main = startApp App {..}
   where
-    model  = 0   		-- initial model
-    update = updateModel	-- update function
-    view   = viewModel		-- view function
-    events = defaultEvents	-- default delegated events
-    subs   = []			-- empty subscription list
+    initialAction = SayHelloWorld -- initial action to be executed on application load
+    model  = 0   		  -- initial model
+    update = updateModel	  -- update function
+    view   = viewModel		  -- view function
+    events = defaultEvents	  -- default delegated events
+    subs   = []			  -- empty subscription list
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Model Action
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
+updateModel NoOp m = noEff m
+updateModel SayHelloWorld m = m <# do
+  putStrLn "Hello World" >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

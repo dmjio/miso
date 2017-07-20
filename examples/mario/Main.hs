@@ -15,6 +15,7 @@ data Action
   = GetArrows !Arrows
   | Time !Double
   | WindowCoords !(Int,Int)
+  | NoOp
 
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
@@ -23,7 +24,7 @@ main :: IO ()
 main = do
     time <- now
     let m = mario { time = time }
-    startApp App { model = m, ..}
+    startApp App { model = m, initialAction = NoOp, ..}
   where
     update = updateMario
     view   = display
@@ -63,6 +64,7 @@ mario = Model
     }
 
 updateMario :: Action -> Model -> Effect Model Action
+updateMario NoOp m = noEff m
 updateMario (GetArrows arrs) m = step newModel
   where
     newModel = m { arrows = arrs }
