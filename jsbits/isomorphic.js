@@ -3,10 +3,17 @@ function copyDOMIntoVTree (vtree) {
 }
 
 function walk (vtree, node) {
-    var i = 0;
+    var i = 0, vdomChild, domChild;
     vtree.domRef = node;
     while (i < vtree.children.length) {
-      walk(vtree.children[i], node.children[i]);
+      vdomChild = vtree.children[i];
+      domChild = node.childNodes[i];
+      if (vdomChild.type === "vtext") {
+	  vdomChild.domRef = domChild;
+	  i++;
+	  continue;
+      }
+      walk(vdomChild, domChild);
       i++;
    }
 }

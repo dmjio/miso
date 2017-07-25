@@ -204,8 +204,11 @@ library
       Miso.FFI
       Miso.Delegate
   else
+    exposed-modules:
+      Miso.TypeLevel
     build-depends:
       lucid,
+      servant-lucid,
       vector
     hs-source-dirs:
       ghc-src

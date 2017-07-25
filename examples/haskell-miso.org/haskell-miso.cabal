@@ -1,0 +1,60 @@
+name:                haskell-miso
+version:             0.1.0.0
+synopsis:            https://haskell-miso.org
+description:         Website for the Miso web framework
+homepage:            https://haskell-miso.org
+license:             BSD3
+license-file:        LICENSE
+author:              David Johnson
+maintainer:          djohnson.m@gmail.com
+copyright:           David Johnson (c) 2017
+category:            Web
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+executable server
+  main-is:
+    Main.hs
+  if impl(ghcjs)
+    buildable: False
+  else
+    ghc-options:
+      -O2 -threaded -Wall -rtsopts
+    hs-source-dirs:
+      server, shared
+    build-depends:
+      aeson,
+      base < 5,
+      containers,
+      http-types,
+      lucid,
+      miso,
+      mtl,
+      network-uri,
+      servant,
+      servant-lucid,
+      servant-server,
+      wai,
+      wai-extra,
+      warp
+    default-language:
+      Haskell2010
+
+executable client
+  main-is:
+    Main.hs
+  if !impl(ghcjs)
+    buildable: False
+  else
+    hs-source-dirs:
+      client, shared
+    build-depends:
+      aeson,
+      base < 5,
+      containers,
+      network-uri,
+      miso,
+      servant
+    default-language:
+      Haskell2010

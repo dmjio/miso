@@ -39,8 +39,6 @@ module Miso.Html.Internal (
   -- * Handling events
   , on
   , onWithOptions
-  -- * String
-  , module Miso.String
   ) where
 
 import           Data.Aeson
@@ -64,7 +62,6 @@ data VTree action where
   VNode :: { vType :: Text -- ^ Element type (i.e. "div", "a", "p")
            , vNs :: NS -- ^ HTML or SVG
            , vProps :: Props -- ^ Fields present on DOM Node
-           , vCss :: CSS -- ^ Styles
            , vKey :: Maybe Key -- ^ Key used for child swap patch
            , vChildren :: V.Vector (VTree action) -- ^ Child nodes
            } -> VTree action
@@ -77,7 +74,8 @@ instance Show (VTree action) where
 -- | Converting `VTree` to Lucid's `L.Html`
 instance L.ToHtml (VTree action) where
   toHtmlRaw = L.toHtml
-  toHtml (VText x) = L.toHtml x
+  toHtml (VText x) | T.null x = L.toHtml (" " :: MisoString)
+                   | otherwise = L.toHtml x
   toHtml VNode{..} =
     let ele = L.makeElement (toTag vType) kids
     in L.with ele as
@@ -130,7 +128,6 @@ data NS
 node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
 node vNs vType vKey as xs =
   let vProps  = Props  $ M.fromList [ (k,v) | P k v <- as ]
-      vCss    = CSS    $ M.fromList [ (k,v) | C k v <- as ]
       vChildren = V.fromList $ map runView xs
   in View VNode {..}
 
@@ -161,15 +158,13 @@ instance ToKey Word   where toKey = Key . T.pack . show
 
 -- | Properties
 newtype Props = Props (M.Map MisoString Value)
-
--- | CSS
-newtype CSS = CSS (M.Map MisoString MisoString)
+  deriving (Show, Eq)
 
 -- | `View` Attributes to annotate DOM, converted into Events, Props, Attrs and CSS
 data Attribute action
-  = C MisoString MisoString
-  | P MisoString Value
+  = P MisoString Value
   | E ()
+  deriving (Show, Eq)
 
 -- | DMJ: this used to get set on preventDefault on Options... if options are dynamic now what
 -- | Useful for `drop` events
@@ -212,7 +207,7 @@ onWithOptions _ _ _ _ = E ()
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: M.Map MisoString MisoString -> Attribute action
-style_ = C "style" . M.foldrWithKey go mempty
+style_ map' = P "style" $ String (M.foldrWithKey go mempty map')
   where
     go :: MisoString -> MisoString -> MisoString -> MisoString
     go k v xs = mconcat [ k, ":", v, ";" ] <> xs
