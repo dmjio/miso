@@ -9,8 +9,6 @@ let
 in
   runCommand "haskell-miso.org" { inherit client server; } ''
     mkdir -p $out/{bin,static}
-    cp ${client}/bin/client.jsexe/all.js $out/static/all.js
+    ${closurecompiler}/bin/closure-compiler ${client}/bin/client.jsexe/all.js > $out/static/all.js
     cp ${server}/bin/* $out/bin
   ''
-
-
