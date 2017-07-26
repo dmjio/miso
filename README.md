@@ -40,6 +40,9 @@
 - [Haddocks](#haddocks)
 - [Sample Application](#sample-application)
 - [Building examples](#building-examples)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Examples
   - TodoMVC
@@ -153,3 +156,18 @@ To see examples, we recommend hosting them with a webserver
 cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
+
+## Maintainers
+
+[@dmjio](https://github.com/dmjio)
+
+## Contributing
+
+Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) or submit [PRs](https://github.com/dmjio/miso/pulls). 
+
+See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
+
+## License
+
+[BSD3](LICENSE) © David Johnson
+
