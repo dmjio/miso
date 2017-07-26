@@ -31,12 +31,12 @@ A good guideline for going about contributing to a Haskell project is [Neil Mitc
        - `client` / `server` setup walkthrough guide (for both `nix`, `stack`, `cabal`)
      - Introductory materials
        - Blog posts
-       - User experiences, comparisons.
-       - JS minification, cabal file setup, configurations walk-throughs.
+       - User experiences, comparisons
+       - JS minification, cabal file setup, configuration walk-throughs
   - Press
-     - Get the word out, blog, tweet, fb, etc.
+     - Get the word out, blog, tweet, fb, etc
   - Testimonials
-     - Are you using `miso` in any capacity? Get in touch.
+     - Are you using `miso` in any capacity? Please let us know!
   - More tests
      - https://github.com/dmjio/miso/blob/master/tests/Main.hs#L20
   - Anything listed as `low-hanging-fruit` / `help-wanted` in the [issues](https://github.com/dmjio/miso/issues)
