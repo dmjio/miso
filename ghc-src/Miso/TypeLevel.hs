@@ -15,5 +15,5 @@ type family ToServerRoutes (layout :: k) (wrapper :: * -> *) (action :: *) :: k 
       ToServerRoutes b wrapper action
   ToServerRoutes (a :> b) wrapper action =
     a :> ToServerRoutes b wrapper action
-  ToServerRoutes (View _) wrapper action =
+  ToServerRoutes (View a) wrapper action =
     Get '[HTML] (wrapper (View action))
