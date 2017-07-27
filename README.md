@@ -40,6 +40,7 @@
   - [Stack](#stack)
   - [Nix](#nix)
   - [Cabal](#cabal)
+  - [GHCJSi Caveats](#ghcjsi-caveats)
   - [Architecture](#architecture)
 - [Examples](#examples)
   - [TodoMVC](#todomvc)
@@ -269,6 +270,12 @@ cabal install --ghcjs
 cabal build
 open dist/build/app/app.jsexe/index.html
 ```
+
+### GHCJSi Caveats
+If you run `main` in `GHCJSi`, interrupt it and then run it again, you
+will end up with two copies of your app displayed above each other. As
+a workaround, you can use `clearBody >> main` which will completely
+clear the document body before rendering your application.
 
 ### Architecture
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/haskell-miso.cabal#L16-L60). For more info on how to use `stack` with a `client`/`server` setup, see this [link](https://docs.haskellstack.org/en/stable/ghcjs/#project-with-both-client-and-server). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).

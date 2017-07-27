@@ -23,6 +23,7 @@ module Miso.FFI
    , item
    , jsvalToValue
    , delegateEvent
+   , clearBody
    ) where
 
 import           Control.Monad
@@ -127,3 +128,7 @@ foreign import javascript unsafe "delegate($1, $2);"
      -> Callback (IO JSVal) -- ^ Virtual DOM callback
      -> IO ()
 
+-- | Clear the document body. This is particularly useful to avoid
+-- creating multiple copies of your app when running in GHCJSi.
+foreign import javascript unsafe "document.body.innerHTML = '';"
+  clearBody :: IO ()

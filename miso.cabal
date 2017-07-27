@@ -186,6 +186,7 @@ library
       jsbits/isomorphic.js
       jsbits/util.js
     exposed-modules:
+      Miso.Dev
       Miso.Effect
       Miso.Effect.Storage
       Miso.Effect.XHR
