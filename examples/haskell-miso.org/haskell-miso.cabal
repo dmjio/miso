@@ -47,6 +47,8 @@ executable client
   if !impl(ghcjs)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
     hs-source-dirs:
       client, shared
     build-depends:

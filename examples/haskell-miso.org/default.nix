@@ -1,10 +1,10 @@
 { pkgs ? import <nixpkgs> {} }:
 let
   inherit (pkgs) runCommand closurecompiler;
-  inherit (pkgs.haskell.packages) ghcjs ghc802;
+  inherit (pkgs.haskell.packages) ghcjsHEAD ghc802;
   miso-ghc = ghc802.callPackage ./../../miso-ghc.nix { };
-  miso-ghcjs = ghcjs.callPackage ./../../miso-ghcjs.nix { };
-  client = ghcjs.callPackage ./client { miso = miso-ghcjs; };
+  miso-ghcjs = ghcjsHEAD.callPackage ./../../miso-ghcjs.nix { };
+  client = ghcjsHEAD.callPackage ./client { miso = miso-ghcjs; };
   server = ghc802.callPackage ./server { miso = miso-ghc; };
 in
   runCommand "haskell-miso.org" { inherit client server; } ''
