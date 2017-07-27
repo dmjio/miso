@@ -4,7 +4,8 @@ compiler-check: match-exact
 
 packages:
  - '.'
-extra-deps: []
+extra-deps:
+ - miso
 
 setup-info:
   ghcjs:
