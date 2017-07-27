@@ -36,6 +36,11 @@
 **Miso** is a small "[isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/)" [Haskell](https://www.haskell.org/) front-end framework featuring a virtual-dom, diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). **Miso** is pure by default, but side effects (like `XHR`) can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHCJS](https://github.com/ghcjs/ghcjs) FFI and therefore has minimal dependencies.
 
 ## Table of Contents
+- [Quick Start](#quick-start)
+  - [Stack](#stack)
+  - [Nix](#nix)
+  - [Cabal](#cabal)
+  - [Architecture](#architecture)
 - [Examples](#examples)
   - [TodoMVC](#todomvc)
   - [Mario](#mario)
@@ -47,93 +52,11 @@
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
-- [Quick Start](#quick-start)
-  - [Stack](#stack)
-  - [Nix](#nix)
-  - [Cabal](#cabal)
-  - [Architecture](#architecture)
 - [Building examples](#building-examples)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Examples
-
-### TodoMVC
-  - [Link](https://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
-
-### Mario
-  - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
-
-### Websocket
-  - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
-
-### Router
-  - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
-
-### SVG
-  - [Link](https://svg.haskell-miso.org/)
-
-### Simple
-  - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
-
-## Haddocks
-
-### GHCJS
-  - [Link](https://haddocks.haskell-miso.org/)
-
-### GHC
-  - [Link](http://hackage.haskell.org/package/miso)
-
-## Sample application
-```haskell
--- | Haskell language pragma
-{-# LANGUAGE RecordWildCards #-}
-
--- | Haskell module declaration
-module Main where
-
--- | Miso framework import
-import Miso
-
--- | Type synonym for an application model
-type Model = Int
-
--- | Sum type for application events
-data Action
-  = AddOne
-  | SubtractOne
-  | NoOp
-  | SayHelloWorld
-  deriving (Show, Eq)
-
--- | Entry point for a miso application
-main :: IO ()
-main = startApp App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0			  -- initial model
-    update = updateModel	  -- update function
-    view   = viewModel		  -- view function
-    events = defaultEvents	  -- default delegated events
-    subs   = []			  -- empty subscription list
-
--- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Model Action
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
-updateModel NoOp m = noEff m
-updateModel SayHelloWorld m = m <# do
-  putStrLn "Hello World" >> pure NoOp
-
--- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Action
-viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
- , text (show x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
-```
 ## Quick start
 To get started quickly building applications, we recommend using the [`stack`](https://docs.haskellstack.org/en/stable/README/) or [`nix`](https://nixos.org/nix) package managers. Obtaining [`GHCJS`](https://github.com/ghcjs/ghcjs) is required as a prerequisite. `stack` and `nix` make this process easy, if you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means.
 
@@ -349,6 +272,84 @@ open dist/build/app/app.jsexe/index.html
 
 ### Architecture
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/haskell-miso.cabal#L16-L60). For more info on how to use `stack` with a `client`/`server` setup, see this [link](https://docs.haskellstack.org/en/stable/ghcjs/#project-with-both-client-and-server). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
+
+## Examples
+
+### TodoMVC
+  - [Link](https://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
+
+### Mario
+  - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+
+### Websocket
+  - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
+
+### Router
+  - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
+
+### SVG
+  - [Link](https://svg.haskell-miso.org/)
+
+### Simple
+  - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
+
+## Haddocks
+
+### GHCJS
+  - [Link](https://haddocks.haskell-miso.org/)
+
+### GHC
+  - [Link](http://hackage.haskell.org/package/miso)
+
+## Sample application
+```haskell
+-- | Haskell language pragma
+{-# LANGUAGE RecordWildCards #-}
+
+-- | Haskell module declaration
+module Main where
+
+-- | Miso framework import
+import Miso
+
+-- | Type synonym for an application model
+type Model = Int
+
+-- | Sum type for application events
+data Action
+  = AddOne
+  | SubtractOne
+  | NoOp
+  | SayHelloWorld
+  deriving (Show, Eq)
+
+-- | Entry point for a miso application
+main :: IO ()
+main = startApp App {..}
+  where
+    initialAction = SayHelloWorld -- initial action to be executed on application load
+    model  = 0			  -- initial model
+    update = updateModel	  -- update function
+    view   = viewModel		  -- view function
+    events = defaultEvents	  -- default delegated events
+    subs   = []			  -- empty subscription list
+
+-- | Updates model, optionally introduces side effects
+updateModel :: Action -> Model -> Effect Model Action
+updateModel AddOne m = noEff (m + 1)
+updateModel SubtractOne m = noEff (m - 1)
+updateModel NoOp m = noEff m
+updateModel SayHelloWorld m = m <# do
+  putStrLn "Hello World" >> pure NoOp
+
+-- | Constructs a virtual DOM from a model
+viewModel :: Model -> View Action
+viewModel x = div_ [] [
+   button_ [ onClick AddOne ] [ text "+" ]
+ , text (show x)
+ , button_ [ onClick SubtractOne ] [ text "-" ]
+ ]
+```
 
 ## Building examples
 
