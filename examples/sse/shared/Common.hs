@@ -17,7 +17,7 @@ data Action
 
 home :: Model -> View Action
 home (Model _ msg) =
-  div_ [] [div_ [] [h3_ [] [text ("SSE Example" :: String)]], text msg]
+  div_ [] [div_ [] [h3_ [] [text ("SSE (Server-sent events) Example" :: String)]], text msg]
 
 -- There is only a single route in this example
 type ClientRoutes = Home
