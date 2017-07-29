@@ -46,6 +46,7 @@
   - [TodoMVC](#todomvc)
   - [Mario](#mario)
   - [Websocket](#websocket)
+  - [SSE](#sse)
   - [Router](#router)
   - [SVG](#svg)
   - [Simple](#simple)
@@ -290,6 +291,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### Websocket
   - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
+
+### SSE
+  - [Link](https://sse.haskell-miso.org/) / [Client](https://github.com/dmjio/miso/blob/master/examples/sse/client/Main.hs) / [Server](https://github.com/dmjio/miso/blob/master/examples/sse/server/Main.hs)
 
 ### Router
   - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
