@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
+import Control.Monad
 import GHCJS.Three
 import GHCJS.Types
 import JavaScript.Web.AnimationFrame
@@ -22,13 +23,12 @@ data Model
 
 data Context
   = Context
-  { renderScene :: IO ()
-  , updateCube :: (Int,Int) -> IO ()
+  { updateScene :: Maybe (Int,Int) -> IO ()
   , addToDOM :: IO ()
   }
 
--- | Note, we never change model, so there we never redraw
--- This menas we need to rAF manually
+-- | Note, we never change the model, so therefore we never redraw or rAF
+-- This means we need to rAF manually
 updateModel :: Context -> Action -> Model -> Effect Model Action
 updateModel Context {..} action m = m <#
   case action of
@@ -36,13 +36,10 @@ updateModel Context {..} action m = m <#
       addToDOM
       pure Step
     Step -> do
-      renderScene
-      waitForAnimationFrame
+      updateScene Nothing
       pure Step
     Mouse coords -> do
-      updateCube coords
-      renderScene
-      waitForAnimationFrame
+      updateScene (Just coords)
       pure Step
 
 main :: IO ()
@@ -73,16 +70,17 @@ initContext = do
    cp <- position camera
    setPosition cp {v3z = 5} camera
    pure Context {
-     renderScene = render scene camera renderer
-   , addToDOM = do
+     addToDOM = do
        Just (Element glElem) <- domElement renderer
        c <- getContainer
        appendChild c glElem
-   , updateCube = \(x,y) -> do
-       cubeR <- rotation cube
-       setRotation cubeR { eX = eX cubeR + fromIntegral x
-                         , eY = eY cubeR + fromIntegral y
-                         } cube
+   , updateScene = \maybeCoords -> do
+       waitForAnimationFrame
+       forM_ maybeCoords $ \(x,y) -> do
+         cubeR <- rotation cube
+         setRotation cubeR { eX = eX cubeR + fromIntegral x
+                           , eY = eY cubeR + fromIntegral y
+                           } cube
        render scene camera renderer
    }
 
