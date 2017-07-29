@@ -55,7 +55,6 @@ executable client
       aeson,
       base < 5,
       containers,
-      network-uri,
       miso,
       servant
     default-language:

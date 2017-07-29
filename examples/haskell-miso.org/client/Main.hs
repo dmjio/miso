@@ -3,7 +3,6 @@ module Main where
 
 import Common
 import Data.Proxy
-import Network.URI
 
 import Miso
 import Miso.String

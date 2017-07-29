@@ -8,7 +8,6 @@ import           Data.Bool
 import qualified Data.Map    as M
 import           Data.Monoid
 import           Data.Proxy
-import           Network.URI
 import           Servant.API
 
 import           Miso
