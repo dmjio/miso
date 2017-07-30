@@ -21,7 +21,11 @@ import Miso.Effect.Storage
 import Miso.Effect.XHR
 import Miso.Effect.DOM
 
--- | Capturing effects in update actions
+-- | An effect represents the results of an update action.
+--
+-- It consists of the updated model and an optional action. The action
+-- is always run in a new thread so there is no risk of accidentally
+-- blocking the application.
 data Effect model action
   = NoEffect model
   | Effect model (IO action)
