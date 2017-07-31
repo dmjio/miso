@@ -3,8 +3,6 @@ version:             0.1.0.0
 synopsis:            https://webgl.haskell-miso.org
 description:         WebGL example for the Miso web framework, based on three.js
 homepage:            https://webgl.haskell-miso.org
-license:             BSD3
-license-file:        LICENSE
 author:              David Johnson
 maintainer:          djohnson.m@gmail.com
 copyright:           David Johnson (c) 2017
@@ -20,12 +18,9 @@ executable webgl
     buildable: False
   else
     build-depends:
-                  aeson,
-                  base < 5,
-                  containers,
-                  ghcjs-base >= 0.2.0.0,
-                  ghcjs-three,
-                  miso,
-                  servant
+      base < 5,
+      ghcjs-base,
+      ghcjs-three,
+      miso
     default-language:
       Haskell2010

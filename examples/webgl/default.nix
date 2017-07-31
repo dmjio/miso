@@ -11,7 +11,4 @@ let
   miso-ghcjs = ghcjs.callPackage ./../../miso-ghcjs.nix { };
   webgl = ghcjs.callPackage ./webgl.nix { miso = miso-ghcjs; inherit ghcjs-three; };
 in
-  runCommand "webgl" { inherit webgl; } ''
-    mkdir -p $out/static
-    ${closurecompiler}/bin/closure-compiler ${webgl}/bin/webgl.jsexe/all.js > $out/static/all.js
-  ''
+  webgl
