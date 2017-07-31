@@ -53,6 +53,23 @@ executable todo-mvc
     default-language:
       Haskell2010
 
+executable xhr
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/xhr
+    build-depends:
+      aeson,
+      base < 5,
+      containers,
+      ghcjs-base,
+      miso
+    default-language:
+      Haskell2010
+
 executable router
   main-is:
     Main.hs

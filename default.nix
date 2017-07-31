@@ -14,6 +14,7 @@ let
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/examples/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
       cp ${drv.src}/examples/websocket/index.html $out/bin/websocket.jsexe/
+      cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
       ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
       rm $out/bin/todo-mvc.jsexe/all.js
       mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
@@ -32,7 +33,7 @@ let
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/router.jsexe/ s3://aws-website-router-gfy22/
-       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/share/doc/x86_64-*-ghcjs-0.2.0-ghc7_10_3/*/html/ s3://aws-website-miso-ghcjs-1yv32/
+       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/xhr.jsexe/ s3://aws-website-xhr-gvnhn/
     '';
   };
 in nixpkgs.runCommand "miso" result ''
