@@ -127,7 +127,6 @@ foldEffects
   -> (model, IO ()) -> action -> (model, IO ())
 foldEffects sink update = \(model, as) action ->
   case update action model of
-    NoEffect newModel -> (newModel, as)
-    Effect newModel eff -> (newModel, newAs)
+    Effect newModel effs -> (newModel, newAs)
       where
-        newAs = as >> do void . forkIO . sink =<< eff
+        newAs = as >> (mapM_ (forkIO . sink =<<) effs)
