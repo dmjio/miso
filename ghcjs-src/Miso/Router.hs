@@ -43,6 +43,7 @@ import           Servant.API
 import           Web.HttpApiData
 
 import           Miso.Html             hiding (text)
+import           Miso.Lens
 
 -- | Router terminator.
 -- The 'HasRouter' instance for 'View' finalizes the router.
@@ -203,29 +204,6 @@ uriToLocation uri = Location
   }
 
 class HasURI m where lensURI :: Lens' m URI
-
-type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
-type Lens' s a = Lens s s a a
-type Getting r s a = (a -> Const r a) -> (s -> Const r s)
-
-newtype Const r a = Const { runConst :: r }
-  deriving Functor
-
-newtype Id a = Id { runId :: a }
-  deriving (Functor)
-
-instance Applicative Id where
-  pure = Id
-  Id f <*> Id x = Id (f x)
-
-get :: Getting a s a -> s -> a
-get l = \ s -> runConst (l Const s)
-
-set :: Lens s t a b -> b -> s -> t
-set l b = \ s -> runId (l (\ _ -> A.pure b) s)
-
-makeLens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
-makeLens get' upd = \ f s -> upd s `fmap` f (get' s)
 
 getURI :: HasURI m => m -> URI
 getURI = get lensURI

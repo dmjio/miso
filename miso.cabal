@@ -161,6 +161,7 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Lens
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
