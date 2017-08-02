@@ -321,6 +321,11 @@ For constructing client and server applications, we recommend using one `cabal` 
 -- | Haskell language pragma
 {-# LANGUAGE RecordWildCards #-}
 
+-- Following two extensions are very important for values of 
+-- type MisoString to work without any type annotations
+{-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE OverloadedStrings    #-}
+
 -- | Haskell module declaration
 module Main where
 
