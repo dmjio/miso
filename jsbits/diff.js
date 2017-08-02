@@ -15,7 +15,7 @@ function diff (currentObj, newObj, parent) {
 }
 
 function diffTextNodes (c, n) {
-  if (c.text !== n.text) c.domRef.replaceData (0, c.domRef.length, n.text);
+  if (c.text !== n.text) c.domRef.textContent = n.text;
   n.domRef = c.domRef;
 }
 
