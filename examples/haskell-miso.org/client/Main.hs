@@ -26,7 +26,7 @@ main = do
         either (const $ the404 m) id $
           runRoute (Proxy :: Proxy ClientRoutes) handlers m
 
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
   pure NoOp
 updateModel (ChangeURI u) m = m <# do

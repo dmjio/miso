@@ -63,7 +63,7 @@ mario = Model
     , window = (0,0)
     }
 
-updateMario :: Action -> Model -> Effect Model Action
+updateMario :: Action -> Model -> Effect Action Model
 updateMario NoOp m = noEff m
 updateMario (GetArrows arrs) m = step newModel
   where
@@ -77,7 +77,7 @@ updateMario (WindowCoords coords) m = step newModel
   where
     newModel = m { window = coords }
 
-step :: Model -> Effect Model Action
+step :: Model -> Effect Action Model
 step m@Model{..} = k <# do Time <$> now
   where
     k = m & gravity delta

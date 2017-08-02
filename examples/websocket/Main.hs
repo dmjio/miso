@@ -31,7 +31,7 @@ main = startApp App { initialAction = Id, ..}
     uri = URL "wss://echo.websocket.org"
     protocols = Protocols [ ]
 
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) model
   = noEff model { received = m }
 updateModel (SendMessage msg) model = model <# do send msg >> pure Id

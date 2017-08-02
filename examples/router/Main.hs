@@ -43,7 +43,7 @@ main = do
     view   = viewModel
 
 -- | Update your model
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
   pure NoOp
 updateModel (ChangeURI u) m = m <# do

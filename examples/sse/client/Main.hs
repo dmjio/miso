@@ -33,7 +33,7 @@ handleSseMsg (SSEMessage msg) = ServerMsg msg
 handleSseMsg SSEClose = ServerMsg "SSE connection closed"
 handleSseMsg SSEError = ServerMsg "SSE error"
 
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel (ServerMsg msg) m = noEff (m {modelMsg = "Event received: " ++ msg})
 updateModel (HandleURI u) m = m {modelUri = u} <# pure NoOp
 updateModel (ChangeURI u) m = m <# (pushURI u >> pure NoOp)
