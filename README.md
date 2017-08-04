@@ -361,7 +361,7 @@ updateModel SayHelloWorld m = m <# do
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (show x)
+ , text $ toMisoString (show x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
 ```

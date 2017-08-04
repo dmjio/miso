@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Common where
 
 import Data.Proxy
 import Servant.API
 
 import Miso
+import Miso.String
 
 data Model = Model { modelUri :: URI,  modelMsg :: String }
   deriving (Show, Eq)
@@ -17,7 +19,7 @@ data Action
 
 home :: Model -> View Action
 home (Model _ msg) =
-  div_ [] [div_ [] [h3_ [] [text ("SSE (Server-sent events) Example" :: String)]], text msg]
+  div_ [] [div_ [] [h3_ [] [text "SSE (Server-sent events) Example"]], text $ ms msg]
 
 -- There is only a single route in this example
 type ClientRoutes = Home
@@ -31,7 +33,7 @@ the404 :: View Action
 the404 =
   div_
     []
-    [ text ("404: Page not found")
+    [ text "404: Page not found"
     , a_ [onClick $ ChangeURI goHome] [text " - Go Home"]
     ]
 

@@ -14,9 +14,11 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.String (
-    MisoString
+    ToMisoString (..)
+  , MisoString
   , module Data.JSString
-  , ToMisoString (..)
+  , module Data.Monoid
+  , ms
   ) where
 
 import           Data.Aeson
@@ -24,6 +26,7 @@ import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.JSString
 import           Data.JSString.Text
+import           Data.Monoid
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
@@ -46,10 +49,13 @@ instance FromJSON MisoString where
 class ToMisoString str where
   toMisoString :: str -> MisoString
 
+-- | Convenience function, shorthand for `toMisoString`
+ms :: ToMisoString str => str -> MisoString
+ms = toMisoString
+
 instance ToMisoString MisoString where toMisoString = id
 instance ToMisoString String where toMisoString = pack
 instance ToMisoString T.Text where toMisoString = textToJSString
 instance ToMisoString LT.Text where toMisoString = lazyTextToJSString
 instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
-instance ToMisoString Value where toMisoString = toMisoString . encode 

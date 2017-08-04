@@ -132,8 +132,8 @@ node vNs vType vKey as xs =
   in View VNode {..}
 
 -- | `VText` creation
-text :: ToMisoString str => str -> View action
-text x = View $ VText (toMisoString x)
+text :: MisoString -> View action
+text = View . VText
 
 -- | Key for specific children patch
 newtype Key = Key MisoString
