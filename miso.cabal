@@ -118,6 +118,20 @@ executable mario
     default-language:
       Haskell2010
 
+executable compose-update
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/compose-update
+    build-depends:
+      base < 5,
+      miso
+    default-language:
+      Haskell2010
+
 executable simple
   main-is:
     Main.hs
@@ -161,6 +175,7 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Lens
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types

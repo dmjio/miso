@@ -43,7 +43,7 @@ main = do
       view   = viewModel
 
 -- | Update your model
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel FetchGitHub m = m <# do
   SetGitHub <$> getGitHubAPIInfo
 updateModel (SetGitHub apiInfo) m =

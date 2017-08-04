@@ -350,7 +350,7 @@ main = startApp App {..}
     subs   = []			  -- empty subscription list
 
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 updateModel NoOp m = noEff m

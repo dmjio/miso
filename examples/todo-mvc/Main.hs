@@ -86,7 +86,7 @@ main = startApp App { initialAction = NoOp, ..}
     events = defaultEvents
     subs   = []
 
-updateModel :: Msg -> Model -> Effect Model Msg
+updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m
 updateModel (CurrentTime n) m =
   m <# do print n >> pure NoOp

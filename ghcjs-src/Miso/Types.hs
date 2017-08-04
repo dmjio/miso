@@ -20,7 +20,7 @@ import           Miso.String
 data App model action = App
   { model :: model
   -- ^ initial model
-  , update :: action -> model -> Effect model action
+  , update :: action -> model -> Effect action model
   -- ^ Function to update model, optionally provide effects
   , view :: model -> View action
   -- ^ Function to draw `View`
