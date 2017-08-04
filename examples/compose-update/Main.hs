@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 -- This example demonstrates how you can split your update function
@@ -13,6 +14,7 @@ import Data.Monoid
 
 import Miso
 import Miso.Lens
+import Miso.String
 
 -- In this slightly contrived example, our model consists of two
 -- counters. When one of those counters is incremented, the other is
@@ -100,6 +102,6 @@ viewModel (x, y) =
   div_
     []
     [ button_ [onClick Increment] [text "+"]
-    , text (show x <> " | " <> show y)
+    , text (ms (show x) <> " | " <> ms (show y))
     , button_ [onClick Decrement] [text "-"]
     ]

@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE DataKinds            #-}
@@ -346,20 +347,20 @@ starMiso :: View action
 starMiso = a_ [
     class_ (pack "github-button")
   , href_ (pack "https://github.com/dmjio/miso")
-  , prop (pack "data-icon") "octicon-star"
-  , prop (pack "data-size") "large"
-  , prop (pack "data-show-count") "true"
-  , prop (pack "aria-label") "Star dmjio/miso on GitHub"
+  , textProp (pack "data-icon") "octicon-star"
+  , textProp (pack "data-size") "large"
+  , textProp (pack "data-show-count") "true"
+  , textProp (pack "aria-label") "Star dmjio/miso on GitHub"
   ] [ text "Star" ]
 
 forkMiso :: View action
 forkMiso = a_ [
     class_ (pack "github-button")
   , href_ (pack "https://github.com/dmjio/miso/fork")
-  , prop (pack "data-icon") "octicon-repo-forked"
-  , prop (pack "data-size") "large"
-  , prop (pack "data-show-count") "true"
-  , prop (pack "aria-label") "Fork dmjio/miso on GitHub"
+  , textProp (pack "data-icon") "octicon-repo-forked"
+  , textProp (pack "data-size") "large"
+  , textProp (pack "data-show-count") "true"
+  , textProp (pack "aria-label") "Fork dmjio/miso on GitHub"
   ] [ text "Fork" ]
 
 -- | Hero
@@ -455,7 +456,7 @@ newNav =
                  ]
                ]
             , div_ [ class_$pack  "navbar-burger burger"
-                   , prop (pack "data-target") (pack "navMenuIndex")] [
+                   , textProp (pack "data-target") (pack "navMenuIndex")] [
                  span_ [] [ ]
                 ,span_ [] [ ]
                 ,span_ [] [ ]
@@ -518,7 +519,7 @@ newNav =
                             ]
                       , div_ [id_ $pack"blogDropdown"
                              ,class_$pack  "navbar-dropdown is-boxed"
-                             ,prop (pack "data-style_") (pack "width: 18rem;")] [
+                             ,textProp (pack "data-style_") (pack "width: 18rem;")] [
                           a_ [class_$pack  "navbar-item"
                              ,href_$pack "/2017/07/24/access-previous-bulma-versions/"] [
                              div_ [class_$pack  "navbar-content"] [
@@ -629,9 +630,9 @@ newNav =
                                p_ [class_$pack  "control"] [
                                  a_ [ id_ $pack"twitter"
                                     , class_$pack  "button"
-                                    , prop (pack "data-social-network_") (pack "Twitter")
-                                    , prop (pack "data-social-action_") (pack "tweet")
-                                    , prop (pack "data-social-target") (pack "http://bulma.io")
+                                    , textProp (pack "data-social-network_") (pack "Twitter")
+                                    , textProp (pack "data-social-action_") (pack "tweet")
+                                    , textProp (pack "data-social-target") (pack "http://bulma.io")
                                     ,target_$pack "_blank"
                                     , href_$pack "https://twitter.com/intent/tweet?text=Miso: a tasty Haskell front-end framework&url=https://haskell-miso.org&via=dmjio"] [
                                      span_ [class_$pack  "icon"] [

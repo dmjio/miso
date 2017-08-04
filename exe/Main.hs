@@ -1,7 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
 import Miso
+import Miso.String
 
 type Model = Int
 
@@ -31,6 +33,7 @@ data Action
 viewModel :: Int -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (show x)
+ , text $ ms (show x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
+

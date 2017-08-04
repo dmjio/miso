@@ -142,11 +142,11 @@ data NS
   deriving (Show, Eq)
 
 -- | `VText` creation
-text :: ToMisoString str => str -> View m
+text :: MisoString -> View m
 text t = View . const $ do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
-  set "text" (toMisoString t) vtree
+  set "text" t vtree
   pure $ VTree vtree
 
 -- | For use with child reconciliaton algorithm

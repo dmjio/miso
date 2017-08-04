@@ -13,12 +13,14 @@
 module Miso.String
   ( ToMisoString (..)
   , MisoString
+  , module Data.Monoid
   , module Data.Text
+  , ms
   ) where
 
-import           Data.Aeson
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
+import           Data.Monoid
 import           Data.Text
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
@@ -29,10 +31,15 @@ import qualified Data.Text.Lazy.Encoding as LT
 type MisoString = Text
 
 -- | Convenience class for creating `MisoString` from other string-like types
-class ToMisoString str where toMisoString :: str -> MisoString
+class ToMisoString str where
+  toMisoString :: str -> MisoString
+
+-- | Convenience function, shorthand for `toMisoString`
+ms :: ToMisoString str => str -> MisoString
+ms = toMisoString
+
 instance ToMisoString MisoString where toMisoString = id
 instance ToMisoString String where toMisoString = T.pack
 instance ToMisoString LT.Text where toMisoString = LT.toStrict
 instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
-instance ToMisoString Value where toMisoString = toMisoString . encode
