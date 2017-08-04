@@ -45,7 +45,6 @@ import           Data.Aeson
 import qualified Data.Map    as M
 import           Data.Monoid
 import           Data.Proxy
-import           Data.Text   (Text)
 import qualified Data.Text   as T
 import qualified Data.Vector as V
 import qualified Lucid       as L
