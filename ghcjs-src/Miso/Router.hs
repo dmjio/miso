@@ -30,7 +30,6 @@ module Miso.Router
   , makeLens
   ) where
 
-import qualified Control.Applicative as A
 import qualified Data.ByteString.Char8 as BS
 import           Data.Proxy
 import           Data.Text             (Text)
