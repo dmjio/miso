@@ -318,8 +318,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ## Sample application
 ```haskell
--- | Haskell language pragma
-{-# LANGUAGE RecordWildCards #-}
+-- | Haskell language pragmas
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 -- | Haskell module declaration
 module Main where
