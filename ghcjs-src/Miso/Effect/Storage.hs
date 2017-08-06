@@ -10,22 +10,24 @@
 -- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- This module provides an interface to the
+-- [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API).
 ----------------------------------------------------------------------------
 module Miso.Effect.Storage
-  ( -- * Local and Session Storage APIs
-    --- * Get storage
+  ( -- * Retrieve storage
     getLocalStorage
   , getSessionStorage
-    --- * Set storage
+    -- * Set items in storage
   , setLocalStorage
   , setSessionStorage
-    --- * Remove storage
+    -- * Remove items from storage
   , removeLocalStorage
   , removeSessionStorage
-    --- * Clear storage
+    -- * Clear storage
   , clearLocalStorage
   , clearSessionStorage
-    --- * Get storage length
+    -- * Get number of items in storage
   , localStorageLength
   , sessionStorageLength
   ) where
@@ -36,10 +38,6 @@ import GHCJS.Nullable
 import GHCJS.Types
 
 import Miso.FFI
-
--- | Retrieve local storage
-getLocalStorage, getSessionStorage ::
-  FromJSON model => JSString -> IO (Either String model)
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
@@ -55,21 +53,29 @@ getStorageCommon f key = do
         Error y -> Left y
 
 -- | Retrieve session storage
+getSessionStorage :: FromJSON model => JSString -> IO (Either String model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     r <- getItemSS t
     pure (nullableToMaybe r)
+
 -- | Retrieve local storage
+getLocalStorage :: FromJSON model => JSString -> IO (Either String model)
 getLocalStorage = getStorageCommon $ \t -> do
     r <- getItemLS t
     pure (nullableToMaybe r)
 
-setLocalStorage, setSessionStorage ::
-  ToJSON model => JSString -> model -> IO ()
--- | Set local storage
+-- | Set the value of a key in local storage.
+--
+-- @setLocalStorage key value@ sets the value of @key@ to @value@.
+setLocalStorage :: ToJSON model => JSString -> model -> IO ()
 setLocalStorage key model =
   setItemLS key =<< stringify model
--- | Set session storage
+
+-- | Set the value of a key in session storage.
+--
+-- @setSessionStorage key value@ sets the value of @key@ to @value@.
+setSessionStorage :: ToJSON model => JSString -> model -> IO ()
 setSessionStorage key model =
   setItemSS key =<< stringify model
 
@@ -79,11 +85,11 @@ foreign import javascript unsafe "$r = window.localStorage.getItem($1);"
 foreign import javascript unsafe "$r = window.sessionStorage.getItem($1);"
   getItemSS :: JSString -> IO (Nullable JSVal)
 
--- | Removes item from local storage by key name
+-- | Removes item from local storage by key name.
 foreign import javascript unsafe "window.localStorage.removeItem($1);"
   removeLocalStorage :: JSString -> IO ()
 
--- | Removes item from session storage by key name
+-- | Removes item from session storage by key name.
 foreign import javascript unsafe "window.sessionStorage.removeItem($1);"
   removeSessionStorage :: JSString -> IO ()
 
@@ -93,18 +99,18 @@ foreign import javascript unsafe "window.localStorage.setItem($1, $2);"
 foreign import javascript unsafe "window.sessionStorage.setItem($1, $2);"
   setItemSS :: JSString -> JSString -> IO ()
 
--- | Retrieves the number of items in local storage
+-- | Retrieves the number of items in local storage.
 foreign import javascript unsafe "$r = window.localStorage.length;"
   localStorageLength :: IO Int
 
--- | Retrieves the number of items in session storage
+-- | Retrieves the number of items in session storage.
 foreign import javascript unsafe "$r = window.sessionStorage.length;"
   sessionStorageLength :: IO Int
 
--- | Clears local storage
+-- | Clears local storage.
 foreign import javascript unsafe "window.localStorage.clear();"
   clearLocalStorage :: IO ()
 
--- | Clears session storage
+-- | Clears session storage.
 foreign import javascript unsafe "window.sessionStorage.clear();"
   clearSessionStorage :: IO ()

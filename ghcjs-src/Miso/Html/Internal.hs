@@ -72,10 +72,15 @@ import           Miso.Event.Types
 import           Miso.String
 import           Miso.FFI
 
--- | Type def for constructing event subscriptions
-type Sub a m = IO m -> (a -> IO ()) -> IO ()
+-- | Type synonym for constructing event subscriptions.
+--
+-- The first argument passed to a subscription provides a way to
+-- access the current value of the model (without blocking). The
+-- callback is used to dispatch actions which are then fed back to the
+-- @update@ function.
+type Sub action model = IO model -> (action -> IO ()) -> IO ()
 
--- | Virtual DOM implemented as a JavaScript `Object`
+-- | Virtual DOM implemented as a JavaScript `Object`.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
@@ -96,7 +101,11 @@ class ToView v where toView :: v -> View m
 set :: ToJSVal v => JSString -> v -> Object -> IO ()
 set k v obj = toJSVal v >>= \x -> setProp k x obj
 
--- | `VNode` creation
+-- | Create a new @VNode@.
+--
+-- @node ns tag key attrs children@ creates a new node with tag @tag@
+-- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
+-- the node is created and its children are initialized to @children@.
 node :: NS
      -> MisoString
      -> Maybe Key
@@ -135,13 +144,13 @@ instance ToJSVal NS where
   toJSVal SVG  = toJSVal ("svg" :: JSString)
   toJSVal HTML = toJSVal ("html" :: JSString)
 
--- | Namespace for element creation
+-- | Namespace of DOM elements.
 data NS
   = HTML -- ^ HTML Namespace
   | SVG  -- ^ SVG Namespace
   deriving (Show, Eq)
 
--- | `VText` creation
+-- | Create a new @VText@ with the given content.
 text :: MisoString -> View m
 text t = View . const $ do
   vtree <- create
@@ -149,12 +158,19 @@ text t = View . const $ do
   set "text" t vtree
   pure $ VTree vtree
 
--- | For use with child reconciliaton algorithm
--- Keys must be unique. Failure to satisfy this invariant
--- gives undefined behavior at runtime.
+-- | A unique key for a dom node.
+--
+-- This key is only used to speed up diffing the children of a DOM
+-- node, the actual content is not important. The keys of the children
+-- of a given DOM node must be unique. Failure to satisfy this
+-- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
 
--- | Convert type into Key, ensure `Key` is unique
+-- | Convert custom key types to `Key`.
+--
+-- Instances of this class do not have to guarantee uniqueness of the
+-- generated keys, it is up to the user to do so. `toKey` must be an
+-- injective function.
 class ToKey key where toKey :: key -> Key
 -- | Identity instance
 instance ToKey Key where toKey = id
@@ -173,17 +189,23 @@ instance ToKey Float where toKey = Key . pack . show
 -- | Convert `Word` to `Key`
 instance ToKey Word where toKey = Key . pack . show
 
--- | `View` Attributes to annotate DOM, converted into `Events`, `Props`, `Attrs` and `CSS`
+-- | Attribute of a vnode in a `View`.
+--
+-- The callback can be used to dispatch actions which are fed back to
+-- the @update@ function. This is especially useful for event handlers
+-- like the @onclick@ attribute. The second argument represents the
+-- vnode the attribute is attached to.
 newtype Attribute action = Attribute ((action -> IO ()) -> Object -> IO ())
 
--- | Constructs a property on a `VNode`, used to set fields on a DOM Node
+-- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
+-- to @v@.
 prop :: ToJSVal a => MisoString -> a -> Attribute action
 prop k v = Attribute . const $ \n -> do
   val <- toJSVal v
   o <- getProp ("props" :: MisoString) n
   set k val (Object o)
 
--- | For defining delegated events
+-- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
 -- > let clickHandler = on "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
@@ -200,7 +222,12 @@ foreign import javascript unsafe "$r = objectToJSON($1,$2);"
     -> JSVal -- ^ object with impure references to the DOM
     -> IO JSVal
 
--- | For defining delegated events with options
+-- | @onWithOptions opts eventName decoder toAction@ is an attribute
+-- that will set the event handler of the associated DOM node to a function that
+-- decodes its argument using @decoder@, converts it to an action
+-- using @toAction@ and then feeds that action back to the @update@ function.
+--
+-- @opts@ can be used to disable further event propagation.
 --
 -- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
@@ -226,7 +253,10 @@ onWithOptions options eventName Decoder{..} toAction =
    setProp "options" jsOptions eventHandlerObject
    setProp eventName eo (Object eventObj)
 
--- | Constructs `CSS` for a DOM Element
+-- | @style_ attrs@ is an attribute that will set the @style@
+-- attribute of the associated DOM node to @attrs@.
+--
+-- @style@ attributes not contained in @attrs@ will be deleted.
 --
 -- > import qualified Data.Map as M
 -- > div_ [ style_  $ M.singleton "background" "red" ] [ ]
