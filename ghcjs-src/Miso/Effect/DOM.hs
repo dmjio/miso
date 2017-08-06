@@ -16,16 +16,18 @@ module Miso.Effect.DOM
 
 import Miso.String
 
--- | Fails silently if no element found
--- Analgous to `document.getElementById(id).focus()`
+-- | Fails silently if the element is not found.
+--
+-- Analogous to @document.getElementById(id).focus()@.
 foreign import javascript unsafe "callFocus($1);"
   focus :: MisoString -> IO ()
 
--- | Fails silently if no element found
--- Analgous to `document.getElementById(id).blur()`
+-- | Fails silently if the element is not found.
+--
+-- Analogous to @document.getElementById(id).blur()@
 foreign import javascript unsafe "callBlur($1);"
   blur :: MisoString -> IO ()
 
--- | Calls alert() function
+-- | Calls the @alert()@ function.
 foreign import javascript unsafe "alert($1);"
   alert :: MisoString -> IO ()

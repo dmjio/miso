@@ -17,21 +17,25 @@ import           GHC.Generics
 import           Miso.String
 import           Data.Aeson
 
--- | Type used for Keyboard events
+-- | Type used for Keyboard events.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#Browser_compatibility>
 newtype KeyCode = KeyCode Int
   deriving (Show, Eq, Ord, FromJSON)
 
--- | Type used for Checkbox events
+-- | Type used for Checkbox events.
 newtype Checked = Checked Bool
   deriving (Show, Eq, Ord, FromJSON)
 
--- | Options for handling event propagation
+-- | Options for handling event propagation.
 data Options = Options {
     preventDefault :: Bool
   , stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
 
--- | Default options
+-- | Default value for 'Options'.
+--
+-- > defaultOptions = Options { preventDefault = False, stopPropagation = False }
 defaultOptions :: Options
 defaultOptions = Options False False
 
