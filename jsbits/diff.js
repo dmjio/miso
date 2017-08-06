@@ -127,13 +127,16 @@ function diffCss (cCss, nCss, node) {
 }
 
 function hasKey (cs) {
-    return cs && cs[0] && cs[0].key;
+  return cs && cs[0] && cs[0].key;
 }
 
 function diffChildren (cs, ns, parent) {
     var longest = ns.length > cs.length ? ns.length : cs.length;
-//    if (hasKey(cs)) syncChildren (cs, ns, parent);
-    for (var i = 0; i < longest; i++) diff (cs[i], ns[i], parent);
+    if (hasKey(cs))
+      syncChildren (cs, ns, parent);
+    else
+      for (var i = 0; i < longest; i++)
+        diff (cs[i], ns[i], parent);
 }
 
 function createElement (obj) {
@@ -163,32 +166,34 @@ function syncChildren (os, ns, parent) {
     , newLastIndex = ns.length - 1
     , nFirst
     , nLast
-    , oFirst
-    , oLast
-    , LIS
-    , temp;
+    , tmp
+    , found
+    , node;
     for (;;) {
 	 /* check base case, first > last for both new and old
 	   [ ] -- old children empty (fully-swapped)
 	   [ ] -- new children empty (fully-swapped)
 	 */
-	if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) break;
-	  nFirst = ns[newFirstIndex];
-	  nLast  = ns[newLastIndex];
-	  oFirst = os[oldFirstIndex];
-	  oLast  = os[oldLastIndex];
+	if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
+	    break;
+	}
+
+	/* Initialize */
+	nFirst = ns[newFirstIndex];
+	nLast  = ns[newLastIndex];
+	oFirst = os[oldFirstIndex];
+	oLast  = os[oldLastIndex];
+
 	/* No more old nodes, create and insert all remaining nodes
 	   -> [ ] <- old children
 	   -> [ a b c ] <- new children
 	*/
 	if (oldFirstIndex > oldLastIndex) {
-	    var node = createNodeDontAppend(nFirst);
+	    createElement(nFirst);
 	    /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
 	       Otherwise, it will insert node.domRef before oLast.domRef. */
-	    parent.insertBefore(node.domRef, oLast ? oLast.domRef : null);
-	    os.splice(newFirstIndex, 0, nFirst);
+            parent.insertBefore (nFirst.domRef, os[oldLastIndex] ? os[oldLastIndex].domRef.nextSibling : null);
 	    newFirstIndex++;
-	    continue;
 	}
 	/* No more new nodes, delete all remaining nodes in old list
 	   -> [ a b c ] <- old children
@@ -198,168 +203,152 @@ function syncChildren (os, ns, parent) {
 	    tmp = oldLastIndex - oldFirstIndex;
 	    while (tmp >= 0) {
 	      parent.removeChild(os[oldFirstIndex].domRef);
-	      os.splice(oldFirstIndex, 1);
 	      tmp--;
-	    }
-	    break;
+	    } break;
 	}
 	/* happy path, everything aligns, we continue
 	   -> oldFirstIndex -> [ a b c ] <- oldLastIndex
 	   -> newFirstIndex -> [ a b c ] <- newLastIndex
 	   check if nFirst and oFirst align, if so, check nLast and oLast
 	*/
-	else if (oFirst.key === nFirst.key) {
-	    newFirstIndex++;
-	    oldFirstIndex++;
-	    continue;
-	} else if (oLast.key === nLast.key) {
-	    newLastIndex--;
-	    oldLastIndex--;
-	    continue;
-	}
+	else if (oFirst.key === nFirst.key || oLast.key === nLast.key) {
+            while (os[oldFirstIndex].key === ns[newFirstIndex].key && os[oldLastIndex].key === ns[newLastIndex].key) {
+              diff (os[oldLastIndex], ns[newLastIndex], parent);
+	      diff (os[oldFirstIndex], ns[newFirstIndex], parent);
+	      oldLastIndex--; newLastIndex--;
+ 	      oldFirstIndex++; newFirstIndex++;
+	      if (oldFirstIndex > oldLastIndex || newFirstIndex > newLastIndex) break;
+	    }
+
+	    while (os[oldFirstIndex].key === ns[newFirstIndex].key) {
+	      diff (os[oldFirstIndex], ns[newFirstIndex], parent);
+ 	      oldFirstIndex++; newFirstIndex++;
+	      if (oldFirstIndex > oldLastIndex || newFirstIndex > newLastIndex) break;
+	    }
+
+            while (os[oldLastIndex].key === ns[newLastIndex].key) {
+              diff (os[oldLastIndex], ns[newLastIndex], parent);
+	      oldLastIndex--; newLastIndex--;
+	      if (oldFirstIndex > oldLastIndex || newFirstIndex > newLastIndex) break;
+	    }
+        }
 	/* flip-flop case, nodes have been swapped, in some way or another
 	   both could have been swapped.
 	   -> [ a b c ] <- old children
-	   -> [ c b a ] <- new children */
+	   -> [ c b a ] <- new children
+	*/
 	else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-	    var nextSib = oFirst.domRef.nextSibling;
-	    parent.insertBefore(oFirst.domRef, oLast.domRef);
-	    parent.insertBefore(nextSib, oLast.domRef);
-	    newFirstIndex++;
-	    oldFirstIndex++;
-	    oldLastIndex--;
-	    newLastIndex--;
-	    continue;
+	    // swap array elements
+	    tmp = oFirst;
+	    oFirst = oLast;
+	    oLast = tmp;
+
+	    // swap pointers
+	    node = oLast.domRef.nextSibling;
+	    parent.insertBefore(oLast.domRef, oFirst.domRef.nextSibling);
+	    parent.insertBefore(oFirst.domRef, node);
+
+	    // diff
+            diff (oLast, nLast, parent);
+            diff (oFirst, nFirst, parent);
+
+	    // incr/decr
+	    newFirstIndex++; oldFirstIndex++;
+	    oldLastIndex--; newLastIndex--;
+	}
+	/* Or just one could be swapped (d's align here)
+           This is top left and bottom right match case.
+           We move d to end of list, mutate old vdom to reflect the change
+	   We then continue without affecting indexes, hoping to land in a better case
+	   -> [ d a b ] <- old children
+	   -> [ a b d ] <- new children
+	   becomes
+	   -> [ a b d ] <- old children
+	   -> [ a b d ] <- new children
+	   and now we happy path
+        */
+        else if (oFirst.key === nLast.key) {
+	    parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
+	    /* swap positions in old vdom */
+   	    os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
+	    diff (os[oldLastIndex], nLast, parent);
+	    newLastIndex--; oldLastIndex--;
+	}
+	/*
+           This is top right and bottom lefts match case.
+           We move d to end of list, mutate old vdom to reflect the change
+	   -> [ b a d ] <- old children
+	   -> [ d b a ] <- new children
+	   becomes
+	   -> [ a b d ] <- old children
+	   -> [ a b d ] <- new children
+	   and now we happy path
+	*/
+        else if (oLast.key === nFirst.key) {
+	    os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
+	    parent.insertBefore(oLast.domRef, oFirst.domRef);
+	    diff (os[oldFirstIndex], nFirst, parent);
+	    oldFirstIndex++; newFirstIndex++;
 	}
 
-	/* or just one could be swapped (d's align here)
-	   -> [ d b g ] <- old children
-	   -> [ a k d ] <- new children
-	   on either side (e's align here)
-	   -> [ e b c ] <- old children
-	   -> [ b c e ] <- new children */
-
-	/* For now, the above case is handled in the "you're screwed case" below. */
-
 	/* The "you're screwed" case, nothing aligns, pull the ripcord, do something more fancy
-	   This can happen when the list is sorted, for example.
+	   This can happen when the list is sorted, for example, or when the list is replaced with another list of differing keys.
 	   -> [ a e c ] <- old children
 	   -> [ b e d ] <- new children
 	*/
 
 	else {
-	    var P = [], I = {}, i = 0, nLen = newLastIndex - newFirstIndex, oLen = oldLastIndex - oldFirstIndex,
-		foundKey, last = -1, moved = false, newNodeIndex, removedNodes = 0;
-	    /* Create array with length of new children list */
-	    /* -1 means a new node should be inserted */
-	    for (i = nLen; i > 0; i--) P.append(-1);
-	    /* Create index I that maps keys with node positions of the remaining nodes from the new children */
-	    for (i = newFirstIndex; i <= newLastIndex; i++) I[ns[i].key] = i;
-	    /* Iterate over old nodes with Index, check if we can find node with same key in index */
-	    for (i = oldFirstIndex; i <= oldLastIndex; i++) {
-		node = os[i]; /* This will always return a match in this loop */
-		newNodeIndex = I[node.key];
-		/* If old node doesn't exist in new node list, remove it */
-		if (!newNodeIndex) {
-		    parent.removeChild(node.domRef);
-		    removedNodes++;
-		}
-		/* Found new node in index map */
-		else {
-		    /* Assign position of the node in the old children list to the positions array. */
-		    P[newNodeIndex] = i;
-		    /* When assigning positions in the positions array, we also keep the last seen node position of the new children
-		       list. If the last seen position is larger than current position of the node at the new list, then we are switching
-		       `moved` flag to `true`. */
-
-		    /* First check if last seen node position is larger than current node position */
-		    if (last > newNodeIndex) moved = true;
-		    /* Update last seen */
-		    last = newNodeIndex;
-		}
+	    /* final case, perform linear search to check if new key exists in old map, decide what to do from there */
+	    found = false;
+	    tmp = oldFirstIndex;
+	    while (tmp <= oldLastIndex) {
+       	      if (os[tmp].key === nFirst.key) {
+		  found = true;
+		  node = os[tmp];
+		  break;
+	      }
+              tmp++;
 	    }
-	    /* If `moved` flag is on, or if the length of the old children list minus the number of
-	       removed nodes isn't equal to the length of the new children list. Then go to the next step */
-	    if (moved /* DMJ: not sure we need this predicate ? ===> */ || (oLen - removedNodes !== nLen)) {
-		/* Find minimum number of moves if `moved` flag is on, or insert new nodes if the length is changed. */
-		LIS = lis(P);
-		lisIndex = LIS.length - 1;
-		while (nLen > -1) {
-		    if (P[lisIndex] === nLen) {
-			listIndex--;
-			continue;
-		    }
-		    else if (LIS[lisIndex] !== nLen) {
-			/* node has moved */
-			ns[nLen].domRef = os[P[nLen]].domRef;
-			parent.insertBefore(ns[nLen].domRef, os[nLen].domRef);
-		    }
-		    nLen--;
-		}
-	    } else if (!moved) {
-		/* When moved flag is off, we don't need to find LIS, and we just
-		   iterate over the new children list and check its
-		   current position in the positions array, if it is `-1`,
-		   then we insert new node. */
-		for (i = newFirstIndex; i <= newLastIndex; i++) {
-		    if (P[i] === -1) {
-			createNodeDontAppend(ns[i]);
-			/* Replace whatever is at current */
-			/* parent.replaceChild(ns[i].domRef, parent.children[i]); ... this doesn't seem right to me... */
-			parent.insertBefore(ns[i].domRef, parent.children[i+1]);
-		    }
-		}
+	    /* If new key was found in old map this means it was moved, hypothetically as below
+	       -> [ a e b c ] <- old children
+	       -> [ b e a j ] <- new children
+                    ^
+	       In the above case 'b' has been moved, so we need to insert 'b' before 'a' in both vDOM and DOM
+	       We also increase oldFirstIndex and newFirstIndex.
+
+	       This results in new list below w/ updated index position
+	       -> [ b a e c ] <- old children
+	       -> [ b e a j ] <- new children
+                      ^
+   	    */
+	    if (found) {
+		/* Swap DOM references */
+		parent.insertBefore(node.domRef, oFirst.domRef);
+                /* Move item to correct position */
+        	os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
+		/* optionally perform `diff` here */
+                diff (os[oldFirstIndex], nFirst, parent);
+		/* increment counters */
+		oldFirstIndex++; newFirstIndex++;
+	    }
+	    /* If new key was *not* found in the old map this means it must now be created, example below
+	       -> [ a e d c ] <- old children
+	       -> [ b e a j ] <- new children
+                    ^
+
+	       In the above case 'b' does not exist in the old map, so we create a new element and DOM reference.
+	       We then insertBefore in both vDOM and DOM.
+
+	       -> [ b a e d c ] <- old children
+	       -> [ b e a j   ] <- new children
+                      ^
+   	    */
+	    else {
+		createElement(nFirst);
+		parent.insertBefore(nFirst.domRef, oFirst.domRef);
+		os.splice(oldFirstIndex, 0, nFirst);
+		newFirstIndex++; oldFirstIndex++; oldLastIndex++;
 	    }
 	}
     }
-}
-
-
-/* Thanks Boris :) */
-function lis(a) {
-  var p = a.slice(0);
-  var result = [], u, v, il, c, j;
-  result.push(0);
-
-  for (var i = 0, il = a.length; i < il; i++) {
-    if (a[i] === -1) {
-      continue;
-    }
-
-    j = result[result.length - 1];
-    if (a[j] < a[i]) {
-      p[i] = j;
-      result.push(i);
-      continue;
-    }
-
-    u = 0;
-    v = result.length - 1;
-
-    while (u < v) {
-      c = ((u + v) / 2) | 0;
-      if (a[result[c]] < a[i]) {
-	u = c + 1;
-      } else {
-	v = c;
-      }
-    }
-
-    if (a[i] < a[result[u]]) {
-      if (u > 0) {
-	p[i] = result[u - 1];
-      }
-      result[u] = i;
-    }
-  }
-
-  u = result.length;
-  v = result[u - 1];
-
-  while (u-- > 0) {
-    result[u] = v;
-    v = p[v];
-  }
-
-  return result;
 }

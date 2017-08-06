@@ -2,38 +2,58 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main where
 
-import Miso
-import Miso.String
+import Control.Concurrent
+import Control.Monad
+import Data.List
 
-type Model = Int
+import Miso
+import Miso.String hiding (replicate)
+
+type Model = [Int]
 
 main :: IO ()
-main = startApp App { initialAction = SayHelloWorld, ..}
+main = startApp App { initialAction = NoOp
+                    , ..
+                    }
   where
-    model  = 0
+    model  = [1..10]
     update = updateModel
     view   = viewModel
     events = defaultEvents
-    subs   = []
+    subs   = [ ] -- setNums SetNums ]
+
+setNums :: ([Int] -> action) -> Sub action model
+setNums f _ = \sink -> do
+  void . forkIO . forever $ do
+    threadDelay 100000
+    nums <- sort . nub <$> replicateM 20 getRand
+    sink (f nums)
+
+foreign import javascript unsafe "$r = h$rand() % 10;"
+  getRand :: IO Int
 
 updateModel :: Action -> Model -> Effect Action Model
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
 updateModel NoOp m = noEff m
-updateModel SayHelloWorld m = m <# do
-  putStrLn "Hello World!" >> pure NoOp
+updateModel (SetNums xs) _ = noEff xs
+updateModel (Say x) m = m <# do
+  print x >> pure NoOp
+updateModel NewNums m = m <# do
+  nums <- replicateM 40 getRand
+  print nums >> pure (SetNums nums)
 
 data Action
-  = AddOne
-  | SubtractOne
-  | NoOp
-  | SayHelloWorld
+  = NoOp
+  | Say Int
+  | SetNums Model
+  | NewNums
   deriving (Show, Eq)
 
-viewModel :: Int -> View Action
-viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
- , text $ ms (show x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
-
+viewModel :: Model -> View Action
+viewModel xs = div_ [] [
+    button_ [ onClick NewNums ] [ "random nums" ]
+  , button_ [ onClick $ SetNums [10,9..1 ] ] [ "set 10 10's and 1 9" ]
+  , ul_ [] [
+     liKeyed_ (toKey x) [ onClick (Say x) ] [ text $ ms (show x) ]
+     | x <- xs
+     ]
+  ]
