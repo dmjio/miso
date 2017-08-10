@@ -58,6 +58,7 @@ import           Data.JSString.Text
 import qualified Data.Map                   as M
 import           Data.Monoid
 import           Data.Proxy
+import           Data.String                (IsString(..))
 import qualified Data.Text                  as T
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
@@ -157,6 +158,10 @@ text t = View . const $ do
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
+
+-- | `IsString` instance
+instance IsString (View a) where
+  fromString = text . fromString
 
 -- | A unique key for a dom node.
 --
