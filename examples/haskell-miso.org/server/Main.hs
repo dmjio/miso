@@ -56,6 +56,7 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtml (Wrapper x) =
     L.doctypehtml_ $ do
         L.head_ $ do
+          L.title_ "Miso: A tasty Haskell front-end framework"
           L.meta_ [L.charset_ "utf-8"]
           L.meta_ [ L.httpEquiv_ "X-UA-Compatible"
                   , L.content_ "IE=edge"
