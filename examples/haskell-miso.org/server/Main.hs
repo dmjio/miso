@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE CPP                        #-}
 module Main where
 
 import           Common
@@ -29,7 +30,11 @@ main = do
       compress = gzip def { gzipFiles = GzipCompress }
 
 app :: Application
+#if MIN_VERSION_servant(0,11,0)
+app = serve (Proxy @ API) (static :<|> serverHandlers :<|> Tagged handle404)
+#else
 app = serve (Proxy @ API) (static :<|> serverHandlers :<|> handle404)
+#endif
   where
     static = serveDirectory "static"
 
@@ -99,12 +104,15 @@ bulmaRef = "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css
 
 analytics :: MisoString
 analytics =
-  "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){\
-  \(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),\
-  \m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)\
-  \})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');\
-  \ga('create', 'UA-102668481-1', 'auto');\
-  \ga('send', 'pageview');"
+  -- Multiline strings don’t work well with CPP
+  mconcat
+    [ "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){"
+    , "(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),"
+    , "m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)"
+    , "})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');"
+    , "ga('create', 'UA-102668481-1', 'auto');"
+    , "ga('send', 'pageview');"
+    ]
 
 serverHandlers ::
        Handler (Wrapper (View Action))

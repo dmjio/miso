@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
@@ -86,14 +87,18 @@ app :: Chan ServerEvent -> Application
 app chan =
   serve
     (Proxy @API)
+#if MIN_VERSION_servant(0,11,0)
+    (static :<|> Tagged (sseApp chan) :<|> (serverHandlers :<|> Tagged handle404))
+#else
     (static :<|> sseApp chan :<|> (serverHandlers :<|> handle404))
+#endif
   where
     static = serveDirectory "static"
 
 sseApp :: Chan ServerEvent -> Application
 sseApp chan = eventSourceAppChan chan
 
-serverHandlers :: Handler (Wrapper (View Action))
+serverHandlers :: Server ServerRoutes
 serverHandlers = homeHandler
   where
     send f u =

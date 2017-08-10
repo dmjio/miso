@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE CPP                  #-}
 module Common where
 
 import           Data.Bool
@@ -10,6 +11,9 @@ import qualified Data.Map    as M
 import           Data.Monoid
 import           Data.Proxy
 import           Servant.API
+#if MIN_VERSION_servant(0,10,0)
+import Servant.Utils.Links
+#endif
 
 import           Miso
 import           Miso.String
@@ -325,11 +329,19 @@ the404 = template v
 -- | Links
 goHome, goExamples, goDocs, goCommunity :: URI
 ( goHome, goExamples, goDocs, goCommunity ) =
+#if MIN_VERSION_servant(0,10,0)
+    ( linkURI (safeLink routes homeProxy)
+    , linkURI (safeLink routes examplesProxy)
+    , linkURI (safeLink routes docsProxy)
+    , linkURI (safeLink routes communityProxy)
+    )
+#else
     ( safeLink routes homeProxy
     , safeLink routes examplesProxy
     , safeLink routes docsProxy
     , safeLink routes communityProxy
     )
+#endif
 
 homeProxy :: Proxy Home
 homeProxy = Proxy
