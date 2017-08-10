@@ -45,6 +45,7 @@ import           Data.Aeson
 import qualified Data.Map    as M
 import           Data.Monoid
 import           Data.Proxy
+import           Data.String (IsString(..))
 import qualified Data.Text   as T
 import qualified Data.Vector as V
 import qualified Lucid       as L
@@ -133,6 +134,10 @@ node vNs vType vKey as xs =
 -- | `VText` creation
 text :: MisoString -> View action
 text = View . VText
+
+-- | `IsString` instance
+instance IsString (View a) where
+  fromString = text . fromString
 
 -- | Key for specific children patch
 newtype Key = Key MisoString
