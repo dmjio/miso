@@ -118,6 +118,20 @@ executable mario
     default-language:
       Haskell2010
 
+executable geo
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/geo
+    build-depends:
+      base < 5,
+      miso
+    default-language:
+      Haskell2010
+
 executable compose-update
   main-is:
     Main.hs
@@ -225,6 +239,7 @@ library
       Miso.Effect.DOM
       Miso.Router
       Miso.Subscription
+      Miso.Subscription.Geolocation
       Miso.Subscription.History
       Miso.Subscription.Keyboard
       Miso.Subscription.Mouse

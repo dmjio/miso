@@ -11,6 +11,7 @@ module Miso.Subscription
   ( module Miso.Subscription.Mouse
   , module Miso.Subscription.Keyboard
   , module Miso.Subscription.History
+  , module Miso.Subscription.Geolocation
   , module Miso.Subscription.WebSocket
   , module Miso.Subscription.Window
   , module Miso.Subscription.SSE
@@ -18,6 +19,7 @@ module Miso.Subscription
 
 import Miso.Subscription.Mouse
 import Miso.Subscription.Keyboard
+import Miso.Subscription.Geolocation
 import Miso.Subscription.History
 import Miso.Subscription.WebSocket
 import Miso.Subscription.Window
