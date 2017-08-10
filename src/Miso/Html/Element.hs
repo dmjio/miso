@@ -50,6 +50,7 @@ module Miso.Html.Element
     , iframe_
     , canvas_
     , math_
+    , script_
     -- * Inputs
     , select_
     , option_
@@ -474,3 +475,6 @@ u_ = nodeHtml "u"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
 q_ :: [Attribute actqon] -> [View actqon] -> View actqon
 q_ = nodeHtml "q"
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+script_ :: [Attribute action] -> [View action] -> View action
+script_ = nodeHtml "script"
