@@ -131,6 +131,10 @@ examples = template v
           , a_ [ target_ $ pack "_blank"
                , href_ $ pack "https://mario.haskell-miso.org/" ]
             [ text "Mario" ]
+          , text " / "
+          , a_ [ target_ $ pack "_blank"
+               , href_ $ pack "https://flatris.haskell-miso.org/" ]
+            [ text "Flatris" ]
          ]
        ]
 
