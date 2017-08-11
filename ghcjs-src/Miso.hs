@@ -75,6 +75,8 @@ common App {..} m getView = do
   viewRef <- getView writeEvent
   -- Begin listening for events in the virtual dom
   delegator viewRef events
+  -- Process initial action of application
+  writeEvent initialAction
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model
