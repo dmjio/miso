@@ -303,7 +303,7 @@ For constructing client and server applications, we recommend using one `cabal` 
   - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
 
 ### SVG
-  - [Link](https://svg.haskell-miso.org/)
+  - [Link](https://svg.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)
 
 ### Simple
   - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)

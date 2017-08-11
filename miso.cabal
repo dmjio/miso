@@ -118,6 +118,21 @@ executable mario
     default-language:
       Haskell2010
 
+executable svg
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/svg
+    build-depends:
+      base < 5,
+      containers,
+      miso
+    default-language:
+      Haskell2010
+
 executable compose-update
   main-is:
     Main.hs
