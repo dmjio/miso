@@ -44,6 +44,7 @@
   - [Architecture](#architecture)
 - [Examples](#examples)
   - [TodoMVC](#todomvc)
+  - [Flatris](#flatris)
   - [Mario](#mario)
   - [Websocket](#websocket)
   - [SSE](#sse)
@@ -286,6 +287,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### TodoMVC
   - [Link](https://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
+
+### Flatris
+  - [Link](https://flatris.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs-flatris/)
 
 ### Mario
   - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
