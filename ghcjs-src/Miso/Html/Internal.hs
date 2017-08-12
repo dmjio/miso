@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
@@ -89,7 +90,7 @@ newtype VTree = VTree { getTree :: Object }
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 newtype View action = View {
   runView :: (action -> IO ()) -> IO VTree
-}
+} deriving Functor
 
 -- | For constructing type-safe links
 instance HasLink (View a) where

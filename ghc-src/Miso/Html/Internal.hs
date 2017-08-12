@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -67,6 +68,7 @@ data VTree action where
            } -> VTree action
   VText :: { vText :: Text -- ^ TextNode content
            } -> VTree action
+  deriving Functor
 
 instance Show (VTree action) where
   show = show . L.toHtml
@@ -100,6 +102,7 @@ toHtmlFromJSON (Array a) = pack (show a)
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 newtype View action = View { runView :: VTree action }
+  deriving Functor
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
