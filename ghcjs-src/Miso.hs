@@ -87,7 +87,7 @@ common App {..} m getView = do
                 foldl' (foldEffects writeEvent update)
                   (oldModel, pure ()) actions
           in (newModel, (oldModel /= newModel, effects))
-        effects
+        void $ forkIO effects
         pure (S.empty, shouldDraw)
     when shouldDraw $ do
       newVTree <-
