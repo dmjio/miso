@@ -54,7 +54,7 @@ common App {..} m getView = do
   -- init Notifier
   Notify {..} <- newNotify
   -- init EventWriter
-  EventWriter {..} <- newEventWriter notify
+  EventWriter {..} <- newEventWriter
   -- init empty Model
   modelRef <- newIORef m
   -- init empty actions
@@ -65,8 +65,9 @@ common App {..} m getView = do
   -- init event application thread
   void . forkIO . forever $ do
     action <- getEvent
-    modifyMVar_ actionsMVar $! \actions ->
+    modifyMVar_ actionsMVar $! \actions -> do
       pure (actions |> action)
+    notify
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
