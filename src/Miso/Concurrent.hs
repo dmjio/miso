@@ -26,15 +26,14 @@ data EventWriter action = EventWriter {
   }
 
 -- | Creates a new `EventWriter`
-newEventWriter :: IO () -> IO (EventWriter m)
-newEventWriter notify' = do
+newEventWriter :: IO (EventWriter m)
+newEventWriter = do
   chan <- newBoundedChan 50
   pure $ EventWriter (write chan) (readChan chan)
     where
       write chan event =
         void . forkIO $ do
           void $ tryWriteChan chan $! event
-          notify'
 
 -- | Concurrent API for `SkipChan` implementation
 data Notify = Notify {
