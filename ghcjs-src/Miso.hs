@@ -88,7 +88,7 @@ common App {..} m getView = do
                 foldl' (foldEffects writeEvent update)
                   (oldModel, pure ()) actions
           in (newModel, (oldModel /= newModel, effects))
-        void $ forkIO effects
+        effects
         pure (S.empty, shouldDraw)
     when shouldDraw $ do
       newVTree <-
@@ -132,4 +132,6 @@ foldEffects sink update = \(model, as) action ->
   case update action model of
     Effect newModel effs -> (newModel, newAs)
       where
-        newAs = as >> (mapM_ (forkIO . sink =<<) effs)
+        newAs = as >> do
+          forM_ effs $ \eff ->
+            void $ forkIO (sink =<< eff)
