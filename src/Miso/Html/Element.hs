@@ -51,6 +51,7 @@ module Miso.Html.Element
     , canvas_
     , math_
     , script_
+    , link_
     -- * Inputs
     , select_
     , option_
@@ -478,3 +479,6 @@ q_ = nodeHtml "q"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
 script_ :: [Attribute action] -> [View action] -> View action
 script_ = nodeHtml "script"
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
+link_ :: [Attribute action] -> [View action] -> View action
+link_ = nodeHtml "link"
