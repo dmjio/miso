@@ -80,7 +80,7 @@ function diffProps (cProps, nProps, node, isSvg) {
 		node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
 	     else
 		node.setAttribute(c, newProp);
-	    } else if (n in node) {
+	    } else if (c in node) {
 		node[c] = newProp;
 	     } else {
 	       node.setAttribute(c, newProp);
