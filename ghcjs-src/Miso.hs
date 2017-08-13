@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
@@ -54,20 +55,19 @@ common App {..} m getView = do
   -- init Notifier
   Notify {..} <- newNotify
   -- init EventWriter
-  EventWriter {..} <- newEventWriter
+--  EventWriter {..} <- newEventWriter
   -- init empty Model
   modelRef <- newIORef m
   -- init empty actions
-  actionsMVar <- newMVar S.empty
+  actionsRef <- newIORef S.empty
+  -- event writer
+  let writeEvent a = void . forkIO $ do
+        atomicModifyIORef' actionsRef $! \as -> (let !x = as |> a in x, ())
+        notify
   -- init Subs
   forM_ subs $ \sub ->
     sub (readIORef modelRef) writeEvent
   -- init event application thread
-  void . forkIO . forever $ do
-    action <- getEvent
-    modifyMVar_ actionsMVar $! \actions -> do
-      pure (actions |> action)
-    notify
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
@@ -81,15 +81,15 @@ common App {..} m getView = do
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model
-    shouldDraw <-
-      modifyMVar actionsMVar $! \actions -> do
-        (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel ->
-          let (newModel, effects) =
-                foldl' (foldEffects writeEvent update)
-                  (oldModel, pure ()) actions
-          in (newModel, (oldModel /= newModel, effects))
-        effects
-        pure (S.empty, shouldDraw)
+    modelUpdate <-
+      atomicModifyIORef' actionsRef $! \actions -> do
+          let modelUpdate = do
+                 atomicModifyIORef' modelRef $! \oldModel -> do
+                   let (newModel, effects) = foldl' (foldEffects writeEvent update) (oldModel, pure ()) actions
+                   (newModel, (oldModel /= newModel, effects))
+          (mempty, modelUpdate)
+    (shouldDraw, effects) <- modelUpdate
+    effects
     when shouldDraw $ do
       newVTree <-
         flip runView writeEvent

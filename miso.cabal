@@ -210,7 +210,6 @@ library
     aeson,
     base < 5,
     bytestring,
-    BoundedChan,
     containers,
     servant,
     text
