@@ -4,10 +4,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE CPP #-}
 module Main where
 
 import Data.Proxy
 import Servant.API
+#if MIN_VERSION_servant(0,10,0)
+import Servant.Utils.Links
+#endif
 
 import Miso
 
@@ -81,7 +85,11 @@ type About = "about" :> View Action
 goAbout, goHome :: Action
 (goHome, goAbout) = (goto api home, goto api about)
   where
+#if MIN_VERSION_servant(0,10,0)
+    goto a b = ChangeURI (linkURI (safeLink a b))
+#else
     goto a b = ChangeURI (safeLink a b)
+#endif
     home  = Proxy :: Proxy Home
     about = Proxy :: Proxy About
     api   = Proxy :: Proxy API
