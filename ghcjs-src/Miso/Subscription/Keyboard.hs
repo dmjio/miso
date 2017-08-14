@@ -16,7 +16,9 @@ module Miso.Subscription.Keyboard
     Arrows (..)
     -- * Subscriptions
   , arrowsSub
+  , directionSub
   , keyboardSub
+  , wasdSub
   ) where
 
 import           Data.IORef
@@ -40,25 +42,38 @@ data Arrows = Arrows {
  , arrowY :: !Int
  } deriving (Show, Eq)
 
--- | Helper function to convert keys currently pressed to `Arrow`
-toArrows :: Set Int -> Arrows
-toArrows set =
+-- | Helper function to convert keys currently pressed to `Arrow`, given a
+-- mapping for keys representing up, down, left and right respectively.
+toArrows :: ([Int], [Int], [Int], [Int]) -> Set Int -> Arrows
+toArrows (up, down, left, right) set =
   Arrows {
     arrowX =
-      case (S.member 37 set, S.member 39 set) of
+      case (check left, check right) of
         (True, False) -> -1
         (False, True) -> 1
         (_,_) -> 0
- ,  arrowY =
-      case (S.member 40 set, S.member 38 set) of
+  , arrowY =
+      case (check down, check up) of
         (True, False) -> -1
         (False, True) -> 1
         (_,_) -> 0
- }
+  }
+  where
+    check = any (`S.member` set)
 
 -- | Maps `Arrows` onto a Keyboard subscription
 arrowsSub :: (Arrows -> action) -> Sub action model
-arrowsSub = keyboardSub . (. toArrows)
+arrowsSub = directionSub ([38], [40], [37], [39])
+
+-- | Maps `WASD` onto a Keyboard subscription for directions
+wasdSub :: (Arrows -> action) -> Sub action model
+wasdSub = directionSub ([87], [83], [65], [68])
+
+-- | Maps a specified list of keys to directions (up, down, left, right)
+directionSub :: ([Int], [Int], [Int], [Int])
+             -> (Arrows -> action)
+             -> Sub action model
+directionSub dirs = keyboardSub . (. toArrows dirs)
 
 -- | Returns subscription for Keyboard
 keyboardSub :: (Set Int -> action) -> Sub action model
