@@ -52,6 +52,7 @@
   - [Router](#router)
   - [SVG](#svg)
   - [Simple](#simple)
+  - [File Reader](#file-reader)
 - [Haddocks](#haddocks)
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
@@ -311,6 +312,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### Simple
   - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
+
+### File Reader
+  - [Link](https://file-reader.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs)
 
 ## Haddocks
 
