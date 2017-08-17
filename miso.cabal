@@ -87,6 +87,22 @@ executable xhr
     default-language:
       Haskell2010
 
+executable canvas2d
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/canvas2d
+    build-depends:
+      aeson,
+      base < 5,
+      ghcjs-base,
+      miso
+    default-language:
+      Haskell2010
+
 executable router
   main-is:
     Main.hs
