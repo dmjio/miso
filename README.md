@@ -52,6 +52,7 @@
   - [XHR](#xhr)
   - [Router](#router)
   - [SVG](#svg)
+  - [Canvas 2D](#canvas-2d)
   - [Simple](#simple)
   - [File Reader](#file-reader)
 - [Haddocks](#haddocks)
@@ -313,6 +314,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### SVG
   - [Link](https://svg.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)
+
+### Canvas 2D
+  - [Link](http://canvas.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
 
 ### Simple
   - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
