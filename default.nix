@@ -30,12 +30,12 @@ let
     rev = "3e110bb847f447acebc769edf03758af5eaa57be";
     sha256 = "0qhrgbq7d3rclsarvsgx61aif7cifl069l0x700w4nhflcxbp2p0";
   }) { miso = result.miso-ghcjs; };
-  the2048 = ghcjs.callCabal2nix "hs2048" (nixpkgs.fetchFromGitHub {
+  the2048 = import (nixpkgs.fetchFromGitHub {
     repo = "hs2048";
     owner = "ptigwe";
-    rev = "f9dc23960c90d2772a3195a7b227624aa6691674";
-    sha256 = "0gchbvs3iwniy639iqxbxa6q1r0h9lm6w801rzqi3rhln9w1m2z3";
-  }) { miso = result.miso-ghcjs; };
+    rev = "ec7d9324f3783c183e702fe4aa2b6d608643dd15";
+    sha256 = "1zp5813pgcsi1j61gdpklg4g7nh1dckawjdy0jps4gn125snizzg";
+  }) {};
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildStrictly miso-ghc;
@@ -51,7 +51,7 @@ let
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
-       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${the2048}/bin/app.jsexe/ s3://aws-website--6uw7z/
+       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${the2048}/* s3://aws-website--6uw7z/
     '';
   };
 in nixpkgs.runCommand "miso" result ''
