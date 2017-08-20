@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Main where
 
@@ -66,7 +67,9 @@ main = do
 
 viewModel :: Double -> View action
 viewModel _ = div_ [] [
-    div_ [ id_ "stats" ] []
+    div_ [ id_ "stats"
+         , style_ [("position", "absolute")]
+         ] []
   , canvas_ [ id_ "canvas"
             , width_ "400"
             , height_ "300"
