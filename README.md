@@ -53,6 +53,7 @@
   - [Router](#router)
   - [SVG](#svg)
   - [Canvas 2D](#canvas-2d)
+  - [ThreeJS](#threejs)
   - [Simple](#simple)
   - [File Reader](#file-reader)
 - [Haddocks](#haddocks)
@@ -317,6 +318,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### Canvas 2D
   - [Link](http://canvas.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
+
+### ThreeJS
+  - [Link](http://threejs.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs)
 
 ### Simple
   - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
