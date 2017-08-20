@@ -3,18 +3,106 @@
 module Main where
 
 import Control.Monad
+import Data.IORef
+import GHCJS.Types
 
 import Miso
 import Miso.String
-
-import Data.IORef
-
-import GHCJS.Types
 
 data Action
   = GetTime
   | Init
   | SetTime !Double
+
+withStats :: JSVal -> IO () -> IO ()
+withStats stats m = do
+  statsBegin stats >> m
+  statsEnd stats
+
+data Context = Context
+  { rotateCube :: IO ()
+  , renderScene :: IO ()
+  , stats :: JSVal
+  }
+
+initContext :: IORef Context -> IO ()
+initContext ref = do
+  canvas <- getElementById "canvas"
+  scene <- newScene
+  camera <- newCamera
+  renderer <- newRenderer canvas
+  setSize renderer
+  cube <- join $ newMesh
+    <$> newBoxGeometry 1 1 1
+    <*> newMeshBasicMaterial
+  addToScene scene cube
+  positionCamera camera 5
+  stats <- newStats
+  statsContainer <- getElementById "stats"
+  addStatsToDOM statsContainer stats
+  writeIORef ref Context {
+    stats = stats
+  , rotateCube = do
+      rotateX cube 0.1
+      rotateY cube 0.1
+  , renderScene =
+      render renderer scene camera
+  }
+
+main :: IO ()
+main = do
+  stats <- newStats
+  ref <- newIORef $ Context (pure ()) (pure ()) stats
+  m <- now
+  startApp App { model = m
+               , initialAction = Init
+               , update = updateModel ref
+               , ..
+               }
+    where
+      events = defaultEvents
+      view   = viewModel
+      subs   = []
+
+viewModel :: Double -> View action
+viewModel _ = div_ [] [
+    div_ [ id_ "stats" ] []
+  , canvas_ [ id_ "canvas"
+            , width_ "400"
+            , height_ "300"
+            ] []
+  ]
+
+updateModel
+  :: IORef Context
+  -> Action
+  -> Double
+  -> Effect Action Double
+updateModel ref Init m = m <# do
+  initContext ref
+  pure GetTime
+
+updateModel ref GetTime m = m <# do
+  Context {..} <- readIORef ref
+  withStats stats $ do
+    rotateCube
+    renderScene
+  SetTime <$> now
+
+updateModel _ (SetTime m) _ =
+  m <# pure GetTime
+
+foreign import javascript unsafe "$r = new Stats();"
+  newStats :: IO JSVal
+
+foreign import javascript unsafe "$1.begin();"
+  statsBegin :: JSVal -> IO ()
+
+foreign import javascript unsafe "$1.end();"
+  statsEnd :: JSVal -> IO ()
+
+foreign import javascript unsafe "$1.showPanel(0);"
+  showPanel :: JSVal -> IO ()
 
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
@@ -55,77 +143,11 @@ foreign import javascript unsafe "$1.rotation.x += $2;"
 foreign import javascript unsafe "$1.rotation.y += $2;"
   rotateY :: JSVal -> Double -> IO ()
 
-foreign import javascript unsafe "$1.render($2,$3);"
+foreign import javascript unsafe "$1.render($2, $3);"
   render :: JSVal -> JSVal -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.position.z = $2;"
   positionCamera :: JSVal -> Double -> IO ()
 
-data Context = Context
-  { rotateCube :: IO ()
-  , renderScene :: IO ()
-  }
-
-initContext :: IORef Context -> IO ()
-initContext ref = do
-  canvas <- getElementById "canvas"
-  scene <- newScene
-  camera <- newCamera
-  renderer <- newRenderer canvas
-  setSize renderer
-  cube <- join $ newMesh
-    <$> newBoxGeometry 1 1 1
-    <*> newMeshBasicMaterial
-  addToScene scene cube
-  positionCamera camera 5
-  writeIORef ref Context {
-    rotateCube = do
-      rotateX cube 0.1
-      rotateY cube 0.1
-  , renderScene =
-      render renderer scene camera
-  }
-
-main :: IO ()
-main = do
-  ref <- newIORef $ Context (pure ()) (pure ())
-  m <- now
-  startApp App { model = m
-               , initialAction = Init
-               , update = updateModel ref
-               , ..
-               }
-    where
-      events = defaultEvents
-      view   = viewModel
-      subs   = []
-
-viewModel :: Double -> View action
-viewModel _ = div_ [] [
-    canvas_ [ id_ "canvas"
-            , width_ "400"
-            , height_ "300"
-            ] []
-  ]
-
-updateModel
-  :: IORef Context
-  -> Action
-  -> Double
-  -> Effect Action Double
-updateModel ref Init m = m <# do
-  initContext ref
-  pure GetTime
-
-updateModel ref GetTime m = m <# do
-  Context {..} <- readIORef ref
-  putStrLn "foo"
-  rotateCube
-  renderScene
-  SetTime <$> now
-
-updateModel _ (SetTime m) _ =
-  m <# pure GetTime
-
-
-
+foreign import javascript unsafe "$1.appendChild( $2.domElement );"
+  addStatsToDOM :: JSVal -> JSVal -> IO ()
