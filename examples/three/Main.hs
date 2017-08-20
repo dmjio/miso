@@ -49,10 +49,10 @@ foreign import javascript unsafe "$1.add($2);"
 foreign import javascript unsafe "$1.position.z = $2;"
   cameraZ :: JSVal -> Int -> IO ()
 
-foreign import javascript unsafe "$1.rotation.x = $2;"
+foreign import javascript unsafe "$1.rotation.x += $2;"
   rotateX :: JSVal -> Double -> IO ()
 
-foreign import javascript unsafe "$1.rotation.y = $2;"
+foreign import javascript unsafe "$1.rotation.y += $2;"
   rotateY :: JSVal -> Double -> IO ()
 
 foreign import javascript unsafe "$1.render($2,$3);"
@@ -80,8 +80,8 @@ initContext ref = do
   positionCamera camera 5
   writeIORef ref Context {
     rotateCube = do
-      rotateX cube 1.0
-      rotateY cube 1.0
+      rotateX cube 0.1
+      rotateY cube 0.1
   , renderScene =
       render renderer scene camera
   }
