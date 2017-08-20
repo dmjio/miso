@@ -125,7 +125,7 @@ foreign import javascript unsafe "$r = new THREE.Mesh( $1, $2 );"
 foreign import javascript unsafe "$r = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );"
   newMeshBasicMaterial :: IO JSVal
 
-foreign import javascript unsafe "$r = new THREE.WebGLRenderer({canvas:$1});"
+foreign import javascript unsafe "$r = new THREE.WebGLRenderer({canvas:$1, antialias : true});"
   newRenderer :: JSVal -> IO JSVal
 
 foreign import javascript unsafe "$1.setSize( window.innerWidth, window.innerHeight );"
