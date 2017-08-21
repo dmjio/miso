@@ -92,14 +92,14 @@ compiler-check: match-exact
 packages:
  - '.'
 extra-deps:
- - miso-0.4.0.0
+ - miso-0.7.2.0
 
 setup-info:
   ghcjs:
     source:
       ghcjs-0.2.0.9006020_ghc-7.10.3:
-	 url: http://ghcjs.tolysz.org/lts-6.20-9006020.tar.gz
-	 sha1: a6cea90cd8121eee3afb201183c6e9bd6bacd94a
+         url: http://ghcjs.tolysz.org/lts-6.20-9006020.tar.gz
+         sha1: a6cea90cd8121eee3afb201183c6e9bd6bacd94a
 ```
 
 Add a `cabal` file
