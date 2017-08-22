@@ -33,14 +33,18 @@ function delegateEvent (event, obj, stack, parentStack) {
     /* stack.length == 1 */
     else {
 	if (obj.domRef === stack[0]) {
-          if (obj.events[event.type]) {
-	      var eventObj = obj.events[event.type],
-		  options = eventObj.options;
-              if (options.preventDefault) event.preventDefault();
-          eventObj.runEvent(event);
-	    if (!options.stopPropagation)
-	     propogateWhileAble (parentStack, event);
-          }
+	    var eventObj = obj.events[event.type];
+	    if (eventObj) {
+		var options = eventObj.options;
+		if (options.preventDefault)
+		    event.preventDefault();
+		eventObj.runEvent(event);
+		if (!options.stopPropagation)
+		    propogateWhileAble (parentStack, event);
+	    } else {
+		 /* still propagate to parent handlers even if event not defined */
+ 		 propogateWhileAble (parentStack, event);
+	      }
 	}
     }
 }
