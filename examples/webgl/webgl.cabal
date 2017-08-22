@@ -1,0 +1,26 @@
+name:                webgl
+version:             0.1.0.0
+synopsis:            https://webgl.haskell-miso.org
+description:         WebGL example for the Miso web framework, based on three.js
+homepage:            https://webgl.haskell-miso.org
+author:              David Johnson
+maintainer:          djohnson.m@gmail.com
+copyright:           David Johnson (c) 2017
+category:            Web
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+executable webgl
+  main-is:
+    Main.hs
+  if !impl(ghcjs)
+    buildable: False
+  else
+    build-depends:
+      base < 5,
+      ghcjs-base,
+      ghcjs-three,
+      miso
+    default-language:
+      Haskell2010
