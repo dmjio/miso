@@ -26,9 +26,9 @@ let
   });
   flatris = ghcjs.callCabal2nix "hs-flatris" (nixpkgs.fetchFromGitHub {
     repo = "hs-flatris";
-    owner = "dmjio";
-    rev = "3e110bb847f447acebc769edf03758af5eaa57be";
-    sha256 = "0qhrgbq7d3rclsarvsgx61aif7cifl069l0x700w4nhflcxbp2p0";
+    owner = "ptigwe";
+    rev = "9dd888c86c91197773525befafaa0f2c01d548ec";
+    sha256 = "14hrzzh4kb6q9c8ah18dsvjlmfcb6sj9r16r66mpbgfmxl2xr037";
   }) { miso = result.miso-ghcjs; };
   the2048 = import (nixpkgs.fetchFromGitHub {
     repo = "hs2048";
