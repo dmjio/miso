@@ -32,9 +32,9 @@ let
   }) { miso = result.miso-ghcjs; };
   the2048 = import (nixpkgs.fetchFromGitHub {
     repo = "hs2048";
-    owner = "ptigwe";
-    rev = "ec7d9324f3783c183e702fe4aa2b6d608643dd15";
-    sha256 = "1zp5813pgcsi1j61gdpklg4g7nh1dckawjdy0jps4gn125snizzg";
+    owner = "dmjio";
+    rev = "c2c2078eec418d2ff2f3bd18c2b07f6005747ac4";
+    sha256 = "0iqv3b7lbbxkx0kmdjrvy2ijrqzicx3ydqi1lczcas430f0bdk3h";
   }) {};
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
