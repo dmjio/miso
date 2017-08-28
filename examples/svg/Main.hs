@@ -9,6 +9,7 @@ import qualified Data.Map           as M
 import           Miso
 import           Miso.String        (MisoString, pack, ms)
 import           Miso.Svg           hiding (height_, id_, style_, width_)
+import Touch
 
 main :: IO ()
 main = startApp App {..}
@@ -17,19 +18,27 @@ main = startApp App {..}
     model         = emptyModel
     update        = updateModel
     view          = viewModel
-    events        = defaultEvents
+    events        = M.insert (pack "mousemove") False $
+                    M.insert (pack "touchstart") False $
+                    M.insert (pack "touchmove") False defaultEvents
     subs          = [ mouseSub HandleMouse ]
 
 emptyModel :: Model
 emptyModel = Model (0,0)
 
 updateModel :: Action -> Model -> Effect Action Model
+updateModel (HandleTouch (TouchEvent touch)) model =
+  model <# do
+    putStrLn "Touch did move"
+    print touch
+    return $ HandleMouse $ page touch
 updateModel (HandleMouse newCoords) model =
   noEff model { mouseCoords = newCoords }
 updateModel Id model = noEff model
 
 data Action
   = HandleMouse (Int, Int)
+  | HandleTouch TouchEvent
   | Id
 
 newtype Model
@@ -44,6 +53,7 @@ viewModel (Model (x,y)) =
                                , ("height", "700px")
                                ]
          , width_ "auto"
+         , onTouchMove HandleTouch
        ] [
      g_ [] [
      ellipse_ [ cx_ $ pack $ show x

@@ -72,10 +72,24 @@ function propogateWhileAble (parentStack, event) {
 
 /* Convert event to JSON at a specific location in the DOM tree*/
 function objectToJSON (at, obj) {
+    console.log("at ", at);
+    console.log("obj ", obj);
     for (var i in at) obj = obj[at[i]];
     var newObj = {};
     for (var i in obj)
-	if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
-	    newObj[i] = obj[i];
+        if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
+            newObj[i] = obj[i];
     return (newObj);
+}
+
+function objectsToJSON (at, obj) {
+  var at = [at];
+  res = [];
+  console.log("orig at", at);
+  console.log("obj ", obj);
+  for (var i in at) {
+    res.push(objectToJSON(at[i], obj));
+  }
+  console.log("res ", res);
+  return (res);
 }
