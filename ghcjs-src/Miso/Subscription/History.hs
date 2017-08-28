@@ -41,11 +41,11 @@ getCurrentURI = getURI
 getURI :: IO URI
 {-# INLINE getURI #-}
 getURI = do
-  URI <$> pure mempty
+  URI <$> do unpack <$> getProtocol
       <*> pure Nothing
       <*> do Prelude.drop 1 . unpack <$> getPathName
       <*> do unpack <$> getSearch
-      <*> pure mempty
+      <*> do unpack <$> getHash
 
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> IO ()
@@ -106,6 +106,12 @@ foreign import javascript unsafe "$r = window.location.pathname;"
 
 foreign import javascript unsafe "$r = window.location.search;"
   getSearch :: IO JSString
+
+foreign import javascript unsafe "$r = window.location.hash;"
+  getHash :: IO JSString
+
+foreign import javascript unsafe "$r = window.location.protocol;"
+  getProtocol :: IO JSString
 
 foreign import javascript unsafe "window.addEventListener('popstate', $1);"
   onPopState :: Callback (IO ()) -> IO ()
