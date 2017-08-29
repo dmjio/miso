@@ -1,4 +1,5 @@
 -- | Haskell language pragma
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Haskell module declaration
@@ -6,6 +7,7 @@ module Main where
 
 -- | Miso framework import
 import Miso
+import Miso.String
 
 -- | Type synonym for an application model
 type Model = Int
@@ -30,7 +32,7 @@ main = startApp App {..}
     subs   = []                   -- empty subscription list
 
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Model Action
+updateModel :: Action -> Model -> Effect Action Model
 updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 updateModel NoOp m = noEff m
@@ -41,6 +43,6 @@ updateModel SayHelloWorld m = m <# do
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (show x)
+ , text (ms (show x))
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
