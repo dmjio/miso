@@ -17,6 +17,8 @@ module Miso.Effect (
 , (#>)
 ) where
 
+import Data.Bifunctor
+
 import Miso.Effect.Storage
 import Miso.Effect.XHR
 import Miso.Effect.DOM
@@ -41,6 +43,9 @@ instance Monad (Effect action) where
   Effect m acts >>= f =
     case f m of
       Effect m' acts' -> Effect m' (acts ++ acts')
+
+instance Bifunctor Effect where
+  bimap f g (Effect m acts) = Effect (g m) (map (fmap f) acts)
 
 -- | Smart constructor for an 'Effect' with no actions.
 noEff :: model -> Effect action model
