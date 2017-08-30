@@ -64,8 +64,8 @@ mario = Model
     }
 
 updateMario :: Action -> Model -> Effect Action Model
-updateMario NoOp m = noEff m
-updateMario (GetArrows arrs) m = step newModel
+updateMario NoOp m = step m
+updateMario (GetArrows arrs) m = noEff newModel
   where
     newModel = m { arrows = arrs }
 updateMario (Time newTime) m = step newModel
@@ -73,7 +73,7 @@ updateMario (Time newTime) m = step newModel
     newModel = m { delta = (newTime - time m) / 20
                  , time = newTime
                  }
-updateMario (WindowCoords coords) m = step newModel
+updateMario (WindowCoords coords) m = noEff newModel
   where
     newModel = m { window = coords }
 
