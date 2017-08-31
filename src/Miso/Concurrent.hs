@@ -11,29 +11,9 @@
 module Miso.Concurrent (
     Notify (..)
   , newNotify
-  , EventWriter (..)
-  , newEventWriter
   ) where
 
-import Control.Concurrent hiding (readChan)
-import Control.Concurrent.BoundedChan
-import Control.Monad
-
--- | Concurrent API for receiving events and writing to an event sink
-data EventWriter action = EventWriter {
-    writeEvent :: action -> IO ()
-  , getEvent :: IO action
-  }
-
--- | Creates a new `EventWriter`
-newEventWriter :: IO (EventWriter m)
-newEventWriter = do
-  chan <- newBoundedChan 50
-  pure $ EventWriter (write chan) (readChan chan)
-    where
-      write chan event =
-        void . forkIO $ do
-          void $ tryWriteChan chan $! event
+import Control.Concurrent
 
 -- | Concurrent API for `SkipChan` implementation
 data Notify = Notify {
@@ -48,4 +28,3 @@ newNotify = do
   pure $ Notify
    (takeMVar mvar)
    (() <$ do tryPutMVar mvar $! ())
-

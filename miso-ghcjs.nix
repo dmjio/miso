@@ -1,18 +1,18 @@
 { mkDerivation, aeson, base, bytestring, containers, ghcjs-base
 , network-uri, scientific, stdenv, text, transformers
 , unordered-containers, vector, hspec, hspec-core, servant
-, http-types, http-api-data, BoundedChan
+, http-types, http-api-data
 }:
 mkDerivation {
   pname = "miso";
-  version = "0.7.4.0";
+  version = "0.7.5.0";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
     aeson base bytestring containers ghcjs-base network-uri scientific
     text transformers unordered-containers vector hspec hspec-core servant
-    http-types http-api-data BoundedChan
+    http-types http-api-data
   ];
   homepage = "http://github.com/dmjio/miso";
   description = "A tasty Haskell front-end framework";

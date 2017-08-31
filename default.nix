@@ -27,14 +27,14 @@ let
   flatris = ghcjs.callCabal2nix "hs-flatris" (nixpkgs.fetchFromGitHub {
     repo = "hs-flatris";
     owner = "ptigwe";
-    rev = "9dd888c86c91197773525befafaa0f2c01d548ec";
-    sha256 = "14hrzzh4kb6q9c8ah18dsvjlmfcb6sj9r16r66mpbgfmxl2xr037";
+    rev = "4ec1b66b2b265af96bce351538b1f604d04c6c9e";
+    sha256 = "1bl9bmx8sjnh917iwk08mkq56b2jsv7fxk43z4cjngvjjl73ssqv";
   }) { miso = result.miso-ghcjs; };
   the2048 = import (nixpkgs.fetchFromGitHub {
     repo = "hs2048";
-    owner = "dmjio";
-    rev = "c2c2078eec418d2ff2f3bd18c2b07f6005747ac4";
-    sha256 = "0iqv3b7lbbxkx0kmdjrvy2ijrqzicx3ydqi1lczcas430f0bdk3h";
+    owner = "ptigwe";
+    rev = "0b4858c545d4cf6ca0c1a0cadb44d9e633c6bee6";
+    sha256 = "0znr7i8q5sg3bzz8wak1l2hqs62vvpsgvj0rszbvks45vdfidnxj";
   }) {};
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");

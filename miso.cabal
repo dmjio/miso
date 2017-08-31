@@ -1,5 +1,5 @@
 name:                miso
-version:             0.7.4.0
+version:             0.7.5.0
 category:            Web, Miso, Data Structures
 license:             BSD3
 license-file:        LICENSE
@@ -260,7 +260,6 @@ library
     aeson,
     base < 5,
     bytestring,
-    BoundedChan,
     containers,
     servant,
     text
