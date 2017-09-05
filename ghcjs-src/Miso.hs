@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -121,7 +122,7 @@ foldEffects
   :: (action -> IO ())
   -> (action -> model -> Effect action model)
   -> (model, IO ()) -> action -> (model, IO ())
-foldEffects sink update = \(model, as) action ->
+foldEffects sink update = \(!model, !as) action ->
   case update action model of
     Effect newModel effs -> (newModel, newAs)
       where
