@@ -80,7 +80,7 @@ function diffProps (cProps, nProps, node, isSvg) {
 		node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
 	     else
 		node.setAttribute(c, newProp);
-	    } else if (c in node) {
+	    } else if (c in node && !(c === "list" || c === "form")) {
 		node[c] = newProp;
 	     } else {
 	       node.setAttribute(c, newProp);
@@ -99,7 +99,7 @@ function diffProps (cProps, nProps, node, isSvg) {
 	       node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
 	    else
 	       node.setAttribute(n, newProp);
-	  } else if (n in node) {
+	  } else if (n in node && !(n === "list" || n === "form")) {
 	     node[n] = nProps[n];
 	  } else {
 	     node.setAttribute(n, newProp);
