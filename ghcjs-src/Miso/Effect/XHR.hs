@@ -18,36 +18,61 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Effect.XHR where
+module Miso.Effect.XHR ( misoXHR ) where
 
 import           Data.Aeson
+import           Data.Function
+import           Data.Maybe
 import           Data.Proxy
 import           GHC.TypeLits
 -- import           GHCJS.Types
 import           JavaScript.Web.XMLHttpRequest
+import           Servant.API.BasicAuth
 import qualified JavaScript.Web.XMLHttpRequest as J
 import           Servant.API
 import qualified Servant.API                   as S
 import           Unsafe.Coerce
-import qualified Network.HTTP.Types.Header as N
+import           System.IO.Unsafe
+import qualified Network.HTTP.Types.Header     as N
 
 import           Miso.String
 import           Miso.FFI
+import           Miso.Lens
 
 -- | Default request
-defReq :: Request
-defReq = Request J.GET mempty mempty mempty False NoData
+defReq :: XHRReq
+defReq = XHRReq {
+    _req = Request J.GET mempty mempty mempty False NoData
+  , _qs = mempty
+  }
+
+data XHRReq
+  = XHRReq
+  { _req :: Request
+  , _qs :: [(MisoString, Maybe MisoString)]
+  }
+
+-- | Requests Lens
+req :: Lens' XHRReq Request
+req = makeLens _req (\r x -> r { _req = x })
+
+-- | QueryString Lens
+qs :: Lens' XHRReq Request
+qs = makeLens _req (\r x -> r { _req = x })
+
+(^.) = get
+(.~) = set
 
 -- | Class for `XHR`
 class HasXHR api where
   type XHR api :: *
   xhrWithRoute
     :: Proxy api
-    -> Request
+    -> XHRReq
     -> XHR api
 
-xhr' :: HasXHR api => Proxy api -> XHR api
-xhr' = flip xhrWithRoute defReq
+misoXHR :: HasXHR api => Proxy api -> XHR api
+misoXHR = flip xhrWithRoute defReq
 
 class GetMethod (m :: k) where getMethod :: Proxy m -> J.Method
 instance GetMethod 'S.GET where getMethod = const J.GET
@@ -68,13 +93,8 @@ instance {-# OVERLAPPABLE #-}
   type XHR (Verb method status cts' a) = IO a
   xhrWithRoute Proxy request = do
     Response {..} :: Response MisoString <-
-      xhr request { reqMethod = getMethod (Proxy :: Proxy method) }
+      xhr (get req request) { reqMethod = getMethod (Proxy :: Proxy method) }
     parse (unsafeCoerce contents)
-
-type API = "foo" :> Capture "foo" Int :> Get '[JSON] NoContent
-  :<|> "foo" :> Capture "foo" Int :> Get '[JSON] NoContent
-
-foo = xhr' (Proxy :: Proxy API)
 
 -- | Verb NoContent
 instance {-# OVERLAPPING #-}
@@ -82,7 +102,7 @@ instance {-# OVERLAPPING #-}
   type XHR (Verb method status cts NoContent) = IO NoContent
   xhrWithRoute Proxy request = do
     Response {..} :: Response MisoString <-
-      xhr request { reqMethod = getMethod (Proxy :: Proxy method) }
+      xhr (req ^. request) { reqMethod = getMethod (Proxy :: Proxy method) }
     pure NoContent
 
 -- | Verb, with HEADERS
@@ -92,7 +112,7 @@ instance {-# OVERLAPPING #-}
   type XHR (Verb method status cts' (Headers ls a)) = IO (Headers ls a)
   xhrWithRoute Proxy request = do
     Response {..} :: Response MisoString <-
-      xhr request { reqMethod = getMethod (Proxy :: Proxy method) }
+      xhr (req ^. request) { reqMethod = getMethod (Proxy :: Proxy method) }
     resp <- parse (unsafeCoerce contents)
     rHs <- getAllResponseHeaders
     pure Headers { getResponse = resp
@@ -109,7 +129,7 @@ instance {-# OVERLAPPING #-}
   type XHR (Verb method status cts' (Headers ls NoContent)) = IO (Headers ls NoContent)
   xhrWithRoute Proxy request = do
     Response {..} :: Response MisoString <-
-      xhr request { reqMethod = getMethod (Proxy :: Proxy method) }
+      xhr (get req request) { reqMethod = getMethod (Proxy :: Proxy method) }
     rHs <- getAllResponseHeaders
     pure Headers { getResponse = NoContent
                  , getHeadersHList = buildHeadersTo (toHeaders rHs)
@@ -118,11 +138,12 @@ instance {-# OVERLAPPING #-}
 -- | Capture
 instance (ToHttpApiData a, HasXHR api, KnownSymbol sym) => HasXHR (Capture sym a :> api) where
   type XHR (Capture sym a :> api) = a -> XHR api
-  xhrWithRoute Proxy req x =
-    xhrWithRoute (Proxy :: Proxy api) newReq
+  xhrWithRoute Proxy req' x =
+    xhrWithRoute (Proxy :: Proxy api) $ (req .~ newReq) req'
       where
-        newReq = req {
-           reqURI = reqURI req <> "/" <> ms (toUrlPiece x)
+        r = get req req'
+        newReq = r {
+          reqURI = reqURI r <> "/" <> ms (toUrlPiece x)
         }
 
 #if MIN_VERSION_servant(0,8,1)
@@ -165,7 +186,14 @@ instance (HasXHR left, HasXHR right) => HasXHR (left :<|> right) where
 -- | Header
 instance (ToHttpApiData a, HasXHR api, KnownSymbol sym) => HasXHR (Header sym a :> api) where
   type XHR (Header sym a :> api) = Maybe a -> XHR api
-  xhrWithRoute Proxy _ header = undefined
+  xhrWithRoute Proxy req header = xhrWithRoute (Proxy :: Proxy api) newReq
+    where
+      newReq = req {
+        reqHeaders = (k,v) : reqHeaders req
+      }
+      k = ms $ symbolVal (Proxy :: Proxy sym)
+      v = fromMaybe mempty (ms . toHeader <$> header)
+
 
 -- | HttpVersion
 instance HasXHR api => HasXHR (HttpVersion :> api) where
@@ -175,7 +203,11 @@ instance HasXHR api => HasXHR (HttpVersion :> api) where
 -- | Query param
 instance (KnownSymbol sym, ToHttpApiData a, HasXHR api) => HasXHR (QueryParam sym a :> api) where
   type XHR (QueryParam sym a :> api) = Maybe a -> XHR api
-  xhrWithRoute Proxy _ _ = undefined
+  xhrWithRoute Proxy req qp = xhrWithRoute (Proxy :: Proxy api) newReq
+    where
+      newReq = req { reqURI = undefined }
+      k = ms $ symbolVal (Proxy :: Proxy sym)
+      v = fromMaybe mempty (ms . toQueryParam <$> qp)
 
 -- | Query param(s)
 instance (KnownSymbol sym, ToHttpApiData a, HasXHR api) => HasXHR (QueryParams sym a :> api) where
@@ -188,9 +220,12 @@ instance (KnownSymbol sym, HasXHR api) => HasXHR (QueryFlag sym :> api) where
   xhrWithRoute Proxy _ _ = undefined
 
 -- | Request Body
-instance (MimeRender ct a, HasXHR api) => HasXHR (ReqBody (ct ': cts) a :> api) where
+instance (ToJSON a, MimeRender ct a, HasXHR api) => HasXHR (ReqBody (ct ': cts) a :> api) where
   type XHR (ReqBody (ct ': cts) a :> api) = a -> XHR api
-  xhrWithRoute Proxy _ _ = undefined
+  xhrWithRoute Proxy req body = do
+    xhrWithRoute (Proxy :: Proxy api) req {
+      reqData = StringData $ unsafePerformIO (stringify body)
+    }
 
 -- | Remote host (done)
 instance HasXHR api => HasXHR (RemoteHost :> api) where
@@ -212,10 +247,14 @@ instance HasXHR api => HasXHR (Vault :> api) where
   type XHR (Vault :> api) = XHR api
   xhrWithRoute Proxy req = xhrWithRoute (Proxy :: Proxy api) req
 
--- | BasicAuth
+-- | BasicAuth (done)
 instance HasXHR api => HasXHR (BasicAuth realm usr :> api) where
   type XHR (BasicAuth realm usr :> api) = BasicAuthData -> XHR api
-  xhrWithRoute Proxy req _ = xhrWithRoute (Proxy :: Proxy api) req
+  xhrWithRoute Proxy req BasicAuthData{..} =
+    xhrWithRoute (Proxy :: Proxy api) req {
+      reqLogin = Just (ms basicAuthUsername, ms basicAuthPassword)
+    , reqWithCredentials = True
+    }
 
 -- | Can't find AuthenticateReq
 -- instance HasXHR api => HasXHR (AuthProtect tag :> api) where
