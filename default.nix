@@ -36,6 +36,12 @@ let
     rev = "0b4858c545d4cf6ca0c1a0cadb44d9e633c6bee6";
     sha256 = "0znr7i8q5sg3bzz8wak1l2hqs62vvpsgvj0rszbvks45vdfidnxj";
   }) {};
+  snake = ghcjs.callCabal2nix "miso-snake" (nixpkgs.fetchFromGitHub {
+    repo = "miso-snake";
+    owner = "lbonn";
+    rev = "2ff741cdd5de814988b92ffcadcc1879e89dfb40";
+    sha256 = "1p4qz6xgrqbgaxhfivzkqayw0psfk34y6a2rfpqgp92lpsl8b1k8";
+  }) { miso = result.miso-ghcjs; };
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildStrictly miso-ghc;
@@ -51,6 +57,7 @@ let
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
+       ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${snake}/bin/app.jsexe/ s3://aws-website-snake-9o0ge/
        ${nixpkgs.s3cmd}/bin/s3cmd sync --recursive ${the2048}/* s3://aws-website--6uw7z/
     '';
   };
