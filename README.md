@@ -338,7 +338,7 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ## Sample application
 ```haskell
--- | Haskell language pragmas
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
@@ -347,7 +347,8 @@ module Main where
 
 -- | Miso framework import
 import Miso
-import MisoString
+import Miso.String
+-- import Miso.String (toMisoString)
 
 -- | Type synonym for an application model
 type Model = Int
@@ -383,7 +384,7 @@ updateModel SayHelloWorld m = m <# do
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text $ toMisoString (show x)
+ , text $ ms $ show x
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
 ```
