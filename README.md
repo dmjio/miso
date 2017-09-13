@@ -347,6 +347,7 @@ module Main where
 
 -- | Miso framework import
 import Miso
+import MisoString
 
 -- | Type synonym for an application model
 type Model = Int
