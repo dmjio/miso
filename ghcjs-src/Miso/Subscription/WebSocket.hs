@@ -67,17 +67,10 @@ websocketSub
   -> Protocols
   -> (WebSocket m -> action)
   -> Sub action model
-websocketSub (URL u) (Protocols ps) f _ sink = do
+websocketSub (URL u) (Protocols ps) f getModel sink = do
   socket <- createWebSocket u ps
   writeIORef websocket (Just socket)
-  --  Handle Reconnects
-  void . forkIO . forever $ do
-    threadDelay (secs 3)
-    Just s <- readIORef websocket
-    status <- getSocketState' s
-    when (status == 3) $ do
-      atomicWriteIORef websocket
-        =<< Just <$> createWebSocket u ps
+  void . forkIO $ handleReconnect
   onOpen socket =<< do
     asyncCallback $ do
       sink (f WebSocketOpen)
@@ -95,6 +88,14 @@ websocketSub (URL u) (Protocols ps) f _ sink = do
     asyncCallback1 $ \v -> do
       d <- parse =<< getData v
       sink $ f (WebSocketError d)
+  where
+    handleReconnect = do
+      threadDelay (secs 3)
+      Just s <- readIORef websocket
+      status <- getSocketState' s
+      if status == 3
+        then websocketSub (URL u) (Protocols ps) f getModel sink
+        else handleReconnect
 
 -- | Sends message to a websocket server
 send :: ToJSON a => a -> IO ()
