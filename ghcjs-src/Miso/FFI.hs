@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
@@ -28,18 +29,21 @@ module Miso.FFI
 
 import           Control.Monad
 import           Control.Monad.Trans.Maybe
-import qualified Data.Aeson as AE
-import           Data.Aeson hiding (Object)
-import qualified Data.HashMap.Strict as H
+import qualified Data.Aeson                 as AE
+import           Data.Aeson                 hiding (Object)
+import qualified Data.HashMap.Strict        as H
 import           Data.JSString
-import qualified Data.JSString.Text as JSS
+import qualified Data.JSString.Text         as JSS
+import           Data.Maybe
 import           Data.Scientific
-import qualified Data.Vector as V
+import qualified Data.Vector                as V
 import           GHCJS.Foreign.Callback
 import           GHCJS.Foreign.Internal
 import           GHCJS.Marshal
 import           GHCJS.Types
+import           JavaScript.Array.Internal
 import qualified JavaScript.Object.Internal as OI
+import           Unsafe.Coerce
 
 -- | Convert JSVal to Maybe `Value`
 jsvalToValue :: JSVal -> IO (Maybe Value)
@@ -52,12 +56,16 @@ jsvalToValue r = do
          <$> fromJSVal r
     JSONBool -> liftM AE.Bool <$> fromJSVal r
     JSONString -> liftM AE.String <$> fromJSVal r
-    JSONArray -> liftM (Array . V.fromList) <$> fromJSVal r
+    JSONArray -> do
+      xs :: [Value] <-
+        catMaybes <$>
+          forM (toList (unsafeCoerce r)) jsvalToValue
+      pure . pure $ Array . V.fromList $ xs
     JSONObject -> do
-        Just props<- fromJSVal =<< getKeys (OI.Object r)
+        Just (props :: [JSString]) <- fromJSVal =<< getKeys (OI.Object r)
         runMaybeT $ do
             propVals <- forM props $ \p -> do
-              v <- MaybeT (fromJSVal =<< OI.getProp p (OI.Object r))
+              v <- MaybeT (jsvalToValue =<< OI.getProp p (OI.Object r))
               return (JSS.textFromJSString p, v)
             return (AE.Object (H.fromList propVals))
 

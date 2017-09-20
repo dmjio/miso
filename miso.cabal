@@ -220,14 +220,29 @@ executable tests
     buildable: False
   else
     hs-source-dirs:
-      tests
+      tests, ghcjs-src, src
+    other-modules:
+      Miso.FFI
     build-depends:
       aeson,
       base < 5,
-      miso,
+      bytestring,
       hspec,
       hspec-core,
-      ghcjs-base
+      ghcjs-base,
+      QuickCheck,
+      quickcheck-instances,
+      miso,
+      http-types,
+      network-uri,
+      http-api-data,
+      containers,
+      scientific,
+      servant,
+      text,
+      unordered-containers,
+      transformers,
+      vector
     default-language:
       Haskell2010
 
