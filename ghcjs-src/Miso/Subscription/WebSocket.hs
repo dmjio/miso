@@ -57,6 +57,10 @@ websocket :: IORef (Maybe Socket)
 {-# NOINLINE websocket #-}
 websocket = unsafePerformIO (newIORef Nothing)
 
+closedCode :: IORef (Maybe CloseCode)
+{-# NOINLINE closedCode #-}
+closedCode = unsafePerformIO (newIORef Nothing)
+
 secs :: Int -> Int
 secs = (*1000000)
 
@@ -72,8 +76,8 @@ websocketSub (URL u) (Protocols ps) f getModel sink = do
   writeIORef websocket (Just socket)
   void . forkIO $ handleReconnect
   onOpen socket =<< do
-    asyncCallback $ do
-      sink (f WebSocketOpen)
+    writeIORef closedCode Nothing
+    asyncCallback $ sink (f WebSocketOpen)
   onMessage socket =<< do
     asyncCallback1 $ \v -> do
       d <- parse =<< getData v
@@ -81,11 +85,13 @@ websocketSub (URL u) (Protocols ps) f getModel sink = do
   onClose socket =<< do
     asyncCallback1 $ \e -> do
       code <- codeToCloseCode <$> getCode e
+      writeIORef closedCode (Just code)
       reason <- getReason e
       clean <- wasClean e
       sink $ f (WebSocketClose code clean reason)
   onError socket =<< do
     asyncCallback1 $ \v -> do
+      writeIORef closedCode Nothing
       d <- parse =<< getData v
       sink $ f (WebSocketError d)
   where
@@ -93,8 +99,11 @@ websocketSub (URL u) (Protocols ps) f getModel sink = do
       threadDelay (secs 3)
       Just s <- readIORef websocket
       status <- getSocketState' s
+      code <- readIORef closedCode
       if status == 3
-        then websocketSub (URL u) (Protocols ps) f getModel sink
+        then do
+          unless (code == Just CLOSE_NORMAL) $
+            websocketSub (URL u) (Protocols ps) f getModel sink
         else handleReconnect
 
 -- | Sends message to a websocket server
