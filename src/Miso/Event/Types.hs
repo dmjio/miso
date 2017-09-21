@@ -15,7 +15,7 @@ module Miso.Event.Types where
 import qualified Data.Map as M
 import           GHC.Generics
 import           Miso.String
-import           Data.Aeson
+import           Data.Aeson (FromJSON)
 
 -- | Type used for Keyboard events.
 --
