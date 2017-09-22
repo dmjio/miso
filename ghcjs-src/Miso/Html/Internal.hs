@@ -228,11 +228,6 @@ foreign import javascript unsafe "$r = objectToJSON($1,$2);"
     -> JSVal -- ^ object with impure references to the DOM
     -> IO JSVal
 
-foreign import javascript unsafe "$r = objectsToJSON($1,$2);"
-  objectsToJSON
-    :: JSVal -- ^ decodeAt :: [JSString]
-    -> JSVal -- ^ object with impure references to the DOM
-    -> IO JSVal
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
 -- decodes its argument using @decoder@, converts it to an action
@@ -256,7 +251,7 @@ onWithOptions options eventName Decoder{..} toAction =
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
    cb <- jsval <$> (asyncCallback1 $ \e -> do
-       Just v <- fromJSVal =<< objectsToJSON decodeAtVal e
+       Just v <- jsvalToValue =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
          Right r -> sink (toAction r))
