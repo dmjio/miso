@@ -12,6 +12,7 @@
 module Miso.Event.Decoder
   ( -- * Decoder
     Decoder (..)
+  , DecodeTarget (..)
   , at
   -- * Decoders
   , emptyDecoder
@@ -23,19 +24,30 @@ module Miso.Event.Decoder
 
 import Data.Aeson.Types
 import Control.Applicative
+import GHCJS.Marshal
 
 import Miso.Event.Types
 import Miso.String
 
+-- | Data type for storing the target when parsing events
+data DecodeTarget
+  = DecodeTarget [MisoString] -- ^ Decode a single object
+  | DecodeTargets [[MisoString]] -- ^ Decode multiple objecjects
+
+-- | `ToJSVal` instance
+instance ToJSVal DecodeTarget where
+  toJSVal (DecodeTarget xs) = toJSVal xs
+  toJSVal (DecodeTargets xs) = toJSVal xs
+
 -- | Decoder data type for parsing events
 data Decoder a = Decoder {
   decoder :: Value -> Parser a -- ^ FromJSON-based Event decoder
-, decodeAt :: [MisoString] -- ^ Location in DOM of where to decode
+, decodeAt :: DecodeTarget -- ^ Location in DOM of where to decode
 }
 
 -- | Smart constructor for building
 at :: [MisoString] -> (Value -> Parser a) -> Decoder a
-at decodeAt decoder = Decoder {..}
+at decodeAt decoder = Decoder {decodeAt = DecodeTarget decodeAt, ..}
 
 -- | Empty decoder for use with events like "click" that do not
 -- return any meaningful values
@@ -48,7 +60,7 @@ emptyDecoder = mempty `at` go
 keycodeDecoder :: Decoder KeyCode
 keycodeDecoder = Decoder {..}
   where
-    decodeAt = mempty
+    decodeAt = DecodeTarget mempty
     decoder = withObject "event" $ \o ->
        KeyCode <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
 
@@ -56,13 +68,13 @@ keycodeDecoder = Decoder {..}
 valueDecoder :: Decoder MisoString
 valueDecoder = Decoder {..}
   where
-    decodeAt = ["target"]
+    decodeAt = DecodeTarget ["target"]
     decoder = withObject "target" $ \o -> o .: "value"
 
 -- | Retrieves "checked" field in Decoder
 checkedDecoder :: Decoder Checked
 checkedDecoder = Decoder {..}
   where
-    decodeAt = ["target"]
+    decodeAt = DecodeTarget ["target"]
     decoder = withObject "target" $ \o ->
        Checked <$> (o .: "checked")

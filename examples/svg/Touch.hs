@@ -30,13 +30,13 @@ data TouchEvent =
 
 instance FromJSON TouchEvent where
   parseJSON obj = do
-    (x:_) <- parseJSON obj
+    ((x:_):_) <- parseJSON obj
     return $ TouchEvent x
 
 touchDecoder :: Decoder TouchEvent
 touchDecoder = Decoder {..}
   where
-    decodeAt = ["changedTouches"]
+    decodeAt = DecodeTargets [["changedTouches"], ["targetTouches"], ["touches"]]
     decoder = parseJSON
 
 onTouchMove :: (TouchEvent -> action) -> Attribute action
