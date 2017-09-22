@@ -72,10 +72,16 @@ function propogateWhileAble (parentStack, event) {
 
 /* Convert event to JSON at a specific location in the DOM tree*/
 function objectToJSON (at, obj) {
-    for (var i in at) obj = obj[at[i]];
-    var newObj = {};
-    for (var i in obj)
-	if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
-	    newObj[i] = obj[i];
+  for (var i in at) obj = obj[at[i]];
+  if ("length" in obj) { // If obj is a list-like object
+    var newObj = [];
+    for (var i = 0; i < obj.length; i++)
+      newObj = newObj.concat(objectToJSON([], obj[i]));
     return (newObj);
+  }
+  var newObj = {};
+  for (var i in obj)
+    if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
+      newObj[i] = obj[i];
+  return (newObj);
 }

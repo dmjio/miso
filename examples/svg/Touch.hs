@@ -5,16 +5,14 @@ module Touch where
 
 import Control.Monad
 import Data.Aeson.Types
-import qualified Data.Vector as V
 import Debug.Trace
-import GHCJS.Marshal
 import Miso
 
 data Touch = Touch
   { identifier :: Int
   , screen :: (Int, Int)
-  , client :: (Int, Int)
-  , page :: (Int, Int)
+  , client :: (Double, Double)
+  , page :: (Double, Double)
   } deriving (Eq, Show)
 
 instance FromJSON Touch where
@@ -38,7 +36,7 @@ instance FromJSON TouchEvent where
 touchDecoder :: Decoder TouchEvent
 touchDecoder = Decoder {..}
   where
-    decodeAt = ["changedTouches", "0"]
+    decodeAt = ["changedTouches"]
     decoder = parseJSON
 
 onTouchMove :: (TouchEvent -> action) -> Attribute action

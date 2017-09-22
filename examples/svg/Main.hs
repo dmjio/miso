@@ -9,7 +9,10 @@ import qualified Data.Map           as M
 import           Miso
 import           Miso.String        (MisoString, pack, ms)
 import           Miso.Svg           hiding (height_, id_, style_, width_)
+import Control.Arrow
 import Touch
+
+trunc = truncate *** truncate
 
 main :: IO ()
 main = startApp App {..}
@@ -31,7 +34,7 @@ updateModel (HandleTouch (TouchEvent touch)) model =
   model <# do
     putStrLn "Touch did move"
     print touch
-    return $ HandleMouse $ page touch
+    return $ HandleMouse $ trunc . page $ touch
 updateModel (HandleMouse newCoords) model =
   noEff model { mouseCoords = newCoords }
 updateModel Id model = noEff model
