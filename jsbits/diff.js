@@ -170,7 +170,7 @@ function syncChildren (os, ns, parent) {
 	   [ ] -- old children empty (fully-swapped)
 	   [ ] -- new children empty (fully-swapped)
 	 */
-        console.log(os.map(function(x) { return x.key; }));
+        // console.log(os.map(function(x) { return x.key; }));
 	if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
 	    break;
 	}
@@ -195,6 +195,7 @@ function syncChildren (os, ns, parent) {
             diff (null, nFirst, parent);
 	    newFirstIndex++;
             console.log(os.map(function(x) { return x.key; }));
+	    console.log(os.map(function(x) { return x.domRef; }));
 	}
 	/* No more new nodes, delete all remaining nodes in old list
 	   -> [ a b c ] <- old children
@@ -209,6 +210,7 @@ function syncChildren (os, ns, parent) {
 	      tmp--;
 	    }
 	    console.log(os.map(function(x) { return x.key; }));
+	    console.log(os.map(function(x) { return x.domRef; }));
 	    break;
 	}
 	/* happy path, everything aligns, we continue
@@ -216,34 +218,34 @@ function syncChildren (os, ns, parent) {
 	   -> newFirstIndex -> [ a b c ] <- newLastIndex
 	   check if nFirst and oFirst align, if so, check nLast and oLast
 	*/
-	else if (oFirst.key === nFirst.key) {
-            console.log('oFirst.key === nFirst.key');
-	    newFirstIndex++; oldFirstIndex++;
-            diff (oFirst, nFirst, parent);
-            console.log(os.map(function(x) { return x.key; }));
-	} else if (oLast.key === nLast.key) {
-            console.log('oLast.key === nLast.key');
-	    newLastIndex--; oldLastIndex--;
-            diff (oLast, nLast, parent);
-            console.log(os.map(function(x) { return x.key; }));
-	}
+	// else if (oFirst.key === nFirst.key) {
+        //     console.log('oFirst.key === nFirst.key');
+	//     newFirstIndex++; oldFirstIndex++;
+        //     diff (oFirst, nFirst, parent);
+        //     console.log(os.map(function(x) { return x.key; }));
+	// } else if (oLast.key === nLast.key) {
+        //     console.log('oLast.key === nLast.key');
+	//     newLastIndex--; oldLastIndex--;
+        //     diff (oLast, nLast, parent);
+        //     console.log(os.map(function(x) { return x.key; }));
+	// }
 	/* flip-flop case, nodes have been swapped, in some way or another
 	   both could have been swapped.
 	   -> [ a b c ] <- old children
 	   -> [ c b a ] <- new children */
-	else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-            console.log('oFirst.key === nLast.key && nFirst.key === oLast.key');
-	    node = oFirst.domRef.nextSibling;
-	    parent.insertBefore(oFirst.domRef, oLast.domRef);
-	    parent.insertBefore(node, oLast.domRef);
-	    newFirstIndex++;
-	    oldFirstIndex++;
-	    oldLastIndex--;
-	    newLastIndex--;
-            diff (oLast, nLast, parent);
-            diff (oFirst, nFirst, parent);
-            console.log(os.map(function(x) { return x.key; }));
-	}
+	// else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
+        //     console.log('oFirst.key === nLast.key && nFirst.key === oLast.key');
+	//     node = oFirst.domRef.nextSibling;
+	//     parent.insertBefore(oFirst.domRef, oLast.domRef);
+	//     parent.insertBefore(node, oLast.domRef);
+	//     newFirstIndex++;
+	//     oldFirstIndex++;
+	//     oldLastIndex--;
+	//     newLastIndex--;
+        //     diff (oLast, nLast, parent);
+        //     diff (oFirst, nFirst, parent);
+        //     console.log(os.map(function(x) { return x.key; }));
+	// }
 	/* Or just one could be swapped (d's align here)
            This is top left and bottom right match case.
            We move d to end of list, mutate old vdom to reflect the change
@@ -255,15 +257,15 @@ function syncChildren (os, ns, parent) {
 	   -> [ a b d ] <- new children
 	   and now we happy path
         */
-        // else if (oFirst.key === nLast.key) {
-        //     console.log('oFirst.key === nLast.key');
-	//     /* insertAfter */
-	//     parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
-	//     /* swap positions in old vdom */
-   	//     os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-	//     newFirstIndex++;
-	//     oldFirstIndex++;
-	// }
+        else if (oFirst.key === nLast.key) {
+            console.log('oFirst.key === nLast.key');
+	    /* insertAfter */
+	    parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
+	    /* swap positions in old vdom */
+   	    os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
+	    newFirstIndex++;
+	    oldFirstIndex++;
+	}
 	/*
            This is top right and bottom lefts match case.
            We move d to end of list, mutate old vdom to reflect the change
@@ -280,6 +282,7 @@ function syncChildren (os, ns, parent) {
 	//     parent.insertBefore(oLast.domRef, oFirst.domRef);
 	//     /* swap positions in old vdom */
 	//     os.splice(oldLastIndex, 0, os.splice(1, oldFirstIndex)[0]);
+	//     diff (oFirst, nFirst, parent);
 	//     oldFirstIndex++;
 	//     newFirstIndex++;
 	// }
@@ -326,6 +329,7 @@ function syncChildren (os, ns, parent) {
 		oldFirstIndex++;
 		newFirstIndex++;
                 console.log(os.map(function(x) { return x.key; }));
+		console.log(os.map(function(x) { return x.domRef; }));
 	    }
 	    /* If new key was *not* found in the old map this means it must now be created, example below
 	       -> [ a e d c ] <- old children
@@ -344,11 +348,11 @@ function syncChildren (os, ns, parent) {
 		createElement(nFirst);
 		parent.insertBefore(nFirst.domRef, oFirst.domRef);
 		os.splice(oldFirstIndex, 0, nFirst);
-		diff(oFirst,nFirst,parent);
 		newFirstIndex++;
 		oldFirstIndex++;
 		oldLastIndex++;
 		console.log(os.map(function(x) { return x.key; }));
+		console.log(os.map(function(x) { return x.domRef; }));
 	    }
 	}
     }
