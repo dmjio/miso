@@ -166,6 +166,8 @@ function syncChildren (os, ns, parent) {
     , newLastIndex = ns.length - 1
     , nFirst
     , nLast
+    , oFirst
+    , oLast
     , tmp
     , found
     , node;
