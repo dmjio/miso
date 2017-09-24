@@ -277,7 +277,8 @@ library
     bytestring,
     containers,
     servant,
-    text
+    text,
+    transformers
   if impl(ghcjs)
     hs-source-dirs:
       ghcjs-src
