@@ -131,7 +131,7 @@ function hasKey (cs) {
 }
 
 function diffChildren (cs, ns, parent) {
-    var longest = ns.length > cs.length ? ns.length : cs.length;
+    var longest = Math.max (ns.length, cs.length);
     if (hasKey(cs))
       syncChildren (cs, ns, parent);
     else
@@ -171,14 +171,11 @@ function syncChildren (os, ns, parent) {
     , tmp
     , found
     , node;
-    for (;;) {
+    while (newFirstIndex <= newLastIndex || oldFirstIndex <= oldLastIndex) {
 	 /* check base case, first > last for both new and old
 	   [ ] -- old children empty (fully-swapped)
 	   [ ] -- new children empty (fully-swapped)
 	 */
-	if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
-	    break;
-	}
 
 	/* Initialize */
 	nFirst = ns[newFirstIndex];
@@ -205,6 +202,7 @@ function syncChildren (os, ns, parent) {
 	    tmp = oldLastIndex - oldFirstIndex;
 	    while (tmp >= 0) {
 	      parent.removeChild(os[oldFirstIndex].domRef);
+	      os.splice(oldFirstIndex, 1);
 	      tmp--;
 	    } break;
 	}
@@ -214,14 +212,6 @@ function syncChildren (os, ns, parent) {
 	   check if nFirst and oFirst align, if so, check nLast and oLast
 	*/
 	else if (oFirst.key === nFirst.key || oLast.key === nLast.key) {
-            while (os[oldFirstIndex].key === ns[newFirstIndex].key && os[oldLastIndex].key === ns[newLastIndex].key) {
-              diff (os[oldLastIndex], ns[newLastIndex], parent);
-	      diff (os[oldFirstIndex], ns[newFirstIndex], parent);
-	      oldLastIndex--; newLastIndex--;
- 	      oldFirstIndex++; newFirstIndex++;
-	      if (oldFirstIndex > oldLastIndex || newFirstIndex > newLastIndex) break;
-	    }
-
 	    while (os[oldFirstIndex].key === ns[newFirstIndex].key) {
 	      diff (os[oldFirstIndex], ns[newFirstIndex], parent);
  	      oldFirstIndex++; newFirstIndex++;
