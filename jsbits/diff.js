@@ -30,19 +30,9 @@ function replaceTextWithElement (c, n, parent) {
 }
 
 function populate (c, n) {
-    if (!c) c = {
-	      props : null
-	    , css : null
-	    , children : []
-	    }
-    if (!n) n = {
-	      props : null
-	    , css : null
-	    , children : []
-	    }
-  diffProps (c.props, n.props, n.domRef, n.ns === "svg");
-  diffCss (c.css, n.css, n.domRef);
-  diffChildren (c.children, n.children, n.domRef);
+  diffProps (c ? c.props : null, n.props, n.domRef, n.ns === "svg");
+  diffCss (c ? c.css : null, n.css, n.domRef);
+  diffChildren (c ? c.children : [], n.children, n.domRef);
 }
 
 function diffVNodes (c, n, parent) {
