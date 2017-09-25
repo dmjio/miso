@@ -42,7 +42,7 @@ module Miso.Html.Internal (
   , onWithOptions
   ) where
 
-import           Data.Aeson
+import           Data.Aeson (Value(..), ToJSON(..))
 import qualified Data.Map    as M
 import           Data.Monoid
 import           Data.Proxy
