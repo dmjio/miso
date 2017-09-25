@@ -1,3 +1,11 @@
+// Swap elements at indices i and j
+Array.prototype.swap = function (i, j) {
+  var tmp = this[i];
+  this[i] = this[j];
+  this[j] = tmp;
+  return this;
+};
+
 /* virtual-dom diffing algorithm, applies patches as detected */
 function diff (currentObj, newObj, parent) {
   if (!currentObj && !newObj) return;
@@ -252,7 +260,7 @@ function syncChildren (os, ns, parent) {
         else if (oFirst.key === nLast.key) {
 	    parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
 	    /* swap positions in old vdom */
-   	    os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
+   	    os.swap(oldLastIndex, oldFirstIndex);
 	    diff (os[oldLastIndex], nLast, parent);
 	    newLastIndex--; oldLastIndex--;
 	}
@@ -267,7 +275,7 @@ function syncChildren (os, ns, parent) {
 	   and now we happy path
 	*/
         else if (oLast.key === nFirst.key) {
-	    os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
+	    os.swap(oldFirstIndex, oldLastIndex);
 	    parent.insertBefore(oLast.domRef, oFirst.domRef);
 	    diff (os[oldFirstIndex], nFirst, parent);
 	    oldFirstIndex++; newFirstIndex++;
@@ -307,7 +315,7 @@ function syncChildren (os, ns, parent) {
 		/* Swap DOM references */
 		parent.insertBefore(node.domRef, oFirst.domRef);
                 /* Move item to correct position */
-        	os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
+        	os.swap(oldFirstIndex, tmp);
 		/* optionally perform `diff` here */
                 diff (os[oldFirstIndex], nFirst, parent);
 		/* increment counters */
