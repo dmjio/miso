@@ -26,16 +26,17 @@ function delegateEvent (event, obj, stack) {
       if (node.type === "vtext") continue;
       /* matched, keep digging */
        if (node.domRef === stack[idx]) {
-        /* we found it! */
+           /* we found it! */
+	stack[idx] = node;
         if (idx === stack.length - 1) {
           delete stack[idx];
           execute(node, event, stack);
           break;
 	}
 	idx++;
-	obj = node;
-	continue;
-      }
+        obj = node;
+	o = -1;
+       }
       /* couldn't find it, exit */
       if (o === obj.children.length - 1) break;
     }
