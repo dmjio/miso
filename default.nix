@@ -39,8 +39,8 @@ let
   snake = ghcjs.callCabal2nix "miso-snake" (nixpkgs.fetchFromGitHub {
     repo = "miso-snake";
     owner = "lbonn";
-    rev = "2ff741cdd5de814988b92ffcadcc1879e89dfb40";
-    sha256 = "1p4qz6xgrqbgaxhfivzkqayw0psfk34y6a2rfpqgp92lpsl8b1k8";
+    rev = "5e68faf59ec6cf90e5f6991c93223ad481b8496f";
+    sha256 = "179lnjnbmz8ph7v4w235xnaly86p8hlvizzf0mkiybnmwbzjqrm5";
   }) { miso = result.miso-ghcjs; };
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
