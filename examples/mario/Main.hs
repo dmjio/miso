@@ -4,6 +4,7 @@
 {-# LANGUAGE BangPatterns      #-}
 module Main where
 
+import           Data.Bool
 import           Data.Function
 import qualified Data.Map      as M
 import           Data.Monoid
@@ -19,6 +20,9 @@ data Action
 
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
+
+spriteFrames :: [MisoString]
+spriteFrames = ["0 0", "-74px 0","-111px 0","-148px 0","-185px 0","-222px 0","-259px 0","-296px 0"]
 
 main :: IO ()
 main = do
@@ -113,32 +117,33 @@ display :: Model -> View action
 display m@Model{..} = marioImage
   where
     (h,w) = window
-    verb = if | y > 0 -> "jump"
-              | vx /= 0 -> "walk"
-              | otherwise -> "stand"
-    d = case dir of
-            L -> "left"
-            R -> "right"
-    src  = "imgs/"<> verb <> "/" <> d <> ".gif"
     groundY = 62 - (fromIntegral (fst window) / 2)
     marioImage =
       div_ [ height_ $ pack (show h)
-           , height_ $ pack (show w)
-           ] [ img_ [ height_ "37"
-                    , width_ "37"
-                    , src_ src
-                    , style_ (marioStyle m groundY)
-                    ] [] ]
+           , width_ $ pack (show w)
+           ] [ div_ [ style_ (marioStyle m groundY) ] [] ]
 
 marioStyle :: Model -> Double -> M.Map MisoString MisoString
 marioStyle Model {..} gy =
-  M.fromList [ ("transform", matrix x $ abs (y + gy) )
+  M.fromList [ ("transform", matrix dir x $ abs (y + gy) )
              , ("display", "block")
+             , ("width", "37px")
+             , ("height", "37px")
+             , ("background-color", "transparent")
+             , ("background-image", "url(imgs/mario.png)")
+             , ("background-repeat", "no-repeat")
+             , ("background-position", spriteFrames !! frame)
+             , bool mempty ("animation", "play 0.8s steps(8) infinite") (y == 0 && vx /= 0)
              ]
+  where
+    frame | y > 0 = 1
+          | otherwise = 0
 
-matrix :: Double -> Double -> MisoString
-matrix x y =
-  "matrix(1,0,0,1,"
+matrix :: Direction -> Double -> Double -> MisoString
+matrix dir x y =
+  "matrix("
+     <> (if dir == L then "-1" else "1")
+     <> ",0,0,1,"
      <> pack (show x)
      <> ","
      <> pack (show y)

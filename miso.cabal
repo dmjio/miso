@@ -18,12 +18,8 @@ extra-source-files:
   README.md
   examples/todo-mvc/index.html
   examples/websocket/index.html
-  examples/mario/imgs/jump/right.gif
-  examples/mario/imgs/jump/left.gif
-  examples/mario/imgs/stand/right.gif
-  examples/mario/imgs/stand/left.gif
-  examples/mario/imgs/walk/right.gif
-  examples/mario/imgs/walk/left.gif
+  examples/mario/index.html
+  examples/mario/imgs/mario.png
 
 flag examples
   default:
