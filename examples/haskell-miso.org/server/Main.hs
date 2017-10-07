@@ -54,7 +54,7 @@ handle404 :: Application
 handle404 _ respond = respond $ responseLBS
     status404
     [("Content-Type", "text/html")] $
-      renderBS $ toHtml $ Wrapper $ the404 Model { uri = goHome }
+      renderBS $ toHtml $ Wrapper $ the404 Model { uri = goHome, navMenuOpen = False }
 
 instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
@@ -124,7 +124,7 @@ serverHandlers = examplesHandler
   :<|> communityHandler
   :<|> homeHandler
      where
-       send f u = pure $ Wrapper $ f Model {uri = u}
+       send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False}
        homeHandler = send home goHome
        examplesHandler = send examples goExamples
        docsHandler  = send docs goDocs
