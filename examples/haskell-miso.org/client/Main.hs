@@ -16,7 +16,7 @@ instance HasURI Model where
 main :: IO ()
 main = do
   currentURI <- getCurrentURI
-  miso App { model = Model currentURI, ..}
+  miso App { model = Model currentURI False, ..}
     where
       initialAction = NoOp
       update = updateModel
@@ -29,10 +29,12 @@ main = do
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
   pure NoOp
-updateModel (ChangeURI u) m = m <# do
+updateModel (ChangeURI u) m = m { navMenuOpen = False } <# do
   pushURI u
   pure NoOp
 updateModel Alert m@Model{..} = m <# do
   alert $ pack (show uri)
+  pure NoOp
+updateModel ToggleNavMenu m@Model{..} = m { navMenuOpen = not navMenuOpen } <# do
   pure NoOp
 updateModel NoOp m = noEff m

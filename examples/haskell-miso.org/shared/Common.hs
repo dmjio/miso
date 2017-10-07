@@ -26,6 +26,7 @@ import           Miso.String
 -- | Model
 data Model = Model
   { uri :: URI
+  , navMenuOpen :: Bool
   } deriving (Show, Eq)
 
 -- | Event Actions
@@ -33,6 +34,7 @@ data Action
   = Alert
   | ChangeURI URI
   | HandleURI URI
+  | ToggleNavMenu
   | NoOp
   deriving (Show, Eq)
 
@@ -218,8 +220,8 @@ home = template v
 template :: View Action -> Model -> View Action
 template content Model{..} =
   div_ [ ] [
---    newNav
-   hero content uri
+--    newNav navMenuOpen
+   hero content uri navMenuOpen
   , middle
   , footer
   ]
@@ -380,8 +382,8 @@ forkMiso = a_ [
   ] [ text "Fork" ]
 
 -- | Hero
-hero :: View Action -> URI -> View Action
-hero content uri' =
+hero :: View Action -> URI -> Bool -> View Action
+hero content uri' navMenuOpen' =
   section_ [ class_ $ pack "hero is-medium is-primary is-bold has-text-centered" ] [
     div_ [ class_ $pack"hero-head" ] [
      header_ [class_$pack"nav"] [
@@ -390,12 +392,14 @@ hero content uri' =
           a_ [class_$pack"nav-item"][
                  ]
           ],
-        span_ [class_$pack"nav-toggle"] [
+        span_ [class_$pack"nav-toggle " <> do pack $ bool mempty "is-active" navMenuOpen'
+              , onClick ToggleNavMenu
+              ] [
           span_[][]
         , span_[][]
         , span_[][]
         ],
-         div_ [ class_$pack"nav-right nav-menu"] [
+         div_ [ class_$pack"nav-right nav-menu " <> do pack $ bool mempty "is-active" navMenuOpen'] [
           a_ [ class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goHome)
              , onClick (ChangeURI goHome) ] [ text$pack"Home" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goExamples)
@@ -447,7 +451,7 @@ footer =
 
 
 
-newNav =
+newNav navMenuOpen' = 
   div_ [ class_$pack  "container" ] [
     nav_ [class_$pack  "navbar is-transparent"] [
       div_ [class_$pack  "navbar-brand"] [
@@ -471,15 +475,16 @@ newNav =
                  i_ [class_$pack  "fa fa-twitter"] [ ]
                  ]
                ]
-            , div_ [ class_$pack  "navbar-burger burger"
-                   , textProp (pack "data-target") (pack "navMenuIndex")] [
+            , div_ [ class_$pack  "navbar-burger burger " <> do pack $ bool mempty "is-active" navMenuOpen'
+                   , textProp (pack "data-target") (pack "navMenuIndex")
+                   , onClick ToggleNavMenu] [
                  span_ [] [ ]
                 ,span_ [] [ ]
                 ,span_ [] [ ]
                 ]
             ]
             , div_ [ id_ $pack"navMenuIndex"
-                   , class_$pack  "navbar-menu"] [
+                   , class_$pack  "navbar-menu " <> do pack $ bool mempty "is-active" navMenuOpen'] [
                 div_ [class_$pack  "navbar-start"] [
                   a_ [class_$pack  "navbar-item is-active"
                      ,href_$pack "https://haskell-miso.org"] [
@@ -668,4 +673,3 @@ newNav =
             ]
       ]
     ]
-
