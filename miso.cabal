@@ -259,6 +259,7 @@ library
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
+    Miso.Router
     Miso.Svg
     Miso.Svg.Attribute
     Miso.Svg.Element
@@ -276,6 +277,9 @@ library
     base < 5,
     bytestring,
     containers,
+    http-api-data,
+    http-types,
+    network-uri,
     servant,
     text,
     transformers
@@ -284,9 +288,6 @@ library
       ghcjs-src
     build-depends:
       ghcjs-base,
-      http-types,
-      network-uri,
-      http-api-data,
       containers,
       scientific,
       unordered-containers,
@@ -303,7 +304,6 @@ library
       Miso.Effect.Storage
       Miso.Effect.XHR
       Miso.Effect.DOM
-      Miso.Router
       Miso.Subscription
       Miso.Subscription.History
       Miso.Subscription.Keyboard
