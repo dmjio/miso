@@ -400,15 +400,15 @@ hero content uri' navMenuOpen' =
         , span_[][]
         ],
          div_ [ class_$pack"nav-right nav-menu " <> do pack $ bool mempty "is-active" navMenuOpen'] [
-          a_ [ class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goHome)
+          a_ [ class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goHome)
              , onClick (ChangeURI goHome) ] [ text$pack"Home" ],
-          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goExamples)
+          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goExamples)
              , onClick (ChangeURI goExamples)
              ] [ text$pack"Examples" ],
-          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goDocs)
+          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goDocs)
              , onClick (ChangeURI goDocs)
              ] [ text$pack"Docs" ],
-          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uri' == goCommunity)
+          a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goCommunity)
              , onClick (ChangeURI goCommunity)
              ] [ text$pack"Community" ]
 
