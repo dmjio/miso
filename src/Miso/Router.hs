@@ -58,12 +58,7 @@ data Location = Location
   } deriving (Show, Eq, Ord)
 
 -- | When routing, the router may fail to match a location.
--- Either this is an unrecoverable failure,
--- such as failing to parse a query parameter,
--- or it is recoverable by trying another path.
-data RoutingError
-  = Fail
-  | FailFatal
+data RoutingError = Fail
   deriving (Show, Eq, Ord)
 
 -- | A 'Router' contains the information necessary to execute a handler.
@@ -163,28 +158,27 @@ routeLoc loc r m = case r of
   RChoice a b -> do
     case routeLoc loc a m of
       Left Fail -> routeLoc loc b m
-      Left FailFatal -> Left FailFatal
       Right x -> Right x
   RCapture f -> case locPath loc of
     [] -> Left Fail
     capture:paths ->
       case parseUrlPieceMaybe capture of
-        Nothing -> Left FailFatal
+        Nothing -> Left Fail
         Just x -> routeLoc loc { locPath = paths } (f x) m
   RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
     Nothing -> routeLoc loc (f Nothing) m
-    Just Nothing -> Left FailFatal
+    Just Nothing -> Left Fail
     Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
-      Nothing -> Left FailFatal
+      Nothing -> Left Fail
       Just x -> routeLoc loc (f (Just x)) m
-  RQueryParams sym f -> maybe (Left FailFatal) (\x -> routeLoc loc (f x) m) $ do
+  RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x) m) $ do
     ps <- sequence $ snd <$> Prelude.filter
       (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
     sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
   RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
     Nothing -> routeLoc loc (f False) m
     Just Nothing -> routeLoc loc (f True) m
-    Just (Just _) -> Left FailFatal
+    Just (Just _) -> Left Fail
   RPath sym a -> case locPath loc of
     [] -> Left Fail
     p:paths -> if p == T.pack (symbolVal sym)
