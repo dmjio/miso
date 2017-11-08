@@ -21,22 +21,22 @@ import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
 main :: IO ()
-main = startApp App { initialAction = Id, ..}
-  where
+main = do
+  Right socket <- newWebSocket "wss://echo.websocket.org"
+  let
     model = Model mempty mempty
     events = defaultEvents
-    subs = [ websocketSub uri protocols HandleWebSocket ]
-    update = updateModel
+    subs = [ websocketSub socket HandleWebSocket ]
+    update = updateModel socket
     view = appView
-    uri = URL "wss://echo.websocket.org"
-    protocols = Protocols [ ]
+  startApp App { initialAction = Id, ..}
 
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleWebSocket (WebSocketMessage (Message m))) model
-  = noEff model { received = m }
-updateModel (SendMessage msg) model = model <# do send msg >> pure Id
-updateModel (UpdateMessage m) model = noEff model { msg = Message m }
-updateModel _ model = noEff model
+updateModel :: WebSocket -> Action -> Model -> Effect Action Model
+updateModel ws action model = case action of
+  HandleWebSocket (WebSocketMessage (Message m)) -> pure model {received = m}
+  SendMessage msg -> model <# do Id <$ sendJsonToWebSocket ws msg
+  UpdateMessage m -> pure model { msg = Message m }
+  _ -> pure model
 
 instance ToJSON Message
 instance FromJSON Message
@@ -45,7 +45,7 @@ newtype Message = Message MisoString
   deriving (Eq, Show, Generic, Monoid)
 
 data Action
-  = HandleWebSocket (WebSocket Message)
+  = HandleWebSocket (WebSocketEvent Message)
   | SendMessage Message
   | UpdateMessage MisoString
   | Id
