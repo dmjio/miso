@@ -401,15 +401,15 @@ hero content uri' navMenuOpen' =
         ],
          div_ [ class_$pack"nav-right nav-menu " <> do pack $ bool mempty "is-active" navMenuOpen'] [
           a_ [ class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goHome)
-             , onClick (ChangeURI goHome) ] [ text$pack"Home" ],
+             , href_ "", onPreventClick (ChangeURI goHome) ] [ text$pack"Home" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goExamples)
-             , onClick (ChangeURI goExamples)
+             , href_ "/examples", onPreventClick (ChangeURI goExamples)
              ] [ text$pack"Examples" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goDocs)
-             , onClick (ChangeURI goDocs)
+             , href_ "/docs", onPreventClick (ChangeURI goDocs)
              ] [ text$pack"Docs" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goCommunity)
-             , onClick (ChangeURI goCommunity)
+             , href_ "/community", onPreventClick (ChangeURI goCommunity)
              ] [ text$pack"Community" ]
 
           ]]]]
@@ -419,6 +419,10 @@ hero content uri' navMenuOpen' =
          ]
      ]
   ]
+  where
+    onPreventClick action =
+      onWithOptions defaultOptions { preventDefault = True }
+        "click" emptyDecoder (\() -> action)
 
 -- | Footer
 footer :: View action
