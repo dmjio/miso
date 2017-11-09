@@ -203,7 +203,7 @@ instance HasXHR api => HasXHR (BasicAuth realm usr :> api) where
 --   case contents r of
 --     Nothing -> pure r { contents = Just Null }
 --     Just jsstring -> do
---       x <- parse (unsafeCoerce jsstring)
+--       x <- unsafeParseJSValAsJson (unsafeCoerce jsstring)
 --       pure $ r { contents = Just x }
 
 

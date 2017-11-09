@@ -19,10 +19,11 @@ module Miso.FFI
    , now
    , consoleLog
    , stringify
-   , parse
-   , parseString
-   , safeParse
-   , safeParseString
+   , parseJSValAsJson
+   , unsafeParseJSValAsJson
+   , unsafeParseJsonString
+   , parseJsonString
+   , parseJsonToJSVal
    , copyDOMIntoVTree
    , item
    , jsvalToValue
@@ -104,41 +105,63 @@ foreign import javascript unsafe "console.log($1);"
 foreign import javascript unsafe "$r = JSON.stringify($1);"
   stringify' :: JSVal -> IO JSString
 
--- | Parse a raw string into JSON. Accepts any JS value.
-foreign import javascript unsafe "$r = JSON.parse('' + $1);"
-  parse' :: JSVal -> IO JSVal
+-- | Parse a raw string into JSON. Might return an exception result, so
+-- should only be used by 'parseJson' which will wrap the result in an Either.
+foreign import javascript unsafe
+  "try {$r = JSON.parse($1);} catch (e) {$r = e;}"
+  parseJson' :: JSString -> IO JSVal
+
+-- | Check if a value is an error
+foreign import javascript unsafe "$r = $1 instanceof Error;"
+  jsvalIsError' :: JSVal -> IO Bool
+
+-- | Return an exception's message
+foreign import javascript unsafe "$r = $1.message;"
+  getErrorMessage' :: JSVal -> IO JSString
 
 -- | Converts a JS object into a JSON string
 stringify :: ToJSON json => json -> IO JSString
 {-# INLINE stringify #-}
 stringify j = stringify' =<< toJSVal (toJSON j)
 
--- | Parses a JSVal (which of course should be a string). Less safe
--- | than 'parseString'.
-parseString :: FromJSON json => JSString -> IO json
-{-# INLINE parseString #-}
-parseString = parse . unsafeCoerce
+-- | Parse a string as JSON, checking for parse errors.
+parseJsonToJSVal :: JSString -> IO (Either JSString JSVal)
+parseJsonToJSVal s = do
+  result <- parseJson' s
+  jsvalIsError' result >>= \case
+    True -> Left <$> getErrorMessage' result
+    False -> pure $ Right result
 
--- | Parses a JSVal (which of course should be a string). Less safe
--- | than 'parseString'.
-parse :: FromJSON json => JSVal -> IO json
-{-# INLINE parse #-}
-parse jval = safeParse jval >>= \case
-  Success obj -> pure obj
-  Error e -> error ("When parsing JSON: " ++ e)
+-- | Parses a string, throwing errors as exceptions.
+unsafeParseJsonString :: FromJSON json => JSString -> IO json
+{-# INLINE unsafeParseJsonString #-}
+unsafeParseJsonString s = parseJsonToJSVal s >>= \case
+  Left err -> error ("When parsing JSON: " ++ unpack err)
+  Right parsed -> do
+    Just val <- jsvalToValue parsed
+    case fromJSON val of
+      Error err' -> error ("When parsing JSON: " ++ err')
+      Success obj -> pure obj
+
+-- | Parses a JSVal as a JSON string. This will fail if the input is
+-- not a valid input to JSON.parse, if it's not valid JSON, or if it
+-- doesn't parse as a member of the output type.
+unsafeParseJSValAsJson :: FromJSON json => JSVal -> IO json
+{-# INLINE unsafeParseJSValAsJson #-}
+unsafeParseJSValAsJson = unsafeParseJsonString . unsafeCoerce
+
+-- | Parse a JSVal as Json, assuming it's a string.
+parseJSValAsJson :: FromJSON json => JSVal -> IO (Result json)
+parseJSValAsJson = parseJsonString . unsafeCoerce
 
 -- | Parse a JSVal into a result, so that it can be checked.
-safeParse :: FromJSON obj => JSVal -> IO (Result obj)
-{-# INLINE safeParse #-}
-safeParse jval = do
-  parsed <- parse' jval
-  Just val <- jsvalToValue parsed
-  pure $ fromJSON val
-
--- | Parse a JSString into a result, so that it can be checked.
-safeParseString :: FromJSON obj => JSString -> IO (Result obj)
-{-# INLINE safeParseString #-}
-safeParseString = safeParse . unsafeCoerce
+parseJsonString :: FromJSON obj => JSString -> IO (Result obj)
+{-# INLINE parseJsonString #-}
+parseJsonString s = parseJsonToJSVal s >>= \case
+  Left err -> pure $ Error (unpack err)
+  Right jval -> jsvalToValue jval >>= \case
+    Nothing -> pure $ Error "Couldn't convert JSVal to Value"
+    Just val -> pure $ fromJSON val
 
 -- | Indexing into a JS object
 foreign import javascript unsafe "$r = $1[$2];"

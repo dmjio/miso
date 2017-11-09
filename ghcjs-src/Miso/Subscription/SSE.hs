@@ -30,7 +30,7 @@ sseSub url f _ = \sink -> do
   es <- newEventSource url
   onMessage es =<< do
     asyncCallback1 $ \val -> do
-      getData val >>= parse >>= \x -> do
+      getData val >>= unsafeParseJSValAsJson >>= \x -> do
         sink $ f (SSEMessage x)
   onError es =<< do
     asyncCallback $

@@ -46,11 +46,9 @@ getStorageCommon f key = do
   result :: Maybe JSVal <- f key
   case result of
     Nothing -> pure $ Left "Not Found"
-    Just v -> do
-      r <- parse v
-      pure $ case fromJSON r of
-        Success x -> Right x
-        Error y -> Left y
+    Just v -> parseJSValAsJson v >>= pure . \case
+      Success x -> Right x
+      Error y -> Left y
 
 -- | Retrieve session storage
 getSessionStorage :: FromJSON model => JSString -> IO (Either String model)
