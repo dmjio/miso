@@ -167,60 +167,9 @@ home = template v
        ]
 
 
--- nav :: View Action
--- nav =
---    nav_ [ class_$pack "navbar is-bold" ] [
---      div_ [class_$pack"navbar-menu"][
---        div_[class_$pack"navbar-start"][
---          a_[class_$pack"navbar-item"
---            , onClick (ChangeURI goHome)
---            ][ text$pack"Home" ],
---          a_[class_$pack"navbar-item"
---            , onClick (ChangeURI goExamples)
---            ][ text$pack"Examples" ],
---          a_[class_$pack"navbar-item"
---            , onClick (ChangeURI goDocs)
---            ][ text$pack"Docs" ],
---          a_[ class_$pack"navbar-item"
---            , onClick (ChangeURI goCommunity)
---            ][ text$pack"Community" ]
---          ]
---        ],
---        div_ [class_$pack"navbar-end"][
---          div_ [class_$pack"navbar-item"][
---           div_[class_$pack"field is-grouped"][
---             p_ [class_$pack"control is-info"][
---              a_[  id_$pack"twitter"
---                 , class_$pack"button"
---                 , prop (pack "data-social-network") (pack "Twitter")
---                 , prop (pack "data-social-action") (pack "tweet")
---                 , prop (pack "data-social-target") (pack "https://haskell-miso.org")
---                 , target_$pack"blank"
---                 , href_$pack "https://twitter.com/intent/tweet?text=Miso: a tasty Haskell front-end framework&url=https://haskell-miso.org&via=dmjio"
---                 ] [
---                  span_ [ class_$pack"icon"] [
---                    i_ [class_$pack"fa fa-twitter"] []
---                  ], span_ [] [text$pack"Tweet"]
---              ],
---            p_ [class_$pack"control"][
---              a_ [class_$pack"button is-primary"
---                 ,href_$pack"https://github.com/dmjio/miso"
---                 ][
---                  span_ [ class_$pack"icon"] [
---                    i_ [class_$pack"fa fa-github"] []
---                  ], span_ [] [text$pack"Github"]
---              ]
---             ]
---           ]
---          ]
---         ]
---        ]
---      ]
-
 template :: View Action -> Model -> View Action
 template content Model{..} =
   div_ [ ] [
---    newNav navMenuOpen
    hero content uri navMenuOpen
   , middle
   , footer
@@ -328,7 +277,7 @@ the404 = template v
          ] [ text "404" ]
        , h2_ [ class_ $ pack "subtitle animated pulse" ] [
           text "No soup for you! "
-          , a_ [ onClick $ ChangeURI goHome ] [ text " - Go Home" ]
+          , a_ [ href_ "/", onPreventClick (ChangeURI goHome) ] [ text " - Go Home" ]
          ]
        ]
 
@@ -401,15 +350,15 @@ hero content uri' navMenuOpen' =
         ],
          div_ [ class_$pack"nav-right nav-menu " <> do pack $ bool mempty "is-active" navMenuOpen'] [
           a_ [ class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goHome)
-             , onClick (ChangeURI goHome) ] [ text$pack"Home" ],
+             , href_ "/", onPreventClick (ChangeURI goHome) ] [ text$pack"Home" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goExamples)
-             , onClick (ChangeURI goExamples)
+             , href_ "/examples", onPreventClick (ChangeURI goExamples)
              ] [ text$pack"Examples" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goDocs)
-             , onClick (ChangeURI goDocs)
+             , href_ "/docs", onPreventClick (ChangeURI goDocs)
              ] [ text$pack"Docs" ],
           a_ [class_$ pack "nav-item " <> do pack $ bool mempty "is-active" (uriPath uri' == uriPath goCommunity)
-             , onClick (ChangeURI goCommunity)
+             , href_ "/community", onPreventClick (ChangeURI goCommunity)
              ] [ text$pack"Community" ]
 
           ]]]]
@@ -419,6 +368,11 @@ hero content uri' navMenuOpen' =
          ]
      ]
   ]
+
+onPreventClick :: Action -> Attribute Action
+onPreventClick action =
+  onWithOptions defaultOptions { preventDefault = True }
+    "click" emptyDecoder (\() -> action)
 
 -- | Footer
 footer :: View action
@@ -451,7 +405,7 @@ footer =
 
 
 
-newNav navMenuOpen' = 
+newNav navMenuOpen' =
   div_ [ class_$pack  "container" ] [
     nav_ [class_$pack  "navbar is-transparent"] [
       div_ [class_$pack  "navbar-brand"] [
