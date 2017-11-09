@@ -1,5 +1,10 @@
-{ nixpkgs ? import <nixpkgs> {}, tests ? true, haddock ? true }:
+{ pkgs ? import ./build/bootstrap.nix
+, args ? { config.allowUnfree = true; }
+, tests ? true
+, haddock ? true
+}:
 let
+  nixpkgs = import pkgs args;
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
   inherit (nixpkgs.lib) overrideDerivation optionalString;
