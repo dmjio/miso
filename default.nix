@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, tests ? true, haddock ? true }:
+{ nixpkgs ? import <nixpkgs> {}, tests ? false, haddock ? true }:
 let
   inherit (nixpkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
   inherit (nixpkgs.haskell.packages) ghc802 ghcjs;
@@ -63,9 +63,9 @@ let
     '';
   };
 in nixpkgs.runCommand "miso" result ''
-     mkdir -p $out/{lib,doc,examples}
+     mkdir -p $out/{lib,examples}
      cp -r ${result.miso-ghcjs}/bin/* $out/examples
      cp -r ${result.miso-ghcjs}/lib/* $out/lib
-     cp -r ${result.miso-ghcjs}/share/doc/* $out/doc/
-     cp -r ${result.miso-ghc}/share/doc/* $out/doc/
+     ln -s ${result.miso-ghcjs.doc} $out/ghcjs-doc
+     ln -s ${result.miso-ghc.doc} $out/ghc-doc
    ''
