@@ -3,8 +3,8 @@ let
   result = import (pkgs.fetchFromGitHub {
     owner = "dmjio";
     repo = "miso";
-    sha256 = "13ckz11gbfs047hl3phj7h6fm59wsg9zw2fiqjaqkxmxv17zj5yj";
-    rev = "0834d5c0b309de24d836cbdcc25fd257de10be17";
+    sha256 = "0cv9hr35a3w02fzc79mvhinazdmxv9fp5ir4k4brhdarbnjxv98n";
+    rev = "82ae55f2cd81c6120fdfbb0bbe801a44a37bd282";
   }) {};
 in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
   miso = result.miso-ghcjs;
