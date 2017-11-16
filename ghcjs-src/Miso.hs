@@ -15,7 +15,9 @@
 ----------------------------------------------------------------------------
 module Miso
   ( miso
+  , misoWithContext
   , startApp
+  , startAppWithContext
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -28,7 +30,6 @@ import           Control.Concurrent
 import           Control.Monad
 import           Data.IORef
 import           Data.List
-import           Data.Sequence                 ((|>))
 import qualified Data.Sequence                 as S
 import qualified JavaScript.Object.Internal    as OI
 import           JavaScript.Web.AnimationFrame
@@ -47,46 +48,42 @@ import           Miso.FFI
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
   :: Eq model
-  => App model action
-  -> model
-  -> ((action -> IO ()) -> IO (IORef VTree))
-  -> IO b
-common App {..} m getView = do
-  -- init Notifier
-  Notify {..} <- newNotify
-  -- init empty Model
-  modelRef <- newIORef m
-  -- init empty actions
-  actionsRef <- newIORef S.empty
-  let writeEvent a = void . forkIO $ do
-        atomicModifyIORef' actionsRef $ \as -> (as |> a, ())
-        notify
+  => AppContext action model
+  -> App model action
+  -> IO (IORef VTree)
+  -> IO ()
+common (ctx@AppContext{..}) App{..} getView = do
+  let Notify {..} = notifier
   -- init Subs
-  forM_ subs $ \sub ->
-    sub (readIORef modelRef) writeEvent
+  mapM_ (addSub ctx) subs
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
   void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
   -- Retrieves reference view
-  viewRef <- getView writeEvent
+  viewRef <- getView
   -- Begin listening for events in the virtual dom
   delegator viewRef events
   -- Process initial action of application
-  writeEvent initialAction
+  writeEvent ctx initialAction
   -- Program loop, blocking on SkipChan
   forever $ wait >> do
     -- Apply actions to model
     actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
-    (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel ->
-          let (newModel, effects) =
-                foldl' (foldEffects writeEvent update)
-                  (oldModel, pure ()) actions
-          in (newModel, (oldModel /= newModel, effects))
+    (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel -> do
+      let foldEffects (!oldModel', !as) action = do
+            -- Apply the update function to the current model
+            let Effect newModel' effs = update action oldModel'
+            -- Evaluate each effect in a new thread; put the resulting action
+            -- in the event loop. Pass the new model to the next iteration.
+            (newModel', as >> mapM_ (forkIO . writeEvent ctx =<<) effs)
+      let (newModel, effects) =
+            foldl' foldEffects (oldModel, pure ()) actions
+      (newModel, (oldModel /= newModel, effects))
     effects
     when shouldDraw $ do
       newVTree <-
-        flip runView writeEvent
+        flip runView (writeEvent ctx)
           =<< view <$> readIORef modelRef
       oldVTree <- readIORef viewRef
       void $ waitForAnimationFrame
@@ -96,36 +93,37 @@ common App {..} m getView = do
 -- | Runs an isomorphic miso application
 -- Assumes the pre-rendered DOM is already present
 miso :: (HasURI model, Eq model) => App model action -> IO ()
-miso app@App{..} = do
-  uri <- getCurrentURI
-  let modelWithUri = setURI uri model
-  common app model $ \writeEvent -> do
-    let initialView = view modelWithUri
-    VTree (OI.Object iv) <- flip runView writeEvent initialView
+miso app = do
+  context <- newAppContext (model app)
+  misoWithContext context app
+
+-- | Run isomorphic app, given a context.
+misoWithContext
+  :: (HasURI model, Eq model)
+  => AppContext action model -> App model action -> IO ()
+misoWithContext context (app@App{..}) = do
+  common context app $ do
+    uri <- getCurrentURI
+    let initialView = view $ setURI uri model
+    VTree (OI.Object iv) <- flip runView (writeEvent context) initialView
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree iv
     let initialVTree = VTree (OI.Object iv)
     -- Create virtual dom, perform initial diff
     newIORef initialVTree
 
--- | Runs a miso application
+-- | Runs a miso application, creating a new context from the model.
 startApp :: Eq model => App model action -> IO ()
-startApp app@App {..} =
-  common app model $ \writeEvent -> do
-    let initialView = view model
-    initialVTree <- flip runView writeEvent initialView
-    Nothing `diff` (Just initialVTree)
-    newIORef initialVTree
+startApp app = do
+  context <- newAppContext (model app)
+  startAppWithContext context app
 
--- | Helper
-foldEffects
-  :: (action -> IO ())
-  -> (action -> model -> Effect action model)
-  -> (model, IO ()) -> action -> (model, IO ())
-foldEffects sink update = \(!model, !as) action ->
-  case update action model of
-    Effect newModel effs -> (newModel, newAs)
-      where
-        newAs = as >> do
-          forM_ effs $ \eff ->
-            void $ forkIO (sink =<< eff)
+-- | Run a miso application given a context.
+startAppWithContext
+  :: Eq model => AppContext action model -> App model action -> IO ()
+startAppWithContext context (app@App{..}) = do
+  common context app $ do
+    let initialView = view model
+    initialVTree <- flip runView (writeEvent context) initialView
+    Nothing `diff` Just initialVTree
+    newIORef initialVTree

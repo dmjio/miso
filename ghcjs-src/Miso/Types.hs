@@ -1,3 +1,4 @@
+{-# Language RecordWildCards     #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -10,6 +11,11 @@
 module Miso.Types
   ( App (..)
 
+  -- * Application context
+  , AppContext (..)
+  , newAppContext
+  , writeEvent
+
     -- * The Transition Monad
   , Transition
   , fromTransition
@@ -17,13 +23,47 @@ module Miso.Types
   , scheduleIO
   ) where
 
+import           Control.Concurrent (forkIO)
+import           Control.Monad (void)
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
 import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell)
 import qualified Data.Map           as M
+import           Data.Sequence (Seq, (|>))
+import           Data.IORef (IORef, newIORef, atomicModifyIORef')
 import           Miso.Effect
 import           Miso.Html.Internal
 import           Miso.String
+import           Miso.Concurrent (Notify(..), newNotify)
+
+-- | Mutable runtime data for an app.
+data AppContext action model = AppContext {
+  modelRef :: IORef model,
+  -- ^ IORef which contains the model currently being displayed by the app.
+  notifier :: Notify,
+  -- ^ Provides primitives for blocking the app until the model updates.
+  actionsRef :: IORef (Seq action)
+  -- ^ Actions queue; the app is updated as these are processed.
+  }
+
+-- | Create a new application context.
+newAppContext :: model -> IO (AppContext action model)
+newAppContext model = do
+  -- init Notifier.
+  notifier@Notify {..} <- newNotify
+  -- init Model ref with the given model.
+  modelRef <- newIORef model
+  -- init empty actions.
+  actionsRef <- newIORef mempty
+  -- Use the above values to instantiate an AppContext.
+  pure AppContext {..}
+
+-- | Write a new action event to an application context.
+writeEvent :: AppContext action model -> action -> IO ()
+writeEvent (AppContext{..}) a = void . forkIO $ do
+  atomicModifyIORef' actionsRef $ \as -> (as |> a, ())
+  notify notifier
+
 
 -- | Application entry point
 data App model action = App
@@ -41,6 +81,7 @@ data App model action = App
   , initialAction :: action
   -- ^ Initial action that is run after the application has loaded
   }
+
 
 -- | A monad for succinctly expressing model transitions in the 'update' function.
 --
