@@ -1,10 +1,10 @@
 /* event delegation algorithm */
-function delegate(events, getVTree) {
+function delegate(mountPointElement, events, getVTree) {
     for (var event in events) {
-	document.body.addEventListener(events[event][0], function(e) {
+	mountPointElement.addEventListener(events[event][0], function(e) {
             delegateEvent ( e
                           , getVTree()
-                          , buildTargetToBody(document.body, e.target)
+                          , buildTargetToElement(mountPointElement, e.target)
                           , []
                           );
 	     }, events[event][1]);
@@ -49,9 +49,9 @@ function delegateEvent (event, obj, stack, parentStack) {
     }
 }
 
-function buildTargetToBody (body, target) {
+function buildTargetToElement (element, target) {
     var stack = [];
-    while (body !== target) {
+    while (element !== target) {
       stack.unshift (target);
       target = target.parentNode;
     }

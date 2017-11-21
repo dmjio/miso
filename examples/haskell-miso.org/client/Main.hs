@@ -19,6 +19,7 @@ main = do
   miso App { model = Model currentURI False, ..}
     where
       initialAction = NoOp
+      mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]

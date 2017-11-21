@@ -80,11 +80,12 @@ data Msg
 main :: IO ()
 main = startApp App { initialAction = NoOp, ..}
   where
-    model  = emptyModel
-    update = updateModel
-    view   = viewModel
-    events = defaultEvents
-    subs   = []
+    model      = emptyModel
+    update     = updateModel
+    view       = viewModel
+    events     = defaultEvents
+    mountPoint = Nothing
+    subs       = []
 
 updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m

@@ -14,6 +14,7 @@ main = startApp App { initialAction = SayHelloWorld, ..}
     update = updateModel
     view   = viewModel
     events = defaultEvents
+    mountPoint = Nothing
     subs   = []
 
 updateModel :: Action -> Model -> Effect Action Model

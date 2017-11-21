@@ -40,6 +40,8 @@ data App model action = App
   -- ^ List of delegated events that the body element will listen for
   , initialAction :: action
   -- ^ Initial action that is run after the application has loaded
+  , mountPoint :: Maybe MisoString
+  -- ^ root element for DOM diff
   }
 
 -- | A monad for succinctly expressing model transitions in the 'update' function.

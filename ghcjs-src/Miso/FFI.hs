@@ -130,9 +130,10 @@ foreign import javascript unsafe "copyDOMIntoVTree($1);"
 
 -- | Event delegation FFI, routes events received on body through the virtual dom
 -- Invokes event handler when found
-foreign import javascript unsafe "delegate($1, $2);"
+foreign import javascript unsafe "delegate($1, $2, $3);"
   delegateEvent
-     :: JSVal               -- ^ Events
+     :: JSVal               -- ^ mountPoint element
+     -> JSVal               -- ^ Events
      -> Callback (IO JSVal) -- ^ Virtual DOM callback
      -> IO ()
 

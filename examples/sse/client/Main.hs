@@ -27,6 +27,7 @@ main = do
       either (const the404) id . runRoute (Proxy :: Proxy ClientRoutes) handlers
     events = defaultEvents
     subs = [sseSub "/sse" handleSseMsg, uriSub HandleURI]
+    mountPoint = Nothing
 
 handleSseMsg :: SSE String -> Action
 handleSseMsg (SSEMessage msg) = ServerMsg msg

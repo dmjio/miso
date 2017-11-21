@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedLists   #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Main where
 
-import Control.Monad
-import Data.IORef
-import GHCJS.Types
+import           Control.Monad
+import           Data.IORef
+import qualified Data.Map      as M
+import           GHCJS.Types
 
-import Miso
-import Miso.String
+import           Miso
+import           Miso.String
 
 data Action
   = GetTime
@@ -58,6 +58,7 @@ main = do
   startApp App { model = m
                , initialAction = Init
                , update = updateModel ref
+               , mountPoint = Nothing
                , ..
                }
     where
@@ -68,7 +69,7 @@ main = do
 viewModel :: Double -> View action
 viewModel _ = div_ [] [
     div_ [ id_ "stats"
-         , style_ [("position", "absolute")]
+         , style_ $ M.singleton "position" "absolute"
          ] []
   , canvas_ [ id_ "canvas"
             , width_ "400"
