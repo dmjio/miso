@@ -70,8 +70,10 @@ common App {..} m getView = do
   void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
   -- Retrieves reference view
   viewRef <- getView writeEvent
+  -- know thy mountElement
+  mountEl <- mountElement mountPoint
   -- Begin listening for events in the virtual dom
-  delegator viewRef events
+  delegator mountEl viewRef events
   -- Process initial action of application
   writeEvent initialAction
   -- Program loop, blocking on SkipChan
@@ -90,7 +92,7 @@ common App {..} m getView = do
           =<< view <$> readIORef modelRef
       oldVTree <- readIORef viewRef
       void $ waitForAnimationFrame
-      Just oldVTree `diff` Just newVTree
+      (diff mountPoint) (Just oldVTree) (Just newVTree)
       atomicWriteIORef viewRef newVTree
 
 -- | Runs an isomorphic miso application
@@ -114,7 +116,7 @@ startApp app@App {..} =
   common app model $ \writeEvent -> do
     let initialView = view model
     initialVTree <- flip runView writeEvent initialView
-    Nothing `diff` (Just initialVTree)
+    (diff mountPoint) Nothing (Just initialVTree)
     newIORef initialVTree
 
 -- | Helper

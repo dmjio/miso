@@ -17,16 +17,18 @@ import           Miso.FFI
 import qualified JavaScript.Object.Internal as OI
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
+import           GHCJS.Types (JSVal)
 
 -- | Entry point for event delegation
 delegator
-  :: IORef VTree
+  :: JSVal
+  -> IORef VTree
   -> M.Map MisoString Bool
   -> IO ()
-delegator vtreeRef es = do
+delegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
   getVTreeFromRef <- syncCallback' $ do
     VTree (OI.Object val) <- readIORef vtreeRef
     pure val
-  delegateEvent evts getVTreeFromRef
+  delegateEvent mountPointElement evts getVTreeFromRef
 
