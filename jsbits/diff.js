@@ -76,8 +76,6 @@ function diffProps (cProps, nProps, node, isSvg) {
 	   if (isSvg) {
 	     if (c === "href")
 		node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
-	     else if (c === "className" || c === "class")
-		node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
 	     else
 		node.setAttribute(c, newProp);
 	    } else if (c in node && !(c === "list" || c === "form")) {
@@ -95,8 +93,6 @@ function diffProps (cProps, nProps, node, isSvg) {
 	  if (isSvg) {
 	    if (n === "href")
 	       node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
-	    else if (n === "className" || n === "class")
-	       node.setAttributeNS("http://www.w3.org/1999/xlink", "class", newProp);
 	    else
 	       node.setAttribute(n, newProp);
 	  } else if (n in node && !(n === "list" || n === "form")) {
