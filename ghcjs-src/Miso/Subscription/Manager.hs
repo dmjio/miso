@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE RecordWildCards            #-}
 -- | Tool for starting and stopping subscriptions while app is running.
 module Miso.Subscription.Manager (
   SubscriptionManager,
@@ -9,18 +10,17 @@ module Miso.Subscription.Manager (
   managerSub
   ) where
 
-import Prelude
-import GHC.Generics (Generic)
+import Prelude                 hiding (lookup)
+import Control.Concurrent      (forkIO)
+import Control.Concurrent.Chan (Chan, newChan, writeChan, readChan)
 import Control.Concurrent.MVar (MVar, newMVar, newEmptyMVar)
 import Control.Concurrent.MVar (modifyMVar, modifyMVar_, readMVar, putMVar)
-import Control.Concurrent.Chan (Chan, newChan, writeChan, readChan)
-import Control.Monad (forever)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import Data.IntMap (IntMap)
-import qualified Data.IntMap as IM
+import Control.Monad           (void, forever)
+import Data.IORef              (IORef, newIORef, readIORef, writeIORef)
+import Data.IntMap             (IntMap, insert, lookup, delete)
+import GHC.Generics            (Generic)
 
-import Miso.Html.Internal (Sub)
-
+import Miso.Html.Internal      (Sub)
 
 -- | Provides facilities for adding/removing subscriptions.
 data SubscriptionManager action model = SubscriptionManager {
@@ -47,14 +47,14 @@ startSubscription
   :: SubscriptionManager action model -- ^ Manager.
   -> Sub action model -- ^ Subscription function. Non-blocking.
   -> IO Int -- ^ ID of the new subscription.
-startSubscription manager sub = do
-  getModel <- readMVar (ioModel manager)
-  modifyMVar (subscriptions manager) $ \(subs, subId) -> do
+startSubscription (SubscriptionManager{..}) sub = do
+  getModel <- readMVar ioModel
+  modifyMVar subscriptions $ \(subs, subId) -> do
     subIsActive <- newIORef True
     sub getModel $ \action -> readIORef subIsActive >>= \case
-      True -> writeChan (eventsChan manager) action
+      True -> writeChan eventsChan action
       False -> pure ()
-    pure ((IM.insert subId subIsActive subs, subId + 1), subId)
+    pure ((insert subId subIsActive subs, subId + 1), subId)
 
 -- | Stop a subscription, given its ID.
 --
@@ -63,18 +63,20 @@ startSubscription manager sub = do
 -- the user to stop any asynchronous functions/threads/etc that might
 -- be producing those events. For example, if your subscription gets
 -- events from a WebSocket, you should close that websocket so it's
--- not using CPU/memory.
+-- not using CPU/memory/network. If your subscription listens to
+-- events from the window, you should remove relevant event listeners.
 --
 -- Idempotent and safe to call even if the given ID doesn't exist.
 stopSubscription :: SubscriptionManager action model -> Int -> IO ()
-stopSubscription manager subId = do
-  modifyMVar_ (subscriptions manager) $ \(subs, nextId) -> do
-    case IM.lookup subId subs of
+stopSubscription (SubscriptionManager{..}) subId = do
+  modifyMVar_ subscriptions $ \(subs, nextId) -> do
+    case lookup subId subs of
       Nothing -> pure (subs, nextId)
-      Just ref -> (IM.delete subId subs, nextId) <$ writeIORef ref False
+      Just ref -> (delete subId subs, nextId) <$ writeIORef ref False
 
--- | Create a subscription from a subscription manager.
+-- | Create a subscription from a subscription manager. Put a call to
+-- this into the @subs@ list on your @App@.
 managerSub :: SubscriptionManager action model -> Sub action model
-managerSub manager getModel sink = do
-  putMVar (ioModel manager) getModel
-  forever $ readChan (eventsChan manager) >>= sink
+managerSub (SubscriptionManager{..}) getModel sink = do
+  putMVar ioModel getModel
+  void $ forkIO $ forever $ readChan eventsChan >>= sink

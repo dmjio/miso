@@ -307,6 +307,7 @@ library
       Miso.Subscription.WebSocket
       Miso.Subscription.Window
       Miso.Subscription.SSE
+      Miso.Subscription.Manager
       Miso.Types
     other-modules:
       Miso.Diff
