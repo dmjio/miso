@@ -19,6 +19,7 @@ main = startApp App {..}
     view          = viewModel
     events        = defaultEvents
     subs          = [ mouseSub HandleMouse ]
+    mountPoint    = Nothing
 
 emptyModel :: Model
 emptyModel = Model (0,0)

@@ -35,6 +35,7 @@ main = do
                , ..
                }
     where
+      mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs   = []

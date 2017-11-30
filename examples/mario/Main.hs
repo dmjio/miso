@@ -36,6 +36,7 @@ main = do
     subs   = [ arrowsSub GetArrows
              , windowSub WindowCoords
              ]
+    mountPoint = Nothing
 
 data Model = Model
     { x :: !Double

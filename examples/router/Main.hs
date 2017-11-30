@@ -46,6 +46,7 @@ main = do
     events = defaultEvents
     subs   = [ uriSub HandleURI ]
     view   = viewModel
+    mountPoint = Nothing
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model

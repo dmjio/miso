@@ -373,6 +373,7 @@ main = startApp App {..}
     update = updateModel          -- update function
     view   = viewModel            -- view function
     events = defaultEvents        -- default delegated events
+    mountPoint = Nothing          -- mount point for miso on DOM, defaults to body
     subs   = []                   -- empty subscription list
 
 -- | Updates model, optionally introduces side effects
