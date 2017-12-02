@@ -48,14 +48,27 @@ instance FromJSON MisoString where
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
+  fromMisoString :: MisoString -> str
 
 -- | Convenience function, shorthand for `toMisoString`
 ms :: ToMisoString str => str -> MisoString
 ms = toMisoString
 
-instance ToMisoString MisoString where toMisoString = id
-instance ToMisoString String where toMisoString = pack
-instance ToMisoString T.Text where toMisoString = textToJSString
-instance ToMisoString LT.Text where toMisoString = lazyTextToJSString
-instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
-instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
+instance ToMisoString MisoString where
+  toMisoString = id
+  fromMisoString = id
+instance ToMisoString String where
+  toMisoString = pack
+  fromMisoString = unpack
+instance ToMisoString T.Text where
+  toMisoString = textToJSString
+  fromMisoString = textFromJSString
+instance ToMisoString LT.Text where
+  toMisoString = lazyTextToJSString
+  fromMisoString = lazyTextFromJSString
+instance ToMisoString B.ByteString where
+  toMisoString = toMisoString . T.decodeUtf8
+  fromMisoString = T.encodeUtf8 . fromMisoString
+instance ToMisoString BL.ByteString where
+  toMisoString = toMisoString . LT.decodeUtf8
+  fromMisoString = LT.encodeUtf8 . fromMisoString

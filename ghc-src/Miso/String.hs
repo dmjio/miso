@@ -33,13 +33,24 @@ type MisoString = Text
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
+  fromMisoString :: MisoString -> str
 
 -- | Convenience function, shorthand for `toMisoString`
 ms :: ToMisoString str => str -> MisoString
 ms = toMisoString
 
-instance ToMisoString MisoString where toMisoString = id
-instance ToMisoString String where toMisoString = T.pack
-instance ToMisoString LT.Text where toMisoString = LT.toStrict
-instance ToMisoString B.ByteString where toMisoString = toMisoString . T.decodeUtf8
-instance ToMisoString BL.ByteString where toMisoString = toMisoString . LT.decodeUtf8
+instance ToMisoString MisoString where
+  toMisoString = id
+  fromMisoString = id
+instance ToMisoString String where
+  toMisoString = T.pack
+  fromMisoString = T.unpack
+instance ToMisoString LT.Text where
+  toMisoString = LT.toStrict
+  fromMisoString = LT.fromStrict
+instance ToMisoString B.ByteString where
+  toMisoString = toMisoString . T.decodeUtf8
+  fromMisoString = T.encodeUtf8 . fromMisoString
+instance ToMisoString BL.ByteString where
+  toMisoString = toMisoString . LT.decodeUtf8
+  fromMisoString = LT.encodeUtf8 . fromMisoString
