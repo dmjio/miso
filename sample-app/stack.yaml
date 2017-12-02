@@ -5,7 +5,7 @@ compiler-check: match-exact
 packages:
  - '.'
 extra-deps:
- - miso-0.4.0.0
+ - miso-0.10.0.0
 
 setup-info:
   ghcjs:

@@ -93,7 +93,7 @@ compiler-check: match-exact
 packages:
  - '.'
 extra-deps:
- - miso-0.7.2.0
+ - miso-0.10.0.0
 
 setup-info:
   ghcjs:
