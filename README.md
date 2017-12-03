@@ -57,6 +57,7 @@
   - [ThreeJS](#threejs)
   - [Simple](#simple)
   - [File Reader](#file-reader)
+  - [WebVR](#webvr)
 - [Haddocks](#haddocks)
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
@@ -331,6 +332,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### File Reader
   - [Link](https://file-reader.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs)
+
+### WebVR
+  - [Link](https://fizruk.github.io/fpconf-2017-talk/miso-aframe-demo/dist/demo.jsexe/index.html) / [Source](https://github.com/fizruk/miso-aframe)
 
 ## Haddocks
 
