@@ -7,5 +7,5 @@ mkDerivation {
   isExecutable = true;
   executableHaskellDepends = [ base miso ];
   description = "First miso app";
-  license = stdenv.lib.licenses.unfree;
+  license = stdenv.lib.licenses.bsd3;
 }

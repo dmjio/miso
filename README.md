@@ -215,7 +215,7 @@ mkDerivation {
   isExecutable = true;
   executableHaskellDepends = [ base miso ];
   description = "First miso app";
-  license = stdenv.lib.licenses.unfree;
+  license = stdenv.lib.licenses.bsd3;
 }
 ```
 
@@ -226,8 +226,8 @@ let
   result = import (pkgs.fetchFromGitHub {
     owner = "dmjio";
     repo = "miso";
-    sha256 = "13wfxxplnqajqnykyxdy7477kdfxshpv800b2shr1iib8m01lygn";
-    rev = "91b7194c6e0baab3d367073449a8ada7ba8dc346";
+    sha256 = "18jhr1ihf0vwwvp134j24isvzq699x5iy7l9ihrah760zmcxi7d2";
+    rev = "e3d3d874337a4a44adc4b6bdb8b18d907c6c1e34";
   }) {};
 in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
   miso = result.miso-ghcjs;
