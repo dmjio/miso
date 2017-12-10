@@ -175,6 +175,7 @@ executable svg
     build-depends:
       base < 5,
       containers,
+      aeson,
       miso
     default-language:
       Haskell2010
