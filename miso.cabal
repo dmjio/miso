@@ -172,6 +172,8 @@ executable svg
   else
     hs-source-dirs:
       examples/svg
+    other-modules:
+      Touch
     build-depends:
       base < 5,
       containers,

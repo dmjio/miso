@@ -24,7 +24,6 @@ module Miso.Event.Decoder
 
 import Data.Aeson.Types
 import Control.Applicative
-import GHCJS.Marshal
 
 import Miso.Event.Types
 import Miso.String
@@ -33,11 +32,6 @@ import Miso.String
 data DecodeTarget
   = DecodeTarget [MisoString] -- ^ Decode a single object
   | DecodeTargets [[MisoString]] -- ^ Decode multiple objecjects
-
--- | `ToJSVal` instance
-instance ToJSVal DecodeTarget where
-  toJSVal (DecodeTarget xs) = toJSVal xs
-  toJSVal (DecodeTargets xs) = toJSVal xs
 
 -- | Decoder data type for parsing events
 data Decoder a = Decoder {

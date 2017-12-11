@@ -71,7 +71,7 @@ function propogateWhileAble (parentStack, event) {
 }
 
 /* Convert event to JSON at a specific location in the DOM tree*/
-fuction objectToJSON (at, obj) {
+function objectToJSON (at, obj) {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] == "object") {
     var ret = [];

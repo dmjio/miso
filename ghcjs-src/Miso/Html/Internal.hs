@@ -103,6 +103,11 @@ class ToView v where toView :: v -> View m
 set :: ToJSVal v => JSString -> v -> Object -> IO ()
 set k v obj = toJSVal v >>= \x -> setProp k x obj
 
+-- | `ToJSVal` instance for `Decoder`
+instance ToJSVal DecodeTarget where
+  toJSVal (DecodeTarget xs) = toJSVal xs
+  toJSVal (DecodeTargets xs) = toJSVal xs
+
 -- | Create a new @VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@

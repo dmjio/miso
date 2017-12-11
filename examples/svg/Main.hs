@@ -4,13 +4,13 @@
 {-# LANGUAGE TypeOperators              #-}
 module Main where
 
-import qualified Data.Map           as M
+import qualified Data.Map      as M
 
+import           Control.Arrow
 import           Miso
-import           Miso.String        (MisoString, pack, ms)
-import           Miso.Svg           hiding (height_, id_, style_, width_)
-import Control.Arrow
-import Touch
+import           Miso.String   (MisoString, pack, ms)
+import           Miso.Svg      hiding (height_, id_, style_, width_)
+import           Touch
 
 trunc = truncate *** truncate
 

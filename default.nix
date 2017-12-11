@@ -39,8 +39,8 @@ let
   }) {};
   snake = ghcjs.callCabal2nix "miso-snake" (nixpkgs.fetchFromGitHub {
     repo = "miso-snake";
-    owner = "lbonn";
-    rev = "5e68faf59ec6cf90e5f6991c93223ad481b8496f";
+    owner = "dmjio";
+    rev = "aa25ee5c84cfde0ccd01b3d217485d545d5f13e5";
     sha256 = "179lnjnbmz8ph7v4w235xnaly86p8hlvizzf0mkiybnmwbzjqrm5";
   }) { miso = result.miso-ghcjs; };
   result = {
