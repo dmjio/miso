@@ -41,7 +41,7 @@ let
     repo = "miso-snake";
     owner = "dmjio";
     rev = "aa25ee5c84cfde0ccd01b3d217485d545d5f13e5";
-    sha256 = "179lnjnbmz8ph7v4w235xnaly86p8hlvizzf0mkiybnmwbzjqrm5";
+    sha256 = "0g85qc4pzpqillvkagirmra1axr6xn934ka82ll614cylfzbj7n1";
   }) { miso = result.miso-ghcjs; };
   result = {
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
