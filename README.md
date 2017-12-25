@@ -87,8 +87,8 @@ app
 Add a `stack.yaml` file that uses a recent version of `miso`.
 ```bash
 ➜  cat app/stack.yaml
-resolver: lts-6.20
-compiler: ghcjs-0.2.0.9006020_ghc-7.10.3
+resolver: lts-6.30
+compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
 compiler-check: match-exact
 
 packages:
@@ -99,9 +99,9 @@ extra-deps:
 setup-info:
   ghcjs:
     source:
-      ghcjs-0.2.0.9006020_ghc-7.10.3:
-         url: http://ghcjs.tolysz.org/lts-6.20-9006020.tar.gz
-         sha1: a6cea90cd8121eee3afb201183c6e9bd6bacd94a
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 ```
 
 Add a `cabal` file
