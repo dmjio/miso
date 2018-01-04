@@ -151,8 +151,8 @@ title_ = textProp "title"
 selected_ ::  Bool -> Attribute action
 selected_ = boolProp "selected"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/hidden>
-hidden_ ::  MisoString -> Attribute action
-hidden_             = textProp "hidden"
+hidden_ ::  Bool -> Attribute action
+hidden_             = boolProp "hidden"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/value>
 value_ ::  MisoString -> Attribute action
 value_             = textProp "value"
@@ -169,14 +169,14 @@ acceptCharset_     = textProp "acceptCharset"
 action_ ::  MisoString -> Attribute action
 action_            = textProp "action"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/autocomplete>
-autocomplete_ ::  MisoString -> Attribute action
-autocomplete_      = textProp "autocomplete"
+autocomplete_ ::  Bool -> Attribute action
+autocomplete_ b = textProp "autocomplete" (if b then "on" else "off")
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/autosave>
 autosave_ ::  MisoString -> Attribute action
 autosave_          = textProp "autosave"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/disabled>
-disabled_ ::  MisoString -> Attribute action
-disabled_          = textProp "disabled"
+disabled_ ::  Bool -> Attribute action
+disabled_          = boolProp "disabled"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/enctype>
 enctype_ ::  MisoString -> Attribute action
 enctype_           = textProp "enctype"
@@ -196,20 +196,20 @@ minlength_         = textProp "minlength"
 method_ ::  MisoString -> Attribute action
 method_            = textProp "method"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/multiple>
-multiple_ ::  MisoString -> Attribute action
-multiple_          = textProp "multiple"
+multiple_ ::  Bool -> Attribute action
+multiple_          = boolProp "multiple"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/novalidate>
-novalidate_ ::  MisoString -> Attribute action
-novalidate_        = textProp "novalidate"
+novalidate_ ::  Bool -> Attribute action
+novalidate_        = boolProp "noValidate"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/pattern>
 pattern_ ::  MisoString -> Attribute action
 pattern_           = textProp "pattern"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/readonly>
-readonly_ ::  MisoString -> Attribute action
-readonly_          = textProp "readonly"
+readonly_ ::  Bool -> Attribute action
+readonly_          = boolProp "readOnly"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/required>
-required_ ::  MisoString -> Attribute action
-required_          = textProp "required"
+required_ ::  Bool -> Attribute action
+required_          = boolProp "required"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/size>
 size_ ::  MisoString -> Attribute action
 size_              = textProp "size"
@@ -283,14 +283,14 @@ width_             = textProp "width"
 alt_ ::  MisoString -> Attribute action
 alt_               = textProp "alt"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/autoplay>
-autoplay_ ::  MisoString -> Attribute action
-autoplay_          = textProp "autoplay"
+autoplay_ ::  Bool -> Attribute action
+autoplay_          = boolProp "autoplay"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/controls>
-controls_ ::  MisoString -> Attribute action
-controls_          = textProp "controls"
+controls_ ::  Bool -> Attribute action
+controls_          = boolProp "controls"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/loop>
-loop_ ::  MisoString -> Attribute action
-loop_              = textProp "loop"
+loop_ ::  Bool -> Attribute action
+loop_              = boolProp "loop"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/preload>
 preload_ ::  MisoString -> Attribute action
 preload_           = textProp "preload"
@@ -298,8 +298,8 @@ preload_           = textProp "preload"
 poster_ ::  MisoString -> Attribute action
 poster_            = textProp "poster"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/default>
-default_ ::  MisoString -> Attribute action
-default_           = textProp "default"
+default_ ::  Bool -> Attribute action
+default_           = boolProp "default"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/kind>
 kind_ ::  MisoString -> Attribute action
 kind_              = textProp "kind"

@@ -231,7 +231,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
 viewControls :: Model ->  MisoString -> [ Entry ] -> View Msg
 viewControls model visibility entries =
   footer_  [ class_ "footer"
-           , hidden_ (bool "" "hidden" $ null entries)
+           , hidden_ (null entries)
            ]
       [ viewControlsCount entriesLeft
       , viewControlsFilters visibility
