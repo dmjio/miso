@@ -88,10 +88,7 @@ viewModel Model {..} = view
       where
         attrs = [ onClick FetchGitHub
                 , class_ $ pack "button is-large is-outlined"
-                ] ++
-                [ disabled_ $ pack "disabled"
-                | isJust info
-                ]
+                ] ++ [ disabled_ True | isJust info ]
 
 data APIInfo
   = APIInfo

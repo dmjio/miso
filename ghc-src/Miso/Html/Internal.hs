@@ -83,10 +83,24 @@ instance L.ToHtml (VTree action) where
     in L.with ele as
       where
         Props xs = vProps
-        as = [ L.makeAttribute k v'
+        as = [ L.makeAttribute k (if k `elem` exceptions && v == Bool True then k else v')
              | (k,v) <- M.toList xs
              , let v' = toHtmlFromJSON v
+             , not (k `elem` exceptions && v == Bool False)
              ]
+        exceptions = [ "checked"
+                     , "disabled"
+                     , "selected"
+                     , "hidden"
+                     , "readOnly"
+                     , "autoplay"
+                     , "required"
+                     , "default"
+                     , "autofocus"
+                     , "multiple"
+                     , "noValidate"
+                     , "autocomplete"
+                     ]
         toTag = T.toLower
         kids = foldMap L.toHtml vChildren
 
