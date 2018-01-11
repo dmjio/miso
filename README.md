@@ -63,6 +63,7 @@
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
 - [Building examples](#building-examples)
+- [Pinning nixpkgs](#pinning-nixpkgs)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [License](#license)
@@ -435,6 +436,15 @@ To see examples, we recommend hosting them with a webserver
 ```
 cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
+```
+
+## Pinning nixpkgs
+
+By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/default.nix#L1-L6).
+To override this to your system's version of `nixpkgs` write:
+
+```
+nix-build --arg nixpkgs 'import <nixpkgs> {};'
 ```
 
 ## Maintainers
