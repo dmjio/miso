@@ -1,8 +1,12 @@
-{ pulls ? ./test.json }:
-
-let
-  pkgs = import <nixpkgs>{};
-in with (import ./lib.nix { inherit pkgs; });
+{ pulls ? ./test.json
+, pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
+    owner = "NixOS";
+    repo = "nixpkgs";
+    rev = "a0aeb23";
+    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
+  }){}
+}:
+with (import ./lib.nix { inherit pkgs; });
 with pkgs.lib;
 let
   defaults = globalDefaults // {
@@ -15,7 +19,7 @@ let
       description = "miso-master";
       inputs = {
         miso = mkFetchGithub "https://github.com/dmjio/miso master";
-        nixpkgs = mkFetchGithub "https://github.com/nixos/nixpkgs-channels.git nixpkgs-unstable";
+        inherit pkgs;
       };
     };
   };
@@ -26,7 +30,7 @@ let
       description = "PR ${num}: ${info.title}";
       inputs = {
         miso = mkFetchGithub "https://github.com/${info.head.repo.owner.login}/${info.head.repo.name}.git ${info.head.ref}";
-        nixpkgs = mkFetchGithub "https://github.com/nixos/nixpkgs-channels.git nixpkgs-unstable";
+        inherit pkgs;
       };
     };
   };
