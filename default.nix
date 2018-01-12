@@ -39,12 +39,12 @@ let
     rev = "4ec1b66b2b265af96bce351538b1f604d04c6c9e";
     sha256 = "1bl9bmx8sjnh917iwk08mkq56b2jsv7fxk43z4cjngvjjl73ssqv";
   }) { miso = result.miso-ghcjs; };
-  the2048 = import (nixpkgs.fetchFromGitHub {
+  the2048 = ghcjs.callCabal2nix "2048" (nixpkgs.fetchFromGitHub {
     repo = "hs2048";
-    owner = "ptigwe";
-    rev = "0b4858c545d4cf6ca0c1a0cadb44d9e633c6bee6";
-    sha256 = "0znr7i8q5sg3bzz8wak1l2hqs62vvpsgvj0rszbvks45vdfidnxj";
-  }) {};
+    owner = "dmjio";
+    rev = "133eb63defa9442e64a41114d342b7d4ab6d809d";
+    sha256 = "1dsbnaqv41r316hy6w6ny8c2582p95qh6xvjszkyscr2w425034w";
+  }) { miso = result.miso-ghcjs; };
   snake = ghcjs.callCabal2nix "miso-snake" (nixpkgs.fetchFromGitHub {
     repo = "miso-snake";
     owner = "dmjio";
