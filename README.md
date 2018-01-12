@@ -444,7 +444,7 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 To override this to your system's version of `nixpkgs` write:
 
 ```
-nix-build --arg nixpkgs 'import <nixpkgs> {};'
+nix-build --arg nixpkgs 'import <nixpkgs> {}'
 ```
 
 ## Maintainers
