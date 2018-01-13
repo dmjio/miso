@@ -18,8 +18,6 @@ extra-source-files:
   README.md
   examples/todo-mvc/index.html
   examples/websocket/index.html
-  examples/mario/index.html
-  examples/mario/imgs/mario.png
 
 flag examples
   default:
@@ -143,21 +141,6 @@ executable websocket
       examples/websocket
     build-depends:
       aeson,
-      base < 5,
-      containers,
-      miso
-    default-language:
-      Haskell2010
-
-executable mario
-  main-is:
-    Main.hs
-  if !impl(ghcjs) || !flag(examples)
-    buildable: False
-  else
-    hs-source-dirs:
-      examples/mario
-    build-depends:
       base < 5,
       containers,
       miso

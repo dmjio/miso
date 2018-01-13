@@ -444,6 +444,8 @@ cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
 
+You can also run [`example of Mario`](https://github.com/dmjio/miso/blob/master/examples/mario/) as a single build as described in its [README](https://github.com/dmjio/miso/blob/master/examples/mario/README.md)
+
 ## Pinning nixpkgs
 
 By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/default.nix#L1-L6).

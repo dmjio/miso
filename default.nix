@@ -18,10 +18,7 @@ let
     doCheck = tests && !isDarwin;
     doHaddock = haddock;
     postInstall = ''
-      mkdir -p $out/bin/mario.jsexe/imgs
-      cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/examples/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
-      cp ${drv.src}/examples/mario/index.html $out/bin/mario.jsexe/
       cp ${drv.src}/examples/websocket/index.html $out/bin/websocket.jsexe/
       cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
       ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
@@ -33,6 +30,7 @@ let
       phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
+  mario = ghcjs.callPackage ./examples/mario/mario.nix { miso = result.miso-ghcjs; };
   flatris = ghcjs.callCabal2nix "hs-flatris" (pkgs.fetchFromGitHub {
     repo = "hs-flatris";
     owner = "ptigwe";
@@ -58,7 +56,7 @@ let
     s3 = pkgs.writeScriptBin "s3.sh" ''
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${flatris}/bin/app.jsexe/ s3://aws-website-flatris-b3cr6/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/simple.jsexe/ s3://aws-website-simple-4yic3/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
+       ${ pkgs.s3cmd}/bin/s3cmd sync --recursive ${mario}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/router.jsexe/ s3://aws-website-router-gfy22/
@@ -73,6 +71,8 @@ let
 in pkgs.runCommand "miso" result ''
      mkdir -p $out/{lib,examples}
      cp -r ${result.miso-ghcjs}/bin/* $out/examples
+     mkdir -p $out/examples/mario
+     cp -r ${mario}/bin/* $out/examples/mario
      cp -r ${result.miso-ghcjs}/lib/* $out/lib
      ln -s ${result.miso-ghcjs.doc} $out/ghcjs-doc
      ln -s ${result.miso-ghc.doc} $out/ghc-doc
