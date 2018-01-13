@@ -22,9 +22,6 @@
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
     <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
   </a>
-  <a href="https://ci.appveyor.com/project/dmjio/miso">
-    <img src="https://img.shields.io/appveyor/ci/dmjio/miso/master.svg?style=flat-square" alt="appveyor">
-  </a>
   <a href="https://hydra.dmj.io">
     <img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=flat-square" alt="Miso Hydra">
   </a>
