@@ -18,9 +18,6 @@ data Action
   | WindowCoords !(Int,Int)
   | NoOp
 
-foreign import javascript unsafe "$r = performance.now();"
-  now :: IO Double
-
 spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0","-111px 0","-148px 0","-185px 0","-222px 0","-259px 0","-296px 0"]
 

@@ -311,6 +311,7 @@ library
       Miso.Subscription.Window
       Miso.Subscription.SSE
       Miso.Types
+      Miso.Util
     other-modules:
       Miso.Diff
       Miso.FFI
