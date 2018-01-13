@@ -6,7 +6,7 @@ license-file:        LICENSE
 author:              David M. Johnson <djohnson.m@gmail.com>
 maintainer:          David M. Johnson <djohnson.m@gmail.com>
 homepage:            http://github.com/dmjio/miso
-copyright:           Copyright (c) 2017 David M. Johnson
+copyright:           Copyright (c) 2017-2018 David M. Johnson
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.22
