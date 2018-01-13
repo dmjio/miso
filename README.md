@@ -13,17 +13,8 @@
   <a href="http://hackage.haskell.org/package/miso">
     <img src="https://img.shields.io/hackage/v/miso.svg?style=for-the-badge" alt="Hackage">
   </a>
-  <a href="https://haskell.org">
-    <img src="https://img.shields.io/badge/language-Haskell-green.svg?style=for-the-badge" alt="Haskell">
-  </a>
-  <a href="https://img.shields.io/hackage-deps/v/miso.svg">
-    <img src="https://img.shields.io/hackage-deps/v/miso.svg?style=for-the-badge" alt="Hackage">
-  </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
     <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=for-the-badge" alt="LICENSE">
-  </a>
-  <a href="https://ci.appveyor.com/project/dmjio/miso">
-    <img src="https://img.shields.io/appveyor/ci/dmjio/miso/master.svg?style=for-the-badge" alt="appveyor">
   </a>
   <a href="https://hydra.dmj.io">
     <img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=for-the-badge" alt="Miso Hydra">
