@@ -61,6 +61,7 @@
 - [Sample Application](#sample-application)
 - [Building examples](#building-examples)
 - [Pinning nixpkgs](#pinning-nixpkgs)
+- [Binary cache](#binary-cache)
 - [Benchmarks](#benchmarks)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
@@ -449,6 +450,20 @@ To override this to your system's version of `nixpkgs` write:
 
 ```
 nix-build --arg nixpkgs 'import <nixpkgs> {}'
+```
+
+## Binary cache
+
+`nix` users on a Linux distro can take advantage of a [binary cache](https://cache.dmj.io/nix-cache-info) for faster builds. To use the binary cache simply append `https://cache.dmj.io/nix-cache-info` during all `nix-shell` and/or `nix-build` invocations.
+
+```bash
+nix-build --option extra-binary-caches https://cache.dmj.io
+```
+
+Alternatively, add `https://cache.dmj.io` to your list of local binary caches in `nix.conf` (usually found in `/etc/nix/nix.conf`), and it will automatically be used on all invocations of `nix-build` and/or `nix-shell`.
+
+```
+binary-caches = https://cache.dmj.io/ https://cache.nixos.org/
 ```
 
 ## Benchmarks
