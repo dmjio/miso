@@ -8,28 +8,28 @@
 
 <p align="center">
   <a href="https://haskell-miso-slack.herokuapp.com">
-    <img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
+    <img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=for-the-badge" alt="Miso Slack">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
-    <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
+    <img src="https://img.shields.io/hackage/v/miso.svg?style=for-the-badge" alt="Hackage">
   </a>
   <a href="https://haskell.org">
-    <img src="https://img.shields.io/badge/language-Haskell-green.svg?style=flat-square" alt="Haskell">
+    <img src="https://img.shields.io/badge/language-Haskell-green.svg?style=for-the-badge" alt="Haskell">
   </a>
   <a href="https://img.shields.io/hackage-deps/v/miso.svg">
-    <img src="https://img.shields.io/hackage-deps/v/miso.svg?style=flat-square" alt="Hackage">
+    <img src="https://img.shields.io/hackage-deps/v/miso.svg?style=for-the-badge" alt="Hackage">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
-    <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
+    <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=for-the-badge" alt="LICENSE">
   </a>
   <a href="https://ci.appveyor.com/project/dmjio/miso">
-    <img src="https://img.shields.io/appveyor/ci/dmjio/miso/master.svg?style=flat-square" alt="appveyor">
+    <img src="https://img.shields.io/appveyor/ci/dmjio/miso/master.svg?style=for-the-badge" alt="appveyor">
   </a>
   <a href="https://hydra.dmj.io">
-    <img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=flat-square" alt="Miso Hydra">
+    <img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=for-the-badge" alt="Miso Hydra">
   </a>
   <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
-    <img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
+    <img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=for-the-badge" alt="IRC #haskell-miso">
   </a>
 </p>
 
