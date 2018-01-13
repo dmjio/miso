@@ -108,9 +108,6 @@ foreign import javascript unsafe "$1.end();"
 foreign import javascript unsafe "$1.showPanel(0);"
   showPanel :: JSVal -> IO ()
 
-foreign import javascript unsafe "$r = performance.now();"
-  now :: IO Double
-
 foreign import javascript unsafe "$r = new THREE.Scene();"
   newScene :: IO JSVal
 

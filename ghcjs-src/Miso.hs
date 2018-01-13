@@ -22,6 +22,7 @@ module Miso
   , module Miso.Subscription
   , module Miso.Types
   , module Miso.Router
+  , module Miso.Util
   ) where
 
 import           Control.Concurrent
@@ -38,6 +39,7 @@ import           Miso.Delegate
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
+import           Miso.Util
 import           Miso.Html
 import           Miso.Router
 import           Miso.Subscription
