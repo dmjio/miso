@@ -7,7 +7,7 @@ license:             BSD3
 license-file:        LICENSE
 author:              David Johnson
 maintainer:          djohnson.m@gmail.com
-copyright:           David Johnson (c) 2017
+copyright:           David Johnson (c) 2017-2018
 category:            Web
 build-type:          Simple
 extra-source-files:  ChangeLog.md
