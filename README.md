@@ -119,7 +119,7 @@ compiler-check: match-exact
 packages:
  - '.'
 extra-deps:
- - miso-0.11.0.0
+ - miso-0.12.0.0
 
 setup-info:
   ghcjs:
