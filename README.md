@@ -16,9 +16,6 @@
   <a href="https://haskell.org">
     <img src="https://img.shields.io/badge/language-Haskell-green.svg?style=flat-square" alt="Haskell">
   </a>
-  <a href="https://img.shields.io/hackage-deps/v/miso.svg">
-    <img src="https://img.shields.io/hackage-deps/v/miso.svg?style=flat-square" alt="Hackage">
-  </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
     <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
   </a>
