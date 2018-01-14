@@ -34,6 +34,7 @@
 
 ## Table of Contents
 - [Quick Start](#quick-start)
+  - [Begin](#begin)
   - [Stack](#stack)
   - [Nix](#nix)
   - [Cabal](#cabal)
@@ -72,6 +73,30 @@ To get started quickly building applications, we recommend using the [`stack`](h
 
 All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
 
+### Begin
+We recommend using `nix` when working with `miso`, but it is just as fine to use `stack`. 
+To build the sample-app with `nix`, execute the command below:
+
+```bash
+git clone https://github.com/dmjio/miso && cd miso/sample-app && nix-build
+```
+
+To develop with `nix` run the below command (this will put you into a shell where you can iteratively develop the project with `cabal build`).
+
+```bash
+git clone https://github.com/dmjio/miso && cd miso/sample-app && nix-shell -A env
+```
+
+For more information on using `nix` w/ `miso`, see the [`nix` section below](#nix)
+
+To build the sample-app with `stack`, execute the command below:
+```bash
+git clone https://github.com/dmjio/miso && cd miso/sample-app && stack setup && stack build
+```
+
+For more information on using `stack` w/ `miso`, see the [`stack` section below](#stack)
+
+
 ### Stack
 In the `miso` repository there is a [folder named `stack`](https://github.com/dmjio/miso/tree/master/stack) with "known to work" configurations for `GHCJS`. One stack file exists for both the `7.10.3` and `8.0.1` versions of `GHCJS`. In general, we recommend developing with the `7.10.3` version since it currently supports `GHCJSi` (a REPL that connects to the browser by way of a [`nodejs`](https://nodejs.org/en/) web server using [`socket.io`](https://socket.io/)) and building with the `8.0.1` version (if possible). For more information on using `stack` with `GHCJS`, please consult the [GHCJS section of the `stack` docs](https://docs.haskellstack.org/en/stable/ghcjs/).
 
@@ -94,7 +119,7 @@ compiler-check: match-exact
 packages:
  - '.'
 extra-deps:
- - miso-0.10.0.0
+ - miso-0.11.0.0
 
 setup-info:
   ghcjs:
