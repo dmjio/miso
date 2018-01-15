@@ -52,7 +52,6 @@ let
     sha256 = "06l2ajw9g5x5c45hwkdyzm0x0ngg16f7n9aqnyng1q46w5wr4sa8";
   }) { miso = result.miso-ghcjs; };
   result = {
-    inherit pkgs;
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildStrictly miso-ghc;
     release = sdistTarball (buildStrictly miso-ghc);
