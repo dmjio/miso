@@ -58,6 +58,7 @@
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
 - [Building examples](#building-examples)
+- [Isomorphic](#isomorphic)
 - [Pinning nixpkgs](#pinning-nixpkgs)
 - [Binary cache](#binary-cache)
 - [Benchmarks](#benchmarks)
@@ -71,7 +72,7 @@ To get started quickly building applications, we recommend using the [`stack`](h
 All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
 
 ### Begin
-We recommend using `nix` when working with `miso`, but it is just as fine to use `stack`. 
+We recommend using `nix` when working with `miso`, but it is just as fine to use `stack`.
 To build the sample-app with `nix`, execute the command below:
 
 ```bash
@@ -464,6 +465,14 @@ To see examples, we recommend hosting them with a webserver
 cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
+
+## Isomorphic
+
+Isomorphic javascript is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM, and the application proceeds as normal. All subsequent page navigation is handled locally by the client, avoiding full-page postbacks as necessary.
+
+The `miso` function is used to perform the pointer-copying behavior client-side.
+
+For more information on how `miso` handles isomorphic javascript, we recommend [this tutorial](https://github.com/FPtje/miso-isomorphic-example).
 
 ## Pinning nixpkgs
 
