@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE MultiWayIf        #-}
-{-# LANGUAGE BangPatterns      #-}
 module Main where
 
 import           Data.Bool
@@ -115,7 +114,7 @@ display :: Model -> View action
 display m@Model{..} = marioImage
   where
     (h,w) = window
-    groundY = 62 - (fromIntegral (fst window) / 2)
+    groundY = 62 - (fromIntegral h / 2)
     marioImage =
       div_ [ height_ $ pack (show h)
            , width_ $ pack (show w)
