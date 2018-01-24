@@ -37,7 +37,7 @@ let
     repo = "hs-flatris";
     owner = "ptigwe";
     rev = "5b386e35db143205b4bd8d45cdf98423ed51b713";
-    sha256 = "1nsp5mlci20yacd8my04m30366a7gnshzx5nxziw6fs7fsirxadm";
+    sha256 = "0wll5fizkdmj2hgd71v9klnnr6wxvvf36imchh2chm1slqm78zca";
   }) { miso = result.miso-ghcjs; };
   the2048 = ghcjs.callCabal2nix "2048" (pkgs.fetchFromGitHub {
     repo = "hs2048";
