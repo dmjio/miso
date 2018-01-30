@@ -92,6 +92,16 @@ To build the sample-app with `stack`, execute the command below:
 git clone https://github.com/dmjio/miso && cd miso/sample-app && stack setup && stack build
 ```
 
+Note: It's important to ensure that you don't have a global `cabal-install` present on your system. This could cause build problems. If you see an error like this (below), try deleting your global `cabal-install`.
+
+```bash
+exit status: 1                                
+stderr: solver must be one of: modular        
+CallStack (from HasCallStack):                
+  error, called at libraries/Cabal/Cabal/Distribution/ReadE.hs:46:24 in Cabal-2.0.1.0:Distribution.ReadE
+```
+
+
 For more information on using `stack` w/ `miso`, see the [`stack` section below](#stack)
 
 
