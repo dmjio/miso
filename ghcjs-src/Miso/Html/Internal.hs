@@ -41,6 +41,7 @@ module Miso.Html.Internal (
   , NS     (..)
   -- * Setting properties on virtual DOM nodes
   , prop
+  , optionalProp
   -- * Setting css
   , style_
   -- * Handling events
@@ -215,6 +216,10 @@ prop k v = Attribute . const $ \n -> do
   val <- toJSVal v
   o <- getProp ("props" :: MisoString) n
   set k val (Object o)
+
+optionalProp :: ToJSVal a => MisoString -> Maybe a -> Attribute action
+optionalProp _ Nothing  = Attribute $ \_ _ -> pure ()
+optionalProp k (Just v) = prop k v
 
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --

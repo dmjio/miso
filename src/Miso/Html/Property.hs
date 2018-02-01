@@ -176,7 +176,8 @@ autosave_ ::  MisoString -> Attribute action
 autosave_          = textProp "autosave"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/disabled>
 disabled_ ::  Bool -> Attribute action
-disabled_          = boolProp "disabled"
+disabled_ disabled = optionalProp "disabled" $
+                       if disabled then Just True else Nothing
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/enctype>
 enctype_ ::  MisoString -> Attribute action
 enctype_           = textProp "enctype"
