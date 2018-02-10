@@ -14,6 +14,32 @@ module Miso.Util
   , windowAddEventListener
   , stringify
   , parse
+
+  , withFoldable
+  , conditionalViews
   ) where
 
 import Miso.FFI
+import Miso.Html.Internal
+import Data.Foldable
+
+-- | Generic @map@ function, useful for creating @View@s from the elements of
+-- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
+-- below.
+--
+-- @
+-- view model =
+--     div_ [] $
+--      withFoldable (model ^. mSomeMaybeVal) $ \someVal ->
+--         p_ [] [ text $ "Hey, look at this value: " <> ms (show someVal) ]
+-- @
+withFoldable :: Foldable t => t a -> (a -> b) -> [b]
+withFoldable ta f = map f (toList ta)
+
+-- | Hides the @View@s the condition is False. Shows them when the condition
+-- is True.
+conditionalViews :: Bool -> [View action] -> [View action]
+conditionalViews condition views =
+    if condition
+    then views
+    else []
