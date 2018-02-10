@@ -103,6 +103,6 @@ viewModel (x, y) =
   div_
     []
     [ button_ [onClick Increment] [text "+"]
-    , text (ms (show x) <> " | " <> ms (show y))
+    , text (ms x <> " | " <> ms y)
     , button_ [onClick Decrement] [text "-"]
     ]

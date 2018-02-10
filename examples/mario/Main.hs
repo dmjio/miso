@@ -117,8 +117,8 @@ display m@Model{..} = marioImage
     (h,w) = window
     groundY = 62 - (fromIntegral (fst window) / 2)
     marioImage =
-      div_ [ height_ $ pack (show h)
-           , width_ $ pack (show w)
+      div_ [ height_ $ ms h
+           , width_ $ ms w
            ] [ div_ [ style_ (marioStyle m groundY) ] [] ]
 
 marioStyle :: Model -> Double -> M.Map MisoString MisoString
@@ -142,7 +142,7 @@ matrix dir x y =
   "matrix("
      <> (if dir == L then "-1" else "1")
      <> ",0,0,1,"
-     <> pack (show x)
+     <> ms x
      <> ","
-     <> pack (show y)
+     <> ms y
      <> ")"

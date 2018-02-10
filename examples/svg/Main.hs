@@ -60,15 +60,15 @@ viewModel (Model (x,y)) =
          , onTouchMove HandleTouch
        ] [
      g_ [] [
-     ellipse_ [ cx_ $ pack $ show x
-              , cy_ $ pack $ show y
+     ellipse_ [ cx_ $ ms x
+              , cy_ $ ms y
               , style_ svgStyle
               , rx_ "100"
               , ry_ "100"
               ] [ ]
      ]
-     , text_ [ x_ $ pack $ show x
-             , y_ $ pack $ show y
+     , text_ [ x_ $ ms x
+             , y_ $ ms y
              ] [ text $ ms $ show (x,y) ]
    ]
  ]

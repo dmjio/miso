@@ -44,6 +44,6 @@ updateModel SayHelloWorld m = m <# do
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (ms (show x))
+ , text (ms x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
