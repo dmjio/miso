@@ -412,12 +412,12 @@ main :: IO ()
 main = startApp App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel          -- update function
-    view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
-    mountPoint = Nothing          -- mount point for miso on DOM, defaults to body
-    subs   = []                   -- empty subscription list
+    model         = 0             -- initial model
+    update        = updateModel   -- update function
+    view          = viewModel     -- view function
+    events        = defaultEvents -- default delegated events
+    subs          = []            -- empty subscription list
+    mountPoint    = Nothing       -- mount point for application (Nothing defaults to 'body')
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
@@ -431,7 +431,7 @@ updateModel SayHelloWorld m = m <# do
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (ms (show x))
+ , text (ms x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
 ```
