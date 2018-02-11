@@ -25,12 +25,16 @@ import           Data.Aeson
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.JSString
+import           Data.JSString.Int
+import           Data.JSString.RealFloat
 import           Data.JSString.Text
 import           Data.Monoid
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
+import           GHCJS.Marshal.Pure
+import           GHCJS.Types
 
 -- | String type swappable based on compiler
 type MisoString = JSString
@@ -72,3 +76,15 @@ instance ToMisoString B.ByteString where
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
   fromMisoString = LT.encodeUtf8 . fromMisoString
+instance ToMisoString Float where
+  toMisoString = realFloat
+  fromMisoString = pFromJSVal . toJSNumber
+instance ToMisoString Double where
+  toMisoString = realFloat
+  fromMisoString = pFromJSVal . toJSNumber
+instance ToMisoString Int where
+  toMisoString = decimal
+  fromMisoString = pFromJSVal . toJSNumber
+
+foreign import javascript unsafe "$r = Number($1);"
+  toJSNumber :: JSString -> JSVal

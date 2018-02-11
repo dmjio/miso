@@ -220,7 +220,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         [ class_ "edit"
         , value_ description
         , name_ "title"
-        , id_ $ "todo-" <> S.pack (show eid)
+        , id_ $ "todo-" <> S.ms eid
         , onInput $ UpdateEntry eid
         , onBlur $ EditingEntry eid False
         , onEnter $ EditingEntry eid False
@@ -244,7 +244,7 @@ viewControls model visibility entries =
 viewControlsCount :: Int -> View Msg
 viewControlsCount entriesLeft =
   span_ [ class_ "todo-count" ]
-     [ strong_ [] [ text $ S.pack (show entriesLeft) ]
+     [ strong_ [] [ text $ S.ms entriesLeft ]
      , text (item_ <> " left")
      ]
   where
@@ -277,7 +277,7 @@ viewControlsClear _ entriesCompleted =
     , prop "hidden" (entriesCompleted == 0)
     , onClick DeleteComplete
     ]
-    [ text $ "Clear completed (" <> S.pack (show entriesCompleted) <> ")" ]
+    [ text $ "Clear completed (" <> S.ms entriesCompleted <> ")" ]
 
 viewInput :: Model -> MisoString -> View Msg
 viewInput _ task =
