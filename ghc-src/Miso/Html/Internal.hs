@@ -35,6 +35,7 @@ module Miso.Html.Internal (
   , NS     (..)
   -- * Setting properties on virtual DOM nodes
   , prop
+  , optionalProp
   -- * Setting CSS
   , style_
   -- * Handling events
@@ -144,7 +145,7 @@ data NS
 -- | `VNode` creation
 node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
 node vNs vType vKey as xs =
-  let vProps  = Props  $ M.fromList [ (k,v) | P k v <- as ]
+  let vProps  = Props  $ M.fromList [ (k,v) | P k (Just v) <- as ]
       vChildren = V.fromList $ map runView xs
   in View VNode {..}
 
@@ -183,7 +184,7 @@ newtype Props = Props (M.Map MisoString Value)
 
 -- | `View` Attributes to annotate DOM, converted into Events, Props, Attrs and CSS
 data Attribute action
-  = P MisoString Value
+  = P MisoString (Maybe Value)
   | E ()
   deriving (Show, Eq)
 
@@ -194,7 +195,10 @@ newtype AllowDrop = AllowDrop Bool
 
 -- | Constructs a property on a `VNode`, used to set fields on a DOM Node
 prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = P k (toJSON v)
+prop k v = P k (Just $ toJSON v)
+
+optionalProp :: ToJSON a => MisoString -> Maybe a -> Attribute action
+optionalProp k mbV = P k (fmap toJSON mbV)
 
 -- | For defining delegated events
 --
@@ -228,7 +232,7 @@ onWithOptions _ _ _ _ = E ()
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: M.Map MisoString MisoString -> Attribute action
-style_ map' = P "style" $ String (M.foldrWithKey go mempty map')
+style_ map' = P "style" $ Just $ String (M.foldrWithKey go mempty map')
   where
     go :: MisoString -> MisoString -> MisoString -> MisoString
     go k v xs = mconcat [ k, ":", v, ";" ] <> xs
