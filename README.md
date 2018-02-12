@@ -265,8 +265,8 @@ let
   result = import (pkgs.fetchFromGitHub {
     owner = "dmjio";
     repo = "miso";
-    sha256 = "03w1gffzw0qry6q5may5miyjf36574kx12pviywjddpckp62p8h3";
-    rev = "2a42c67ef1f876b2f81dbcf18bcc18269d0f6876";
+    sha256 = "1l1gwzzqlvvcmg70jjrwc5ijv1vb6y5ljqkh7rxxq7hkyxpjyx9q";
+    rev = "95f6bc9b1ae6230b110358a82b6a573806f272c2";
   }) {};
 in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
   miso = result.miso-ghcjs;
