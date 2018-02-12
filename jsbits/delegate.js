@@ -70,7 +70,8 @@ function propogateWhileAble (parentStack, event) {
   }
 }
 
-/* Convert event to JSON at a specific location in the DOM tree*/
+/* Walks down obj following the path described by `at`, then filters primitive
+ values (string, numbers and booleans)*/
 function objectToJSON (at, obj) {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] == "object") {
@@ -83,7 +84,7 @@ function objectToJSON (at, obj) {
   for (var i in at) obj = obj[at[i]];
 
   /* If obj is a list-like object */
-  if ("length" in obj) {
+  if (obj instanceof Array) {
     var newObj = [];
     for (var i = 0; i < obj.length; i++)
       newObj.push(objectToJSON([], obj[i]));
