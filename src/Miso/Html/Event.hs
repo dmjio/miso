@@ -40,6 +40,7 @@ module Miso.Html.Event
   , onKeyUp
   -- * Form events
   , onInput
+  , onChange
   , onChecked
   , onSubmit
   -- * Focus events
@@ -86,6 +87,10 @@ onDoubleClick action = on "dblclick" emptyDecoder $ \() -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
 onInput :: (MisoString -> action) -> Attribute action
 onInput = on "input" valueDecoder
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/change
+onChange :: (MisoString -> action) -> Attribute action
+onChange = on "change" valueDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDown :: (KeyCode -> action) -> Attribute action

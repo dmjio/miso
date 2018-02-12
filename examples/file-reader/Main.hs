@@ -65,7 +65,7 @@ viewModel Model {..} = view
         "FileReader API example"
       , input_ [ id_ "fileReader"
              , type_ "file"
-             , onChange ReadFile
+             , onChange (const ReadFile)
              ] []
       , div_ [] [ text info ]
       ]
@@ -90,6 +90,3 @@ foreign import javascript unsafe "$r = $1.result;"
 
 foreign import javascript unsafe "$1.readAsText($2);"
   readText :: JSVal -> JSVal -> IO ()
-
-onChange :: action -> Attribute action
-onChange r = on "change" emptyDecoder (const r)
