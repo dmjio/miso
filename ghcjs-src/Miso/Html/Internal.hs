@@ -55,7 +55,6 @@ module Miso.Html.Internal (
 import           Control.Monad
 import           Data.Aeson.Types           (parseEither)
 import           Data.JSString
-import           Data.JSString.Text
 import qualified Data.Map                   as M
 import           Data.Monoid
 import           Data.Proxy
@@ -188,17 +187,17 @@ instance ToKey Key where toKey = id
 -- | Convert `MisoString` to `Key`
 instance ToKey MisoString where toKey = Key
 -- | Convert `Text` to `Key`
-instance ToKey T.Text where toKey = Key . textToJSString
+instance ToKey T.Text where toKey = Key . toMisoString
 -- | Convert `String` to `Key`
-instance ToKey String where toKey = Key . pack
+instance ToKey String where toKey = Key . toMisoString
 -- | Convert `Int` to `Key`
-instance ToKey Int where toKey = Key . pack . show
+instance ToKey Int where toKey = Key . toMisoString
 -- | Convert `Double` to `Key`
-instance ToKey Double where toKey = Key . pack . show
+instance ToKey Double where toKey = Key . toMisoString
 -- | Convert `Float` to `Key`
-instance ToKey Float where toKey = Key . pack . show
+instance ToKey Float where toKey = Key . toMisoString
 -- | Convert `Word` to `Key`
-instance ToKey Word where toKey = Key . pack . show
+instance ToKey Word where toKey = Key . toMisoString
 
 -- | Attribute of a vnode in a `View`.
 --
