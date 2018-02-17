@@ -85,6 +85,9 @@ instance ToMisoString Double where
 instance ToMisoString Int where
   toMisoString = decimal
   fromMisoString = pFromJSVal . toJSNumber
+instance ToMisoString Word where
+  toMisoString = decimal
+  fromMisoString = pFromJSVal . toJSNumber
 
 foreign import javascript unsafe "$r = Number($1);"
   toJSNumber :: JSString -> JSVal
