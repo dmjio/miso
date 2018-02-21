@@ -9,6 +9,8 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( App (..)
+  , Effect
+  , Sub
 
     -- * The Transition Monad
   , Transition

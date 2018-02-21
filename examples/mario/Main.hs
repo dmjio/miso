@@ -25,13 +25,16 @@ main :: IO ()
 main = do
     time <- now
     let m = mario { time = time }
-    startApp App { model = m, initialAction = NoOp, ..}
+    startApp App { model = m
+                 , initialAction = NoOp
+                 , ..
+                 }
   where
     update = updateMario
     view   = display
     events = defaultEvents
     subs   = [ arrowsSub GetArrows
-             , windowSub WindowCoords
+             , windowCoordsSub WindowCoords
              ]
     mountPoint = Nothing
 

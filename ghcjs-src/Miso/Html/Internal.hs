@@ -223,12 +223,6 @@ on :: MisoString
    -> Attribute action
 on = onWithOptions defaultOptions
 
-foreign import javascript unsafe "$r = objectToJSON($1,$2);"
-  objectToJSON
-    :: JSVal -- ^ decodeAt :: [JSString]
-    -> JSVal -- ^ object with impure references to the DOM
-    -> IO JSVal
-
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
 -- decodes its argument using @decoder@, converts it to an action
