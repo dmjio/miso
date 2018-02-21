@@ -16,6 +16,8 @@ module Miso.FFI
    , windowRemoveEventListener
    , windowInnerHeight
    , windowInnerWidth
+   , eventPreventDefault
+   , eventStopPropagation
    , now
    , consoleLog
    , stringify
@@ -25,6 +27,8 @@ module Miso.FFI
    , jsvalToValue
    , delegateEvent
    , clearBody
+   , objectToJSON
+   , window
    ) where
 
 import           Control.Monad
@@ -80,6 +84,19 @@ foreign import javascript unsafe "window.addEventListener($1, $2);"
 -- | Removes event listener from window
 foreign import javascript unsafe "window.removeEventListener($1, $2);"
   windowRemoveEventListener :: JSString -> Callback (JSVal -> IO ()) -> IO ()
+
+
+foreign import javascript unsafe "$1.stopPropagation();"
+    eventStopPropagation :: JSVal -> IO ()
+
+foreign import javascript unsafe "$1.preventDefault();"
+    eventPreventDefault :: JSVal -> IO ()
+
+
+-- | Window object
+foreign import javascript unsafe "$r = window;"
+  window :: IO JSVal
+
 
 -- | Retrieves inner height
 foreign import javascript unsafe "$r = window.innerHeight;"
@@ -141,3 +158,10 @@ foreign import javascript unsafe "delegate($1, $2, $3);"
 -- creating multiple copies of your app when running in GHCJSi.
 foreign import javascript unsafe "document.body.innerHTML = '';"
   clearBody :: IO ()
+
+
+foreign import javascript unsafe "$r = objectToJSON($1,$2);"
+  objectToJSON
+    :: JSVal -- ^ decodeAt :: [JSString]
+    -> JSVal -- ^ object with impure references to the DOM
+    -> IO JSVal
