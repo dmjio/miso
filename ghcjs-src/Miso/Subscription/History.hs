@@ -1,8 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.History
@@ -23,14 +23,14 @@ module Miso.Subscription.History
   , URI (..)
   ) where
 
-import Control.Concurrent
-import Control.Monad
-import GHCJS.Foreign.Callback
-import Miso.Concurrent
-import Miso.Html.Internal     ( Sub )
-import Miso.String
-import Network.URI            hiding (path)
-import System.IO.Unsafe
+import           Control.Concurrent
+import           Control.Monad
+import           GHCJS.Foreign.Callback
+import           Miso.Concurrent
+import           Miso.Html.Internal     (Sub)
+import           Miso.String
+import           Network.URI            hiding (path)
+import           System.IO.Unsafe
 
 -- | Retrieves current URI of page
 getCurrentURI :: IO URI
@@ -41,11 +41,10 @@ getCurrentURI = getURI
 getURI :: IO URI
 {-# INLINE getURI #-}
 getURI = do
-  URI <$> do unpack <$> getProtocol
-      <*> pure Nothing
-      <*> do Prelude.drop 1 . unpack <$> getPathName
-      <*> do unpack <$> getSearch
-      <*> do unpack <$> getHash
+  href <- fromMisoString <$> getWindowLocationHref
+  case parseURI href of
+    Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
+    Just uri -> return uri
 
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> IO ()
@@ -92,6 +91,9 @@ uriSub = \f sink -> do
      asyncCallback $ do
       sink =<< f <$> getURI
 
+foreign import javascript safe "$r = window.location.href || '';"
+  getWindowLocationHref :: IO MisoString
+
 foreign import javascript unsafe "window.history.go($1);"
   go' :: Int -> IO ()
 
@@ -100,18 +102,6 @@ foreign import javascript unsafe "window.history.back();"
 
 foreign import javascript unsafe "window.history.forward();"
   forward' :: IO ()
-
-foreign import javascript unsafe "$r = window.location.pathname;"
-  getPathName :: IO JSString
-
-foreign import javascript unsafe "$r = window.location.search;"
-  getSearch :: IO JSString
-
-foreign import javascript unsafe "$r = window.location.hash;"
-  getHash :: IO JSString
-
-foreign import javascript unsafe "$r = window.location.protocol;"
-  getProtocol :: IO JSString
 
 foreign import javascript unsafe "window.addEventListener('popstate', $1);"
   onPopState :: Callback (IO ()) -> IO ()
