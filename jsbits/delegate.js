@@ -109,12 +109,10 @@ function objectToJSON (at, obj) {
   for (var i in at) obj = obj[at[i]];
 
   /* If obj is a list-like object */
-  if (obj.forEach) {
-    const newObj = [];
-    obj.forEach(function(it) {
-      newObj.push(objectToJSON([], it));
+  if (obj instanceof Array) {
+    return obj.map(function(it) {
+      return objectToJSON([], it);
     });
-    return (newObj);
   }
 
   /* If obj is a non-list-like object */
