@@ -13,7 +13,7 @@
 /* event delegation algorithm */
 function delegate(mountPointElement, events, getVTree) {
   const vtree = getVTree(); // This *is* a constant relative to all the events, correct?
-  events.forEach(function(event) {
+  for(var event in events) {
     mountPointElement.addEventListener(events[event][0], function(e) {
       // NB: Sorely tempted to do a window.setTimeout here as an ad hoc trampoline.
       // We should check performance of this implementation vs. that one. If the difference is trivial,
@@ -26,7 +26,7 @@ function delegate(mountPointElement, events, getVTree) {
                     , []
                     );
     }, events[event][1]);
-  });
+  }
 }
 
 /* Accumulate parent stack as well for propagation */
