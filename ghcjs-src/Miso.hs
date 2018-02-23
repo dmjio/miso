@@ -23,6 +23,7 @@ module Miso
   , module Miso.Types
   , module Miso.Router
   , module Miso.Util
+  , module Miso.FFI
   ) where
 
 import           Control.Concurrent
@@ -31,6 +32,7 @@ import           Data.IORef
 import           Data.List
 import           Data.Sequence                 ((|>))
 import qualified Data.Sequence                 as S
+import           GHCJS.Types (JSVal)
 import qualified JavaScript.Object.Internal    as OI
 import           JavaScript.Web.AnimationFrame
 
@@ -131,3 +133,8 @@ foldEffects sink update = \(Acc model as) action ->
             void $ forkIO (eff sink)
 
 data Acc model = Acc !model !(IO ())
+
+-- | Copies DOM pointers into virtual dom
+-- entry point into isomorphic javascript
+foreign import javascript unsafe "copyDOMIntoVTree($1);"
+  copyDOMIntoVTree :: JSVal -> IO ()

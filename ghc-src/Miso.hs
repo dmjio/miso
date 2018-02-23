@@ -17,9 +17,11 @@ module Miso
   , module Miso.Html
   , module Miso.Router
   , module Miso.TypeLevel
+  , module Miso.Util
   ) where
 
 import           Miso.Event
 import           Miso.Html
 import           Miso.Router
 import           Miso.TypeLevel
+import           Miso.Util

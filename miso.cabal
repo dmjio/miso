@@ -250,6 +250,7 @@ library
     Haskell2010
   exposed-modules:
     Miso
+    Miso.Util
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event
@@ -311,7 +312,6 @@ library
       Miso.Subscription.Window
       Miso.Subscription.SSE
       Miso.Types
-      Miso.Util
     other-modules:
       Miso.Diff
       Miso.FFI
