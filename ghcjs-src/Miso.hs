@@ -51,7 +51,7 @@ common
   :: Eq model
   => App model action
   -> model
-  -> ((action -> IO ()) -> IO (IORef VTree))
+  -> (Sink action -> IO (IORef VTree))
   -> IO b
 common App {..} m getView = do
   -- init Notifier
@@ -123,7 +123,7 @@ startApp app@App {..} =
 
 -- | Helper
 foldEffects
-  :: (action -> IO ())
+  :: Sink action
   -> (action -> model -> Effect action model)
   -> (model, IO ()) -> action -> (model, IO ())
 foldEffects sink update = \(!model, !as) action ->
@@ -132,4 +132,4 @@ foldEffects sink update = \(!model, !as) action ->
       where
         newAs = as >> do
           forM_ effs $ \eff ->
-            void $ forkIO (sink =<< eff)
+            void $ forkIO (eff sink)

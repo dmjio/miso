@@ -15,6 +15,7 @@ module Miso.Types
   , fromTransition
   , toTransition
   , scheduleIO
+  , scheduleIOWithSink
   ) where
 
 import           Control.Monad.Trans.Class (lift)
@@ -72,7 +73,7 @@ data App model action = App
 --   , ...
 --   }
 -- @
-type Transition action model = StateT model (Writer [IO action])
+type Transition action model = StateT model (Writer [Sink action -> IO ()])
 
 -- | Convert a @Transition@ computation to a function that can be given to 'update'.
 fromTransition
@@ -93,4 +94,16 @@ toTransition f = StateT $ \s ->
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 scheduleIO :: IO action -> Transition action model ()
-scheduleIO ioAction = lift $ tell [ ioAction ]
+scheduleIO ioAction = scheduleIOWithSink $ \sink -> ioAction >>= sink
+
+-- | Like 'scheduleIO' but allows the scheduled IO computation to
+-- access a 'Sink' which can be used to asynchronously dispatch actions
+-- to the 'update' function.
+--
+-- A use-case is scheduling an IO computation which creates a
+-- 3rd-party JS widget which has an associated callback. The callback
+-- can then call the sink to turn events into actions. To do this
+-- without accessing a sink requires going via a @'Sub'scription@
+-- which introduces a leaky-abstraction.
+scheduleIOWithSink :: (Sink action -> IO ()) -> Transition action model ()
+scheduleIOWithSink f = lift $ tell [ f ]

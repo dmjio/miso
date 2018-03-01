@@ -71,15 +71,16 @@ import           Servant.API
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import           Miso.String
+import           Miso.Effect (Sink)
 import           Miso.FFI
 
 -- | Type synonym for constructing event subscriptions.
 --
 -- The first argument passed to a subscription provides a way to
--- access the current value of the model (without blocking). The
+-- access the current value of the model (without blocking). The 'Sink'
 -- callback is used to dispatch actions which are then fed back to the
 -- @update@ function.
-type Sub action model = IO model -> (action -> IO ()) -> IO ()
+type Sub action model = IO model -> Sink action -> IO ()
 
 -- | Virtual DOM implemented as a JavaScript `Object`.
 --   Used for diffing, patching and event delegation.
@@ -88,7 +89,7 @@ newtype VTree = VTree { getTree :: Object }
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 newtype View action = View {
-  runView :: (action -> IO ()) -> IO VTree
+  runView :: Sink action -> IO VTree
 } deriving Functor
 
 -- | For constructing type-safe links
@@ -201,11 +202,11 @@ instance ToKey Word where toKey = Key . toMisoString
 
 -- | Attribute of a vnode in a `View`.
 --
--- The callback can be used to dispatch actions which are fed back to
+-- The 'Sink' callback can be used to dispatch actions which are fed back to
 -- the @update@ function. This is especially useful for event handlers
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
-newtype Attribute action = Attribute ((action -> IO ()) -> Object -> IO ())
+newtype Attribute action = Attribute (Sink action -> Object -> IO ())
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
