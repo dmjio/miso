@@ -46,6 +46,9 @@ module Miso.Html.Internal (
   -- * Handling events
   , on
   , onWithOptions
+  -- * Life cycle events
+  , onCreated
+  , onDestroyed
   -- * Events
   , defaultEvents
   -- * Subscription type
@@ -63,9 +66,10 @@ import qualified Data.Text                  as T
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Types
-import           JavaScript.Array.Internal  (fromList)
 import           JavaScript.Object
 import           JavaScript.Object.Internal (Object (Object))
+import qualified JavaScript.Array as JSArray
+import           JavaScript.Array.Internal (SomeJSArray(..))
 import           Servant.API
 
 import           Miso.Event.Decoder
@@ -139,7 +143,7 @@ node ns tag key attrs kids = View $ \sink -> do
           attr sink vnode
 
       setKids sink =
-        jsval . fromList <$>
+        jsval . JSArray.fromList <$>
           fmap (jsval . getTree) <$>
             traverse (flip runView sink) kids
 
@@ -262,6 +266,23 @@ onWithOptions options eventName Decoder{..} toAction =
    setProp "runEvent" cb eventHandlerObject
    setProp "options" jsOptions eventHandlerObject
    setProp eventName eo (Object eventObj)
+
+-- | @onCreated action@ is an event that gets called after the actual DOM
+-- element is created.
+onCreated :: action -> Attribute action
+onCreated action =
+  Attribute $ \sink n -> do
+    cb <- jsval <$> asyncCallback (sink action)
+    setProp "onCreated" cb n
+
+-- | @onDestroyed action@ is an event that gets called after the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+onDestroyed :: action -> Attribute action
+onDestroyed action =
+  Attribute $ \sink n -> do
+    cb <- jsval <$> asyncCallback (sink action)
+    setProp "onDestroyed" cb n
 
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
