@@ -40,6 +40,9 @@ module Miso.Html.Internal (
   -- * Handling events
   , on
   , onWithOptions
+  -- * Life cycle events
+  , onCreated
+  , onDestroyed
   ) where
 
 import           Data.Aeson (Value(..), ToJSON(..))
@@ -219,6 +222,17 @@ onWithOptions
    -> (r -> action)
    -> Attribute action
 onWithOptions _ _ _ _ = E ()
+
+-- | @onCreated action@ is an event that gets called after the actual DOM
+-- element is created.
+onCreated :: action -> Attribute action
+onCreated _ = E ()
+
+-- | @onDestroyed action@ is an event that gets called after the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+onDestroyed :: action -> Attribute action
+onDestroyed _ = E ()
 
 -- | Constructs CSS for a DOM Element
 --

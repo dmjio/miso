@@ -2,7 +2,7 @@
 function diff (currentObj, newObj, parent) {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) createNode (newObj, parent);
-  else if (currentObj && !newObj) parent.removeChild (currentObj.domRef);
+  else if (currentObj && !newObj) destroyNode(currentObj, parent);
   else {
     if (currentObj.type === "vtext") {
       if (newObj.type === "vnode") replaceTextWithElement (currentObj, newObj, parent);
@@ -22,11 +22,13 @@ function diffTextNodes (c, n) {
 function replaceElementWithText (c, n, parent) {
   n.domRef = document.createTextNode (n.text);
   parent.replaceChild (n.domRef, c.domRef);
+  callDestroyedRecursive(c);
 }
 
 function replaceTextWithElement (c, n, parent) {
   createElement (n);
   parent.replaceChild (n.domRef, c.domRef);
+  callCreated(n);
 }
 
 function populate (c, n) {
@@ -46,12 +48,14 @@ function populate (c, n) {
 }
 
 function diffVNodes (c, n, parent) {
-  if (c.tag === n.tag) {
+  if (c.tag === n.tag && n.key === c.key) {
     n.domRef = c.domRef;
     populate (c, n);
   } else {
     createElement(n);
     parent.replaceChild (n.domRef, c.domRef);
+    callDestroyedRecursive(c);
+    callCreated(n);
   }
 }
 
@@ -143,12 +147,34 @@ function createNode (obj, parent) {
     if (obj.type === "vnode") createElement(obj);
     else obj.domRef = document.createTextNode(obj.text);
     parent.appendChild(obj.domRef);
+    callCreated(obj);
 }
 
 function createNodeDontAppend (obj) {
   if (obj.type === "vnode") createElement(obj);
   else obj.domRef = document.createTextNode(obj.text);
   return obj;
+}
+
+function destroyNode (obj, parent) {
+    parent.removeChild (obj.domRef);
+    callDestroyedRecursive(obj);
+}
+
+function callDestroyed (obj) {
+  if ("onDestroyed" in obj)
+    obj.onDestroyed();
+}
+
+function callDestroyedRecursive (obj) {
+  callDestroyed(obj);
+  for (var i in obj.children)
+    callDestroyedRecursive(obj.children[i]);
+}
+
+function callCreated (obj) {
+  if ("onCreated" in obj)
+    obj.onCreated();
 }
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
