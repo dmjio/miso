@@ -19,10 +19,10 @@ function destroyNode(obj, parent) {
     callDestroyedRecursive(obj);
 }
 
-function callDestroyedRecursive(obj) {
-    callDestroyed(obj);
-    for (var i = 0; i < obj.children.length; i++)
-	callDestroyedRecursive(obj.children[i]);
+function callDestroyedRecursive (obj) {
+  callDestroyed(obj);
+  for (var i in obj.children)
+    callDestroyedRecursive(obj.children[i]);
 }
 
 function callDestroyed(obj) {
