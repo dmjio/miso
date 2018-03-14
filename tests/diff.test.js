@@ -582,12 +582,29 @@ test('Should execute top-left and bottom-right match case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
     diff(null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'd')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'd')], {}, {}, "html", null, null, null, "key-1");
     diff(currentNode, newNode, body, document)
-    expect(newNode.children.length).toBe(3);
+    expect(newNode.children.length).toBe(5);
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(currentNode.children).toEqual(newNode.children);
+    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
+    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
+test('Should handle duplicate keys case', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var destroy = 0;
+    var currentNode =
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+    diff(null, currentNode, body, document)
+    var newNode =
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+    diff(currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
@@ -599,12 +616,12 @@ test('Should execute top-right and bottom-left match case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
     diff(null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
     diff(currentNode, newNode, body, document)
-    expect(newNode.children.length).toBe(3);
+    expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
@@ -633,29 +650,12 @@ test('Should handle nothing matches case where new key is found in old map', () 
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'g')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'g')], {}, {}, "html", null, null, null, "key-1");
     diff(null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'k')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'l'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'k')], {}, {}, "html", null, null, null, "key-1");
     diff(currentNode, newNode, body, document)
-    expect(newNode.children.length).toBe(4);
-    expect(newNode.children.length).toBe(currentNode.children.length);
-    expect(currentNode.children).toEqual(newNode.children);
-    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
-    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
-});
-
-test('Should handle nothing matches case where new key is found in old map', () => {
-    var document = new jsdom.JSDOM().window.document;
-    var body = document.body;
-    var destroy = 0;
-    var currentNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k')], {}, {}, "html", null, null, null, "key-1");
-    diff(null, currentNode, body, document)
-    var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'e'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'j')], {}, {}, "html", null, null, null, "key-1");
-    diff(currentNode, newNode, body, document)
-    expect(newNode.children.length).toBe(4);
+    expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);

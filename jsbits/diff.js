@@ -228,9 +228,7 @@ function syncChildren(os, ns, parent, doc) {
 	   -> [ c b a ] <- new children
 	*/
 	else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-	    node = oFirst.nextElementSibling;
-	    oLast.domRef.replaceWith(oFirst.domRef);
-	    parent.insertBefore(oLast.domRef, node);
+	    swapDomRefs(node, oFirst.domRef, oLast.domRef, parent);
 	    swap(os, oldFirstIndex, oldLastIndex);
 	    diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
 	    diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
@@ -304,9 +302,7 @@ function syncChildren(os, ns, parent, doc) {
 		/* Move item to correct position */
 		swap(os, oldFirstIndex, tmp);
   		/* Swap DOM references */
-	        tmp = oFirst.nextElementSibling;
-	        node.domRef.replaceWith(oFirst.domRef);
-	        parent.insertBefore(node.domRef, tmp);
+		swapDomRefs(tmp, oFirst.domRef, node.domRef, parent);
 		/* optionally perform `diff` here */
 		diff(os[oldFirstIndex++], nFirst, parent, doc);
 		/* increment counters */
@@ -335,10 +331,14 @@ function syncChildren(os, ns, parent, doc) {
     }
 }
 
+function swapDomRefs(tmp,a,b,p) {
+  tmp = a.nextElementSibling;
+  b.replaceWith(a.domRef);
+  p.insertBefore(b, tmp);
+}
+
 function swap(os,l,r) {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;
 }
-
-module.exports = diff;
