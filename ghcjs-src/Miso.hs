@@ -56,8 +56,6 @@ common
 common App {..} m getView = do
   -- init Notifier
   Notify {..} <- newNotify
-  -- init empty Model
-  modelRef <- newIORef m
   -- init empty actions
   actionsRef <- newIORef S.empty
   let writeEvent a = void . forkIO $ do
@@ -65,7 +63,7 @@ common App {..} m getView = do
         notify
   -- init Subs
   forM_ subs $ \sub ->
-    sub (readIORef modelRef) writeEvent
+    sub writeEvent
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
@@ -79,23 +77,21 @@ common App {..} m getView = do
   -- Process initial action of application
   writeEvent initialAction
   -- Program loop, blocking on SkipChan
-  forever $ wait >> do
-    -- Apply actions to model
-    actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
-    (shouldDraw, effects) <- atomicModifyIORef' modelRef $! \oldModel ->
-          let (newModel, effects) =
-                foldl' (foldEffects writeEvent update)
-                  (oldModel, pure ()) actions
-          in (newModel, (oldModel /= newModel, effects))
-    effects
-    when shouldDraw $ do
-      newVTree <-
-        flip runView writeEvent
-          =<< view <$> readIORef modelRef
-      oldVTree <- readIORef viewRef
-      void $ waitForAnimationFrame
-      (diff mountPoint) (Just oldVTree) (Just newVTree)
-      atomicWriteIORef viewRef newVTree
+
+  let loop !oldModel = wait >> do
+        -- Apply actions to model
+        actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
+        let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
+                                            (Acc oldModel (pure ())) actions
+        effects
+        when (oldModel /= newModel) $ do
+          newVTree <- runView (view newModel) writeEvent
+          oldVTree <- readIORef viewRef
+          void $ waitForAnimationFrame
+          (diff mountPoint) (Just oldVTree) (Just newVTree)
+          atomicWriteIORef viewRef newVTree
+        loop newModel
+  loop m
 
 -- | Runs an isomorphic miso application
 -- Assumes the pre-rendered DOM is already present
@@ -125,11 +121,13 @@ startApp app@App {..} =
 foldEffects
   :: Sink action
   -> (action -> model -> Effect action model)
-  -> (model, IO ()) -> action -> (model, IO ())
-foldEffects sink update = \(!model, !as) action ->
+  -> Acc model -> action -> Acc model
+foldEffects sink update = \(Acc model as) action ->
   case update action model of
-    Effect newModel effs -> (newModel, newAs)
+    Effect newModel effs -> Acc newModel newAs
       where
         newAs = as >> do
           forM_ effs $ \eff ->
             void $ forkIO (eff sink)
+
+data Acc model = Acc !model !(IO ())

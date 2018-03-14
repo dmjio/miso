@@ -62,22 +62,22 @@ toArrows (up, down, left, right) set =
     check = any (`S.member` set)
 
 -- | Maps `Arrows` onto a Keyboard subscription
-arrowsSub :: (Arrows -> action) -> Sub action model
+arrowsSub :: (Arrows -> action) -> Sub action
 arrowsSub = directionSub ([38], [40], [37], [39])
 
 -- | Maps `WASD` onto a Keyboard subscription for directions
-wasdSub :: (Arrows -> action) -> Sub action model
+wasdSub :: (Arrows -> action) -> Sub action
 wasdSub = directionSub ([87], [83], [65], [68])
 
 -- | Maps a specified list of keys to directions (up, down, left, right)
 directionSub :: ([Int], [Int], [Int], [Int])
              -> (Arrows -> action)
-             -> Sub action model
+             -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 
 -- | Returns subscription for Keyboard
-keyboardSub :: (Set Int -> action) -> Sub action model
-keyboardSub f _ sink = do
+keyboardSub :: (Set Int -> action) -> Sub action
+keyboardSub f sink = do
   keySetRef <- newIORef mempty
   windowAddEventListener "keyup" =<< keyUpCallback keySetRef
   windowAddEventListener "keydown" =<< keyDownCallback keySetRef
@@ -97,4 +97,3 @@ keyboardSub f _ sink = do
              let !new = S.delete key keys
              in (new, new)
           sink (f newKeys)
-

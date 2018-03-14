@@ -25,8 +25,8 @@ import Miso.Html.Internal     ( Sub )
 import Miso.String
 
 -- | Server-sent events Subscription
-sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action model
-sseSub url f _ = \sink -> do
+sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action
+sseSub url f = \sink -> do
   es <- newEventSource url
   onMessage es =<< do
     asyncCallback1 $ \val -> do
@@ -66,4 +66,3 @@ foreign import javascript unsafe "$1.onclose = $2;"
 -- | Test URL
 -- http://sapid.sourceforge.net/ssetest/webkit.events.php
 -- var source = new EventSource("demo_sse.php");
-
