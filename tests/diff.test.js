@@ -31,6 +31,20 @@ function vnodeKeyed(tag, key) {
     };
 }
 
+function vnodeKids(tag, kids) {
+    return {
+        'type': 'vnode',
+        'tag': tag,
+        'children': kids,
+        'props': {},
+        'css': {},
+        'ns': 'HTML',
+        'domRef': null,
+        'onCreated': null,
+        'onDestroyed': null,
+    };
+}
+
 function vtext(txt) {
     return {
         'type': 'vtext',
@@ -637,4 +651,16 @@ test('Should append new nodes in keys patch', () => {
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
+test('Should not attempt to destroy text nodes recursively', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var destroy = 0;
+    var currentNode = vnodeKids('div', [vtext ("derp")]);
+    diff(null, currentNode, body, document)
+    var newNode = vnodeKids('a', [vtext ("foo")]);
+    diff(currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(newNode.domRef.childNodes[0].textContent).toBe("foo");
 });
