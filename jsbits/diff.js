@@ -19,10 +19,10 @@ function destroyNode(obj, parent) {
     callDestroyedRecursive(obj);
 }
 
-function callDestroyedRecursive (obj) {
-  callDestroyed(obj);
-  for (var i in obj.children)
-    callDestroyedRecursive(obj.children[i]);
+function callDestroyedRecursive(obj) {
+    callDestroyed(obj);
+    for (var i in obj.children)
+	callDestroyedRecursive(obj.children[i]);
 }
 
 function callDestroyed(obj) {
@@ -178,7 +178,6 @@ function syncChildren(os, ns, parent, doc) {
 	  [ ] -- old children empty (fully-swapped)
 	  [ ] -- new children empty (fully-swapped)
 	*/
-
 	if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
 	    break;
 	}
@@ -219,13 +218,9 @@ function syncChildren(os, ns, parent, doc) {
 	   check if nFirst and oFirst align, if so, check nLast and oLast
 	*/
 	else if (oFirst.key === nFirst.key) {
-	    newFirstIndex++;
-	    oldFirstIndex++;
-	    diff(oFirst, nFirst, parent, doc);
+	    diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
 	} else if (oLast.key === nLast.key) {
-	    newLastIndex--;
-	    oldLastIndex--;
-	    diff(oLast, nLast, parent, doc);
+	    diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
 	}
 	/* flip-flop case, nodes have been swapped, in some way or another
 	   both could have been swapped.
@@ -233,16 +228,12 @@ function syncChildren(os, ns, parent, doc) {
 	   -> [ c b a ] <- new children
 	*/
 	else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-	    node = oFirst.domRef.nextSibling;
-	    parent.insertBefore(oFirst.domRef, oLast.domRef);
-	    parent.insertBefore(node, oLast.domRef);
-	    os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-	    newFirstIndex++;
-	    oldFirstIndex++;
-	    oldLastIndex--;
-	    newLastIndex--;
-	    diff(oLast, nLast, parent, doc);
-	    diff(oFirst, nFirst, parent, doc);
+	    node = oFirst.nextElementSibling;
+	    oLast.domRef.replaceWith(oFirst.domRef);
+	    parent.insertBefore(oLast.domRef, node);
+	    swap(os, oldFirstIndex, oldLastIndex);
+	    diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
+	    diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
 	}
 	/* Or just one could be swapped (d's align here)
 	       This is top left and bottom right match case.
@@ -259,10 +250,8 @@ function syncChildren(os, ns, parent, doc) {
 	    /* insertAfter */
 	    parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
 	    /* swap positions in old vdom */
-	    os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
-	    newLastIndex--;
-	    oldLastIndex--;
-	    diff(nLast, oFirst, parent, doc);
+	    swap(os, oldLastIndex, oldFirstIndex);
+	    diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
 	}
 	/* This is top right and bottom lefts match case.
 	   We move d to end of list, mutate old vdom to reflect the change
@@ -277,9 +266,8 @@ function syncChildren(os, ns, parent, doc) {
 	    /* insertAfter */
 	    parent.insertBefore(oLast.domRef, oFirst.domRef);
 	    /* swap positions in old vdom */
-	    os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-	    diff(os[oldFirstIndex], nFirst, parent, doc);
-	    oldFirstIndex++;
+	    swap(os, oldFirstIndex, oldLastIndex);
+	    diff(os[oldFirstIndex++], nFirst, parent, doc);
 	    newFirstIndex++;
 	}
 
@@ -300,7 +288,7 @@ function syncChildren(os, ns, parent, doc) {
 		}
 		tmp++;
 	    }
-	    /* If new key was found in old map this means it was moved, hypothetically as below
+   	        /* If new key was found in old map this means it was moved, hypothetically as below
 		   -> [ a e b c ] <- old children
 		   -> [ b e a j ] <- new children
 			^
@@ -314,13 +302,14 @@ function syncChildren(os, ns, parent, doc) {
 		*/
 	    if (found) {
 		/* Move item to correct position */
-		os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
-		/* Swap DOM references */
-		parent.insertBefore(node.domRef, oFirst.domRef);
+		swap(os, oldFirstIndex, tmp);
+  		/* Swap DOM references */
+	        tmp = oFirst.nextElementSibling;
+	        node.domRef.replaceWith(oFirst.domRef);
+	        parent.insertBefore(node.domRef, tmp);
 		/* optionally perform `diff` here */
-		diff(os[oldFirstIndex], nFirst, parent, doc);
+		diff(os[oldFirstIndex++], nFirst, parent, doc);
 		/* increment counters */
-		oldFirstIndex++;
 		newFirstIndex++;
 	    }
 	    /* If new key was *not* found in the old map this means it must now be created, example below
@@ -338,11 +327,18 @@ function syncChildren(os, ns, parent, doc) {
 	    else {
 		createElement(nFirst, doc);
 		parent.insertBefore(nFirst.domRef, oFirst.domRef);
-		os.splice(oldFirstIndex, 0, nFirst);
+		os.splice(oldFirstIndex++, 0, nFirst);
 		newFirstIndex++;
-		oldFirstIndex++;
 		oldLastIndex++;
 	    }
 	}
     }
 }
+
+function swap(os,l,r) {
+  var k = os[l];
+  os[l] = os[r];
+  os[r] = k;
+}
+
+module.exports = diff;

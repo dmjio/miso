@@ -52,6 +52,15 @@ function vtext(txt) {
     };
 }
 
+function vtextKeyed(txt, key) {
+    return {
+        'type': 'vtext',
+        'text': txt,
+	'key': key
+    };
+}
+
+
 // base case
 test('Should be null when diffing two null virtual DOMs', () => {
     const document = new jsdom.JSDOM().window.document;
@@ -556,12 +565,12 @@ test('Should execute flip-flop case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
     diff(null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
     diff(currentNode, newNode, body, document)
-    expect(newNode.children.length).toBe(2);
+    expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
@@ -636,6 +645,23 @@ test('Should handle nothing matches case where new key is found in old map', () 
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
 });
 
+test('Should handle nothing matches case where new key is found in old map', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var destroy = 0;
+    var currentNode =
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k')], {}, {}, "html", null, null, null, "key-1");
+    diff(null, currentNode, body, document)
+    var newNode =
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'e'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'j')], {}, {}, "html", null, null, null, "key-1");
+    diff(currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(4);
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(currentNode.children).toEqual(newNode.children);
+    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
+    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
 test('Should append new nodes in keys patch', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
@@ -653,14 +679,14 @@ test('Should append new nodes in keys patch', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
 });
 
-test('Should not attempt to destroy text nodes recursively', () => {
+test('Should diff keyed text nodes', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
     var destroy = 0;
-    var currentNode = vnodeKids('div', [vtext ("derp")]);
+    var currentNode = vnodeKids('div', [ vtextKeyed ("foo",1), vtextKeyed ("bar",2), vtextKeyed ("baz",3)]);
     diff(null, currentNode, body, document)
-    var newNode = vnodeKids('a', [vtext ("foo")]);
-    diff(currentNode, newNode, body, document)
+    var newNode = vnodeKids('div', [ vtextKeyed ("baz",3), vtextKeyed ("bar",2), vtextKeyed ("foo",1) ]);
+    diff(currentNode, newNode, body, document);
     expect(newNode.children.length).toBe(currentNode.children.length);
-    expect(newNode.domRef.childNodes[0].textContent).toBe("foo");
+    expect(newNode.children).toEqual(currentNode.children);
 });
