@@ -56,8 +56,6 @@ common
 common App {..} m getView = do
   -- init Notifier
   Notify {..} <- newNotify
-  -- init empty Model
-  modelRef <- newIORef m
   -- init empty actions
   actionsRef <- newIORef S.empty
   let writeEvent a = void . forkIO $ do
@@ -65,7 +63,7 @@ common App {..} m getView = do
         notify
   -- init Subs
   forM_ subs $ \sub ->
-    sub (readIORef modelRef) writeEvent
+    sub writeEvent
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
@@ -85,7 +83,6 @@ common App {..} m getView = do
         actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
         let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
                                             (Acc oldModel (pure ())) actions
-        writeIORef modelRef newModel
         effects
         when (oldModel /= newModel) $ do
           newVTree <- runView (view newModel) writeEvent

@@ -11,11 +11,11 @@ module Miso.Effect (
   module Miso.Effect.Storage
 , module Miso.Effect.XHR
 , module Miso.Effect.DOM
-, Effect (..), Sink
+, Effect (..), Sub, Sink
 , noEff
 , (<#)
 , (#>)
-, effectWithSink
+, effectSub
 ) where
 
 import Data.Bifunctor
@@ -26,12 +26,16 @@ import Miso.Effect.DOM
 
 -- | An effect represents the results of an update action.
 --
--- It consists of the updated model and a list of IO computations. Each IO
--- computation is run in a new thread so there is no risk of accidentally
--- blocking the application. The IO computation is given a 'Sink' callback which
--- can be used to dispatch actions which are fed back to the @update@ function
-data Effect action model
-  = Effect model [Sink action -> IO ()]
+-- It consists of the updated model and a list of subscriptions. Each 'Sub' is
+-- run in a new thread so there is no risk of accidentally blocking the
+-- application.
+data Effect action model = Effect model [Sub action]
+
+-- | Type synonym for constructing event subscriptions.
+--
+-- The 'Sink' callback is used to dispatch actions which are then fed
+-- back to the 'update' function.
+type Sub action = Sink action -> IO ()
 
 -- | Function to asynchronously dispatch actions to the 'update' function.
 type Sink action = action -> IO ()
@@ -58,20 +62,19 @@ noEff m = Effect m []
 
 -- | Smart constructor for an 'Effect' with exactly one action.
 (<#) :: model -> IO action -> Effect action model
-(<#) m a = effectWithSink m $ \sink -> a >>= sink
+(<#) m a = effectSub m $ \sink -> a >>= sink
 
 -- | `Effect` smart constructor, flipped
 (#>) :: IO action -> model -> Effect action model
 (#>) = flip (<#)
 
--- | Like '<#' but allows the scheduled IO computation to access a
--- 'Sink' which can be used to asynchronously dispatch actions to the
--- 'update' function.
+-- | Like '<#' but schedules a subscription which is an IO computation which has
+-- access to a 'Sink' which can be used to asynchronously dispatch actions to
+-- the 'update' function.
 --
--- A use-case is scheduling an IO computation which creates a
--- 3rd-party JS widget which has an associated callback. The callback
--- can then call the sink to turn events into actions. To do this
--- without accessing a sink requires going via a @'Sub'scription@
--- which introduces a leaky-abstraction.
-effectWithSink :: model -> (Sink action -> IO ()) -> Effect action model
-effectWithSink model sinkAction = Effect model [sinkAction]
+-- A use-case is scheduling an IO computation which creates a 3rd-party JS
+-- widget which has an associated callback. The callback can then call the sink
+-- to turn events into actions. To do this without accessing a sink requires
+-- going via a @'Sub'scription@ which introduces a leaky-abstraction.
+effectSub :: model -> Sub action -> Effect action model
+effectSub model sub = Effect model [sub]

@@ -83,8 +83,8 @@ chan :: Notify
 chan = unsafePerformIO newNotify
 
 -- | Subscription for `popState` events, from the History API
-uriSub :: (URI -> action) -> Sub action model
-uriSub = \f _ sink -> do
+uriSub :: (URI -> action) -> Sub action
+uriSub = \f sink -> do
   void.forkIO.forever $ do
     wait chan >> do
       sink =<< f <$> getURI

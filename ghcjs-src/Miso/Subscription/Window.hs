@@ -21,8 +21,8 @@ import Miso.Html.Internal ( Sub )
 
 -- | Captures window coordinates changes as they occur and writes them to
 -- an event sink
-windowSub :: ((Int, Int) -> action) -> Sub action model
-windowSub f _ = \sink -> do
+windowSub :: ((Int, Int) -> action) -> Sub action
+windowSub f = \sink -> do
   sink . f =<< (,) <$> windowInnerHeight <*> windowInnerWidth
   windowAddEventListener "resize" =<< do
     asyncCallback1 $ \windowEvent -> do
@@ -30,4 +30,3 @@ windowSub f _ = \sink -> do
       Just w <- fromJSVal =<< getProp "innerWidth" (Object target)
       Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
       sink $ f (h, w)
-

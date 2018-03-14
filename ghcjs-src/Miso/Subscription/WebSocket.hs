@@ -70,8 +70,8 @@ websocketSub
   => URL
   -> Protocols
   -> (WebSocket m -> action)
-  -> Sub action model
-websocketSub (URL u) (Protocols ps) f getModel sink = do
+  -> Sub action
+websocketSub (URL u) (Protocols ps) f sink = do
   socket <- createWebSocket u ps
   writeIORef websocket (Just socket)
   void . forkIO $ handleReconnect
@@ -103,7 +103,7 @@ websocketSub (URL u) (Protocols ps) f getModel sink = do
       if status == 3
         then do
           unless (code == Just CLOSE_NORMAL) $
-            websocketSub (URL u) (Protocols ps) f getModel sink
+            websocketSub (URL u) (Protocols ps) f sink
         else handleReconnect
 
 -- | Sends message to a websocket server
