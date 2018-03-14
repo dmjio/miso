@@ -248,7 +248,7 @@ function syncChildren(os, ns, parent, doc) {
 	    /* insertAfter */
 	    parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
 	    /* swap positions in old vdom */
-	    swap(os, oldLastIndex, oldFirstIndex);
+	    os.splice(oldLastIndex,0,os.splice(oldFirstIndex,1)[0]);
 	    diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
 	}
 	/* This is top right and bottom lefts match case.
@@ -264,7 +264,7 @@ function syncChildren(os, ns, parent, doc) {
 	    /* insertAfter */
 	    parent.insertBefore(oLast.domRef, oFirst.domRef);
 	    /* swap positions in old vdom */
-	    swap(os, oldFirstIndex, oldLastIndex);
+	    os.splice(oldFirstIndex,0, os.splice(oldLastIndex,1)[0]);
 	    diff(os[oldFirstIndex++], nFirst, parent, doc);
 	    newFirstIndex++;
 	}
