@@ -300,9 +300,9 @@ function syncChildren(os, ns, parent, doc) {
 		*/
 	    if (found) {
 		/* Move item to correct position */
-		swap(os, oldFirstIndex, tmp);
+		os.splice(oldFirstIndex,0, os.splice(tmp,1)[0]);
   		/* Swap DOM references */
-		swapDomRefs(tmp, oFirst.domRef, node.domRef, parent);
+		parent.insertBefore(node.domRef, os[oldFirstIndex].domRef);
 		/* optionally perform `diff` here */
 		diff(os[oldFirstIndex++], nFirst, parent, doc);
 		/* increment counters */
