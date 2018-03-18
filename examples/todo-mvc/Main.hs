@@ -175,7 +175,7 @@ viewEntries visibility entries =
         , name_ "toggle"
         , checked_ allCompleted
         , onClick $ CheckAll (not allCompleted)
-        ] []
+        ]
       , label_
         [ for_ "toggle-all" ]
           [ text $ S.pack "Mark all as complete" ]
@@ -207,7 +207,7 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
             , type_ "checkbox"
             , checked_ completed
             , onClick $ Check eid (not completed)
-            ] []
+            ]
         , label_
             [ onDoubleClick $ EditingEntry eid True ]
             [ text description ]
@@ -225,7 +225,6 @@ viewEntry Entry {..} = liKeyed_ (toKey eid)
         , onBlur $ EditingEntry eid False
         , onEnter $ EditingEntry eid False
         ]
-        []
     ]
 
 viewControls :: Model ->  MisoString -> [ Entry ] -> View Msg
@@ -291,7 +290,7 @@ viewInput _ task =
         , name_ "newTodo"
         , onInput UpdateField
         , onEnter Add
-        ] []
+        ]
     ]
 
 onEnter :: Msg -> Attribute Msg

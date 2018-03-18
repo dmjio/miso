@@ -66,7 +66,7 @@ viewModel Model {..} = view
       , input_ [ id_ "fileReader"
              , type_ "file"
              , onChange (const ReadFile)
-             ] []
+             ]
       , div_ [] [ text info ]
       ]
 

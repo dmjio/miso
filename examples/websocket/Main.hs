@@ -63,7 +63,7 @@ appView Model{..} = div_ [ style_ $ M.fromList [("text-align", "center")] ] [
  , input_  [ type_ "text"
            , onInput UpdateMessage
            , onEnter (SendMessage msg)
-           ] []
+           ]
  , button_ [ onClick (SendMessage msg)
            ] [ text (S.pack "Send to echo server") ]
  , div_ [ ] [ p_ [ ] [ text received | not . S.null $ received ] ]

@@ -251,16 +251,16 @@ h6_ :: [Attribute action] -> [View action] -> View action
 h6_ = nodeHtml "h6"
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr
-hr_ :: [Attribute action] -> [View action] -> View action
-hr_ = nodeHtml "hr"
+hr_ :: [Attribute action] -> View action
+hr_ = flip (nodeHtml "hr") []
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/pre
 pre_ :: [Attribute action] -> [View action] -> View action
 pre_ = nodeHtml "pre"
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input
-input_ :: [Attribute action] -> [View action] -> View action
-input_ = nodeHtml "input"
+input_ :: [Attribute action] -> View action
+input_ = flip (nodeHtml "input") []
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
 label_ :: [Attribute action] -> [View action] -> View action
@@ -288,8 +288,8 @@ bdi_ = nodeHtml "bdi"
 bdo_ :: [Attribute action] -> [View action] -> View action
 bdo_ = nodeHtml "bdo"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/wbr
-wbr_ :: [Attribute action] -> [View action] -> View action
-wbr_ = nodeHtml "wbr"
+wbr_ :: [Attribute action] -> View action
+wbr_ = flip (nodeHtml "wbr") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
 details_ :: [Attribute action] -> [View action] -> View action
 details_ = nodeHtml "details"
@@ -336,20 +336,20 @@ audio_ = nodeHtml "audio"
 video_ :: [Attribute action] -> [View action] -> View action
 video_ = nodeHtml "video"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/source
-source_ :: [Attribute action] -> [View action] -> View action
-source_ = nodeHtml "source"
+source_ :: [Attribute action] -> View action
+source_ = flip (nodeHtml "source") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
-track_ :: [Attribute action] -> [View action] -> View action
-track_ = nodeHtml "track"
+track_ :: [Attribute action] -> View action
+track_ = flip (nodeHtml "track") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/embed
-embed_ :: [Attribute action] -> [View action] -> View action
-embed_ = nodeHtml "embed"
+embed_ :: [Attribute action] -> View action
+embed_ = flip (nodeHtml "embed") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/object
 object_ :: [Attribute action] -> [View action] -> View action
 object_ = nodeHtml "object"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/param
-param_ :: [Attribute action] -> [View action] -> View action
-param_ = nodeHtml "param"
+param_ :: [Attribute action] -> View action
+param_ = flip (nodeHtml "param") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ins
 ins_ :: [Attribute action] -> [View action] -> View action
 ins_ = nodeHtml "ins"
@@ -387,8 +387,8 @@ caption_ = nodeHtml "caption"
 colgroup_ :: [Attribute action] -> [View action] -> View action
 colgroup_ = nodeHtml "colgroup"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/col
-col_ :: [Attribute action] -> [View action] -> View action
-col_ = nodeHtml "col"
+col_ :: [Attribute action] -> View action
+col_ = flip (nodeHtml "col") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/nav
 nav_ :: [Attribute action] -> [View action] -> View action
 nav_ = nodeHtml "nav"
@@ -423,8 +423,8 @@ dt_ = nodeHtml "dt"
 dd_ :: [Attribute action] -> [View action] -> View action
 dd_ = nodeHtml "dd"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img
-img_ :: [Attribute action] -> [View action] -> View action
-img_ = nodeHtml "img"
+img_ :: [Attribute action] -> View action
+img_ = flip (nodeHtml "img") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/iframe
 iframe_ :: [Attribute action] -> [View action] -> View action
 iframe_ = nodeHtml "iframe"
@@ -450,8 +450,8 @@ sub_ = nodeHtml "sub"
 sup_ :: [Attribute action] -> [View action] -> View action
 sup_ = nodeHtml "sup"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/br
-br_ :: [Attribute action] -> [View action] -> View action
-br_ = nodeHtml "br"
+br_ :: [Attribute action] -> View action
+br_ = flip (nodeHtml "br") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/ol
 ol_ :: [Attribute action] -> [View action] -> View action
 ol_ = nodeHtml "ol"
@@ -480,5 +480,5 @@ q_ = nodeHtml "q"
 script_ :: [Attribute action] -> [View action] -> View action
 script_ = nodeHtml "script"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
-link_ :: [Attribute action] -> [View action] -> View action
-link_ = nodeHtml "link"
+link_ :: [Attribute action] -> View action
+link_ = flip (nodeHtml "link") []
