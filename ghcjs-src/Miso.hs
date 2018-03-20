@@ -58,19 +58,19 @@ common
 common App {..} m getView = do
   -- init empty actions
   actionsTQueue <- newTQueueIO
-  let writeEvent :: Sink action
-      writeEvent = atomically . writeTQueue actionsTQueue
+  let sink :: Sink action
+      sink = atomically . writeTQueue actionsTQueue
   -- init Subs
   forM_ subs $ \sub ->
-    sub writeEvent
+    sub sink
   -- Retrieves reference view
-  viewRef <- getView writeEvent
+  viewRef <- getView sink
   -- know thy mountElement
   mountEl <- mountElement mountPoint
   -- Begin listening for events in the virtual dom
   delegator mountEl viewRef events
   -- Process initial action of application
-  writeEvent initialAction
+  sink initialAction
   -- Program loop, blocks when there are no new actions
 
   let loop !oldModel = do
@@ -78,11 +78,11 @@ common App {..} m getView = do
         actions <- atomically $ do
                      actions <- flushTQueue actionsTQueue
                      when (null actions) retry $> actions
-        let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
+        let (Acc newModel effects) = foldl' (foldEffects sink update)
                                             (Acc oldModel (pure ())) actions
         effects
         when (oldModel /= newModel) $ do
-          newVTree <- runView (view newModel) writeEvent
+          newVTree <- runView (view newModel) sink
           oldVTree <- readIORef viewRef
           void $ waitForAnimationFrame
           (diff mountPoint) (Just oldVTree) (Just newVTree)
@@ -96,9 +96,9 @@ miso :: (HasURI model, Eq model) => App model action -> IO ()
 miso app@App{..} = do
   uri <- getCurrentURI
   let modelWithUri = setURI uri model
-  common app model $ \writeEvent -> do
+  common app model $ \sink -> do
     let initialView = view modelWithUri
-    VTree (OI.Object iv) <- flip runView writeEvent initialView
+    VTree (OI.Object iv) <- flip runView sink initialView
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree iv
     let initialVTree = VTree (OI.Object iv)
@@ -108,9 +108,9 @@ miso app@App{..} = do
 -- | Runs a miso application
 startApp :: Eq model => App model action -> IO ()
 startApp app@App {..} =
-  common app model $ \writeEvent -> do
+  common app model $ \sink -> do
     let initialView = view model
-    initialVTree <- flip runView writeEvent initialView
+    initialVTree <- flip runView sink initialView
     (diff mountPoint) Nothing (Just initialVTree)
     newIORef initialVTree
 
