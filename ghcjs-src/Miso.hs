@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase          #-}
@@ -26,15 +27,15 @@ module Miso
   ) where
 
 import           Control.Concurrent
+import           Control.Monad.STM
+import           Control.Concurrent.STM.TQueue
 import           Control.Monad
 import           Data.IORef
 import           Data.List
-import           Data.Sequence                 ((|>))
-import qualified Data.Sequence                 as S
+import           Data.Functor
 import qualified JavaScript.Object.Internal    as OI
 import           JavaScript.Web.AnimationFrame
 
-import           Miso.Concurrent
 import           Miso.Delegate
 import           Miso.Diff
 import           Miso.Effect
@@ -48,26 +49,20 @@ import           Miso.FFI
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
-  :: Eq model
+  :: forall model action b
+   . (Eq model)
   => App model action
   -> model
   -> (Sink action -> IO (IORef VTree))
   -> IO b
 common App {..} m getView = do
-  -- init Notifier
-  Notify {..} <- newNotify
   -- init empty actions
-  actionsRef <- newIORef S.empty
-  let writeEvent a = void . forkIO $ do
-        atomicModifyIORef' actionsRef $ \as -> (as |> a, ())
-        notify
+  actionsTQueue <- newTQueueIO
+  let writeEvent :: Sink action
+      writeEvent = atomically . writeTQueue actionsTQueue
   -- init Subs
   forM_ subs $ \sub ->
     sub writeEvent
-  -- Hack to get around `BlockedIndefinitelyOnMVar` exception
-  -- that occurs when no event handlers are present on a template
-  -- and `notify` is no longer in scope
-  void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
   -- Retrieves reference view
   viewRef <- getView writeEvent
   -- know thy mountElement
@@ -76,11 +71,13 @@ common App {..} m getView = do
   delegator mountEl viewRef events
   -- Process initial action of application
   writeEvent initialAction
-  -- Program loop, blocking on SkipChan
+  -- Program loop, blocks when there are no new actions
 
-  let loop !oldModel = wait >> do
+  let loop !oldModel = do
         -- Apply actions to model
-        actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
+        actions <- atomically $ do
+                     actions <- flushTQueue actionsTQueue
+                     when (null actions) retry $> actions
         let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
                                             (Acc oldModel (pure ())) actions
         effects
@@ -131,3 +128,18 @@ foldEffects sink update = \(Acc model as) action ->
             void $ forkIO (eff sink)
 
 data Acc model = Acc !model !(IO ())
+
+#if !MIN_VERSION_stm(2,4,5)
+-- | Efficiently read the entire contents of a TQueue into a list.
+-- This function never retries.
+-- Note that the implementation from stm >= 2.4.5.0 is more efficient
+-- than this fallback.
+flushTQueue :: TQueue a -> STM [a]
+flushTQueue tq = readAll []
+  where
+    readAll xs = do
+      mbX <- tryReadTQueue tq
+      case mbX of
+        Nothing -> pure (reverse xs)
+        Just x -> readAll (x:xs)
+#endif

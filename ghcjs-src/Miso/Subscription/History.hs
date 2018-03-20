@@ -26,7 +26,6 @@ module Miso.Subscription.History
 import Control.Concurrent
 import Control.Monad
 import GHCJS.Foreign.Callback
-import Miso.Concurrent
 import Miso.Html.Internal     ( Sub )
 import Miso.String
 import Network.URI            hiding (path)
@@ -133,3 +132,17 @@ replaceTo' :: URI -> IO ()
 replaceTo' u = do
   replaceState' . pack . show $ u
   notify chan
+
+-- | Concurrent API for `SkipChan` implementation
+data Notify = Notify {
+    wait :: IO ()
+  , notify :: IO ()
+  }
+
+-- | Create a new `Notify`
+newNotify :: IO Notify
+newNotify = do
+  mvar <- newMVar ()
+  pure $ Notify
+   (takeMVar mvar)
+   (() <$ do tryPutMVar mvar $! ())
