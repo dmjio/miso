@@ -139,7 +139,7 @@ function diffCss(cCss, nCss, node) {
 }
 
 function hasKeys(ns, cs) {
-    return ns.length > 0 && cs.length > 0 && ns[0].key !== undefined;
+    return ns.length > 0 && cs.length > 0 && ns[0].key !== null && cs[0].key !== null;
 }
 
 function diffChildren(cs, ns, parent, doc) {
