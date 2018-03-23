@@ -238,6 +238,7 @@ executable tests
       containers,
       scientific,
       servant,
+      stm,
       text,
       unordered-containers,
       transformers,
@@ -265,7 +266,6 @@ library
     Miso.Svg.Event
     Miso.String
   other-modules:
-    Miso.Concurrent
     Miso.Html.Internal
   ghc-options:
     -Wall
@@ -280,6 +280,7 @@ library
     http-types,
     network-uri,
     servant,
+    stm,
     text,
     transformers
   if impl(ghcjs)

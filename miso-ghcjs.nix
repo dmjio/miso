@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, containers, ghcjs-base
-, network-uri, scientific, stdenv, text, transformers
+, network-uri, scientific, stdenv, stm, text, transformers
 , unordered-containers, vector, hspec, hspec-core, servant
 , http-types, http-api-data, QuickCheck, quickcheck-instances
 }:
@@ -10,7 +10,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers ghcjs-base network-uri scientific
+    aeson base bytestring containers ghcjs-base network-uri scientific stm
     text transformers unordered-containers vector hspec hspec-core servant
     http-types http-api-data QuickCheck quickcheck-instances
   ];
