@@ -68,7 +68,7 @@ community = template v
            width_ $ pack "100"
          , class_ $ pack "animated bounceInDown"
          , src_ misoSrc
-         ] [ ]
+         ]
          , h1_ [ class_ $ pack "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -93,7 +93,7 @@ docs = template v
            width_ $ pack "100"
          , class_ $ pack "animated bounceInDown"
          , src_ misoSrc
-         ] [  ]
+         ]
          , h1_ [ class_ $ pack "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -123,7 +123,7 @@ examples = template v
            width_ $ pack "100"
          , class_ $ pack "animated bounceInDown"
          , src_ misoSrc
-         ] [  ]
+         ]
          , h1_ [ class_ $ pack "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -151,7 +151,7 @@ home = template v
            width_ $ pack "100"
          , class_ $ pack "animated bounceInDown"
          , src_ misoSrc
-         ] [  ]
+         ]
          , h1_ [ class_ $ pack "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -269,7 +269,7 @@ the404 = template v
            width_ $ pack "100"
          , class_ $ pack "animated bounceOutUp"
          , src_ misoSrc
-         ] []
+         ]
          , h1_ [ class_ $ pack "title"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -474,8 +474,8 @@ newNav navMenuOpen' =
                         , a_ [class_$pack  "navbar-item "
                              ,href_$pack "http://bulma.io/documentation/layout/container/"
                              ] [  text $ pack "Layout"]
-                        , hr_ [class_$pack  "navbar-divider"] [
-                            div_ [class_$pack  "navbar-item"] [
+                        , hr_ [class_$pack  "navbar-divider"]
+                        , div_ [class_$pack  "navbar-item"] [
                               div_ [] [
                                 p_ [class_$pack  "has-text-info is-size-6-desktop"] [
                                   strong_ [] [ text $ pack "0.4.4"]]
@@ -533,8 +533,8 @@ newNav navMenuOpen' =
                         , a_ [class_$pack  "navbar-item",href_$pack "http://bulma.io/blog/"] [
                             text $ pack "More posts"
                             ]
-                        , hr_ [class_$pack  "navbar-divider"] [
-                            div_ [class_$pack  "navbar-item"] [
+                        , hr_ [class_$pack  "navbar-divider"]
+                        , div_ [class_$pack  "navbar-item"] [
                               div_ [class_$pack  "navbar-content"] [
                                 div_ [class_$pack  "level is-mobile"] [
                                   div_ [class_$pack  "level-left"] [
@@ -571,12 +571,12 @@ newNav navMenuOpen' =
                                      p_ [] [ strong_ [] [
                                        text $ pack "Extensions"
                                      ]
-                                   , br_ [] [
-                                      small_ [] [
+                                   , br_ []
+                                   , small_ [] [
                                           text $ pack "Side projects to enhance Bulma"]
                                       ]
+                                     ]
                                    ]
-                                 ]
                                , div_ [class_$pack  "level-right"] [
                                    div_ [class_$pack  "level-item"] [
                                       span_ [class_$pack  "icon has-text-info"] [
@@ -623,7 +623,4 @@ newNav navMenuOpen' =
                     ]
                   ]
                 ]
-                ]
-            ]
-      ]
     ]
