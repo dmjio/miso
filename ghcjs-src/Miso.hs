@@ -95,12 +95,10 @@ common App {..} m getView = do
 
 -- | Runs an isomorphic miso application
 -- Assumes the pre-rendered DOM is already present
-miso :: (HasURI model, Eq model) => App model action -> IO ()
+miso :: Eq model => App model action -> IO ()
 miso app@App{..} = do
-  uri <- getCurrentURI
-  let modelWithUri = setURI uri model
   common app model $ \writeEvent -> do
-    let initialView = view modelWithUri
+    let initialView = view model
     VTree (OI.Object iv) <- flip runView writeEvent initialView
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree iv
