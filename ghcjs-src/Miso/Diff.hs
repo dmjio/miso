@@ -31,14 +31,15 @@ diff mayElem current new =
 -- | diffing / patching a given element
 diffElement :: JSVal -> Maybe VTree -> Maybe VTree -> IO ()
 diffElement mountEl current new = do
+  doc <- getDoc
   case (current, new) of
     (Nothing, Nothing) -> pure ()
     (Just (VTree current'), Just (VTree new')) -> do
-      diff' current' new' mountEl
+      diff' current' new' mountEl doc
     (Nothing, Just (VTree new')) -> do
-      diff' (Object jsNull) new' mountEl
+      diff' (Object jsNull) new' mountEl doc
     (Just (VTree current'), Nothing) -> do
-      diff' current' (Object jsNull) mountEl
+      diff' current' (Object jsNull) mountEl doc
 
 -- | return the configured mountPoint element or the body
 mountElement :: Maybe JSString -> IO JSVal
@@ -50,12 +51,16 @@ mountElement mayMp =
 foreign import javascript unsafe "$r = document.body;"
   getBody :: IO JSVal
 
+foreign import javascript unsafe "$r = document;"
+  getDoc :: IO JSVal
+
 foreign import javascript unsafe "$r = document.getElementById($1);"
   getElementById :: JSString -> IO JSVal
 
-foreign import javascript unsafe "diff($1, $2, $3);"
+foreign import javascript unsafe "diff($1, $2, $3, $4);"
   diff'
     :: Object -- ^ current object
     -> Object -- ^ new object
     -> JSVal  -- ^ parent node
+    -> JSVal  -- ^ document
     -> IO ()
