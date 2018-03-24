@@ -20,7 +20,7 @@ function vnodeKeyed(tag, key) {
     return {
         'type': 'vnode',
         'tag': tag,
-        'children': [],
+        'children': [vtext(key)],
         'props': {},
         'css': {},
         'ns': 'HTML',
@@ -589,6 +589,10 @@ test('Should execute flip-flop case', () => {
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+    for (var i = 0; i < 3; i++) {
+	expect(currentNode.children[i]).not.toBe(undefined);
+	expect(newNode.children[i]).not.toBe(undefined);
+    }
 });
 
 test('Should execute swapped case on 1k nodes', () => {
@@ -596,7 +600,9 @@ test('Should execute swapped case on 1k nodes', () => {
     var body = document.body;
     var kids = [];
     for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i))
+
     var currentNode =  vnode('div', kids, {}, {}, "html", null, null, null, "key-1");
+
     var newKids = [];
     for (var i = 1; i < 1001; i++) {
 	if (i == 3) {
@@ -615,6 +621,13 @@ test('Should execute swapped case on 1k nodes', () => {
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+    for (var i = 0; i < 1000; i++) {
+       expect(newNode.children[i].key).toBe(currentNode.children[i].key);
+       expect(newNode.children[i].children[0].text).toBe(currentNode.children[i].children[0].text);
+       expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+       expect(newNode.children[i].domRef).not.toBe(undefined);
+       expect(currentNode.children[i].domRef).not.toBe(undefined);
+    }
 });
 
 test('Should execute top-left and bottom-right match case', () => {
