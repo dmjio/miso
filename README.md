@@ -58,6 +58,7 @@
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
 - [Building examples](#building-examples)
+- [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
 - [Pinning nixpkgs](#pinning-nixpkgs)
 - [Binary cache](#binary-cache)
@@ -475,6 +476,10 @@ To see examples, we recommend hosting them with a webserver
 cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
+
+## Coverage
+
+The core algorithmic component of miso is [diff.js](https://github.com/dmjio/miso/blob/master/jsbits/diff.js). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [jsdom](https://github.com/jsdom/jsdom) and [jest](https://github.com/facebook/jest).
 
 ## Isomorphic
 
