@@ -332,9 +332,9 @@ function syncChildren(os, ns, parent, doc) {
 }
 
 function swapDomRefs(tmp,a,b,p) {
-  tmp = a.nextElementSibling;
-  b.replaceWith(a.domRef);
-  p.insertBefore(b, tmp);
+  tmp = a.nextSibling;
+  p.insertBefore(a,b);
+  p.insertBefore(b,tmp);
 }
 
 function swap(os,l,r) {
