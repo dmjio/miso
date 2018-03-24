@@ -560,10 +560,24 @@ test('Should execute right-hand side happy path key-diffing case', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
 });
 
+
+test('Should swap nodes', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var currentNode = vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+    diff(null, currentNode, body, document)
+    var newNode = vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+    diff(currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(2);
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(currentNode.children).toEqual(newNode.children);
+    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
+    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
 test('Should execute flip-flop case', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
-    var destroy = 0;
     var currentNode =
         vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
     diff(null, currentNode, body, document)
@@ -571,6 +585,32 @@ test('Should execute flip-flop case', () => {
         vnode('div', [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
     diff(currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(3);
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(currentNode.children).toEqual(newNode.children);
+    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
+    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
+test('Should execute swapped case on 1k nodes', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var kids = [];
+    for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i))
+    var currentNode =  vnode('div', kids, {}, {}, "html", null, null, null, "key-1");
+    var newKids = [];
+    for (var i = 1; i < 1001; i++) {
+	if (i == 3) {
+            newKids.push(vnodeKeyed('div', 999))
+	} else if (i == 999) {
+            newKids.push(vnodeKeyed('div', 3))
+	} else {
+            newKids.push(vnodeKeyed('div', i))
+	}
+    }
+    diff(null, currentNode, body, document)
+    var newNode =  vnode('div', newKids, {}, {}, "html", null, null, null, "key-1");
+    diff(currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
