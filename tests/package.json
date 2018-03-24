@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "jsdom": "^11.6.2",
+    "jsverify": "^0.8.3",
+    "npm": "^5.7.1",
+    "underscore": "^1.8.3",
+    "jest": "^22.4.3"
+  }
+}
