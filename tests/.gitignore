@@ -1,0 +1,5 @@
+diff.js
+*lock.json
+node_modules
+*DS_Store
+coverage

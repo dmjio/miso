@@ -8,22 +8,22 @@
 
 <p align="center">
   <a href="https://haskell-miso-slack.herokuapp.com">
-    <img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
+	<img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
-    <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
+	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
   <a href="https://haskell.org">
-    <img src="https://img.shields.io/badge/language-Haskell-green.svg?style=flat-square" alt="Haskell">
+	<img src="https://img.shields.io/badge/language-Haskell-green.svg?style=flat-square" alt="Haskell">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
-    <img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
+	<img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
   </a>
   <a href="https://hydra.dmj.io">
-    <img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=flat-square" alt="Miso Hydra">
+	<img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=flat-square" alt="Miso Hydra">
   </a>
   <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
-    <img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
+	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
   </a>
 </p>
 
@@ -96,9 +96,9 @@ git clone https://github.com/dmjio/miso && cd miso/sample-app && stack setup && 
 Note: It's important to ensure that you don't have a global `cabal-install` present on your system. This could cause build problems. If you see an error like this (below), try deleting your global `cabal-install`.
 
 ```bash
-exit status: 1                                
-stderr: solver must be one of: modular        
-CallStack (from HasCallStack):                
+exit status: 1
+stderr: solver must be one of: modular
+CallStack (from HasCallStack):
   error, called at libraries/Cabal/Cabal/Distribution/ReadE.hs:46:24 in Cabal-2.0.1.0:Distribution.ReadE
 ```
 
@@ -132,10 +132,10 @@ extra-deps:
 
 setup-info:
   ghcjs:
-    source:
-      ghcjs-0.2.0.9006030_ghc-7.10.3:
-         url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-         sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+	source:
+	  ghcjs-0.2.0.9006030_ghc-7.10.3:
+		 url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+		 sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 ```
 
 Add a `cabal` file
@@ -256,18 +256,18 @@ mkDerivation {
 Write a `default.nix` (which calls `app.nix`), this fetches a recent version of `miso`.
 ```nix
 { pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs";
-    rev = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
+	owner = "NixOS";
+	repo = "nixpkgs";
+	rev = "a0aeb23";
+	sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
   }){}
 }:
 let
   result = import (pkgs.fetchFromGitHub {
-    owner = "dmjio";
-    repo = "miso";
-    sha256 = "1l1gwzzqlvvcmg70jjrwc5ijv1vb6y5ljqkh7rxxq7hkyxpjyx9q";
-    rev = "95f6bc9b1ae6230b110358a82b6a573806f272c2";
+	owner = "dmjio";
+	repo = "miso";
+	sha256 = "1l1gwzzqlvvcmg70jjrwc5ijv1vb6y5ljqkh7rxxq7hkyxpjyx9q";
+	rev = "95f6bc9b1ae6230b110358a82b6a573806f272c2";
   }) {};
 in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
   miso = result.miso-ghcjs;
@@ -412,13 +412,13 @@ data Action
 main :: IO ()
 main = startApp App {..}
   where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model         = 0             -- initial model
-    update        = updateModel   -- update function
-    view          = viewModel     -- view function
-    events        = defaultEvents -- default delegated events
-    subs          = []            -- empty subscription list
-    mountPoint    = Nothing       -- mount point for application (Nothing defaults to 'body')
+	initialAction = SayHelloWorld -- initial action to be executed on application load
+	model         = 0             -- initial model
+	update        = updateModel   -- update function
+	view          = viewModel     -- view function
+	events        = defaultEvents -- default delegated events
+	subs          = []            -- empty subscription list
+	mountPoint    = Nothing       -- mount point for application (Nothing defaults to 'body')
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
@@ -480,6 +480,12 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 ## Coverage
 
 The core algorithmic component of miso is [diff.js](https://github.com/dmjio/miso/blob/master/jsbits/diff.js). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [jsdom](https://github.com/jsdom/jsdom) and [jest](https://github.com/facebook/jest).
+
+To run the tests and build the coverage report:
+
+```bash
+cd miso/tests && ./run.sh
+```
 
 ## Isomorphic
 
