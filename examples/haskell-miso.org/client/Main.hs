@@ -7,12 +7,6 @@ import Data.Proxy
 import Miso
 import Miso.String
 
-instance HasURI Model where
-  lensURI = makeLens getter setter
-    where
-      getter = uri
-      setter = \m u -> m { uri = u }
-
 main :: IO ()
 main = do
   currentURI <- getCurrentURI
@@ -24,8 +18,8 @@ main = do
       events = defaultEvents
       subs = [ uriSub HandleURI ]
       view m =
-        either (const $ the404 m) id $
-          runRoute (Proxy :: Proxy ClientRoutes) handlers m
+        either (const $ the404 m) ($ m) $
+          runRoute (Proxy :: Proxy ClientRoutes) handlers currentURI
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
