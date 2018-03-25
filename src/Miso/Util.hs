@@ -8,20 +8,12 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Util
-  ( now
-  , consoleLog
-  , jsvalToValue
-  , windowAddEventListener
-  , stringify
-  , parse
-
-  , withFoldable
+  ( withFoldable
   , conditionalViews
   ) where
 
-import Miso.FFI
-import Miso.Html.Internal
 import Data.Foldable
+import Miso.Html (View)
 
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example

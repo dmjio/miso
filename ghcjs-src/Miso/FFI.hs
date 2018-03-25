@@ -20,10 +20,8 @@ module Miso.FFI
    , consoleLog
    , stringify
    , parse
-   , copyDOMIntoVTree
    , item
    , jsvalToValue
-   , delegateEvent
    , clearBody
    ) where
 
@@ -122,20 +120,6 @@ parse jval = do
 -- | Indexing into a JS object
 foreign import javascript unsafe "$r = $1[$2];"
   item :: JSVal -> JSString -> IO JSVal
-
--- | Copies DOM pointers into virtual dom
--- entry point into isomorphic javascript
-foreign import javascript unsafe "copyDOMIntoVTree($1);"
-  copyDOMIntoVTree :: JSVal -> IO ()
-
--- | Event delegation FFI, routes events received on body through the virtual dom
--- Invokes event handler when found
-foreign import javascript unsafe "delegate($1, $2, $3);"
-  delegateEvent
-     :: JSVal               -- ^ mountPoint element
-     -> JSVal               -- ^ Events
-     -> Callback (IO JSVal) -- ^ Virtual DOM callback
-     -> IO ()
 
 -- | Clear the document body. This is particularly useful to avoid
 -- creating multiple copies of your app when running in GHCJSi.

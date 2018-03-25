@@ -13,7 +13,6 @@ import           Data.IORef
 import qualified Data.Map                 as M
 import           Miso.Html.Internal
 import           Miso.String
-import           Miso.FFI
 import qualified JavaScript.Object.Internal as OI
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
@@ -32,3 +31,11 @@ delegator mountPointElement vtreeRef es = do
     pure val
   delegateEvent mountPointElement evts getVTreeFromRef
 
+-- | Event delegation FFI, routes events received on body through the virtual dom
+-- Invokes event handler when found
+foreign import javascript unsafe "delegate($1, $2, $3);"
+  delegateEvent
+     :: JSVal               -- ^ mountPoint element
+     -> JSVal               -- ^ Events
+     -> Callback (IO JSVal) -- ^ Virtual DOM callback
+     -> IO ()
