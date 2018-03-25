@@ -484,7 +484,12 @@ The core algorithmic component of miso is [diff.js](https://github.com/dmjio/mis
 To run the tests and build the coverage report:
 
 ```bash
-cd miso/tests && ./run.sh
+cd miso/tests
+npm i
+npm run test
+## Or by using `yarn` instead of `npm`:
+# yarn
+# yarn test
 ```
 
 ## Isomorphic
