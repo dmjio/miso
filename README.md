@@ -511,16 +511,16 @@ nix-build --arg nixpkgs 'import <nixpkgs> {}'
 
 ## Binary cache
 
-`nix` users on a Linux distro can take advantage of a [binary cache](https://cache.dmj.io/nix-cache-info) for faster builds. To use the binary cache simply append `https://cache.dmj.io/nix-cache-info` during all `nix-shell` and/or `nix-build` invocations.
+`nix` users on a Linux distro can take advantage of a [binary cache](https://hydra.dmj.io/nix-cache-info) for faster builds. To use the binary cache simply append `https://hydra.dmj.io/nix-cache-info` during all `nix-shell` and/or `nix-build` invocations.
 
 ```bash
-nix-build --option extra-binary-caches https://cache.dmj.io
+nix-build --option extra-binary-caches https://hydra.dmj.io
 ```
 
-Alternatively, add `https://cache.dmj.io` to your list of local binary caches in `nix.conf` (usually found in `/etc/nix/nix.conf`), and it will automatically be used on all invocations of `nix-build` and/or `nix-shell`.
+Alternatively, add `https://hydra.dmj.io` to your list of local binary caches in `nix.conf` (usually found in `/etc/nix/nix.conf`), and it will automatically be used on all invocations of `nix-build` and/or `nix-shell`.
 
 ```
-binary-caches = https://cache.dmj.io/ https://cache.nixos.org/
+binary-caches = https://hydra.dmj.io/ https://cache.nixos.org/
 ```
 
 ## Benchmarks
