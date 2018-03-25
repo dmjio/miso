@@ -1,5 +1,25 @@
 {
-  "dependencies": {
+  "name": "miso",
+  "version": "1.0.0",
+  "description": "miso tests",
+  "main": "diff.test.js",
+  "scripts": {
+    "test": "cp ../jsbits/diff.js ./ && echo 'module.exports = diff;' >> diff.js &&./node_modules/.bin/jest --coverage && rm ./diff.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmjio/miso.git"
+  },
+  "keywords": [
+    "miso"
+  ],
+  "author": "dmijo",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/dmjio/miso/issues"
+  },
+  "homepage": "https://github.com/dmjio/miso#readme",
+  "devDependencies": {
     "jsdom": "^11.6.2",
     "jsverify": "^0.8.3",
     "npm": "^5.7.1",
