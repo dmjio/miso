@@ -1,5 +1,5 @@
 const diff = require('./diff');
-const jsdom = require('JSDom');
+const jsdom = require('jsdom');
 
 function vnode(tag, children, props, css, ns, ref, oc, od, key) {
     return {
