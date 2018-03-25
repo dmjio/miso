@@ -81,6 +81,7 @@ module Miso.Html.Element
     , thead_
     , tfoot_
     , tr_
+    , trKeyed_
     , td_
     , th_
     -- * Less common elements
@@ -162,6 +163,13 @@ tbody_  = nodeHtml "tbody"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr
 tr_ :: [Attribute action] -> [View action] -> View action
 tr_  = nodeHtml "tr"
+
+-- | Contains `Key`, inteded to be used for child replacement patch
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/tr>
+
+trKeyed_ :: Key -> [Attribute action] -> [View action] -> View action
+trKeyed_ = node HTML "tr" . pure
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/th
 th_ :: [Attribute action] -> [View action] -> View action
