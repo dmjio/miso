@@ -60,11 +60,11 @@ type Home      = View Action
 community :: Model -> View Action
 community = template v
   where
-    v = div_ [ class_  "animated fadeIn" ] [ img_ [
+    v = div_ [ class_  "animated fadeIn" ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ img_ [
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
-         ]
+         ] ]
          , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -85,11 +85,11 @@ community = template v
 docs :: Model -> View Action
 docs = template v
   where
-    v = div_ [ class_  "animated fadeIn" ] [ img_ [
+    v = div_ [ class_  "animated fadeIn" ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ img_ [
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
-         ]
+         ] ]
          , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -115,11 +115,11 @@ examples :: Model -> View Action
 examples = template v
   where
     v =
-     div_ [ class_  "animated fadeIn" ] [ img_ [
+      div_ [ class_  "animated fadeIn" ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ img_ [
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
-         ]
+         ] ]
          , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -143,24 +143,26 @@ examples = template v
 home :: Model -> View Action
 home = template v
   where
-    v = div_ [class_  "animated fadeIn"] [ img_ [
-           width_  "100"
-         , class_  "animated bounceInDown"
-         , src_ misoSrc
-         ]
-         , h1_ [ class_  "title animated pulse"
+    v = div_ [ class_  "animated fadeIn" ] [
+        a_ [ href_ "https://github.com/dmjio/miso" ] [
+            img_ [ width_  "100"
+                 , class_  "animated bounceInDown"
+                 , src_ misoSrc
+                 ]
+            ]
+        , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
                                      ]
            ] [ text "miso" ]
-       , h2_ [ class_ "subtitle animated pulse" ] [
+        , h2_ [ class_ "subtitle animated pulse" ] [
          text "A tasty "
          , a_ [ href_ "https://www.haskell.org/"
               , target_ "_blank"][
              strong_ [] [text "Haskell" ]]
          , text  " front-end framework"
          ]
-       ]
+        ]
 
 
 template :: View Action -> Model -> View Action
@@ -261,11 +263,11 @@ cols = section_[][div_ [ class_  "container" ] [
 the404 :: Model -> View Action
 the404 = template v
   where
-    v = div_ [] [ img_ [
+    v = div_ [] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ img_ [
            width_  "100"
          , class_  "animated bounceOutUp"
          , src_ misoSrc
-         ]
+         ]]
          , h1_ [ class_  "title"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
                                      ,(pack "font-weight", pack "100")
@@ -387,6 +389,13 @@ footer =
          , p_ [] [ text "The source code for this website is located "
                  , a_ [ href_  "https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org" ] [  text" here."]
                  ]
+         , p_ [] [ a_ [href_"https://bulma.io"] [ img_
+                                                    [ src_ "https://bulma.io/images/made-with-bulma.png"
+                                                    , alt_ "Made with Bulma"
+                                                    , width_ "128"
+                                                    , height_ "24"
+                                                    ]
+                                                ] ]
          , p_ [] [
            a_ [ class_  "icon"
               , href_  "https://github.com/dmjio/miso"
