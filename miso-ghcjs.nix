@@ -5,7 +5,7 @@
 }:
 mkDerivation {
   pname = "miso";
-  version = "0.16.0.0";
+  version = "0.17.0.0";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
