@@ -172,7 +172,7 @@ function syncChildren(os, ns, parent, doc) {
 	newFirstIndex = 0,
 	oldLastIndex = os.length - 1,
 	newLastIndex = ns.length - 1,
-	nFirst, nLast, tmp, found, node;
+	nFirst, nLast, oLast, oFirst, tmp, found, node;
     for (;;) {
 	/* check base case, first > last for both new and old
 	  [ ] -- old children empty (fully-swapped)
