@@ -45,10 +45,6 @@ type ClientRoutes = Examples
   :<|> Home
 
 -- | Handlers
-handlers ::
-  (Model -> View Action)
-    :<|> ((Model -> View Action)
-        :<|> ((Model -> View Action) :<|> (Model -> View Action)))
 handlers = examples
   :<|> docs
   :<|> community

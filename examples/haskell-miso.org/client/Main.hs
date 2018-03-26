@@ -8,18 +8,21 @@ import Miso
 import Miso.String
 
 main :: IO ()
-main = do
-  currentURI <- getCurrentURI
-  miso App { model = Model currentURI False, ..}
+main = miso $ \currentURI -> App
+        { model = Model currentURI False
+        , view = viewModel
+        , ..
+        }
     where
       initialAction = NoOp
       mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]
-      view m =
-        either (const $ the404 m) ($ m) $
-          runRoute (Proxy :: Proxy ClientRoutes) handlers currentURI
+      viewModel m =
+        case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
+          Left _ -> the404 m
+          Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do

@@ -97,8 +97,9 @@ common App {..} m getView = do
 
 -- | Runs an isomorphic miso application
 -- Assumes the pre-rendered DOM is already present
-miso :: Eq model => App model action -> IO ()
-miso app@App{..} = do
+miso :: Eq model => (URI -> App model action) -> IO ()
+miso f = do
+  app@App {..} <- f <$> getCurrentURI
   common app model $ \writeEvent -> do
     let initialView = view model
     VTree (OI.Object iv) <- flip runView writeEvent initialView
