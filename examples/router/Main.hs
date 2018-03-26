@@ -22,13 +22,6 @@ data Model
     -- ^ current URI of application
   } deriving (Eq, Show)
 
--- | HasURI typeclass
-instance HasURI Model where
-  lensURI = makeLens getter setter
-    where
-      getter = uri
-      setter = \m u -> m { uri = u }
-
 -- | Action
 data Action
   = HandleURI URI
@@ -59,10 +52,11 @@ updateModel _ m = noEff m
 
 -- | View function, with routing
 viewModel :: Model -> View Action
-viewModel model@Model {..} = view
+viewModel model = view
   where
-    view = either (const the404) id result
-    result = runRoute (Proxy :: Proxy API) handlers model
+    view =
+      either (const the404) id
+        $ runRoute (Proxy :: Proxy API) handlers uri model
     handlers = about :<|> home
     home (_ :: Model) = div_ [] [
         div_ [] [ text "home" ]

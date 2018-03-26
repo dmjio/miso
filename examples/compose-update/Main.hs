@@ -13,7 +13,6 @@ import Control.Monad
 import Data.Monoid
 
 import Miso
-import Miso.Lens
 import Miso.String
 
 -- In this slightly contrived example, our model consists of two
@@ -32,6 +31,7 @@ data Action
 -- utilities ourselves. We recommend that in your own applications,
 -- you depend on a lens library such as @lens@ or @microlens@ to get
 -- these definitions.
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 
 -- | You can find this under the same name in @lens@ and
 -- @microlens@. @lens@ also provides the infix operator '%%~' as a

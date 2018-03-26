@@ -24,10 +24,6 @@
 module Miso.Router
   ( runRoute
   , RoutingError (..)
-  , HasURI (..)
-  , getURI
-  , setURI
-  , makeLens
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -42,7 +38,6 @@ import           Servant.API
 import           Web.HttpApiData
 
 import           Miso.Html             hiding (text)
-import           Miso.Lens
 
 -- | Router terminator.
 -- The 'HasRouter' instance for 'View' finalizes the router.
@@ -145,12 +140,16 @@ runRouteLoc loc layout page m =
 -- All handlers must, in the end, return @m a@.
 -- 'routeLoc' will choose a route and return its result.
 runRoute
-  :: (HasURI m, HasRouter m layout)
+  :: HasRouter m layout
   => Proxy layout
   -> RouteT m layout a
+  -> (m -> URI)
   -> m
   -> Either RoutingError a
-runRoute layout page m = runRouteLoc (uriToLocation (getURI m)) layout page m
+runRoute layout page getURI m =
+  runRouteLoc (uriToLocation uri) layout page m
+    where
+      uri = getURI m
 
 -- | Use a computed 'Router' to route a 'Location'.
 routeLoc :: Location -> Router a -> m -> Either RoutingError a
@@ -195,16 +194,3 @@ uriToLocation uri = Location
   { locPath = decodePathSegments $ BS.pack (uriPath uri)
   , locQuery = parseQuery $ BS.pack (uriQuery uri)
   }
-
-class HasURI m where lensURI :: Lens' m URI
-
-getURI :: HasURI m => m -> URI
-getURI = get lensURI
-
-setURI :: HasURI m => URI -> m -> m
-setURI m u = set lensURI m u
-
-
-
-
-

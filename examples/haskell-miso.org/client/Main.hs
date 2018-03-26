@@ -7,25 +7,22 @@ import Data.Proxy
 import Miso
 import Miso.String
 
-instance HasURI Model where
-  lensURI = makeLens getter setter
-    where
-      getter = uri
-      setter = \m u -> m { uri = u }
-
 main :: IO ()
-main = do
-  currentURI <- getCurrentURI
-  miso App { model = Model currentURI False, ..}
+main = miso $ \currentURI -> App
+        { model = Model currentURI False
+        , view = viewModel
+        , ..
+        }
     where
       initialAction = NoOp
       mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]
-      view m =
-        either (const $ the404 m) id $
-          runRoute (Proxy :: Proxy ClientRoutes) handlers m
+      viewModel m =
+        case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
+          Left _ -> the404 m
+          Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
