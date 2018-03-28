@@ -73,115 +73,125 @@ data Router a where
 -- It is the class responsible for making API combinators routable.
 -- 'RouteT' is used to build up the handler types.
 -- 'Router' is returned, to be interpretted by 'routeLoc'.
-class HasRouter model layout where
+class HasRouter layout where
   -- | A route handler.
-  type RouteT model layout a :: *
+  type RouteT layout a :: *
   -- | Transform a route handler into a 'Router'.
-  route :: Proxy layout -> Proxy a -> RouteT model layout a -> model -> Router a
+  route :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
 
 -- | Alternative
-instance (HasRouter m x, HasRouter m y) => HasRouter m (x :<|> y) where
-  type RouteT m (x :<|> y) a = RouteT m x a :<|> RouteT m y a
-  route _ (a :: Proxy a) ((x :: RouteT m x a) :<|> (y :: RouteT m y a)) m
-    = RChoice (route (Proxy :: Proxy x) a x m) (route (Proxy :: Proxy y) a y m)
+instance (HasRouter x, HasRouter y) => HasRouter (x :<|> y) where
+  type RouteT (x :<|> y) a = RouteT x a :<|> RouteT y a
+  route _ (a :: Proxy a) ((x :: RouteT x a) :<|> (y :: RouteT y a))
+    = RChoice (route (Proxy :: Proxy x) a x) (route (Proxy :: Proxy y) a y)
 
 -- | Capture
-instance (HasRouter m sublayout, FromHttpApiData x) =>
-  HasRouter m (Capture sym x :> sublayout) where
-  type RouteT m (Capture sym x :> sublayout) a = x -> RouteT m sublayout a
-  route _ a f m = RCapture (\x -> route (Proxy :: Proxy sublayout) a (f x) m)
+instance (HasRouter sublayout, FromHttpApiData x) =>
+  HasRouter (Capture sym x :> sublayout) where
+  type RouteT (Capture sym x :> sublayout) a = x -> RouteT sublayout a
+  route _ a f = RCapture (\x -> route (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryParam
-instance (HasRouter m sublayout, FromHttpApiData x, KnownSymbol sym)
-         => HasRouter m (QueryParam sym x :> sublayout) where
-  type RouteT m (QueryParam sym x :> sublayout) a = Maybe x -> RouteT m sublayout a
-  route _ a f m = RQueryParam (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x) m)
+instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
+         => HasRouter (QueryParam sym x :> sublayout) where
+  type RouteT (QueryParam sym x :> sublayout) a = Maybe x -> RouteT sublayout a
+  route _ a f = RQueryParam (Proxy :: Proxy sym)
+    (\x -> route (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryParams
-instance (HasRouter m sublayout, FromHttpApiData x, KnownSymbol sym)
-         => HasRouter m (QueryParams sym x :> sublayout) where
-  type RouteT m (QueryParams sym x :> sublayout) a = [x] -> RouteT m sublayout a
-  route _ a f m = RQueryParams
+instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
+         => HasRouter (QueryParams sym x :> sublayout) where
+  type RouteT (QueryParams sym x :> sublayout) a = [x] -> RouteT sublayout a
+  route _ a f = RQueryParams
     (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x) m)
+    (\x -> route (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryFlag
-instance (HasRouter m sublayout, KnownSymbol sym)
-         => HasRouter m (QueryFlag sym :> sublayout) where
-  type RouteT m (QueryFlag sym :> sublayout) a = Bool -> RouteT m sublayout a
-  route _ a f m = RQueryFlag
+instance (HasRouter sublayout, KnownSymbol sym)
+         => HasRouter (QueryFlag sym :> sublayout) where
+  type RouteT (QueryFlag sym :> sublayout) a = Bool -> RouteT sublayout a
+  route _ a f = RQueryFlag
     (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x) m)
+    (\x -> route (Proxy :: Proxy sublayout) a (f x))
 
 -- | Path
-instance (HasRouter m sublayout, KnownSymbol path)
-         => HasRouter m (path :> sublayout) where
-  type RouteT m (path :> sublayout) a = RouteT m sublayout a
-  route _ a page m = RPath
+instance (HasRouter sublayout, KnownSymbol path)
+         => HasRouter (path :> sublayout) where
+  type RouteT (path :> sublayout) a = RouteT sublayout a
+  route _ a page = RPath
     (Proxy :: Proxy path)
-    (route (Proxy :: Proxy sublayout) a page m)
+    (route (Proxy :: Proxy sublayout) a page)
 
 -- | View
-instance HasRouter m (View a) where
-  type RouteT m (View a) x = m -> x
-  route _ _ a m = RPage (a m)
+instance HasRouter (View a) where
+  type RouteT (View a) x = x
+  route _ _ a = RPage a
+
+-- | Unit endpoint
+instance HasRouter () where
+  type RouteT () x = x
+  route _ _ a = RPage a
 
 -- | Use a handler to route a 'Location'.
 -- Normally 'runRoute' should be used instead, unless you want custom
 -- handling of string failing to parse as 'URI'.
-runRouteLoc :: forall m layout a. HasRouter m layout
-            => Location -> Proxy layout -> RouteT m layout a -> m -> Either RoutingError a
-runRouteLoc loc layout page m =
-  let routing = route layout (Proxy :: Proxy a) page m
-  in routeLoc loc routing m
+runRouteLoc :: forall layout a. HasRouter layout
+            => Location -> Proxy layout -> RouteT layout a ->  Either RoutingError a
+runRouteLoc loc layout page =
+  let routing = route layout (Proxy :: Proxy a) page
+  in routeLoc loc routing
 
 -- | Use a handler to route a location, represented as a 'String'.
 -- All handlers must, in the end, return @m a@.
 -- 'routeLoc' will choose a route and return its result.
 runRoute
-  :: HasRouter m layout
+  :: HasRouter layout
   => Proxy layout
-  -> RouteT m layout a
+  -> RouteT layout a
+  -> URI
+  -> Either RoutingError a
+runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
+
+runMisoRoute
+  :: HasRouter layout
+  => Proxy layout
+  -> RouteT layout (m -> a)
   -> (m -> URI)
   -> m
   -> Either RoutingError a
-runRoute layout page getURI m =
-  runRouteLoc (uriToLocation uri) layout page m
-    where
-      uri = getURI m
+runMisoRoute layout pages getURI model = ($ model) <$> runRoute layout pages (getURI model)
 
 -- | Use a computed 'Router' to route a 'Location'.
-routeLoc :: Location -> Router a -> m -> Either RoutingError a
-routeLoc loc r m = case r of
+routeLoc :: Location -> Router a -> Either RoutingError a
+routeLoc loc r = case r of
   RChoice a b -> do
-    case routeLoc loc a m of
-      Left Fail -> routeLoc loc b m
+    case routeLoc loc a of
+      Left Fail -> routeLoc loc b
       Right x -> Right x
   RCapture f -> case locPath loc of
     [] -> Left Fail
     capture:paths ->
       case parseUrlPieceMaybe capture of
         Nothing -> Left Fail
-        Just x -> routeLoc loc { locPath = paths } (f x) m
+        Just x -> routeLoc loc { locPath = paths } (f x)
   RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-    Nothing -> routeLoc loc (f Nothing) m
+    Nothing -> routeLoc loc (f Nothing)
     Just Nothing -> Left Fail
     Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
       Nothing -> Left Fail
-      Just x -> routeLoc loc (f (Just x)) m
-  RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x) m) $ do
+      Just x -> routeLoc loc (f (Just x))
+  RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x)) $ do
     ps <- sequence $ snd <$> Prelude.filter
       (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
     sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
   RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-    Nothing -> routeLoc loc (f False) m
-    Just Nothing -> routeLoc loc (f True) m
+    Nothing -> routeLoc loc (f False)
+    Just Nothing -> routeLoc loc (f True)
     Just (Just _) -> Left Fail
   RPath sym a -> case locPath loc of
     [] -> Left Fail
     p:paths -> if p == T.pack (symbolVal sym)
-      then routeLoc (loc { locPath = paths }) a m
+      then routeLoc (loc { locPath = paths }) a
       else Left Fail
   RPage a ->
     case locPath loc of
