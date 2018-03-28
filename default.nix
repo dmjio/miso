@@ -45,7 +45,15 @@ let
     rev = "c38947cd9417ab8bf8a8d3652d8bf549e35f14af";
     sha256 = "17rdc7fisqgf8zq90c3cw9c08b1qac6wirqmwifw2a0xxbigz4qc";
   }) { miso = result.miso-ghcjs; };
+  uploadCoverage = pkgs.writeScriptBin "upload-coverage.sh" ''
+    #!/usr/bin/env bash
+    export PATH=$PATH:${pkgs.nodePackages.yarn}/bin
+    cd tests && yarn test
+    cd coverage
+    ${pkgs.s3cmd}/bin/s3cmd sync --recursive lcov-report/ s3://aws-website-coverage-j7fc9/
+  '';
   result = {
+    inherit uploadCoverage;
     miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
     miso-ghc = buildStrictly miso-ghc;
     release = sdistTarball (buildStrictly miso-ghc);
