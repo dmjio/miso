@@ -22,7 +22,8 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Router
-  ( runRoute
+  ( runMisoRoute
+  , runRoute
   , RoutingError (..)
   ) where
 
