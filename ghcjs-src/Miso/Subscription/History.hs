@@ -49,18 +49,12 @@ getURI = do
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> IO ()
 {-# INLINE pushURI #-}
-pushURI uri = pushStateNoModel uri { uriPath = path }
-  where
-    path | uriPath uri == mempty = "/"
-         | otherwise = uriPath uri
+pushURI uri = pushStateNoModel uri { uriPath = "/" <> uriPath uri }
 
 -- | Replaces current URI on stack
 replaceURI :: URI -> IO ()
 {-# INLINE replaceURI #-}
-replaceURI uri = replaceTo' uri { uriPath = path }
-  where
-    path | uriPath uri == mempty = "/"
-         | otherwise = uriPath uri
+replaceURI uri = replaceTo' uri { uriPath = "/" <> uriPath uri }
 
 -- | Navigates backwards
 back :: IO ()
