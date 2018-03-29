@@ -1,3 +1,20 @@
+var registeredCallbacks = [];
+
+/* Callbacks in ghcjs need to be released. With this function one can register
+   callbacks that should be released right before diffing.
+*/
+function registerCallback(cb) {
+    registeredCallbacks.push(cb);
+}
+
+/* This clears the callbacks. */
+function clearCallbacks() {
+    for (var i in registeredCallbacks)
+      h$release(registeredCallbacks[i]);
+
+    registeredCallbacks = [];
+}
+
 /* event delegation algorithm */
 function delegate(mountPointElement, events, getVTree) {
     for (var event in events) {

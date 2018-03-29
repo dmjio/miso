@@ -251,12 +251,13 @@ onWithOptions options eventName Decoder{..} toAction =
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
-   cb <- jsval <$> (asyncCallback1 $ \e -> do
+   cb <- asyncCallback1 $ \e -> do
        Just v <- jsvalToValue =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> sink (toAction r))
-   setProp "runEvent" cb eventHandlerObject
+         Right r -> sink (toAction r)
+   setProp "runEvent" (jsval cb) eventHandlerObject
+   registerCallback cb
    setProp "options" jsOptions eventHandlerObject
    setProp eventName eo (Object eventObj)
 
@@ -265,8 +266,9 @@ onWithOptions options eventName Decoder{..} toAction =
 onCreated :: action -> Attribute action
 onCreated action =
   Attribute $ \sink n -> do
-    cb <- jsval <$> asyncCallback (sink action)
-    setProp "onCreated" cb n
+    cb <- asyncCallback (sink action)
+    setProp "onCreated" (jsval cb) n
+    registerCallback cb
 
 -- | @onDestroyed action@ is an event that gets called after the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -274,8 +276,9 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   Attribute $ \sink n -> do
-    cb <- jsval <$> asyncCallback (sink action)
-    setProp "onDestroyed" cb n
+    cb <- asyncCallback (sink action)
+    setProp "onDestroyed" (jsval cb) n
+    registerCallback cb
 
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
@@ -292,3 +295,8 @@ style_ m = Attribute . const $ \n -> do
    cssObj <- getProp "css" n
    forM_ (M.toList m) $ \(k,v) ->
      setProp k (jsval v) (Object cssObj)
+
+foreign import javascript unsafe "registerCallback($1);"
+  registerCallback
+    :: Callback a
+    -> IO ()

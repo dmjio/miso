@@ -91,6 +91,7 @@ common App {..} m getView = do
           oldVTree <- readIORef viewRef
           void $ waitForAnimationFrame
           (diff mountPoint) (Just oldVTree) (Just newVTree)
+          clearCallbacks
           atomicWriteIORef viewRef newVTree
         loop newModel
   loop m
@@ -137,3 +138,7 @@ data Acc model = Acc !model !(IO ())
 -- entry point into isomorphic javascript
 foreign import javascript unsafe "copyDOMIntoVTree($1);"
   copyDOMIntoVTree :: JSVal -> IO ()
+
+-- | Clears callbacks registered by the virtual DOM.
+foreign import javascript unsafe "clearCallbacks();"
+  clearCallbacks :: IO ()
