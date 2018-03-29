@@ -1,18 +1,27 @@
-var registeredCallbacks = [];
+var oldCallbacks = [];
+var currentCallbacks = [];
 
 /* Callbacks in ghcjs need to be released. With this function one can register
    callbacks that should be released right before diffing.
 */
 function registerCallback(cb) {
-    registeredCallbacks.push(cb);
+    currentCallbacks.push(cb);
 }
 
-/* This clears the callbacks. */
-function clearCallbacks() {
-    for (var i in registeredCallbacks)
-      h$release(registeredCallbacks[i]);
+/* Swaps out the new calbacks for old callbacks.
+The old callbacks should be cleared once the new callbacks have replaced them.
+*/
+function swapCallbacks() {
+  oldCallbacks = currentCallbacks;
+  currentCallbacks = [];
+}
 
-    registeredCallbacks = [];
+/* This releases the old callbacks. */
+function releaseCallbacks() {
+    for (var i in oldCallbacks)
+      h$release(oldCallbacks[i]);
+
+    oldCallbacks = [];
 }
 
 /* event delegation algorithm */
