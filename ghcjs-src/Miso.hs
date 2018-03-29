@@ -87,11 +87,12 @@ common App {..} m getView = do
                                             (Acc oldModel (pure ())) actions
         effects
         when (oldModel /= newModel) $ do
+          swapCallbacks
           newVTree <- runView (view newModel) writeEvent
           oldVTree <- readIORef viewRef
           void $ waitForAnimationFrame
           (diff mountPoint) (Just oldVTree) (Just newVTree)
-          clearCallbacks
+          releaseCallbacks
           atomicWriteIORef viewRef newVTree
         loop newModel
   loop m
@@ -139,6 +140,10 @@ data Acc model = Acc !model !(IO ())
 foreign import javascript unsafe "copyDOMIntoVTree($1);"
   copyDOMIntoVTree :: JSVal -> IO ()
 
--- | Clears callbacks registered by the virtual DOM.
-foreign import javascript unsafe "clearCallbacks();"
-  clearCallbacks :: IO ()
+-- | Pins down the current callbacks for clearing later
+foreign import javascript unsafe "swapCallbacks();"
+  swapCallbacks :: IO ()
+
+-- | Releases callbacks registered by the virtual DOM.
+foreign import javascript unsafe "releaseCallbacks();"
+  releaseCallbacks :: IO ()
