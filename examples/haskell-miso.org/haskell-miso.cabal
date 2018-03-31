@@ -35,7 +35,9 @@ executable server
       servant,
       servant-lucid,
       servant-server,
+      text,
       wai,
+      wai-app-static,
       wai-extra,
       warp
     default-language:

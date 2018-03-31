@@ -64,10 +64,11 @@ community = template v
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
+         , alt_ "miso logo"
          ] ]
          , h1_ [ class_  "title animated pulse"
-               , style_ $ M.fromList [(pack "font-size", pack "82px")
-                                     ,(pack "font-weight", pack "100")
+               , style_ $ M.fromList [ (pack "font-size", pack "82px")
+                                     , (pack "font-weight", pack "100")
                                      ]
            ] [ text "community" ]
        , h2_ [ class_  "subtitle animated pulse" ] [
@@ -89,6 +90,7 @@ docs = template v
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
+         , alt_ "miso logo"
          ] ]
          , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
@@ -119,6 +121,7 @@ examples = template v
            width_  "100"
          , class_  "animated bounceInDown"
          , src_ misoSrc
+         , alt_ "miso logo"
          ] ]
          , h1_ [ class_  "title animated pulse"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
@@ -145,9 +148,10 @@ home = template v
   where
     v = div_ [ class_  "animated fadeIn" ] [
         a_ [ href_ "https://github.com/dmjio/miso" ] [
-            img_ [ width_  "100"
-                 , class_  "animated bounceInDown"
+            img_ [ width_ "100"
+                 , class_ "animated bounceInDown"
                  , src_ misoSrc
+                 , alt_ "miso logo"
                  ]
             ]
         , h1_ [ class_  "title animated pulse"
@@ -158,6 +162,7 @@ home = template v
         , h2_ [ class_ "subtitle animated pulse" ] [
          text "A tasty "
          , a_ [ href_ "https://www.haskell.org/"
+              , rel_ "noopener"
               , target_ "_blank"][
              strong_ [] [text "Haskell" ]]
          , text  " front-end framework"
@@ -174,13 +179,14 @@ template content Model{..} =
   ]
 
 middle =
-  section_ [class_   "hero" ] [
-    div_ [class_   "hero-body"] [
-      div_ [class_   "container"] [
-        nav_ [class_   "columns"] [
-               a_ [ class_   "column has-text-centered"
-                   , href_  "https://medium.com/@localvoid/how-to-win-in-web-framework-benchmarks-8bc31af76ce7"
-                   , target_  "_blank"
+  section_ [class_ "hero" ] [
+    div_ [class_ "hero-body"] [
+      div_ [class_ "container"] [
+        nav_ [class_ "columns"] [
+               a_ [ class_ "column has-text-centered"
+                   , href_ "https://medium.com/@localvoid/how-to-win-in-web-framework-benchmarks-8bc31af76ce7"
+                   , target_ "_blank"
+                   , rel_ "noopener"
                    ] [
                   span_ [class_   "icon is-large"] [
                       i_ [class_   "fa fa-flash"] [ ]
@@ -208,6 +214,7 @@ middle =
                   a_ [ class_   "column has-text-centered"
                      , target_  "_blank"
                      , href_  "http://chimera.labs.oreilly.com/books/1230000000929/index.html"
+                     , rel_ "noopener"
                      ] [
                     span_ [class_  "icon is-large"] [
                        i_ [class_  "fa fa-gears"] [ ]
@@ -218,8 +225,9 @@ middle =
                         text  "Type-safe and polymorphic, GHC Haskell"
                        ]
                     ],
-                  a_ [class_   "column has-text-centered"
-                     , href_ $  pack "https://github.com/ghcjs/ghcjs/blob/master/doc/foreign-function-interface.md"
+                  a_ [class_ "column has-text-centered"
+                     , href_  "https://github.com/ghcjs/ghcjs/blob/master/doc/foreign-function-interface.md"
+                     , rel_ "noopener"
                      , target_  "_blank"
                      ] [
                     span_ [class_   "icon is-large"] [
@@ -267,6 +275,7 @@ the404 = template v
            width_  "100"
          , class_  "animated bounceOutUp"
          , src_ misoSrc
+         , alt_ "miso logo"
          ]]
          , h1_ [ class_  "title"
                , style_ $ M.fromList [(pack "font-size", pack "82px")
@@ -380,14 +389,20 @@ footer =
          p_ [] [
             strong_ [] [ text "Miso" ]
          ,  text " by "
-         ,  a_ [ href_  "https://github.com/dmjio/miso" ]
+         ,  a_ [ href_  "https://github.com/dmjio/miso"
+               , style_ $ M.singleton "color" "#363636"
+               ]
               [ text "dmjio" ]
          , text ". BSD3"
-         , a_ [ href_  "https://opensource.org/licenses/BSD-3-Clause" ]
+         , a_ [ href_  "https://opensource.org/licenses/BSD-3-Clause"
+              , style_ $ M.singleton "color" "#363636"
+              ]
               [ text " licensed." ]
          ]
          , p_ [] [ text "The source code for this website is located "
-                 , a_ [ href_  "https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org" ] [  text" here."]
+                 , a_ [ href_  "https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org"
+                      , style_ $ M.singleton "color" "#363636"
+                      ] [  text" here."]
                  ]
          , p_ [] [ a_ [href_"https://bulma.io"] [ img_
                                                     [ src_ "https://bulma.io/images/made-with-bulma.png"
@@ -397,14 +412,15 @@ footer =
                                                     ]
                                                 ] ]
          , p_ [] [
-           a_ [ class_  "icon"
-              , href_  "https://github.com/dmjio/miso"
-              , target_ (pack "blank")
-              ] [span_ [class_"icon is-large"]
-                  [i_[class_"fa fa-github"][]]]
-         ]
-         ]
-      ]]
+           a_ [ ] [ span_ [class_"icon is-large"]
+                  [
+                    i_ [ class_"fa fa-github"][ ]
+                  ]
+                  ]
+          ]
+        ]
+      ]
+    ]
 
 newNav navMenuOpen' =
   div_ [ class_ "container" ] [
@@ -415,16 +431,21 @@ newNav navMenuOpen' =
              text "miso",
           a_ [class_ "navbar-item is-hidden-desktop"
              ,href_"https://github.com/dmjio/miso"
-             ,target_"_blank"] [
-             span_ [class_ "icon",
-                    style_ $ M.singleton (pack "color") (pack "#333")
+             ,target_"_blank"
+             ,rel_ "noopener"
+             ,name_ "miso"
+             ] [
+             span_ [ class_ "icon"
+                   , name_ "github"
+                   , style_ $ M.singleton (pack "color") (pack "#333")
                    ] [ i_ [class_ "fa fa-github"] [ ]
               ]
            ]
           , a_ [class_ "navbar-item is-hidden-desktop"
                ,href_"https://twitter.com/dmjio"
+               ,rel_ "noopener"
                ,target_"_blank"] [
-               span_ [ class_ "icon"
+               span_ [ class_ "icon", name_ "twitter"
                      , style_ $ M.singleton (pack "color") (pack "#55acee")
                      ] [
                  i_ [class_ "fa fa-twitter"] [ ]

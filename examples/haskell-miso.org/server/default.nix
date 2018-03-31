@@ -1,6 +1,6 @@
-{ mkDerivation, aeson, base, containers, lucid, miso, mtl
-, network-uri, servant, servant-lucid, servant-server, stdenv, time
-, wai-extra, warp
+{ mkDerivation, aeson, base, containers, http-types, lucid, miso
+, mtl, network-uri, servant, servant-lucid, servant-server, stdenv
+, text, wai, wai-app-static, wai-extra, warp
 }:
 mkDerivation {
   pname = "haskell-miso";
@@ -9,8 +9,8 @@ mkDerivation {
   isLibrary = false;
   isExecutable = true;
   executableHaskellDepends = [
-    aeson base containers lucid miso mtl network-uri servant
-    servant-lucid servant-server time wai-extra warp
+    aeson base containers http-types lucid miso mtl network-uri servant
+    servant-lucid servant-server text wai wai-app-static wai-extra warp
   ];
   homepage = "https://haskell-miso.org";
   description = "https://haskell-miso.org";

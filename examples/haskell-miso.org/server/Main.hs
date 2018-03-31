@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DeriveGeneric             #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE DataKinds                  #-}
@@ -8,15 +9,21 @@
 module Main where
 
 import           Common
+import           Data.Aeson
 import           Data.Proxy
+import           Data.Text                            (Text)
+import qualified Data.Text                            as T
+import           GHC.Generics
 import qualified Lucid                                as L
 import           Lucid.Base
-import           Network.HTTP.Types
+import           Network.HTTP.Types hiding (Header)
 import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Gzip
+import           Network.Wai.Application.Static
 import           Network.Wai.Middleware.RequestLogger
 import           Servant
+import           Servant.Server.Internal
 import qualified System.IO                            as IO
 
 import           Miso
@@ -31,12 +38,12 @@ main = do
 
 app :: Application
 #if MIN_VERSION_servant(0,11,0)
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> Tagged handle404)
+app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
 #else
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> handle404)
+app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> handle404)
 #endif
   where
-    static = serveDirectory "static"
+    static = serveDirectoryWith (defaultWebAppSettings "static")
 
 -- | Wrapper for setting HTML doctype and header
 newtype Wrapper a = Wrapper a
@@ -48,7 +55,30 @@ type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 -- | API type
 type API = ("static" :> Raw)
   :<|> ServerRoutes
+  :<|> ("manifest.json" :> Get '[JSON] Manifest)
   :<|> Raw
+
+data Manifest
+  = Manifest
+  { name :: Text
+  , short_name :: Text
+  , start_url :: Text
+  , display :: Text
+  , theme_color :: Text
+  , description :: Text
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Manifest
+
+misoManifest :: Manifest
+misoManifest =
+  Manifest { name = "Haskell Miso"
+           , short_name = "Miso"
+           , start_url = "."
+           , display = "standalone"
+           , theme_color = "#00d1b2"
+           , description = "A tasty Haskell front-end framework"
+           }
 
 handle404 :: Application
 handle404 _ respond = respond $ responseLBS
@@ -60,9 +90,14 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
   toHtml (Wrapper x) =
     L.doctypehtml_ $ do
+      L.html_ [ L.lang_ "en" ] $ do
         L.head_ $ do
           L.title_ "Miso: A tasty Haskell front-end framework"
-          L.meta_ [L.charset_ "utf-8"]
+          L.link_ [ L.rel_ "manifest"
+                  , L.href_ "/manifest.json"
+                  ]
+          L.meta_ [ L.charset_ "utf-8" ]
+          L.meta_ [ L.name_ "theme-color", L.content_ "#00d1b2" ]
           L.meta_ [ L.httpEquiv_ "X-UA-Compatible"
                   , L.content_ "IE=edge"
                   ]
