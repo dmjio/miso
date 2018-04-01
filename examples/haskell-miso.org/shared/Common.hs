@@ -412,12 +412,12 @@ footer =
                                                     ]
                                                 ] ]
          , p_ [] [
-           a_ [ ] [ span_ [class_"icon is-large"]
+           a_ [ href_ "https://github.com/dmjio/miso" ] [ span_ [ class_"icon is-large"]
                   [
                     i_ [ class_"fa fa-github"][ ]
                   ]
-                  ]
-          ]
+                                                        ]
+           ]
         ]
       ]
     ]
