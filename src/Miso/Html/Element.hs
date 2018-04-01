@@ -476,13 +476,13 @@ em_ = nodeHtml "em"
 i_ :: [Attribute action] -> [View action] -> View action
 i_ = nodeHtml "i"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/b
-b_ :: [Attribute actbon] -> [View actbon] -> View actbon
+b_ :: [Attribute action] -> [View action] -> View action
 b_ = nodeHtml "b"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/u
-u_ :: [Attribute actuon] -> [View actuon] -> View actuon
+u_ :: [Attribute action] -> [View action] -> View action
 u_ = nodeHtml "u"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
-q_ :: [Attribute actqon] -> [View actqon] -> View actqon
+q_ :: [Attribute action] -> [View action] -> View action
 q_ = nodeHtml "q"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
 script_ :: [Attribute action] -> [View action] -> View action
