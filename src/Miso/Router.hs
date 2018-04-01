@@ -191,6 +191,6 @@ routeLoc loc r m = case r of
 -- | Convert a 'URI' to a 'Location'.
 uriToLocation :: URI -> Location
 uriToLocation uri = Location
-  { locPath = decodePathSegments $ BS.pack (uriPath uri)
+  { locPath = decodePathSegments $ BS.pack (uriPath uri ++ uriFragment uri)
   , locQuery = parseQuery $ BS.pack (uriQuery uri)
   }
