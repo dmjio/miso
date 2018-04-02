@@ -4,7 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Miso.TypeLevel ( CanMapLeaves, ToApi, ToHandler, ToServerRoutes, mapLeaves ) where
+module Miso.TypeLevel ( CanMapHandlers, MapApi, MapHandlers, ToServerRoutes, mapHandlers ) where
 
 import Miso.Html
 import Miso.TypeLevel.Internal

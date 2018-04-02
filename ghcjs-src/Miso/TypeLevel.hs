@@ -1,3 +1,3 @@
-module Miso.TypeLevel ( CanMapLeaves, ToApi, ToHandler, mapLeaves ) where
+module Miso.TypeLevel ( CanMapHandlers, MapApi, MapHandlers, mapHandlers ) where
 
 import Miso.TypeLevel.Internal

@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Miso.TypeLevel.Internal (CanMapLeaves, ToApi, ToHandler, mapLeaves) where
+module Miso.TypeLevel.Internal (CanMapHandlers, MapApi, MapHandlers, mapHandlers) where
 
 import Data.Proxy (Proxy(Proxy))
 import GHC.TypeLits (Symbol)
@@ -13,46 +13,43 @@ import Servant.API
 
 import Miso.Html (View)
 
-type family ToApi (a :: *) (layout :: k) :: k where
-    ToApi a (x :<|> y) = ToApi x a :<|> ToApi y a
-    ToApi a (x :> y) = x :> ToApi y a
-    ToApi a (View b) = a
-    ToApi a Raw = a
+type family MapApi (a :: *) (layout :: k) :: k where
+    MapApi a (x :<|> y) = MapApi x a :<|> MapApi y a
+    MapApi a (x :> y) = x :> MapApi y a
+    MapApi a (View b) = a
+    MapApi a Raw = a
 
--- ToHandlers?
-type family ToHandler (a :: *) (layout :: k) :: * where
-    ToHandler a (x :<|> y) = ToHandler a x :<|> ToHandler a y
-    ToHandler a (Capture sym x :> y) = x -> ToHandler a y
-    ToHandler a (QueryParam sym x :> y) = Maybe x -> ToHandler a y
-    ToHandler a (QueryParams sym x :> y) = [x] -> ToHandler a y
-    ToHandler a (QueryFlag sym :> y) = Bool -> ToHandler a y
-    ToHandler a (sym :> y) = ToHandler a y
-    ToHandler a (View b) = a
-    ToHandler a Raw = a
+type family MapHandlers (a :: *) (layout :: k) :: * where
+    MapHandlers a (x :<|> y) = MapHandlers a x :<|> MapHandlers a y
+    MapHandlers a (Capture sym x :> y) = x -> MapHandlers a y
+    MapHandlers a (QueryParam sym x :> y) = Maybe x -> MapHandlers a y
+    MapHandlers a (QueryParams sym x :> y) = [x] -> MapHandlers a y
+    MapHandlers a (QueryFlag sym :> y) = Bool -> MapHandlers a y
+    MapHandlers a (sym :> y) = MapHandlers a y
+    MapHandlers a (View b) = a
+    MapHandlers a Raw = a
 
--- CanMapHandlers?
-class CanMapLeaves (layout :: k) where
-    mapLeaves :: Proxy layout -> (a -> b) -> ToHandler a layout -> ToHandler b layout
-    -- mapHandlers
+class CanMapHandlers (layout :: k) where
+    mapHandlers :: Proxy layout -> (a -> b) -> MapHandlers a layout -> MapHandlers b layout
 
-instance (CanMapLeaves x, CanMapLeaves y) => CanMapLeaves (x :<|> y) where
-    mapLeaves _ f (x :<|> y) = mapLeaves (Proxy :: Proxy x) f x
-                          :<|> mapLeaves (Proxy :: Proxy y) f y
+instance (CanMapHandlers x, CanMapHandlers y) => CanMapHandlers (x :<|> y) where
+    mapHandlers _ f (x :<|> y) = mapHandlers (Proxy :: Proxy x) f x
+                          :<|> mapHandlers (Proxy :: Proxy y) f y
 
-instance CanMapLeaves y => CanMapLeaves (Capture sym (x :: *) :> y) where
-    mapLeaves _ f g = mapLeaves (Proxy :: Proxy y) f . g
+instance CanMapHandlers y => CanMapHandlers (Capture sym (x :: *) :> y) where
+    mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f . g
 
-instance CanMapLeaves y => CanMapLeaves (QueryParam sym (x :: *) :> y) where
-    mapLeaves _ f g = mapLeaves (Proxy :: Proxy y) f . g
+instance CanMapHandlers y => CanMapHandlers (QueryParam sym (x :: *) :> y) where
+    mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f . g
 
-instance CanMapLeaves y => CanMapLeaves (QueryParams sym (x :: *) :> y) where
-    mapLeaves _ f g = mapLeaves (Proxy :: Proxy y) f . g
+instance CanMapHandlers y => CanMapHandlers (QueryParams sym (x :: *) :> y) where
+    mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f . g
 
-instance CanMapLeaves y => CanMapLeaves (QueryFlag sym :> y) where
-    mapLeaves _ f g = mapLeaves (Proxy :: Proxy y) f . g
+instance CanMapHandlers y => CanMapHandlers (QueryFlag sym :> y) where
+    mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f . g
 
-instance CanMapLeaves y => CanMapLeaves ((sym :: Symbol) :> y) where
-    mapLeaves _ f g = mapLeaves (Proxy :: Proxy y) f g
+instance CanMapHandlers y => CanMapHandlers ((sym :: Symbol) :> y) where
+    mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f g
 
-instance CanMapLeaves Raw where
-    mapLeaves _ f g = f g
+instance CanMapHandlers Raw where
+    mapHandlers _ f g = f g
