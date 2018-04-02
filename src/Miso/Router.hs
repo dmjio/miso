@@ -128,9 +128,9 @@ instance HasRouter (View a) where
   type RouteT (View a) x = x
   route _ _ a = RPage a
 
--- | Unit endpoint
-instance HasRouter () where
-  type RouteT () x = x
+-- | Raw
+instance HasRouter Raw where
+  type RouteT Raw x = x
   route _ _ a = RPage a
 
 -- | Use a handler to route a 'Location'.
