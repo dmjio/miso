@@ -56,7 +56,7 @@ viewModel model = view
   where
     view =
       either (const the404) id
-        $ runMisoRoute (Proxy :: Proxy API) handlers uri model
+        $ runRoute (Proxy :: Proxy API) handlers uri model
     handlers = about :<|> home
     home (_ :: Model) = div_ [] [
         div_ [] [ text "home" ]
