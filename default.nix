@@ -4,7 +4,6 @@
     rev = "a0aeb23";
     sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
   }){}
-, tests ? false
 , haddock ? true
 }:
 let
@@ -12,10 +11,9 @@ let
   inherit (pkgs.haskell.packages) ghc802 ghcjs;
   inherit (pkgs.lib) overrideDerivation optionalString;
   inherit (pkgs.stdenv) isDarwin;
-  inherit (pkgs) phantomjs2 closurecompiler;
+  inherit (pkgs) closurecompiler;
   miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
-    doCheck = tests && !isDarwin;
     doHaddock = haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
@@ -27,10 +25,6 @@ let
       ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
       rm $out/bin/todo-mvc.jsexe/all.js
       mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
-    '';
-    checkPhase = optionalString (!isDarwin) ''
-      export PATH=$PATH:${phantomjs2}/bin
-      phantomjs dist/build/tests/tests.jsexe/all.js
     '';
   });
   flatris = ghcjs.callCabal2nix "hs-flatris" (pkgs.fetchFromGitHub {
@@ -66,6 +60,7 @@ let
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/tests.jsexe/ s3://aws-website-tests-xc9ud
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${snake}/bin/app.jsexe/ s3://aws-website-snake-9o0ge/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${the2048}/* s3://aws-website--6uw7z/
     '';

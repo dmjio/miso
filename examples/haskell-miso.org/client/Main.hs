@@ -20,7 +20,7 @@ main = miso $ \currentURI -> App
       events = defaultEvents
       subs = [ uriSub HandleURI ]
       viewModel m =
-        case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
+        case runMisoRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
           Left _ -> the404 m
           Right v -> v
 
