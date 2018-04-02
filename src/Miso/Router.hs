@@ -22,8 +22,8 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Router
-  ( runMisoRoute
-  , runRoute
+  ( runRoute
+  , route
   , RoutingError (..)
   ) where
 
@@ -75,94 +75,94 @@ data Router a where
 -- 'RouteT' is used to build up the handler types.
 -- 'Router' is returned, to be interpretted by 'routeLoc'.
 class HasRouter layout where
-  -- | A route handler.
+  -- | A mkRouter handler.
   type RouteT layout a :: *
-  -- | Transform a route handler into a 'Router'.
-  route :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
+  -- | Transform a mkRouter handler into a 'Router'.
+  mkRouter :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
 
 -- | Alternative
 instance (HasRouter x, HasRouter y) => HasRouter (x :<|> y) where
   type RouteT (x :<|> y) a = RouteT x a :<|> RouteT y a
-  route _ (a :: Proxy a) ((x :: RouteT x a) :<|> (y :: RouteT y a))
-    = RChoice (route (Proxy :: Proxy x) a x) (route (Proxy :: Proxy y) a y)
+  mkRouter _ (a :: Proxy a) ((x :: RouteT x a) :<|> (y :: RouteT y a))
+    = RChoice (mkRouter (Proxy :: Proxy x) a x) (mkRouter (Proxy :: Proxy y) a y)
 
 -- | Capture
 instance (HasRouter sublayout, FromHttpApiData x) =>
   HasRouter (Capture sym x :> sublayout) where
   type RouteT (Capture sym x :> sublayout) a = x -> RouteT sublayout a
-  route _ a f = RCapture (\x -> route (Proxy :: Proxy sublayout) a (f x))
+  mkRouter _ a f = RCapture (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryParam
 instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
          => HasRouter (QueryParam sym x :> sublayout) where
   type RouteT (QueryParam sym x :> sublayout) a = Maybe x -> RouteT sublayout a
-  route _ a f = RQueryParam (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x))
+  mkRouter _ a f = RQueryParam (Proxy :: Proxy sym)
+    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryParams
 instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
          => HasRouter (QueryParams sym x :> sublayout) where
   type RouteT (QueryParams sym x :> sublayout) a = [x] -> RouteT sublayout a
-  route _ a f = RQueryParams
+  mkRouter _ a f = RQueryParams
     (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x))
+    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
 
 -- | QueryFlag
 instance (HasRouter sublayout, KnownSymbol sym)
          => HasRouter (QueryFlag sym :> sublayout) where
   type RouteT (QueryFlag sym :> sublayout) a = Bool -> RouteT sublayout a
-  route _ a f = RQueryFlag
+  mkRouter _ a f = RQueryFlag
     (Proxy :: Proxy sym)
-    (\x -> route (Proxy :: Proxy sublayout) a (f x))
+    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
 
 -- | Path
 instance (HasRouter sublayout, KnownSymbol path)
          => HasRouter (path :> sublayout) where
   type RouteT (path :> sublayout) a = RouteT sublayout a
-  route _ a page = RPath
+  mkRouter _ a page = RPath
     (Proxy :: Proxy path)
-    (route (Proxy :: Proxy sublayout) a page)
+    (mkRouter (Proxy :: Proxy sublayout) a page)
 
 -- | View
 instance HasRouter (View a) where
   type RouteT (View a) x = x
-  route _ _ a = RPage a
+  mkRouter _ _ a = RPage a
 
 -- | Raw
 instance HasRouter Raw where
   type RouteT Raw x = x
-  route _ _ a = RPage a
+  mkRouter _ _ a = RPage a
 
--- | Use a handler to route a 'Location'.
--- Normally 'runRoute' should be used instead, unless you want custom
+-- | Use a handler to mkRouter a 'Location'.
+-- Normally 'route' should be used instead, unless you want custom
 -- handling of string failing to parse as 'URI'.
 runRouteLoc :: forall layout a. HasRouter layout
             => Location -> Proxy layout -> RouteT layout a ->  Either RoutingError a
 runRouteLoc loc layout page =
-  let routing = route layout (Proxy :: Proxy a) page
+  let routing = mkRouter layout (Proxy :: Proxy a) page
   in routeLoc loc routing
 
--- | Use a handler to route a location, represented as a 'String'.
+-- | Use a handler to mkRouter a location, represented as a 'String'.
 -- All handlers must, in the end, return @m a@.
--- 'routeLoc' will choose a route and return its result.
-runRoute
+-- 'routeLoc' will choose a mkRouter and return its result.
+route
   :: HasRouter layout
   => Proxy layout
   -> RouteT layout a
   -> URI
   -> Either RoutingError a
-runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
+route layout handler u = runRouteLoc (uriToLocation u) layout handler
 
-runMisoRoute
+runRoute
   :: HasRouter layout
   => Proxy layout
   -> RouteT layout (m -> a)
   -> (m -> URI)
   -> m
   -> Either RoutingError a
-runMisoRoute layout pages getURI model = ($ model) <$> runRoute layout pages (getURI model)
+runRoute layout pages getURI model = ($ model) <$> route layout pages (getURI model)
 
--- | Use a computed 'Router' to route a 'Location'.
+-- | Use a computed 'Router' to mkRouter a 'Location'.
 routeLoc :: Location -> Router a -> Either RoutingError a
 routeLoc loc r = case r of
   RChoice a b -> do
