@@ -27,6 +27,7 @@ module Miso.FFI
    , clearBody
    , objectToJSON
    , getWindow
+   , set
    ) where
 
 import           Control.Monad
@@ -46,6 +47,10 @@ import           GHCJS.Types
 import           JavaScript.Array.Internal
 import qualified JavaScript.Object.Internal as OI
 import           Unsafe.Coerce
+
+-- | Set property on object
+set :: ToJSVal v => JSString -> v -> OI.Object -> IO ()
+set k v obj = toJSVal v >>= \x -> OI.setProp k x obj
 
 -- | Convert JSVal to Maybe `Value`
 jsvalToValue :: JSVal -> IO (Maybe Value)

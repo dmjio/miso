@@ -1,7 +1,7 @@
 { mkDerivation, aeson, base, bytestring, containers, ghcjs-base
-, network-uri, scientific, stdenv, text, transformers
-, unordered-containers, vector, hspec, hspec-core, servant
-, http-types, http-api-data, QuickCheck, quickcheck-instances
+, http-api-data, http-types, network-uri, QuickCheck
+, quickcheck-instances, scientific, servant, stdenv, text
+, transformers, unordered-containers, vector
 }:
 mkDerivation {
   pname = "miso";
@@ -10,9 +10,14 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base bytestring containers ghcjs-base network-uri scientific
-    text transformers unordered-containers vector hspec hspec-core servant
-    http-types http-api-data QuickCheck quickcheck-instances
+    aeson base bytestring containers ghcjs-base http-api-data
+    http-types network-uri scientific servant text transformers
+    unordered-containers vector
+  ];
+  executableHaskellDepends = [
+    aeson base bytestring containers ghcjs-base http-api-data
+    http-types network-uri QuickCheck quickcheck-instances scientific
+    servant text transformers unordered-containers vector
   ];
   homepage = "http://github.com/dmjio/miso";
   description = "A tasty Haskell front-end framework";

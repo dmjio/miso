@@ -96,9 +96,6 @@ instance HasLink (View a) where
 -- | Convenience class for using View
 class ToView v where toView :: v -> View m
 
-set :: ToJSVal v => JSString -> v -> Object -> IO ()
-set k v obj = toJSVal v >>= \x -> setProp k x obj
-
 -- | `ToJSVal` instance for `Decoder`
 instance ToJSVal DecodeTarget where
   toJSVal (DecodeTarget xs) = toJSVal xs
