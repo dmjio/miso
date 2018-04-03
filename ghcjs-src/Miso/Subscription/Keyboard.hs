@@ -45,7 +45,7 @@ data Arrows = Arrows {
 -- | Helper function to convert keys currently pressed to `Arrow`, given a
 -- mapping for keys representing up, down, left and right respectively.
 toArrows :: ([Int], [Int], [Int], [Int]) -> Set Int -> Arrows
-toArrows (up, down, left, right) set =
+toArrows (up, down, left, right) set' =
   Arrows {
     arrowX =
       case (check left, check right) of
@@ -59,7 +59,7 @@ toArrows (up, down, left, right) set =
         (_,_) -> 0
   }
   where
-    check = any (`S.member` set)
+    check = any (`S.member` set')
 
 -- | Maps `Arrows` onto a Keyboard subscription
 arrowsSub :: (Arrows -> action) -> Sub action
