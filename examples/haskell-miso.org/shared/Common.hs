@@ -184,7 +184,7 @@ middle =
       div_ [class_ "container"] [
         nav_ [class_ "columns"] [
                a_ [ class_ "column has-text-centered"
-                   , href_ "https://medium.com/@localvoid/how-to-win-in-web-framework-benchmarks-8bc31af76ce7"
+                   , href_ "https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html"
                    , target_ "_blank"
                    , rel_ "noopener"
                    ] [
@@ -200,7 +200,9 @@ middle =
                   ]
 
               , a_ [ class_   "column has-text-centered"
-                   , href_  "/uhoh"
+                   , href_  "https://en.wikipedia.org/wiki/Isomorphic_JavaScript"
+                   , target_ "_blank"
+                   , rel_ "noopener"
                    ] [
                   span_ [class_   "icon is-large"] [
                       i_ [class_   "fa fa-refresh"] [ ]
@@ -209,11 +211,11 @@ middle =
                      strong_ [] [ text  "Isomorphic"]
                   ],
                   p_ [class_   "subtitle"]
-                      [ text  "Seamless web experience, try to 404 (click here)" ]
+                      [ text  "Seamless web experience" ]
                   ],
                   a_ [ class_   "column has-text-centered"
                      , target_  "_blank"
-                     , href_  "http://chimera.labs.oreilly.com/books/1230000000929/index.html"
+                     , href_  "http://book.realworldhaskell.org/read/concurrent-and-multicore-programming.html"
                      , rel_ "noopener"
                      ] [
                     span_ [class_  "icon is-large"] [
