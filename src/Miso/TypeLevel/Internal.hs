@@ -14,8 +14,8 @@ import Servant.API
 import Miso.Html (View)
 
 type family MapApi (a :: *) (layout :: k) :: k where
-    MapApi a (x :<|> y) = MapApi x a :<|> MapApi y a
-    MapApi a (x :> y) = x :> MapApi y a
+    MapApi a (x :<|> y) = MapApi a x :<|> MapApi a y
+    MapApi a (x :> y) = x :> MapApi a y
     MapApi a (View b) = a
     MapApi a Raw = a
 
