@@ -93,6 +93,9 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
       L.html_ [ L.lang_ "en" ] $ do
         L.head_ $ do
           L.title_ "Miso: A tasty Haskell front-end framework"
+          L.link_ [ L.rel_ "stylesheet"
+                  , L.href_ "https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.2/gh-fork-ribbon.min.css"
+                  ]
           L.link_ [ L.rel_ "manifest"
                   , L.href_ "/manifest.json"
                   ]
@@ -107,6 +110,7 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
           L.meta_ [ L.name_ "description"
                   , L.content_ "Miso is a small isomorphic Haskell front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHCJS FFI and therefore has minimal dependencies."
                   ]
+          L.style_ ".github-fork-ribbon:before { background-color: \"#e59751\" !important; } "
           cssRef animateRef
           cssRef bulmaRef
           cssRef fontAwesomeRef

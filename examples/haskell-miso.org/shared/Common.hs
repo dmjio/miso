@@ -173,7 +173,14 @@ home = template v
 template :: View Action -> Model -> View Action
 template content Model{..} =
   div_ [ ] [
-   hero content uri navMenuOpen
+    a_ [ class_ "github-fork-ribbon left-top fixed"
+       , href_ "http://github.com/dmjio/miso"
+       , prop "data-ribbon" ("Fork me on GitHub"::MisoString)
+       , target_ "blank"
+       , rel_ "noopener"
+       , title_"Fork me on GitHub"
+       ] [text "Fork me on GitHub"]
+  , hero content uri navMenuOpen
   , middle
   , footer
   ]
