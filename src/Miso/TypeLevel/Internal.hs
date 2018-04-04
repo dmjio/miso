@@ -51,5 +51,8 @@ instance CanMapHandlers y => CanMapHandlers (QueryFlag sym :> y) where
 instance CanMapHandlers y => CanMapHandlers ((sym :: Symbol) :> y) where
     mapHandlers _ f g = mapHandlers (Proxy :: Proxy y) f g
 
+instance CanMapHandlers (View a) where
+    mapHandlers _ f g = f g
+
 instance CanMapHandlers Raw where
     mapHandlers _ f g = f g
