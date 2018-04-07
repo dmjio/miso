@@ -531,7 +531,7 @@ binary-caches = https://hydra.dmj.io/ https://cache.nixos.org/
 
 ## Benchmarks
 
-[According to benchmarks](https://medium.com/@saurabhnanda/benchmarks-fp-languages-libraries-for-front-end-development-a11af0542f7e), `miso` is among the fastest functional programming web frameworks, second only to [Elm](http://elm-lang.org).
+[According to benchmarks](https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html), `miso` is among the fastest functional programming web frameworks, second only to [Elm](http://elm-lang.org).
 
 <img src="https://cdn-images-1.medium.com/max/1600/1*6EjJTf1mhlTxd4QWsygCwA.png" width="500" height="600" />
 
