@@ -52,6 +52,7 @@ data WebSocket action
   | WebSocketClose CloseCode WasClean Reason
   | WebSocketOpen
   | WebSocketError MisoString
+    deriving (Show, Eq)
 
 websocket :: IORef (Maybe Socket)
 {-# NOINLINE websocket #-}
