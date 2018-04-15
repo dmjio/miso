@@ -19,7 +19,7 @@ import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
 import           System.IO.Unsafe
-import           Test.QuickCheck
+import           Test.QuickCheck hiding (total)
 import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
 
