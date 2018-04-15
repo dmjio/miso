@@ -17,6 +17,7 @@ module Miso.Types
   , fromTransition
   , toTransition
   , scheduleIO
+  , scheduleIO_
   , scheduleSub
   ) where
 
@@ -97,6 +98,14 @@ toTransition f = StateT $ \s ->
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 scheduleIO :: IO action -> Transition action model ()
 scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
+
+-- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
+-- the 'update' function.
+--
+-- This is handy for scheduling IO computations where you don't care
+-- about their results or when they complete.
+scheduleIO_ :: IO () -> Transition action model ()
+scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
 
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
 -- computation that has access to a 'Sink' which can be used to
