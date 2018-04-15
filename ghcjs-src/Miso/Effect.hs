@@ -12,6 +12,7 @@ module Miso.Effect (
 , module Miso.Effect.XHR
 , module Miso.Effect.DOM
 , Effect (..), Sub, Sink
+, mapSub
 , noEff
 , (<#)
 , (#>)
@@ -39,6 +40,12 @@ type Sub action = Sink action -> IO ()
 
 -- | Function to asynchronously dispatch actions to the 'update' function.
 type Sink action = action -> IO ()
+
+-- | Turn a subscription that consumes actions of type @a@ into a subscription
+-- that consumes actions of type @b@ using the supplied function of type @a -> b@.
+mapSub :: (actionA -> actionB) -> Sub actionA -> Sub actionB
+mapSub f sub = \sinkB -> let sinkA = sinkB . f
+                         in sub sinkA
 
 instance Functor (Effect action) where
   fmap f (Effect m acts) = Effect (f m) acts
