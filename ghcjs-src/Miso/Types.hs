@@ -14,6 +14,7 @@ module Miso.Types
 
     -- * The Transition Monad
   , Transition
+  , mapAction
   , fromTransition
   , toTransition
   , scheduleIO
@@ -21,9 +22,10 @@ module Miso.Types
   ) where
 
 import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
-import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell)
+import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
+import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell, mapWriter)
 import qualified Data.Map           as M
+import           Data.Bifunctor (second)
 import           Miso.Effect
 import           Miso.Html.Internal
 import           Miso.String
@@ -76,6 +78,13 @@ data App model action = App
 --   }
 -- @
 type Transition action model = StateT model (Writer [Sub action])
+
+-- | Turn a transition that schedules subscriptions that consume
+-- actions of type @a@ into a transition that schedules subscriptions
+-- that consume actions of type @b@ using the supplied function of
+-- type @a -> b@.
+mapAction :: (actionA -> actionB) -> Transition actionA model r -> Transition actionB model r
+mapAction = mapStateT . mapWriter . second . fmap . mapSub
 
 -- | Convert a @Transition@ computation to a function that can be given to 'update'.
 fromTransition
