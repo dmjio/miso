@@ -22,11 +22,12 @@ module Miso.Types
   , scheduleSub
   ) where
 
-import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
+import           Control.Monad.Trans.Class         (lift)
+import           Control.Monad.Trans.State.Strict  (StateT(StateT), execStateT, mapStateT)
 import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell, mapWriter)
-import qualified Data.Map           as M
-import           Data.Bifunctor (second)
+import           Data.Bifunctor                    (second)
+import           Data.Foldable                     (Foldable, for_)
+import qualified Data.Map                          as M
 import           Miso.Effect
 import           Miso.Html.Internal
 import           Miso.String
@@ -115,6 +116,12 @@ scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
 -- about their results or when they complete.
 scheduleIO_ :: IO () -> Transition action model ()
 scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
+
+-- | Like `scheduleIO_` but generalized to any instance of `Foldable`
+--
+-- This is handy for scheduling IO computations that return a `Maybe` value
+scheduleIOFor_ :: Foldable f => IO (f action) -> Transition action model ()
+scheduleIOFor_ io = scheduleSub $ \sink -> io >>= \m -> for_ m sink
 
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
 -- computation that has access to a 'Sink' which can be used to
