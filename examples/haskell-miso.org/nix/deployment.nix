@@ -1,0 +1,3 @@
+{
+  webserver = import ./module.nix;
+}
