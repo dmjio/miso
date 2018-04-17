@@ -16,6 +16,7 @@ module Miso.Effect (
 , noEff
 , (<#)
 , (#>)
+, batchEff
 , effectSub
 ) where
 
@@ -74,6 +75,10 @@ noEff m = Effect m []
 -- | `Effect` smart constructor, flipped
 (#>) :: IO action -> model -> Effect action model
 (#>) = flip (<#)
+
+-- | `Smart constructor for an 'Effect' with multiple actions.
+batchEff :: model -> [IO action] -> Effect action model
+batchEff model actions = Effect model $ (>>=) <$> actions
 
 -- | Like '<#' but schedules a subscription which is an IO computation which has
 -- access to a 'Sink' which can be used to asynchronously dispatch actions to
