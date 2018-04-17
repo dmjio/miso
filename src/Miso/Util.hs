@@ -10,9 +10,11 @@
 module Miso.Util
   ( withFoldable
   , conditionalViews
+  , (=:)
   ) where
 
 import Data.Foldable
+import qualified Data.Map as M
 import Miso.Html (View)
 
 -- | Generic @map@ function, useful for creating @View@s from the elements of
@@ -35,3 +37,12 @@ conditionalViews condition views =
     if condition
     then views
     else []
+
+-- | Smart constructor for Attributes. This function is helpful when constructing numerous Attributes
+-- Example shown below.
+-- 
+-- @ 
+-- div_ [ style_  $ ("background" =: "red" <> "width" =: "250px" <> "height" =: "250px") ] []
+-- @
+(=:) :: k -> a -> M.Map k a 
+a =: b = M.singleton a b
