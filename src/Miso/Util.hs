@@ -10,6 +10,7 @@
 module Miso.Util
   ( withFoldable
   , conditionalViews
+  , (=:)
   ) where
 
 import Data.Foldable
