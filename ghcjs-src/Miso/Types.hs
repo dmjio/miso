@@ -19,6 +19,7 @@ module Miso.Types
   , toTransition
   , scheduleIO
   , scheduleIO_
+  , scheduleIOFor_
   , scheduleSub
   ) where
 
