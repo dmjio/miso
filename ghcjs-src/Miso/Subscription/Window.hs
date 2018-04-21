@@ -24,9 +24,6 @@ import Miso.FFI
 import Miso.Html.Internal         ( Sub )
 import Miso.String
 
-import Miso.String
-import Miso.Event
-
 import Data.Aeson.Types (parseEither)
 
 -- | Captures window coordinates changes as they occur and writes them to
