@@ -27,6 +27,12 @@ flag examples
   description:
     Builds Miso's examples
 
+flag tests
+  default:
+    False
+  description:
+    Builds Miso's tests
+
 executable todo-mvc
   main-is:
     Main.hs
@@ -209,7 +215,7 @@ executable simple
 executable tests
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) || !flag(tests)
     buildable: False
   else
     hs-source-dirs:
