@@ -33,7 +33,6 @@ data Model = Model
 data Action
   = Alert
   | ChangeURI URI
-  | HandleURI URI
   | ToggleNavMenu
   | NoOp
   deriving (Show, Eq)

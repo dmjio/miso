@@ -27,7 +27,7 @@ main = startApp App { initialAction = Id, ..}
     events = defaultEvents
     subs = [ websocketSub uri protocols HandleWebSocket ]
     update = updateModel
-    view = appView
+    view = LocatedView Nothing . appView
     uri = URL "wss://echo.websocket.org"
     protocols = Protocols [ ]
     mountPoint = Nothing

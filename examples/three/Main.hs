@@ -63,7 +63,7 @@ main = do
                }
     where
       events = defaultEvents
-      view   = viewModel
+      view   = LocatedView Nothing . viewModel
       subs   = []
 
 viewModel :: Double -> View action

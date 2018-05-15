@@ -24,8 +24,7 @@ data Model
 
 -- | Action
 data Action
-  = HandleURI URI
-  | ChangeURI URI
+  = ChangeURI URI
   | NoOp
   deriving (Show, Eq)
 
@@ -37,17 +36,13 @@ main = do
   where
     update = updateModel
     events = defaultEvents
-    subs   = [ uriSub HandleURI ]
-    view   = viewModel
+    subs   = [ uriSub ChangeURI ]
+    view m = LocatedView (Just (uri m)) $ viewModel m
     mountPoint = Nothing
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m = m { uri = u } <# do
-  pure NoOp
-updateModel (ChangeURI u) m = m <# do
-  pushURI u
-  pure NoOp
+updateModel (ChangeURI u) m = m { uri = u } <# pure NoOp
 updateModel _ m = noEff m
 
 -- | View function, with routing
@@ -88,4 +83,3 @@ goAbout, goHome :: Action
     home  = Proxy :: Proxy Home
     about = Proxy :: Proxy About
     api   = Proxy :: Proxy API
-

@@ -12,7 +12,7 @@ main = startApp App { initialAction = SayHelloWorld, ..}
   where
     model  = 0
     update = updateModel
-    view   = viewModel
+    view   = LocatedView Nothing . viewModel
     events = defaultEvents
     mountPoint = Nothing
     subs   = []
@@ -37,4 +37,3 @@ viewModel x = div_ [] [
  , text $ ms (show x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
-

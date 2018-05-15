@@ -27,7 +27,8 @@ main = do
                , ..
                }
   where
-    view _ = canvas_ [ id_ "canvas"
+    view _ = LocatedView Nothing $
+             canvas_ [ id_ "canvas"
                      , width_ "300"
                      , height_ "300"
                      ] []
@@ -92,4 +93,3 @@ foreign import javascript unsafe "$r = $1.getSeconds();"
 
 foreign import javascript unsafe "$r = $1.getMilliseconds();"
   getMillis :: JSVal -> IO Double
-
