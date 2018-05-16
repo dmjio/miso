@@ -18,7 +18,6 @@ data Action
   = ServerMsg String
   | NoOp
   | ChangeURI URI
-  | HandleURI URI
   deriving (Show, Eq)
 
 home :: Model -> View Action

@@ -31,7 +31,7 @@ main = do
                  }
   where
     update = updateMario
-    view   = display
+    view   = LocatedView Nothing . display
     events = defaultEvents
     subs   = [ arrowsSub GetArrows
              , windowCoordsSub WindowCoords

@@ -53,7 +53,7 @@ common
   :: Eq model
   => App model action
   -> model
-  -> (Sink action -> IO (IORef VTree))
+  -> (Sink action -> IO (URI, IORef VTree))
   -> IO b
 common App {..} m getView = do
   -- init Notifier
@@ -71,7 +71,7 @@ common App {..} m getView = do
   -- and `notify` is no longer in scope
   void . forkIO . forever $ threadDelay (1000000 * 86400) >> notify
   -- Retrieves reference view
-  viewRef <- getView writeEvent
+  (uri, viewRef) <- getView writeEvent
   -- know thy mountElement
   mountEl <- mountElement mountPoint
   -- Begin listening for events in the virtual dom
@@ -79,46 +79,63 @@ common App {..} m getView = do
   -- Process initial action of application
   writeEvent initialAction
   -- Program loop, blocking on SkipChan
-
-  let loop !oldModel = wait >> do
+  let loop !oldModel oldUri = wait >> do
         -- Apply actions to model
         actions <- atomicModifyIORef' actionsRef $ \actions -> (S.empty, actions)
         let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
                                             (Acc oldModel (pure ())) actions
         effects
-        when (oldModel /= newModel) $ do
+        if oldModel /= newModel
+        then do
+          let LocatedView mbNewUri newView = view newModel
+          newUri <- handleUri oldUri mbNewUri
           swapCallbacks
-          newVTree <- runView (view newModel) writeEvent
+          newVTree <- runView newView writeEvent
           oldVTree <- readIORef viewRef
           void $ waitForAnimationFrame
           (diff mountPoint) (Just oldVTree) (Just newVTree)
           releaseCallbacks
           atomicWriteIORef viewRef newVTree
-        loop newModel
-  loop m
+          loop newModel newUri
+        else
+          loop newModel oldUri
+  loop m uri
+
+-- | Push a new URI on the history when it's different than the old URI.
+handleUri :: URI -> Maybe URI -> IO URI
+handleUri oldUri Nothing = pure oldUri
+handleUri oldUri (Just newUri) = do
+  when (oldUri /= newUri) $ pushURI newUri
+  pure newUri
 
 -- | Runs an isomorphic miso application
 -- Assumes the pre-rendered DOM is already present
 miso :: Eq model => (URI -> App model action) -> IO ()
 miso f = do
-  app@App {..} <- f <$> getCurrentURI
+  uri <- getCurrentURI
+  let app@App {..} = f uri
   common app model $ \writeEvent -> do
-    let initialView = view model
+    let LocatedView mbInitialUri initialView = view model
+    newUri <- handleUri uri mbInitialUri
     VTree (OI.Object iv) <- flip runView writeEvent initialView
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree iv
     let initialVTree = VTree (OI.Object iv)
     -- Create virtual dom, perform initial diff
-    newIORef initialVTree
+    viewRef <- newIORef initialVTree
+    pure (newUri, viewRef)
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> IO ()
-startApp app@App {..} =
+startApp app@App {..} = do
+  uri <- getCurrentURI
   common app model $ \writeEvent -> do
-    let initialView = view model
+    let LocatedView mbInitialUri initialView = view model
+    newUri <- handleUri uri mbInitialUri
     initialVTree <- flip runView writeEvent initialView
     (diff mountPoint) Nothing (Just initialVTree)
-    newIORef initialVTree
+    viewRef <- newIORef initialVTree
+    pure (newUri, viewRef)
 
 -- | Helper
 foldEffects

@@ -41,7 +41,7 @@ main = do
       update = updateModel
       events = defaultEvents
       subs   = []
-      view   = viewModel
+      view   = LocatedView Nothing . viewModel
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
@@ -142,4 +142,3 @@ getGitHubAPIInfo = do
                   , reqWithCredentials = False
                   , reqData = NoData
                   }
-

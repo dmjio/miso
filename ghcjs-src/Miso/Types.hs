@@ -11,6 +11,7 @@ module Miso.Types
   ( App (..)
   , Effect
   , Sub
+  , LocatedView(..)
 
     -- * The Transition Monad
   , Transition
@@ -32,6 +33,7 @@ import qualified Data.Map                          as M
 import           Miso.Effect
 import           Miso.Html.Internal
 import           Miso.String
+import           Network.URI                       (URI)
 
 -- | Application entry point
 data App model action = App
@@ -40,8 +42,8 @@ data App model action = App
   , update :: action -> model -> Effect action model
   -- ^ Function to update model, optionally provide effects.
   --   See the 'Transition' monad for succinctly expressing model transitions.
-  , view :: model -> View action
-  -- ^ Function to draw `View`
+  , view :: model -> LocatedView action
+  -- ^ Function to draw `View` and to get the 'URI' to be displayed.
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
   , events :: M.Map MisoString Bool
@@ -50,6 +52,17 @@ data App model action = App
   -- ^ Initial action that is run after the application has loaded
   , mountPoint :: Maybe MisoString
   -- ^ root element for DOM diff
+  }
+
+-- | A 'View' paired with the 'URI' that should be displayed in the address bar.
+--
+-- If the new URI is different than the current URI the new URI will
+-- be pushed on the
+-- <https://developer.mozilla.org/en-US/docs/Web/API/History_API window.history>
+-- using 'pushURI'.
+data LocatedView action = LocatedView
+  { lvLocation :: Maybe URI
+  , lvView :: View action
   }
 
 -- | A monad for succinctly expressing model transitions in the 'update' function.

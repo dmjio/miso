@@ -82,7 +82,7 @@ main = startApp App { initialAction = NoOp, ..}
   where
     model      = emptyModel
     update     = updateModel
-    view       = viewModel
+    view       = LocatedView Nothing . viewModel
     events     = defaultEvents
     mountPoint = Nothing
     subs       = []

@@ -18,17 +18,14 @@ main = miso $ \currentURI -> App
       mountPoint = Nothing
       update = updateModel
       events = defaultEvents
-      subs = [ uriSub HandleURI ]
-      viewModel m =
+      subs = [ uriSub ChangeURI ]
+      viewModel m = LocatedView (Just (uri m)) $
         case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
           Left _ -> the404 m
           Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m = m { uri = u } <# do
-  pure NoOp
-updateModel (ChangeURI u) m = m { navMenuOpen = False } <# do
-  pushURI u
+updateModel (ChangeURI u) m = m { uri = u, navMenuOpen = False } <# do
   pure NoOp
 updateModel Alert m@Model{..} = m <# do
   alert $ pack (show uri)

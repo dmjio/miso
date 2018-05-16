@@ -20,7 +20,7 @@ main = startApp App {..}
     initialAction = Id
     model         = emptyModel
     update        = updateModel
-    view          = viewModel
+    view          = LocatedView Nothing . viewModel
     events        = M.insert (pack "mousemove") False $
                     M.insert (pack "touchstart") False $
                     M.insert (pack "touchmove") False defaultEvents
