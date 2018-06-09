@@ -280,6 +280,8 @@ in pkgs.haskell.packages.ghcjs.callPackage ./app.nix {
 }
 ```
 
+Add the source from [Sample Application](#sample-application) to `app/Main.hs`
+
 Build the project
 ```
 nix-build
