@@ -7,6 +7,7 @@ author:              David M. Johnson <djohnson.m@gmail.com>
 maintainer:          David M. Johnson <djohnson.m@gmail.com>
 homepage:            http://github.com/dmjio/miso
 copyright:           Copyright (c) 2017-2018 David M. Johnson
+bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.22
