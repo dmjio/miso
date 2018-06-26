@@ -420,13 +420,13 @@ data Action
 main :: IO ()
 main = startApp App {..}
   where
-	initialAction = SayHelloWorld -- initial action to be executed on application load
-	model         = 0             -- initial model
-	update        = updateModel   -- update function
-	view          = viewModel     -- view function
-	events        = defaultEvents -- default delegated events
-	subs          = []            -- empty subscription list
-	mountPoint    = Nothing       -- mount point for application (Nothing defaults to 'body')
+    initialAction = SayHelloWorld -- initial action to be executed on application load
+    model  = 0                    -- initial model
+    update = updateModel          -- update function
+    view   = viewModel            -- view function
+    events = defaultEvents        -- default delegated events
+    subs   = []                   -- empty subscription list
+    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
