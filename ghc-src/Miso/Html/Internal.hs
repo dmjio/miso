@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE DataKinds            #-}
@@ -123,8 +124,14 @@ newtype View action = View { runView :: VTree action }
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
+#if MIN_VERSION_servant(0,14,0)
+  type MkLink (View a) b = MkLink (Get '[] ()) b
+  toLink Proxy toA = toLink toA (Proxy :: Proxy (Get '[] ()))
+#else
   type MkLink (View a) = MkLink (Get '[] ())
-  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
+  toLink Proxy = toLink (Proxy :: Proxy (Get '[] ()))
+#endif
+
 
 -- | Convenience class for using View
 class ToView v where toView :: v -> View action
