@@ -88,8 +88,8 @@ handle404 _ respond = respond $ responseLBS
 
 instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
-  toHtml (Wrapper x) =
-    L.doctypehtml_ $ do
+  toHtml (Wrapper x) = do
+      L.doctype_
       L.html_ [ L.lang_ "en" ] $ do
         L.head_ $ do
           L.title_ "Miso: A tasty Haskell front-end framework"
