@@ -1,10 +1,13 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
-module Miso.TypeLevel ( ToServerRoutes ) where
+
+module Miso.TypeLevel ( CanMapHandlers, MapApi, MapHandlers, ToServerRoutes, mapHandlers ) where
 
 import Miso.Html
+import Miso.TypeLevel.Internal
 import Servant.API
 import Servant.HTML.Lucid
 

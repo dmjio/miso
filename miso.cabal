@@ -263,9 +263,11 @@ library
     Miso.Svg.Element
     Miso.Svg.Event
     Miso.String
+    Miso.TypeLevel
   other-modules:
     Miso.Concurrent
     Miso.Html.Internal
+    Miso.TypeLevel.Internal
   ghc-options:
     -Wall
   hs-source-dirs:
@@ -315,8 +317,6 @@ library
       Miso.FFI
       Miso.Delegate
   else
-    exposed-modules:
-      Miso.TypeLevel
     build-depends:
       lucid,
       servant-lucid,
