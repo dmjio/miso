@@ -263,6 +263,7 @@ library
     Miso.Svg.Element
     Miso.Svg.Event
     Miso.String
+    Miso.WebSocket
   other-modules:
     Miso.Concurrent
     Miso.Html.Internal

@@ -18,6 +18,7 @@ module Miso
   , module Miso.Router
   , module Miso.TypeLevel
   , module Miso.Util
+  , module Miso.WebSocket
   ) where
 
 import           Miso.Event
@@ -25,3 +26,4 @@ import           Miso.Html
 import           Miso.Router
 import           Miso.TypeLevel
 import           Miso.Util
+import           Miso.WebSocket
