@@ -197,6 +197,20 @@ executable compose-update
     default-language:
       Haskell2010
 
+executable mathml
+  main-is:
+    Main.hs
+  if !impl(ghcjs) || !flag(examples)
+    buildable: False
+  else
+    hs-source-dirs:
+      examples/mathml
+    build-depends:
+      base < 5,
+      miso
+    default-language:
+      Haskell2010
+
 executable simple
   main-is:
     Main.hs
@@ -262,6 +276,8 @@ library
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
+    Miso.Mathml
+    Miso.Mathml.Element
     Miso.String
     Miso.WebSocket
   other-modules:

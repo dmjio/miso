@@ -153,9 +153,13 @@ function diffChildren(cs, ns, parent, doc) {
 }
 
 function createElement(obj, doc) {
-    obj.domRef = obj.ns === "svg" ?
-	doc.createElementNS("http://www.w3.org/2000/svg", obj.tag) :
-	doc.createElement(obj.tag);
+	if (obj.ns === "svg") {
+		obj.domRef = doc.createElementNS("http://www.w3.org/2000/svg", obj.tag);
+	} else if (obj.ns === "mathml") {
+		obj.domRef = doc.createElementNS("http://www.w3.org/1998/Math/MathML", obj.tag);
+	} else {
+		obj.domRef = doc.createElement(obj.tag);
+	}
     populate(null, obj, doc);
 }
 

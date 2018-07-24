@@ -149,6 +149,7 @@ instance L.ToHtml (View action) where
 data NS
   = HTML -- ^ HTML Namespace
   | SVG  -- ^ SVG Namespace
+  | MATHML  -- ^ MATHML Namespace
   deriving (Show, Eq)
 
 -- | `VNode` creation
