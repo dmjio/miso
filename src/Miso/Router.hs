@@ -130,6 +130,11 @@ instance HasRouter (View a) where
   type RouteT (View a) x = x
   mkRouter _ _ a = RPage a
 
+-- | Verb
+instance HasRouter (Verb m s c a) where
+  type RouteT (Verb m s c a) x = x
+  mkRouter _ _ a = RPage a
+
 -- | Raw
 instance HasRouter Raw where
   type RouteT Raw x = x
