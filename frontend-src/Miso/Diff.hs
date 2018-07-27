@@ -13,12 +13,12 @@ module Miso.Diff ( diff
 
 import GHCJS.Foreign.Internal     hiding (Object)
 import GHCJS.Types
-import JavaScript.Object
 import JavaScript.Object.Internal
 import Miso.Html.Internal
+import Miso.FFI
 
 -- | Entry point for diffing / patching algorithm
-diff :: Maybe JSString -> Maybe VTree -> Maybe VTree -> IO ()
+diff :: Maybe JSString -> Maybe VTree -> Maybe VTree -> JSM ()
 diff mayElem current new =
   case mayElem of
     Nothing -> do
@@ -29,7 +29,7 @@ diff mayElem current new =
       diffElement e current new
 
 -- | diffing / patching a given element
-diffElement :: JSVal -> Maybe VTree -> Maybe VTree -> IO ()
+diffElement :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
 diffElement mountEl current new = do
   doc <- getDoc
   case (current, new) of
@@ -42,25 +42,8 @@ diffElement mountEl current new = do
       diff' current' (Object jsNull) mountEl doc
 
 -- | return the configured mountPoint element or the body
-mountElement :: Maybe JSString -> IO JSVal
+mountElement :: Maybe JSString -> JSM JSVal
 mountElement mayMp =
   case mayMp of
     Nothing -> getBody
     Just eid -> getElementById eid
-
-foreign import javascript unsafe "$r = document.body;"
-  getBody :: IO JSVal
-
-foreign import javascript unsafe "$r = document;"
-  getDoc :: IO JSVal
-
-foreign import javascript unsafe "$r = document.getElementById($1);"
-  getElementById :: JSString -> IO JSVal
-
-foreign import javascript unsafe "diff($1, $2, $3, $4);"
-  diff'
-    :: Object -- ^ current object
-    -> Object -- ^ new object
-    -> JSVal  -- ^ parent node
-    -> JSVal  -- ^ document
-    -> IO ()

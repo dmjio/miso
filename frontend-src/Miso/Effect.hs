@@ -21,6 +21,9 @@ module Miso.Effect (
 
 import Data.Bifunctor
 
+import Control.Monad.IO.Class
+import Miso.FFI (JSM)
+
 import Miso.Effect.Storage
 import Miso.Effect.DOM
 
@@ -35,7 +38,7 @@ data Effect action model = Effect model [Sub action]
 --
 -- The 'Sink' callback is used to dispatch actions which are then fed
 -- back to the 'update' function.
-type Sub action = Sink action -> IO ()
+type Sub action = Sink action -> JSM ()
 
 -- | Function to asynchronously dispatch actions to the 'update' function.
 type Sink action = action -> IO ()
@@ -67,16 +70,17 @@ noEff :: model -> Effect action model
 noEff m = Effect m []
 
 -- | Smart constructor for an 'Effect' with exactly one action.
-(<#) :: model -> IO action -> Effect action model
-(<#) m a = effectSub m $ \sink -> a >>= sink
+(<#) :: model -> JSM action -> Effect action model
+(<#) m a = effectSub m $ \sink -> a >>= liftIO . sink
 
 -- | `Effect` smart constructor, flipped
-(#>) :: IO action -> model -> Effect action model
+(#>) :: JSM action -> model -> Effect action model
 (#>) = flip (<#)
 
 -- | `Smart constructor for an 'Effect' with multiple actions.
-batchEff :: model -> [IO action] -> Effect action model
-batchEff model actions = Effect model $ (>>=) <$> actions
+batchEff :: model -> [JSM action] -> Effect action model
+batchEff model actions = Effect model $
+  map (\a sink -> liftIO . sink =<< a) actions
 
 -- | Like '<#' but schedules a subscription which is an IO computation which has
 -- access to a 'Sink' which can be used to asynchronously dispatch actions to

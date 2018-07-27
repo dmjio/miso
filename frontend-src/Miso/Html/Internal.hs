@@ -56,19 +56,18 @@ module Miso.Html.Internal (
   ) where
 
 import           Control.Monad
-import           Data.Aeson.Types           (parseEither)
+import           Control.Monad.IO.Class
+import           Data.Aeson.Types (parseEither)
 import           Data.JSString
-import qualified Data.Map                   as M
-import           Data.Monoid
+import qualified Data.Map as M
 import           Data.Proxy
-import           Data.String                (IsString(..))
-import qualified Data.Text                  as T
-import           GHCJS.Foreign.Callback
+import           Data.String (IsString(..))
+import qualified Data.Text as T
 import           GHCJS.Marshal
 import           GHCJS.Types
+import qualified JavaScript.Array as JSArray
 import           JavaScript.Object
 import           JavaScript.Object.Internal (Object (Object))
-import qualified JavaScript.Array as JSArray
 import           Servant.API
 
 import           Miso.Effect (Sub)
@@ -85,7 +84,7 @@ newtype VTree = VTree { getTree :: Object }
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 newtype View action = View {
-  runView :: Sink action -> IO VTree
+  runView :: Sink action -> JSM VTree
 } deriving Functor
 
 -- | For constructing type-safe links
@@ -119,9 +118,9 @@ node :: NS
      -> View m
 node ns tag key attrs kids = View $ \sink -> do
   vnode <- create
-  cssObj <- jsval <$> create
-  propsObj <- jsval <$> create
-  eventObj <- jsval <$> create
+  cssObj <- objectToJSVal =<< create
+  propsObj <- objectToJSVal =<< create
+  eventObj <- objectToJSVal =<< create
   set "css" cssObj vnode
   set "props" propsObj vnode
   set "events" eventObj vnode
@@ -130,17 +129,15 @@ node ns tag key attrs kids = View $ \sink -> do
   set "tag" tag vnode
   set "key" key vnode
   setAttrs vnode sink
-  flip (set "children") vnode =<< setKids sink
+  flip (set "children") vnode =<< ghcjsPure . jsval =<< setKids sink
   pure $ VTree vnode
     where
       setAttrs vnode sink =
         forM_ attrs $ \(Attribute attr) ->
           attr sink vnode
-
-      setKids sink =
-        jsval . JSArray.fromList <$>
-          fmap (jsval . getTree) <$>
-            traverse (flip runView sink) kids
+      setKids sink = do
+        kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
+        ghcjsPure (JSArray.fromList kidsViews)
 
 instance ToJSVal Options
 instance ToJSVal Key where toJSVal (Key x) = toJSVal x
@@ -206,7 +203,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- the @update@ function. This is especially useful for event handlers
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
-newtype Attribute action = Attribute (Sink action -> Object -> IO ())
+newtype Attribute action = Attribute (Sink action -> Object -> JSM ())
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
@@ -249,23 +246,23 @@ onWithOptions options eventName Decoder{..} toAction =
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
-   cb <- asyncCallback1 $ \e -> do
-       Just v <- jsvalToValue =<< objectToJSON decodeAtVal e
+   cb <- callbackToJSVal <=< asyncCallback1 $ \e -> do
+       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> sink (toAction r)
-   setProp "runEvent" (jsval cb) eventHandlerObject
+         Right r -> liftIO (sink (toAction r))
+   set "runEvent" cb eventHandlerObject
    registerCallback cb
-   setProp "options" jsOptions eventHandlerObject
-   setProp eventName eo (Object eventObj)
+   set "options" jsOptions eventHandlerObject
+   set eventName eo (Object eventObj)
 
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
 onCreated :: action -> Attribute action
 onCreated action =
   Attribute $ \sink n -> do
-    cb <- asyncCallback (sink action)
-    setProp "onCreated" (jsval cb) n
+    cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
+    set "onCreated" cb n
     registerCallback cb
 
 -- | @onDestroyed action@ is an event that gets called after the DOM element
@@ -274,8 +271,8 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   Attribute $ \sink n -> do
-    cb <- asyncCallback (sink action)
-    setProp "onDestroyed" (jsval cb) n
+    cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
+    set "onDestroyed" cb n
     registerCallback cb
 
 -- | @style_ attrs@ is an attribute that will set the @style@
@@ -292,9 +289,4 @@ style_ :: M.Map MisoString MisoString -> Attribute action
 style_ m = Attribute . const $ \n -> do
    cssObj <- getProp "css" n
    forM_ (M.toList m) $ \(k,v) ->
-     setProp k (jsval v) (Object cssObj)
-
-foreign import javascript unsafe "registerCallback($1);"
-  registerCallback
-    :: Callback a
-    -> IO ()
+     set k v (Object cssObj)

@@ -23,13 +23,15 @@ module Miso.Types
   , scheduleSub
   ) where
 
-import           Control.Monad.Trans.Class         (lift)
-import           Control.Monad.Trans.State.Strict  (StateT(StateT), execStateT, mapStateT)
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
 import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell, mapWriter)
-import           Data.Bifunctor                    (second)
-import           Data.Foldable                     (Foldable, for_)
-import qualified Data.Map                          as M
+import           Data.Bifunctor (second)
+import           Data.Foldable (Foldable, for_)
+import qualified Data.Map as M
 import           Miso.Effect
+import           Miso.FFI (JSM)
 import           Miso.Html.Internal
 import           Miso.String
 
@@ -107,22 +109,22 @@ toTransition f = StateT $ \s ->
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: IO action -> Transition action model ()
-scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
+scheduleIO :: JSM action -> Transition action model ()
+scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= liftIO . sink
 
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
 -- the 'update' function.
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: IO () -> Transition action model ()
+scheduleIO_ :: JSM () -> Transition action model ()
 scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
 
 -- | Like `scheduleIO_` but generalized to any instance of `Foldable`
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => IO (f action) -> Transition action model ()
-scheduleIOFor_ io = scheduleSub $ \sink -> io >>= \m -> for_ m sink
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
+scheduleIOFor_ io = scheduleSub $ \sink -> io >>= \m -> liftIO (for_ m sink)
 
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
 -- computation that has access to a 'Sink' which can be used to

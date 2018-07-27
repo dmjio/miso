@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -21,24 +22,25 @@ module Miso.String (
   , ms
   ) where
 
+#ifndef JSADDLE
 import           Data.Aeson
-import qualified Data.ByteString         as B
-import qualified Data.ByteString.Lazy    as BL
+#endif
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import           Data.JSString
-import           Data.JSString.Int
-import           Data.JSString.RealFloat
 import           Data.JSString.Text
 import           Data.Monoid
-import qualified Data.Text               as T
-import qualified Data.Text.Encoding      as T
-import qualified Data.Text.Lazy          as LT
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import           GHCJS.Marshal.Pure
-import           GHCJS.Types
+
+import           Miso.FFI
 
 -- | String type swappable based on compiler
 type MisoString = JSString
 
+#ifndef JSADDLE
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
@@ -48,6 +50,7 @@ instance FromJSON MisoString where
   parseJSON =
     withText "Not a valid string" $ \x ->
       pure (toMisoString x)
+#endif
 
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
@@ -77,17 +80,14 @@ instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
   fromMisoString = LT.encodeUtf8 . fromMisoString
 instance ToMisoString Float where
-  toMisoString = realFloat
-  fromMisoString = pFromJSVal . toJSNumber
+  toMisoString = realFloatToJSString
+  fromMisoString = realToFrac . jsStringToDouble
 instance ToMisoString Double where
-  toMisoString = realFloat
-  fromMisoString = pFromJSVal . toJSNumber
+  toMisoString = realFloatToJSString
+  fromMisoString =  jsStringToDouble
 instance ToMisoString Int where
-  toMisoString = decimal
-  fromMisoString = pFromJSVal . toJSNumber
+  toMisoString = integralToJSString
+  fromMisoString = round . jsStringToDouble
 instance ToMisoString Word where
-  toMisoString = decimal
-  fromMisoString = pFromJSVal . toJSNumber
-
-foreign import javascript unsafe "$r = Number($1);"
-  toJSNumber :: JSString -> JSVal
+  toMisoString = integralToJSString
+  fromMisoString = round . jsStringToDouble

@@ -9,33 +9,24 @@
 ----------------------------------------------------------------------------
 module Miso.Delegate where
 
+import           Control.Monad.IO.Class
 import           Data.IORef
-import qualified Data.Map                 as M
-import           Miso.Html.Internal
-import           Miso.String
-import qualified JavaScript.Object.Internal as OI
-import           GHCJS.Foreign.Callback
+import qualified Data.Map as M
 import           GHCJS.Marshal
 import           GHCJS.Types (JSVal)
+import qualified JavaScript.Object.Internal as OI
+import           Miso.FFI
+import           Miso.Html.Internal
+import           Miso.String
 
 -- | Entry point for event delegation
 delegator
   :: JSVal
   -> IORef VTree
   -> M.Map MisoString Bool
-  -> IO ()
+  -> JSM ()
 delegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
-  getVTreeFromRef <- syncCallback' $ do
-    VTree (OI.Object val) <- readIORef vtreeRef
+  delegateEvent mountPointElement evts $ do
+    VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
     pure val
-  delegateEvent mountPointElement evts getVTreeFromRef
-
--- | Event delegation FFI, routes events received on body through the virtual dom
--- Invokes event handler when found
-foreign import javascript unsafe "delegate($1, $2, $3);"
-  delegateEvent
-     :: JSVal               -- ^ mountPoint element
-     -> JSVal               -- ^ Events
-     -> Callback (IO JSVal) -- ^ Virtual DOM callback
-     -> IO ()

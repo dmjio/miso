@@ -11,7 +11,7 @@
 ----------------------------------------------------------------------------
 module Miso.Subscription.Mouse (mouseSub) where
 
-import GHCJS.Foreign.Callback
+import Control.Monad.IO.Class
 import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
@@ -23,8 +23,8 @@ import Miso.Html.Internal ( Sub )
 -- an event sink
 mouseSub :: ((Int,Int) -> action) -> Sub action
 mouseSub f = \sink -> do
-  windowAddEventListener "mousemove" =<< do
-    asyncCallback1 $ \mouseEvent -> do
+  windowAddEventListener "mousemove" $
+    \mouseEvent -> do
       Just x <- fromJSVal =<< getProp "clientX" (Object mouseEvent)
       Just y <- fromJSVal =<< getProp "clientY" (Object mouseEvent)
-      sink $ f (x,y)
+      liftIO (sink $ f (x,y))

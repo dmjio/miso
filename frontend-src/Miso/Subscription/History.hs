@@ -23,31 +23,32 @@ module Miso.Subscription.History
   , URI (..)
   ) where
 
-import           Control.Concurrent
-import           Control.Monad
-import           GHCJS.Foreign.Callback
-import           Miso.Concurrent
-import           Miso.Html.Internal     (Sub)
-import           Miso.String
-import           Network.URI            hiding (path)
-import           System.IO.Unsafe
+import Control.Monad
+import Control.Monad.IO.Class
+import Miso.Concurrent
+import Miso.FFI
+import qualified Miso.FFI.History as FFI
+import Miso.Html.Internal (Sub)
+import Miso.String
+import Network.URI hiding (path)
+import System.IO.Unsafe
 
 -- | Retrieves current URI of page
-getCurrentURI :: IO URI
+getCurrentURI :: JSM URI
 {-# INLINE getCurrentURI #-}
 getCurrentURI = getURI
 
 -- | Retrieves current URI of page
-getURI :: IO URI
+getURI :: JSM URI
 {-# INLINE getURI #-}
 getURI = do
-  href <- fromMisoString <$> getWindowLocationHref
+  href <- fromMisoString <$> FFI.getWindowLocationHref
   case parseURI href of
     Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
     Just uri -> return uri
 
 -- | Pushes a new URI onto the History stack
-pushURI :: URI -> IO ()
+pushURI :: URI -> JSM ()
 {-# INLINE pushURI #-}
 pushURI uri = pushStateNoModel uri { uriPath = toPath uri }
 
@@ -61,24 +62,24 @@ toPath uri =
     xs -> '/' : xs
 
 -- | Replaces current URI on stack
-replaceURI :: URI -> IO ()
+replaceURI :: URI -> JSM ()
 {-# INLINE replaceURI #-}
 replaceURI uri = replaceTo' uri { uriPath = toPath uri }
 
 -- | Navigates backwards
-back :: IO ()
+back :: JSM ()
 {-# INLINE back #-}
-back = back'
+back = FFI.back
 
 -- | Navigates forwards
-forward :: IO ()
+forward :: JSM ()
 {-# INLINE forward #-}
-forward = forward'
+forward = FFI.forward
 
 -- | Jumps to a specific position in history
-go :: Int -> IO ()
+go :: Int -> JSM ()
 {-# INLINE go #-}
-go n = go' n
+go n = FFI.go n
 
 chan :: Notify
 {-# NOINLINE chan #-}
@@ -87,42 +88,20 @@ chan = unsafePerformIO newEmptyNotify
 -- | Subscription for `popState` events, from the History API
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
-  void.forkIO.forever $ do
-    wait chan >> do
-      sink =<< f <$> getURI
-  onPopState =<< do
-     asyncCallback $ do
-      sink =<< f <$> getURI
+  void.forkJSM.forever $ do
+    liftIO (wait chan)
+    liftIO . sink . f =<< getURI
+  windowAddEventListener "popstate" $ \_ ->
+      liftIO . sink . f =<< getURI
 
-foreign import javascript safe "$r = window.location.href || '';"
-  getWindowLocationHref :: IO MisoString
-
-foreign import javascript unsafe "window.history.go($1);"
-  go' :: Int -> IO ()
-
-foreign import javascript unsafe "window.history.back();"
-  back' :: IO ()
-
-foreign import javascript unsafe "window.history.forward();"
-  forward' :: IO ()
-
-foreign import javascript unsafe "window.addEventListener('popstate', $1);"
-  onPopState :: Callback (IO ()) -> IO ()
-
-foreign import javascript unsafe "window.history.pushState(null, null, $1);"
-  pushStateNoModel' :: JSString -> IO ()
-
-foreign import javascript unsafe "window.history.replaceState(null, null, $1);"
-  replaceState' :: JSString -> IO ()
-
-pushStateNoModel :: URI -> IO ()
+pushStateNoModel :: URI -> JSM ()
 {-# INLINE pushStateNoModel #-}
 pushStateNoModel u = do
-  pushStateNoModel' . pack . show $ u
-  notify chan
+  FFI.pushState . pack . show $ u
+  liftIO (notify chan)
 
-replaceTo' :: URI -> IO ()
+replaceTo' :: URI -> JSM ()
 {-# INLINE replaceTo' #-}
 replaceTo' u = do
-  replaceState' . pack . show $ u
-  notify chan
+  FFI.replaceState . pack . show $ u
+  liftIO (notify chan)

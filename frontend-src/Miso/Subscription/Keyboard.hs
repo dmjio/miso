@@ -21,10 +21,10 @@ module Miso.Subscription.Keyboard
   , wasdSub
   ) where
 
+import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.Set
 import qualified Data.Set as S
-import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           JavaScript.Object
 import           JavaScript.Object.Internal
@@ -78,22 +78,20 @@ directionSub dirs = keyboardSub . (. toArrows dirs)
 -- | Returns subscription for Keyboard
 keyboardSub :: (Set Int -> action) -> Sub action
 keyboardSub f sink = do
-  keySetRef <- newIORef mempty
-  windowAddEventListener "keyup" =<< keyUpCallback keySetRef
-  windowAddEventListener "keydown" =<< keyDownCallback keySetRef
+  keySetRef <- liftIO (newIORef mempty)
+  windowAddEventListener "keyup" $ keyUpCallback keySetRef
+  windowAddEventListener "keydown" $ keyDownCallback keySetRef
     where
-      keyDownCallback keySetRef = do
-        asyncCallback1 $ \keyDownEvent -> do
+      keyDownCallback keySetRef = \keyDownEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)
-          newKeys <- atomicModifyIORef' keySetRef $ \keys ->
+          newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.insert key keys
              in (new, new)
-          sink (f newKeys)
+          liftIO (sink (f newKeys))
 
-      keyUpCallback keySetRef = do
-        asyncCallback1 $ \keyUpEvent -> do
+      keyUpCallback keySetRef = \keyUpEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
-          newKeys <- atomicModifyIORef' keySetRef $ \keys ->
+          newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.delete key keys
              in (new, new)
-          sink (f newKeys)
+          liftIO (sink (f newKeys))
