@@ -8,6 +8,11 @@
 let
   inherit (pkgs) runCommand closurecompiler;
   inherit (pkgs.haskell.packages) ghcjsHEAD ghc802;
+  ghcjs = ghcjs.override {
+    overrides = self: super: {
+      jsaddle-warp = super.callPackage ./../../jsaddle-warp-ghcjs.nix;
+    };
+  };
   miso-ghc = ghc802.callPackage ./../../miso-ghc.nix { };
   miso-ghcjs = ghcjsHEAD.callPackage ./../../miso-ghcjs.nix { };
   client = ghcjsHEAD.callPackage ./client { miso = miso-ghcjs; };
