@@ -24,6 +24,8 @@
 module Miso.Router
   ( runRoute
   , route
+  , HasRouter
+  , RouteT
   , RoutingError (..)
   ) where
 
