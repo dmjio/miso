@@ -301,7 +301,6 @@ library
       Miso.Dev
       Miso.Effect
       Miso.Effect.Storage
-      Miso.Effect.XHR
       Miso.Effect.DOM
       Miso.Subscription
       Miso.Subscription.History
