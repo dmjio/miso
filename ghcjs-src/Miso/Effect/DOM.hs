@@ -11,6 +11,7 @@
 module Miso.Effect.DOM
   ( focus
   , blur
+  , scrollIntoView
   , alert
   ) where
 
@@ -27,6 +28,11 @@ foreign import javascript unsafe "callFocus($1);"
 -- Analogous to @document.getElementById(id).blur()@
 foreign import javascript unsafe "callBlur($1);"
   blur :: MisoString -> IO ()
+
+-- | Calls @document.getElementById(id).scrollIntoView()@
+foreign import javascript unsafe
+  "document.getElementById($1).scrollIntoView();"
+  scrollIntoView :: MisoString -> IO ()
 
 -- | Calls the @alert()@ function.
 foreign import javascript unsafe "alert($1);"
