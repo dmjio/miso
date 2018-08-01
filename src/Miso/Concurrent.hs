@@ -11,6 +11,7 @@
 module Miso.Concurrent (
     Notify (..)
   , newNotify
+  , newEmptyNotify
   ) where
 
 import Control.Concurrent
@@ -28,3 +29,12 @@ newNotify = do
   pure $ Notify
    (takeMVar mvar)
    (() <$ do tryPutMVar mvar $! ())
+
+-- | Create a new `Notify`
+newEmptyNotify :: IO Notify
+newEmptyNotify = do
+  mvar <- newEmptyMVar
+  pure $ Notify
+   (takeMVar mvar)
+   (() <$ do tryPutMVar mvar $! ())
+

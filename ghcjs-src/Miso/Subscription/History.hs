@@ -82,7 +82,7 @@ go n = go' n
 
 chan :: Notify
 {-# NOINLINE chan #-}
-chan = unsafePerformIO newNotify
+chan = unsafePerformIO newEmptyNotify
 
 -- | Subscription for `popState` events, from the History API
 uriSub :: (URI -> action) -> Sub action
