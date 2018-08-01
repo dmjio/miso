@@ -9,7 +9,6 @@
 ----------------------------------------------------------------------------
 module Miso.Effect (
   module Miso.Effect.Storage
-, module Miso.Effect.XHR
 , module Miso.Effect.DOM
 , Effect (..), Sub, Sink
 , mapSub
@@ -23,7 +22,6 @@ module Miso.Effect (
 import Data.Bifunctor
 
 import Miso.Effect.Storage
-import Miso.Effect.XHR
 import Miso.Effect.DOM
 
 -- | An effect represents the results of an update action.
