@@ -148,11 +148,13 @@ instance ToJSVal Key where toJSVal (Key x) = toJSVal x
 instance ToJSVal NS where
   toJSVal SVG  = toJSVal ("svg" :: JSString)
   toJSVal HTML = toJSVal ("html" :: JSString)
+  toJSVal MATHML = toJSVal ("mathml" :: JSString)
 
 -- | Namespace of DOM elements.
 data NS
   = HTML -- ^ HTML Namespace
   | SVG  -- ^ SVG Namespace
+  | MATHML  -- ^ MATHML Namespace
   deriving (Show, Eq)
 
 -- | Create a new @VText@ with the given content.
