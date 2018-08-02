@@ -14,6 +14,7 @@ module Miso.Subscription
   , module Miso.Subscription.WebSocket
   , module Miso.Subscription.Window
   , module Miso.Subscription.SSE
+  , module Miso.Subscription.Manager
   ) where
 
 import Miso.Subscription.Mouse
@@ -22,3 +23,4 @@ import Miso.Subscription.History
 import Miso.Subscription.WebSocket
 import Miso.Subscription.Window
 import Miso.Subscription.SSE
+import Miso.Subscription.Manager
