@@ -9,9 +9,12 @@ module Main where
 
 import Data.Proxy
 import Servant.API
-#if MIN_VERSION_servant(0,10,0)
+#if MIN_VERSION_servant(0,14,1)
+import Servant.Links
+#elif MIN_VERSION_servant(0,10,0)
 import Servant.Utils.Links
 #endif
+import Language.Javascript.JSaddle.Warp as JSaddle
 
 import Miso
 
@@ -32,8 +35,9 @@ data Action
 -- | Main entry point
 main :: IO ()
 main = do
-  currentURI <- getCurrentURI
-  startApp App { model = Model currentURI, initialAction = NoOp, ..}
+  JSaddle.run 8080 $ do
+    currentURI <- getCurrentURI
+    startApp App { model = Model currentURI, initialAction = NoOp, ..}
   where
     update = updateModel
     events = defaultEvents

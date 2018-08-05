@@ -8,7 +8,12 @@
 }:
 let
   inherit (pkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
-  inherit (pkgs.haskell.packages) ghc802 ghcjs;
+  inherit (pkgs.haskell.packages) ghc802;
+  ghcjs = pkgs.haskell.packages.ghcjsHEAD.override {
+     overrides = self: super: {
+       jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
+     };
+  };
   inherit (pkgs.lib) overrideDerivation optionalString;
   inherit (pkgs.stdenv) isDarwin;
   inherit (pkgs) closurecompiler;
@@ -18,9 +23,6 @@ let
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
-      cp ${drv.src}/examples/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
-      cp ${drv.src}/examples/mario/index.html $out/bin/mario.jsexe/
-      cp ${drv.src}/examples/websocket/index.html $out/bin/websocket.jsexe/
       cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
       ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
       rm $out/bin/todo-mvc.jsexe/all.js

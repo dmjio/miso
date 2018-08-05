@@ -76,9 +76,6 @@ foreign import javascript unsafe "console.log($1);"
 foreign import javascript unsafe "$r = new FileReader();"
   newReader :: IO JSVal
 
-foreign import javascript unsafe "$r = document.getElementById($1);"
-  getElementById :: MisoString -> IO JSVal
-
 foreign import javascript unsafe "$r = $1.files[0];"
   getFile :: JSVal -> IO JSVal
 

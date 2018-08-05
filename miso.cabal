@@ -17,9 +17,6 @@ description:
 
 extra-source-files:
   README.md
-  examples/todo-mvc/index.html
-  examples/websocket/index.html
-  examples/mario/index.html
   examples/mario/imgs/mario.png
 
 flag examples
@@ -34,10 +31,17 @@ flag tests
   description:
     Builds Miso's tests
 
+flag jsaddle
+  manual: True
+  default:
+    False
+  description:
+    Compile with JSaddle
+
 executable todo-mvc
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(examples)
+  if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
     hs-source-dirs:
@@ -46,7 +50,9 @@ executable todo-mvc
       aeson,
       base < 5,
       containers,
-      miso
+      jsaddle-warp,
+      miso,
+      transformers
     default-language:
       Haskell2010
 
@@ -120,7 +126,7 @@ executable canvas2d
 executable router
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(examples)
+  if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
     hs-source-dirs:
@@ -129,15 +135,17 @@ executable router
       aeson,
       base < 5,
       containers,
+      jsaddle-warp,
       miso,
-      servant
+      servant,
+      transformers
     default-language:
       Haskell2010
 
 executable websocket
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(examples)
+  if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
     hs-source-dirs:
@@ -146,14 +154,16 @@ executable websocket
       aeson,
       base < 5,
       containers,
-      miso
+      jsaddle-warp,
+      miso,
+      transformers
     default-language:
       Haskell2010
 
 executable mario
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(examples)
+  if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
     hs-source-dirs:
@@ -161,7 +171,14 @@ executable mario
     build-depends:
       base < 5,
       containers,
-      miso
+      miso,
+      jsaddle-warp
+    if flag(jsaddle) && !impl(ghcjs)
+      build-depends:
+        wai,
+        wai-app-static,
+        warp,
+        websockets
     default-language:
       Haskell2010
 
@@ -214,7 +231,7 @@ executable mathml
 executable simple
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(examples)
+  if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
     hs-source-dirs:
@@ -223,7 +240,9 @@ executable simple
       aeson,
       base < 5,
       containers,
-      miso
+      jsaddle-warp,
+      miso,
+      transformers
     default-language:
       Haskell2010
 
@@ -234,9 +253,7 @@ executable tests
     buildable: False
   else
     hs-source-dirs:
-      tests, ghcjs-src, src
-    other-modules:
-      Miso.FFI
+      tests
     build-depends:
       aeson,
       base < 5,
@@ -298,21 +315,32 @@ library
     servant,
     text,
     transformers
-  if impl(ghcjs)
+  if impl(ghcjs) || flag (jsaddle)
+    if flag(jsaddle)
+      build-depends:
+        file-embed,
+        jsaddle
+      cpp-options: -DJSADDLE
+      hs-source-dirs:
+        jsaddle-ffi
+    else
+      build-depends:
+        ghcjs-base
+      hs-source-dirs:
+        ghcjs-ffi
+      js-sources:
+        jsbits/diff.js
+        jsbits/delegate.js
+        jsbits/isomorphic.js
+        jsbits/util.js
     hs-source-dirs:
-      ghcjs-src
+      frontend-src
     build-depends:
-      ghcjs-base,
       containers,
       scientific,
       unordered-containers,
       transformers,
       vector
-    js-sources:
-      jsbits/diff.js
-      jsbits/delegate.js
-      jsbits/isomorphic.js
-      jsbits/util.js
     exposed-modules:
       Miso.Dev
       Miso.Effect
@@ -329,6 +357,10 @@ library
     other-modules:
       Miso.Diff
       Miso.FFI
+      Miso.FFI.History
+      Miso.FFI.SSE
+      Miso.FFI.Storage
+      Miso.FFI.WebSocket
       Miso.Delegate
   else
     exposed-modules:

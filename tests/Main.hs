@@ -24,7 +24,6 @@ import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
 
 import           Miso
-import           Miso.FFI
 
 instance Arbitrary Value where
   arbitrary = sized sizedArbitraryValue
@@ -82,7 +81,7 @@ roundTrip
   :: Value
   -> IO Bool
 roundTrip x = do
-  Just y <- jsvalToValue =<< toJSVal x
+  Just y <- fromJSVal =<< toJSVal x
   pure $ compareValue x y == True
 
 iso_prop :: Value -> Property

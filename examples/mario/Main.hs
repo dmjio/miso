@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE MultiWayIf        #-}
@@ -6,11 +7,32 @@ module Main where
 
 import           Data.Bool
 import           Data.Function
-import qualified Data.Map      as M
+import qualified Data.Map as M
 import           Data.Monoid
 
 import           Miso
 import           Miso.String
+
+import qualified Language.Javascript.JSaddle.Warp as JSaddle
+
+#ifdef ghcjs_HOST_OS
+run :: Int -> JSM () -> IO ()
+run = JSaddle.run
+#else
+import           Network.Wai.Application.Static
+import qualified Network.Wai as Wai
+import qualified Network.Wai.Handler.Warp as Warp
+import           Network.WebSockets
+
+run :: Int -> JSM () -> IO ()
+run port f =
+    Warp.runSettings (Warp.setPort port (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
+        JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) app
+    where app req sendResp =
+            case Wai.pathInfo req of
+              ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
+              _ -> JSaddle.jsaddleApp req sendResp
+#endif
 
 data Action
   = GetArrows !Arrows
@@ -22,7 +44,7 @@ spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0","-111px 0","-148px 0","-185px 0","-222px 0","-259px 0","-296px 0"]
 
 main :: IO ()
-main = do
+main = run 8080 $ do
     time <- now
     let m = mario { time = time }
     startApp App { model = m
@@ -122,7 +144,10 @@ display m@Model{..} = marioImage
     marioImage =
       div_ [ height_ $ ms h
            , width_ $ ms w
-           ] [ div_ [ style_ (marioStyle m groundY) ] [] ]
+           ]
+           [ nodeHtml "style" [] ["@keyframes play { 100% { background-position: -296px; } }"]
+           , div_ [ style_ (marioStyle m groundY) ] []
+           ]
 
 marioStyle :: Model -> Double -> M.Map MisoString MisoString
 marioStyle Model {..} gy =
