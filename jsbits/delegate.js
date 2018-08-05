@@ -1,44 +1,46 @@
-var oldCallbacks = [];
-var currentCallbacks = [];
+window.oldCallbacks = [];
+window.currentCallbacks = [];
 
 /* Callbacks in ghcjs need to be released. With this function one can register
    callbacks that should be released right before diffing.
 */
-function registerCallback(cb) {
+window.registerCallback = function registerCallback(cb) {
     currentCallbacks.push(cb);
-}
+};
 
 /* Swaps out the new calbacks for old callbacks.
 The old callbacks should be cleared once the new callbacks have replaced them.
 */
-function swapCallbacks() {
+window.swapCallbacks = function swapCallbacks() {
   oldCallbacks = currentCallbacks;
   currentCallbacks = [];
-}
+};
 
 /* This releases the old callbacks. */
-function releaseCallbacks() {
+window.releaseCallbacks = function releaseCallbacks() {
     for (var i in oldCallbacks)
       h$release(oldCallbacks[i]);
 
     oldCallbacks = [];
-}
+};
 
 /* event delegation algorithm */
-function delegate(mountPointElement, events, getVTree) {
+window.delegate = function delegate(mountPointElement, events, getVTree) {
     for (var event in events) {
-	mountPointElement.addEventListener(events[event][0], function(e) {
-            delegateEvent ( e
-                          , getVTree()
+	  mountPointElement.addEventListener(events[event][0], function(e) {
+        getVTree(function (obj) {
+          delegateEvent ( e
+                          , obj
                           , buildTargetToElement(mountPointElement, e.target)
                           , []
-                          );
+                        );
+        });
 	     }, events[event][1]);
     }
-}
+};
 
 /* Accumulate parent stack as well for propagation */
-function delegateEvent (event, obj, stack, parentStack) {
+window.delegateEvent = function delegateEvent (event, obj, stack, parentStack) {
 
     /* base case, not found */
     if (!stack.length) return;
@@ -73,18 +75,18 @@ function delegateEvent (event, obj, stack, parentStack) {
 	      }
 	}
     }
-}
+};
 
-function buildTargetToElement (element, target) {
+window.buildTargetToElement = function buildTargetToElement (element, target) {
     var stack = [];
     while (element !== target) {
       stack.unshift (target);
       target = target.parentNode;
     }
     return stack;
-}
+};
 
-function propogateWhileAble (parentStack, event) {
+window.propogateWhileAble = function propogateWhileAble (parentStack, event) {
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i].events[event.type]) {
       var eventObj = parentStack[i].events[event.type],
@@ -94,11 +96,11 @@ function propogateWhileAble (parentStack, event) {
   	if (options.stopPropagation) break;
     }
   }
-}
+};
 
 /* Walks down obj following the path described by `at`, then filters primitive
  values (string, numbers and booleans)*/
-function objectToJSON (at, obj) {
+window.objectToJSON = function objectToJSON (at, obj) {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] == "object") {
     var ret = [];
@@ -123,4 +125,4 @@ function objectToJSON (at, obj) {
     if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
       newObj[i] = obj[i];
   return (newObj);
-}
+};

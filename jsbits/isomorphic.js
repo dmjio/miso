@@ -1,8 +1,8 @@
-function copyDOMIntoVTree (vtree) {
+window.copyDOMIntoVTree = function copyDOMIntoVTree (vtree) {
     walk (vtree, document.body.firstChild);
-}
+};
 
-function walk (vtree, node) {
+window.walk = function walk (vtree, node) {
     var i = 0, vdomChild, domChild;
     vtree.domRef = node;
 
@@ -20,5 +20,4 @@ function walk (vtree, node) {
       walk(vdomChild, domChild);
       i++;
    }
-}
-
+};

@@ -12,14 +12,17 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 module Main where
 
-import           Data.Aeson   hiding (Object)
+import           Data.Aeson hiding (Object)
 import           Data.Bool
-import qualified Data.Map     as M
+import qualified Data.Map as M
 import           Data.Monoid
 import           GHC.Generics
 import           Miso
-import           Miso.String  (MisoString)
-import qualified Miso.String  as S
+import           Miso.String (MisoString)
+import qualified Miso.String as S
+
+import           Control.Monad.IO.Class
+import           Language.Javascript.JSaddle.Warp as JSaddle
 
 default (MisoString)
 
@@ -78,7 +81,8 @@ data Msg
    deriving Show
 
 main :: IO ()
-main = startApp App { initialAction = NoOp, ..}
+main =
+  JSaddle.run 8080 $ startApp App { initialAction = NoOp, ..}
   where
     model      = emptyModel
     update     = updateModel
@@ -90,7 +94,7 @@ main = startApp App { initialAction = NoOp, ..}
 updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m
 updateModel (CurrentTime n) m =
-  m <# do print n >> pure NoOp
+  m <# do liftIO (print n) >> pure NoOp
 updateModel Add model@Model{..} =
   noEff model {
     uid = uid + 1
@@ -123,7 +127,7 @@ updateModel (Check id' isCompleted) model@Model{..} =
    model { entries = newEntries } <# eff
     where
       eff =
-        putStrLn "clicked check" >>
+        liftIO (putStrLn "clicked check") >>
           pure NoOp
 
       newEntries =
@@ -161,6 +165,10 @@ viewModel m@Model{..} =
         , viewControls m visibility entries
         ]
     , infoFooter
+    , link_
+        [ rel_ "stylesheet"
+        , href_ "https://d33wubrfki0l68.cloudfront.net/css/d0175a264698385259b5f1638f2a39134ee445a0/style.css"
+        ]
     ]
 
 viewEntries :: MisoString -> [ Entry ] -> View Msg

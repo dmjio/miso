@@ -129,9 +129,6 @@ foreign import javascript unsafe "$r = new THREE.WebGLRenderer({canvas:$1, antia
 foreign import javascript unsafe "$1.setSize( window.innerWidth, window.innerHeight );"
   setSize :: JSVal -> IO ()
 
-foreign import javascript unsafe "$r = document.getElementById($1);"
-  getElementById :: MisoString -> IO JSVal
-
 foreign import javascript unsafe "$1.add($2);"
   addToScene :: JSVal -> JSVal -> IO ()
 

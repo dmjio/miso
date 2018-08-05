@@ -20,10 +20,12 @@ import           Miso
 import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
+import qualified Language.Javascript.JSaddle.Warp as JSaddle
+
 main :: IO ()
-main = startApp App { initialAction = Id, ..}
+main = JSaddle.run 8080 $ startApp App { initialAction = Id, ..}
   where
-    model = Model mempty mempty
+    model = Model (Message "") mempty
     events = defaultEvents
     subs = [ websocketSub uri protocols HandleWebSocket ]
     update = updateModel
@@ -43,7 +45,7 @@ instance ToJSON Message
 instance FromJSON Message
 
 newtype Message = Message MisoString
-  deriving (Eq, Show, Generic, Monoid)
+  deriving (Eq, Show, Generic)
 
 data Action
   = HandleWebSocket (WebSocket Message)
@@ -58,7 +60,8 @@ data Model = Model {
 
 appView :: Model -> View Action
 appView Model{..} = div_ [ style_ $ M.fromList [("text-align", "center")] ] [
-   h1_ [style_ $ M.fromList [("font-weight", "bold")] ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ text $ S.pack "Miso Websocket Example" ] ]
+   link_ [rel_ "stylesheet", href_ "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"]
+ , h1_ [style_ $ M.fromList [("font-weight", "bold")] ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ text $ S.pack "Miso Websocket Example" ] ]
  , h3_ [] [ text $ S.pack "wss://echo.websocket.org" ]
  , input_  [ type_ "text"
            , onInput UpdateMessage
