@@ -34,19 +34,19 @@ let
     owner = "ptigwe";
     rev = "5b386e35db143205b4bd8d45cdf98423ed51b713";
     sha256 = "0wll5fizkdmj2hgd71v9klnnr6wxvvf36imchh2chm1slqm78zca";
-  }) { miso = result.miso-ghcjs; };
+  }) { miso = miso-ghcjs; };
   the2048 = ghcjs.callCabal2nix "2048" (pkgs.fetchFromGitHub {
     repo = "hs2048";
     owner = "dmjio";
     rev = "07dbed79a012240bfe19b836b6d445bb16a0602a";
     sha256 = "00rqix5g8s8y6ngxnjskvcyj19g639havn9pgpkdpxp8ni6g7xsm";
-  }) { miso = result.miso-ghcjs; };
+  }) { miso = miso-ghcjs; };
   snake = ghcjs.callCabal2nix "miso-snake" (pkgs.fetchFromGitHub {
     repo = "miso-snake";
     owner = "dmjio";
     rev = "c38947cd9417ab8bf8a8d3652d8bf549e35f14af";
     sha256 = "17rdc7fisqgf8zq90c3cw9c08b1qac6wirqmwifw2a0xxbigz4qc";
-  }) { miso = result.miso-ghcjs; };
+  }) { miso = miso-ghcjs; };
   uploadCoverage = pkgs.writeScriptBin "upload-coverage.sh" ''
     #!/usr/bin/env bash
     export PATH=$PATH:${pkgs.nodePackages.yarn}/bin
@@ -54,31 +54,28 @@ let
     cd coverage
     ${pkgs.s3cmd}/bin/s3cmd sync --recursive lcov-report/ s3://aws-website-coverage-j7fc9/
   '';
-  result = {
-    inherit uploadCoverage;
-    miso-ghcjs = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
-    miso-ghc = buildStrictly miso-ghc;
-    release = sdistTarball (buildStrictly miso-ghc);
-    s3 = pkgs.writeScriptBin "s3.sh" ''
+  miso-ghcjs-release = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
+  release = sdistTarball (buildStrictly miso-ghc);
+  s3 = pkgs.writeScriptBin "s3.sh" ''
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${flatris}/bin/app.jsexe/ s3://aws-website-flatris-b3cr6/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/simple.jsexe/ s3://aws-website-simple-4yic3/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/router.jsexe/ s3://aws-website-router-gfy22/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/xhr.jsexe/ s3://aws-website-xhr-gvnhn/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
-       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${result.miso-ghcjs}/bin/tests.jsexe/ s3://aws-website-tests-xc9ud
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/simple.jsexe/ s3://aws-website-simple-4yic3/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/router.jsexe/ s3://aws-website-router-gfy22/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/xhr.jsexe/ s3://aws-website-xhr-gvnhn/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
+       ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${miso-ghcjs-release}/bin/tests.jsexe/ s3://aws-website-tests-xc9ud
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${snake}/bin/app.jsexe/ s3://aws-website-snake-9o0ge/
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${the2048}/* s3://aws-website--6uw7z/
     '';
-  };
-in pkgs.runCommand "miso" result ''
+  payload = pkgs.runCommand "miso" {} ''
      mkdir -p $out/{lib,examples}
-     cp -r ${result.miso-ghcjs}/bin/* $out/examples
-     cp -r ${result.miso-ghcjs}/lib/* $out/lib
-     ln -s ${result.miso-ghcjs.doc} $out/ghcjs-doc
-     ln -s ${result.miso-ghc.doc} $out/ghc-doc
-   ''
+     cp -r ${miso-ghcjs-release}/bin/* $out/examples
+     cp -r ${miso-ghcjs-release}/lib/* $out/lib
+     ln -s ${miso-ghcjs-release.doc} $out/ghcjs-doc
+     ln -s ${miso-ghc.doc} $out/ghc-doc
+   '';
+   in { inherit payload miso-ghcjs miso-ghc release s3; }
