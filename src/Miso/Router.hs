@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
@@ -204,6 +205,7 @@ routeLoc loc r = case r of
   RPage a ->
     case locPath loc of
       [] -> Right a
+      [""] -> Right a
       _ -> Left Fail
 
 -- | Convert a 'URI' to a 'Location'.
