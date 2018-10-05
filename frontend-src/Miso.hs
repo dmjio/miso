@@ -34,6 +34,7 @@ import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.List
 import           Data.Sequence ((|>))
+import           System.Mem.StableName
 import qualified Data.Sequence as S
 import qualified JavaScript.Object.Internal as OI
 
@@ -102,7 +103,9 @@ common App {..} m getView = do
         let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
                                             (Acc oldModel (pure ())) actions
         effects
-        when (oldModel /= newModel) $ do
+        oldName <- oldModel `seq` makeStableName oldModel
+        newName <- newModel `seq` makeStableName newModel
+        when (oldName /= newName && oldModel /= newModel) $ do
           swapCallbacks
           newVTree <- runView (view newModel) writeEvent
           oldVTree <- liftIO (readIORef viewRef)
