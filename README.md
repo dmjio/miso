@@ -1,5 +1,6 @@
 <h1 align="center">miso</h1>
 <p align="center">
+
 <a href="https://haskell-miso.org">
   <img width=10% src="https://emojipedia-us.s3.amazonaws.com/thumbs/240/apple/96/steaming-bowl_1f35c.png">
    </a>
@@ -24,12 +25,6 @@
   </a>
   <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
 	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://saucelabs.com/u/dmjio">
-    <img src="https://saucelabs.com/browser-matrix/dmjio.svg" alt="Sauce Test Status"/>
   </a>
 </p>
 
