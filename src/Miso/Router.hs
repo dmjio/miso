@@ -36,7 +36,7 @@ import           Data.Text             (Text)
 import qualified Data.Text             as T
 import           Data.Text.Encoding
 import           GHC.TypeLits
-import           Network.HTTP.Types
+import           Network.HTTP.Types    hiding (Header)
 import           Network.URI
 import           Servant.API
 import           Web.HttpApiData
@@ -117,6 +117,11 @@ instance (HasRouter sublayout, KnownSymbol sym)
   mkRouter _ a f = RQueryFlag
     (Proxy :: Proxy sym)
     (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
+
+-- | Header
+instance HasRouter sublayout => HasRouter (Header sym (x :: *) :> sublayout) where
+    type RouteT (Header sym x :> sublayout) a = Maybe x -> RouteT sublayout a
+    mkRouter _ a f = mkRouter (Proxy :: Proxy sublayout) a (f Nothing)
 
 -- | Path
 instance (HasRouter sublayout, KnownSymbol path)
