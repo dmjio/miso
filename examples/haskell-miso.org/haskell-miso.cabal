@@ -50,7 +50,7 @@ executable client
     buildable: False
   else
     ghcjs-options:
-      -dedupe
+      -dedupe -DGHCJS_GC_INTERVAL=5000
     hs-source-dirs:
       client, shared
     build-depends:
