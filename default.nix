@@ -1,23 +1,43 @@
-{ pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs";
-    rev = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
-  }){}
+{ rev ? "4507926b80c6b8f73053775ffee17f6781c7e7c8"
+, sha256 ? "068v9xh7d8klk62p2qwr76fyfqfh1bp08xc12x138g5q6pg6yfzb"
+, pkgs ? import (builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
+    inherit sha256;
+  }) { inherit config; }
 , haddock ? true
+, config ? {
+    packageOverrides = pkgs: with pkgs.haskell.lib; {
+      haskell = pkgs.haskell // {
+        packages = pkgs.haskell.packages // {
+          ghcjs84 = pkgs.haskell.packages.ghcjs84.override {
+           overrides = self: super: {
+             doctest = null;
+             directory-tree = dontCheck (super.directory-tree);
+             http-types = dontCheck (super.http-types);
+             servant = dontCheck (super.servant);
+               jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
+               ghc = super.ghc.override {
+               ghcjsSrc = pkgs.fetchgit {
+                   url = "https://github.com/ghcjs/ghcjs.git";
+                   rev = "3959a9321a2d3e2ad4b8d4c9cc436fcfece99237";
+                   sha256 = "0myjkd1scw9n4kdag7b7xdw91alaifyxw534l545hpn9a2mbaz6v";
+                   fetchSubmodules = true;
+                 };
+               };
+             };
+           };
+        };
+     };
+   };
+  }
 }:
 let
   inherit (pkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
-  inherit (pkgs.haskell.packages) ghc802;
-  ghcjs = pkgs.haskell.packages.ghcjsHEAD.override {
-     overrides = self: super: {
-       jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
-     };
-  };
+  inherit (pkgs.haskell.packages) ghc843 ghcjs;
   inherit (pkgs.lib) overrideDerivation optionalString;
   inherit (pkgs.stdenv) isDarwin;
   inherit (pkgs) closurecompiler;
-  miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
+  miso-ghc = ghc843.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
     doHaddock = haddock;
     postInstall = ''
