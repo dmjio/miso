@@ -6,7 +6,7 @@
   }) { inherit config; }
 , haddock ? true
 , config ? {
-    packageOverrides = pkgs: with pkgs.haskell.lib; {
+    packageOverrides = pkgs: with pkgs.haskell.lib;  with pkgs.lib; {
       haskell = pkgs.haskell // {
         packages = pkgs.haskell.packages // {
           ghcjs84 = pkgs.haskell.packages.ghcjs84.override {
@@ -14,19 +14,21 @@
              doctest = null;
              directory-tree = dontCheck (super.directory-tree);
              http-types = dontCheck (super.http-types);
+             tasty-quickcheck = dontCheck (super.tasty-quickcheck);
+             scientific = dontCheck (super.scientific);
              servant = dontCheck (super.servant);
-               jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
-               ghc = super.ghc.override {
+             jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
+             ghc = overrideDerivation (super.ghc.override {
                ghcjsSrc = pkgs.fetchgit {
-                   url = "https://github.com/ghcjs/ghcjs.git";
-                   rev = "3959a9321a2d3e2ad4b8d4c9cc436fcfece99237";
-                   sha256 = "0myjkd1scw9n4kdag7b7xdw91alaifyxw534l545hpn9a2mbaz6v";
-                   fetchSubmodules = true;
-                 };
+                 url = "https://github.com/ghcjs/ghcjs.git";
+                 rev = "dc190b1bb2453cfa484124e9f335ee3cad1492f7";
+                 sha256 = "0dh52gj0f3700zfyrhisy44b6y9p1bsawwrmd5pllpdyw21zd9lw";
+                 fetchSubmodules = true;
                };
-             };
+             }) (drv: { patches = (drv.patches or []) ++ [ ./ghcjs.patch ]; });
            };
-        };
+         };
+       };
      };
    };
   }
