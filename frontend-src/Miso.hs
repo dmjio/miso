@@ -103,8 +103,8 @@ common App {..} m getView = do
         let (Acc newModel effects) = foldl' (foldEffects writeEvent update)
                                             (Acc oldModel (pure ())) actions
         effects
-        oldName <- oldModel `seq` makeStableName oldModel
-        newName <- newModel `seq` makeStableName newModel
+        oldName <- liftIO $ oldModel `seq` makeStableName oldModel
+        newName <- liftIO $ newModel `seq` makeStableName newModel
         when (oldName /= newName && oldModel /= newModel) $ do
           swapCallbacks
           newVTree <- runView (view newModel) writeEvent
