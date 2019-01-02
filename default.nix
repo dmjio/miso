@@ -1,16 +1,28 @@
 { pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
     owner = "NixOS";
     repo = "nixpkgs";
-    rev = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
+    rev = "b9fa31c";
+    sha256 = "1iqdra7nvcwbydjirjsk71rpzk4ljc0gzqy33fcp8l18y8iwh47k";
   }){}
 , haddock ? true
 }:
 let
   inherit (pkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
-  inherit (pkgs.haskell.packages) ghc802;
-  ghcjs = pkgs.haskell.packages.ghcjsHEAD.override {
+  ghc802 = pkgs.haskell.packages.ghc802.override {
      overrides = self: super: {
+       concurrent-output = pkgs.haskell.lib.doJailbreak super.concurrent-output;
+     };
+  };
+  ghcjs = pkgs.haskell.packages.ghcjs84.override {
+     overrides = self: super: {
+       aeson = pkgs.haskell.lib.dontCheck super.aeson;
+       http-types = pkgs.haskell.lib.dontCheck super.http-types;
+       natural-transformation = pkgs.haskell.lib.dontCheck super.natural-transformation;
+       scientific = pkgs.haskell.lib.dontCheck super.scientific;
+       servant = pkgs.haskell.lib.dontCheck super.servant;
+       uri-bytestring = pkgs.haskell.lib.dontCheck super.uri-bytestring;
+       uuid-types = pkgs.haskell.lib.dontCheck super.uuid-types;
+
        jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
      };
   };
