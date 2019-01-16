@@ -126,7 +126,7 @@ module Miso.Html.Element
     , bdi_
     , bdo_
     , wbr_
-    -- * Interactive elemnts
+    -- * Interactive elements
     , details_
     , summary_
     , menuitem_
