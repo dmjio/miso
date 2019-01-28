@@ -24,7 +24,7 @@ let
       mkdir -p $out/bin/mario.jsexe/imgs
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
-      ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
+      ${closurecompiler}/bin/closure-compiler --compilation_level=ADVANCED_OPTIMIZATIONS --jscomp_off=checkVars $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
       rm $out/bin/todo-mvc.jsexe/all.js
       mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
     '';
