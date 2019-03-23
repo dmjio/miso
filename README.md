@@ -133,10 +133,10 @@ extra-deps:
 
 setup-info:
   ghcjs:
-	source:
-	  ghcjs-0.2.0.9006030_ghc-7.10.3:
-		 url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-		 sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
+    source:
+      ghcjs-0.2.0.9006030_ghc-7.10.3:
+        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
+        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
 ```
 
 Add a `cabal` file
@@ -167,7 +167,7 @@ Run `stack build` to get the static assets
 stack build
 ```
 
-See the result
+See the result(For linux, use `xdg-open`)
 ```
 open $(stack path --local-install-root)/bin/app.jsexe/index.html
 ```
