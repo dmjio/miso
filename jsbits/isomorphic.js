@@ -1,9 +1,9 @@
-function MisoException(message) {
+window.MisoException = function MisoException(message) {
   this.message = message;
   this.name = 'MisoException';
 }
 
-function copyDOMIntoVTree(vtree) {
+window.copyDOMIntoVTree = function copyDOMIntoVTree(vtree, document = document) {
   walk(vtree, document.body.firstChild);
 }
 

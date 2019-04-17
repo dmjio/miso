@@ -4,7 +4,7 @@
   "description": "miso tests",
   "main": "diff.test.js",
   "scripts": {
-    "test": "cp ../jsbits/diff.js ./ && echo 'module.exports = diff;' >> diff.js &&./node_modules/.bin/jest --coverage && rm ./diff.js"
+    "test": "cp ../jsbits/diff.js ./ && cp ../jsbits/isomorphic.js ./ && echo 'module.exports = diff;' >> diff.js &&./node_modules/.bin/jest --coverage && rm ./diff.js && rm ./isomorphic.js"
   },
   "repository": {
     "type": "git",
