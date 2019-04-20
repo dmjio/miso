@@ -787,6 +787,34 @@ test('Should throw exception about expecting element', () => {
     expect(f).toThrow(MisoException);
 });
 
+test('Should throw exception about non-matching text', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var div = document.createElement("div");
+    body.appendChild(div);
+    var txt = document.createTextNode("foo");
+    div.appendChild(txt);
+    var currentNode = vnodeKids('div', [ vtext("bar") ]);
+    const f = () => {
+        copyDOMIntoVTree(currentNode, document);
+    };
+    expect(f).toThrow(MisoException);
+});
+
+test('Should throw exception about non-matching DOM and VDOM', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var div = document.createElement("div");
+    body.appendChild(div);
+    var txt = document.createTextNode("foobar");
+    div.appendChild(txt);
+    var currentNode = vnodeKids('div', [ vtext("foo") ]);
+    const f = () => {
+        copyDOMIntoVTree(currentNode, document);
+    };
+    expect(f).toThrow(MisoException);
+});
+
 test('Should copy DOM into VTree with multiple consecutive text nodes', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
@@ -796,7 +824,8 @@ test('Should copy DOM into VTree with multiple consecutive text nodes', () => {
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [ vtext("foo"), vtext("bar"), vtext("baz") ]);
     copyDOMIntoVTree(currentNode, document);
-    expect(currentNode.children[0].text).toEqual('foobarbaz');
-    expect(currentNode.children[1].text).toEqual('');
-    expect(currentNode.children[2].text).toEqual('');
+    // Expect "foobarbaz" to be split up into three nodes in the DOM
+    expect(div.childNodes[0].textContent).toEqual('foo');
+    expect(div.childNodes[1].textContent).toEqual('bar');
+    expect(div.childNodes[2].textContent).toEqual('baz');
 });
