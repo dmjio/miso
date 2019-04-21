@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.String
@@ -54,3 +55,17 @@ instance ToMisoString B.ByteString where
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
   fromMisoString = LT.encodeUtf8 . fromMisoString
+instance ToMisoString Float where
+  toMisoString = T.pack . show
+  fromMisoString = read . T.unpack
+instance ToMisoString Double where
+  toMisoString = T.pack . show
+  fromMisoString = read . T.unpack
+instance ToMisoString Int where
+  toMisoString = T.pack . show
+  -- Replicate frontend behavior
+  fromMisoString = round . read @Double . T.unpack
+instance ToMisoString Word where
+  toMisoString = T.pack . show
+  -- Replicate frontend behavior
+  fromMisoString = round . read @Double . T.unpack
