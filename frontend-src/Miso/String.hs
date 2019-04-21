@@ -84,7 +84,7 @@ instance ToMisoString Float where
   fromMisoString = realToFrac . jsStringToDouble
 instance ToMisoString Double where
   toMisoString = realFloatToJSString
-  fromMisoString =  jsStringToDouble
+  fromMisoString = jsStringToDouble
 instance ToMisoString Int where
   toMisoString = integralToJSString
   fromMisoString = round . jsStringToDouble
