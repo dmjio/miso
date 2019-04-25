@@ -258,6 +258,9 @@ onWithOptions options eventName Decoder{..} toAction =
 
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
   Attribute $ \sink n -> do
@@ -268,6 +271,9 @@ onCreated action =
 -- | @onDestroyed action@ is an event that gets called after the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
 -- removed from the DOM tree.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   Attribute $ \sink n -> do
