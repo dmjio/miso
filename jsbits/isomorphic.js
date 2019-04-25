@@ -1,23 +1,23 @@
 window.copyDOMIntoVTree = function copyDOMIntoVTree (vtree) {
-    walk (vtree, document.body.firstChild);
+  walk (vtree, document.body.firstChild);
 };
 
 window.walk = function walk (vtree, node) {
-    var i = 0, vdomChild, domChild;
-    vtree.domRef = node;
+  var i = 0, vdomChild, domChild;
+  vtree.domRef = node;
 
-    // Fire onCreated events as though the elements had just been created.
-    callCreated(vtree);
+  // Fire onCreated events as though the elements had just been created.
+  callCreated(vtree);
 
-    while (i < vtree.children.length) {
-      vdomChild = vtree.children[i];
-      domChild = node.childNodes[i];
-      if (vdomChild.type === "vtext") {
-	  vdomChild.domRef = domChild;
-	  i++;
-	  continue;
-      }
-      walk(vdomChild, domChild);
+  while (i < vtree.children.length) {
+    vdomChild = vtree.children[i];
+    domChild = node.childNodes[i];
+    if (vdomChild.type === "vtext") {
+      vdomChild.domRef = domChild;
       i++;
-   }
+      continue;
+    }
+    walk(vdomChild, domChild);
+    i++;
+  }
 };
