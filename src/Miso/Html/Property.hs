@@ -114,6 +114,8 @@ module Miso.Html.Property
    , httpEquiv_
    , language_
    , scoped_
+   -- * Data
+   , data_
    ) where
 
 import           Miso.Html.Internal
@@ -383,3 +385,7 @@ autofocus_ = boolProp "autofocus"
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 class_ ::  MisoString -> Attribute action
 class_ = textProp "class"
+-- | Set "data-*" property
+-- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
+data_ ::  MisoString -> MisoString -> Attribute action
+data_ k v = textProp ("data-" <> k) v
