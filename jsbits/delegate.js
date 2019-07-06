@@ -47,7 +47,7 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
 
   /* stack not length 1, recurse */
   else if (stack.length > 1) {
-    if (obj.domRef === stack[0]) parentStack.unshift(obj);
+    if (obj['domRef'] === stack[0]) parentStack.unshift(obj);
     for (var o = 0; o < obj.children.length; o++) {
       if (obj.children[o].type === "vtext") continue;
       delegateEvent ( event
@@ -60,13 +60,13 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
 
   /* stack.length == 1 */
   else {
-    if (obj.domRef === stack[0]) {
-      var eventObj = obj.events[event.type];
+    if (obj['domRef'] === stack[0]) {
+      var eventObj = obj['events'][event.type];
       if (eventObj) {
         var options = eventObj.options;
       if (options.preventDefault)
         event.preventDefault();
-      eventObj.runEvent(event);
+      eventObj['runEvent'](event);
       if (!options.stopPropagation)
         propogateWhileAble (parentStack, event);
       } else {
@@ -88,11 +88,11 @@ window['buildTargetToElement'] = function buildTargetToElement (element, target)
 
 window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) {
   for (var i = 0; i < parentStack.length; i++) {
-    if (parentStack[i].events[event.type]) {
-      var eventObj = parentStack[i].events[event.type],
-          options = eventObj.options;
+    if (parentStack[i]['events'][event.type]) {
+      var eventObj = parentStack[i]['events'][event.type],
+          options = eventObj['options'];
       if (options.preventDefault) event.preventDefault();
-      eventObj.runEvent(event);
+      eventObj['runEvent'](event);
       if (options.stopPropagation) break;
     }
   }
