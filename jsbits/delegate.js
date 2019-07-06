@@ -5,23 +5,23 @@ window['currentCallbacks'] = [];
    callbacks that should be released right before diffing.
 */
 window['registerCallback'] = function registerCallback(cb) {
-  currentCallbacks.push(cb);
+  window['currentCallbacks'].push(cb);
 };
 
 /* Swaps out the new calbacks for old callbacks.
 The old callbacks should be cleared once the new callbacks have replaced them.
 */
 window['swapCallbacks'] = function swapCallbacks() {
-  oldCallbacks = currentCallbacks;
-  currentCallbacks = [];
+  window['oldCallbacks'] = window['currentCallbacks'];
+  window['currentCallbacks'] = [];
 };
 
 /* This releases the old callbacks. */
 window['releaseCallbacks'] = function releaseCallbacks() {
-  for (var i in oldCallbacks)
-    h$release(oldCallbacks[i]);
+  for (var i in window['oldCallbacks'])
+    h$release(window['oldCallbacks'][i]);
 
-  oldCallbacks = [];
+  window['oldCallbacks'] = [];
 };
 
 /* event delegation algorithm */
@@ -29,11 +29,7 @@ window['delegate'] = function delegate(mountPointElement, events, getVTree) {
   for (var event in events) {
     mountPointElement.addEventListener(events[event][0], function(e) {
       getVTree(function (obj) {
-        delegateEvent ( e
-                        , obj
-                        , buildTargetToElement(mountPointElement, e.target)
-                        , []
-                      );
+        window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
       });
     }, events[event][1]);
   }
@@ -49,7 +45,7 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
   else if (stack.length > 1) {
     if (obj['domRef'] === stack[0]) parentStack.unshift(obj);
     for (var o = 0; o < obj.children.length; o++) {
-      if (obj.children[o].type === "vtext") continue;
+      if (obj.children[o]['type'] === "vtext") continue;
       delegateEvent ( event
                     , obj.children[o]
                     , stack.slice(1)
@@ -64,14 +60,14 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
       var eventObj = obj['events'][event.type];
       if (eventObj) {
         var options = eventObj.options;
-      if (options.preventDefault)
+      if (options['preventDefault'])
         event.preventDefault();
       eventObj['runEvent'](event);
-      if (!options.stopPropagation)
-        propogateWhileAble (parentStack, event);
+      if (!options['stopPropagation'])
+        window['propogateWhileAble'] (parentStack, event);
       } else {
         /* still propagate to parent handlers even if event not defined */
-        propogateWhileAble (parentStack, event);
+        window['propogateWhileAble'] (parentStack, event);
       }
     }
   }
@@ -91,9 +87,9 @@ window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) 
     if (parentStack[i]['events'][event.type]) {
       var eventObj = parentStack[i]['events'][event.type],
           options = eventObj['options'];
-      if (options.preventDefault) event.preventDefault();
+      if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
-      if (options.stopPropagation) break;
+      if (options['stopPropagation']) break;
     }
   }
 };
@@ -105,7 +101,7 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
   if (typeof at[0] == "object") {
     var ret = [];
     for (var i = 0; i < at.length; i++)
-      ret.push(objectToJSON(at[i], obj));
+      ret.push(window['objectToJSON'](at[i], obj));
     return (ret);
   }
 
@@ -115,7 +111,7 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
   if (obj instanceof Array) {
     var newObj = [];
     for (var i = 0; i < obj.length; i++)
-      newObj.push(objectToJSON([], obj[i]));
+      newObj.push(window['objectToJSON']([], obj[i]));
     return (newObj);
   }
 

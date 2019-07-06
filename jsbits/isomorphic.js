@@ -1,11 +1,11 @@
 window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc = window.document) {
   var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
-  if (!walk(vtree, node, doc)) {
+  if (!window['walk'](vtree, node, doc)) {
     console.warn('Could not copy DOM into virtual DOM, falling back to diff');
     // Remove all children before rebuilding DOM
     while (node.firstChild)
       node.removeChild(node.lastChild);
-    window.diff(null, vtree, node, doc);
+    window['diff'](null, vtree, node, doc);
     return false;
   }
   return true;
@@ -18,19 +18,19 @@ window['walk'] = function walk(vtree, node, doc) {
   var vdomChild,
       domChild;
 
-  vtree.domRef = node;
+  vtree['domRef'] = node;
 
   // Fire onCreated events as though the elements had just been created.
-  callCreated(vtree);
+  window['callCreated'](vtree);
 
   for (var i = 0; i < vtree.children.length; i++) {
-    vdomChild = vtree.children[i];
+    vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
     if (vdomChild.type === "vtext") {
         if (domChild.nodeType !== Node.TEXT_NODE) return false;
 
-        if (vdomChild.text === domChild.textContent) {
-          vdomChild.domRef = domChild;
+        if (vdomChild['text'] === domChild.textContent) {
+          vdomChild['domRef'] = domChild;
         } else {
           var len = vdomChild.text.length,
               domNodeText = domChild.textContent.substring(0, len);
@@ -40,12 +40,12 @@ window['walk'] = function walk(vtree, node, doc) {
           // Create new DOM node to ensure synchrony between VDom and DOM
           var partialTxt = doc.createTextNode(domNodeText);
           node.insertBefore(partialTxt, domChild);
-          vdomChild.domRef = partialTxt;
+          vdomChild['domRef'] = partialTxt;
           domChild.textContent = domChild.textContent.substring(len);
         }
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
-      walk(vdomChild, domChild, doc);
+      window['walk'](vdomChild, domChild, doc);
     }
 
   }

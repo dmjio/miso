@@ -1,32 +1,53 @@
-{ pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
+{ nixpkgs ? (import <nixpkgs> {}).fetchFromGitHub {
     owner = "NixOS";
     repo = "nixpkgs";
-    rev = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
-  }){}
+    rev = "4dd5c93998da55002fdec1c715c680531420381c";
+    sha256 = "06paxakic36nbdnwkkb1094fzp3lpzxxb1r57gmb3py6pb6xrcnh";
+  }
 , haddock ? true
 }:
 let
-  inherit (pkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
-  inherit (pkgs.haskell.packages) ghc802;
-  ghcjs = pkgs.haskell.packages.ghcjsHEAD.override {
-     overrides = self: super: {
-       jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
-     };
+  overrides = pkgs: {
+    haskell = pkgs.haskell // {
+      packages = pkgs.haskell.packages // {
+        ghc864 = pkgs.haskell.packages.ghc864.override {
+          overrides = self: super: with pkgs.haskell.lib; {
+            happy = dontCheck (super.callHackage "happy" "1.19.9" {});
+            mkDerivation = args: super.mkDerivation (args // {
+              enableLibraryProfiling = false;
+              doCheck = false;
+              doHaddock = false;
+            });
+          };
+        };
+        ghcjs86 = pkgs.haskell.packages.ghcjs86.override {
+          overrides = self: super: {
+            jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
+            mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
+            doctest = null;
+          };
+        };
+      };
+    };
   };
+  pkgs = import nixpkgs { config.packageOverrides = overrides; };
+  inherit (pkgs.haskell.lib) buildFromSdist enableCabalFlag sdistTarball buildStrictly;
+  inherit (pkgs.haskell.packages) ghc865 ghcjs;
   inherit (pkgs.lib) overrideDerivation optionalString;
   inherit (pkgs.stdenv) isDarwin;
   inherit (pkgs) closurecompiler;
-  miso-ghc = ghc802.callPackage ./miso-ghc.nix { };
+  miso-ghc = ghc865.callPackage ./miso-ghc.nix { };
   miso-ghcjs = (ghcjs.callPackage ./miso-ghcjs.nix { }).overrideDerivation (drv: {
     doHaddock = haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
       cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
-      ${closurecompiler}/bin/closure-compiler $out/bin/todo-mvc.jsexe/all.js > $out/bin/todo-mvc.jsexe/min.js
-      rm $out/bin/todo-mvc.jsexe/all.js
-      mv $out/bin/todo-mvc.jsexe/min.js $out/bin/todo-mvc.jsexe/all.js
+      ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+        --jscomp_off=checkVars \
+        --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
+        $out/bin/todo-mvc.jsexe/all.js > temp.js
+      mv temp.js $out/bin/todo-mvc.jsexe/all.js
     '';
   });
   flatris = ghcjs.callCabal2nix "hs-flatris" (pkgs.fetchFromGitHub {
