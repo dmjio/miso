@@ -1,11 +1,11 @@
-window.callFocus = function callFocus(id) {
+window['callFocus'] = function callFocus(id) {
   setTimeout(function(){
     var ele = document.getElementById(id);
     if (ele && ele.focus) ele.focus()
   }, 50);
 }
 
-window.callBlur = function callBlur(id) {
+window['callBlur'] = function callBlur(id) {
   setTimeout(function(){
     var ele = document.getElementById(id);
     if (ele && ele.blur) ele.blur()

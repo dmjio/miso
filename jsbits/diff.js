@@ -1,5 +1,5 @@
 /* virtual-dom diffing algorithm, applies patches as detected */
-window.diff = function diff(currentObj, newObj, parent, doc) {
+window['diff'] = function diff(currentObj, newObj, parent, doc) {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) createNode(newObj, parent, doc);
   else if (currentObj && !newObj) destroyNode(currentObj, parent);
@@ -14,43 +14,43 @@ window.diff = function diff(currentObj, newObj, parent, doc) {
   }
 };
 
-window.destroyNode = function destroyNode(obj, parent) {
+window['destroyNode'] = function destroyNode(obj, parent) {
   parent.removeChild(obj.domRef);
   callDestroyedRecursive(obj);
 };
 
-window.callDestroyedRecursive = function callDestroyedRecursive(obj) {
+window['callDestroyedRecursive'] = function callDestroyedRecursive(obj) {
   callDestroyed(obj);
   for (var i in obj.children)
     callDestroyedRecursive(obj.children[i]);
 };
 
-window.callDestroyed = function callDestroyed(obj) {
+window['callDestroyed'] = function callDestroyed(obj) {
   if (obj.onDestroyed) obj.onDestroyed();
 };
 
-window.diffTextNodes = function diffTextNodes(c, n) {
+window['diffTextNodes'] = function diffTextNodes(c, n) {
   if (c.text !== n.text) c.domRef.textContent = n.text;
   n.domRef = c.domRef;
 };
 
-window.replaceElementWithText = function replaceElementWithText(c, n, parent, doc) {
+window['replaceElementWithText'] = function replaceElementWithText(c, n, parent, doc) {
   n.domRef = doc.createTextNode(n.text);
   parent.replaceChild(n.domRef, c.domRef);
   callDestroyedRecursive(c);
 };
 
-window.replaceTextWithElement = function replaceTextWithElement(c, n, parent, doc) {
+window['replaceTextWithElement'] = function replaceTextWithElement(c, n, parent, doc) {
   createElement(n, doc);
   parent.replaceChild(n.domRef, c.domRef);
   callCreated(n);
 };
 
-window.callCreated = function callCreated(obj) {
+window['callCreated'] = function callCreated(obj) {
   if (obj.onCreated) obj.onCreated();
 };
 
-window.populate = function populate(c, n, doc) {
+window['populate'] = function populate(c, n, doc) {
   if (!c) c = {
               props: null,
               css: null,
@@ -61,7 +61,7 @@ window.populate = function populate(c, n, doc) {
   diffChildren(c.children, n.children, n.domRef, doc);
 };
 
-window.diffVNodes = function diffVNodes(c, n, parent, doc) {
+window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
   if (c.tag === n.tag && n.key === c.key) {
     n.domRef = c.domRef;
     populate(c, n, doc);
@@ -73,7 +73,7 @@ window.diffVNodes = function diffVNodes(c, n, parent, doc) {
   }
 };
 
-window.diffProps = function diffProps(cProps, nProps, node, isSvg) {
+window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
   var result, newProp, domProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
@@ -119,7 +119,7 @@ window.diffProps = function diffProps(cProps, nProps, node, isSvg) {
   }
 };
 
-window.diffCss = function diffCss(cCss, nCss, node) {
+window['diffCss'] = function diffCss(cCss, nCss, node) {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {
@@ -138,11 +138,11 @@ window.diffCss = function diffCss(cCss, nCss, node) {
   }
 };
 
-window.hasKeys = function hasKeys(ns, cs) {
+window['hasKeys'] = function hasKeys(ns, cs) {
   return ns.length > 0 && cs.length > 0 && ns[0].key != null && cs[0].key != null;
 };
 
-window.diffChildren = function diffChildren(cs, ns, parent, doc) {
+window['diffChildren'] = function diffChildren(cs, ns, parent, doc) {
   var longest = ns.length > cs.length ? ns.length : cs.length;
   if (hasKeys(ns, cs)) {
     syncChildren(cs, ns, parent, doc);
@@ -152,7 +152,7 @@ window.diffChildren = function diffChildren(cs, ns, parent, doc) {
   }
 };
 
-window.createElement = function createElement(obj, doc) {
+window['createElement'] = function createElement(obj, doc) {
   if (obj.ns === "svg") {
     obj.domRef = doc.createElementNS("http://www.w3.org/2000/svg", obj.tag);
   } else if (obj.ns === "mathml") {
@@ -163,7 +163,7 @@ window.createElement = function createElement(obj, doc) {
   populate(null, obj, doc);
 };
 
-window.createNode = function createNode(obj, parent, doc) {
+window['createNode'] = function createNode(obj, parent, doc) {
   if (obj.type === "vnode") createElement(obj, doc);
   else obj.domRef = doc.createTextNode(obj.text);
   parent.appendChild(obj.domRef);
@@ -171,7 +171,7 @@ window.createNode = function createNode(obj, parent, doc) {
 };
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-window.syncChildren = function syncChildren(os, ns, parent, doc) {
+window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
   var oldFirstIndex = 0,
   newFirstIndex = 0,
   oldLastIndex = os.length - 1,
@@ -335,13 +335,13 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
   }
 };
 
-window.swapDomRefs = function swapDomRefs(tmp,a,b,p) {
+window['swapDomRefs'] = function swapDomRefs(tmp,a,b,p) {
   tmp = a.nextSibling;
   p.insertBefore(a,b);
   p.insertBefore(b,tmp);
 };
 
-window.swap= function swap(os,l,r) {
+window['swap']= function swap(os,l,r) {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;

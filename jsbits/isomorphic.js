@@ -1,4 +1,4 @@
-window.copyDOMIntoVTree = function copyDOMIntoVTree(mountPoint, vtree, doc = window.document) {
+window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc = window.document) {
   var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
   if (!walk(vtree, node, doc)) {
     console.warn('Could not copy DOM into virtual DOM, falling back to diff');
@@ -11,7 +11,7 @@ window.copyDOMIntoVTree = function copyDOMIntoVTree(mountPoint, vtree, doc = win
   return true;
 }
 
-window.walk = function walk(vtree, node, doc) {
+window['walk'] = function walk(vtree, node, doc) {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
