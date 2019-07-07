@@ -5,6 +5,7 @@
     sha256 = "06paxakic36nbdnwkkb1094fzp3lpzxxb1r57gmb3py6pb6xrcnh";
   }
 , haddock ? true
+, tests ? false
 }:
 let
   overrides = pkgs: {
@@ -48,6 +49,12 @@ let
         --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
         $out/bin/todo-mvc.jsexe/all.js > temp.js
       mv temp.js $out/bin/todo-mvc.jsexe/all.js
+    '' + pkgs.lib.optionalString tests ''
+      ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+        --jscomp_off=checkVars \
+        --externs=$out/bin/tests.jsexe/all.js.externs \
+        $out/bin/tests.jsexe/all.js > temp.js
+      mv temp.js $out/bin/tests.jsexe/all.js
     '';
   });
   flatris = ghcjs.callCabal2nix "hs-flatris" (pkgs.fetchFromGitHub {

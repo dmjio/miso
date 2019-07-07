@@ -95,7 +95,6 @@ propTest prop = do
     GaveUp { output = o } -> (False, o)
     Failure { output = o } -> (False, o)
     NoExpectedFailure { output = o } -> (False, o)
---  InsufficientCoverage { output = o } -> (False, o)
 
 foreign import javascript unsafe "window.global_test_results = $1;"
   writeToGlobalObject :: JSVal -> IO ()
