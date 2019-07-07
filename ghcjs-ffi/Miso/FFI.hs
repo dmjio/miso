@@ -162,7 +162,7 @@ foreign import javascript unsafe "document.body.innerHTML = '';"
   clearBody :: IO ()
 
 
-foreign import javascript unsafe "$r = objectToJSON($1,$2);"
+foreign import javascript unsafe "$r = window.objectToJSON($1,$2);"
   objectToJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
@@ -201,7 +201,7 @@ delegateEvent mountPoint events getVTree = do
     callFunction continuation res
   delegateEvent' mountPoint events cb'
 
-foreign import javascript unsafe "delegate($1, $2, $3);"
+foreign import javascript unsafe "window.delegate($1, $2, $3);"
   delegateEvent'
      :: JSVal               -- ^ mountPoint element
      -> JSVal               -- ^ Events
@@ -213,33 +213,33 @@ foreign import javascript unsafe "$1($2);"
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
-foreign import javascript unsafe "copyDOMIntoVTree($1, $2);"
+foreign import javascript unsafe "window.copyDOMIntoVTree($1, $2);"
   copyDOMIntoVTree
     :: JSVal -- ^ mountPoint element of the isomorphic app
     -> JSVal -- ^ VDom object
     -> IO ()
 
 -- | Pins down the current callbacks for clearing later
-foreign import javascript unsafe "swapCallbacks();"
+foreign import javascript unsafe "window.swapCallbacks();"
   swapCallbacks :: IO ()
 
 -- | Releases callbacks registered by the virtual DOM.
-foreign import javascript unsafe "releaseCallbacks();"
+foreign import javascript unsafe "window.releaseCallbacks();"
   releaseCallbacks :: IO ()
 
-foreign import javascript unsafe "registerCallback($1);"
+foreign import javascript unsafe "window.registerCallback($1);"
   registerCallback :: JSVal -> IO ()
 
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
-foreign import javascript unsafe "callFocus($1);"
+foreign import javascript unsafe "window.callFocus($1);"
   focus :: JSString -> JSM ()
 
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
-foreign import javascript unsafe "callBlur($1);"
+foreign import javascript unsafe "window.callBlur($1);"
   blur :: JSString -> JSM ()
 
 -- | Calls @document.getElementById(id).scrollIntoView()@
