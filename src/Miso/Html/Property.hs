@@ -120,6 +120,7 @@ module Miso.Html.Property
 
 import           Miso.Html.Internal
 import           Miso.String (MisoString, intercalate)
+import           Data.Monoid ((<>))
 
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
