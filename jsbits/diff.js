@@ -1,80 +1,80 @@
 /* virtual-dom diffing algorithm, applies patches as detected */
-window.diff = function diff(currentObj, newObj, parent, doc) {
+window['diff'] = function diff(currentObj, newObj, parent, doc) {
   if (!currentObj && !newObj) return;
-  else if (!currentObj && newObj) createNode(newObj, parent, doc);
-  else if (currentObj && !newObj) destroyNode(currentObj, parent);
+  else if (!currentObj && newObj) window['createNode'](newObj, parent, doc);
+  else if (currentObj && !newObj) window['destroyNode'](currentObj, parent);
   else {
     if (currentObj.type === "vtext") {
-      if (newObj.type === "vnode") replaceTextWithElement(currentObj, newObj, parent, doc);
-      else diffTextNodes(currentObj, newObj);
+      if (newObj.type === "vnode") window['replaceTextWithElement'](currentObj, newObj, parent, doc);
+      else window['diffTextNodes'](currentObj, newObj);
     } else {
-      if (newObj.type === "vnode") diffVNodes(currentObj, newObj, parent, doc);
-      else replaceElementWithText(currentObj, newObj, parent, doc);
+      if (newObj.type === "vnode") window['diffVNodes'](currentObj, newObj, parent, doc);
+      else window['replaceElementWithText'](currentObj, newObj, parent, doc);
     }
   }
 };
 
-window.destroyNode = function destroyNode(obj, parent) {
-  parent.removeChild(obj.domRef);
-  callDestroyedRecursive(obj);
+window['destroyNode'] = function destroyNode(obj, parent) {
+  parent.removeChild(obj['domRef']);
+  window['callDestroyedRecursive'](obj);
 };
 
-window.callDestroyedRecursive = function callDestroyedRecursive(obj) {
-  callDestroyed(obj);
+window['callDestroyedRecursive'] = function callDestroyedRecursive(obj) {
+  window['callDestroyed'](obj);
   for (var i in obj.children)
-    callDestroyedRecursive(obj.children[i]);
+    window['callDestroyedRecursive'](obj.children[i]);
 };
 
-window.callDestroyed = function callDestroyed(obj) {
-  if (obj.onDestroyed) obj.onDestroyed();
+window['callDestroyed'] = function callDestroyed(obj) {
+  if (obj['onDestroyed']) obj['onDestroyed']();
 };
 
-window.diffTextNodes = function diffTextNodes(c, n) {
-  if (c.text !== n.text) c.domRef.textContent = n.text;
-  n.domRef = c.domRef;
+window['diffTextNodes'] = function diffTextNodes(c, n) {
+  if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
+  n['domRef'] = c['domRef'];
 };
 
-window.replaceElementWithText = function replaceElementWithText(c, n, parent, doc) {
-  n.domRef = doc.createTextNode(n.text);
-  parent.replaceChild(n.domRef, c.domRef);
-  callDestroyedRecursive(c);
+window['replaceElementWithText'] = function replaceElementWithText(c, n, parent, doc) {
+  n['domRef'] = doc.createTextNode(n['text']);
+  parent.replaceChild(n['domRef'], c['domRef']);
+  window['callDestroyedRecursive'](c);
 };
 
-window.replaceTextWithElement = function replaceTextWithElement(c, n, parent, doc) {
-  createElement(n, doc);
-  parent.replaceChild(n.domRef, c.domRef);
-  callCreated(n);
+window['replaceTextWithElement'] = function replaceTextWithElement(c, n, parent, doc) {
+  window['createElement'](n, doc);
+  parent.replaceChild(n['domRef'], c['domRef']);
+  window['callCreated'](n);
 };
 
-window.callCreated = function callCreated(obj) {
-  if (obj.onCreated) obj.onCreated();
+window['callCreated'] = function callCreated(obj) {
+  if (obj['onCreated']) obj['onCreated']();
 };
 
-window.populate = function populate(c, n, doc) {
+window['populate'] = function populate(c, n, doc) {
   if (!c) c = {
               props: null,
               css: null,
               children: []
               }
-  diffProps(c.props, n.props, n.domRef, n.ns === "svg");
-  diffCss(c.css, n.css, n.domRef);
-  diffChildren(c.children, n.children, n.domRef, doc);
+  window['diffProps'](c['props'], n['props'], n['domRef'], n['ns'] === "svg");
+  window['diffCss'](c['css'], n['css'], n['domRef']);
+  window['diffChildren'](c['children'], n['children'], n['domRef'], doc);
 };
 
-window.diffVNodes = function diffVNodes(c, n, parent, doc) {
-  if (c.tag === n.tag && n.key === c.key) {
-    n.domRef = c.domRef;
-    populate(c, n, doc);
+window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
+  if (c['tag'] === n['tag'] && n['key'] === c['key']) {
+    n['domRef'] = c['domRef'];
+    window['populate'](c, n, doc);
   } else {
-    createElement(n, doc);
-    parent.replaceChild(n.domRef, c.domRef);
-    callDestroyedRecursive(c);
-    callCreated(n);
+    window['createElement'](n, doc);
+    parent.replaceChild(n['domRef'], c['domRef']);
+    window['callDestroyedRecursive'](c);
+    window['callCreated'](n);
   }
 };
 
-window.diffProps = function diffProps(cProps, nProps, node, isSvg) {
-  var result, newProp, domProp;
+window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
+  var result, newProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
     newProp = nProps[c];
@@ -88,7 +88,6 @@ window.diffProps = function diffProps(cProps, nProps, node, isSvg) {
     } else {
       /* Already on DOM from previous diff, continue */
       if (newProp === cProps[c]) continue;
-      domProp = node[c];
       if (isSvg) {
         if (c === "href")
           node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
@@ -119,7 +118,7 @@ window.diffProps = function diffProps(cProps, nProps, node, isSvg) {
   }
 };
 
-window.diffCss = function diffCss(cCss, nCss, node) {
+window['diffCss'] = function diffCss(cCss, nCss, node) {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {
@@ -138,40 +137,40 @@ window.diffCss = function diffCss(cCss, nCss, node) {
   }
 };
 
-window.hasKeys = function hasKeys(ns, cs) {
-  return ns.length > 0 && cs.length > 0 && ns[0].key != null && cs[0].key != null;
+window['hasKeys'] = function hasKeys(ns, cs) {
+  return ns.length > 0 && cs.length > 0 && ns[0]['key'] != null && cs[0]['key'] != null;
 };
 
-window.diffChildren = function diffChildren(cs, ns, parent, doc) {
+window['diffChildren'] = function diffChildren(cs, ns, parent, doc) {
   var longest = ns.length > cs.length ? ns.length : cs.length;
-  if (hasKeys(ns, cs)) {
-    syncChildren(cs, ns, parent, doc);
+  if (window['hasKeys'](ns, cs)) {
+    window['syncChildren'](cs, ns, parent, doc);
   } else {
     for (var i = 0; i < longest; i++)
-      diff(cs[i], ns[i], parent, doc);
+      window['diff'](cs[i], ns[i], parent, doc);
   }
 };
 
-window.createElement = function createElement(obj, doc) {
-  if (obj.ns === "svg") {
-    obj.domRef = doc.createElementNS("http://www.w3.org/2000/svg", obj.tag);
-  } else if (obj.ns === "mathml") {
-    obj.domRef = doc.createElementNS("http://www.w3.org/1998/Math/MathML", obj.tag);
+window['createElement'] = function createElement(obj, doc) {
+  if (obj['ns'] === "svg") {
+    obj['domRef'] = doc.createElementNS("http://www.w3.org/2000/svg", obj['tag']);
+  } else if (obj['ns'] === "mathml") {
+    obj['domRef'] = doc.createElementNS("http://www.w3.org/1998/Math/MathML", obj['tag']);
   } else {
-    obj.domRef = doc.createElement(obj.tag);
+    obj['domRef'] = doc.createElement(obj['tag']);
   }
-  populate(null, obj, doc);
+  window['populate'](null, obj, doc);
 };
 
-window.createNode = function createNode(obj, parent, doc) {
-  if (obj.type === "vnode") createElement(obj, doc);
-  else obj.domRef = doc.createTextNode(obj.text);
-  parent.appendChild(obj.domRef);
-  callCreated(obj);
+window['createNode'] = function createNode(obj, parent, doc) {
+  if (obj.type === "vnode") window['createElement'](obj, doc);
+  else obj['domRef'] = doc.createTextNode(obj['text']);
+  parent.appendChild(obj['domRef']);
+  window['callCreated'](obj);
 };
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-window.syncChildren = function syncChildren(os, ns, parent, doc) {
+window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
   var oldFirstIndex = 0,
   newFirstIndex = 0,
   oldLastIndex = os.length - 1,
@@ -196,10 +195,10 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
        -> [ a b c ] <- new children
     */
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent, doc);
+      window['diff'](null, nFirst, parent, doc);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-         Otherwise, it will insert node.domRef before oLast.domRef. */
-      parent.insertBefore(oLast.domRef, nFirst.domRef);
+         Otherwise, it will insert node['domRef'] before oLast['domRef']. */
+      parent.insertBefore(oLast['domRef'], nFirst['domRef']);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     }
@@ -210,7 +209,7 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
     else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex - oldFirstIndex;
       while (tmp >= 0) {
-        parent.removeChild(os[oldFirstIndex].domRef);
+        parent.removeChild(os[oldFirstIndex]['domRef']);
         os.splice(oldFirstIndex, 1);
         tmp--;
       }
@@ -221,21 +220,21 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
        -> newFirstIndex -> [ a b c ] <- newLastIndex
        check if nFirst and oFirst align, if so, check nLast and oLast
     */
-    else if (oFirst.key === nFirst.key) {
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
-    } else if (oLast.key === nLast.key) {
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+    else if (oFirst['key'] === nFirst['key']) {
+      window['diff'](os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
+    } else if (oLast['key'] === nLast['key']) {
+      window['diff'](os[oldLastIndex--], ns[newLastIndex--], parent, doc);
     }
     /* flip-flop case, nodes have been swapped, in some way or another
        both could have been swapped.
        -> [ a b c ] <- old children
        -> [ c b a ] <- new children
     */
-    else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-      swapDomRefs(node, oFirst.domRef, oLast.domRef, parent);
-      swap(os, oldFirstIndex, oldLastIndex);
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+    else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
+      window['swapDomRefs'](node, oFirst['domRef'], oLast['domRef'], parent);
+      window['swap'](os, oldFirstIndex, oldLastIndex);
+      window['diff'](os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
+      window['diff'](os[oldLastIndex--], ns[newLastIndex--], parent, doc);
     }
     /* Or just one could be swapped (d's align here)
            This is top left and bottom right match case.
@@ -248,12 +247,12 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
            -> [ a b d ] <- new children
            and now we happy path
        */
-    else if (oFirst.key === nLast.key) {
+    else if (oFirst['key'] === nLast['key']) {
       /* insertAfter */
-      parent.insertBefore(oFirst.domRef, oLast.domRef.nextSibling);
+      parent.insertBefore(oFirst['domRef'], oLast['domRef'].nextSibling);
       /* swap positions in old vdom */
       os.splice(oldLastIndex,0,os.splice(oldFirstIndex,1)[0]);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+      window['diff'](os[oldLastIndex--], ns[newLastIndex--], parent, doc);
     }
     /* This is top right and bottom lefts match case.
        We move d to end of list, mutate old vdom to reflect the change
@@ -264,12 +263,12 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
        -> [ d b a ] <- new children
        and now we happy path
     */
-    else if (oLast.key === nFirst.key) {
+    else if (oLast['key'] === nFirst['key']) {
       /* insertAfter */
-      parent.insertBefore(oLast.domRef, oFirst.domRef);
+      parent.insertBefore(oLast['domRef'], oFirst['domRef']);
       /* swap positions in old vdom */
       os.splice(oldFirstIndex,0, os.splice(oldLastIndex,1)[0]);
-      diff(os[oldFirstIndex++], nFirst, parent, doc);
+      window['diff'](os[oldFirstIndex++], nFirst, parent, doc);
       newFirstIndex++;
     }
 
@@ -283,7 +282,7 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
       found = false;
       tmp = oldFirstIndex;
       while (tmp <= oldLastIndex) {
-        if (os[tmp].key === nFirst.key) {
+        if (os[tmp]['key'] === nFirst['key']) {
           found = true;
           node = os[tmp];
           break;
@@ -306,9 +305,9 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
         /* Move item to correct position */
         os.splice(oldFirstIndex,0, os.splice(tmp,1)[0]);
         /* Swap DOM references */
-        parent.insertBefore(node.domRef, os[oldFirstIndex].domRef);
+        parent.insertBefore(node['domRef'], os[oldFirstIndex]['domRef']);
         /* optionally perform `diff` here */
-        diff(os[oldFirstIndex++], nFirst, parent, doc);
+        window['diff'](os[oldFirstIndex++], nFirst, parent, doc);
         /* increment counters */
         newFirstIndex++;
       }
@@ -325,8 +324,8 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
               ^
            */
       else {
-        createElement(nFirst, doc);
-        parent.insertBefore(nFirst.domRef, oFirst.domRef);
+        window['createElement'](nFirst, doc);
+        parent.insertBefore(nFirst['domRef'], oFirst['domRef']);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
@@ -335,13 +334,13 @@ window.syncChildren = function syncChildren(os, ns, parent, doc) {
   }
 };
 
-window.swapDomRefs = function swapDomRefs(tmp,a,b,p) {
+window['swapDomRefs'] = function swapDomRefs(tmp,a,b,p) {
   tmp = a.nextSibling;
   p.insertBefore(a,b);
   p.insertBefore(b,tmp);
 };
 
-window.swap= function swap(os,l,r) {
+window['swap']= function swap(os,l,r) {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;

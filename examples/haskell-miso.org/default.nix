@@ -7,16 +7,16 @@
 }:
 let
   inherit (pkgs) runCommand closurecompiler;
-  inherit (pkgs.haskell.packages) ghcjsHEAD ghc802;
+  inherit (pkgs.haskell.packages) ghcjsHEAD ghc865;
   ghcjs = ghcjsHEAD.override {
     overrides = self: super: {
       jsaddle-warp = super.callPackage ./../../jsaddle-warp-ghcjs.nix {};
     };
   };
-  miso-ghc = ghc802.callPackage ./../../miso-ghc.nix { };
+  miso-ghc = ghc865.callPackage ./../../miso-ghc.nix { };
   miso-ghcjs = ghcjs.callPackage ./../../miso-ghcjs.nix { };
   client = ghcjs.callPackage ./client { miso = miso-ghcjs; };
-  server = ghc802.callPackage ./server { miso = miso-ghc; };
+  server = ghc865.callPackage ./server { miso = miso-ghc; };
 in
   runCommand "haskell-miso.org" { inherit client server; } ''
     mkdir -p $out/{bin,static}
