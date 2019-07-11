@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Property
@@ -120,7 +121,10 @@ module Miso.Html.Property
 
 import           Miso.Html.Internal
 import           Miso.String (MisoString, intercalate)
+
+#if __GLASGOW_HASKELL__ < 841
 import           Data.Monoid ((<>))
+#endif
 
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
