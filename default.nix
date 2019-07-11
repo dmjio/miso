@@ -82,7 +82,7 @@ let
     cd coverage
     ${pkgs.s3cmd}/bin/s3cmd sync --recursive lcov-report/ s3://aws-website-coverage-j7fc9/
   '';
-  miso-ghcjs-release = buildStrictly (enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests");
+  miso-ghcjs-release = enableCabalFlag (enableCabalFlag miso-ghcjs "examples") "tests";
   release = sdistTarball (buildStrictly miso-ghc);
   s3 = pkgs.writeScriptBin "s3.sh" ''
        ${pkgs.s3cmd}/bin/s3cmd sync --recursive ${flatris}/bin/app.jsexe/ s3://aws-website-flatris-b3cr6/
