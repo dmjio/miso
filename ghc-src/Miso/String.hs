@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.String
@@ -64,8 +63,8 @@ instance ToMisoString Double where
 instance ToMisoString Int where
   toMisoString = T.pack . show
   -- Replicate frontend behavior
-  fromMisoString = round . read @Double . T.unpack
+  fromMisoString = round . (read :: String -> Double) . T.unpack
 instance ToMisoString Word where
   toMisoString = T.pack . show
   -- Replicate frontend behavior
-  fromMisoString = round . read @Double . T.unpack
+  fromMisoString = round . (read :: String -> Double) . T.unpack
