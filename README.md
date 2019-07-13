@@ -44,6 +44,7 @@
   - [2048](#2048)
   - [Snake](#snake)
   - [Mario](#mario)
+  - [Miso Plane (Flappy Birds)](#miso-plane-flappy-birds)
   - [Websocket](#websocket)
   - [SSE](#sse)
   - [XHR](#xhr)
@@ -354,6 +355,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### Mario
   - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+
+### Miso Plane (Flappy Birds)
+  - [Link](https://miso-plane.lermex.net/) / [Source](https://github.com/Lermex/miso-plane)
 
 ### Websocket
   - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
