@@ -106,4 +106,4 @@ let
      ln -s ${miso-ghcjs-release.doc} $out/ghcjs-doc
      ln -s ${miso-ghc.doc} $out/ghc-doc
    '';
-   in { inherit payload miso-ghcjs miso-ghc release s3; }
+   in { inherit pkgs payload miso-ghcjs miso-ghc release s3; }

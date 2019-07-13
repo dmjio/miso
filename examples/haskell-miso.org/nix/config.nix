@@ -13,8 +13,8 @@
            forceSSL = true;
            enableACME = true;
            locations = {
-	     "/" = {
-	        proxyPass = "http://localhost:3002";
+     	     "/" = {
+    	        proxyPass = "http://127.0.0.1:3002";
             };
           };
         };
