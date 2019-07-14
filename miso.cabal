@@ -44,6 +44,10 @@ executable todo-mvc
   if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/todo-mvc
     build-depends:
@@ -62,6 +66,10 @@ executable threejs
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/three
     build-depends:
@@ -79,6 +87,10 @@ executable file-reader
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/file-reader
     build-depends:
@@ -96,6 +108,10 @@ executable xhr
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/xhr
     build-depends:
@@ -113,6 +129,10 @@ executable canvas2d
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/canvas2d
     build-depends:
@@ -129,6 +149,10 @@ executable router
   if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/router
     build-depends:
@@ -148,6 +172,10 @@ executable websocket
   if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/websocket
     build-depends:
@@ -166,6 +194,10 @@ executable mario
   if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/mario
     build-depends:
@@ -188,6 +220,10 @@ executable svg
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/svg
     other-modules:
@@ -206,6 +242,10 @@ executable compose-update
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/compose-update
     build-depends:
@@ -220,6 +260,10 @@ executable mathml
   if !impl(ghcjs) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       examples/mathml
     build-depends:
@@ -234,6 +278,10 @@ executable simple
   if (!impl(ghcjs) && !flag(jsaddle)) || !flag(examples)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       exe
     build-depends:
@@ -252,6 +300,10 @@ executable tests
   if !impl(ghcjs) || !flag(tests)
     buildable: False
   else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
     hs-source-dirs:
       tests
     build-depends:
