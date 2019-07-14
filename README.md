@@ -20,8 +20,8 @@
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
 	<img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
   </a>
-  <a href="https://hydra.dmj.io">
-	<img src="https://img.shields.io/badge/build-Hydra-00BDFD.svg?style=flat-square" alt="Miso Hydra">
+  <a href="https://haskell-miso.cachix.org">
+	<img src="https://img.shields.io/badge/build-cachix-00BDFD.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
 	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
@@ -341,7 +341,7 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 
 ## Binary cache
 
-`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://hydra.dmj.io/nix-cache-info) for faster builds. To use the binary cache follow the instructions on `https://haskell-miso.cachix.org/`.
+`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso.cachix.org/).
 
 ```bash
 cachix use haskell-miso

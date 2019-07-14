@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "miso";
-  version = "0.21.2.0";
+  version = "1.0.0.0";
   src = ./.;
   configureFlags = [ "-fexamples" "-fjsaddle" ];
   isLibrary = true;
