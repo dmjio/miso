@@ -33,10 +33,7 @@
 ## Table of Contents
 - [Quick Start](#quick-start)
   - [Begin](#begin)
-  - [Stack](#stack)
   - [Nix](#nix)
-  - [Cabal](#cabal)
-  - [GHCJSi Caveats](#ghcjsi-caveats)
   - [Architecture](#architecture)
 - [Examples](#examples)
   - [TodoMVC](#todomvc)
@@ -70,152 +67,35 @@
 - [License](#license)
 
 ## Quick start
-To get started quickly building applications, we recommend using the [`stack`](https://docs.haskellstack.org/en/stable/README/) or [`nix`](https://nixos.org/nix) package managers. Obtaining [`GHCJS`](https://github.com/ghcjs/ghcjs) is required as a prerequisite. `stack` and `nix` make this process easy, if you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means.
-
-All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
+To get started quickly building applications, we recommend using the [`nix`](https://nixos.org/nix) package manager with miso's binary cache provided by [`cachix`](https://haskell-miso.cachix.org/). It is possible to use [`stack`](https://docs.haskellstack.org/en/stable/README/) to build GHCJS projects, but support for procuring `GHCJS` has been removed [as of stack 2.0](https://github.com/commercialhaskell/stack/issues/4086). `nix` is used to procure a working version of `GHCJS`. If you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means. All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
 
 ### Begin
-We recommend using `nix` when working with `miso`, but it is just as fine to use `stack`.
-To build the sample-app with `nix`, execute the command below:
+To build the sample-app with `nix`, execute the commands below:
 
 ```bash
-git clone https://github.com/dmjio/miso && cd miso/sample-app && nix-build
+(optional) nix-env -iA cachix -f https://cachix.org/api/v1/install
+(optional) cachix use haskell-miso
+git clone https://github.com/dmjio/miso
+cd miso/sample-app
+nix-build
+open ./result/bin/app.jsexe/index.html
 ```
 
-To develop with `nix` run the below command (this will put you into a shell where you can iteratively develop the project with `cabal build`).
-
-```bash
-git clone https://github.com/dmjio/miso && cd miso/sample-app && nix-shell -A env
-```
-
-For more information on using `nix` w/ `miso`, see the [`nix` section below](#nix)
-
-To build the sample-app with `stack`, execute the command below:
-```bash
-git clone https://github.com/dmjio/miso && cd miso/sample-app && stack setup && stack build
-```
-
-Note: It's important to ensure that you don't have a global `cabal-install` present on your system. This could cause build problems. If you see an error like this (below), try deleting your global `cabal-install`.
-
-```bash
-exit status: 1
-stderr: solver must be one of: modular
-CallStack (from HasCallStack):
-  error, called at libraries/Cabal/Cabal/Distribution/ReadE.hs:46:24 in Cabal-2.0.1.0:Distribution.ReadE
-```
-
-
-For more information on using `stack` w/ `miso`, see the [`stack` section below](#stack)
-
-
-### Stack
-In the `miso` repository there is a [folder named `stack`](https://github.com/dmjio/miso/tree/master/stack) with "known to work" configurations for `GHCJS`. One stack file exists for both the `7.10.3` and `8.0.1` versions of `GHCJS`. In general, we recommend developing with the `7.10.3` version since it currently supports `GHCJSi` (a REPL that connects to the browser by way of a [`nodejs`](https://nodejs.org/en/) web server using [`socket.io`](https://socket.io/)) and building with the `8.0.1` version (if possible). For more information on using `stack` with `GHCJS`, please consult the [GHCJS section of the `stack` docs](https://docs.haskellstack.org/en/stable/ghcjs/).
-
-To begin, create the following directory layout
-```bash
-➜  mkdir app && touch app/{Main.hs,app.cabal,stack.yaml} && tree app
-app
-|-- Main.hs
-|-- app.cabal
-`-- stack.yaml
-```
-
-Add a `stack.yaml` file that uses a recent version of `miso`.
-```bash
-➜  cat app/stack.yaml
-resolver: lts-6.30
-compiler: ghcjs-0.2.0.9006030_ghc-7.10.3
-compiler-check: match-exact
-
-packages:
- - '.'
-extra-deps:
- - miso-0.18.0.0
-
-setup-info:
-  ghcjs:
-    source:
-      ghcjs-0.2.0.9006030_ghc-7.10.3:
-        url: http://ghcjs.tolysz.org/lts-6.30-9006030.tar.gz
-        sha1: 2371e2ffe9e8781808b7a04313e6a0065b64ee51
-```
-
-Add a `cabal` file
-```bash
-➜  cat app/*.cabal
-name:                app
-version:             0.1.0.0
-synopsis:            First miso app
-category:            Web
-build-type:          Simple
-cabal-version:       >=1.10
-
-executable app
-  main-is:             Main.hs
-  build-depends:       base, miso
-  default-language:    Haskell2010
-```
-
-Add the source from [Sample Application](#sample-application) to `app/Main.hs`
-
-Run `stack setup`. This might take a long time, since it will have to build `GHCJS`.
-```
-stack setup
-```
-
-Run `stack build` to get the static assets
-```
-stack build
-```
-
-See the result(For linux, use `xdg-open`)
-```
-open $(stack path --local-install-root)/bin/app.jsexe/index.html
-```
-
-Using GHCJSi
-```
-stack ghci
-```
-
-If that warns with `socket.io not found, browser session not available`, you'll need to install `socket.io`
-```
-npm install socket.io
-```
-
-and update your `NODE_PATH`
-```
-export NODE_PATH=$(pwd)/node_modules
-```
-
-Now you should be connected, and the app viewable in `GHCJSi` (open http://localhost:6400).
-```bash
-➜  stack ghci
-app-0.1.0.0: initial-build-steps (exe)
-Configuring GHCi with the following packages: app
-GHCJSi, version 0.2.0.9006020-7.10.3: http://www.github.com/ghcjs/ghcjs/  :? for help
-[1 of 1] Compiling Main             ( /Users/david/Desktop/miso/sample-app/Main.hs, interpreted )
-socket.io found, browser session available at http://localhost:6400
-Ok, modules loaded: Main.
-*Main> main
-browser connected, code runs in browser from now on
-```
+The above commands will add miso's binary cache to your nix installation (support for both Linux and OSX).
+`nix-build` will fetch the dependencies from miso's cache and build the sample application.
 
 ### Nix
 `Nix` is a more powerful option for building web applications with `miso` since it encompasses development workflow, configuration management, and deployment. The source code for [`haskell-miso.org`](https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org) is an example of this.
 
 If unfamiliar with `nix`, we recommend [@Gabriel439](https://github.com/Gabriel439)'s ["Nix and Haskell in production"](https://github.com/Gabriel439/haskell-nix) guide.
 
-To get started, we will use the [`cabal2nix`](https://github.com/NixOS/cabal2nix) tool to convert our `Cabal` file into a `nix` derivation (named `app.nix`). We'll then write a file named `default.nix`, which is used for building our project (via `nix-build`) and development (via `nix-shell`).
-
 To begin, make the following directory layout:
 ```bash
-➜  mkdir app && touch app/{Main.hs,app.cabal,default.nix,app.nix} && tree app
+➜  mkdir app && touch app/{Main.hs,app.cabal,default.nix} && tree app
 app
 |-- Main.hs
 |-- app.cabal
-|-- default.nix
-`-- app.nix
+`-- default.nix
 ```
 
 Add a `cabal` file
@@ -230,56 +110,21 @@ cabal-version:       >=1.10
 
 executable app
   main-is:             Main.hs
+  ghcjs-options:
+    -dedupe
   build-depends:       base, miso
   default-language:    Haskell2010
 ```
 
-Use [`cabal2nix`](https://github.com/NixOS/cabal2nix) to generate a file named `app.nix`
-that looks like below.
-```bash
-➜  cabal2nix . --compiler ghcjs > app.nix
-➜  cat app.nix
-```
+Write a `default.nix` (this will fetch a recent version of `miso`). `miso` will provide you with a working `nixpkgs` named `pkgs`. `callCabal2nix` will automatically produce a nix expression that builds your cabal file.
 
 ```nix
-{ mkDerivation, base, miso, stdenv }:
-mkDerivation {
-  pname = "app";
-  version = "0.1.0.0";
-  src = ./.;
-  isLibrary = false;
-  isExecutable = true;
-  executableHaskellDepends = [ base miso ];
-  description = "First miso app";
-  license = stdenv.lib.licenses.bsd3;
-}
-```
-
-Write a `default.nix` (which calls `app.nix`), this fetches a recent version of `miso`.
-```nix
-{ pkgs ? import <nixpkgs> {} }:
-
-let
-
-  pinnedPkgs = import (pkgs.fetchFromGitHub {
-    owner  = "NixOS";
-    repo   = "nixpkgs";
-    rev    = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
-  }){};
-
-  miso = pinnedPkgs.haskell.packages.ghcjs.callCabal2nix "miso" (pkgs.fetchFromGitHub {
-    owner  = "dmjio";
-    repo   = "miso";
-    rev    = "bb2be3264ff3c6aa3b18e471d7cf04296024059b";
-    sha256 = "07k1rlvl9g027fp2khl9kiwla4rcn9sv8v2dzm0rzf149aal93vn";
-  }){};
-
-in
-
-  pinnedPkgs.haskell.packages.ghcjs.callPackage ./app.nix {
-    inherit miso;
-  }
+with (import (builtins.fetchTarball {
+  url = "https://github.com/dmjio/miso/archive/b4c473f3ed6d6251ea7b8b489fc50076ac8d9b70.tar.gz";
+  sha256 = "11rby2s0hxbl28a4fcwdm9lcbjfysv862xd6b9jy0rgl63dh51i3";
+}) {});
+with pkgs.haskell.packages;
+ghcjs.callCabal2nix "app" ./. {}
 ```
 
 Add the source from [Sample Application](#sample-application) to `app/Main.hs`
@@ -294,7 +139,7 @@ Open the result
 open ./result/bin/app.jsexe/index.html
 ```
 
-For development with `nix`, it's important to have `cabal` present for building. This command will make it available in your `PATH`.
+For development with `nix`, it can be nice to have `cabal` present for building. This command will make it available in your `PATH`.
 ```
 nix-env -iA cabal-install -f '<nixpkgs>'
 ```
@@ -304,37 +149,20 @@ To be put into a shell w/ `GHCJS` and all the dependencies for this project pres
 nix-shell -A env
 ```
 
-To open `GHCJSi` (`NODE_PATH` should already be set properly)
+To view the dependencies for your project, call `ghcjs-pkg list` when inside the shell.
 ```
-$ cabal configure --ghcjs
-$ cabal repl
-Package has never been configured. Configuring with default flags. If this
-fails, please run configure manually.
-Resolving dependencies...
-Configuring app-0.1.0.0...
-Preprocessing executable 'app' for app-0.1.0.0...
-GHCJSi, version 0.2.0-7.10.3: http://www.github.com/ghcjs/ghcjs/  :? for help
-[1 of 1] Compiling Main             ( Main.hs, interpreted )
-Ok, modules loaded: Main.
-*Main>
-browser connected, code runs in browser from now on
+nix-shell -A env --run 'ghcjs-pkg list'
 ```
 
-### Cabal
-The latest stable version of `miso` will be available on Hackage.
-To build with cabal, we assume `ghcjs` is in your `PATH` and `ghcjs-base` is present in your `ghcjs-pkg` list.
-```bash
-cabal sandbox init
-cabal install --ghcjs
-cabal build
-open dist/build/app/app.jsexe/index.html
+To build the project with `cabal` after entering the `nix-shell`
+```
+nix-shell -A env --run 'cabal configure --ghcjs && cabal build`
 ```
 
-### GHCJSi Caveats
-If you run `main` in `GHCJSi`, interrupt it and then run it again, you
-will end up with two copies of your app displayed above each other. As
-a workaround, you can use `clearBody >> main` which will completely
-clear the document body before rendering your application.
+For incremental development inside of the `nix-shell` we recommend using a tool like [`entr`](http://eradman.com/entrproject/) to automatically rebuild on file changes, or roll your own solution with `inotify`.
+```
+ag -l | entr 'cabal build'
+```
 
 ### Architecture
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/haskell-miso.cabal#L16-L60). For more info on how to use `stack` with a `client`/`server` setup, see this [link](https://docs.haskellstack.org/en/stable/ghcjs/#project-with-both-client-and-server). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
@@ -454,39 +282,33 @@ viewModel x = div_ [] [
 
 The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
 ```
-git clone https://github.com/dmjio/miso && cd miso && nix-build
+git clone https://github.com/dmjio/miso && cd miso && nix-build -A miso-ghcjs
 ```
 
 This will build all examples and documentation into a folder named `result`
 ```
-➜  miso git:(master) ✗ tree result -d
-result
-|-- doc
-|   |-- x86_64-osx-ghc-8.0.2
-|   |   `-- miso-0.2.0.0
-|   |       `-- html
-|   |           `-- src
-|   `-- x86_64-osx-ghcjs-0.2.0-ghc7_10_3
-|       `-- miso-0.2.0.0
-|           `-- html
-|               `-- src
-|-- examples
-|   |-- mario.jsexe
-|   |   `-- imgs
-|   |       |-- jump
-|   |       |-- stand
-|   |       `-- walk
-|   |-- router.jsexe
-|   |-- simple.jsexe
-|   |-- tests.jsexe
-|   |-- todo-mvc.jsexe
-|   `-- websocket.jsexe
+➜  miso git:(master) ✗ tree -d ./result/bin
+./result/bin
+|-- canvas2d.jsexe
+|-- compose-update.jsexe
+|-- file-reader.jsexe
+|-- mario.jsexe
+|   `-- imgs
+|-- mathml.jsexe
+|-- router.jsexe
+|-- simple.jsexe
+|-- svg.jsexe
+|-- tests.jsexe
+|-- threejs.jsexe
+|-- todo-mvc.jsexe
+|-- websocket.jsexe
+`-- xhr.jsexe
 ```
 
 To see examples, we recommend hosting them with a webserver
 
 ```
-cd result/examples/todo-mvc.jsexe && python -m SimpleHTTPServer
+cd result/bin/todo-mvc.jsexe && nix-shell -p python --run 'python -m SimpleHTTPServer'
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
 
@@ -515,25 +337,14 @@ For more information on how `miso` handles isomorphic javascript, we recommend [
 
 ## Pinning nixpkgs
 
-By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/default.nix#L1-L6).
-To override this to your system's version of `nixpkgs` write:
-
-```
-nix-build --arg nixpkgs 'import <nixpkgs> {}'
-```
+By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nixpkgs.json).
 
 ## Binary cache
 
-`nix` users on a Linux distro can take advantage of a [binary cache](https://hydra.dmj.io/nix-cache-info) for faster builds. To use the binary cache simply append `https://hydra.dmj.io/nix-cache-info` during all `nix-shell` and/or `nix-build` invocations.
+`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://hydra.dmj.io/nix-cache-info) for faster builds. To use the binary cache follow the instructions on `https://haskell-miso.cachix.org/`.
 
 ```bash
-nix-build --option extra-binary-caches https://hydra.dmj.io
-```
-
-Alternatively, add `https://hydra.dmj.io` to your list of local binary caches in `nix.conf` (usually found in `/etc/nix/nix.conf`), and it will automatically be used on all invocations of `nix-build` and/or `nix-shell`.
-
-```
-binary-caches = https://hydra.dmj.io/ https://cache.nixos.org/
+cachix use haskell-miso
 ```
 
 ## Benchmarks

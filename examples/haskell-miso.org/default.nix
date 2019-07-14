@@ -1,12 +1,10 @@
 {}:
+with (import ../.. {});
 let
-  inherit (import ../../default.nix {}) pkgs;
   inherit (pkgs) runCommand closurecompiler;
   inherit (pkgs.haskell.packages) ghcjs86 ghc865;
-  miso-ghc = ghc865.callPackage ./../../miso-ghc.nix { };
-  miso-ghcjs = ghcjs86.callPackage ./../../miso-ghcjs.nix { };
-  client = ghcjs86.callPackage ./client { miso = miso-ghcjs; };
-  server = ghc865.callPackage ./server { miso = miso-ghc; };
+  client = ghcjs86.callCabal2nix "haskell-miso" ./. {};
+  server = ghc865.callCabal2nix "haskell-miso" ./. {};
 in
   runCommand "haskell-miso.org" { inherit client server; } ''
     mkdir -p $out/{bin,static}
