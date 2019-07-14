@@ -11,17 +11,17 @@
   <a href="https://haskell-miso-slack.herokuapp.com">
 	<img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
   </a>
-  <a href="http://hackage.haskell.org/package/miso">
-	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
-  </a>
   <a href="https://haskell.org">
-	<img src="https://img.shields.io/badge/language-Haskell-green.svg?style=flat-square" alt="Haskell">
+	<img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
+  </a>
+  <a href="https://haskell-miso.cachix.org">
+	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
 	<img src="http://img.shields.io/badge/license-BSD3-brightgreen.svg?style=flat-square" alt="LICENSE">
   </a>
-  <a href="https://haskell-miso.cachix.org">
-	<img src="https://img.shields.io/badge/build-cachix-00BDFD.svg?style=flat-square" alt="Cachix">
+  <a href="http://hackage.haskell.org/package/miso">
+	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
   <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
 	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
@@ -73,8 +73,10 @@ To get started quickly building applications, we recommend using the [`nix`](htt
 To build the sample-app with `nix`, execute the commands below:
 
 ```bash
-(optional) nix-env -iA cachix -f https://cachix.org/api/v1/install
-(optional) cachix use haskell-miso
+# optional use of cache
+nix-env -iA cachix -f https://cachix.org/api/v1/install
+# optional use of cache
+cachix use haskell-miso
 git clone https://github.com/dmjio/miso
 cd miso/sample-app
 nix-build
@@ -120,8 +122,8 @@ Write a `default.nix` (this will fetch a recent version of `miso`). `miso` will 
 
 ```nix
 with (import (builtins.fetchTarball {
-  url = "https://github.com/dmjio/miso/archive/b4c473f3ed6d6251ea7b8b489fc50076ac8d9b70.tar.gz";
-  sha256 = "11rby2s0hxbl28a4fcwdm9lcbjfysv862xd6b9jy0rgl63dh51i3";
+  url = "https://github.com/dmjio/miso/archive/39b9e26ff41d6aab3b9d13a9d102ac56017f6a1f.tar.gz";
+  sha256 = "1lwr35p9074b7wgz0jh4f2pjc7ls8isgzmn9xl86vb6cvsm035kf";
 }) {});
 with pkgs.haskell.packages;
 ghcjs.callCabal2nix "app" ./. {}
