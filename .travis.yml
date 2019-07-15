@@ -1,0 +1,13 @@
+language: nix
+
+matrix:
+  fast_finish: true
+
+before_install:
+ - nix-channel --list
+ - nix-channel --update
+ - nix-env -iA cachix -f https://cachix.org/api/v1/install
+ - cachix use haskell-miso
+
+script:
+ - nix-build
