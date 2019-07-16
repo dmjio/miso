@@ -18,6 +18,10 @@
   "bugs": {
     "url": "https://github.com/dmjio/miso/issues"
   },
+  "jest": {
+    "verbose": true,
+    "testURL": "http://localhost/"
+  },
   "homepage": "https://github.com/dmjio/miso#readme",
   "devDependencies": {
     "jsdom": "^11.6.2",
