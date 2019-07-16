@@ -135,6 +135,15 @@ test('Should create an SVG DOM node', () => {
     expect(body.children[0]).toBe(newNode.domRef);
 });
 
+test('Should create a MathML DOM node', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var currentNode = null;
+    var newNode = vnode('math', [], {}, {}, 'mathml');
+    window['diff'](currentNode, newNode, body, document);
+    expect(body.children[0]).toBe(newNode.domRef);
+});
+
 test('Should create an SVG DOM node, with href attribute', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
