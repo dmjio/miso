@@ -3,10 +3,23 @@
 }:
 with (builtins.fromJSON (builtins.readFile ./nixpkgs.json));
 let
-  inherit (pkgs.haskell.lib) enableCabalFlag sdistTarball buildStrictly;
+  inherit (pkgs.haskell.lib) enableCabalFlags sdistTarball buildStrictly;
   inherit (pkgs.haskell.packages) ghc865 ghcjs;
   inherit (pkgs.lib) overrideDerivation optionalString cleanSourceWith;
   inherit (pkgs) closurecompiler;
+  jsaddle-src = pkgs.fetchFromGitHub {
+    owner = "ghcjs";
+    repo = "jsaddle";
+    rev = "1e39844";
+    sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir8963";
+  };
+  servant-src = pkgs.fetchFromGitHub {
+    owner = "haskell-servant";
+    repo = "servant";
+    rev = "d428993";
+    sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir896z";
+  };
+  servant-src-servant = "${servant-src}/servant";
   miso-src-filter = with pkgs.lib;
     cleanSourceWith {
       src = ./.;
@@ -23,7 +36,38 @@ let
          (baseName == "LICENSE") ||
          (type == "directory" && baseName != "dist"));
     };
-  overrides = pkgs: {
+  overrides = pkgs: with pkgs.haskell.lib; {
+    pkgsCross = pkgs.pkgsCross // {
+      iphone64 = pkgs.pkgsCross.iphone64 // {
+        haskell = pkgs.pkgsCross.iphone64.haskell // {
+          packages = pkgs.pkgsCross.iphone64.haskell.packages // {
+            integer-simple = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple // {
+              ghc865 = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.override {
+                overrides = self: super: {
+                  mkDerivation = args: super.mkDerivation (args // {
+                    enableLibraryProfiling = false;
+                    doCheck = false;
+                    doHaddock = false;
+                  });
+                  jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
+                  jsaddle-wkwebview = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle-wkwebview" {};
+                  servant = pkgs.lib.overrideDerivation (super.servant) (drv: {
+                    postInstall = "";
+                    postUnpack = ''
+                      ${pkgs.gnused}/bin/sed -i '135d' servant*/servant.cabal
+                      ${pkgs.gnused}/bin/sed -i '137d' servant*/servant.cabal
+                    '';
+                  });
+                  aeson = dontCheck super.aeson;
+                  QuickCheck = disableCabalFlag (super.QuickCheck) "templatehaskell";
+                  miso = self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle -fexamples -fios" {};
+                };
+              };
+            };
+          };
+        };
+      };
+    };
     haskell = pkgs.haskell // {
       packages = pkgs.haskell.packages // {
         ghc864 = pkgs.haskell.packages.ghc864.override {
@@ -37,17 +81,21 @@ let
           };
         };
         ghc865 = pkgs.haskell.packages.ghc865.override {
-          overrides = self: super: with pkgs.haskell.lib; {
+          overrides = self: super: with pkgs.haskell.lib; rec {
+            jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
             miso = self.callCabal2nix "miso" miso-src-filter {};
+            miso-jsaddle = self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle -fexamples" {};
+            jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
           };
         };
         ghcjs86 = pkgs.haskell.packages.ghcjs86.override {
-          overrides = self: super: {
-            jsaddle-warp = super.callPackage ./jsaddle-warp-ghcjs.nix {};
+          overrides = self: super: with pkgs.haskell.lib; {
+            jsaddle = ghcjs86.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
+            jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
             mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
             doctest = null;
-            miso = (ghcjs.callCabal2nix "miso" miso-src-filter {}).overrideDerivation (drv: {
-              configureFlags = [ "-fexamples" "-ftests" ];
+            miso = (ghcjs.callCabal2nixWithOptions "miso" miso-src-filter "-fexamples -ftests" {})
+             .overrideDerivation (drv: {
               buildInputs = drv.buildInputs ++ [ self.jsaddle-warp self.quickcheck-instances ];
               doHaddock = haddock;
               postInstall = ''
@@ -75,7 +123,7 @@ let
   pkgs = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256;
-  }) { config.packageOverrides = overrides; };
+  }) { config.packageOverrides = overrides; config.allowUnfree = true; };
   examples = import ./nix/examples.nix pkgs;
   uploadCoverage = pkgs.writeScriptBin "upload-coverage.sh" ''
     #!/usr/bin/env bash
@@ -115,6 +163,8 @@ in
 {
   inherit pkgs;
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
+  miso-ghc-jsaddle = pkgs.haskell.packages.ghc865.miso-jsaddle;
+  miso-arm = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso;
+  inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
   inherit payload release s3;
 }

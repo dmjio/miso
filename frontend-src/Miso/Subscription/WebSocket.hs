@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE TemplateHaskell            #-}
+-- {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
