@@ -45,6 +45,9 @@ flag ios
   description:
     Cross compile to iOS
 
+data-files:
+  jsbits/*.js
+
 executable todo-mvc
   main-is:
     Main.hs
@@ -330,6 +333,8 @@ executable simple
     if flag(ios)
       cpp-options:
         -DIOS
+      ghc-options:
+        -threaded
       build-depends:
         jsaddle-wkwebview
     else
@@ -394,6 +399,7 @@ library
   other-modules:
     Miso.Concurrent
     Miso.Html.Internal
+    Paths_miso
   ghc-options:
     -Wall
   hs-source-dirs:

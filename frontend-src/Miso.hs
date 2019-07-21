@@ -46,6 +46,8 @@ import qualified JavaScript.Object.Internal as OI
 import           GHCJS.Types (JSString)
 import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
 #ifdef IOS
+import           Paths_miso
+import qualified Data.Text.IO as T
 #else
 import           Data.FileEmbed
 #endif
@@ -75,6 +77,10 @@ common
 common App {..} m getView = do
 #ifdef JSADDLE
 #ifdef IOS
+  _ <- eval =<< liftIO (T.readFile =<< getDataFileName "delegate.js")
+  _ <- eval =<< liftIO (T.readFile =<< getDataFileName "diff.js")
+  _ <- eval =<< liftIO (T.readFile =<< getDataFileName "isomorphic.js")
+  _ <- eval =<< liftIO (T.readFile =<< getDataFileName "util.js")
 #else
   _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
