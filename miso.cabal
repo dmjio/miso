@@ -412,11 +412,17 @@ library
   if impl(ghcjs) || flag (jsaddle)
     if flag(jsaddle)
       build-depends:
---      file-embed,
         jsaddle
-      cpp-options: -DJSADDLE
+      cpp-options:
+        -DJSADDLE
       hs-source-dirs:
         jsaddle-ffi
+      if flag (ios)
+        cpp-options:
+          -DIOS
+      else
+        build-depends:
+          file-embed
     else
       build-depends:
         ghcjs-base

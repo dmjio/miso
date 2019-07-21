@@ -152,12 +152,15 @@ let
         ln -s ${miso.doc} $out/ghcjs-doc
         ln -s ${pkgs.haskell.packages.ghc865.miso.doc} $out/ghc-doc
      '';
+   armPkgs = with pkgs;
+     if stdenv.isDarwin
+       then { miso-arm = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; }
+       else { };
 in
 {
   inherit pkgs;
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
   miso-ghc-jsaddle = pkgs.haskell.packages.ghc865.miso-jsaddle;
-  miso-arm = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso;
   inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
   inherit payload release s3;
-}
+} // armPkgs
