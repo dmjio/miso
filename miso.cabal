@@ -68,6 +68,8 @@ executable todo-mvc
     if flag(ios)
       cpp-options:
         -DIOS
+      ghc-options:
+        -threaded
       build-depends:
         jsaddle-wkwebview
     else
@@ -181,6 +183,8 @@ executable router
     if flag(ios)
       cpp-options:
         -DIOS
+      ghc-options:
+        -threaded
       build-depends:
         jsaddle-wkwebview
     else
@@ -210,6 +214,8 @@ executable websocket
     if flag(ios)
       cpp-options:
        -DIOS
+      ghc-options:
+        -threaded
       build-depends:
         jsaddle-wkwebview
     else
@@ -241,6 +247,8 @@ executable mario
     if flag(ios) && !impl(ghcjs)
       cpp-options:
        -DIOS
+      ghc-options:
+        -threaded
       build-depends:
         jsaddle-wkwebview
     if !flag(ios)
