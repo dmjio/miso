@@ -22,7 +22,7 @@ runApp = JSaddle.run
 import qualified Language.Javascript.JSaddle.Warp as JSaddle
 #ifdef ghcjs_HOST_OS
 runApp :: JSM () -> IO ()
-runApp = JSaddle.run
+runApp = JSaddle.run 8080
 
 #else
 import           Network.Wai.Application.Static
