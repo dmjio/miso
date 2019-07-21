@@ -3,7 +3,7 @@
 }:
 with (builtins.fromJSON (builtins.readFile ./nixpkgs.json));
 let
-  inherit (pkgs.haskell.lib) enableCabalFlags sdistTarball buildStrictly;
+  inherit (pkgs.haskell.lib) enableCabalFlag sdistTarball buildStrictly;
   inherit (pkgs.haskell.packages) ghc865 ghcjs;
   inherit (pkgs.lib) overrideDerivation optionalString cleanSourceWith;
   inherit (pkgs) closurecompiler;
@@ -13,13 +13,6 @@ let
     rev = "1e39844";
     sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir8963";
   };
-  servant-src = pkgs.fetchFromGitHub {
-    owner = "haskell-servant";
-    repo = "servant";
-    rev = "d428993";
-    sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir896z";
-  };
-  servant-src-servant = "${servant-src}/servant";
   miso-src-filter = with pkgs.lib;
     cleanSourceWith {
       src = ./.;
