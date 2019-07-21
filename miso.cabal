@@ -45,9 +45,6 @@ flag ios
   description:
     Cross compile to iOS
 
-data-files:
-  jsbits/*.js
-
 executable todo-mvc
   main-is:
     Main.hs
@@ -399,7 +396,6 @@ library
   other-modules:
     Miso.Concurrent
     Miso.Html.Internal
-    Paths_miso
   ghc-options:
     -Wall
   hs-source-dirs:
@@ -426,6 +422,8 @@ library
       if flag (ios)
         cpp-options:
           -DIOS
+        other-modules:
+          Miso.JSBits
       else
         build-depends:
           file-embed

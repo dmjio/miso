@@ -1,5 +1,5 @@
 window = typeof window === 'undefined' ? {} : window;
-window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc = window.document) {
+window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
   var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
   if (!window['walk'](vtree, node, doc)) {
     console.warn('Could not copy DOM into virtual DOM, falling back to diff');
@@ -27,7 +27,7 @@ window['walk'] = function walk(vtree, node, doc) {
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
-    if (vdomChild.type === "vtext") {
+    if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== Node.TEXT_NODE) return false;
 
         if (vdomChild['text'] === domChild.textContent) {

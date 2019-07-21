@@ -30,7 +30,7 @@ window['delegate'] = function delegate(mountPointElement, events, getVTree) {
   for (var event in events) {
     mountPointElement.addEventListener(events[event][0], function(e) {
       getVTree(function (obj) {
-        window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
+	window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
       });
     }, events[event][1]);
   }
@@ -46,12 +46,12 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
   else if (stack.length > 1) {
     if (obj['domRef'] === stack[0]) parentStack.unshift(obj);
     for (var o = 0; o < obj.children.length; o++) {
-      if (obj.children[o]['type'] === "vtext") continue;
+      if (obj.children[o]['type'] === 'vtext') continue;
       delegateEvent ( event
-                    , obj.children[o]
-                    , stack.slice(1)
-                    , parentStack
-                    );
+		    , obj.children[o]
+		    , stack.slice(1)
+		    , parentStack
+		    );
      }
   }
 
@@ -60,15 +60,15 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
     if (obj['domRef'] === stack[0]) {
       var eventObj = obj['events'][event.type];
       if (eventObj) {
-        var options = eventObj.options;
+	var options = eventObj.options;
       if (options['preventDefault'])
-        event.preventDefault();
+	event.preventDefault();
       eventObj['runEvent'](event);
       if (!options['stopPropagation'])
-        window['propogateWhileAble'] (parentStack, event);
+	window['propogateWhileAble'] (parentStack, event);
       } else {
-        /* still propagate to parent handlers even if event not defined */
-        window['propogateWhileAble'] (parentStack, event);
+	/* still propagate to parent handlers even if event not defined */
+	window['propogateWhileAble'] (parentStack, event);
       }
     }
   }
@@ -87,7 +87,7 @@ window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) 
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i]['events'][event.type]) {
       var eventObj = parentStack[i]['events'][event.type],
-          options = eventObj['options'];
+	  options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
       if (options['stopPropagation']) break;
@@ -99,11 +99,11 @@ window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) 
  values (string, numbers and booleans)*/
 window['objectToJSON'] = function objectToJSON (at, obj) {
   /* If at is of type [[MisoString]] */
-  if (typeof at[0] == "object") {
+  if (typeof at[0] == 'object') {
     var ret = [];
     for (var i = 0; i < at.length; i++)
       ret.push(window['objectToJSON'](at[i], obj));
-    return (ret);
+    return ret;
   }
 
   for (var i in at) obj = obj[at[i]];
@@ -113,7 +113,7 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
     var newObj = [];
     for (var i = 0; i < obj.length; i++)
       newObj.push(window['objectToJSON']([], obj[i]));
-    return (newObj);
+    return newObj;
   }
 
   /* If obj is a non-list-like object */
@@ -122,9 +122,9 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
     /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (obj['type'] == "checkbox" && (i === "selectionDirection" || i === "selectionStart" || i === "selectionEnd"))
+    if (obj['type'] == 'checkbox' && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
       continue;
-    if (typeof obj[i] == "string" || typeof obj[i] == "number" || typeof obj[i] == "boolean")
+    if (typeof obj[i] == 'string' || typeof obj[i] == 'number' || typeof obj[i] == 'boolean')
       newObj[i] = obj[i];
   }
   return newObj;

@@ -5,11 +5,11 @@ window['diff'] = function diff(currentObj, newObj, parent, doc) {
   else if (!currentObj && newObj) window['createNode'](newObj, parent, doc);
   else if (currentObj && !newObj) window['destroyNode'](currentObj, parent);
   else {
-    if (currentObj.type === "vtext") {
-      if (newObj.type === "vnode") window['replaceTextWithElement'](currentObj, newObj, parent, doc);
+    if (currentObj.type === 'vtext') {
+      if (newObj.type === 'vnode') window['replaceTextWithElement'](currentObj, newObj, parent, doc);
       else window['diffTextNodes'](currentObj, newObj);
     } else {
-      if (newObj.type === "vnode") window['diffVNodes'](currentObj, newObj, parent, doc);
+      if (newObj.type === 'vnode') window['diffVNodes'](currentObj, newObj, parent, doc);
       else window['replaceElementWithText'](currentObj, newObj, parent, doc);
     }
   }
@@ -57,7 +57,7 @@ window['populate'] = function populate(c, n, doc) {
               css: null,
               children: []
               }
-  window['diffProps'](c['props'], n['props'], n['domRef'], n['ns'] === "svg");
+  window['diffProps'](c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
   window['diffCss'](c['css'], n['css'], n['domRef']);
   window['diffChildren'](c['children'], n['children'], n['domRef'], doc);
 };
@@ -90,11 +90,11 @@ window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
       /* Already on DOM from previous diff, continue */
       if (newProp === cProps[c]) continue;
       if (isSvg) {
-        if (c === "href")
-          node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+        if (c === 'href')
+          node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
         else
           node.setAttribute(c, newProp);
-      } else if (c in node && !(c === "list" || c === "form")) {
+      } else if (c in node && !(c === 'list' || c === 'form')) {
         node[c] = newProp;
       } else {
         node.setAttribute(c, newProp);
@@ -107,11 +107,11 @@ window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
     newProp = nProps[n];
     /* Only add new properties, skip (continue) if they already exist in current property map */
     if (isSvg) {
-      if (n === "href")
-        node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+      if (n === 'href')
+        node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
       else
         node.setAttribute(n, newProp);
-    } else if (n in node && !(n === "list" || n === "form")) {
+    } else if (n in node && !(n === 'list' || n === 'form')) {
       node[n] = nProps[n];
     } else {
       node.setAttribute(n, newProp);
@@ -153,10 +153,10 @@ window['diffChildren'] = function diffChildren(cs, ns, parent, doc) {
 };
 
 window['createElement'] = function createElement(obj, doc) {
-  if (obj['ns'] === "svg") {
-    obj['domRef'] = doc.createElementNS("http://www.w3.org/2000/svg", obj['tag']);
-  } else if (obj['ns'] === "mathml") {
-    obj['domRef'] = doc.createElementNS("http://www.w3.org/1998/Math/MathML", obj['tag']);
+  if (obj['ns'] === 'svg') {
+    obj['domRef'] = doc.createElementNS('http://www.w3.org/2000/svg', obj['tag']);
+  } else if (obj['ns'] === 'mathml') {
+    obj['domRef'] = doc.createElementNS('http://www.w3.org/1998/Math/MathML', obj['tag']);
   } else {
     obj['domRef'] = doc.createElement(obj['tag']);
   }
@@ -164,7 +164,7 @@ window['createElement'] = function createElement(obj, doc) {
 };
 
 window['createNode'] = function createNode(obj, parent, doc) {
-  if (obj.type === "vnode") window['createElement'](obj, doc);
+  if (obj.type === 'vnode') window['createElement'](obj, doc);
   else obj['domRef'] = doc.createTextNode(obj['text']);
   parent.appendChild(obj['domRef']);
   window['callCreated'](obj);
@@ -273,7 +273,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
       newFirstIndex++;
     }
 
-    /* The "you're screwed" case, nothing aligns, pull the ripcord, do something more fancy
+    /* The 'you're screwed' case, nothing aligns, pull the ripcord, do something more fancy
        This can happen when the list is sorted, for example.
        -> [ a e c ] <- old children
        -> [ b e d ] <- new children
