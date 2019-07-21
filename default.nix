@@ -1,5 +1,6 @@
 { haddock ? true
 , tests ? false
+, examples ? false
 }:
 with (builtins.fromJSON (builtins.readFile ./nixpkgs.json));
 let
@@ -16,6 +17,23 @@ let
   miso-src-filter = with pkgs.lib;
     cleanSourceWith {
       src = ./.;
+      filter =
+        name: type: let baseName = baseNameOf (toString name); in
+         ((type == "regular" && hasSuffix ".hs" baseName) ||
+         (hasSuffix ".yaml" baseName) ||
+         (hasSuffix ".cabal" baseName) ||
+         (hasSuffix ".css" baseName) ||
+         (hasSuffix ".html" baseName) ||
+         (hasSuffix ".png" baseName) ||
+         (hasSuffix ".js" baseName) ||
+         (baseName == "README.md") ||
+         (baseName == "LICENSE") ||
+         (type == "directory" && baseName != "examples") ||
+         (type == "directory" && baseName != "dist"));
+    };
+  miso-examples-src-filter = with pkgs.lib;
+    cleanSourceWith {
+      src = ./examples;
       filter =
         name: type: let baseName = baseNameOf (toString name); in
          ((type == "regular" && hasSuffix ".hs" baseName) ||
@@ -53,15 +71,16 @@ let
                   });
                   aeson = dontCheck super.aeson;
                   QuickCheck = disableCabalFlag (super.QuickCheck) "templatehaskell";
+                  miso-examples-arm = self.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle -fios" {};
                   miso = pkgs.lib.overrideDerivation
-                    (self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle -fexamples -fios" {})
+                    (self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle -fios" {})
                     (drv: {
                       preConfigure =
                         let
                           ghc = pkgs.haskellPackages.ghcWithPackages (p: with p; [hjsmin]);
                         in
                           "${ghc}/bin/runghc minify-inline/Main.hs && mv JSBits.hs frontend-src/Miso/";
-                    });
+                  });
                 };
               };
             };
@@ -85,30 +104,33 @@ let
           overrides = self: super: with pkgs.haskell.lib; rec {
             jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
             miso = self.callCabal2nix "miso" miso-src-filter {};
-            miso-jsaddle = self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle -fexamples" {};
+            miso-jsaddle = self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle" {};
+            miso-examples-jsaddle = self.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" { miso = miso-jsaddle; };
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
           };
         };
         ghcjs86 = pkgs.haskell.packages.ghcjs86.override {
           overrides = self: super: with pkgs.haskell.lib; {
-            jsaddle = ghcjs86.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
+            jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
             mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
             doctest = null;
-            miso = (ghcjs.callCabal2nixWithOptions "miso" miso-src-filter "-fexamples -ftests" {})
-             .overrideDerivation (drv: {
-              buildInputs = drv.buildInputs ++ [ self.jsaddle-warp self.quickcheck-instances ];
+            miso-examples = (ghcjs.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" {}).overrideDerivation (drv: {
               doHaddock = haddock;
               postInstall = ''
                 mkdir -p $out/bin/mario.jsexe/imgs
-                cp -r ${drv.src}/examples/mario/imgs $out/bin/mario.jsexe/
-                cp ${drv.src}/examples/xhr/index.html $out/bin/xhr.jsexe/
+                cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
+                cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
                 ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
                   --jscomp_off=checkVars \
                   --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
                   $out/bin/todo-mvc.jsexe/all.js > temp.js
                 mv temp.js $out/bin/todo-mvc.jsexe/all.js
-              '' + pkgs.lib.optionalString tests ''
+              '';
+            });
+            miso = (ghcjs.callCabal2nixWithOptions "miso" miso-src-filter "-ftests" {}).overrideDerivation (drv: {
+              doHaddock = haddock;
+              postInstall = pkgs.lib.optionalString tests ''
                 ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
                   --jscomp_off=checkVars \
                   --externs=$out/bin/tests.jsexe/all.js.externs \
@@ -125,7 +147,7 @@ let
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256;
   }) { config.packageOverrides = overrides; config.allowUnfree = true; };
-  examples = import ./nix/examples.nix pkgs;
+  more-examples = import ./nix/examples.nix pkgs;
   uploadCoverage = pkgs.writeScriptBin "upload-coverage.sh" ''
     #!/usr/bin/env bash
     export PATH=$PATH:${pkgs.nodePackages.yarn}/bin
@@ -137,38 +159,40 @@ let
   s3 = with pkgs.haskell.packages.ghcjs86;
        with pkgs;
     pkgs.writeScriptBin "s3.sh" ''
-       ${s3cmd}/bin/s3cmd sync --recursive ${examples.flatris}/bin/app.jsexe/ s3://aws-website-flatris-b3cr6/
+       ${s3cmd}/bin/s3cmd sync --recursive ${more-examples.flatris}/bin/app.jsexe/ s3://aws-website-flatris-b3cr6/
        ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/simple.jsexe/ s3://aws-website-simple-4yic3/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/router.jsexe/ s3://aws-website-router-gfy22/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/xhr.jsexe/ s3://aws-website-xhr-gvnhn/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
-       ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/mario.jsexe/ s3://aws-website-mario-5u38b/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/todo-mvc.jsexe/ s3://aws-website-todo-mvc-hs61i/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/websocket.jsexe/ s3://aws-website-websocket-0gx34/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/router.jsexe/ s3://aws-website-router-gfy22/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/xhr.jsexe/ s3://aws-website-xhr-gvnhn/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/svg.jsexe/ s3://aws-website-svg-wa5mj/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/file-reader.jsexe/ s3://aws-website-file-reader-q1rpg/
+       ${s3cmd}/bin/s3cmd sync --recursive ${miso-examples}/bin/canvas2d.jsexe/ s3://aws-website-canvas-y63zw/
        ${s3cmd}/bin/s3cmd sync --recursive ${miso}/bin/tests.jsexe/ s3://aws-website-tests-xc9ud
-       ${s3cmd}/bin/s3cmd sync --recursive ${examples.snake}/bin/app.jsexe/ s3://aws-website-snake-9o0ge/
-       ${s3cmd}/bin/s3cmd sync --recursive ${examples.the2048}/* s3://aws-website--6uw7z/
+       ${s3cmd}/bin/s3cmd sync --recursive ${more-examples.snake}/bin/app.jsexe/ s3://aws-website-snake-9o0ge/
+       ${s3cmd}/bin/s3cmd sync --recursive ${more-examples.the2048}/* s3://aws-website--6uw7z/
     '';
-  payload =
-    with pkgs.haskell.packages.ghcjs86;
-      pkgs.runCommand "miso" {} ''
-        mkdir -p $out/{lib,examples}
-        cp -r ${miso}/bin/* $out/examples
-        cp -r ${miso}/lib/* $out/lib
-        ln -s ${miso.doc} $out/ghcjs-doc
-        ln -s ${pkgs.haskell.packages.ghc865.miso.doc} $out/ghc-doc
-     '';
-   armPkgs = with pkgs;
-     if stdenv.isDarwin
-       then { miso-arm = pkgs.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; }
-       else { };
+   armPkgs = with pkgs; with pkgs.lib;
+     optionalAttrs stdenv.isDarwin
+       { miso-arm = pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; };
+   examplePkgs = with pkgs; with pkgs.lib;
+     let
+       examplePkgs = optionalAttrs examples {
+         inherit (haskell.packages.ghc865) miso-examples-jsaddle;
+         inherit (haskell.packages.ghcjs86) miso-examples;
+         inherit s3;
+        };
+     in
+      examplePkgs //
+        optionalAttrs (stdenv.isDarwin && examples)
+          { inherit (pkgsCross.iphone64.haskell.packages.integer-simple.ghc865) miso-examples-arm;
+          };
 in
 {
   inherit pkgs;
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
   miso-ghc-jsaddle = pkgs.haskell.packages.ghc865.miso-jsaddle;
   inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
-  inherit payload release s3;
-} // armPkgs
+  inherit release;
+} // armPkgs // examplePkgs
