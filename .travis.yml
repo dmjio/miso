@@ -10,7 +10,7 @@ before_install:
  - nix-channel --list
  - nix-channel --update
  - nix-env -iA cachix -f https://cachix.org/api/v1/install
- - cachix use haskell-miso
+ - sudo cachix use haskell-miso
  - nix-build -A pkgs.yarn default.nix && nix-env -i ./result
 
 script:
