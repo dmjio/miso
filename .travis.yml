@@ -1,5 +1,8 @@
 language: nix
 
+os:
+  - osx
+
 matrix:
   fast_finish: true
 
