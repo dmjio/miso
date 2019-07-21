@@ -9,6 +9,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ExtendedDefaultRules       #-}
+{-# LANGUAGE CPP                        #-}
 module Main where
 
 import           Data.Aeson
@@ -20,10 +21,20 @@ import           Miso
 import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
-import qualified Language.Javascript.JSaddle.Warp as JSaddle
+#ifdef IOS
+import Language.Javascript.JSaddle.WKWebView as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run
+#else
+import Language.Javascript.JSaddle.Warp as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run 8080
+#endif
 
 main :: IO ()
-main = JSaddle.run 8080 $ startApp App { initialAction = Id, ..}
+main = runApp $ startApp App { initialAction = Id, ..}
   where
     model = Model (Message "") mempty
     events = defaultEvents

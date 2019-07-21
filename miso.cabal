@@ -38,6 +38,13 @@ flag jsaddle
   description:
     Compile with JSaddle
 
+flag ios
+  manual: True
+  default:
+    False
+  description:
+    Cross compile to iOS
+
 executable todo-mvc
   main-is:
     Main.hs
@@ -54,11 +61,20 @@ executable todo-mvc
       aeson,
       base < 5,
       containers,
-      jsaddle-warp,
       miso,
       transformers
     default-language:
       Haskell2010
+    if flag(ios)
+      cpp-options:
+        -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    else
+      build-depends:
+        jsaddle-warp
 
 executable threejs
   main-is:
@@ -159,12 +175,21 @@ executable router
       aeson,
       base < 5,
       containers,
-      jsaddle-warp,
       miso,
       servant,
       transformers
     default-language:
       Haskell2010
+    if flag(ios)
+      cpp-options:
+        -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    else
+      build-depends:
+        jsaddle-warp
 
 executable websocket
   main-is:
@@ -182,11 +207,20 @@ executable websocket
       aeson,
       base < 5,
       containers,
-      jsaddle-warp,
       miso,
       transformers
     default-language:
       Haskell2010
+    if flag(ios)
+      cpp-options:
+       -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    else
+      build-depends:
+        jsaddle-warp
 
 executable mario
   main-is:
@@ -203,14 +237,23 @@ executable mario
     build-depends:
       base < 5,
       containers,
-      miso,
-      jsaddle-warp
-    if flag(jsaddle) && !impl(ghcjs)
+      miso
+    if flag(jsaddle) && !impl(ghcjs) && !flag(ios)
       build-depends:
         wai,
         wai-app-static,
         warp,
         websockets
+    if flag(ios) && !impl(ghcjs)
+      cpp-options:
+       -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    if !flag(ios)
+      build-depends:
+        jsaddle-warp
     default-language:
       Haskell2010
 
@@ -288,11 +331,20 @@ executable simple
       aeson,
       base < 5,
       containers,
-      jsaddle-warp,
       miso,
       transformers
     default-language:
       Haskell2010
+    if flag(ios)
+      cpp-options:
+        -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    else
+      build-depends:
+        jsaddle-warp
 
 executable tests
   main-is:
@@ -370,11 +422,19 @@ library
   if impl(ghcjs) || flag (jsaddle)
     if flag(jsaddle)
       build-depends:
-        file-embed,
         jsaddle
-      cpp-options: -DJSADDLE
+      cpp-options:
+        -DJSADDLE
       hs-source-dirs:
         jsaddle-ffi
+      if flag (ios)
+        cpp-options:
+          -DIOS
+        other-modules:
+          Miso.JSBits
+      else
+        build-depends:
+          file-embed
     else
       build-depends:
         ghcjs-base

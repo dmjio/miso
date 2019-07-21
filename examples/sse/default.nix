@@ -1,27 +1,17 @@
-{ pkgs ? import ((import <nixpkgs> {}).fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs";
-    rev = "a0aeb23";
-    sha256 = "04dgg0f2839c1kvlhc45hcksmjzr8a22q1bgfnrx71935ilxl33d";
-  }){}
-}:
+{}:
+with (import ../.. {});
 let
   inherit (pkgs) runCommand closurecompiler;
-  inherit (pkgs.haskell.packages) ghc865;
-  ghcjs = pkgs.haskell.packages.ghcjs.override (oldAttrs: {
-    overrides = self: super: {
-      jsaddle-warp = super.callPackage ./../../jsaddle-warp-ghcjs.nix {};
-      mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
-      doctest = null;
-    };
-  });
-  miso-ghc = ghc865.callPackage ./../../miso-ghc.nix { };
-  miso-ghcjs = ghcjs.callPackage ./../../miso-ghcjs.nix { };
-  server = ghc865.callPackage ./server.nix { miso = miso-ghc; };
-  client = ghcjs.callPackage ./client.nix { miso = miso-ghcjs; };
+  inherit (pkgs.haskell.packages) ghcjs86 ghc865;
+  client = ghcjs86.callCabal2nix "sse" ./. {};
+  server = ghc865.callCabal2nix "sse" ./. {};
 in
   runCommand "sse.haskell-miso.org" { inherit client server; } ''
     mkdir -p $out/{bin,static}
-    ${closurecompiler}/bin/closure-compiler ${client}/bin/client.jsexe/all.js > $out/static/all.js
     cp ${server}/bin/* $out/bin
+    ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+      --jscomp_off=checkVars \
+      --externs=${client}/bin/client.jsexe/all.js.externs \
+      ${client}/bin/client.jsexe/all.js > temp.js
+    mv temp.js $out/static/all.js
   ''

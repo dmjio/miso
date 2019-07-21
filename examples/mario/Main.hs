@@ -13,25 +13,32 @@ import           Data.Monoid
 import           Miso
 import           Miso.String
 
-import qualified Language.Javascript.JSaddle.Warp as JSaddle
+#ifdef IOS
+import Language.Javascript.JSaddle.WKWebView as JSaddle
 
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run
+#else
+import qualified Language.Javascript.JSaddle.Warp as JSaddle
 #ifdef ghcjs_HOST_OS
-run :: Int -> JSM () -> IO ()
-run = JSaddle.run
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run 8080
+
 #else
 import           Network.Wai.Application.Static
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
 import           Network.WebSockets
 
-run :: Int -> JSM () -> IO ()
-run port f =
-    Warp.runSettings (Warp.setPort port (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
+runApp :: JSM () -> IO ()
+runApp f =
+    Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
         JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) app
     where app req sendResp =
             case Wai.pathInfo req of
               ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
               _ -> JSaddle.jsaddleApp req sendResp
+#endif
 #endif
 
 data Action
@@ -44,7 +51,7 @@ spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0","-111px 0","-148px 0","-185px 0","-222px 0","-259px 0","-296px 0"]
 
 main :: IO ()
-main = run 8080 $ do
+main = runApp $ do
     time <- now
     let m = mario { time = time }
     startApp App { model = m

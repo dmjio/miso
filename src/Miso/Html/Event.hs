@@ -5,10 +5,9 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE KindSignatures            #-}
-{-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE CPP                       #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies              #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Event

@@ -1,10 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE CPP                 #-}
 module Main where
 
 import Data.Proxy
@@ -14,9 +14,20 @@ import Servant.Links
 #elif MIN_VERSION_servant(0,10,0)
 import Servant.Utils.Links
 #endif
-import Language.Javascript.JSaddle.Warp as JSaddle
 
 import Miso
+
+#ifdef IOS
+import Language.Javascript.JSaddle.WKWebView as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run
+#else
+import Language.Javascript.JSaddle.Warp as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run 8080
+#endif
 
 -- | Model
 data Model
@@ -34,8 +45,8 @@ data Action
 
 -- | Main entry point
 main :: IO ()
-main = do
-  JSaddle.run 8080 $ do
+main =
+  runApp $ do
     currentURI <- getCurrentURI
     startApp App { model = Model currentURI, initialAction = NoOp, ..}
   where
