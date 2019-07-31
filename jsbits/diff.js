@@ -199,7 +199,11 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
       window['diff'](null, nFirst, parent, doc);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
          Otherwise, it will insert node['domRef'] before oLast['domRef']. */
-      parent.insertBefore(oLast['domRef'], nFirst['domRef']);
+      if (!oLast) {
+        parent.insertBefore(nFirst['domRef'], oFirst['domRef']);
+      } else {
+        parent.insertBefore(oLast['domRef'], nFirst['domRef']);
+      }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     }
