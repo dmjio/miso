@@ -553,6 +553,23 @@ test('Should execute left-hand side happy path key-window diffing case', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
 });
 
+test('Should diff keys properly when keys are prepended', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var destroy = 0;
+    var currentNode =
+        vnode('div', [vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, "key-1");
+    window['diff'](null, currentNode, body, document)
+    var newNode =
+	vnode('div', [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, "key-1");
+    window['diff'](currentNode, newNode, body, document)
+    expect(newNode.children.length).toBe(2);
+    expect(newNode.children.length).toBe(currentNode.children.length);
+    expect(currentNode.children).toEqual(newNode.children);
+    expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
+    expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
+});
+
 test('Should execute right-hand side happy path key-window diffing case', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
