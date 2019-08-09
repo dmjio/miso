@@ -1,5 +1,5 @@
 name:                miso-examples
-version:             1.0.0.0
+version:             1.2.0.0
 category:            Web, Miso, Data Structures
 author:              David M. Johnson <djohnson.m@gmail.com>
 maintainer:          David M. Johnson <djohnson.m@gmail.com>
@@ -10,6 +10,8 @@ build-type:          Simple
 cabal-version:       >=1.22
 synopsis:            A tasty Haskell front-end framework
 description:         Examples for miso
+license:             BSD3
+license-file:        LICENSE
 
 extra-source-files:
   mario/imgs/mario.png
