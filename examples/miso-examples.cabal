@@ -12,7 +12,7 @@ synopsis:            A tasty Haskell front-end framework
 description:         Examples for miso
 
 extra-source-files:
-  examples/mario/imgs/mario.png
+  mario/imgs/mario.png
 
 flag jsaddle
   manual: True
