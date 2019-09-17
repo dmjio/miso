@@ -8,15 +8,15 @@ in {
        path = with pkgs; [ haskell-miso bash ];
        wantedBy = [ "multi-user.target" ];
        script = ''
-	 ./bin/server +RTS -N -A4M -RTS
+         ./bin/server +RTS -N -A4M -RTS
        '';
        description = ''
          https://haskell-miso.org
        '';
        serviceConfig = {
          WorkingDirectory=pkgs.haskell-miso;
-	 KillSignal="INT";
-	 Type = "simple";
+         KillSignal="INT";
+         Type = "simple";
          Restart = "on-abort";
          RestartSec = "10";
       };
