@@ -2,7 +2,7 @@ const diff = require('./diff');
 const isomorphic = require('./isomorphic.js');
 const jsdom = require('jsdom');
 
-function vnode(tag, children, props, css, ns, ref, oc, od, key) {
+function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) {
     return {
         'type': 'vnode',
         'tag': tag,
@@ -13,6 +13,7 @@ function vnode(tag, children, props, css, ns, ref, oc, od, key) {
         'domRef': ref,
         'onCreated': oc,
         'onDestroyed': od,
+        'onBeforeDestroyed': bd,
         'key': key
     };
 }
@@ -28,6 +29,7 @@ function vnodeKeyed(tag, key) {
         'domRef': null,
         'onCreated': null,
         'onDestroyed': null,
+        'onBeforeDestroyed': null,
         'key': key
     };
 }
@@ -43,6 +45,7 @@ function vnodeKids(tag, kids) {
         'domRef': null,
         'onCreated': null,
         'onDestroyed': null,
+        'onBeforeDestroyed': null,
     };
 }
 
@@ -485,7 +488,27 @@ test('Should call onCreated and onDestroyed', () => {
         create++;
     }, function() {
         destroy++;
-    });
+    }, null, 'key');
+
+    window['diff'](null, currentNode, body, document)
+    expect(create).toBe(1);
+
+    window['diff'](currentNode, null, body, document)
+    expect(destroy).toBe(1);
+});
+
+test('Should call onCreated and onBeforeDestroyed', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+
+    // populate DOM
+    var create = 0;
+    destroy = 0;
+    var currentNode = vnode('div', [], {}, {}, "html", null, function() {
+        create++;
+    }, null, function() {
+        destroy++;
+    }, 'key');
 
     window['diff'](null, currentNode, body, document)
     expect(create).toBe(1);
@@ -503,14 +526,33 @@ test('Should call onDestroyed recursively', () => {
     var currentNode =
         vnode('div', [vnode('div', [], {}, {}, "html", null, null, function() {
             childDestroy++;
-        })], {}, {}, "html", null, null, function() {
+        }, null, 'a')], {}, {}, "html", null, null, function() {
             destroy++;
-        });
+        }, null, 'b');
     window['diff'](null, currentNode, body, document)
     window['diff'](currentNode, null, body, document)
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
 });
+
+test('Should call onBeforeDestroyed recursively', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    // populate DOM
+    var destroy = 0;
+    childDestroy = 0;
+    var currentNode =
+        vnode('div', [vnode('div', [], {}, {}, "html", null, null, null, function() {
+            childDestroy++;
+        }, 'a')], {}, {}, "html", null, null, null, function() {
+            destroy++;
+        }, 'b');
+    window['diff'](null, currentNode, body, document)
+    window['diff'](currentNode, null, body, document)
+    expect(destroy).toBe(1);
+    expect(childDestroy).toBe(1);
+});
+
 
 test('Should recreate a DOM node when tags are the same but keys are window different', () => {
     var document = new jsdom.JSDOM().window.document;
@@ -519,19 +561,19 @@ test('Should recreate a DOM node when tags are the same but keys are window diff
     var currentNode =
         vnode('div', [], {}, {}, "html", null, null, function() {
             destroy++;
-        }, "key-1");
+        }, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
         vnode('div', [], {}, {}, "html", null, null, function() {
             destroy++;
-        }, "key-1");
+        }, null, "key-1");
     window['diff'](null, currentNode, body, document)
     expect(destroy).toBe(0);
     window['diff'](currentNode, newNode, body, document)
     var newKeyedNode =
         vnode('div', [], {}, {}, "html", null, null, function() {
             destroy++;
-        }, "key-2");
+        }, null, "key-2");
     window['diff'](currentNode, newKeyedNode, body, document)
     expect(destroy).toBe(1);
 });
@@ -541,10 +583,10 @@ test('Should execute left-hand side happy path key-window diffing case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -558,10 +600,10 @@ test('Should diff keys properly when keys are prepended', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-	vnode('div', [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, "key-1");
+	vnode('div', [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -575,10 +617,10 @@ test('Should execute right-hand side happy path key-window diffing case', () => 
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -591,9 +633,9 @@ test('Should execute right-hand side happy path key-window diffing case', () => 
 test('Should swap nodes', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
-    var currentNode = vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+    var currentNode = vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
-    var newNode = vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+    var newNode = vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -606,10 +648,10 @@ test('Should execute flip-flop case', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -628,7 +670,7 @@ test('Should execute swapped case on 1k nodes', () => {
     var kids = [];
     for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i))
 
-    var currentNode =  vnode('div', kids, {}, {}, "html", null, null, null, "key-1");
+    var currentNode =  vnode('div', kids, {}, {}, "html", null, null, null, null, "key-1");
 
     var newKids = [];
     for (var i = 1; i < 1001; i++) {
@@ -641,7 +683,7 @@ test('Should execute swapped case on 1k nodes', () => {
 	}
     }
     window['diff'](null, currentNode, body, document)
-    var newNode =  vnode('div', newKids, {}, {}, "html", null, null, null, "key-1");
+    var newNode =  vnode('div', newKids, {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -662,10 +704,10 @@ test('Should execute top-left and bottom-right match case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'd')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'r'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'd')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -679,10 +721,10 @@ test('Should handle duplicate keys case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -696,10 +738,10 @@ test('Should execute top-right and bottom-left match case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'b')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'g'), vnodeKeyed('div', 'd'), vnodeKeyed('div', 'a')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -713,10 +755,10 @@ test('Nothing matches case', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode =
-        vnode('div', [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')], {}, {}, "html", null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
