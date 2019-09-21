@@ -49,6 +49,7 @@ module Miso.Html.Internal (
   -- * Life cycle events
   , onCreated
   , onDestroyed
+  , onBeforeDestroyed
   -- * Events
   , defaultEvents
   -- * Subscription type
