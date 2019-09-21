@@ -281,6 +281,19 @@ onDestroyed action =
     set "onDestroyed" cb n
     registerCallback cb
 
+-- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onBeforeDestroyed :: action -> Attribute action
+onBeforeDestroyed action =
+  Attribute $ \sink n -> do
+    cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
+    set "onBeforeDestroyed" cb n
+    registerCallback cb
+
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
 --

@@ -44,6 +44,7 @@ module Miso.Html.Internal (
   -- * Life cycle events
   , onCreated
   , onDestroyed
+  , onBeforeDestroyed
   ) where
 
 import           Data.Aeson (Value(..), ToJSON(..))
@@ -241,6 +242,12 @@ onCreated _ = E ()
 -- removed from the DOM tree.
 onDestroyed :: action -> Attribute action
 onDestroyed _ = E ()
+
+-- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+onBeforeDestroyed :: action -> Attribute action
+onBeforeDestroyed _ = E ()
 
 -- | Constructs CSS for a DOM Element
 --

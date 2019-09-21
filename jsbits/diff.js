@@ -16,6 +16,7 @@ window['diff'] = function diff(currentObj, newObj, parent, doc) {
 };
 
 window['destroyNode'] = function destroyNode(obj, parent) {
+  window['callBeforeDestroyedRecursive'](obj);
   parent.removeChild(obj['domRef']);
   window['callDestroyedRecursive'](obj);
 };
@@ -30,6 +31,16 @@ window['callDestroyed'] = function callDestroyed(obj) {
   if (obj['onDestroyed']) obj['onDestroyed']();
 };
 
+window['callBeforeDestroyed'] = function callBeforeDestroyed(obj) {
+  if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
+};
+
+window['callBeforeDestroyedRecursive'] = function callBeforeDestroyedRecursive(obj) {
+  window['callBeforeDestroyed'](obj);
+  for (var i in obj.children)
+    window['callBeforeDestroyedRecursive'](obj.children[i]);
+};
+
 window['diffTextNodes'] = function diffTextNodes(c, n) {
   if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
   n['domRef'] = c['domRef'];
@@ -37,6 +48,7 @@ window['diffTextNodes'] = function diffTextNodes(c, n) {
 
 window['replaceElementWithText'] = function replaceElementWithText(c, n, parent, doc) {
   n['domRef'] = doc.createTextNode(n['text']);
+  window['callBeforeDestroyedRecursive'](c);
   parent.replaceChild(n['domRef'], c['domRef']);
   window['callDestroyedRecursive'](c);
 };
@@ -68,6 +80,7 @@ window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
     window['populate'](c, n, doc);
   } else {
     window['createElement'](n, doc);
+    window['callBeforeDestroyedRecursive'](c);
     parent.replaceChild(n['domRef'], c['domRef']);
     window['callDestroyedRecursive'](c);
     window['callCreated'](n);
