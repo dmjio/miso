@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://haskell-miso-slack.herokuapp.com">
-	<a href="https://opencollective.com/miso" alt="Financial Contributors on Open Collective"><img src="https://opencollective.com/miso/all/badge.svg?label=financial+contributors" /></a> <img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
+<img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
   </a>
   <a href="https://haskell.org">
 	<img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
@@ -67,6 +67,7 @@
 - [Benchmarks](#benchmarks)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
+- [Contributors](#contributors)
 - [License](#license)
 
 ## Quick start
