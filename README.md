@@ -80,7 +80,7 @@ To build the sample-app with `nix`, execute the commands below:
 # optional use of cache
 nix-env -iA cachix -f https://cachix.org/api/v1/install
 # optional use of cache
-cachix use haskell-miso
+cachix use miso-haskell
 git clone https://github.com/dmjio/miso
 cd miso/sample-app
 nix-build
