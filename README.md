@@ -347,10 +347,10 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 
 ## Binary cache
 
-`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso.cachix.org/).
+`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://miso-haskell.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://miso-haskell.cachix.org/).
 
 ```bash
-cachix use haskell-miso
+cachix use miso-haskell
 ```
 
 ## Benchmarks
