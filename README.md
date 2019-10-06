@@ -66,6 +66,7 @@
 - [Binary cache](#binary-cache)
 - [Benchmarks](#benchmarks)
 - [Maintainers](#maintainers)
+- [Commercial Users](#commerical-users)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [License](#license)
@@ -362,6 +363,10 @@ cachix use miso-haskell
 ## Maintainers
 
 [@dmjio](https://github.com/dmjio)
+
+## Commercial Users
+  - [Polimorphic](https://www.polimorphic.com)
+  - [Lumi Guide](https://lumi.guide/en/)
 
 ## Contributing
 
