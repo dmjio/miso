@@ -366,7 +366,7 @@ cachix use miso-haskell
 
 ## Commercial Users
   - [Polimorphic](https://www.polimorphic.com)
-  - [Lumi Guide](https://lumi.guide/en/)
+  - [LumiGuide](https://lumi.guide/en/)
 
 ## Contributing
 
