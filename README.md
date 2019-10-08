@@ -66,7 +66,7 @@
 - [Binary cache](#binary-cache)
 - [Benchmarks](#benchmarks)
 - [Maintainers](#maintainers)
-- [Commercial Users](#commerical-users)
+- [Commercial Users](#commercial-users)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [License](#license)
