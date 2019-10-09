@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -15,6 +16,7 @@ module Miso.Types
     -- * The Transition Monad
   , Transition
   , mapAction
+  , embedAction
   , fromTransition
   , toTransition
   , scheduleIO
@@ -90,6 +92,21 @@ type Transition action model = StateT model (Writer [Sub action])
 -- type @a -> b@.
 mapAction :: (actionA -> actionB) -> Transition actionA model r -> Transition actionB model r
 mapAction = mapStateT . mapWriter . second . fmap . mapSub
+
+-- | Turn a transition that schedules subscriptions that consume
+-- actions of type @a@ into a transition that schedules subscriptions
+-- that consume actions of type @b@ using the supplied function of
+-- type @a -> b@. Also turns a transition that operates on models of
+-- type @a@ into one that operates on models of type @b@
+-- Useful for embedding components.
+embedAction
+  :: forall childAction parentAction parentModel childModel a
+   . (childAction -> parentAction)                   
+  -> Lens' parentModel childModel
+  -> Transition childAction childModel a  
+  -> Transition parentAction parentModel a 
+embedAction action lens' trans =
+  zoom lens' (mapAction action trans)
 
 -- | Convert a @Transition@ computation to a function that can be given to 'update'.
 fromTransition
