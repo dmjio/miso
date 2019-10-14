@@ -8,6 +8,8 @@ module Main where
 -- | Miso framework import
 import Miso
 import Miso.String
+import Language.Javascript.JSaddle.Warp as JSaddle
+import Control.Monad.IO.Class (liftIO)
 
 -- | Type synonym for an application model
 type Model = Int
@@ -22,7 +24,7 @@ data Action
 
 -- | Entry point for a miso application
 main :: IO ()
-main = startApp App {..}
+main = JSaddle.run 8080 $ startApp App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
     model  = 0                    -- initial model
@@ -38,7 +40,7 @@ updateModel AddOne m = noEff (m + 1)
 updateModel SubtractOne m = noEff (m - 1)
 updateModel NoOp m = noEff m
 updateModel SayHelloWorld m = m <# do
-  putStrLn "Hello World" >> pure NoOp
+  liftIO (putStrLn "Hello World") >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

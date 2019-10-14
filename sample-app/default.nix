@@ -3,4 +3,4 @@ with (import (builtins.fetchTarball {
   sha256 = "0kg9lg18qdsnb6gw3jmnl49widzf5cy151bls7k09d5dxlm0myd8";
 }) {});
 with pkgs.haskell.packages;
-ghcjs.callCabal2nix "app" ./. {}
+ghc865.callCabal2nix "app" ./. { miso = ghc865.miso-jsaddle; }
