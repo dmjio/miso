@@ -127,11 +127,10 @@ Write a `default.nix` (this will fetch a recent version of `miso`). `miso` will 
 
 ```nix
 with (import (builtins.fetchTarball {
-  url = "https://github.com/dmjio/miso/archive/39b9e26ff41d6aab3b9d13a9d102ac56017f6a1f.tar.gz";
-  sha256 = "1lwr35p9074b7wgz0jh4f2pjc7ls8isgzmn9xl86vb6cvsm035kf";
+  url = "https://github.com/dmjio/miso/archive/8de0a8a432252fe83610bfd310fc856148f524f7.tar.gz";
+  sha256 = "0pmpwnss4ax2c7hcd32cs4phq3b9995wkx6qw6861q2pvqk96rhz";
 }) {});
-with pkgs.haskell.packages;
-ghcjs.callCabal2nix "app" ./. {}
+pkgs.haskell.packages.ghcjs.callCabal2nix "app" ./. {}
 ```
 
 Add the source from [Sample Application](#sample-application) to `app/Main.hs`
