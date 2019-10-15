@@ -111,6 +111,7 @@ let
         };
         ghcjs86 = pkgs.haskell.packages.ghcjs86.override {
           overrides = self: super: with pkgs.haskell.lib; {
+            inherit (pkgs.haskell.packages.ghc865) hpack;
             jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
             mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
