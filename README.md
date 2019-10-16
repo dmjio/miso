@@ -291,6 +291,12 @@ viewModel x = div_ [] [
 ```
 
 ## Transition application
+
+An alternative, more powerful interface for constructing `miso` applications is using the `Transition` interface.
+`Transition` is based on the `StateT` monad transformer, and can be used to construct components. It also works
+very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`).
+
+
 ```haskell
 -- | Haskell language pragma
 {-# LANGUAGE OverloadedStrings #-}
