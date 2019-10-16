@@ -168,7 +168,7 @@ nix-shell -A env --run 'cabal configure --ghcjs && cabal build`
 
 For incremental development inside of the `nix-shell` we recommend using a tool like [`entr`](http://eradman.com/entrproject/) to automatically rebuild on file changes, or roll your own solution with `inotify`.
 ```
-ag -l | entr 'cabal build'
+ag -l | entr cabal build
 ```
 
 ### Architecture
