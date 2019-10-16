@@ -59,6 +59,7 @@
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
+- [Transition Application](#transition-application)
 - [Building examples](#building-examples)
 - [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
@@ -269,11 +270,89 @@ main = startApp App {..}
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
-updateModel NoOp m = noEff m
-updateModel SayHelloWorld m = m <# do
-  putStrLn "Hello World" >> pure NoOp
+updateModel action m =
+  case action of
+    AddOne
+      -> noEff (m + 1)
+    SubtractOne
+      -> noEff (m - 1)
+    NoOp
+      -> noEff m
+    SayHelloWorld
+      -> m <# do logConsole "Hello World" >> pure NoOp
+
+-- | Constructs a virtual DOM from a model
+viewModel :: Model -> View Action
+viewModel x = div_ [] [
+   button_ [ onClick AddOne ] [ text "+" ]
+ , text (ms x)
+ , button_ [ onClick SubtractOne ] [ text "-" ]
+ ]
+```
+
+## Transition application
+
+An alternative, more powerful interface for constructing `miso` applications is using the `Transition` interface.
+`Transition` is based on the `StateT` monad transformer, and can be used to construct components. It also works
+very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`).
+
+
+```haskell
+-- | Haskell language pragma
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+
+-- | Haskell module declaration
+module Main where
+
+-- | Miso framework import
+import Miso
+import Miso.String
+
+-- | Lens import
+import Control.Lens
+
+-- | Type synonym for an application model
+data Model
+  = Model
+  { _counter :: Int
+  } deriving (Show, Eq)
+
+counter :: Lens' Model Int
+counter = lens _counter $ \record field -> record { _counter = field }
+
+-- | Sum type for application events
+data Action
+  = AddOne
+  | SubtractOne
+  | NoOp
+  | SayHelloWorld
+  deriving (Show, Eq)
+
+-- | Entry point for a miso application
+main :: IO ()
+main = startApp App {..}
+  where
+    initialAction = SayHelloWorld -- initial action to be executed on application load
+    model  = 0                    -- initial model
+    update = fromTransition . updateModel -- update function
+    view   = viewModel            -- view function
+    events = defaultEvents        -- default delegated events
+    subs   = []                   -- empty subscription list
+    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
+
+-- | Updates model, optionally introduces side effects
+updateModel :: Action -> Transition Action Model ()
+updateModel action =
+  case action of
+    AddOne
+      -> counter += 1
+    SubtractOne
+      -> counter -= 1
+    NoOp
+      -> pure ()
+    SayHelloWorld
+      -> scheduleIO_ (logConsole "Hello World")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
