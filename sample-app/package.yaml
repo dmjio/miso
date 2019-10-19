@@ -1,0 +1,11 @@
+name: app
+version: '0.1.0.0'
+synopsis: First miso app
+category: Web
+license: PublicDomain
+dependencies:
+- base
+- miso
+executables:
+  app:
+      main: Main.hs
