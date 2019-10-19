@@ -60,6 +60,7 @@
   - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
 - [Transition Application](#transition-application)
+- [Live reload with JSaddle](#live-reload-with-jsaddle)
 - [Building examples](#building-examples)
 - [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
@@ -362,6 +363,10 @@ viewModel x = div_ [] [
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
 ```
+
+## Live reload with JSaddle
+
+To build `miso` applications with `ghcid`, `jsaddle` that allow for live hot reloading of your application in reponse to changes in application code. See the [README](https://github.com/dmjio/miso/blob/master/sample-app-jsaddle/README.md) in the `sample-app-jsaddle` folder.
 
 ## Building examples
 
