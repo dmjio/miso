@@ -129,8 +129,8 @@ Write a `default.nix` (this will fetch a recent version of `miso`). `miso` will 
 
 ```nix
 with (import (builtins.fetchTarball {
-  url = "https://github.com/dmjio/miso/archive/8de0a8a432252fe83610bfd310fc856148f524f7.tar.gz";
-  sha256 = "0pmpwnss4ax2c7hcd32cs4phq3b9995wkx6qw6861q2pvqk96rhz";
+  url = "https://github.com/dmjio/miso/archive/425de4eb87e876428df4872a595ac1a0717dd165.tar.gz";
+  sha256 = "1mc44vnx8qmvxkrvxhzlnrza8shnk8a0ad7hfk8hlblzrd9ha5id";
 }) {});
 pkgs.haskell.packages.ghcjs.callCabal2nix "app" ./. {}
 ```
