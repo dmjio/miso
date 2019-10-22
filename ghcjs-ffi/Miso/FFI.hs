@@ -32,6 +32,7 @@ module Miso.FFI
 
    , now
    , consoleLog
+   , consoleLogJSVal
    , stringify
    , parse
    , clearBody
@@ -61,7 +62,7 @@ module Miso.FFI
    ) where
 
 import           Control.Concurrent
-import           Data.Aeson hiding (Object)
+import           Data.Aeson                 hiding (Object)
 import           Data.JSString
 import           Data.JSString.Int
 import           Data.JSString.RealFloat
@@ -132,7 +133,10 @@ foreign import javascript unsafe "$r = performance.now();"
 
 -- | Console-logging
 foreign import javascript unsafe "console.log($1);"
-  consoleLog :: JSVal -> IO ()
+  consoleLog :: JSString -> IO ()
+
+foreign import javascript unsafe "console.log($1);"
+  consoleLogJSVal :: JSVal -> IO ()
 
 -- | Converts a JS object into a JSON string
 foreign import javascript unsafe "$r = JSON.stringify($1);"

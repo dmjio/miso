@@ -70,9 +70,6 @@ viewModel Model {..} = view
       , div_ [] [ text info ]
       ]
 
-foreign import javascript unsafe "console.log($1);"
-  consoleLog :: JSVal -> IO ()
-
 foreign import javascript unsafe "$r = new FileReader();"
   newReader :: IO JSVal
 
