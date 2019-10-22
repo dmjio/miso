@@ -20,3 +20,20 @@ To build the application w/ GHCJS, execute the below command.
 ```bash
 nix-build -A release
 ```
+
+## Dev with `stack`
+
+In order to build `miso` w/ `jsaddle` support, it is necessary to remove the existing `miso` package first.
+
+```bash
+stack exec -- ghc-pkg unregister --force miso
+```
+
+Enable the `jsaddle` flag by adding the following to your project's `package.yaml` file, then call `stack build`.
+
+```yaml
+flags:
+  miso:
+    jsaddle: true
+```
+
