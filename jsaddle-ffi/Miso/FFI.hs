@@ -30,6 +30,7 @@ module Miso.FFI
 
    , now
    , consoleLog
+   , consoleLogJSVal
    , stringify
    , parse
    , clearBody
@@ -127,8 +128,14 @@ now :: JSM Double
 now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 
 -- | Console-logging
-consoleLog :: JSVal -> JSM ()
+consoleLog :: JSString -> JSM ()
 consoleLog v = do
+  _ <- jsg "console" # "log" $ [toJSString v]
+  pure ()
+
+-- | Console-logging
+consoleLogJSVal :: JSVal -> JSM ()
+consoleLogJSVal v = do
   _ <- jsg "console" # "log" $ [v]
   pure ()
 

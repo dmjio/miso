@@ -280,7 +280,7 @@ updateModel action m =
     NoOp
       -> noEff m
     SayHelloWorld
-      -> m <# do logConsole "Hello World" >> pure NoOp
+      -> m <# do consoleLog "Hello World" >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
@@ -353,7 +353,7 @@ updateModel action =
     NoOp
       -> pure ()
     SayHelloWorld
-      -> scheduleIO_ (logConsole "Hello World")
+      -> scheduleIO_ (consoleLog "Hello World")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
