@@ -10,6 +10,7 @@
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 -----------------------------------------------------------------------------
 -- |
@@ -170,7 +171,7 @@ instance IsString (View a) where
 
 -- | Key for specific children patch
 newtype Key = Key MisoString
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, IsString)
 
 -- | Convert type into Key, ensure `Key` is unique
 class ToKey key where toKey :: key -> Key
