@@ -335,7 +335,7 @@ main :: IO ()
 main = startApp App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
+    model  = Model 0              -- initial model
     update = fromTransition . updateModel -- update function
     view   = viewModel            -- view function
     events = defaultEvents        -- default delegated events
@@ -359,7 +359,7 @@ updateModel action =
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
- , text (ms x)
+ , text . ms $ x^.counter
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
 ```
