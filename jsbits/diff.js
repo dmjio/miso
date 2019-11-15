@@ -215,7 +215,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
       if (!oLast) {
         parent.insertBefore(nFirst['domRef'], oFirst['domRef']);
       } else {
-        parent.insertBefore(oLast['domRef'], nFirst['domRef']);
+        parent.insertBefore(oFirst['domRef'], nFirst['domRef']);
       }
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
