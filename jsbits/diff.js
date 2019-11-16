@@ -245,7 +245,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        -> [ c b a ] <- new children
     */
     else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
-      window['swapDomRefs'](node, oFirst['domRef'], oLast['domRef'], parent);
+      window['swapDomRefs'](node, oLast['domRef'], oFirst['domRef'], parent);
       window['swap'](os, oldFirstIndex, oldLastIndex);
       window['diff'](os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
       window['diff'](os[oldLastIndex--], ns[newLastIndex--], parent, doc);
@@ -318,10 +318,10 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
       if (found) {
         /* Move item to correct position */
         os.splice(oldFirstIndex,0, os.splice(tmp,1)[0]);
-        /* Swap DOM references */
-        parent.insertBefore(node['domRef'], os[oldFirstIndex]['domRef']);
         /* optionally perform `diff` here */
         window['diff'](os[oldFirstIndex++], nFirst, parent, doc);
+        /* Swap DOM references */
+        parent.insertBefore(node['domRef'], os[oldFirstIndex]['domRef']);
         /* increment counters */
         newFirstIndex++;
       }
