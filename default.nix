@@ -1,6 +1,7 @@
 { haddock ? true
 , tests ? false
 , examples ? false
+, ios ? false
 }:
 with (builtins.fromJSON (builtins.readFile ./nixpkgs.json));
 let
@@ -199,7 +200,7 @@ let
        ${s3cmd}/bin/s3cmd sync --recursive ${more-examples.the2048}/* s3://aws-website--6uw7z/
     '';
    armPkgs = with pkgs; with pkgs.lib;
-     optionalAttrs stdenv.isDarwin
+     optionalAttrs (ios && stdenv.isDarwin)
        { miso-arm = pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; };
    examplePkgs = with pkgs; with pkgs.lib;
      let
@@ -210,7 +211,7 @@ let
         };
      in
       examplePkgs //
-        optionalAttrs (stdenv.isDarwin && examples)
+        optionalAttrs (stdenv.isDarwin && examples && ios)
           { inherit (pkgsCross.iphone64.haskell.packages.integer-simple.ghc865) miso-examples-arm;
           };
 in
