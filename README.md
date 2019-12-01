@@ -372,7 +372,7 @@ It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow l
 
 The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
 ```
-git clone https://github.com/dmjio/miso && cd miso && nix-build -A miso-ghcjs
+git clone https://github.com/dmjio/miso && cd miso && nix-build --arg examples true
 ```
 
 This will build all examples and documentation into a folder named `result`
