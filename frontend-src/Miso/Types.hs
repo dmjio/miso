@@ -40,18 +40,19 @@ data App model action = App
   { model :: model
   -- ^ initial model
   , update :: action -> model -> Effect action model
-  -- ^ Function to update model, optionally provide effects.
+  -- ^ Function to update model, optionally providing effects.
   --   See the 'Transition' monad for succinctly expressing model transitions.
   , view :: model -> View action
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
   , events :: M.Map MisoString Bool
-  -- ^ List of delegated events that the body element will listen for
+  -- ^ List of delegated events that the body element will listen for.
+  --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , initialAction :: action
   -- ^ Initial action that is run after the application has loaded
   , mountPoint :: Maybe MisoString
-  -- ^ root element for DOM diff
+  -- ^ Id of the root element for DOM diff. If 'Nothing' is provided, the entire document body is used.
   }
 
 -- | A monad for succinctly expressing model transitions in the 'update' function.

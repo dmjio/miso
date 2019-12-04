@@ -28,10 +28,10 @@ import Control.Applicative
 import Miso.Event.Types
 import Miso.String
 
--- | Data type for storing the target when parsing events
+-- | Data type representing path (consisting of field names) within event object, where a decoder should be applied.
 data DecodeTarget
-  = DecodeTarget [MisoString] -- ^ Decode a single object
-  | DecodeTargets [[MisoString]] -- ^ Decode multiple objecjects
+  = DecodeTarget [MisoString] -- ^ Specify single path within Event object, where a decoder should be applied.
+  | DecodeTargets [[MisoString]] -- ^ Specify multiple paths withing Event object, where decoding should be attempted. The first path where decoding suceeds is the one taken.
 
 -- | Decoder data type for parsing events
 data Decoder a = Decoder {
@@ -39,7 +39,7 @@ data Decoder a = Decoder {
 , decodeAt :: DecodeTarget -- ^ Location in DOM of where to decode
 }
 
--- | Smart constructor for building
+-- | Smart constructor for building a `Decoder`.
 at :: [MisoString] -> (Value -> Parser a) -> Decoder a
 at decodeAt decoder = Decoder {decodeAt = DecodeTarget decodeAt, ..}
 

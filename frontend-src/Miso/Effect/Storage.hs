@@ -54,7 +54,7 @@ getStorageCommon f key = do
         Success x -> Right x
         Error y -> Left y
 
--- | Retrieve session storage
+-- | Retrieve a value stored under given key in session storage
 getSessionStorage :: FromJSON model => JSString -> JSM (Either String model)
 getSessionStorage =
   getStorageCommon $ \t -> do
@@ -62,7 +62,7 @@ getSessionStorage =
     r <- Storage.getItem s t
     fromJSVal r
 
--- | Retrieve local storage
+-- | Retrieve a value stored under given key in local storage
 getLocalStorage :: FromJSON model => JSString -> JSM (Either String model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- Storage.localStorage
