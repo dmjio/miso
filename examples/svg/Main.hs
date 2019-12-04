@@ -55,8 +55,8 @@ viewModel (Model (x,y)) =
   div_ [ ] [
     svg_ [ style_ $ M.fromList [ ("border-style", "solid")
                                , ("height", "700px")
+                               , ("width", "100%")
                                ]
-         , width_ "auto"
          , onTouchMove HandleTouch
        ] [
      g_ [] [
