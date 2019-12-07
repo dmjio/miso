@@ -77,7 +77,7 @@ noEff m = Effect m []
 (#>) :: JSM action -> model -> Effect action model
 (#>) = flip (<#)
 
--- | `Smart constructor for an 'Effect' with multiple actions.
+-- | Smart constructor for an 'Effect' with multiple actions.
 batchEff :: model -> [JSM action] -> Effect action model
 batchEff model actions = Effect model $
   map (\a sink -> liftIO . sink =<< a) actions
