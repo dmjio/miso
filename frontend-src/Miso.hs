@@ -129,7 +129,7 @@ common App {..} m getView = do
         loop newModel
   loop m
 
--- | Runs an isomorphic miso application
+-- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = do

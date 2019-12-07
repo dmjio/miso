@@ -6,6 +6,9 @@
 -- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- This module defines `Effect` and `Sub` types, which are used to define
+-- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
 module Miso.Effect (
   module Miso.Effect.Storage
@@ -37,10 +40,10 @@ data Effect action model = Effect model [Sub action]
 -- | Type synonym for constructing event subscriptions.
 --
 -- The 'Sink' callback is used to dispatch actions which are then fed
--- back to the 'update' function.
+-- back to the 'Miso.Types.update' function.
 type Sub action = Sink action -> JSM ()
 
--- | Function to asynchronously dispatch actions to the 'update' function.
+-- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
 type Sink action = action -> IO ()
 
 -- | Turn a subscription that consumes actions of type @a@ into a subscription
