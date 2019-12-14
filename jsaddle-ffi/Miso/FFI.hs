@@ -68,6 +68,7 @@ import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 
+-- | Run given `JSM` action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ()
 forkJSM a = do
   ctx <- askJSM
@@ -92,13 +93,19 @@ set k v obj = do
   v' <- toJSVal v
   setProp k v' obj
 
-addEventListener :: JSVal -> JSString -> (JSVal -> JSM ()) -> JSM ()
+-- | Register an event listener on given target.
+addEventListener :: JSVal             -- ^ Event target on which we want to register event listener
+                 -> JSString          -- ^ Type of event to listen to (e.g. "click")
+                 -> (JSVal -> JSM ()) -- ^ Callback which will be called when the event occurs, the event will be passed to it as a parameter.
+                 -> JSM ()
 addEventListener self name cb = do
   _ <- self # "addEventListener" $ (name, asyncFunction (\_ _ [a] -> cb a))
   pure ()
 
--- | Adds event listener to window
-windowAddEventListener :: JSString -> (JSVal -> JSM ()) -> JSM ()
+-- | Registers an event listener on window
+windowAddEventListener :: JSString           -- ^ Type of event to listen to (e.g. "click")
+                       -> (JSVal -> JSM ())  -- ^ Callback which will be called when the event occurs, the event will be passed to it as a parameter.
+                       -> JSM ()
 windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
@@ -113,21 +120,29 @@ eventPreventDefault e = do
   _ <- e # "preventDefault" $ ()
   pure ()
 
--- | Retrieves inner height
+-- | Retrieves the height (in pixels) of the browser window viewport including, if rendered, the horizontal scrollbar.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerHeight>
 windowInnerHeight :: JSM Int
 windowInnerHeight =
   fromJSValUnchecked =<< jsg "window" ! "innerHeight"
 
--- | Retrieves outer height
+-- | Retrieves the width (in pixels) of the browser window viewport including, if rendered, the vertical scrollbar.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth>
 windowInnerWidth :: JSM Int
 windowInnerWidth =
   fromJSValUnchecked =<< jsg "window" ! "innerWidth"
 
--- | Retrieve high performance time stamp
+-- | Retrieve high resolution time stamp
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
 now :: JSM Double
 now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 
--- | Console-logging
+-- | Outputs a message to the web console
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
 consoleLog :: JSString -> JSM ()
 consoleLog v = do
   _ <- jsg "console" # "log" $ [toJSString v]
@@ -167,12 +182,22 @@ objectToJSON
     -> JSM JSVal
 objectToJSON = jsg2 "objectToJSON"
 
+-- | Retrieves a reference to document body.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 getBody :: JSM JSVal
 getBody = jsg "document" ! "body"
 
+
+-- | Retrieves a reference to the document.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document>
 getDoc :: JSM JSVal
 getDoc = jsg "document"
 
+-- | Returns an Element object representing the element whose id property matches the specified string.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
 getElementById :: JSString -> JSM JSVal
 getElementById e = getDoc # "getElementById" $ [e]
 

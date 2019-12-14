@@ -76,6 +76,7 @@ import qualified JavaScript.Object.Internal as OI
 -- resolves to the `JSM` type defined in `jsaddle`.
 type JSM = IO
 
+-- | Run given `JSM` action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ()
 forkJSM a = () <$ forkIO a
 
@@ -88,6 +89,7 @@ objectToJSVal = pure . jsval
 ghcjsPure :: a -> JSM a
 ghcjsPure = pure
 
+-- | Forces execution of pending asyncronous code
 syncPoint :: JSM ()
 syncPoint = pure ()
 
@@ -95,14 +97,20 @@ syncPoint = pure ()
 set :: ToJSVal v => JSString -> v -> OI.Object -> IO ()
 set k v obj = toJSVal v >>= \x -> OI.setProp k x obj
 
--- | Adds event listener to window
 foreign import javascript unsafe "$1.addEventListener($2, $3);"
   addEventListener' :: JSVal -> JSString -> Callback (JSVal -> IO ()) -> IO ()
 
-addEventListener :: JSVal -> JSString -> (JSVal -> IO ()) -> IO ()
+-- | Register an event listener on given target.
+addEventListener :: JSVal            -- ^ Event target on which we want to register event listener
+                 -> JSString         -- ^ Type of event to listen to (e.g. "click")
+                 -> (JSVal -> IO ()) -- ^ Callback which will be called when the event occurs. The event is passed as a parameter to it.
+                 -> IO ()
 addEventListener self name cb = addEventListener' self name =<< asyncCallback1 cb
 
-windowAddEventListener :: JSString -> (JSVal -> IO ()) -> IO ()
+-- | Registers an event listener on window
+windowAddEventListener :: JSString           -- ^ Type of event to listen to (e.g. "click")
+                       -> (JSVal -> IO ())  -- ^ Callback which will be called when the event occurs, the event will be passed to it as a parameter.
+                       -> IO ()
 windowAddEventListener name cb = do
   win <- getWindow
   addEventListener win name cb
@@ -119,19 +127,27 @@ foreign import javascript unsafe "$r = window;"
   getWindow :: IO JSVal
 
 
--- | Retrieves inner height
+-- | Retrieves the height (in pixels) of the browser window viewport including, if rendered, the horizontal scrollbar.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerHeight>
 foreign import javascript unsafe "$r = window['innerHeight'];"
   windowInnerHeight :: IO Int
 
--- | Retrieves outer height
+-- | Retrieves the width (in pixels) of the browser window viewport including, if rendered, the vertical scrollbar.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth>
 foreign import javascript unsafe "$r = window['innerWidth'];"
   windowInnerWidth :: IO Int
 
--- | Retrieve high performance time stamp
+-- | Retrieve high resolution time stamp
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
 foreign import javascript unsafe "$r = performance.now();"
   now :: IO Double
 
--- | Console-logging
+-- | Outputs a message to the web console
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
 foreign import javascript unsafe "console.log($1);"
   consoleLog :: JSString -> IO ()
 
@@ -172,12 +188,21 @@ foreign import javascript unsafe "$r = window['objectToJSON']($1,$2);"
     -> JSVal -- ^ object with impure references to the DOM
     -> IO JSVal
 
+-- | Retrieves a reference to the document body.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 foreign import javascript unsafe "$r = document.body;"
   getBody :: IO JSVal
 
+-- | Retrieves a reference to the document.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document>
 foreign import javascript unsafe "$r = document;"
   getDoc :: IO JSVal
 
+-- | Returns an Element object representing the element whose id property matches the specified string.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
 foreign import javascript unsafe "$r = document.getElementById($1);"
   getElementById :: JSString -> IO JSVal
 
