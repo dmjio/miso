@@ -221,10 +221,11 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        -> [ ] <- new children
     */
     else if (newFirstIndex > newLastIndex) {
+      tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        parent.removeChild(os[oldLastIndex]['domRef']);
-        os.splice(oldLastIndex--, 1);
+        parent.removeChild(os[oldLastIndex--]['domRef']);
       }
+      os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
     }
     /* happy path, everything aligns, we continue
