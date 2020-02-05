@@ -221,11 +221,9 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        -> [ ] <- new children
     */
     else if (newFirstIndex > newLastIndex) {
-      tmp = oldLastIndex - oldFirstIndex;
-      while (tmp >= 0) {
-        parent.removeChild(os[oldFirstIndex]['domRef']);
-        os.splice(oldFirstIndex, 1);
-        tmp--;
+      while (oldLastIndex >= oldFirstIndex) {
+        parent.removeChild(os[oldLastIndex]['domRef']);
+        os.splice(oldLastIndex--, 1);
       }
       break;
     }
