@@ -105,15 +105,16 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
   for (var i in at) obj = obj[at[i]];
 
   /* If obj is a list-like object */
+  var newObj;
   if (obj instanceof Array) {
-    var newObj = [];
+    newObj = [];
     for (var i = 0; i < obj.length; i++)
       newObj.push(window['objectToJSON']([], obj[i]));
     return newObj;
   }
 
   /* If obj is a non-list-like object */
-  var newObj = {};
+  newObj = {};
   for (var i in obj){
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
