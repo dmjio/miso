@@ -88,7 +88,7 @@ window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
 };
 
 window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
-  var result, newProp;
+  var newProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
     newProp = nProps[c];
