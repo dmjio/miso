@@ -450,6 +450,7 @@ cachix use miso-haskell
 ## Commercial Users
   - [Polimorphic](https://www.polimorphic.com)
   - [LumiGuide](https://lumi.guide/en/)
+  - [Clovyr](https://clovyr.io)
 
 ## Contributing
 
