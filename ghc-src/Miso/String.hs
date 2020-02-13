@@ -12,6 +12,8 @@
 ----------------------------------------------------------------------------
 module Miso.String
   ( ToMisoString (..)
+  , FromMisoString (..)
+  , fromMisoString
   , MisoString
   , module Data.Monoid
   , module Data.Text
@@ -26,6 +28,8 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
+import           Text.Read(readEither)
+
 
 -- | String type swappable based on compiler
 type MisoString = Text
@@ -33,7 +37,17 @@ type MisoString = Text
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
-  fromMisoString :: MisoString -> str
+
+class FromMisoString t where
+  -- -- | Reads a `MisoString` into an 'a', throws an error when
+  fromMisoStringEither :: MisoString -> Either String t
+
+-- | Reads a `MisoString` into an 'a', throws an error when decoding
+-- fails. Use `fromMisoStringEither` for as a safe alternative.
+fromMisoString :: FromMisoString a => MisoString -> a
+fromMisoString s = case fromMisoStringEither s of
+                     Left err -> error err
+                     Right x  -> x
 
 -- | Convenience function, shorthand for `toMisoString`
 ms :: ToMisoString str => str -> MisoString
@@ -41,30 +55,40 @@ ms = toMisoString
 
 instance ToMisoString MisoString where
   toMisoString = id
-  fromMisoString = id
 instance ToMisoString String where
   toMisoString = T.pack
-  fromMisoString = T.unpack
 instance ToMisoString LT.Text where
   toMisoString = LT.toStrict
-  fromMisoString = LT.fromStrict
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
-  fromMisoString = T.encodeUtf8 . fromMisoString
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
-  fromMisoString = LT.encodeUtf8 . fromMisoString
 instance ToMisoString Float where
   toMisoString = T.pack . show
-  fromMisoString = read . T.unpack
 instance ToMisoString Double where
   toMisoString = T.pack . show
-  fromMisoString = read . T.unpack
 instance ToMisoString Int where
   toMisoString = T.pack . show
-  -- Replicate frontend behavior
-  fromMisoString = round . (read :: String -> Double) . T.unpack
 instance ToMisoString Word where
   toMisoString = T.pack . show
+
+instance FromMisoString MisoString where
+  fromMisoStringEither = Right
+instance FromMisoString String where
+  fromMisoStringEither = Right . T.unpack
+instance FromMisoString LT.Text where
+  fromMisoStringEither = Right . LT.fromStrict
+instance FromMisoString B.ByteString where
+  fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
+instance FromMisoString BL.ByteString where
+  fromMisoStringEither = fmap LT.encodeUtf8 . fromMisoStringEither
+instance FromMisoString Float where
+  fromMisoStringEither = readEither . T.unpack
+instance FromMisoString Double where
+  fromMisoStringEither = readEither . T.unpack
+instance FromMisoString Int where
   -- Replicate frontend behavior
-  fromMisoString = round . (read :: String -> Double) . T.unpack
+  fromMisoStringEither = fmap round . (readEither :: String -> Either String Double) . T.unpack
+instance FromMisoString Word where
+  -- Replicate frontend behavior
+  fromMisoStringEither = fmap round . (readEither :: String -> Either String Double) . T.unpack

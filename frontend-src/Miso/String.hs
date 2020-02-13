@@ -16,6 +16,8 @@
 ----------------------------------------------------------------------------
 module Miso.String (
     ToMisoString (..)
+  , FromMisoString (..)
+  , fromMisoString
   , MisoString
   , module Data.JSString
   , module Data.Monoid
@@ -55,7 +57,17 @@ instance FromJSON MisoString where
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
-  fromMisoString :: MisoString -> str
+
+class FromMisoString t where
+  -- -- | Reads a `MisoString` into an 'a', throws an error when
+  fromMisoStringEither :: MisoString -> Either String t
+
+-- | Reads a `MisoString` into an 'a', throws an error when decoding
+-- fails. Use `fromMisoStringEither` for as a safe alternative.
+fromMisoString :: FromMisoString a => MisoString -> a
+fromMisoString s = case fromMisoStringEither s of
+                     Left err -> error err
+                     Right x  -> x
 
 -- | Convenience function, shorthand for `toMisoString`
 ms :: ToMisoString str => str -> MisoString
@@ -63,31 +75,46 @@ ms = toMisoString
 
 instance ToMisoString MisoString where
   toMisoString = id
-  fromMisoString = id
 instance ToMisoString String where
   toMisoString = pack
-  fromMisoString = unpack
 instance ToMisoString T.Text where
   toMisoString = textToJSString
-  fromMisoString = textFromJSString
 instance ToMisoString LT.Text where
   toMisoString = lazyTextToJSString
-  fromMisoString = lazyTextFromJSString
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
-  fromMisoString = T.encodeUtf8 . fromMisoString
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
-  fromMisoString = LT.encodeUtf8 . fromMisoString
 instance ToMisoString Float where
   toMisoString = realFloatToJSString
-  fromMisoString = realToFrac . jsStringToDouble
 instance ToMisoString Double where
   toMisoString = realFloatToJSString
-  fromMisoString = jsStringToDouble
 instance ToMisoString Int where
   toMisoString = integralToJSString
-  fromMisoString = round . jsStringToDouble
 instance ToMisoString Word where
   toMisoString = integralToJSString
-  fromMisoString = round . jsStringToDouble
+
+instance FromMisoString MisoString where
+  fromMisoStringEither = Right
+instance FromMisoString String where
+  fromMisoStringEither = Right . unpack
+instance FromMisoString T.Text where
+  fromMisoStringEither = Right . textFromJSString
+instance FromMisoString LT.Text where
+  fromMisoStringEither = Right . lazyTextFromJSString
+instance FromMisoString B.ByteString where
+  fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
+instance FromMisoString BL.ByteString where
+  fromMisoStringEither = fmap LT.encodeUtf8 . fromMisoStringEither
+instance FromMisoString Float where
+  fromMisoStringEither = fmap realToFrac . jsStringToDoubleEither
+instance FromMisoString Double where
+  fromMisoStringEither = jsStringToDoubleEither
+instance FromMisoString Int where
+  fromMisoStringEither = fmap round . jsStringToDoubleEither
+instance FromMisoString Word where
+  fromMisoStringEither = fmap round . jsStringToDoubleEither
+
+jsStringToDoubleEither :: JSString -> Either String Double
+jsStringToDoubleEither = Right . jsStringToDouble
+-- TODO
