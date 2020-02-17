@@ -87,7 +87,6 @@ instance FromMisoString Float where
 instance FromMisoString Double where
   fromMisoStringEither = readEither . T.unpack
 instance FromMisoString Int where
-  fromMisoStringEither = fmap round . (readEither :: String -> Either String Int) . T.unpack
+  fromMisoStringEither = readEither . T.unpack
 instance FromMisoString Word where
-  -- Replicate frontend behavior
-  fromMisoStringEither = fmap round . (readEither :: String -> Either String Word) . T.unpack
+  fromMisoStringEither = readEither . T.unpack
