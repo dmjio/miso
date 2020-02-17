@@ -26,6 +26,8 @@ module Miso.String (
 
 #ifndef JSADDLE
 import           Data.Aeson
+import           Data.Char
+
 #endif
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -36,13 +38,15 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-
+import           Prelude hiding (foldr)
 import           Miso.FFI
 
 -- | String type swappable based on compiler
 type MisoString = JSString
 
 #ifndef JSADDLE
+
+
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
@@ -111,11 +115,25 @@ instance FromMisoString Float where
 instance FromMisoString Double where
   fromMisoStringEither = jsStringToDoubleEither
 instance FromMisoString Int where
-  fromMisoStringEither = fmap round . jsStringToDoubleEither
+  fromMisoStringEither = parseInt
 instance FromMisoString Word where
-  fromMisoStringEither = fmap round . jsStringToDoubleEither
+  fromMisoStringEither = parseWord
 
 jsStringToDoubleEither :: JSString -> Either String Double
 jsStringToDoubleEither s = let d = jsStringToDouble s
                            in if isNaN d then Left "jsStringToDoubleEither: parse failed"
                                          else Right d
+
+
+parseWord :: MisoString -> Either String Word
+parseWord = fmap snd . foldr k (Right (1,0))
+  where
+    k c acc = do (l,x) <- acc
+                 y     <- if isDigit c then Right (fromIntegral $ digitToInt c)
+                                       else Left "parseWord: parse error"
+                 pure $ (l*10,l*y + x)
+
+parseInt   :: MisoString -> Either String Int
+parseInt s = case uncons s of
+               Just ('-',s') -> ((-1)*) . fromIntegral <$> parseWord s'
+               _             ->           fromIntegral <$> parseWord s
