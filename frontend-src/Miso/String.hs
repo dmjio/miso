@@ -116,5 +116,6 @@ instance FromMisoString Word where
   fromMisoStringEither = fmap round . jsStringToDoubleEither
 
 jsStringToDoubleEither :: JSString -> Either String Double
-jsStringToDoubleEither = Right . jsStringToDouble
--- TODO
+jsStringToDoubleEither s = let d = jsStringToDouble s
+                           in if isNaN d then Left "jsStringToDoubleEither: parse failed"
+                                         else Right d
