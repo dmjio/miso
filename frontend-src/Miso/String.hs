@@ -31,6 +31,7 @@ import           Data.Char
 #endif
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import           Data.Char
 import           Data.JSString
 import           Data.JSString.Text
 import           Data.Monoid
