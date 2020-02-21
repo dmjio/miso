@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.WebSocket
@@ -25,6 +26,7 @@ module Miso.Subscription.WebSocket
     -- * Subscription
   , websocketSub
   , send
+  , close
   , connect
   , getSocketState
   ) where
@@ -36,6 +38,7 @@ import           Data.Aeson
 import           Data.IORef
 import           Data.Maybe
 import           GHCJS.Marshal
+import           GHCJS.Foreign
 import           GHCJS.Types
 import           Prelude hiding (map)
 import           System.IO.Unsafe
@@ -82,8 +85,18 @@ websocketSub (URL u) (Protocols ps) f sink = do
     liftIO . sink $ f (WebSocketClose code clean reason)
   WS.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
-    d <- parse =<< WS.data' v
-    liftIO . sink $ f (WebSocketError d)
+    d' <- WS.data' v
+#ifndef __GHCJS__        
+    undef <- ghcjsPure (isUndefined d')
+#else
+    let undef = isUndefined d'
+#endif
+    if undef
+      then do
+         liftIO . sink $ f (WebSocketError mempty)
+      else do
+         Just d <- fromJSVal d'
+         liftIO . sink $ f (WebSocketError d)
   where
     handleReconnect = do
       liftIO (threadDelay (secs 3))
@@ -102,6 +115,13 @@ send :: ToJSON a => a -> JSM ()
 send x = do
   Just socket <- liftIO (readIORef websocket)
   sendJson' socket x
+
+-- | Sends message to a websocket server
+close :: JSM ()
+{-# INLINE close #-}
+close =
+  mapM_ WS.close =<<
+    liftIO (readIORef websocket)
 
 -- | Connects to a websocket server
 connect :: URL -> Protocols -> JSM ()

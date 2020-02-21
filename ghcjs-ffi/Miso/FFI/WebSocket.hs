@@ -16,6 +16,7 @@ module Miso.FFI.WebSocket
   , create
   , socketState
   , send
+  , close
   , addEventListener
   , data'
   , wasClean
@@ -32,6 +33,9 @@ newtype Socket = Socket JSVal
 
 foreign import javascript unsafe "$r = new WebSocket($1, $2);"
   create :: JSString -> JSVal -> IO Socket
+
+foreign import javascript unsafe "$1.close()"
+  close :: Socket -> IO ()
 
 foreign import javascript unsafe "$r = $1.readyState;"
   socketState :: Socket -> IO Int
