@@ -37,6 +37,7 @@ import           Data.Aeson
 import           Data.IORef
 import           Data.Maybe
 import           GHCJS.Marshal
+import           GHCJS.Foreign
 import           GHCJS.Types
 import           Prelude hiding (map)
 import           System.IO.Unsafe
@@ -83,8 +84,13 @@ websocketSub (URL u) (Protocols ps) f sink = do
     liftIO . sink $ f (WebSocketClose code clean reason)
   WS.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
-    d <- parse =<< WS.data' v
-    liftIO . sink $ f (WebSocketError d)
+    d' <- WS.data' v
+    if isUndefined d'
+      then do
+         liftIO . sink $ f (WebSocketError mempty)
+      else do
+         Just d <- fromJSVal d'
+         liftIO . sink $ f (WebSocketError d)
   where
     handleReconnect = do
       liftIO (threadDelay (secs 3))
