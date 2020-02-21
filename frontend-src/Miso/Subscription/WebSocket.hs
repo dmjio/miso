@@ -25,6 +25,7 @@ module Miso.Subscription.WebSocket
     -- * Subscription
   , websocketSub
   , send
+  , close
   , connect
   , getSocketState
   ) where
@@ -102,6 +103,13 @@ send :: ToJSON a => a -> JSM ()
 send x = do
   Just socket <- liftIO (readIORef websocket)
   sendJson' socket x
+
+-- | Sends message to a websocket server
+close :: JSM ()
+{-# INLINE close #-}
+close =
+  mapM_ WS.close =<<
+    liftIO (readIORef websocket)
 
 -- | Connects to a websocket server
 connect :: URL -> Protocols -> JSM ()
