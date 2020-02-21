@@ -16,6 +16,7 @@ module Miso.FFI.WebSocket
   , create
   , socketState
   , send
+  , close
   , addEventListener
   , data'
   , wasClean
@@ -42,6 +43,11 @@ socketState (Socket s) = fromJSValUnchecked =<< s ! ("readyState" :: JSString)
 send :: Socket -> JSString -> JSM ()
 send (Socket s) msg = do
   _ <- s # ("send" :: JSString) $ [msg]
+  pure ()
+
+close :: Socket -> JSM ()
+close (Socket s) = do
+  _ <- s # ("close" :: JSString) $ ([] :: [JSString])
   pure ()
 
 addEventListener :: Socket -> JSString -> (JSVal -> JSM ()) -> JSM ()

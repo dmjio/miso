@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.WebSocket
@@ -85,7 +86,12 @@ websocketSub (URL u) (Protocols ps) f sink = do
   WS.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
     d' <- WS.data' v
-    if isUndefined d'
+#ifndef __GHCJS__        
+    undef <- ghcjsPure (isUndefined d')
+#else
+    let undef = isUndefined d'
+#endif
+    if undef
       then do
          liftIO . sink $ f (WebSocketError mempty)
       else do
