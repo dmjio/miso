@@ -126,13 +126,14 @@ jsStringToDoubleEither s = let d = jsStringToDouble s
                                          else Right d
 
 
-parseWord :: MisoString -> Either String Word
-parseWord = fmap snd . foldr k (Right (1,0))
+parseWord   :: MisoString -> Either String Word
+parseWord s = case uncons s of
+                Nothing     -> Left "parseWord: parse error"
+                Just (c,s') -> foldl' k (pDigit c) s'
   where
-    k c acc = do (l,x) <- acc
-                 y     <- if isDigit c then Right (fromIntegral $ digitToInt c)
-                                       else Left "parseWord: parse error"
-                 pure $ (l*10,l*y + x)
+    pDigit c | isDigit c = Right . fromIntegral . digitToInt $ c
+             | otherwise = Left "parseWord: parse error"
+    k ea c = (\a x -> 10*a + x) <$> ea <*> pDigit c
 
 parseInt   :: MisoString -> Either String Int
 parseInt s = case uncons s of
