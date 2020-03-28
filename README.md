@@ -61,6 +61,7 @@
 - [Sample Application](#sample-application)
 - [Transition Application](#transition-application)
 - [Live reload with JSaddle](#live-reload-with-jsaddle)
+- [Docker](#docker)
 - [Building examples](#building-examples)
 - [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
@@ -367,6 +368,10 @@ viewModel x = div_ [] [
 ## Live reload with JSaddle
 
 It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow live reloading of your application in reponse to changes in application code. See the [README](https://github.com/dmjio/miso/blob/master/sample-app-jsaddle/README.md) in the `sample-app-jsaddle` folder for more information.
+
+## Docker
+
+Developing miso applications inside a Docker container is supported (allows applications to be built on Windows). See the [README](https://github.com/dmjio/miso/blob/master/docker/README.md) in the `docker` folder for more information.
 
 ## Building examples
 
