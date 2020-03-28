@@ -182,6 +182,7 @@ let
     ${pkgs.s3cmd}/bin/s3cmd sync --recursive lcov-report/ s3://aws-website-coverage-j7fc9/
   '';
   release = with pkgs.haskell.packages.ghc865; sdistTarball (buildStrictly miso);
+  release-examples = with pkgs.haskell.packages.ghc865; sdistTarball (buildStrictly miso-examples-jsaddle);
   s3 = with pkgs.haskell.packages.ghcjs86;
        with pkgs;
     pkgs.writeScriptBin "s3.sh" ''
@@ -221,4 +222,5 @@ in
   miso-ghc = pkgs.haskell.packages.ghc865.miso;
   inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
   inherit release;
+  inherit release-examples;
 } // armPkgs // examplePkgs
