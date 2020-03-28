@@ -141,7 +141,7 @@ let
             ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${ghcjs-dom-src}/ghcjs-dom" {};
             mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
             doctest = null;
-            miso-examples = (ghcjs.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" {}).overrideDerivation (drv: {
+            miso-examples = (self.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" {}).overrideDerivation (drv: {
               doHaddock = haddock;
               postInstall = ''
                 mkdir -p $out/bin/mario.jsexe/imgs
@@ -154,7 +154,7 @@ let
                 mv temp.js $out/bin/todo-mvc.jsexe/all.js
               '';
             });
-            miso = (ghcjs.callCabal2nixWithOptions "miso" miso-src-filter "-ftests" {}).overrideDerivation (drv: {
+            miso = (self.callCabal2nixWithOptions "miso" miso-src-filter "-ftests" {}).overrideDerivation (drv: {
               doHaddock = haddock;
               postInstall = pkgs.lib.optionalString tests ''
                 ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
