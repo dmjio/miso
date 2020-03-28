@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    working_dir: /miso/sample-app
+    command: [nix-shell, -A, env, default.nix, --run, "cabal configure --ghcjs; ag -l | (ENTR_INOTIFY_WORKAROUND=1 entr sh -c 'cabal build')"]
+    volumes:
+      - ../sample-app:/miso/sample-app/
