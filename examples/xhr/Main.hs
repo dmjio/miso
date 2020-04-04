@@ -118,7 +118,6 @@ data APIInfo
   , current_user_repositories_url :: MisoString
   , starred_url :: MisoString
   , starred_gists_url :: MisoString
-  , team_url :: MisoString
   , user_url :: MisoString
   , user_organizations_url :: MisoString
   , user_repositories_url :: MisoString
