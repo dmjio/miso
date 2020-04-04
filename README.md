@@ -165,7 +165,7 @@ nix-shell -A env --run 'ghcjs-pkg list'
 
 To build the project with `cabal` after entering the `nix-shell`
 ```
-nix-shell -A env --run 'cabal configure --ghcjs && cabal build`
+nix-shell -A env --run 'cabal configure --ghcjs && cabal build'
 ```
 
 For incremental development inside of the `nix-shell` we recommend using a tool like [`entr`](http://eradman.com/entrproject/) to automatically rebuild on file changes, or roll your own solution with `inotify`.
