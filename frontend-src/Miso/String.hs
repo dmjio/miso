@@ -26,8 +26,6 @@ module Miso.String (
 
 #ifndef JSADDLE
 import           Data.Aeson
-import           Data.Char
-
 #endif
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL

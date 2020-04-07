@@ -17,6 +17,13 @@ import           GHC.Generics
 import           Miso.String
 import           Data.Aeson (FromJSON)
 
+-- | Type useful for both KeyCode and additional key press information.
+data KeyInfo
+  = KeyInfo
+  { keyCode :: !KeyCode
+  , shiftKey, metaKey, ctrlKey, altKey :: !Bool
+  } deriving (Show, Eq)
+
 -- | Type used for Keyboard events.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#Browser_compatibility>

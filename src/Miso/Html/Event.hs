@@ -35,6 +35,7 @@ module Miso.Html.Event
   , onMouseOut
   -- * Keyboard events
   , onKeyDown
+  , onKeyDownWithInfo
   , onKeyPress
   , onKeyUp
   -- * Form events
@@ -90,6 +91,10 @@ onInput = on "input" valueDecoder
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChange :: (MisoString -> action) -> Attribute action
 onChange = on "change" valueDecoder
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
+onKeyDownWithInfo :: (KeyInfo -> action) -> Attribute action
+onKeyDownWithInfo = on "keydown" keyInfoDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDown :: (KeyCode -> action) -> Attribute action

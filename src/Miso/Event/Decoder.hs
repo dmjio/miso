@@ -17,6 +17,7 @@ module Miso.Event.Decoder
   -- * Decoders
   , emptyDecoder
   , keycodeDecoder
+  , keyInfoDecoder
   , checkedDecoder
   , valueDecoder
   )
@@ -57,6 +58,19 @@ keycodeDecoder = Decoder {..}
     decodeAt = DecodeTarget mempty
     decoder = withObject "event" $ \o ->
        KeyCode <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
+
+-- | Retrieves either "keyCode", "which" or "charCode" field in `Decoder`, along with shift, ctrl, meta and alt.
+keyInfoDecoder :: Decoder KeyInfo
+keyInfoDecoder = Decoder {..}
+  where
+    decodeAt = DecodeTarget mempty
+    decoder =
+      withObject "event" $ \o ->
+        KeyInfo <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
+                <*> o .: "shiftKey"
+                <*> o .: "metaKey"
+                <*> o .: "ctrlKey"
+                <*> o .: "altKey"
 
 -- | Retrieves "value" field in `Decoder`
 valueDecoder :: Decoder MisoString
