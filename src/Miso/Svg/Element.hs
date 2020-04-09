@@ -126,7 +126,7 @@ foreignObject_ = nodeSvg_ "foreignObject"
 circle_ :: [Attribute action] -> [View action] -> View action
 circle_ = nodeSvg_ "circle"
 
--- | <https__://developer.mozilla.org/en-US/docs/Web/SVG/Element/ellipse>
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/ellipse>
 ellipse_ :: [Attribute action] -> [View action] -> View action
 ellipse_ = nodeSvg_ "ellipse"
 
@@ -134,7 +134,7 @@ ellipse_ = nodeSvg_ "ellipse"
 image_ :: [Attribute action] -> [View action] -> View action
 image_ = nodeSvg_ "image"
 
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/image>
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/line>
 line_ :: [Attribute action] -> [View action] -> View action
 line_ = nodeSvg_ "line"
 
@@ -170,7 +170,7 @@ animateColor_ = nodeSvg_ "animateColor"
 animateMotion_ :: [Attribute action] -> [View action] -> View action
 animateMotion_ = nodeSvg_ "animateMotion"
 
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateMotion>
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/animateTransform>
 animateTransform_ :: [Attribute action] -> [View action] -> View action
 animateTransform_ = nodeSvg_ "animateTransform"
 
@@ -250,7 +250,7 @@ glyph_ = nodeSvg_ "glyph"
 glyphRef_ :: [Attribute action] -> [View action] -> View action
 glyphRef_ = nodeSvg_ "glyphRef"
 
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/glyphRef>
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Element/textPath>
 textPath_ :: [Attribute action] -> [View action] -> View action
 textPath_ = nodeSvg_ "textPath"
 
