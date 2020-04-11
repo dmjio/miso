@@ -12,8 +12,8 @@ let
   jsaddle-src = pkgs.fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "1e39844";
-    sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir8963";
+    rev = "d569be43f92b9b8c01dc3ee4c41401ab406a2076";
+    sha256 = "1m1xxy4l9ii91k1k504qkxh9k1ybprm1m66mkb9dqlwcpyhcccmv";
   };
   jsaddle-dom-src = pkgs.fetchFromGitHub {
     owner = "ghcjs";
