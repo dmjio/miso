@@ -12,8 +12,8 @@ let
   jsaddle-src = pkgs.fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "1e39844";
-    sha256 = "1qrjrjagmrrlcalys33636w5cb67db52i183masb7xd93wir8963";
+    rev = "d569be43f92b9b8c01dc3ee4c41401ab406a2076";
+    sha256 = "1m1xxy4l9ii91k1k504qkxh9k1ybprm1m66mkb9dqlwcpyhcccmv";
   };
   jsaddle-dom-src = pkgs.fetchFromGitHub {
     owner = "ghcjs";
@@ -26,6 +26,12 @@ let
     repo = "ghcjs-dom";
     rev = "b8e483a";
     sha256 = "06qlbbhjd0mlv5cymp5q0rb69a333l0fcif5zwa83h94dh25c1g7";
+  };
+  webkit2gtk3-javascriptcore-src = pkgs.fetchFromGitHub {
+    owner = "gtk2hs";
+    repo = "webkit-javascriptcore";
+    rev = "5868624";
+    sha256 = "0aj0cvcbnzrdi1ynahpb4034vadfrs99n5qa8dar1srhijv55g8b";
   };
   miso-src-filter = with pkgs.lib;
     cleanSourceWith {
@@ -125,6 +131,8 @@ let
             miso-jsaddle = self.callCabal2nixWithOptions "miso" miso-src-filter "-fjsaddle" {};
             miso-examples-jsaddle = self.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" { miso = miso-jsaddle; };
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
+            webkit2gtk3-javascriptcore = self.callCabal2nix "webkit2gtk3-javascriptcore" webkit2gtk3-javascriptcore-src {};
+            jsaddle-webkit2gtk = self.callCabal2nix "jsaddle-webkit2gtk" "${jsaddle-src}/jsaddle-webkit2gtk" {};
             ghcjs-dom-jsaddle = self.callCabal2nix "ghcjs-dom-jsaddle" "${ghcjs-dom-src}/ghcjs-dom-jsaddle" {};
             ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${ghcjs-dom-src}/ghcjs-dom-jsffi" {};
             ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${ghcjs-dom-src}/ghcjs-dom" {};
@@ -136,6 +144,7 @@ let
             jsaddle = self.callCabal2nix "jsaddle" "${jsaddle-src}/jsaddle" {};
             jsaddle-dom = self.callCabal2nix "jsaddle-dom" jsaddle-dom-src {};
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
+            jsaddle-webkit2gtk = self.callCabal2nix "jsaddle-webkit2gtk" "${jsaddle-src}/jsaddle-webkit2gtk" {};
             ghcjs-dom-jsaddle = self.callCabal2nix "ghcjs-dom-jsaddle" "${ghcjs-dom-src}/ghcjs-dom-jsaddle" {};
             ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${ghcjs-dom-src}/ghcjs-dom-jsffi" {};
             ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${ghcjs-dom-src}/ghcjs-dom" {};
