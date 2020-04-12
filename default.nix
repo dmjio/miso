@@ -182,7 +182,7 @@ let
   pkgs = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256;
-  }) { config.packageOverrides = overrides; config.allowUnfree = true; config.overlays = overlays; };
+  }) { config.packageOverrides = overrides; config.allowUnfree = true; inherit overlays; };
   more-examples = import ./nix/examples.nix pkgs;
   uploadCoverage = pkgs.writeScriptBin "upload-coverage.sh" ''
     #!/usr/bin/env bash
