@@ -1,0 +1,1784 @@
+
+./sample-app/Main.hs,262
+module Main Main5,6
+type Model Model12,13
+data ActionAction15,16
+  = AddOneAddOne16,17
+  | SubtractOneSubtractOne17,18
+  | NoOpNoOp18,19
+  | SayHelloWorldSayHelloWorld19,20
+main main23,24
+updateModel updateModel35,36
+viewModel viewModel43,44
+
+./jsaddle-ffi/Miso/FFI.hs,1291
+module Miso.FFIMiso.FFI11,12
+forkJSM forkJSM71,72
+asyncCallback asyncCallback77,78
+asyncCallback1 asyncCallback180,81
+callbackToJSVal callbackToJSVal83,84
+objectToJSVal objectToJSVal86,87
+set set90,91
+addEventListener addEventListener96,97
+windowAddEventListener windowAddEventListener105,106
+eventStopPropagation eventStopPropagation112,113
+eventPreventDefault eventPreventDefault117,118
+windowInnerHeight windowInnerHeight125,126
+windowInnerWidth windowInnerWidth132,133
+now now139,140
+consoleLog consoleLog145,146
+consoleLogJSVal consoleLogJSVal151,152
+stringify stringify157,158
+parse parse164,165
+clearBody clearBody174,175
+objectToJSON objectToJSON182,183
+getBody getBody187,188
+getDoc getDoc194,195
+getElementById getElementById200,201
+diff' diff'209,210
+integralToJSString integralToJSString211,212
+realFloatToJSString realFloatToJSString214,215
+jsStringToDouble jsStringToDouble217,218
+delegateEvent delegateEvent220,221
+delegateEvent' delegateEvent'228,229
+copyDOMIntoVTree copyDOMIntoVTree233,234
+swapCallbacks swapCallbacks239,240
+releaseCallbacks releaseCallbacks243,244
+registerCallback registerCallback246,247
+focus focus252,253
+blur blur258,259
+scrollIntoView scrollIntoView262,263
+alert alert269,270
+
+./jsaddle-ffi/Miso/Dev.hs,30
+module Miso.DevMiso.Dev9,10
+
+./jsaddle-ffi/Miso/FFI/Storage.hs,262
+module Miso.FFI.StorageMiso.FFI.Storage9,10
+newtype Storage Storage25,26
+localStorage localStorage27,28
+sessionStorage sessionStorage30,31
+getItem getItem33,34
+removeItem removeItem37,38
+setItem setItem42,43
+length length47,48
+clear clear50,51
+
+./jsaddle-ffi/Miso/FFI/WebSocket.hs,291
+module Miso.FFI.WebSocketMiso.FFI.WebSocket13,14
+newtype Socket Socket34,35
+create create36,37
+socketState socketState39,40
+send send42,43
+close close47,48
+addEventListener addEventListener52,53
+data' data'56,57
+wasClean wasClean59,60
+code code62,63
+reason reason65,66
+
+./jsaddle-ffi/Miso/FFI/History.hs,239
+module Miso.FFI.HistoryMiso.FFI.History9,10
+getWindowLocationHref getWindowLocationHref22,23
+getHistory getHistory29,30
+go go32,33
+back back37,38
+forward forward42,43
+pushState pushState47,48
+replaceState replaceState52,53
+
+./jsaddle-ffi/Miso/FFI/SSE.hs,153
+module Miso.FFI.SSEMiso.FFI.SSE13,14
+newtype EventSource EventSource28,29
+data' data'30,31
+new new33,34
+addEventListener addEventListener36,37
+
+./minify-inline/Main.hs,37
+module Main Main1,2
+main main7,8
+
+./Setup.hs,15
+main main1,2
+
+./tests/Main.hs,1006
+module Main Main6,7
+instance Arbitrary Arbitrary Value27,28
+  arbitrary arbitrary28,29
+sizedArbitraryValue sizedArbitraryValue30,31
+compareValue compareValue42,43
+closeEnough closeEnough51,52
+main main56,57
+storageTests storageTests61,62
+roundTripJSVal roundTripJSVal74,75
+roundTrip roundTrip82,83
+iso_prop iso_prop86,87
+propTest propTest89,90
+foreign foreign98,99
+runTests runTests101,102
+instance ToJSVal ToJSVal TestResult115,116
+  toJSVal toJSVal116,117
+instance ToJSVal ToJSVal Test125,126
+  toJSVal toJSVal126,127
+it it134,135
+data TestResultTestResult143,144
+  = TestResultTestResult144,145
+  { failed failed145,146
+  , passed passed146,147
+  , total total147,148
+  , duration' duration'148,149
+  , tests tests149,150
+data TestTest152,153
+  = TestTest153,154
+  { name name154,155
+  , result result155,156
+  , message message156,157
+  , duration duration157,158
+type TestM TestM160,161
+shouldBe shouldBe162,163
+clock clock172,173
+
+./sample-app-jsaddle/Main.hs,283
+module Main Main6,7
+type Model Model21,22
+data ActionAction24,25
+  = AddOneAddOne25,26
+  | SubtractOneSubtractOne26,27
+  | NoOpNoOp27,28
+  | SayHelloWorldSayHelloWorld28,29
+runApp runApp32,33
+main main42,43
+updateModel updateModel54,55
+viewModel viewModel62,63
+
+./dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/miso-1.4.0.0/build/autogen/Paths_miso.hs,1081
+module Paths_miso Paths_miso3,4
+catchIO catchIO17,18
+catchIO catchIO25,26
+version version27,28
+bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir sysconfdir29,30
+bindir, libdir, dynlibdir, datadir, libexecdir,libexecdir29,30
+bindir, libdir, dynlibdir, datadir,datadir29,30
+bindir, libdir, dynlibdir,dynlibdir29,30
+bindir, libdir,libdir29,30
+bindir,bindir29,30
+libdir libdir32,33
+dynlibdir dynlibdir33,34
+datadir datadir34,35
+libexecdir libexecdir35,36
+sysconfdir sysconfdir36,37
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir getSysconfDir38,39
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir,getLibexecDir38,39
+getBinDir, getLibDir, getDynLibDir, getDataDir,getDataDir38,39
+getBinDir, getLibDir, getDynLibDir,getDynLibDir38,39
+getBinDir, getLibDir,getLibDir38,39
+getBinDir,getBinDir38,39
+getLibDir getLibDir40,41
+getDynLibDir getDynLibDir41,42
+getDataDir getDataDir42,43
+getLibexecDir getLibexecDir43,44
+getSysconfDir getSysconfDir44,45
+getDataFileName getDataFileName46,47
+
+./dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/miso-1.4.0.0/x/simple/build/simple/autogen/Paths_miso.hs,1081
+module Paths_miso Paths_miso3,4
+catchIO catchIO17,18
+catchIO catchIO25,26
+version version27,28
+bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir sysconfdir29,30
+bindir, libdir, dynlibdir, datadir, libexecdir,libexecdir29,30
+bindir, libdir, dynlibdir, datadir,datadir29,30
+bindir, libdir, dynlibdir,dynlibdir29,30
+bindir, libdir,libdir29,30
+bindir,bindir29,30
+libdir libdir32,33
+dynlibdir dynlibdir33,34
+datadir datadir34,35
+libexecdir libexecdir35,36
+sysconfdir sysconfdir36,37
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir getSysconfDir38,39
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir,getLibexecDir38,39
+getBinDir, getLibDir, getDynLibDir, getDataDir,getDataDir38,39
+getBinDir, getLibDir, getDynLibDir,getDynLibDir38,39
+getBinDir, getLibDir,getLibDir38,39
+getBinDir,getBinDir38,39
+getLibDir getLibDir40,41
+getDynLibDir getDynLibDir41,42
+getDataDir getDataDir42,43
+getLibexecDir getLibexecDir43,44
+getSysconfDir getSysconfDir44,45
+getDataFileName getDataFileName46,47
+
+./ghc-src/Miso.hs,23
+module MisoMiso14,15
+
+./ghc-src/Miso/TypeLevel.hs,107
+module Miso.TypeLevel Miso.TypeLevel4,5
+type family family11,12
+  ToServerRoutes ToServerRoutes12,13
+
+./ghc-src/Miso/Html/Internal.hs,2227
+module Miso.Html.Internal Miso.Html.Internal23,24
+data VTree VTree67,68
+  VNode VNode68,69
+  VNode :: { vType vType68,69
+           , vNs vNs69,70
+           , vProps vProps70,71
+           , vKey vKey71,72
+           , vChildren vChildren72,73
+  VText VText74,75
+  VText :: { vText vText74,75
+instance Show Show (VTree action)78,79
+  show show79,80
+instance L.ToHtml L-ToHtml (VTree action)82,83
+  toHtmlRaw toHtmlRaw83,84
+  toHtml toHtml84,85
+toHtmlFromJSON toHtmlFromJSON114,115
+newtype View View123,124
+newtype View action = View { runView runView123,124
+instance HasLink HasLink (View a)127,128
+  type MkLink MkLink129,130
+  toLink toLink130,131
+  type MkLink MkLink132,133
+  toLink toLink133,134
+class ToView ToView138,139
+class ToView v where toView toView138,139
+instance Show Show (View action)141,142
+  show show142,143
+instance L.ToHtml L-ToHtml (View action)145,146
+  toHtmlRaw toHtmlRaw146,147
+  toHtml toHtml147,148
+data NSNS150,151
+  = HTML HTML151,152
+  | SVG SVG152,153
+  | MATHML MATHML153,154
+node node157,158
+text text164,165
+instance IsString IsString (View a)168,169
+  fromString fromString169,170
+newtype Key Key172,173
+class ToKey ToKey176,177
+class ToKey key where toKey toKey176,177
+instance ToKey ToKey Key178,179
+instance ToKey Key    where toKey toKey178,179
+instance ToKey ToKey MisoString180,181
+instance ToKey MisoString where toKey toKey180,181
+instance ToKey ToKey String182,183
+instance ToKey String where toKey toKey182,183
+instance ToKey ToKey Int184,185
+instance ToKey Int    where toKey toKey184,185
+instance ToKey ToKey Double186,187
+instance ToKey Double where toKey toKey186,187
+instance ToKey ToKey Float188,189
+instance ToKey Float  where toKey toKey188,189
+instance ToKey ToKey Word190,191
+instance ToKey Word   where toKey toKey190,191
+newtype Props Props193,194
+data Attribute Attribute197,198
+  = P P198,199
+  | E E199,200
+newtype AllowDrop AllowDrop204,205
+prop prop208,209
+on on216,217
+onWithOptions onWithOptions233,234
+onCreated onCreated237,238
+onDestroyed onDestroyed243,244
+onBeforeDestroyed onBeforeDestroyed249,250
+style_ style_259,260
+
+./ghc-src/Miso/String.hs,2005
+module Miso.StringMiso.String12,13
+type MisoString MisoString34,35
+class ToMisoString ToMisoString37,38
+  toMisoString toMisoString38,39
+class FromMisoString FromMisoString40,41
+  fromMisoStringEither fromMisoStringEither42,43
+fromMisoString fromMisoString46,47
+ms ms52,53
+instance ToMisoString ToMisoString MisoString55,56
+  toMisoString toMisoString56,57
+instance ToMisoString ToMisoString String57,58
+  toMisoString toMisoString58,59
+instance ToMisoString ToMisoString LT-Text59,60
+  toMisoString toMisoString60,61
+instance ToMisoString ToMisoString B-ByteString61,62
+  toMisoString toMisoString62,63
+instance ToMisoString ToMisoString BL-ByteString63,64
+  toMisoString toMisoString64,65
+instance ToMisoString ToMisoString Float65,66
+  toMisoString toMisoString66,67
+instance ToMisoString ToMisoString Double67,68
+  toMisoString toMisoString68,69
+instance ToMisoString ToMisoString Int69,70
+  toMisoString toMisoString70,71
+instance ToMisoString ToMisoString Word71,72
+  toMisoString toMisoString72,73
+instance FromMisoString FromMisoString MisoString74,75
+  fromMisoStringEither fromMisoStringEither75,76
+instance FromMisoString FromMisoString String76,77
+  fromMisoStringEither fromMisoStringEither77,78
+instance FromMisoString FromMisoString LT-Text78,79
+  fromMisoStringEither fromMisoStringEither79,80
+instance FromMisoString FromMisoString B-ByteString80,81
+  fromMisoStringEither fromMisoStringEither81,82
+instance FromMisoString FromMisoString BL-ByteString82,83
+  fromMisoStringEither fromMisoStringEither83,84
+instance FromMisoString FromMisoString Float84,85
+  fromMisoStringEither fromMisoStringEither85,86
+instance FromMisoString FromMisoString Double86,87
+  fromMisoStringEither fromMisoStringEither87,88
+instance FromMisoString FromMisoString Int88,89
+  fromMisoStringEither fromMisoStringEither89,90
+instance FromMisoString FromMisoString Word90,91
+  fromMisoStringEither fromMisoStringEither91,92
+
+./ghcjs-ffi/Miso/FFI.hs,573
+module Miso.FFIMiso.FFI13,14
+type JSM JSM76,77
+forkJSM forkJSM79,80
+callbackToJSVal callbackToJSVal82,83
+objectToJSVal objectToJSVal85,86
+ghcjsPure ghcjsPure88,89
+syncPoint syncPoint92,93
+set set96,97
+addEventListener addEventListener103,104
+windowAddEventListener windowAddEventListener110,111
+foreign foreign125,126
+stringify stringify164,165
+parse parse169,170
+foreign foreign180,181
+integralToJSString integralToJSString216,217
+realFloatToJSString realFloatToJSString219,220
+foreign foreign222,223
+delegateEvent delegateEvent225,226
+
+./ghcjs-ffi/Miso/FFI/Storage.hs,100
+module Miso.FFI.StorageMiso.FFI.Storage9,10
+newtype Storage Storage23,24
+foreign foreign25,26
+
+./ghcjs-ffi/Miso/FFI/WebSocket.hs,167
+module Miso.FFI.WebSocketMiso.FFI.WebSocket13,14
+newtype Socket Socket31,32
+foreign foreign33,34
+addEventListener addEventListener45,46
+foreign foreign48,49
+
+./ghcjs-ffi/Miso/FFI/History.hs,69
+module Miso.FFI.HistoryMiso.FFI.History9,10
+foreign foreign20,21
+
+./ghcjs-ffi/Miso/FFI/SSE.hs,142
+module Miso.FFI.SSEMiso.FFI.SSE13,14
+newtype EventSource EventSource24,25
+foreign foreign26,27
+addEventListener addEventListener32,33
+
+./frontend-src/Miso.hs,179
+module MisoMiso21,22
+common common75,76
+miso miso133,134
+startApp startApp147,148
+foldEffects foldEffects160,161
+data Acc Acc167,168
+data Acc model = Acc Acc167,168
+
+./frontend-src/Miso/Diff.hs,114
+module Miso.Diff Miso.Diff9,10
+diff diff20,21
+diffElement diffElement31,32
+mountElement mountElement44,45
+
+./frontend-src/Miso/Effect.hs,593
+module Miso.Effect Miso.Effect12,13
+data Effect Effect37,38
+data Effect action model = Effect Effect37,38
+type Sub Sub43,44
+type Sink Sink46,47
+mapSub mapSub50,51
+instance Functor Functor (Effect action)54,55
+  fmap fmap55,56
+instance Applicative Applicative (Effect action)57,58
+  pure pure58,59
+  Effect Effect59,60
+instance Monad Monad (Effect action)61,62
+  return return62,63
+  Effect Effect63,64
+instance Bifunctor Bifunctor Effect67,68
+  bimap bimap68,69
+noEff noEff71,72
+(<(<#)75,76
+(#(#>)79,80
+batchEff batchEff83,84
+effectSub effectSub95,96
+
+./frontend-src/Miso/Effect/Storage.hs,542
+module Miso.Effect.StorageMiso.Effect.Storage16,17
+getStorageCommon getStorageCommon46,47
+getSessionStorage getSessionStorage57,58
+getLocalStorage getLocalStorage65,66
+setLocalStorage setLocalStorage74,75
+setSessionStorage setSessionStorage82,83
+removeLocalStorage removeLocalStorage87,88
+removeSessionStorage removeSessionStorage92,93
+clearLocalStorage clearLocalStorage97,98
+clearSessionStorage clearSessionStorage100,101
+localStorageLength localStorageLength103,104
+sessionStorageLength sessionStorageLength106,107
+
+./frontend-src/Miso/Effect/DOM.hs,44
+module Miso.Effect.DOMMiso.Effect.DOM9,10
+
+./frontend-src/Miso/Html/Internal.hs,1879
+module Miso.Html.Internal Miso.Html.Internal27,28
+newtype VTree VTree83,84
+newtype VTree = VTree { getTree getTree83,84
+newtype View View86,87
+  runView runView87,88
+instance HasLink HasLink (View a)91,92
+  type MkLink MkLink93,94
+  toLink toLink94,95
+  type MkLink MkLink96,97
+  toLink toLink97,98
+class ToView ToView101,102
+class ToView v where toView toView101,102
+instance ToJSVal ToJSVal DecodeTarget104,105
+  toJSVal toJSVal105,106
+node node113,114
+instance ToJSVal ToJSVal Options142,143
+instance ToJSVal ToJSVal Key143,144
+instance ToJSVal Key where toJSVal toJSVal143,144
+instance ToJSVal ToJSVal NS145,146
+  toJSVal toJSVal146,147
+data NSNS151,152
+  = HTML HTML152,153
+  | SVG SVG153,154
+  | MATHML MATHML154,155
+text text158,159
+instance IsString IsString (View a)166,167
+  fromString fromString167,168
+newtype Key Key175,176
+class ToKey ToKey182,183
+class ToKey key where toKey toKey182,183
+instance ToKey ToKey Key184,185
+instance ToKey Key where toKey toKey184,185
+instance ToKey ToKey MisoString186,187
+instance ToKey MisoString where toKey toKey186,187
+instance ToKey ToKey T-Text188,189
+instance ToKey T.Text where toKey toKey188,189
+instance ToKey ToKey String190,191
+instance ToKey String where toKey toKey190,191
+instance ToKey ToKey Int192,193
+instance ToKey Int where toKey toKey192,193
+instance ToKey ToKey Double194,195
+instance ToKey Double where toKey toKey194,195
+instance ToKey ToKey Float196,197
+instance ToKey Float where toKey toKey196,197
+instance ToKey ToKey Word198,199
+instance ToKey Word where toKey toKey198,199
+newtype Attribute Attribute206,207
+prop prop210,211
+on on221,222
+onWithOptions onWithOptions243,244
+onCreated onCreated264,265
+onDestroyed onDestroyed277,278
+onBeforeDestroyed onBeforeDestroyed290,291
+style_ style_307,308
+
+./frontend-src/Miso/String.hs,2484
+module Miso.String Miso.String16,17
+type MisoString MisoString45,46
+instance ToJSON ToJSON MisoString51,52
+  toJSON toJSON52,53
+instance FromJSON FromJSON MisoString55,56
+  parseJSON parseJSON56,57
+class ToMisoString ToMisoString62,63
+  toMisoString toMisoString63,64
+class FromMisoString FromMisoString65,66
+  fromMisoStringEither fromMisoStringEither67,68
+fromMisoString fromMisoString71,72
+ms ms77,78
+instance ToMisoString ToMisoString MisoString80,81
+  toMisoString toMisoString81,82
+instance ToMisoString ToMisoString String82,83
+  toMisoString toMisoString83,84
+instance ToMisoString ToMisoString T-Text84,85
+  toMisoString toMisoString85,86
+instance ToMisoString ToMisoString LT-Text86,87
+  toMisoString toMisoString87,88
+instance ToMisoString ToMisoString B-ByteString88,89
+  toMisoString toMisoString89,90
+instance ToMisoString ToMisoString BL-ByteString90,91
+  toMisoString toMisoString91,92
+instance ToMisoString ToMisoString Float92,93
+  toMisoString toMisoString93,94
+instance ToMisoString ToMisoString Double94,95
+  toMisoString toMisoString95,96
+instance ToMisoString ToMisoString Int96,97
+  toMisoString toMisoString97,98
+instance ToMisoString ToMisoString Word98,99
+  toMisoString toMisoString99,100
+instance FromMisoString FromMisoString MisoString101,102
+  fromMisoStringEither fromMisoStringEither102,103
+instance FromMisoString FromMisoString String103,104
+  fromMisoStringEither fromMisoStringEither104,105
+instance FromMisoString FromMisoString T-Text105,106
+  fromMisoStringEither fromMisoStringEither106,107
+instance FromMisoString FromMisoString LT-Text107,108
+  fromMisoStringEither fromMisoStringEither108,109
+instance FromMisoString FromMisoString B-ByteString109,110
+  fromMisoStringEither fromMisoStringEither110,111
+instance FromMisoString FromMisoString BL-ByteString111,112
+  fromMisoStringEither fromMisoStringEither112,113
+instance FromMisoString FromMisoString Float113,114
+  fromMisoStringEither fromMisoStringEither114,115
+instance FromMisoString FromMisoString Double115,116
+  fromMisoStringEither fromMisoStringEither116,117
+instance FromMisoString FromMisoString Int117,118
+  fromMisoStringEither fromMisoStringEither118,119
+instance FromMisoString FromMisoString Word119,120
+  fromMisoStringEither fromMisoStringEither120,121
+jsStringToDoubleEither jsStringToDoubleEither122,123
+parseWord parseWord128,129
+parseInt parseInt137,138
+
+./frontend-src/Miso/Dev.hs,30
+module Miso.DevMiso.Dev9,10
+
+./frontend-src/Miso/Subscription/Mouse.hs,87
+module Miso.Subscription.Mouse Miso.Subscription.Mouse11,12
+mouseSub mouseSub23,24
+
+./frontend-src/Miso/Subscription/WebSocket.hs,390
+module Miso.Subscription.WebSocketMiso.Subscription.WebSocket16,17
+websocket websocket51,52
+closedCode closedCode55,56
+secs secs59,60
+websocketSub websocketSub69,70
+send send112,113
+close close119,120
+connect connect126,127
+getSocketState getSocketState136,137
+sendJson' sendJson'141,142
+createWebSocket createWebSocket144,145
+codeToCloseCode codeToCloseCode149,150
+
+./frontend-src/Miso/Subscription/History.hs,357
+module Miso.Subscription.HistoryMiso.Subscription.History14,15
+getCurrentURI getCurrentURI36,37
+getURI getURI41,42
+pushURI pushURI50,51
+toPath toPath55,56
+replaceURI replaceURI64,65
+back back69,70
+forward forward74,75
+go go79,80
+chan chan83,84
+uriSub uriSub88,89
+pushStateNoModel pushStateNoModel96,97
+replaceTo' replaceTo'102,103
+
+./frontend-src/Miso/Subscription/Keyboard.hs,315
+module Miso.Subscription.KeyboardMiso.Subscription.Keyboard13,14
+data Arrows Arrows39,40
+data Arrows = Arrows Arrows39,40
+   arrowX arrowX40,41
+ , arrowY arrowY41,42
+toArrows toArrows46,47
+arrowsSub arrowsSub64,65
+wasdSub wasdSub68,69
+directionSub directionSub72,73
+keyboardSub keyboardSub78,79
+
+./frontend-src/Miso/Subscription/Window.hs,179
+module Miso.Subscription.Window Miso.Subscription.Window11,12
+windowCoordsSub windowCoordsSub29,30
+windowSub windowSub41,42
+windowSubWithOptions windowSubWithOptions44,45
+
+./frontend-src/Miso/Subscription/SSE.hs,187
+module Miso.Subscription.SSEMiso.Subscription.SSE12,13
+sseSub sseSub28,29
+data SSE SSE40,41
+  = SSEMessage SSEMessage41,42
+  | SSECloseSSEClose42,43
+  | SSEErrorSSEError43,44
+
+./frontend-src/Miso/Subscription.hs,48
+module Miso.SubscriptionMiso.Subscription9,10
+
+./frontend-src/Miso/JSBits.hs,36
+module Miso.JSBits Miso.JSBits0,1
+
+./frontend-src/Miso/Types.hs,548
+module Miso.TypesMiso.Types9,10
+data App App38,39
+data App model action = AppApp38,39
+  { model model39,40
+  , update update41,42
+  , view view44,45
+  , subs subs46,47
+  , events events48,49
+  , initialAction initialAction51,52
+  , mountPoint mountPoint53,54
+type Transition Transition85,86
+mapAction mapAction91,92
+fromTransition fromTransition98,99
+toTransition toTransition104,105
+scheduleIO scheduleIO112,113
+scheduleIO_ scheduleIO_120,121
+scheduleIOFor_ scheduleIOFor_126,127
+scheduleSub scheduleSub138,139
+
+./frontend-src/Miso/Delegate.hs,68
+module Miso.Delegate Miso.Delegate9,10
+delegator delegator27,28
+
+./examples/svg/Touch.hs,433
+module Touch Touch2,3
+  { identifier identifier10,11
+  , screen screen11,12
+  , client client12,13
+  , page page13,14
+instance FromJSON FromJSON Touch16,17
+  parseJSON parseJSON17,18
+data TouchEvent TouchEvent25,26
+  TouchEvent TouchEvent26,27
+instance FromJSON FromJSON TouchEvent29,30
+  parseJSON parseJSON30,31
+touchDecoder touchDecoder34,35
+onTouchMove onTouchMove40,41
+onTouchStart onTouchStart43,44
+
+./examples/svg/Main.hs,342
+module Main Main4,5
+trunc trunc14,15
+main main16,17
+emptyModel emptyModel29,30
+updateModel updateModel32,33
+data ActionAction42,43
+  = HandleMouse HandleMouse43,44
+  | HandleTouch HandleTouch44,45
+  | IdId45,46
+newtype ModelModel47,48
+  { mouseCoords mouseCoords49,50
+viewModel viewModel52,53
+svgStyle svgStyle75,76
+
+./examples/canvas2d/Main.hs,215
+module Main Main2,3
+type Model Model11,12
+data ActionAction13,14
+  = NoOpNoOp14,15
+  | GetTimeGetTime15,16
+  | SetTime SetTime16,17
+main main18,19
+updateModel updateModel43,44
+foreign foreign71,72
+
+./examples/websocket/Main.hs,512
+module Main Main12,13
+runApp runApp26,27
+main main35,36
+updateModel updateModel47,48
+instance ToJSON ToJSON Message54,55
+instance FromJSON FromJSON Message55,56
+newtype Message Message57,58
+data ActionAction60,61
+  = HandleWebSocket HandleWebSocket61,62
+  | SendMessage SendMessage62,63
+  | UpdateMessage UpdateMessage63,64
+  | IdId64,65
+data Model Model66,67
+data Model = Model Model66,67
+    msg msg67,68
+  , received received68,69
+appView appView71,72
+onEnter onEnter85,86
+
+./examples/sse/server/Main.hs,388
+module Main Main7,8
+port port30,31
+main main33,34
+sendEvents sendEvents43,44
+newtype Wrapper Wrapper53,54
+instance L.ToHtml L-ToHtml a => L-ToHtml (Wrapper a)56,57
+  toHtmlRaw toHtmlRaw57,58
+  toHtml toHtml58,59
+type ServerRoutes ServerRoutes73,74
+handle404 handle40475,76
+type API API83,84
+app app85,86
+sseApp sseApp97,98
+serverHandlers serverHandlers100,101
+
+./examples/sse/shared/Common.hs,474
+module Common Common2,3
+data Model Model13,14
+data Model = Model Model13,14
+data Model = Model { modelUri modelUri13,14
+data Model = Model { modelUri :: URI,  modelMsg modelMsg13,14
+data ActionAction16,17
+  = ServerMsg ServerMsg17,18
+  | NoOpNoOp18,19
+  | ChangeURI ChangeURI19,20
+  | HandleURI HandleURI20,21
+home home23,24
+type ClientRoutes ClientRoutes28,29
+type Home Home30,31
+handlers handlers32,33
+the404 the40435,36
+goHome goHome43,44
+
+./examples/sse/client/Main.hs,102
+module Main Main2,3
+main main9,10
+handleSseMsg handleSseMsg27,28
+updateModel updateModel32,33
+
+./examples/mathml/Main.hs,199
+module Main Main6,7
+data Model Model13,14
+data Model = Empty Empty13,14
+data ActionAction15,16
+  =  NoOpNoOp16,17
+main main20,21
+updateModel updateModel32,33
+viewModel viewModel36,37
+
+./examples/file-reader/Main.hs,292
+module Main Main7,8
+data ModelModel17,18
+  = ModelModel18,19
+  { info info19,20
+data ActionAction23,24
+  = ReadFileReadFile24,25
+  | NoOpNoOp25,26
+  | SetContent SetContent26,27
+main main30,31
+updateModel updateModel44,45
+viewModel viewModel60,61
+foreign foreign72,73
+
+./examples/xhr/Main.hs,1817
+module Main Main6,7
+data ModelModel19,20
+  = ModelModel20,21
+  { info info21,22
+data ActionAction25,26
+  = FetchGitHubFetchGitHub26,27
+  | SetGitHub SetGitHub27,28
+  | NoOpNoOp28,29
+main main32,33
+updateModel updateModel46,47
+viewModel viewModel54,55
+data APIInfoAPIInfo92,93
+  = APIInfoAPIInfo93,94
+  { current_user_url current_user_url94,95
+  , current_user_authorizations_html_url current_user_authorizations_html_url95,96
+  , authorizations_url authorizations_url96,97
+  , code_search_url code_search_url97,98
+  , commit_search_url commit_search_url98,99
+  , emails_url emails_url99,100
+  , emojis_url emojis_url100,101
+  , events_url events_url101,102
+  , feeds_url feeds_url102,103
+  , followers_url followers_url103,104
+  , following_url following_url104,105
+  , gists_url gists_url105,106
+  , hub_url hub_url106,107
+  , issue_search_url issue_search_url107,108
+  , issues_url issues_url108,109
+  , keys_url keys_url109,110
+  , notifications_url notifications_url110,111
+  , organization_repositories_url organization_repositories_url111,112
+  , organization_url organization_url112,113
+  , public_gists_url public_gists_url113,114
+  , rate_limit_url rate_limit_url114,115
+  , repository_url repository_url115,116
+  , repository_search_url repository_search_url116,117
+  , current_user_repositories_url current_user_repositories_url117,118
+  , starred_url starred_url118,119
+  , starred_gists_url starred_gists_url119,120
+  , user_url user_url120,121
+  , user_organizations_url user_organizations_url121,122
+  , user_repositories_url user_repositories_url122,123
+  , user_search_url user_search_url123,124
+instance FromJSON FromJSON APIInfo126,127
+  parseJSON parseJSON127,128
+getGitHubAPIInfo getGitHubAPIInfo129,130
+
+./examples/three/Main.hs,432
+module Main Main2,3
+data ActionAction12,13
+  = GetTimeGetTime13,14
+  | InitInit14,15
+  | SetTime SetTime15,16
+withStats withStats17,18
+data Context Context22,23
+data Context = ContextContext22,23
+  { rotateCube rotateCube23,24
+  , renderScene renderScene24,25
+  , stats stats25,26
+initContext initContext28,29
+main main52,53
+viewModel viewModel68,69
+updateModel updateModel84,85
+foreign foreign98,99
+
+./examples/haskell-miso.org/Setup.hs,15
+main main1,2
+
+./examples/haskell-miso.org/server/Main.hs,758
+module Main Main8,9
+main main31,32
+app app38,39
+newtype Wrapper Wrapper48,49
+type ServerRoutes ServerRoutes52,53
+type API API55,56
+data ManifestManifest60,61
+  = ManifestManifest61,62
+  { name name62,63
+  , short_name short_name63,64
+  , start_url start_url64,65
+  , display display65,66
+  , theme_color theme_color66,67
+  , description description67,68
+instance ToJSON ToJSON Manifest70,71
+misoManifest misoManifest72,73
+handle404 handle40482,83
+instance L.ToHtml L-ToHtml a => L-ToHtml (Wrapper a)88,89
+  toHtmlRaw toHtmlRaw89,90
+  toHtml toHtml90,91
+fontAwesomeRef fontAwesomeRef134,135
+animateRef animateRef137,138
+bulmaRef bulmaRef140,141
+analytics analytics143,144
+serverHandlers serverHandlers155,156
+
+./examples/haskell-miso.org/shared/Common.hs,1209
+module Common Common6,7
+data Model Model26,27
+data Model = ModelModel26,27
+  { uri uri27,28
+  , navMenuOpen navMenuOpen28,29
+data ActionAction32,33
+  = AlertAlert33,34
+  | ChangeURI ChangeURI34,35
+  | HandleURI HandleURI35,36
+  | ToggleNavMenuToggleNavMenu36,37
+  | NoOpNoOp37,38
+type ClientRoutes ClientRoutes41,42
+handlers handlers47,48
+type Examples Examples53,54
+type Docs Docs54,55
+type Community Community55,56
+type Home Home56,57
+community community59,60
+docs docs85,86
+misoSrc misoSrc112,113
+examples examples115,116
+home home145,146
+template template172,173
+middle middle187,188
+cols cols256,257
+the404 the404279,280
+goHome, goExamples, goDocs, goCommunity goCommunity300,301
+goHome, goExamples, goDocs,goDocs300,301
+goHome, goExamples,goExamples300,301
+goHome,goHome300,301
+( (goHome,goExamples,goDocs,goCommunity)301,302
+homeProxy homeProxy316,317
+examplesProxy examplesProxy318,319
+docsProxy docsProxy320,321
+communityProxy communityProxy322,323
+routes routes324,325
+starMiso starMiso328,329
+forkMiso forkMiso338,339
+hero hero349,350
+onPreventClick onPreventClick386,387
+footer footer392,393
+newNav newNav433,434
+
+./examples/haskell-miso.org/client/Main.hs,69
+module Main Main1,2
+main main9,10
+updateModel updateModel26,27
+
+./examples/todo-mvc/Main.hs,1493
+module Main Main13,14
+runApp runApp29,30
+data Model Model40,41
+data Model = ModelModel40,41
+  { entries entries41,42
+  , field field42,43
+  , uid uid43,44
+  , visibility visibility44,45
+  , step step45,46
+data Entry Entry48,49
+data Entry = EntryEntry48,49
+  { description description49,50
+  , completed completed50,51
+  , editing editing51,52
+  , eid eid52,53
+  , focussed focussed53,54
+instance ToJSON ToJSON Entry56,57
+instance ToJSON ToJSON Model57,58
+instance FromJSON FromJSON Entry59,60
+instance FromJSON FromJSON Model60,61
+emptyModel emptyModel62,63
+newEntry newEntry71,72
+data MsgMsg80,81
+  = NoOpNoOp81,82
+  | CurrentTime CurrentTime82,83
+  | UpdateField UpdateField83,84
+  | EditingEntry EditingEntry84,85
+  | UpdateEntry UpdateEntry85,86
+  | AddAdd86,87
+  | Delete Delete87,88
+  | DeleteCompleteDeleteComplete88,89
+  | Check Check89,90
+  | CheckAll CheckAll90,91
+  | ChangeVisibility ChangeVisibility91,92
+main main94,95
+updateModel updateModel104,105
+filterMap filterMap157,158
+viewModel viewModel165,166
+viewEntries viewEntries184,185
+viewKeyedEntry viewKeyedEntry213,214
+viewEntry viewEntry216,217
+viewControls viewControls248,249
+viewControlsCount viewControlsCount261,262
+viewControlsFilters viewControlsFilters270,271
+visibilitySwap visibilitySwap281,282
+viewControlsClear viewControlsClear290,291
+viewInput viewInput299,300
+onEnter onEnter314,315
+infoFooter infoFooter318,319
+
+./examples/mario/Main.hs,794
+module Main Main5,6
+runApp runApp18,19
+runApp runApp32,33
+data ActionAction43,44
+  = GetArrows GetArrows44,45
+  | Time Time45,46
+  | WindowCoords WindowCoords46,47
+  | NoOpNoOp47,48
+spriteFrames spriteFrames49,50
+main main52,53
+data Model Model69,70
+data Model = ModelModel69,70
+    { x x70,71
+    , y y71,72
+    , vx vx72,73
+    , vy vy73,74
+    , dir dir74,75
+    , time time75,76
+    , delta delta76,77
+    , arrows arrows77,78
+    , window window78,79
+data DirectionDirection81,82
+  = LL82,83
+  | RR83,84
+mario mario86,87
+updateMario updateMario99,100
+step step113,114
+jump jump121,122
+gravity gravity127,128
+physics physics131,132
+walk walk137,138
+display display145,146
+marioStyle marioStyle158,159
+matrix matrix174,175
+
+./examples/compose-update/Main.hs,397
+module Main Main4,5
+type Model Model20,21
+data ActionAction22,23
+  = IncrementIncrement23,24
+  | DecrementDecrement24,25
+  | NoOpNoOp25,26
+type Lens Lens33,34
+traverseOf traverseOf44,45
+_1 _149,50
+_2 _254,55
+updateFirstCounter updateFirstCounter58,59
+updateSecondCounter updateSecondCounter66,67
+updateModel updateModel72,73
+main main90,91
+viewModel viewModel100,101
+
+./examples/router/Main.hs,434
+module Main Main7,8
+runApp runApp22,23
+data ModelModel32,33
+  = ModelModel33,34
+  { uri uri34,35
+data ActionAction39,40
+  = HandleURI HandleURI40,41
+  | ChangeURI ChangeURI41,42
+  | NoOpNoOp42,43
+main main46,47
+updateModel updateModel59,60
+viewModel viewModel68,69
+type API API89,90
+type Home Home90,91
+type About About91,92
+goAbout, goHome goHome94,95
+goAbout,goAbout94,95
+(g(goHome,goAbout)95,96
+
+./exe/Main.hs,283
+module Main Main6,7
+runApp runApp17,18
+type Model Model27,28
+data ActionAction30,31
+  = AddOneAddOne31,32
+  | SubtractOneSubtractOne32,33
+  | NoOpNoOp33,34
+  | SayHelloWorldSayHelloWorld34,35
+main main38,39
+updateModel updateModel50,51
+viewModel viewModel58,59
+
+./src/Miso/Svg/Attribute.hs,8021
+module Miso.Svg.AttributeMiso.Svg.Attribute14,15
+attr attr276,277
+accentHeight_ accentHeight_280,281
+accelerate_ accelerate_283,284
+accumulate_ accumulate_286,287
+additive_ additive_289,290
+alphabetic_ alphabetic_292,293
+allowReorder_ allowReorder_295,296
+amplitude_ amplitude_298,299
+arabicForm_ arabicForm_301,302
+ascent_ ascent_304,305
+attributeName_ attributeName_307,308
+attributeType_ attributeType_310,311
+autoReverse_ autoReverse_313,314
+azimuth_ azimuth_316,317
+baseFrequency_ baseFrequency_319,320
+baseProfile_ baseProfile_322,323
+bbox_ bbox_325,326
+begin_ begin_328,329
+bias_ bias_331,332
+by_ by_334,335
+calcMode_ calcMode_337,338
+capHeight_ capHeight_340,341
+class_' class_'343,344
+clipPathUnits_ clipPathUnits_346,347
+contentScriptType_ contentScriptType_349,350
+contentStyleType_ contentStyleType_352,353
+cx_ cx_355,356
+cy_ cy_358,359
+d_ d_361,362
+decelerate_ decelerate_364,365
+descent_ descent_367,368
+diffuseConstant_ diffuseConstant_370,371
+divisor_ divisor_373,374
+dur_ dur_376,377
+dx_ dx_379,380
+dy_ dy_382,383
+edgeMode_ edgeMode_385,386
+elevation_ elevation_388,389
+end_ end_391,392
+exponent_ exponent_394,395
+externalResourcesRequired_ externalResourcesRequired_397,398
+filterRes_ filterRes_400,401
+filterUnits_ filterUnits_403,404
+format_ format_406,407
+from_ from_409,410
+fx_ fx_412,413
+fy_ fy_415,416
+g1_ g1_418,419
+g2_ g2_421,422
+glyphName_ glyphName_424,425
+glyphRef_ glyphRef_427,428
+gradientTransform_ gradientTransform_430,431
+gradientUnits_ gradientUnits_433,434
+hanging_ hanging_436,437
+height_ height_439,440
+horizAdvX_ horizAdvX_442,443
+horizOriginX_ horizOriginX_445,446
+horizOriginY_ horizOriginY_448,449
+id_ id_451,452
+ideographic_ ideographic_454,455
+in_' in_'457,458
+in2_ in2_460,461
+intercept_ intercept_463,464
+k_ k_466,467
+k1_ k1_469,470
+k2_ k2_472,473
+k3_ k3_475,476
+k4_ k4_478,479
+kernelMatrix_ kernelMatrix_481,482
+kernelUnitLength_ kernelUnitLength_484,485
+keyPoints_ keyPoints_487,488
+keySplines_ keySplines_490,491
+keyTimes_ keyTimes_493,494
+lang_ lang_496,497
+lengthAdjust_ lengthAdjust_499,500
+limitingConeAngle_ limitingConeAngle_502,503
+local_ local_505,506
+markerHeight_ markerHeight_508,509
+markerUnits_ markerUnits_511,512
+markerWidth_ markerWidth_514,515
+maskContentUnits_ maskContentUnits_517,518
+maskUnits_ maskUnits_520,521
+mathematical_ mathematical_523,524
+max_ max_526,527
+media_ media_529,530
+method_ method_532,533
+min_ min_535,536
+mode_ mode_538,539
+name_ name_541,542
+numOctaves_ numOctaves_544,545
+offset_ offset_547,548
+operator_ operator_550,551
+order_ order_553,554
+orient_ orient_556,557
+orientation_ orientation_559,560
+origin_ origin_562,563
+overlinePosition_ overlinePosition_565,566
+overlineThickness_ overlineThickness_568,569
+panose1_ panose1_571,572
+path_ path_574,575
+pathLength_ pathLength_577,578
+patternContentUnits_ patternContentUnits_580,581
+patternTransform_ patternTransform_583,584
+patternUnits_ patternUnits_586,587
+pointOrder_ pointOrder_589,590
+points_ points_592,593
+pointsAtX_ pointsAtX_595,596
+pointsAtY_ pointsAtY_598,599
+pointsAtZ_ pointsAtZ_601,602
+preserveAlpha_ preserveAlpha_604,605
+preserveAspectRatio_ preserveAspectRatio_607,608
+primitiveUnits_ primitiveUnits_610,611
+r_ r_613,614
+radius_ radius_616,617
+refX_ refX_619,620
+refY_ refY_622,623
+renderingIntent_ renderingIntent_625,626
+repeatCount_ repeatCount_628,629
+repeatDur_ repeatDur_631,632
+requiredExtensions_ requiredExtensions_634,635
+requiredFeatures_ requiredFeatures_637,638
+restart_ restart_640,641
+result_ result_643,644
+rotate_ rotate_646,647
+rx_ rx_649,650
+ry_ ry_652,653
+scale_ scale_655,656
+seed_ seed_658,659
+slope_ slope_661,662
+spacing_ spacing_664,665
+specularConstant_ specularConstant_667,668
+specularExponent_ specularExponent_670,671
+speed_ speed_673,674
+spreadMethod_ spreadMethod_676,677
+startOffset_ startOffset_679,680
+stdDeviation_ stdDeviation_682,683
+stemh_ stemh_685,686
+stemv_ stemv_688,689
+stitchTiles_ stitchTiles_691,692
+strikethroughPosition_ strikethroughPosition_694,695
+strikethroughThickness_ strikethroughThickness_697,698
+string_ string_700,701
+style_ style_703,704
+surfaceScale_ surfaceScale_706,707
+systemLanguage_ systemLanguage_709,710
+tableValues_ tableValues_712,713
+target_ target_715,716
+targetX_ targetX_718,719
+targetY_ targetY_721,722
+textLength_ textLength_724,725
+title_ title_727,728
+to_ to_730,731
+transform_ transform_733,734
+type_' type_'736,737
+u1_ u1_739,740
+u2_ u2_742,743
+underlinePosition_ underlinePosition_745,746
+underlineThickness_ underlineThickness_748,749
+unicode_ unicode_751,752
+unicodeRange_ unicodeRange_754,755
+unitsPerEm_ unitsPerEm_757,758
+vAlphabetic_ vAlphabetic_760,761
+vHanging_ vHanging_763,764
+vIdeographic_ vIdeographic_766,767
+vMathematical_ vMathematical_769,770
+values_ values_772,773
+version_ version_775,776
+vertAdvY_ vertAdvY_778,779
+vertOriginX_ vertOriginX_781,782
+vertOriginY_ vertOriginY_784,785
+viewBox_ viewBox_787,788
+viewTarget_ viewTarget_790,791
+width_ width_793,794
+widths_ widths_796,797
+x_ x_799,800
+xHeight_ xHeight_802,803
+x1_ x1_805,806
+x2_ x2_808,809
+xChannelSelector_ xChannelSelector_811,812
+xlinkActuate_ xlinkActuate_814,815
+xlinkArcrole_ xlinkArcrole_817,818
+xlinkHref_ xlinkHref_820,821
+xlinkRole_ xlinkRole_823,824
+xlinkShow_ xlinkShow_826,827
+xlinkTitle_ xlinkTitle_829,830
+xlinkType_ xlinkType_832,833
+xmlBase_ xmlBase_835,836
+xmlLang_ xmlLang_838,839
+xmlSpace_ xmlSpace_841,842
+y_ y_844,845
+y1_ y1_847,848
+y2_ y2_850,851
+yChannelSelector_ yChannelSelector_853,854
+z_ z_856,857
+zoomAndPan_ zoomAndPan_859,860
+alignmentBaseline_ alignmentBaseline_862,863
+baselineShift_ baselineShift_865,866
+clipPath_ clipPath_868,869
+clipRule_ clipRule_871,872
+clip_ clip_874,875
+colorInterpolationFilters_ colorInterpolationFilters_877,878
+colorInterpolation_ colorInterpolation_880,881
+colorProfile_ colorProfile_883,884
+colorRendering_ colorRendering_886,887
+color_ color_889,890
+cursor_ cursor_892,893
+direction_ direction_895,896
+display_ display_898,899
+dominantBaseline_ dominantBaseline_901,902
+enableBackground_ enableBackground_904,905
+fillOpacity_ fillOpacity_907,908
+fillRule_ fillRule_910,911
+fill_ fill_913,914
+filter_ filter_916,917
+floodColor_ floodColor_919,920
+floodOpacity_ floodOpacity_922,923
+fontFamily_ fontFamily_925,926
+fontSizeAdjust_ fontSizeAdjust_928,929
+fontSize_ fontSize_931,932
+fontStretch_ fontStretch_934,935
+fontStyle_ fontStyle_937,938
+fontVariant_ fontVariant_940,941
+fontWeight_ fontWeight_943,944
+glyphOrientationHorizontal_ glyphOrientationHorizontal_946,947
+glyphOrientationVertical_ glyphOrientationVertical_949,950
+imageRendering_ imageRendering_952,953
+kerning_ kerning_955,956
+letterSpacing_ letterSpacing_958,959
+lightingColor_ lightingColor_961,962
+markerEnd_ markerEnd_964,965
+markerMid_ markerMid_967,968
+markerStart_ markerStart_970,971
+mask_ mask_973,974
+opacity_ opacity_976,977
+overflow_ overflow_979,980
+pointerEvents_ pointerEvents_982,983
+shapeRendering_ shapeRendering_985,986
+stopColor_ stopColor_988,989
+stopOpacity_ stopOpacity_991,992
+strokeDasharray_ strokeDasharray_994,995
+strokeDashoffset_ strokeDashoffset_997,998
+strokeLinecap_ strokeLinecap_1000,1001
+strokeLinejoin_ strokeLinejoin_1003,1004
+strokeMiterlimit_ strokeMiterlimit_1006,1007
+strokeOpacity_ strokeOpacity_1009,1010
+strokeWidth_ strokeWidth_1012,1013
+stroke_ stroke_1015,1016
+textAnchor_ textAnchor_1018,1019
+textDecoration_ textDecoration_1021,1022
+textRendering_ textRendering_1024,1025
+unicodeBidi_ unicodeBidi_1027,1028
+visibility_ visibility_1030,1031
+wordSpacing_ wordSpacing_1033,1034
+writingMode_ writingMode_1036,1037
+
+./src/Miso/Svg/Event.hs,514
+module Miso.Svg.EventMiso.Svg.Event14,15
+onBegin onBegin44,45
+onEnd onEnd48,49
+onRepeat onRepeat52,53
+onAbort onAbort56,57
+onError onError60,61
+onResize onResize64,65
+onScroll onScroll68,69
+onLoad onLoad72,73
+onUnload onUnload76,77
+onZoom onZoom80,81
+onActivate onActivate84,85
+onFocusIn onFocusIn88,89
+onFocusOut onFocusOut92,93
+onMouseDown onMouseDown96,97
+onMouseMove onMouseMove99,100
+onMouseOut onMouseOut103,104
+onMouseOver onMouseOver107,108
+onMouseUp onMouseUp111,112
+
+./src/Miso/Svg/Element.hs,2444
+module Miso.Svg.ElementMiso.Svg.Element11,12
+nodeSvg_ nodeSvg_113,114
+svg_ svg_117,118
+foreignObject_ foreignObject_121,122
+circle_ circle_125,126
+ellipse_ ellipse_129,130
+image_ image_133,134
+line_ line_137,138
+path_ path_141,142
+polygon_ polygon_145,146
+polyline_ polyline_149,150
+rect_ rect_153,154
+use_ use_157,158
+animate_ animate_161,162
+animateColor_ animateColor_165,166
+animateMotion_ animateMotion_169,170
+animateTransform_ animateTransform_173,174
+mpath_ mpath_177,178
+set_ set_181,182
+desc_ desc_185,186
+metadata_ metadata_189,190
+title_ title_193,194
+a_ a_197,198
+defs_ defs_201,202
+g_ g_205,206
+marker_ marker_209,210
+mask_ mask_213,214
+missingGlyph_ missingGlyph_217,218
+pattern_ pattern_221,222
+switch_ switch_225,226
+symbol_ symbol_229,230
+altGlyph_ altGlyph_233,234
+altGlyphDef_ altGlyphDef_237,238
+altGlyphItem_ altGlyphItem_241,242
+glyph_ glyph_245,246
+glyphRef_ glyphRef_249,250
+textPath_ textPath_253,254
+text_ text_257,258
+tref_ tref_261,262
+tspan_ tspan_265,266
+font_ font_269,270
+fontFace_ fontFace_273,274
+fontFaceFormat_ fontFaceFormat_277,278
+fontFaceName_ fontFaceName_281,282
+fontFaceSrc_ fontFaceSrc_285,286
+fontFaceUri_ fontFaceUri_289,290
+hkern_ hkern_293,294
+vkern_ vkern_297,298
+linearGradient_ linearGradient_301,302
+radialGradient_ radialGradient_305,306
+stop_ stop_309,310
+feBlend_ feBlend_313,314
+feColorMatrix_ feColorMatrix_317,318
+feComponentTransfer_ feComponentTransfer_321,322
+feComposite_ feComposite_325,326
+feConvolveMatrix_ feConvolveMatrix_329,330
+feDiffuseLighting_ feDiffuseLighting_333,334
+feDisplacementMap_ feDisplacementMap_337,338
+feFlood_ feFlood_341,342
+feFuncA_ feFuncA_345,346
+feFuncB_ feFuncB_349,350
+feFuncG_ feFuncG_353,354
+feFuncR_ feFuncR_357,358
+feGaussianBlur_ feGaussianBlur_361,362
+feImage_ feImage_365,366
+feMerge_ feMerge_369,370
+feMergeNode_ feMergeNode_373,374
+feMorhpology_ feMorhpology_377,378
+feOffset_ feOffset_381,382
+feSpecularLighting_ feSpecularLighting_385,386
+feTile_ feTile_389,390
+feTurbulence_ feTurbulence_393,394
+feDistantLight_ feDistantLight_397,398
+fePointLight_ fePointLight_401,402
+feSpotLight_ feSpotLight_405,406
+clipPath_ clipPath_409,410
+colorProfile_ colorProfile_413,414
+cursor_ cursor_417,418
+filter_ filter_421,422
+script_ script_425,426
+style_ style_429,430
+view_ view_433,434
+
+./src/Miso/Svg.hs,31
+module Miso.SvgMiso.Svg26,27
+
+./src/Miso/Mathml/Element.hs,82
+module Miso.Mathml.ElementMiso.Mathml.Element11,12
+nodeMathml nodeMathml21,22
+
+./src/Miso/WebSocket.hs,1253
+module Miso.WebSocketMiso.WebSocket16,17
+data WebSocket WebSocket36,37
+  = WebSocketMessage WebSocketMessage37,38
+  | WebSocketClose WebSocketClose38,39
+  | WebSocketOpenWebSocketOpen39,40
+  | WebSocketError WebSocketError40,41
+newtype URL URL44,45
+newtype Protocols Protocols48,49
+newtype WasClean WasClean52,53
+newtype Reason Reason55,56
+data SocketStateSocketState58,59
+  = CONNECTING CONNECTING59,60
+  | OPEN OPEN60,61
+  | CLOSING CLOSING61,62
+  | CLOSED CLOSED62,63
+data CloseCodeCloseCode67,68
+  = CLOSE_NORMALCLOSE_NORMAL68,69
+  | CLOSE_GOING_AWAYCLOSE_GOING_AWAY70,71
+  | CLOSE_PROTOCOL_ERRORCLOSE_PROTOCOL_ERROR72,73
+  | CLOSE_UNSUPPORTEDCLOSE_UNSUPPORTED74,75
+  | CLOSE_NO_STATUSCLOSE_NO_STATUS76,77
+  | CLOSE_ABNORMALCLOSE_ABNORMAL78,79
+  | Unsupported_DataUnsupported_Data80,81
+  | Policy_ViolationPolicy_Violation82,83
+  | CLOSE_TOO_LARGECLOSE_TOO_LARGE84,85
+  | Missing_ExtensionMissing_Extension86,87
+  | Internal_ErrorInternal_Error88,89
+  | Service_RestartService_Restart90,91
+  | Try_Again_LaterTry_Again_Later92,93
+  | TLS_HandshakeTLS_Handshake94,95
+  | OtherCode OtherCode96,97
+instance ToJSVal ToJSVal CloseCode102,103
+instance FromJSVal FromJSVal CloseCode103,104
+
+./src/Miso/Html/Property.hs,2302
+module Miso.Html.PropertyMiso.Html.Property16,17
+boolProp boolProp129,130
+stringProp stringProp132,133
+textProp textProp135,136
+intProp intProp138,139
+integerProp integerProp141,142
+doubleProp doubleProp144,145
+classList_ classList_150,151
+title_ title_154,155
+selected_ selected_157,158
+hidden_ hidden_160,161
+value_ value_163,164
+defaultValue_ defaultValue_166,167
+accept_ accept_169,170
+acceptCharset_ acceptCharset_172,173
+action_ action_175,176
+autocomplete_ autocomplete_178,179
+autosave_ autosave_181,182
+disabled_ disabled_184,185
+enctype_ enctype_187,188
+formation_ formation_190,191
+list_ list_193,194
+maxlength_ maxlength_196,197
+minlength_ minlength_199,200
+method_ method_202,203
+multiple_ multiple_205,206
+novalidate_ novalidate_208,209
+pattern_ pattern_211,212
+readonly_ readonly_214,215
+required_ required_217,218
+size_ size_220,221
+for_ for_223,224
+form_ form_226,227
+max_ max_229,230
+min_ min_232,233
+step_ step_235,236
+cols_ cols_238,239
+rows_ rows_241,242
+wrap_ wrap_244,245
+target_ target_247,248
+download_ download_250,251
+downloadAs_ downloadAs_253,254
+hreflang_ hreflang_256,257
+media_ media_259,260
+ping_ ping_262,263
+rel_ rel_265,266
+ismap_ ismap_268,269
+usemap_ usemap_271,272
+shape_ shape_274,275
+coords_ coords_277,278
+src_ src_280,281
+height_ height_283,284
+width_ width_286,287
+alt_ alt_289,290
+autoplay_ autoplay_292,293
+controls_ controls_295,296
+loop_ loop_298,299
+preload_ preload_301,302
+poster_ poster_304,305
+default_ default_307,308
+kind_ kind_310,311
+srclang_ srclang_313,314
+sandbox_ sandbox_316,317
+seamless_ seamless_319,320
+srcdoc_ srcdoc_322,323
+reversed_ reversed_325,326
+start_ start_328,329
+align_ align_331,332
+colspan_ colspan_334,335
+rowspan_ rowspan_337,338
+headers_ headers_340,341
+scope_ scope_343,344
+async_ async_346,347
+charset_ charset_349,350
+content_ content_352,353
+defer_ defer_355,356
+httpEquiv_ httpEquiv_358,359
+language_ language_361,362
+scoped_ scoped_364,365
+type_ type_367,368
+name_ name_370,371
+href_ href_373,374
+id_ id_376,377
+placeholder_ placeholder_379,380
+checked_ checked_382,383
+autofocus_ autofocus_386,387
+class_ class_390,391
+data_ data_394,395
+
+./src/Miso/Html/Event.hs,776
+module Miso.Html.EventMiso.Html.Event20,21
+onBlur onBlur66,67
+onChecked onChecked70,71
+onClick onClick74,75
+onFocus onFocus78,79
+onDoubleClick onDoubleClick82,83
+onInput onInput86,87
+onChange onChange90,91
+onKeyDownWithInfo onKeyDownWithInfo94,95
+onKeyDown onKeyDown98,99
+onKeyPress onKeyPress102,103
+onKeyUp onKeyUp106,107
+onMouseUp onMouseUp110,111
+onMouseDown onMouseDown114,115
+onMouseEnter onMouseEnter118,119
+onMouseLeave onMouseLeave122,123
+onMouseOver onMouseOver126,127
+onMouseOut onMouseOut130,131
+onDragStart onDragStart134,135
+onDragOver onDragOver138,139
+onDragEnd onDragEnd142,143
+onDragEnter onDragEnter146,147
+onDragLeave onDragLeave150,151
+onDrag onDrag154,155
+onDrop onDrop158,159
+onSubmit onSubmit164,165
+
+./src/Miso/Html/Element.hs,2344
+module Miso.Html.ElementMiso.Html.Element10,11
+nodeHtml nodeHtml139,140
+nodeHtmlKeyed nodeHtmlKeyed143,144
+div_ div_147,148
+table_ table_151,152
+thead_ thead_155,156
+tbody_ tbody_159,160
+tr_ tr_163,164
+trKeyed_ trKeyed_170,171
+th_ th_174,175
+td_ td_178,179
+tfoot_ tfoot_182,183
+section_ section_186,187
+header_ header_190,191
+footer_ footer_194,195
+button_ button_198,199
+form_ form_202,203
+p_ p_206,207
+s_ s_210,211
+ul_ ul_214,215
+span_ span_218,219
+strong_ strong_222,223
+li_ li_226,227
+liKeyed_ liKeyed_233,234
+h1_ h1_237,238
+h2_ h2_241,242
+h3_ h3_245,246
+h4_ h4_249,250
+h5_ h5_253,254
+h6_ h6_257,258
+hr_ hr_261,262
+pre_ pre_265,266
+input_ input_269,270
+label_ label_273,274
+a_ a_277,278
+mark_ mark_280,281
+ruby_ ruby_283,284
+rt_ rt_286,287
+rp_ rp_289,290
+bdi_ bdi_292,293
+bdo_ bdo_295,296
+wbr_ wbr_298,299
+details_ details_301,302
+summary_ summary_304,305
+menuitem_ menuitem_307,308
+menu_ menu_310,311
+fieldset_ fieldset_313,314
+legend_ legend_316,317
+datalist_ datalist_319,320
+optgroup_ optgroup_322,323
+keygen_ keygen_325,326
+output_ output_328,329
+progress_ progress_331,332
+meter_ meter_334,335
+center_ center_337,338
+audio_ audio_340,341
+video_ video_343,344
+source_ source_346,347
+track_ track_349,350
+embed_ embed_352,353
+object_ object_355,356
+param_ param_358,359
+ins_ ins_361,362
+del_ del_364,365
+small_ small_367,368
+cite_ cite_370,371
+dfn_ dfn_373,374
+abbr_ abbr_376,377
+time_ time_379,380
+var_ var_382,383
+samp_ samp_385,386
+kbd_ kbd_388,389
+caption_ caption_391,392
+colgroup_ colgroup_394,395
+col_ col_397,398
+nav_ nav_400,401
+article_ article_403,404
+aside_ aside_406,407
+address_ address_409,410
+main_ main_412,413
+body_ body_415,416
+figure_ figure_418,419
+figcaption_ figcaption_421,422
+dl_ dl_424,425
+dt_ dt_427,428
+dd_ dd_430,431
+img_ img_433,434
+iframe_ iframe_436,437
+canvas_ canvas_439,440
+math_ math_442,443
+select_ select_445,446
+option_ option_448,449
+textarea_ textarea_451,452
+sub_ sub_454,455
+sup_ sup_457,458
+br_ br_460,461
+ol_ ol_463,464
+blockquote_ blockquote_466,467
+code_ code_469,470
+em_ em_472,473
+i_ i_475,476
+b_ b_478,479
+u_ u_481,482
+q_ q_484,485
+script_ script_487,488
+link_ link_490,491
+
+./src/Miso/Router.hs,2122
+module Miso.RouterMiso.Router24,25
+data Location Location53,54
+data Location = LocationLocation53,54
+  { locPath locPath54,55
+  , locQuery locQuery55,56
+data RoutingError RoutingError59,60
+data RoutingError = FailFail59,60
+data Router Router63,64
+  RChoice RChoice64,65
+  RCapture RCapture65,66
+  RQueryParam RQueryParam66,67
+  RQueryParams RQueryParams68,69
+  RQueryFlag RQueryFlag70,71
+  RPath RPath72,73
+  RPage RPage73,74
+class HasRouter HasRouter79,80
+  type RouteT RouteT81,82
+  mkRouter mkRouter83,84
+instance (H(HasRouter x, HasRouter y) => HasRouter (x :<|> y)86,87
+  type RouteT RouteT87,88
+  mkRouter mkRouter88,89
+instance (H(HasRouter sublayout, FromHttpApiData x) => HasRouter (Capture sym x :> sublayout)92,93
+  type RouteT RouteT94,95
+  mkRouter mkRouter95,96
+instance (H(HasRouter sublayout, FromHttpApiData x, KnownSymbol sym) => HasRouter (QueryParam sym x :> sublayout)98,99
+  type RouteT RouteT100,101
+  mkRouter mkRouter101,102
+instance (H(HasRouter sublayout, FromHttpApiData x, KnownSymbol sym) => HasRouter (QueryParams sym x :> sublayout)105,106
+  type RouteT RouteT107,108
+  mkRouter mkRouter108,109
+instance (H(HasRouter sublayout, KnownSymbol sym) => HasRouter (QueryFlag sym :> sublayout)113,114
+  type RouteT RouteT115,116
+  mkRouter mkRouter116,117
+instance HasRouter HasRouter sublayout => HasRouter (Header sym (x :: *) :> sublayout)121,122
+    type RouteT RouteT122,123
+    mkRouter mkRouter123,124
+instance (H(HasRouter sublayout, KnownSymbol path) => HasRouter (path :> sublayout)126,127
+  type RouteT RouteT128,129
+  mkRouter mkRouter129,130
+instance HasRouter HasRouter (View a)134,135
+  type RouteT RouteT135,136
+  mkRouter mkRouter136,137
+instance HasRouter HasRouter (Verb m s c a)139,140
+  type RouteT RouteT140,141
+  mkRouter mkRouter141,142
+instance HasRouter HasRouter Raw144,145
+  type RouteT RouteT145,146
+  mkRouter mkRouter146,147
+runRouteLoc runRouteLoc151,152
+route route166,167
+runRoute runRoute175,176
+routeLoc routeLoc178,179
+uriToLocation uriToLocation216,217
+
+./src/Miso/Event.hs,34
+module Miso.EventMiso.Event9,10
+
+./src/Miso/Concurrent.hs,217
+module Miso.Concurrent Miso.Concurrent10,11
+data Notify Notify19,20
+data Notify = Notify Notify19,20
+    wait wait20,21
+  , notify notify21,22
+newNotify newNotify25,26
+newEmptyNotify newEmptyNotify33,34
+
+./src/Miso/Html.hs,33
+module Miso.HtmlMiso.Html29,30
+
+./src/Miso/Event/Decoder.hs,447
+module Miso.Event.DecoderMiso.Event.Decoder11,12
+data DecodeTargetDecodeTarget31,32
+  = DecodeTarget DecodeTarget32,33
+  | DecodeTargets DecodeTargets33,34
+data Decoder Decoder36,37
+data Decoder a = Decoder Decoder36,37
+  decoder decoder37,38
+at at42,43
+emptyDecoder emptyDecoder47,48
+keycodeDecoder keycodeDecoder53,54
+keyInfoDecoder keyInfoDecoder61,62
+valueDecoder valueDecoder72,73
+checkedDecoder checkedDecoder79,80
+
+./src/Miso/Event/Types.hs,500
+module Miso.Event.Types Miso.Event.Types12,13
+data KeyInfoKeyInfo20,21
+  = KeyInfoKeyInfo21,22
+  { keyCode keyCode22,23
+  , shiftKey, metaKey, ctrlKey, altKey altKey23,24
+newtype KeyCode KeyCode29,30
+newtype Checked Checked33,34
+data Options Options37,38
+data Options = Options Options37,38
+    preventDefault preventDefault38,39
+  , stopPropagation stopPropagation39,40
+defaultOptions defaultOptions45,46
+newtype AllowDrop AllowDrop49,50
+defaultEvents defaultEvents53,54
+
+./src/Miso/Mathml.hs,37
+module Miso.MathmlMiso.Mathml19,20
+
+./src/Miso/Util.hs,131
+module Miso.UtilMiso.Util9,10
+withFoldable withFoldable29,30
+conditionalViews conditionalViews34,35
+(=(=:)46,47
+a a47,48
