@@ -68,6 +68,11 @@ let
          (type == "directory" && baseName != "dist"));
     };
   overrides = pkgs: with pkgs.haskell.lib; {
+    darwin = pkgs.darwin // {
+      xcode = pkgs.darwin.xcode.overrideAttrs (drv: {
+        outputHash = "ec9f78b948abe341000d31f21b66051741b71163d778702b3e2e01659d60e3d2";
+      });
+    };
     pkgsCross = pkgs.pkgsCross // {
       iphone64 = pkgs.pkgsCross.iphone64 // {
         haskell = pkgs.pkgsCross.iphone64.haskell // {
