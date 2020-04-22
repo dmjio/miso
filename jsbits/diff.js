@@ -101,7 +101,7 @@ window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
         node[c] = '';
     } else {
       /* Already on DOM from previous diff, continue */
-      if (newProp === cProps[c]) continue;
+      if (newProp === cProps[c] && c !== 'checked' && c !== 'value') continue;
       if (isSvg) {
         if (c === 'href')
           node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
