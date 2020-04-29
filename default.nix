@@ -138,7 +138,14 @@ let
             miso-examples-jsaddle = self.callCabal2nixWithOptions "miso-examples" miso-examples-src-filter "-fjsaddle" { miso = miso-jsaddle; };
             jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${jsaddle-src}/jsaddle-warp" {});
             webkit2gtk3-javascriptcore = self.callCabal2nix "webkit2gtk3-javascriptcore" webkit2gtk3-javascriptcore-src {};
-            jsaddle-wkwebview = self.callCabal2nix "jsaddle-wkwebview" "${jsaddle-src}/jsaddle-wkwebview" {};
+            jsaddle-wkwebview = dontCheck (overrideCabal (self.callCabal2nix "jsaddle-wkwebview" "${jsaddle-src}/jsaddle-wkwebview" {}) (drv: {
+              libraryFrameworkDepends =
+                (drv.libraryFrameworkDepends or []) ++
+                (if pkgs.stdenv.hostPlatform.useiOSPrebuilt
+                 then [ "${pkgs.buildPackages.darwin.xcode}/Contents/Developer/Platforms/${pkgs.stdenv.hostPlatform.xcodePlatform}.platform/Developer/SDKs/${pkgs.stdenv.hostPlatform.xcodePlatform}.sdk/System" ]
+                 else (with pkgs.buildPackages.darwin.apple_sdk.frameworks; [ Cocoa WebKit  ]));
+              buildDepends = pkgs.lib.optional (!pkgs.stdenv.hostPlatform.useiOSPrebuilt) [ pkgs.buildPackages.darwin.cf-private ];
+            }));
             jsaddle-webkit2gtk = self.callCabal2nix "jsaddle-webkit2gtk" "${jsaddle-src}/jsaddle-webkit2gtk" {};
             ghcjs-dom-jsaddle = self.callCabal2nix "ghcjs-dom-jsaddle" "${ghcjs-dom-src}/ghcjs-dom-jsaddle" {};
             ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${ghcjs-dom-src}/ghcjs-dom-jsffi" {};
