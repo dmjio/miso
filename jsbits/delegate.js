@@ -115,11 +115,12 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
 
   /* If obj is a non-list-like object */
   newObj = {};
+  var isInput = obj['localName'] === 'input';
   for (var i in obj){
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
     /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (obj['type'] == 'checkbox' && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
+    if (isInput && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
       continue;
     if (typeof obj[i] == 'string' || typeof obj[i] == 'number' || typeof obj[i] == 'boolean')
       newObj[i] = obj[i];
