@@ -64,7 +64,7 @@ defaultEvents = M.fromList [
   , ("keyup", False)
   , ("mouseup", False)
   , ("mousedown", False)
-  , ("mouseenter", False)
+  , ("mouseenter", True)
   , ("mouseleave", False)
   , ("mouseover", False)
   , ("mouseout", False)
