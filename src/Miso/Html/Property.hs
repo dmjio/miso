@@ -57,6 +57,7 @@ module Miso.Html.Property
    , required_
    , size_
    , for_
+   , ref_
    , form_
    -- * Input Ranges
    , max_
@@ -223,6 +224,9 @@ size_              = textProp "size"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/for>
 for_ ::  MisoString -> Attribute action
 for_               = textProp "for"
+-- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/ref>
+ref_ ::  MisoString -> Attribute action
+ref_               = textProp "ref"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/form>
 form_ ::  MisoString -> Attribute action
 form_               = textProp "form"
