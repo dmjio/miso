@@ -875,7 +875,7 @@ test('Should fail because of non-matching DOM and VDOM', () => {
     expect(res).toEqual(false);
 });
 
-test('Should copy DOM into VTree with multiple consecutive text nodes', () => {
+test('Should copy DOM into VTree with multiple consecutive text nodes and collapse them', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
     var div = document.createElement("div");
@@ -885,9 +885,7 @@ test('Should copy DOM into VTree with multiple consecutive text nodes', () => {
     var currentNode = vnodeKids('div', [ vtext("foo"), vtext("bar"), vtext("baz") ]);
     window['copyDOMIntoVTree'](body, currentNode, document);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
-    expect(div.childNodes[0].textContent).toEqual('foo');
-    expect(div.childNodes[1].textContent).toEqual('bar');
-    expect(div.childNodes[2].textContent).toEqual('baz');
+    expect(div.childNodes[0].textContent).toEqual('foobarbaz');
 });
 
 test('Should copy DOM into VTree at mountPoint', () => {
