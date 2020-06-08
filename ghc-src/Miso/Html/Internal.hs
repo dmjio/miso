@@ -124,7 +124,7 @@ instance L.ToHtml (VTree action) where
 collapseSiblingTextNodes :: [VTree a] -> [VTree a]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText x : VText y : xs) =
-  collapseSiblingTextNodes (VText (x <> " " <> y) : xs)
+  collapseSiblingTextNodes (VText (x <> y) : xs)
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 

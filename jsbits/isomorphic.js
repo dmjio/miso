@@ -25,6 +25,7 @@ window['walk'] = function walk(vtree, node, doc) {
   // Fire onCreated events as though the elements had just been created.
   window['callCreated'](vtree);
 
+  vtree.children = window['collapseSiblingTextNodes'](vtree.children);
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
