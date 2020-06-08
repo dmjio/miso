@@ -364,15 +364,23 @@ hero content uri' navMenuOpen' =
         , span_[][]
         ],
          div_ [ class_ $ "nav-right nav-menu " <> do  bool mempty "is-active" navMenuOpen'] [
-          a_ [ class_ $ "nav-item " <> do  bool mempty "is-active" (uriPath uri' == uriPath goHome)
+          a_ [ classList_ [ ("nav-item",True)
+                          , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
+                          ]
              , href_ "/", onPreventClick (ChangeURI goHome) ] [ text"Home" ],
-          a_ [class_ $ "nav-item " <> do  bool mempty "is-active" (uriPath uri' == uriPath goExamples)
+          a_ [classList_ [ ("nav-item",True)
+                         , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
+                         ]
              , href_ "/examples", onPreventClick (ChangeURI goExamples)
              ] [ text"Examples" ],
-          a_ [class_ $ "nav-item " <> do  bool mempty "is-active" (uriPath uri' == uriPath goDocs)
+          a_ [classList_ [ ("nav-item",True)
+                         , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
+                         ]
              , href_ "/docs", onPreventClick (ChangeURI goDocs)
              ] [ text"Docs" ],
-          a_ [class_ $ "nav-item " <> do  bool mempty "is-active" (uriPath uri' == uriPath goCommunity)
+          a_ [classList_ [ ("nav-item",True)
+                         , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
+                         ]
              , href_ "/community", onPreventClick (ChangeURI goCommunity)
              ] [ text"Community" ]
 
