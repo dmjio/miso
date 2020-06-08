@@ -1,4 +1,17 @@
 window = typeof window === 'undefined' ? {} : window;
+window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
+  if (!vs) { return []; }
+  var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
+  for (var ix = 1; ix < vs.length; ix++) {
+    if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
+	adjusted[ax]['text'] += vs[ix]['text'];
+	continue;
+    }
+    adjusted[++ax] = vs[ix];
+  }
+  return adjusted;
+}
+
 window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
   if (!doc) { doc = window.document; }
   var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
