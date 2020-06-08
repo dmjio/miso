@@ -50,6 +50,7 @@ module Miso.FFI
    , delegateEvent
 
    , copyDOMIntoVTree
+   , collapseSiblingTextNodes
 
    , swapCallbacks
    , releaseCallbacks
@@ -121,6 +122,9 @@ foreign import javascript unsafe "$1.stopPropagation();"
 foreign import javascript unsafe "$1.preventDefault();"
     eventPreventDefault :: JSVal -> IO ()
 
+-- | Collapse sibling text nodes into a single text node.
+foreign import javascript unsafe "$r = window['collapseSiblingTextNodes']($1);"
+    collapseSiblingTextNodes :: JSVal -> IO JSVal
 
 -- | Window object
 foreign import javascript unsafe "$r = window;"

@@ -130,7 +130,10 @@ node ns tag key attrs kids = View $ \sink -> do
   set "tag" tag vnode
   set "key" key vnode
   setAttrs vnode sink
-  flip (set "children") vnode =<< ghcjsPure . jsval =<< setKids sink
+  flip (set "children") vnode
+    =<< collapseSiblingTextNodes
+    =<< ghcjsPure . jsval
+    =<< setKids sink
   pure $ VTree vnode
     where
       setAttrs vnode sink =

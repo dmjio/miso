@@ -18,16 +18,12 @@ module Miso.FFI
    , objectToJSVal
    , ghcjsPure
    , syncPoint
-
    , addEventListener
    , windowAddEventListener
-
    , windowInnerHeight
    , windowInnerWidth
-
    , eventPreventDefault
    , eventStopPropagation
-
    , now
    , consoleLog
    , consoleLogJSVal
@@ -40,19 +36,15 @@ module Miso.FFI
    , getDoc
    , getElementById
    , diff'
-
    , integralToJSString
    , realFloatToJSString
    , jsStringToDouble
-
    , delegateEvent
-
    , copyDOMIntoVTree
-
+   , collapseSiblingTextNodes
    , swapCallbacks
    , releaseCallbacks
    , registerCallback
-
    , focus
    , blur
    , scrollIntoView
@@ -233,6 +225,10 @@ delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree mountPoint a = () <$ jsg2 "copyDOMIntoVTree" mountPoint a
+
+-- | Collapses sibling text nodes
+collapseSiblingTextNodes :: JSVal -> JSM JSVal
+collapseSiblingTextNodes = jsg1 "collapseSiblingTextNodes"
 
 -- TODO For now, we do not free callbacks when compiling with JSaddle
 

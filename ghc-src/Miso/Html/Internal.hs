@@ -114,7 +114,19 @@ instance L.ToHtml (VTree action) where
                      , "autocomplete"
                      ]
         toTag = T.toLower
-        kids = foldMap L.toHtml vChildren
+        kids
+          = foldMap L.toHtml
+          . V.fromList
+          . collapseSiblingTextNodes
+          . V.toList
+          $ vChildren
+
+collapseSiblingTextNodes :: [VTree a] -> [VTree a]
+collapseSiblingTextNodes [] = []
+collapseSiblingTextNodes (VText x : VText y : xs) =
+  collapseSiblingTextNodes (VText (x <> " " <> y) : xs)
+collapseSiblingTextNodes (x:xs) =
+  x : collapseSiblingTextNodes xs
 
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
