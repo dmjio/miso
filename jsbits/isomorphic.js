@@ -47,19 +47,19 @@ window['walk'] = function walk(vtree, node, doc) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
       if (!domChild) {
-	  window['diagnoseError'](vdomchild, domChild);
+	  window['diagnoseError'](vdomChild, domChild);
 	  return false;
       }
     if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== Node.TEXT_NODE) {
-  	    window['diagnoseError'](vdomchild, domChild);
+  	    window['diagnoseError'](vdomChild, domChild);
 	    return false;
 	}
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
         } else {
-	  window['diagnoseError'](vdomchild, domChild);
+	  window['diagnoseError'](vdomChild, domChild);
           return false;
 	}
     } else {
@@ -72,7 +72,7 @@ window['walk'] = function walk(vtree, node, doc) {
   // After walking the sizes of VDom and DOM should be equal
   // Otherwise there are DOM nodes unaccounted for
   if (vtree.children.length !== node.childNodes.length) {
-     window['diagnoseError'](vdomchild, domChild);
+     window['diagnoseError'](vdomChild, domChild);
      return false;
   }
   return true;
