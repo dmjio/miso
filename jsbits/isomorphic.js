@@ -18,10 +18,16 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
   if (!window['walk'](vtree, node, doc)) {
     console.warn('Could not copy DOM into virtual DOM, falling back to diff');
     // Remove all children before rebuilding DOM
+    while (node.firstChild) node.removeChild(node.lastChild);
     window['diff'](null, vtree, node.parentNode, doc);
     return false;
   }
+  console.info ('Successfully prendered page');
   return true;
+}
+
+window['diagnoseError'] = function diagnoseError(vtree, node) {
+    console.warn('VTree differed from node', vtree, node);
 }
 
 window['walk'] = function walk(vtree, node, doc) {
@@ -40,25 +46,34 @@ window['walk'] = function walk(vtree, node, doc) {
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
-    if (!domChild) return false;
+      if (!domChild) {
+	  window['diagnoseError'](vdomchild, domChild);
+	  return false;
+      }
     if (vdomChild.type === 'vtext') {
-        if (domChild.nodeType !== Node.TEXT_NODE) return false;
+        if (domChild.nodeType !== Node.TEXT_NODE) {
+  	    window['diagnoseError'](vdomchild, domChild);
+	    return false;
+	}
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
         } else {
+	  window['diagnoseError'](vdomchild, domChild);
           return false;
 	}
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;
-      window['walk'](vdomChild, domChild, doc);
+      if(!window['walk'](vdomChild, domChild, doc)) return false;
     }
 
   }
   // After walking the sizes of VDom and DOM should be equal
   // Otherwise there are DOM nodes unaccounted for
-  if (vtree.children.length !== node.childNodes.length) return false;
-
+  if (vtree.children.length !== node.childNodes.length) {
+     window['diagnoseError'](vdomchild, domChild);
+     return false;
+  }
   return true;
 }
