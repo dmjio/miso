@@ -66,6 +66,7 @@ main = runApp $ do
              , windowCoordsSub WindowCoords
              ]
     mountPoint = Nothing
+    debug = True
 
 data Model = Model
     { x :: !Double

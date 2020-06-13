@@ -59,6 +59,7 @@ main = do
                , initialAction = Init
                , update = updateModel ref
                , mountPoint = Nothing
+               , debug = False
                , ..
                }
     where

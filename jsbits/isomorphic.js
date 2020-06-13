@@ -12,11 +12,13 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
   return adjusted;
 }
 
-window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
+window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, doc) {
   if (!doc) { doc = window.document; }
   var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
-  if (!window['walk'](vtree, node, doc)) {
-    console.warn('Could not copy DOM into virtual DOM, falling back to diff');
+    if (!window['walk'](debug,vtree, node, doc)) {
+    if (debug) {
+      console.warn('Could not copy DOM into virtual DOM, falling back to diff');
+    }
     // Remove all children before rebuilding DOM
     while (node.firstChild) node.removeChild(node.lastChild);
     window['diff'](null, vtree, node.parentNode, doc);
@@ -26,11 +28,11 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
   return true;
 }
 
-window['diagnoseError'] = function diagnoseError(vtree, node) {
-    console.warn('VTree differed from node', vtree, node);
+window['diagnoseError'] = function diagnoseError(debug, vtree, node) {
+    if (debug) console.warn('VTree differed from node', vtree, node);
 }
 
-window['walk'] = function walk(vtree, node, doc) {
+window['walk'] = function walk(debug, vtree, node, doc) {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
@@ -47,32 +49,32 @@ window['walk'] = function walk(vtree, node, doc) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
       if (!domChild) {
-	  window['diagnoseError'](vdomChild, domChild);
+	  window['diagnoseError'](debug,vdomChild, domChild);
 	  return false;
       }
     if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== Node.TEXT_NODE) {
-  	    window['diagnoseError'](vdomChild, domChild);
+  	    window['diagnoseError'](debug, vdomChild, domChild);
 	    return false;
 	}
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
         } else {
-	  window['diagnoseError'](vdomChild, domChild);
+          window['diagnoseError'](debug, vdomChild, domChild);
           return false;
 	}
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;
-      if(!window['walk'](vdomChild, domChild, doc)) return false;
+      if(!window['walk'](debug, vdomChild, domChild, doc)) return false;
     }
 
   }
   // After walking the sizes of VDom and DOM should be equal
   // Otherwise there are DOM nodes unaccounted for
   if (vtree.children.length !== node.childNodes.length) {
-     window['diagnoseError'](vdomChild, domChild);
+     window['diagnoseError'](debug, vdomChild, domChild);
      return false;
   }
   return true;

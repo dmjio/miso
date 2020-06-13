@@ -40,6 +40,7 @@ main = do
       events = defaultEvents
       subs   = []
       view   = viewModel
+      debug  = False
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model

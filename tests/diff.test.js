@@ -823,7 +823,7 @@ test('Should copy simple nested DOM into VTree', () => {
     var txt = document.createTextNode("foo");
     nestedDiv.appendChild(txt);
     var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
-    window['copyDOMIntoVTree'](body, currentNode, document);
+    window['copyDOMIntoVTree'](true, body, currentNode, document);
     expect(currentNode.children[0].children[0].text).toEqual('foo');
 });
 
@@ -835,7 +835,7 @@ test('Should fail because of expecting text node', () => {
     var nestedDiv = document.createElement("div");
     div.appendChild(nestedDiv);
     var currentNode = vnodeKids('div', [ vtext("foo") ]);
-    var res = window['copyDOMIntoVTree'](body, currentNode, document);
+    var res = window['copyDOMIntoVTree'](true, body, currentNode, document);
     expect(res).toEqual(false);
 });
 
@@ -847,7 +847,7 @@ test('Should fail because of expecting element', () => {
     var txt = document.createTextNode("foo");
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [ vnode('div', []) ]);
-    var res = window['copyDOMIntoVTree'](body, currentNode, document);
+    var res = window['copyDOMIntoVTree'](true, body, currentNode, document);
     expect(res).toEqual(false);
 });
 
@@ -859,7 +859,7 @@ test('Should fail because of non-matching text', () => {
     var txt = document.createTextNode("foo");
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [ vtext("bar") ]);
-    var res = window['copyDOMIntoVTree'](body, currentNode, document);
+    var res = window['copyDOMIntoVTree'](true, body, currentNode, document);
     expect(res).toEqual(false);
 });
 
@@ -871,7 +871,7 @@ test('Should fail because of non-matching DOM and VDOM', () => {
     var txt = document.createTextNode("foobar");
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [ vtext("foo") ]);
-    var res = window['copyDOMIntoVTree'](body, currentNode, document);
+    var res = window['copyDOMIntoVTree'](true, body, currentNode, document);
     expect(res).toEqual(false);
 });
 
@@ -883,7 +883,7 @@ test('Should copy DOM into VTree with multiple consecutive text nodes and collap
     var txt = document.createTextNode("foobarbaz");
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [ vtext("foo"), vtext("bar"), vtext("baz") ]);
-    window['copyDOMIntoVTree'](body, currentNode, document);
+    window['copyDOMIntoVTree'](true, body, currentNode, document);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
 });
@@ -904,7 +904,7 @@ test('Should copy DOM into VTree at mountPoint', () => {
     var txt = document.createTextNode("foo");
     nestedDiv2.appendChild(txt);
     var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
-    var succeeded = window['copyDOMIntoVTree'](misoDiv, currentNode, document);
+    var succeeded = window['copyDOMIntoVTree'](true, misoDiv, currentNode, document);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
 });

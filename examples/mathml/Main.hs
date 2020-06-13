@@ -28,6 +28,7 @@ main = startApp App {..}
     events = defaultEvents        -- default delegated events
     subs   = []                   -- empty subscription list
     mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
+    debug = False
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model

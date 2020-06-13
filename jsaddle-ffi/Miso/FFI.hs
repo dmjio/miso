@@ -222,8 +222,8 @@ delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
-copyDOMIntoVTree :: JSVal -> JSVal -> JSM ()
-copyDOMIntoVTree mountPoint a = () <$ jsg2 "copyDOMIntoVTree" mountPoint a
+copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
+copyDOMIntoVTree debug mountPoint a = () <$ jsg3 "copyDOMIntoVTree" debug mountPoint a
 
 -- TODO For now, we do not free callbacks when compiling with JSaddle
 

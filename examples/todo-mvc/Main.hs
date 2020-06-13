@@ -101,6 +101,7 @@ main = runApp $ startApp App { initialAction = NoOp, ..}
     events     = defaultEvents
     mountPoint = Nothing
     subs       = []
+    debug      = False
 
 updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m

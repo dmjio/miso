@@ -53,6 +53,8 @@ data App model action = App
   -- ^ Initial action that is run after the application has loaded
   , mountPoint :: Maybe MisoString
   -- ^ Id of the root element for DOM diff. If 'Nothing' is provided, the entire document body is used as a mount point.
+  , debug :: Bool
+  -- ^ Display warning messages when prerendering if the DOM and VDOM are not in sync.
   }
 
 -- | A monad for succinctly expressing model transitions in the 'update' function.

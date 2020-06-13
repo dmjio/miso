@@ -97,6 +97,7 @@ main = startApp App { initialAction = NoOp, ..}
     events = defaultEvents
     subs   = []
     mountPoint = Nothing
+    debug = True
 
 viewModel :: Model -> View Action
 viewModel (x, y) =
