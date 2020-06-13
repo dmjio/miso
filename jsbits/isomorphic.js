@@ -51,6 +51,7 @@ window['walk'] = function walk(vtree, node, doc) {
 	}
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
+      vdomChild['domRef'] = domChild;
       window['walk'](vdomChild, domChild, doc);
     }
 
