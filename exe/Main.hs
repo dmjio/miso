@@ -46,7 +46,7 @@ main = runApp $ miso $ \_ -> App {..}
     events = defaultEvents        -- default delegated events
     subs   = []                   -- empty subscription list
     mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-    debug = True                  -- Used to copy DOM into VDOM, applies only to `miso` function
+    debug = False                 -- Used to copy DOM into VDOM, applies only to `miso` function
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
