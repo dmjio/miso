@@ -18,9 +18,7 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(mountPoint, vtree, doc) {
   if (!window['walk'](vtree, node, doc)) {
     console.warn('Could not copy DOM into virtual DOM, falling back to diff');
     // Remove all children before rebuilding DOM
-    while (node.firstChild)
-      node.removeChild(node.lastChild);
-    window['diff'](null, vtree, node, doc);
+    window['diff'](null, vtree, node.parentNode, doc);
     return false;
   }
   return true;
