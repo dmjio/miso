@@ -42,22 +42,12 @@ window['walk'] = function walk(vtree, node, doc) {
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
+    if (!domChild) return false;
     if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== Node.TEXT_NODE) return false;
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
-        } else {
-          var len = vdomChild.text.length,
-              domNodeText = domChild.textContent.substring(0, len);
-          if (domNodeText !== vdomChild.text) return false;
-
-          // There are more VDOM nodes than DOM nodes
-          // Create new DOM node to ensure synchrony between VDom and DOM
-          var partialTxt = doc.createTextNode(domNodeText);
-          node.insertBefore(partialTxt, domChild);
-          vdomChild['domRef'] = partialTxt;
-          domChild.textContent = domChild.textContent.substring(len);
         }
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
