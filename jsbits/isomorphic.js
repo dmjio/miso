@@ -48,7 +48,9 @@ window['walk'] = function walk(vtree, node, doc) {
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
-        }
+        } else {
+          return false;
+	}
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       window['walk'](vdomChild, domChild, doc);
