@@ -24,7 +24,9 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, 
     window['diff'](null, vtree, node.parentNode, doc);
     return false;
   }
-  console.info ('Successfully prendered page');
+  if (debug) {
+    console.info ('Successfully prendered page');
+  }
   return true;
 }
 
