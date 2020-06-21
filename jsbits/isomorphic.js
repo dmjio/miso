@@ -21,6 +21,9 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, 
     }
     // Remove all children before rebuilding DOM
     while (node.firstChild) node.removeChild(node.lastChild);
+    // Move node to end since diffing begins at last node of mount point.
+    // No-op if no other nodes are children of body.
+    node.parentNode.appendChild (node);
     window['diff'](null, vtree, node.parentNode, doc);
     return false;
   }
