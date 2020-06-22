@@ -14,23 +14,31 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
 
 window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, doc) {
   if (!doc) { doc = window.document; }
-  var mountChildIdx = 0;
-  // If script tags are rendered first in body, skip them.
-  while (mountPoint && mountPoint.childNodes && mountPoint.childNodes[mountChildIdx].localName === 'script'){
-    mountChildIdx++;
-  }
-  var node = mountPoint && mountPoint.childNodes ? mountPoint.childNodes [mountChildIdx] : doc.body.firstChild;
+    var mountChildIdx = 0, node;
+    // If script tags are rendered first in body, skip them.
+    if (!mountPoint) {
+	if (doc.body.childNodes.length > 0) {
+	    node = doc.body.firstChild;
+	} else {
+	    node = doc.body.appendChild (doc.createElement('div'));
+	}
+    } else if (mountPoint.childNodes.length === 0) {
+	node = mountPoint.appendChild (doc.createElement('div'));
+    } else {
+	while (mountPoint.childNodes[mountChildIdx].localName === 'script' && mountPoint.childNodes[mountChildIdx].nodeType !== Node.TEXT_NODE){
+	  mountChildIdx++;
+	}
+	node = mountPoint.childNodes[mountChildIdx];
+    }
+
     if (!window['walk'](debug,vtree, node, doc)) {
     if (debug) {
       console.warn('Could not copy DOM into virtual DOM, falling back to diff');
     }
     // Remove all children before rebuilding DOM
     while (node.firstChild) node.removeChild(node.lastChild);
-    // Move node to end since diffing begins at last node of mount point.
-    // No-op if no other nodes are children of body.
-    node.parentNode.appendChild (node);
     vtree['domRef'] = node;
-    window['diffVNodes'](null, vtree['children'], node, doc);
+    window['populate'](null, vtree, doc);
     return false;
   }
   if (debug) {
