@@ -29,7 +29,8 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, 
     // Move node to end since diffing begins at last node of mount point.
     // No-op if no other nodes are children of body.
     node.parentNode.appendChild (node);
-    window['diff'](null, vtree, node.parentNode, doc);
+    vtree['domRef'] = node;
+    window['diffVNodes'](null, vtree['children'], node, doc);
     return false;
   }
   if (debug) {
