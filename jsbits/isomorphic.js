@@ -14,7 +14,12 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
 
 window['copyDOMIntoVTree'] = function copyDOMIntoVTree(debug,mountPoint, vtree, doc) {
   if (!doc) { doc = window.document; }
-  var node = mountPoint ? mountPoint.firstChild : doc.body.firstChild;
+  var mountChildIdx = 0;
+  // If script tags are rendered first in body, skip them.
+  while (mountPoint && mountPoint.childNodes && mountPoint.childNodes[mountChildIdx].localName === 'script'){
+    mountChildIdx++;
+  }
+  var node = mountPoint && mountPoint.childNodes ? mountPoint.childNodes [mountChildIdx] : doc.body.firstChild;
     if (!window['walk'](debug,vtree, node, doc)) {
     if (debug) {
       console.warn('Could not copy DOM into virtual DOM, falling back to diff');
