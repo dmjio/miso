@@ -888,6 +888,20 @@ test('Should copy DOM into VTree with multiple consecutive text nodes and collap
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
 });
 
+test('Should copy DOM into VTree with multiple consecutive text nodes and collapse them without mount point', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var div = document.createElement("div");
+    body.appendChild(div);
+    var txt = document.createTextNode("foobarbaz");
+    div.appendChild(txt);
+    var currentNode = vnodeKids('div', [ vtext("foo"), vtext("bar"), vtext("baz"), vnodeKids('div',[]), vtext("foo"), vtext("bar"), vtext("baz"), ]);
+    window['copyDOMIntoVTree'](true, null, currentNode, document);
+    // Expect "foobarbaz" to be split up into three nodes in the DOM
+    expect(div.childNodes[0].textContent).toEqual('foobarbaz');
+    expect(div.childNodes[2].textContent).toEqual('foobarbaz');
+});
+
 test('Should copy DOM into VTree at mountPoint', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
@@ -907,4 +921,22 @@ test('Should copy DOM into VTree at mountPoint', () => {
     var succeeded = window['copyDOMIntoVTree'](true, misoDiv, currentNode, document);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
+});
+
+test('Should fail to mount on a text node', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var misoTxt = document.createTextNode("foo");
+    body.appendChild(misoTxt);
+    var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
+    var succeeded = window['copyDOMIntoVTree'](true, misoTxt, currentNode, document);
+    expect(succeeded).toEqual(false);
+});
+
+test('Should mount on an empty body', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
+    var succeeded = window['copyDOMIntoVTree'](true, null, currentNode, document);
+    expect(succeeded).toEqual(false);
 });

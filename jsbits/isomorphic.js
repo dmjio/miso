@@ -88,13 +88,6 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
       vdomChild['domRef'] = domChild;
       if(!window['walk'](logLevel, vdomChild, domChild, doc)) return false;
     }
-
-  }
-  // After walking the sizes of VDom and DOM should be equal
-  // Otherwise there are DOM nodes unaccounted for
-  if (vtree.children.length !== node.childNodes.length) {
-     window['diagnoseError'](logLevel, vdomChild, domChild);
-     return false;
   }
   return true;
 }
