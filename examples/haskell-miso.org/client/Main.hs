@@ -19,7 +19,7 @@ main = miso $ \currentURI -> App
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]
-      debug = True
+      logLevel = DebugPrerender
       viewModel m =
         case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
           Left _ -> the404 m

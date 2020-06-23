@@ -24,7 +24,7 @@ main = do
              , uriSub HandleURI
              ]
     mountPoint = Nothing
-    debug = False
+    logLevel = Off
 
 handleSseMsg :: SSE String -> Action
 handleSseMsg (SSEMessage msg) = ServerMsg msg

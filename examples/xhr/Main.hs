@@ -42,7 +42,7 @@ main = do
       events = defaultEvents
       subs   = []
       view   = viewModel
-      debug  = False
+      logLevel = Off
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
