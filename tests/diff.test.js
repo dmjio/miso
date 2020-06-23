@@ -906,6 +906,8 @@ test('Should copy DOM into VTree at mountPoint', () => {
     var document = new jsdom.JSDOM().window.document;
     var body = document.body;
     var unrelatedDiv = document.createElement("div");
+    body.appendChild(document.createElement("script"));
+    body.appendChild(document.createTextNode("test"));
     body.appendChild(unrelatedDiv);
     var unrelatedTxt = document.createTextNode("Not part of Miso app");
     unrelatedDiv.appendChild(unrelatedTxt);
@@ -921,6 +923,29 @@ test('Should copy DOM into VTree at mountPoint', () => {
     var succeeded = window['copyDOMIntoVTree'](true, misoDiv, currentNode, document);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
+});
+
+test('Should copy DOM into VTree at body w/ script / text siblings', () => {
+    var document = new jsdom.JSDOM().window.document;
+    var body = document.body;
+    var unrelatedDiv = document.createElement("div");
+    body.appendChild(document.createElement("script"));
+    body.appendChild(document.createTextNode("test"));
+    body.appendChild(unrelatedDiv);
+    var unrelatedTxt = document.createTextNode("Not part of Miso app");
+    unrelatedDiv.appendChild(unrelatedTxt);
+    var misoDiv = document.createElement("div");
+    body.appendChild(misoDiv);
+    var nestedDiv1 = document.createElement("div");
+    misoDiv.appendChild(nestedDiv1);
+    var nestedDiv2 = document.createElement("div");
+    nestedDiv1.appendChild(nestedDiv2);
+    var txt = document.createTextNode("foo");
+    nestedDiv2.appendChild(txt);
+    var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
+    var succeeded = window['copyDOMIntoVTree'](true, body, currentNode, document);
+    expect(currentNode.children[0].children[0].domRef).toEqual(txt);
+    expect(succeeded).toEqual(false);
 });
 
 test('Should fail to mount on a text node', () => {
