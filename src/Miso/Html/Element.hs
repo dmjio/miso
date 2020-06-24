@@ -51,9 +51,8 @@ module Miso.Html.Element
     , canvas_
     , math_
     , script_
-    , scriptRaw_
     , link_
-    , styleRaw_
+    , Miso.Html.Element.style_
     -- * Inputs
     , select_
     , option_
@@ -486,15 +485,12 @@ u_ = nodeHtml "u"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/q
 q_ :: [Attribute action] -> [View action] -> View action
 q_ = nodeHtml "q"
--- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
-script_ :: [Attribute action] -> [View action] -> View action
-script_ = nodeHtml "script"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link
 link_ :: [Attribute action] -> View action
 link_ = flip (nodeHtml "link") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
-styleRaw_ :: [Attribute action] -> MisoString -> View action
-styleRaw_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
+style_ :: [Attribute action] -> MisoString -> View action
+style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
-scriptRaw_ :: [Attribute action] -> MisoString -> View action
-scriptRaw_ attrs rawText = node HTML "script" Nothing attrs [textRaw rawText]
+script_ :: [Attribute action] -> MisoString -> View action
+script_ attrs rawText = node HTML "script" Nothing attrs [textRaw rawText]

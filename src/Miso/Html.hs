@@ -34,7 +34,7 @@ module Miso.Html
    , module Miso.Html.Property
    ) where
 
-import Miso.Html.Element
+import Miso.Html.Element hiding (style_)
 import Miso.Html.Event
-import Miso.Html.Internal
+import Miso.Html.Internal hiding (textRaw)
 import Miso.Html.Property hiding (form_)
