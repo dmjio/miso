@@ -44,6 +44,7 @@ main = runApp $ startApp App { initialAction = Id, ..}
     uri = URL "wss://echo.websocket.org"
     protocols = Protocols [ ]
     mountPoint = Nothing
+    logLevel = Off
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) model

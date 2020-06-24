@@ -55,6 +55,7 @@ main =
     subs   = [ uriSub HandleURI ]
     view   = viewModel
     mountPoint = Nothing
+    logLevel = Off
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model

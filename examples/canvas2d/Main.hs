@@ -35,6 +35,7 @@ main = do
     subs   = []
     events = defaultEvents
     mountPoint = Nothing -- default to body
+    logLevel = Off
 
 updateModel
   :: (Image,Image,Image)

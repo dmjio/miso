@@ -6,7 +6,7 @@ matrix:
 before_install:
  - nix-channel --list
  - nix-channel --update
- - nix upgrade-nix
+ - echo "trusted-users = root travis" | sudo tee -a /etc/nix/nix.conf && sudo pkill nix-daemon
  - nix-env -iA cachix -f https://cachix.org/api/v1/install
  - cachix use miso-haskell
  - nix-build -A pkgs.yarn default.nix && nix-env -i ./result

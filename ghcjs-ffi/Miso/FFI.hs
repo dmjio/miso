@@ -121,7 +121,6 @@ foreign import javascript unsafe "$1.stopPropagation();"
 foreign import javascript unsafe "$1.preventDefault();"
     eventPreventDefault :: JSVal -> IO ()
 
-
 -- | Window object
 foreign import javascript unsafe "$r = window;"
   getWindow :: IO JSVal
@@ -242,9 +241,10 @@ foreign import javascript unsafe "$1($2);"
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
-foreign import javascript unsafe "window['copyDOMIntoVTree']($1, $2);"
+foreign import javascript unsafe "window['copyDOMIntoVTree']($1, $2, $3);"
   copyDOMIntoVTree
-    :: JSVal -- ^ mountPoint element of the isomorphic app
+    :: Bool  -- ^ Display debugging information when pre-rendering
+    -> JSVal -- ^ mountPoint element of the isomorphic app
     -> JSVal -- ^ VDom object
     -> IO ()
 
