@@ -30,6 +30,7 @@ module Miso.Html.Internal (
   -- * Smart `View` constructors
   , node
   , text
+  , textRaw
   -- * Key patch internals
   , Key    (..)
   , ToKey  (..)
@@ -74,6 +75,14 @@ data VTree action where
            } -> VTree action
   VText :: { vText :: Text -- ^ TextNode content
            } -> VTree action
+  -- Invariant: To avoid complexity with collapsing mixed VText and
+  -- VTextRaw nodes, VTextRaw node is always the only child.
+  -- That's not a big limitation, since the intended purpose is to be able
+  -- to use <style> and <script> tags. That means we can't support HTML
+  -- entities like &nbsp; with VTextRaw, but the same can be achieved with
+  -- Unicode.
+  VTextRaw :: { vText :: Text -- ^ Raw TextNode content
+              } -> VTree action
   deriving Functor
 
 instance Show (VTree action) where
@@ -84,6 +93,8 @@ instance L.ToHtml (VTree action) where
   toHtmlRaw = L.toHtml
   toHtml (VText x) | T.null x = L.toHtml (" " :: MisoString)
                    | otherwise = L.toHtml x
+  toHtml (VTextRaw x) | T.null x = L.toHtml (" " :: MisoString)
+                      | otherwise = L.toHtmlRaw x
   toHtml VNode{..} =
     let
       noEnd = ["img", "input", "br", "hr", "meta"]
@@ -125,6 +136,7 @@ collapseSiblingTextNodes :: [VTree a] -> [VTree a]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText x : VText y : xs) =
   collapseSiblingTextNodes (VText (x <> y) : xs)
+-- VTextRaw is the only child, so no need to collapse.
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 
@@ -182,6 +194,10 @@ node vNs vType vKey as xs =
 -- | `VText` creation
 text :: MisoString -> View action
 text = View . VText
+
+-- | `VTextRaw` creation. Don't use directly
+textRaw :: MisoString -> View action
+textRaw = View . VTextRaw
 
 -- | `IsString` instance
 instance IsString (View a) where
