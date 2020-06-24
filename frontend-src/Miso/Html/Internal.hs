@@ -34,6 +34,7 @@ module Miso.Html.Internal (
   -- * Smart `View` constructors
   , node
   , text
+  , textRaw
   -- * Key patch internals
   , Key    (..)
   , ToKey  (..)
@@ -164,6 +165,10 @@ text t = View . const $ do
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
+
+-- | For parity with server-side rendering. Don't use directly.
+textRaw :: MisoString -> View m
+textRaw = text
 
 -- | `IsString` instance
 instance IsString (View a) where
