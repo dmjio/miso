@@ -489,24 +489,28 @@ q_ = nodeHtml "q"
 link_ :: [Attribute action] -> View action
 link_ = flip (nodeHtml "link") []
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/style
+--
 -- This takes the raw text to be put in the style tag.
+--
 -- That means that if any part of the text is not trusted there's
 -- a potential CSS injection. Read more at
 -- https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
---   style_ [] "</style>"
+-- @'style_' [] "\</style\>"@
 style_ :: [Attribute action] -> MisoString -> View action
 style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
+--
 -- This takes the raw text to be put in the script tag.
+--
 -- That means that if any part of the text is not trusted there's
 -- a potential JavaScript injection. Read more at
 -- https://owasp.org/www-community/attacks/xss/
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
---   script_ [] "</script>"
+-- @'script_' [] "\</script\>"@
 script_ :: [Attribute action] -> MisoString -> View action
 script_ attrs rawText = node HTML "script" Nothing attrs [textRaw rawText]
