@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
@@ -80,6 +81,17 @@ objectToJSVal = toJSVal
 
 -- | Set property on object
 set :: ToJSVal v => JSString -> v -> OI.Object -> JSM ()
+set (unpack -> "class") v obj = do
+  classSet <- ((pack "class") `elem`) <$> listProps obj
+  if classSet
+    then do
+      classStr <- fromJSValUnchecked =<< getProp (pack "class") obj
+      vStr <- fromJSValUnchecked =<< toJSVal v
+      v' <- toJSVal (classStr <> pack " " <> vStr)
+      setProp (pack "class") v' obj
+    else do
+      v' <- toJSVal v
+      setProp (pack "class") v' obj
 set k v obj = do
   v' <- toJSVal v
   setProp k v' obj
