@@ -28,7 +28,7 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
 	while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
 	  mountChildIdx++;
 	}
-	if (!node) {
+	if (!mountPoint.childNodes[mountChildIdx]) {
 	    node = doc.body.appendChild (doc.createElement('div'));
 	} else {
 	    node = mountPoint.childNodes[mountChildIdx];
