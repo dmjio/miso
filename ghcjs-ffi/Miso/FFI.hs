@@ -95,7 +95,12 @@ syncPoint = pure ()
 
 -- | Set property on object
 set :: ToJSVal v => JSString -> v -> OI.Object -> IO ()
+set "class" v obj = toJSVal v >>= appendClass obj
 set k v obj = toJSVal v >>= \x -> OI.setProp k x obj
+
+-- | Only used for 'class', guaranteed to be a MisoString
+foreign import javascript unsafe "if ('class' in $1) { $1['class'] += ' ' + $2; } else { $1['class'] = $2; }"
+  appendClass :: OI.Object -> JSVal -> IO ()
 
 foreign import javascript unsafe "$1.addEventListener($2, $3);"
   addEventListener' :: JSVal -> JSString -> Callback (JSVal -> IO ()) -> IO ()

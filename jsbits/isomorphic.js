@@ -25,10 +25,14 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
     } else if (mountPoint.childNodes.length === 0) {
 	node = mountPoint.appendChild (doc.createElement('div'));
     } else {
-	while (mountPoint.childNodes[mountChildIdx].localName === 'script' || mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE){
+	while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
 	  mountChildIdx++;
 	}
-	node = mountPoint.childNodes[mountChildIdx];
+	if (!mountPoint.childNodes[mountChildIdx]) {
+	    node = doc.body.appendChild (doc.createElement('div'));
+	} else {
+	    node = mountPoint.childNodes[mountChildIdx];
+        }
     }
 
     if (!window['walk'](logLevel,vtree, node, doc)) {

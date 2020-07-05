@@ -51,7 +51,6 @@ module Miso.Html.Internal (
 
 import           Data.Aeson (Value(..), ToJSON(..))
 import qualified Data.Map    as M
-import           Data.Monoid
 import           Data.Proxy
 import           Data.String (IsString(..))
 import qualified Data.Text   as T
