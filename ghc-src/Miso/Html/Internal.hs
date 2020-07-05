@@ -49,7 +49,7 @@ module Miso.Html.Internal (
   , onBeforeDestroyed
   ) where
 
-import           Data.Aeson (Value(..), ToJSON(..))
+import           Data.Aeson  (Value(..), ToJSON(..))
 import qualified Data.Map    as M
 import           Data.Proxy
 import           Data.String (IsString(..))
@@ -57,6 +57,7 @@ import qualified Data.Text   as T
 import qualified Data.Vector as V
 import qualified Lucid       as L
 import qualified Lucid.Base  as L
+import           Prelude     hiding (null)
 import           Servant.API
 
 import           Miso.Event
@@ -186,7 +187,12 @@ data NS
 -- | `VNode` creation
 node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
 node vNs vType vKey as xs =
-  let vProps  = Props  $ M.fromList [ (k,v) | P k v <- as ]
+  let classes = intercalate " " [ v | P "class" (String v) <- as ]
+      vProps  = Props $ do
+        let propClass = M.fromList [ (k,v) | P k v <- as ]
+        if not (null classes)
+          then M.insert "class" (String classes) propClass
+          else propClass
       vChildren = V.fromList $ map runView xs
   in View VNode {..}
 
