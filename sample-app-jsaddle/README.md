@@ -37,3 +37,21 @@ flags:
     jsaddle: true
 ```
 
+## Add external javascript file
+
+First download the external javascript file (`your-file.js`) to your project directory.
+Then add `bytestring` to `build-depends` in `app.cabal`.
+In your `Main.hs`  you need to change the implementation of `runApp` from this:
+```
+runApp f =
+  Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
+    JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) JSaddle.jsaddleApp
+```
+to this:
+```
+runApp f = do
+  bString <- B.readFile "your-file.js"
+  jSaddle <- JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) (JSaddle.jsaddleAppWithJs (B.append (JSaddle.jsaddleJs False) bString))
+  Warp.runSettings (Warp.setPort 8081 (Warp.setTimeout 3600 Warp.defaultSettings)) jSaddle
+```
+Now you should be able to use `your-file.js` in jsaddle.
