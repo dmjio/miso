@@ -1,0 +1,17 @@
+name: CI
+on:
+  pull_request:
+  push:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2.3.1
+    - uses: cachix/install-nix-action@v10
+    - uses: cachix/cachix-action@v6
+      with:
+        name: mycache
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
+    - run: nix-build --arg examples true
+    - run: cd tests && yarn && yarn test
