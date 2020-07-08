@@ -10,7 +10,7 @@ jobs:
     - uses: cachix/install-nix-action@v10
     - uses: cachix/cachix-action@v6
       with:
-        name: mycache
+        name: miso-haskell
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
     - run: nix-build --arg examples true
