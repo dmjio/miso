@@ -1,11 +1,13 @@
 name: test matrix
-on: push
+on: 
+  push: 
+  pull_request:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
         include:
         - os: macos-latest
           TARGET: x86_64-apple-darwin
