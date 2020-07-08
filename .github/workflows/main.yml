@@ -25,7 +25,7 @@ jobs:
        with:                                                                                                                              
          name: miso-haskell                                                                                                               
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-       if: ${{ matrix.os == macos-latest }}
+       if: ${{ matrix.os == 'macos-latest' }}
      - run: echo ${{matrix.os}}                                                                                                           
      - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
      - run: cachix push miso-haskell ./result                                                                     
@@ -33,7 +33,7 @@ jobs:
      - run: cd tests && yarn && yarn test
      - run: cachix push miso-haskell ./result                                                                                                                                                                      
      - run: nix-build -A miso-arm --arg ios true
-       if: ${{ matrix.os == ubuntu-latest }}
+       if: ${{ matrix.os == 'ubuntu-latest' }}
      - run: cd tests && yarn && yarn test
      - run: echo ${{matrix.os}}                                                                                                           
      - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
