@@ -29,3 +29,4 @@ jobs:
      - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result                                                                     
      - run: nix-build --arg examples true                                                                                                 
      - run: cd tests && yarn && yarn test 
+     - run: nix-build -A miso-arm --arg ios true 
