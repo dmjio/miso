@@ -71,21 +71,24 @@ import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
 
--- | When compiled without the `jsaddle` Cabal flag, this is just a
--- type synonym for `IO`. When the `jsaddle` flag is enabled, this
--- resolves to the `JSM` type defined in `jsaddle`.
+-- | When compiled without the _jsaddle_ Cabal flag, this is just a
+-- type synonym for 'IO'. When the jsaddle flag is enabled, this
+-- resolves to the 'JSM' type defined in _jsaddle_.
 type JSM = IO
 
--- | Run given `JSM` action asynchronously, in a separate thread.
+-- | Run given 'JSM' action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ()
 forkJSM a = () <$ forkIO a
 
+-- | Convert a Callback into a JSVal
 callbackToJSVal :: Callback a -> JSM JSVal
 callbackToJSVal = pure . jsval
 
+-- | Convert an Object into a JSVal
 objectToJSVal :: OI.Object -> JSM JSVal
 objectToJSVal = pure . jsval
 
+-- | Lift a value into 'JSM'
 ghcjsPure :: a -> JSM a
 ghcjsPure = pure
 
@@ -102,6 +105,7 @@ set k v obj = toJSVal v >>= \x -> OI.setProp k x obj
 foreign import javascript unsafe "if ('class' in $1) { $1['class'] += ' ' + $2; } else { $1['class'] = $2; }"
   appendClass :: OI.Object -> JSVal -> IO ()
 
+-- | Adds an event listener to a DOM node
 foreign import javascript unsafe "$1.addEventListener($2, $3);"
   addEventListener' :: JSVal -> JSString -> Callback (JSVal -> IO ()) -> IO ()
 
@@ -120,9 +124,11 @@ windowAddEventListener name cb = do
   win <- getWindow
   addEventListener win name cb
 
+-- | Stop propagation of events
 foreign import javascript unsafe "$1.stopPropagation();"
     eventStopPropagation :: JSVal -> IO ()
 
+-- | Prevent default event behavior
 foreign import javascript unsafe "$1.preventDefault();"
     eventPreventDefault :: JSVal -> IO ()
 
@@ -155,6 +161,7 @@ foreign import javascript unsafe "$r = performance.now();"
 foreign import javascript unsafe "console.log($1);"
   consoleLog :: JSString -> IO ()
 
+-- | Log to the console with 'JSVal'
 foreign import javascript unsafe "console.log($1);"
   consoleLogJSVal :: JSVal -> IO ()
 
@@ -162,6 +169,7 @@ foreign import javascript unsafe "console.log($1);"
 foreign import javascript unsafe "$r = JSON.stringify($1);"
   stringify' :: JSVal -> IO JSString
 
+-- | Converts a JS string into a JSON object
 foreign import javascript unsafe "$r = JSON.parse($1);"
   parse' :: JSVal -> IO JSVal
 
@@ -185,7 +193,7 @@ parse jval = do
 foreign import javascript unsafe "document.body.innerHTML = '';"
   clearBody :: IO ()
 
-
+-- | Convert a JavaScript object to JSON
 foreign import javascript unsafe "$r = window['objectToJSON']($1,$2);"
   objectToJSON
     :: JSVal -- ^ decodeAt :: [JSString]
@@ -210,6 +218,7 @@ foreign import javascript unsafe "$r = document;"
 foreign import javascript unsafe "$r = document.getElementById($1);"
   getElementById :: JSString -> IO JSVal
 
+-- | Diff two virtual DOMs (internal function not intended for use)
 foreign import javascript unsafe "diff($1, $2, $3, $4);"
   diff'
     :: OI.Object -- ^ current object
@@ -218,15 +227,19 @@ foreign import javascript unsafe "diff($1, $2, $3, $4);"
     -> JSVal  -- ^ document
     -> IO ()
 
+-- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> JSString
 integralToJSString = decimal
 
+-- | Helper function for converting RealFloat types to JavaScript strings
 realFloatToJSString :: RealFloat a => a -> JSString
 realFloatToJSString = realFloat
 
+-- | Helper function for converting RealFloat types to JavaScript strings
 foreign import javascript unsafe "$r = Number($1);"
   jsStringToDouble :: JSString -> Double
 
+-- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> IO JSVal -> IO ()
 delegateEvent mountPoint events getVTree = do
   cb' <- syncCallback1 ThrowWouldBlock $ \continuation -> do
@@ -234,6 +247,7 @@ delegateEvent mountPoint events getVTree = do
     callFunction continuation res
   delegateEvent' mountPoint events cb'
 
+-- | Call 'delegateEvent' JavaScript function
 foreign import javascript unsafe "window['delegate']($1, $2, $3);"
   delegateEvent'
      :: JSVal               -- ^ mountPoint element
@@ -241,6 +255,7 @@ foreign import javascript unsafe "window['delegate']($1, $2, $3);"
      -> Callback (JSVal -> IO ()) -- ^ Virtual DOM callback
      -> IO ()
 
+-- | Invoke a JavaScript function with a single argument
 foreign import javascript unsafe "$1($2);"
   callFunction :: JSVal -> JSVal -> IO ()
 
@@ -261,6 +276,7 @@ foreign import javascript unsafe "window['swapCallbacks']();"
 foreign import javascript unsafe "window['releaseCallbacks']();"
   releaseCallbacks :: IO ()
 
+-- | Register a callback function
 foreign import javascript unsafe "window['registerCallback']($1);"
   registerCallback :: JSVal -> IO ()
 

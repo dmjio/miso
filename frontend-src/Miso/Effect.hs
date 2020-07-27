@@ -87,7 +87,7 @@ batchEff model actions = Effect model $
 
 -- | Like '<#' but schedules a subscription which is an IO computation which has
 -- access to a 'Sink' which can be used to asynchronously dispatch actions to
--- the 'update' function.
+-- the 'Miso.Types.update' function.
 --
 -- A use-case is scheduling an IO computation which creates a 3rd-party JS
 -- widget which has an associated callback. The callback can then call the sink

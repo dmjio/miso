@@ -38,11 +38,12 @@ type MisoString = Text
 class ToMisoString str where
   toMisoString :: str -> MisoString
 
+-- | Class from safely parsing 'MisoString'
 class FromMisoString t where
-  -- -- | Reads a `MisoString` into an 'a', throws an error when
+  -- -- | Parses a `MisoString`
   fromMisoStringEither :: MisoString -> Either String t
 
--- | Reads a `MisoString` into an 'a', throws an error when decoding
+-- | Parses a `MisoString`, throws an error when decoding
 -- fails. Use `fromMisoStringEither` for as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s = case fromMisoStringEither s of

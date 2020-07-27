@@ -85,7 +85,7 @@ chan :: Notify
 {-# NOINLINE chan #-}
 chan = unsafePerformIO newEmptyNotify
 
--- | Subscription for `popState` events, from the History API
+-- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
   void.forkJSM.forever $ do

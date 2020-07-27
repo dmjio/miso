@@ -16,13 +16,13 @@ module Miso.Concurrent (
 
 import Control.Concurrent
 
--- | Concurrent API for `SkipChan` implementation
+-- | Concurrent API for SkipChan implementation
 data Notify = Notify {
     wait :: IO ()
   , notify :: IO ()
   }
 
--- | Create a new `Notify`
+-- | Create a new 'Notify'
 newNotify :: IO Notify
 newNotify = do
   mvar <- newMVar ()
@@ -30,7 +30,7 @@ newNotify = do
    (takeMVar mvar)
    (() <$ do tryPutMVar mvar $! ())
 
--- | Create a new `Notify`
+-- | Create a new 'Notify'
 newEmptyNotify :: IO Notify
 newEmptyNotify = do
   mvar <- newEmptyMVar

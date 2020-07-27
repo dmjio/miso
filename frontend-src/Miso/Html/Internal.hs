@@ -107,7 +107,7 @@ instance ToJSVal DecodeTarget where
   toJSVal (DecodeTarget xs) = toJSVal xs
   toJSVal (DecodeTargets xs) = toJSVal xs
 
--- | Create a new @VNode@.
+-- | Create a new @Miso.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
 -- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
@@ -192,7 +192,7 @@ class ToKey key where toKey :: key -> Key
 instance ToKey Key where toKey = id
 -- | Convert `MisoString` to `Key`
 instance ToKey MisoString where toKey = Key
--- | Convert `Text` to `Key`
+-- | Convert `T.Text` to `Key`
 instance ToKey T.Text where toKey = Key . toMisoString
 -- | Convert `String` to `Key`
 instance ToKey String where toKey = Key . toMisoString
