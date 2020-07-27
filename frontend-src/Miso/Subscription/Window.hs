@@ -37,11 +37,13 @@ windowCoordsSub f = \sink -> do
       Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
       liftIO . sink $ f (h, w)
 
--- | @windowOn eventName decoder toAction@ is a subscription which parallels the
+-- | @windowSub eventName decoder toAction@ is a subscription which parallels the
 -- attribute handler `on`, providing a subscription to listen to window level events.
 windowSub :: MisoString -> Decoder r -> (r -> action) -> Sub action
 windowSub  = windowSubWithOptions defaultOptions
 
+-- | @windowSubWithOptions options eventName decoder toAction@ is a subscription which parallels the
+-- attribute handler `on`, providing a subscription to listen to window level events.
 windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> Sub action
 windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
   windowAddEventListener eventName $

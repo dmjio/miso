@@ -166,6 +166,7 @@ route
   -> Either RoutingError a
 route layout handler u = runRouteLoc (uriToLocation u) layout handler
 
+-- | Executes router
 runRoute
   :: HasRouter layout
   => Proxy layout

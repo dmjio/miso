@@ -67,15 +67,19 @@ forkJSM a = do
   _ <- liftIO (forkIO (runJSM a ctx))
   pure ()
 
+-- | Creates an asynchronous callback function
 asyncCallback :: JSM () -> JSM Function
 asyncCallback a = asyncFunction (\_ _ _ -> a)
 
+-- | Creates an asynchronous callback function with a single argument
 asyncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 asyncCallback1 f = asyncFunction (\_ _ [x] -> f x)
 
+-- | Convert a Callback into a JSVal
 callbackToJSVal :: Function -> JSM JSVal
 callbackToJSVal = toJSVal
 
+-- | Convert an Object into a JSVal
 objectToJSVal :: Object -> JSM JSVal
 objectToJSVal = toJSVal
 
@@ -113,11 +117,13 @@ windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
 
+-- | Stop propagation of events
 eventStopPropagation :: JSVal -> JSM ()
 eventStopPropagation e = do
   _ <- e # "stopPropagation" $ ()
   pure ()
 
+-- | Prevent default event behavior
 eventPreventDefault :: JSVal -> JSM ()
 eventPreventDefault e = do
   _ <- e # "preventDefault" $ ()
@@ -179,6 +185,7 @@ clearBody :: JSM ()
 clearBody =
   (jsg "document" ! "body"  <# "innerHtml") [""]
 
+-- | Convert a JavaScript object to JSON
 objectToJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
@@ -190,7 +197,6 @@ objectToJSON = jsg2 "objectToJSON"
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 getBody :: JSM JSVal
 getBody = jsg "document" ! "body"
-
 
 -- | Retrieves a reference to the document.
 --
@@ -204,6 +210,7 @@ getDoc = jsg "document"
 getElementById :: JSString -> JSM JSVal
 getElementById e = getDoc # "getElementById" $ [e]
 
+-- | Diff two virtual DOMs
 diff'
     :: OI.Object -- ^ current object
     -> OI.Object -- ^ new object
@@ -212,15 +219,19 @@ diff'
     -> JSM ()
 diff' a b c d = () <$ jsg4 "diff" a b c d
 
+-- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> JSString
 integralToJSString = pack . show . toInteger
 
+-- | Helper function for converting RealFloat types to JavaScript strings
 realFloatToJSString :: RealFloat a => a -> JSString
 realFloatToJSString x = (pack . show) (realToFrac x :: Double)
 
+-- | Helper function for converting RealFloat types to JavaScript strings
 jsStringToDouble :: JSString -> Double
 jsStringToDouble = read . unpack
 
+-- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
 delegateEvent mountPoint events getVTree = do
   cb' <- asyncFunction $ \_ _ [continuation] -> do
@@ -229,6 +240,7 @@ delegateEvent mountPoint events getVTree = do
     pure ()
   delegateEvent' mountPoint events cb'
 
+-- | Call 'delegateEvent' JavaScript function
 delegateEvent' :: JSVal -> JSVal -> Function -> JSM ()
 delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
 
@@ -247,6 +259,7 @@ swapCallbacks = pure ()
 releaseCallbacks :: JSM ()
 releaseCallbacks = pure ()
 
+-- | Mock for callback registration
 registerCallback :: JSVal -> JSM ()
 registerCallback _ = pure ()
 

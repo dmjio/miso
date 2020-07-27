@@ -85,24 +85,42 @@ setSessionStorage key model = do
   s <- Storage.sessionStorage
   Storage.setItem s key =<< stringify model
 
+-- | Removes an item from local storage
+--
+-- @removeLocalStorage key@ removes the value of @key@.
 removeLocalStorage :: JSString -> JSM ()
 removeLocalStorage key = do
   s <- Storage.localStorage
   Storage.removeItem s key
 
+-- | Removes an item from session storage.
+--
+-- @removeSessionStorage key@ removes the value of @key@.
 removeSessionStorage :: JSString -> JSM ()
 removeSessionStorage key = do
   s <- Storage.sessionStorage
   Storage.removeItem s key
 
+-- | Clear local storage
+--
+-- @clearLocalStorage@ removes all values from local storage.
 clearLocalStorage :: JSM ()
 clearLocalStorage = Storage.clear =<< Storage.localStorage
 
+-- | Clear session storage
+--
+-- @clearSessionStorage@ removes all values from session storage.
 clearSessionStorage :: JSM ()
 clearSessionStorage = Storage.clear =<< Storage.sessionStorage
 
+-- | Local storage length
+--
+-- @localStorageLength@ returns the count of items in local storage
 localStorageLength :: JSM Int
 localStorageLength = Storage.length =<< Storage.localStorage
 
+-- | Session storage length
+--
+-- @sessionStorageLength@ returns the count of items in session storage
 sessionStorageLength :: JSM Int
 sessionStorageLength = Storage.length =<< Storage.sessionStorage
