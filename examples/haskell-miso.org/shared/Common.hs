@@ -98,7 +98,7 @@ docs = template v
                                      ]
            ] [ text "docs" ]
         , h2_ [ class_  "subtitle animated pulse" ] [
-            a_ [ href_  "https://haddocks.haskell-miso.org/"
+            a_ [ href_  "http://haddocks.haskell-miso.org/"
                , target_  "_blank"
                ]
               [ text "Haddocks" ]
@@ -130,15 +130,15 @@ examples = template v
            ] [ text "examples" ]
        , h2_ [ class_  "subtitle animated pulse" ] [
             a_ [ target_  "_blank"
-               , href_  "https://todo-mvc.haskell-miso.org/"
+               , href_  "http://todo-mvc.haskell-miso.org/"
                ] [ text "TodoMVC" ]
           , text " / "
           , a_ [ target_  "_blank"
-               , href_  "https://mario.haskell-miso.org/" ]
+               , href_  "http://mario.haskell-miso.org/" ]
             [ text "Mario" ]
           , text " / "
           , a_ [ target_  "_blank"
-               , href_  "https://flatris.haskell-miso.org/" ]
+               , href_  "http://flatris.haskell-miso.org/" ]
             [ text "Flatris" ]
          ]
        ]
