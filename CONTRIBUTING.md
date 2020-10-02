@@ -14,7 +14,7 @@ A good guideline for going about contributing to a Haskell project is [Neil Mitc
 
 ## When making PR's
   - Do fork `master`
-  - Do rebase `sqaush` / `fixup` as you see fit (so as to keep changes atomic)
+  - Do rebase `squash` / `fixup` as you see fit (so as to keep changes atomic)
   - Do include documentation (where applicable)
   - Do include tests (where applicable)
   - Don't bump the package version, that will be handled when a release is made
