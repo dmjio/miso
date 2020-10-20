@@ -279,7 +279,7 @@ blur a = () <$ jsg1 "callBlur" a
 scrollIntoView :: JSString -> JSM ()
 scrollIntoView elId = do
   el <- jsg "document" # "getElementById" $ [elId]
-  _ <- el # "scollIntoView" $ ()
+  _ <- el # "scrollIntoView" $ ()
   pure ()
 
 -- | Calls the @alert()@ function.
