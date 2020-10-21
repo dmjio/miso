@@ -24,7 +24,7 @@ module Miso.String (
   , ms
   ) where
 
-#ifndef JSADDLE
+#if !defined(JSADDLE) || defined(__GHCJS__)
 import           Data.Aeson
 #endif
 import qualified Data.ByteString as B
@@ -43,7 +43,7 @@ import           Miso.FFI
 -- | String type swappable based on compiler
 type MisoString = JSString
 
-#ifndef JSADDLE
+#if !defined(JSADDLE) || defined(__GHCJS__)
 
 
 -- | `ToJSON` for `MisoString`
