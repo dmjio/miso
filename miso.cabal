@@ -143,6 +143,9 @@ library
     text,
     transformers
   if impl(ghcjs) || flag (jsaddle)
+    if impl(ghcjs)
+      build-depends:
+        ghcjs-base
     if flag(jsaddle)
       build-depends:
         jsaddle
@@ -159,8 +162,6 @@ library
         build-depends:
           file-embed
     else
-      build-depends:
-        ghcjs-base
       hs-source-dirs:
         ghcjs-ffi
       js-sources:
