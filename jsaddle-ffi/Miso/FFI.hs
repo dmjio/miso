@@ -234,7 +234,7 @@ jsStringToDouble = read . unpack
 -- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
 delegateEvent mountPoint events getVTree = do
-  cb' <- asyncFunction $ \_ _ [continuation] -> do
+  cb' <- function $ \_ _ [continuation] -> do
     res <- getVTree
     _ <- call continuation global res
     pure ()
