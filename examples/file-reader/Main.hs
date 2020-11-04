@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies        #-}
 module Main where
 
-import           Miso
+import           Miso hiding (asyncCallback)
 import           Miso.String
 import           Control.Concurrent.MVar
 

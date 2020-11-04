@@ -147,12 +147,8 @@ library
       build-depends:
         ghcjs-base
     if flag(jsaddle)
-      build-depends:
-        jsaddle
       cpp-options:
         -DJSADDLE
-      hs-source-dirs:
-        jsaddle-ffi
       if flag (ios)
         cpp-options:
           -DIOS
@@ -162,8 +158,6 @@ library
         build-depends:
           file-embed
     else
-      hs-source-dirs:
-        ghcjs-ffi
       js-sources:
         jsbits/diff.js
         jsbits/delegate.js
@@ -173,6 +167,7 @@ library
       frontend-src
     build-depends:
       containers,
+      jsaddle,
       scientific,
       unordered-containers,
       transformers,
