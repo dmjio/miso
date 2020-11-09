@@ -5,7 +5,8 @@ let
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256;
   };
-  config.allowUnfree = true;
+  config.allowUnfree = options.allowUnfree;
+  config.allowBroken = options.allowBroken;
   overlays = [ (import ./overlay.nix options) ] ++ options.overlays;
 in
   import nixpkgs

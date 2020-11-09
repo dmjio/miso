@@ -6,6 +6,8 @@
 , system ? builtins.currentSystem
 , crossSystem ? null
 , crossOverlays ? []
+, allowBroken ? false
+, allowUnfree ? true
 }:
 let
   options =
@@ -17,7 +19,9 @@ let
         overlays
         system
         crossSystem
-        crossOverlays;
+        crossOverlays
+        allowBroken
+        allowUnfree;
     };
   pkgs = import ./nix options;
   armPkgs =
