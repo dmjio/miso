@@ -351,40 +351,43 @@ hero :: View Action -> URI -> Bool -> View Action
 hero content uri' navMenuOpen' =
   section_ [ class_  "hero is-medium is-primary is-bold has-text-centered" ] [
     div_ [ class_ "hero-head" ] [
-     header_ [class_"nav"] [
-      div_ [class_"container"] [
-        div_ [class_"nav-left"][
-          a_ [class_"nav-item"][]
-          ],
-        span_ [class_$ "nav-toggle " <> bool mempty "is-active" navMenuOpen'
-              , onClick ToggleNavMenu
-              ] [
-          span_[][]
-        , span_[][]
-        , span_[][]
-        ],
-         div_ [ class_ $ "nav-right nav-menu " <> do  bool mempty "is-active" navMenuOpen'] [
-          a_ [ classList_ [ ("nav-item",True)
-                          , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
-                          ]
-             , href_ "/", onPreventClick (ChangeURI goHome) ] [ text"Home" ],
-          a_ [classList_ [ ("nav-item",True)
-                         , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
-                         ]
-             , href_ "/examples", onPreventClick (ChangeURI goExamples)
-             ] [ text"Examples" ],
-          a_ [classList_ [ ("nav-item",True)
-                         , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
-                         ]
-             , href_ "/docs", onPreventClick (ChangeURI goDocs)
-             ] [ text"Docs" ],
-          a_ [classList_ [ ("nav-item",True)
-                         , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
-                         ]
-             , href_ "/community", onPreventClick (ChangeURI goCommunity)
-             ] [ text"Community" ]
-
-          ]]]]
+      header_ [class_"nav"] [
+        div_ [class_"container"] [
+          div_ [class_"nav-left"] [
+            a_ [class_"nav-item"] []
+            ],
+          span_ [class_$ "nav-toggle " <> bool mempty "is-active" navMenuOpen'
+                , onClick ToggleNavMenu ] [
+            span_[][],
+            span_[][],
+            span_[][]
+            ],
+          div_ [ class_ $ "nav-right nav-menu " <> do  bool mempty "is-active" navMenuOpen'] [
+            div_ [ classList_ [ ("nav-item",True)
+                              , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
+                 ]] [
+              a_ [ href_ "/", onPreventClick (ChangeURI goHome) ]
+                 [ text"Home" ]
+              ],
+            div_ [ classList_ [ ("nav-item",True)
+                              , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
+                 ]] [
+              a_ [ href_ "/examples", onPreventClick (ChangeURI goExamples)]
+                 [ text"Examples" ]
+              ],
+            div_ [ classList_ [ ("nav-item",True)
+                              , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
+                 ]] [
+              a_ [ href_ "/docs", onPreventClick (ChangeURI goDocs) ]
+                 [ text"Docs" ]
+              ],
+            div_ [ classList_ [ ("nav-item",True)
+                              , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
+                 ]] [
+              a_ [ href_ "/community", onPreventClick (ChangeURI goCommunity) ]
+                 [ text"Community" ]
+              ]
+      ]]]]
     , div_ [ class_  "hero-body" ] [
      div_ [ class_  "container" ] [
            content
