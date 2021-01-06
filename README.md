@@ -55,6 +55,7 @@
   - [Simple](#simple)
   - [File Reader](#file-reader)
   - [WebVR](#webvr)
+  - [Pixel Card Wars](#pixel-card-wars)
 - [Haddocks](#haddocks)
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
@@ -225,6 +226,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### WebVR
   - [Link](http://fizruk.github.io/fpconf-2017-talk/miso-aframe-demo/dist/demo.jsexe/index.html) / [Source](https://github.com/fizruk/miso-aframe)
+
+### Pixel Card Wars
+  - [Link](https://www.schplaf.org/hgames/darkcraw/) / [Source](https://github.com/smelc/miso-darkcraw)
 
 ## Haddocks
 
