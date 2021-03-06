@@ -38,7 +38,6 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import           Prelude hiding (foldr)
-import           Miso.FFI
 
 -- | String type swappable based on compiler
 type MisoString = JSString
@@ -91,13 +90,13 @@ instance ToMisoString B.ByteString where
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
 instance ToMisoString Float where
-  toMisoString = realFloatToJSString
+  toMisoString = pack . show
 instance ToMisoString Double where
-  toMisoString = realFloatToJSString
+  toMisoString = pack . show
 instance ToMisoString Int where
-  toMisoString = integralToJSString
+  toMisoString = pack . show
 instance ToMisoString Word where
-  toMisoString = integralToJSString
+  toMisoString = pack . show
 
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
@@ -121,7 +120,7 @@ instance FromMisoString Word where
   fromMisoStringEither = parseWord
 
 jsStringToDoubleEither :: JSString -> Either String Double
-jsStringToDoubleEither s = let d = jsStringToDouble s
+jsStringToDoubleEither s = let d = read $ unpack s
                            in if isNaN d then Left "jsStringToDoubleEither: parse failed"
                                          else Right d
 
