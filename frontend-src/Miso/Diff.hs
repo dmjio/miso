@@ -16,9 +16,10 @@ import GHCJS.Types
 import JavaScript.Object.Internal
 import Miso.Html.Internal
 import Miso.FFI
+import Miso.String
 
 -- | Entry point for diffing / patching algorithm
-diff :: Maybe JSString -> Maybe VTree -> Maybe VTree -> JSM ()
+diff :: Maybe MisoString -> Maybe VTree -> Maybe VTree -> JSM ()
 diff mayElem current new =
   case mayElem of
     Nothing -> do
@@ -42,7 +43,7 @@ diffElement mountEl current new = do
       diff' current' (Object jsNull) mountEl doc
 
 -- | return the configured mountPoint element or the body
-mountElement :: Maybe JSString -> JSM JSVal
+mountElement :: Maybe MisoString -> JSM JSVal
 mountElement mayMp =
   case mayMp of
     Nothing -> getBody

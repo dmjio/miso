@@ -19,8 +19,9 @@ module Miso.FFI.History
 import Control.Monad
 import GHCJS.Types
 import Language.Javascript.JSaddle
+import Miso.String
 
-getWindowLocationHref :: JSM JSString
+getWindowLocationHref :: JSM MisoString
 getWindowLocationHref = do
   href <- fromJSVal =<< jsg "window" ! "location" ! "href"
   case join href of
@@ -45,12 +46,12 @@ forward = do
   _ <- getHistory # "forward" $ ()
   pure ()
 
-pushState :: JSString -> JSM ()
+pushState :: MisoString -> JSM ()
 pushState url = do
   _ <- getHistory # "pushState" $ (jsNull, jsNull, url)
   pure ()
 
-replaceState :: JSString -> JSM ()
+replaceState :: MisoString -> JSM ()
 replaceState url = do
   _ <- getHistory # "replaceState" $ (jsNull, jsNull, url)
   pure ()
