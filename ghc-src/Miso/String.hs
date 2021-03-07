@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,6 +21,10 @@ module Miso.String
   , ms
   ) where
 
+#ifdef JSADDLE
+import Data.JSString
+import Data.JSString.Text
+#endif
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Monoid
@@ -91,3 +96,10 @@ instance FromMisoString Int where
   fromMisoStringEither = readEither . T.unpack
 instance FromMisoString Word where
   fromMisoStringEither = readEither . T.unpack
+
+#ifdef JSADDLE
+instance ToMisoString JSString where
+  toMisoString = textFromJSString
+instance FromMisoString JSString where
+  fromMisoStringEither = Right . textToJSString
+#endif

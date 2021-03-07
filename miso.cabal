@@ -201,6 +201,12 @@ library
       servant-lucid,
       vector
     hs-source-dirs:
+      backend-src
+  if impl(ghcjs)
+    hs-source-dirs:
+      ghcjs-src
+  else
+    hs-source-dirs:
       ghc-src
 
 source-repository head

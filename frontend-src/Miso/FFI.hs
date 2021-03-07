@@ -54,6 +54,8 @@ module Miso.FFI
 import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
+import           Data.JSString (JSString)
+import qualified Data.JSString as JSS
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
@@ -86,19 +88,19 @@ objectToJSVal = toJSVal
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
 set (unpack -> "class") v obj = do
-  classSet <- ((pack "class") `elem`) <$> listProps obj
+  classSet <- ((JSS.pack "class") `elem`) <$> listProps obj
   if classSet
     then do
-      classStr <- fromJSValUnchecked =<< getProp (pack "class") obj
+      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") obj
       vStr <- fromJSValUnchecked =<< toJSVal v
-      v' <- toJSVal (classStr <> pack " " <> vStr)
-      setProp (pack "class") v' obj
+      v' <- toJSVal (classStr <> JSS.pack " " <> vStr)
+      setProp (JSS.pack "class") v' obj
     else do
       v' <- toJSVal v
-      setProp (pack "class") v' obj
+      setProp (JSS.pack "class") v' obj
 set k v obj = do
   v' <- toJSVal v
-  setProp k v' obj
+  setProp (fromMisoString k) v' obj
 
 -- | Register an event listener on given target.
 addEventListener :: JSVal             -- ^ Event target on which we want to register event listener
