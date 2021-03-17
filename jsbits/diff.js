@@ -93,7 +93,7 @@ window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
   for (var c in cProps) {
     newProp = nProps[c];
     /* If current property no longer exists, remove it */
-    if (!newProp) {
+    if (newProp === undefined) {
       /* current key is not in node, remove it from DOM, if SVG, remove attribute */
       if (isSvg || !(c in node))
         node.removeAttribute(c, cProps[c]);
