@@ -118,6 +118,7 @@ module Miso.Html.Property
    , scoped_
    -- * Data
    , data_
+   , styleInline_
    ) where
 
 import           Miso.Html.Internal
@@ -398,3 +399,10 @@ class_ = textProp "class"
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
 data_ ::  MisoString -> MisoString -> Attribute action
 data_ k v = textProp ("data-" <> k) v
+-- | Set "style" property
+--
+-- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
+--
+-- https://developer.mozilla.org/en-US/docs/Web/CSS
+styleInline_ ::  MisoString -> Attribute action
+styleInline_ = textProp "style"
