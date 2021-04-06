@@ -86,6 +86,7 @@ module Miso.Html.Property
    , height_
    , width_
    , alt_
+   , loading_
    -- * Audio and Video
    , autoplay_
    , controls_
@@ -294,6 +295,9 @@ width_             = textProp "width"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/alt>
 alt_ ::  MisoString -> Attribute action
 alt_               = textProp "alt"
+-- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/loading>
+loading_ ::  MisoString -> Attribute action
+loading_           = textProp "loading"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/autoplay>
 autoplay_ ::  Bool -> Attribute action
 autoplay_          = boolProp "autoplay"
