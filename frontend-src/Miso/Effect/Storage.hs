@@ -33,13 +33,12 @@ module Miso.Effect.Storage
   ) where
 
 import           Data.Aeson hiding (Object, String)
-import           Data.JSString
 import           GHCJS.Marshal
 import           GHCJS.Types
 
 import           Miso.FFI
-
 import qualified Miso.FFI.Storage as Storage
+import           Miso.String
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
@@ -55,7 +54,7 @@ getStorageCommon f key = do
         Error y -> Left y
 
 -- | Retrieve a value stored under given key in session storage
-getSessionStorage :: FromJSON model => JSString -> JSM (Either String model)
+getSessionStorage :: FromJSON model => MisoString -> JSM (Either String model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- Storage.sessionStorage
@@ -63,7 +62,7 @@ getSessionStorage =
     fromJSVal r
 
 -- | Retrieve a value stored under given key in local storage
-getLocalStorage :: FromJSON model => JSString -> JSM (Either String model)
+getLocalStorage :: FromJSON model => MisoString -> JSM (Either String model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- Storage.localStorage
     r <- Storage.getItem s t
@@ -72,7 +71,7 @@ getLocalStorage = getStorageCommon $ \t -> do
 -- | Set the value of a key in local storage.
 --
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
-setLocalStorage :: ToJSON model => JSString -> model -> JSM ()
+setLocalStorage :: ToJSON model => MisoString -> model -> JSM ()
 setLocalStorage key model = do
   s <- Storage.localStorage
   Storage.setItem s key =<< stringify model
@@ -80,7 +79,7 @@ setLocalStorage key model = do
 -- | Set the value of a key in session storage.
 --
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
-setSessionStorage :: ToJSON model => JSString -> model -> JSM ()
+setSessionStorage :: ToJSON model => MisoString -> model -> JSM ()
 setSessionStorage key model = do
   s <- Storage.sessionStorage
   Storage.setItem s key =<< stringify model
@@ -88,7 +87,7 @@ setSessionStorage key model = do
 -- | Removes an item from local storage
 --
 -- @removeLocalStorage key@ removes the value of @key@.
-removeLocalStorage :: JSString -> JSM ()
+removeLocalStorage :: MisoString -> JSM ()
 removeLocalStorage key = do
   s <- Storage.localStorage
   Storage.removeItem s key
@@ -96,7 +95,7 @@ removeLocalStorage key = do
 -- | Removes an item from session storage.
 --
 -- @removeSessionStorage key@ removes the value of @key@.
-removeSessionStorage :: JSString -> JSM ()
+removeSessionStorage :: MisoString -> JSM ()
 removeSessionStorage key = do
   s <- Storage.sessionStorage
   Storage.removeItem s key

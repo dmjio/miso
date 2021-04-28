@@ -47,6 +47,7 @@ import           Miso.FFI
 import           Miso.FFI.WebSocket (Socket)
 import qualified Miso.FFI.WebSocket as WS
 import           Miso.Html.Internal ( Sub )
+import           Miso.String
 import           Miso.WebSocket
 
 websocket :: IORef (Maybe Socket)
@@ -142,7 +143,7 @@ getSocketState = do
 sendJson' :: ToJSON json => Socket -> json -> JSM ()
 sendJson' socket m = WS.send socket =<< stringify m
 
-createWebSocket :: JSString -> [JSString] -> JSM Socket
+createWebSocket :: MisoString -> [MisoString] -> JSM Socket
 {-# INLINE createWebSocket #-}
 createWebSocket url' protocols =
   WS.create url' =<< toJSVal protocols

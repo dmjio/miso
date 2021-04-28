@@ -22,6 +22,7 @@ import           GHCJS.Types
 
 import           Miso.FFI (JSM)
 import qualified Miso.FFI as FFI
+import           Miso.String
 
 import qualified Language.Javascript.JSaddle as JSaddle
 import           Language.Javascript.JSaddle hiding (new)
@@ -31,8 +32,8 @@ newtype EventSource = EventSource JSVal
 data' :: JSVal -> JSM JSVal
 data' v = v ! ("data" :: JSString)
 
-new :: JSString -> JSM EventSource
+new :: MisoString -> JSM EventSource
 new url = EventSource <$> JSaddle.new (jsg ("EventSource" :: JSString)) [url]
 
-addEventListener :: EventSource -> JSString -> (JSVal -> JSM ()) -> JSM ()
+addEventListener :: EventSource -> MisoString -> (JSVal -> JSM ()) -> JSM ()
 addEventListener (EventSource s) = FFI.addEventListener s

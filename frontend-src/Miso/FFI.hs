@@ -54,11 +54,13 @@ module Miso.FFI
 import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
-import           Data.JSString
+import           Data.JSString (JSString)
+import qualified Data.JSString as JSS
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
+import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ()
@@ -84,25 +86,25 @@ objectToJSVal :: Object -> JSM JSVal
 objectToJSVal = toJSVal
 
 -- | Set property on object
-set :: ToJSVal v => JSString -> v -> OI.Object -> JSM ()
+set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
 set (unpack -> "class") v obj = do
-  classSet <- ((pack "class") `elem`) <$> listProps obj
+  classSet <- ((JSS.pack "class") `elem`) <$> listProps obj
   if classSet
     then do
-      classStr <- fromJSValUnchecked =<< getProp (pack "class") obj
+      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") obj
       vStr <- fromJSValUnchecked =<< toJSVal v
-      v' <- toJSVal (classStr <> pack " " <> vStr)
-      setProp (pack "class") v' obj
+      v' <- toJSVal (classStr <> JSS.pack " " <> vStr)
+      setProp (JSS.pack "class") v' obj
     else do
       v' <- toJSVal v
-      setProp (pack "class") v' obj
+      setProp (JSS.pack "class") v' obj
 set k v obj = do
   v' <- toJSVal v
-  setProp k v' obj
+  setProp (fromMisoString k) v' obj
 
 -- | Register an event listener on given target.
 addEventListener :: JSVal             -- ^ Event target on which we want to register event listener
-                 -> JSString          -- ^ Type of event to listen to (e.g. "click")
+                 -> MisoString        -- ^ Type of event to listen to (e.g. "click")
                  -> (JSVal -> JSM ()) -- ^ Callback which will be called when the event occurs, the event will be passed to it as a parameter.
                  -> JSM ()
 addEventListener self name cb = do
@@ -110,7 +112,7 @@ addEventListener self name cb = do
   pure ()
 
 -- | Registers an event listener on window
-windowAddEventListener :: JSString           -- ^ Type of event to listen to (e.g. "click")
+windowAddEventListener :: MisoString         -- ^ Type of event to listen to (e.g. "click")
                        -> (JSVal -> JSM ())  -- ^ Callback which will be called when the event occurs, the event will be passed to it as a parameter.
                        -> JSM ()
 windowAddEventListener name cb = do
@@ -152,7 +154,7 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -- | Outputs a message to the web console
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
-consoleLog :: JSString -> JSM ()
+consoleLog :: MisoString -> JSM ()
 consoleLog v = do
   _ <- jsg "console" # "log" $ [toJSString v]
   pure ()
@@ -164,13 +166,13 @@ consoleLogJSVal v = do
   pure ()
 
 -- | Converts a JS object into a JSON string
-stringify :: ToJSON json => json -> JSM JSString
+stringify :: ToJSON json => json -> JSM MisoString
 {-# INLINE stringify #-}
 stringify j = do
   v <- toJSVal (toJSON j)
   fromJSValUnchecked =<< (jsg "JSON" # "stringify" $ [v])
 
--- | Parses a JSString
+-- | Parses a MisoString
 parse :: FromJSON json => JSVal -> JSM json
 {-# INLINE parse #-}
 parse jval = do
@@ -207,7 +209,7 @@ getDoc = jsg "document"
 -- | Returns an Element object representing the element whose id property matches the specified string.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
-getElementById :: JSString -> JSM JSVal
+getElementById :: MisoString -> JSM JSVal
 getElementById e = getDoc # "getElementById" $ [e]
 
 -- | Diff two virtual DOMs
@@ -220,15 +222,15 @@ diff'
 diff' a b c d = () <$ jsg4 "diff" a b c d
 
 -- | Helper function for converting Integral types to JavaScript strings
-integralToJSString :: Integral a => a -> JSString
+integralToJSString :: Integral a => a -> MisoString
 integralToJSString = pack . show . toInteger
 
 -- | Helper function for converting RealFloat types to JavaScript strings
-realFloatToJSString :: RealFloat a => a -> JSString
+realFloatToJSString :: RealFloat a => a -> MisoString
 realFloatToJSString x = (pack . show) (realToFrac x :: Double)
 
 -- | Helper function for converting RealFloat types to JavaScript strings
-jsStringToDouble :: JSString -> Double
+jsStringToDouble :: MisoString -> Double
 jsStringToDouble = read . unpack
 
 -- | Initialize event delegation from a mount point.
@@ -266,22 +268,22 @@ registerCallback _ = pure ()
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
-focus :: JSString -> JSM ()
+focus :: MisoString -> JSM ()
 focus a = () <$ jsg1 "callFocus" a
 
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
-blur :: JSString -> JSM ()
+blur :: MisoString -> JSM ()
 blur a = () <$ jsg1 "callBlur" a
 
 -- | Calls @document.getElementById(id).scrollIntoView()@
-scrollIntoView :: JSString -> JSM ()
+scrollIntoView :: MisoString -> JSM ()
 scrollIntoView elId = do
   el <- jsg "document" # "getElementById" $ [elId]
   _ <- el # "scrollIntoView" $ ()
   pure ()
 
 -- | Calls the @alert()@ function.
-alert :: JSString -> JSM ()
+alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a

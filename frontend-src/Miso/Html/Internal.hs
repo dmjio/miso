@@ -60,7 +60,7 @@ module Miso.Html.Internal (
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Aeson.Types (parseEither)
-import           Data.JSString
+import           Data.JSString (JSString)
 import qualified Data.Map as M
 import           Data.Proxy
 import           Data.String (IsString(..))
@@ -191,7 +191,7 @@ class ToKey key where toKey :: key -> Key
 -- | Identity instance
 instance ToKey Key where toKey = id
 -- | Convert `MisoString` to `Key`
-instance ToKey MisoString where toKey = Key
+instance ToKey JSString where toKey = Key . toMisoString
 -- | Convert `T.Text` to `Key`
 instance ToKey T.Text where toKey = Key . toMisoString
 -- | Convert `String` to `Key`
@@ -218,7 +218,7 @@ newtype Attribute action = Attribute (Sink action -> Object -> JSM ())
 prop :: ToJSVal a => MisoString -> a -> Attribute action
 prop k v = Attribute . const $ \n -> do
   val <- toJSVal v
-  o <- getProp ("props" :: MisoString) n
+  o <- getProp "props" n
   set k val (Object o)
 
 -- | Convenience wrapper for @onWithOptions defaultOptions@.

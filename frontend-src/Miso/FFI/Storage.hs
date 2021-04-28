@@ -22,6 +22,7 @@ import GHCJS.Types
 import Prelude hiding (length)
 
 import Language.Javascript.JSaddle ((!), (#), JSM, fromJSValUnchecked, jsg)
+import Miso.String hiding (length)
 
 newtype Storage = Storage JSVal
 
@@ -31,16 +32,16 @@ localStorage = Storage <$> (jsg "window" ! "localStorage")
 sessionStorage :: JSM Storage
 sessionStorage = Storage <$> (jsg "window" ! "sessionStorage")
 
-getItem :: Storage -> JSString -> JSM JSVal
+getItem :: Storage -> MisoString -> JSM JSVal
 getItem (Storage s) key =
   s # "getItem" $ [key]
 
-removeItem :: Storage -> JSString -> JSM ()
+removeItem :: Storage -> MisoString -> JSM ()
 removeItem (Storage s) key = do
   _ <- s # "removeItem" $ [key]
   pure ()
 
-setItem :: Storage -> JSString -> JSString -> JSM ()
+setItem :: Storage -> MisoString -> MisoString -> JSM ()
 setItem (Storage s) key val = do
   _ <- s # "setItem" $ (key, val)
   pure ()
