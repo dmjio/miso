@@ -18,9 +18,9 @@ import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
 
+import Miso.Effect (Sub)
 import Miso.Event
 import Miso.FFI
-import Miso.Html.Internal         ( Sub )
 import Miso.String
 
 import Data.Aeson.Types (parseEither)

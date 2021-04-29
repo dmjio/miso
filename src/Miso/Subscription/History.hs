@@ -26,9 +26,9 @@ module Miso.Subscription.History
 import Control.Monad
 import Control.Monad.IO.Class
 import Miso.Concurrent
+import Miso.Effect (Sub)
 import Miso.FFI
 import qualified Miso.FFI.History as FFI
-import Miso.Html.Internal (Sub)
 import Miso.String
 import Network.URI hiding (path)
 import System.IO.Unsafe

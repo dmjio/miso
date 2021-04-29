@@ -16,8 +16,8 @@ import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
 
+import Miso.Effect (Sub)
 import Miso.FFI
-import Miso.Html.Internal ( Sub )
 
 -- | Captures mouse coordinates as they occur and writes them to
 -- an event sink

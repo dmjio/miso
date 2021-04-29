@@ -102,11 +102,6 @@ instance HasLink (View a) where
 -- | Convenience class for using View
 class ToView v where toView :: v -> View m
 
--- | `ToJSVal` instance for `Decoder`
-instance ToJSVal DecodeTarget where
-  toJSVal (DecodeTarget xs) = toJSVal xs
-  toJSVal (DecodeTargets xs) = toJSVal xs
-
 -- | Create a new @Miso.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@

@@ -124,6 +124,13 @@ library
     Miso.FFI.SSE
     Miso.FFI.Storage
     Miso.FFI.WebSocket
+    Miso.Subscription
+    Miso.Subscription.History
+    Miso.Subscription.Keyboard
+    Miso.Subscription.Mouse
+    Miso.Subscription.WebSocket
+    Miso.Subscription.Window
+    Miso.Subscription.SSE
     Miso.Svg
     Miso.Svg.Attribute
     Miso.Svg.Element
@@ -182,13 +189,6 @@ library
       vector
     exposed-modules:
       Miso.Dev
-      Miso.Subscription
-      Miso.Subscription.History
-      Miso.Subscription.Keyboard
-      Miso.Subscription.Mouse
-      Miso.Subscription.WebSocket
-      Miso.Subscription.Window
-      Miso.Subscription.SSE
       Miso.Types
     other-modules:
       Miso.Diff
