@@ -113,6 +113,7 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Html.Types
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types

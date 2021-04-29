@@ -61,6 +61,7 @@ import           Prelude     hiding (null)
 import           Servant.API
 
 import           Miso.Event
+import           Miso.Html.Types
 import           Miso.String hiding (map)
 
 -- | Virtual DOM implemented as a Rose `Vector`.
@@ -177,13 +178,6 @@ instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
   toHtml (View xs) = L.toHtml xs
 
--- | Namespace for element creation
-data NS
-  = HTML -- ^ HTML Namespace
-  | SVG  -- ^ SVG Namespace
-  | MATHML  -- ^ MATHML Namespace
-  deriving (Show, Eq)
-
 -- | `VNode` creation
 node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
 node vNs vType vKey as xs =
@@ -207,27 +201,6 @@ textRaw = View . VTextRaw
 -- | `IsString` instance
 instance IsString (View a) where
   fromString = text . fromString
-
--- | Key for specific children patch
-newtype Key = Key MisoString
-  deriving (Show, Eq, Ord, IsString)
-
--- | Convert type into Key, ensure `Key` is unique
-class ToKey key where toKey :: key -> Key
--- | Identity instance
-instance ToKey Key    where toKey = id
--- | Convert `Text` to `Key`
-instance ToKey MisoString where toKey = Key
--- | Convert `String` to `Key`
-instance ToKey String where toKey = Key . T.pack
--- | Convert `Int` to `Key`
-instance ToKey Int    where toKey = Key . T.pack . show
--- | Convert `Double` to `Key`
-instance ToKey Double where toKey = Key . T.pack . show
--- | Convert `Float` to `Key`
-instance ToKey Float  where toKey = Key . T.pack . show
--- | Convert `Word` to `Key`
-instance ToKey Word   where toKey = Key . T.pack . show
 
 -- | Properties
 newtype Props = Props (M.Map MisoString Value)
