@@ -59,6 +59,7 @@ module Miso.Html.Internal (
 
 import           Control.Monad
 import           Control.Monad.IO.Class
+import           Data.Aeson (ToJSON, Value, toJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.JSString (JSString)
 import qualified Data.Map as M
@@ -133,8 +134,16 @@ node ns tag key attrs kids = View $ \sink -> do
   pure $ VTree vnode
     where
       setAttrs vnode sink =
-        forM_ attrs $ \(Attribute attr) ->
-          attr sink vnode
+        forM_ attrs $ \case
+          P k v -> do
+            val <- toJSVal v
+            o <- getProp "props" vnode
+            set k val (Object o)
+          E attr -> attr sink vnode
+          S m -> do
+            cssObj <- getProp "css" vnode
+            forM_ (M.toList m) $ \(k,v) -> do
+              set k v (Object cssObj)
       setKids sink = do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
         ghcjsPure (JSArray.fromList kidsViews)
@@ -169,15 +178,15 @@ instance IsString (View a) where
 -- the @update@ function. This is especially useful for event handlers
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
-newtype Attribute action = Attribute (Sink action -> Object -> JSM ())
+data Attribute action
+    = P MisoString Value
+    | E (Sink action -> Object -> JSM ())
+    | S (M.Map MisoString MisoString)
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
-prop :: ToJSVal a => MisoString -> a -> Attribute action
-prop k v = Attribute . const $ \n -> do
-  val <- toJSVal v
-  o <- getProp "props" n
-  set k val (Object o)
+prop :: ToJSON a => MisoString -> a -> Attribute action
+prop k v = P k (toJSON v)
 
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
@@ -207,7 +216,7 @@ onWithOptions
   -> (r -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
    eventObj <- getProp "events" n
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
@@ -229,7 +238,7 @@ onWithOptions options eventName Decoder{..} toAction =
 -- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onCreated" cb n
     registerCallback cb
@@ -242,7 +251,7 @@ onCreated action =
 -- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onDestroyed" cb n
     registerCallback cb
@@ -255,7 +264,7 @@ onDestroyed action =
 -- otherwise the event may not be reliably called!
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onBeforeDestroyed" cb n
     registerCallback cb
@@ -271,7 +280,4 @@ onBeforeDestroyed action =
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: M.Map MisoString MisoString -> Attribute action
-style_ m = Attribute . const $ \n -> do
-   cssObj <- getProp "css" n
-   forM_ (M.toList m) $ \(k,v) ->
-     set k v (Object cssObj)
+style_ = S
