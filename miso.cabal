@@ -137,6 +137,7 @@ library
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
+    Miso.TypeLevel
     Miso.Types
     Miso.Mathml
     Miso.Mathml.Element
@@ -159,6 +160,7 @@ library
     jsaddle,
     network-uri,
     servant,
+    servant-lucid,
     text,
     transformers
   if impl(ghcjs) || flag (jsaddle)
@@ -192,11 +194,8 @@ library
       Miso.Diff
       Miso.Delegate
   else
-    exposed-modules:
-      Miso.TypeLevel
     build-depends:
       lucid,
-      servant-lucid,
       vector
     hs-source-dirs:
       backend-src
