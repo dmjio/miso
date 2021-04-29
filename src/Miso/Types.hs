@@ -33,7 +33,7 @@ import           Data.Foldable (Foldable, for_)
 import qualified Data.Map as M
 import           Miso.Effect
 import           Miso.FFI (JSM)
-import           Miso.Html.Internal
+import           Miso.Html.Internal (View)
 import           Miso.String
 
 -- | Application entry point

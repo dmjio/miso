@@ -108,6 +108,7 @@ library
   exposed-modules:
     Miso
     Miso.Util
+    Miso.Dev
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event
@@ -124,6 +125,7 @@ library
     Miso.FFI.SSE
     Miso.FFI.Storage
     Miso.FFI.WebSocket
+    Miso.JSBits
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
@@ -135,6 +137,7 @@ library
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
+    Miso.Types
     Miso.Mathml
     Miso.Mathml.Element
     Miso.String
@@ -168,8 +171,6 @@ library
       if flag (ios)
         cpp-options:
           -DIOS
-        other-modules:
-          Miso.JSBits
       else
         build-depends:
           file-embed
@@ -187,9 +188,6 @@ library
       unordered-containers,
       transformers,
       vector
-    exposed-modules:
-      Miso.Dev
-      Miso.Types
     other-modules:
       Miso.Diff
       Miso.Delegate
