@@ -116,6 +116,11 @@ library
     Miso.Event.Decoder
     Miso.Event.Types
     Miso.Router
+    Miso.FFI
+    Miso.FFI.History
+    Miso.FFI.SSE
+    Miso.FFI.Storage
+    Miso.FFI.WebSocket
     Miso.Svg
     Miso.Svg.Attribute
     Miso.Svg.Element
@@ -138,6 +143,7 @@ library
     containers,
     http-api-data,
     http-types,
+    jsaddle,
     network-uri,
     servant,
     text,
@@ -167,7 +173,6 @@ library
       frontend-src
     build-depends:
       containers,
-      jsaddle,
       scientific,
       unordered-containers,
       transformers,
@@ -187,11 +192,6 @@ library
       Miso.Types
     other-modules:
       Miso.Diff
-      Miso.FFI
-      Miso.FFI.History
-      Miso.FFI.SSE
-      Miso.FFI.Storage
-      Miso.FFI.WebSocket
       Miso.Delegate
   else
     exposed-modules:

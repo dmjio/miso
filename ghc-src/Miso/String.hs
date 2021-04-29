@@ -21,13 +21,11 @@ module Miso.String
   , ms
   ) where
 
-#ifdef JSADDLE
-import Data.JSString
-import Data.JSString.Text
-#endif
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Monoid
+import           Data.JSString
+import           Data.JSString.Text
 import           Data.Text
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
@@ -65,6 +63,8 @@ instance ToMisoString String where
   toMisoString = T.pack
 instance ToMisoString LT.Text where
   toMisoString = LT.toStrict
+instance ToMisoString JSString where
+  toMisoString = textFromJSString
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where
@@ -84,6 +84,8 @@ instance FromMisoString String where
   fromMisoStringEither = Right . T.unpack
 instance FromMisoString LT.Text where
   fromMisoStringEither = Right . LT.fromStrict
+instance FromMisoString JSString where
+  fromMisoStringEither = Right . textToJSString
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
 instance FromMisoString BL.ByteString where
@@ -96,10 +98,3 @@ instance FromMisoString Int where
   fromMisoStringEither = readEither . T.unpack
 instance FromMisoString Word where
   fromMisoStringEither = readEither . T.unpack
-
-#ifdef JSADDLE
-instance ToMisoString JSString where
-  toMisoString = textFromJSString
-instance FromMisoString JSString where
-  fromMisoStringEither = Right . textToJSString
-#endif
