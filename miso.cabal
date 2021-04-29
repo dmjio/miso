@@ -116,6 +116,9 @@ library
     Miso.Event.Decoder
     Miso.Event.Types
     Miso.Router
+    Miso.Effect
+    Miso.Effect.Storage
+    Miso.Effect.DOM
     Miso.FFI
     Miso.FFI.History
     Miso.FFI.SSE
@@ -179,9 +182,6 @@ library
       vector
     exposed-modules:
       Miso.Dev
-      Miso.Effect
-      Miso.Effect.Storage
-      Miso.Effect.DOM
       Miso.Subscription
       Miso.Subscription.History
       Miso.Subscription.Keyboard
