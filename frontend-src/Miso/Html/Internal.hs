@@ -31,6 +31,8 @@ module Miso.Html.Internal (
   , View   (..)
   , ToView (..)
   , Attribute (..)
+  -- * `View` runner
+  , runView
   -- * Smart `View` constructors
   , node
   , text
@@ -86,36 +88,11 @@ import           Miso.Html.Types
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
 
--- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-newtype View action = View {
-  runView :: Sink action -> JSM VTree
-} deriving Functor
-
--- | For constructing type-safe links
-instance HasLink (View a) where
-#if MIN_VERSION_servant(0,14,0)
-  type MkLink (View a) b = MkLink (Get '[] ()) b
-  toLink toA Proxy = toLink toA (Proxy :: Proxy (Get '[] ()))
-#else
-  type MkLink (View a) = MkLink (Get '[] ())
-  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
-#endif
-
 -- | Convenience class for using View
 class ToView v where toView :: v -> View m
 
--- | Create a new @Miso.Types.VNode@.
---
--- @node ns tag key attrs children@ creates a new node with tag @tag@
--- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
--- the node is created and its children are initialized to @children@.
-node :: NS
-     -> MisoString
-     -> Maybe Key
-     -> [Attribute m]
-     -> [View m]
-     -> View m
-node ns tag key attrs kids = View $ \sink -> do
+runView :: View action -> Sink action -> JSM VTree
+runView (Node ns tag key attrs kids) sink = do
   vnode <- create
   cssObj <- objectToJSVal =<< create
   propsObj <- objectToJSVal =<< create
@@ -147,19 +124,9 @@ node ns tag key attrs kids = View $ \sink -> do
       setKids sink = do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
         ghcjsPure (JSArray.fromList kidsViews)
-
--- | Create a new @VText@ with the given content.
-text :: MisoString -> View m
-text t = View . const $ do
+runView (Text t) _ = do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
-
--- | For parity with server-side rendering. Don't use directly.
-textRaw :: MisoString -> View m
-textRaw = text
-
--- | `IsString` instance
-instance IsString (View a) where
-  fromString = text . fromString
+runView (TextRaw t) s = runView (Text t) s

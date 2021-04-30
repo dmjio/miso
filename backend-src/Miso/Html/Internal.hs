@@ -28,6 +28,8 @@ module Miso.Html.Internal (
   , View   (..)
   , ToView (..)
   , Attribute (..)
+  -- * `View` runner
+  , runView
   -- * Smart `View` constructors
   , node
   , text
@@ -152,36 +154,16 @@ toHtmlFromJSON Null = "null"
 toHtmlFromJSON (Object o) = pack (show o)
 toHtmlFromJSON (Array a) = pack (show a)
 
--- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-newtype View action = View { runView :: VTree action }
-  deriving Functor
-
--- | For constructing type-safe links
-instance HasLink (View a) where
-#if MIN_VERSION_servant(0,14,0)
-  type MkLink (View a) b = MkLink (Get '[] ()) b
-  toLink toA Proxy = toLink toA (Proxy :: Proxy (Get '[] ()))
-#else
-  type MkLink (View a) = MkLink (Get '[] ())
-  toLink Proxy = toLink (Proxy :: Proxy (Get '[] ()))
-#endif
-
-
 -- | Convenience class for using View
 class ToView v where toView :: v -> View action
-
--- | Show `View`
-instance Show (View action) where
-  show (View xs) = show xs
 
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (View xs) = L.toHtml xs
+  toHtml v = L.toHtml $ runView v
 
--- | `VNode` creation
-node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
-node vNs vType vKey as xs =
+runView :: View action -> VTree action
+runView (Node vNs vType vKey as xs) =
   let classes = intercalate " " [ v | P "class" (String v) <- as ]
       vProps  = Props $ do
         let propClass = M.fromList $ as >>= \case
@@ -195,19 +177,9 @@ node vNs vType vKey as xs =
           then M.insert "class" (String classes) propClass
           else propClass
       vChildren = V.fromList $ map runView xs
-  in View VNode {..}
-
--- | `VText` creation
-text :: MisoString -> View action
-text = View . VText
-
--- | `VTextRaw` creation. Don't use directly
-textRaw :: MisoString -> View action
-textRaw = View . VTextRaw
-
--- | `IsString` instance
-instance IsString (View a) where
-  fromString = text . fromString
+  in VNode {..}
+runView (Text t) = VText t
+runView (TextRaw t) = VTextRaw t
 
 -- | Properties
 newtype Props = Props (M.Map MisoString Value)

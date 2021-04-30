@@ -1,10 +1,21 @@
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Miso.Html.Types (
     -- * Core types and interface
-      Attribute (..)
+      View   (..)
+    -- * Smart `View` constructors
+    , node
+    , text
+    , textRaw
+    -- * Core types and interface
+    , Attribute (..)
     -- * Key patch internals
     , Key    (..)
     , ToKey  (..)
@@ -29,15 +40,60 @@ import           Data.Aeson (ToJSON, Value, toJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.JSString (JSString)
 import qualified Data.Map as M
+import           Data.Proxy (Proxy(Proxy))
+import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
+import           Servant.API (Get, HasLink, MkLink, toLink)
 
 import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
 import           Miso.String
+
+-- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
+data View action
+    = Node NS MisoString (Maybe Key) [Attribute action] [View action]
+    | Text MisoString
+    | TextRaw MisoString
+    deriving Functor
+
+-- | For constructing type-safe links
+instance HasLink (View a) where
+#if MIN_VERSION_servant(0,14,0)
+  type MkLink (View a) b = MkLink (Get '[] ()) b
+  toLink toA Proxy = toLink toA (Proxy :: Proxy (Get '[] ()))
+#else
+  type MkLink (View a) = MkLink (Get '[] ())
+  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
+#endif
+
+-- | Create a new @Miso.Html.Types.Node@.
+--
+-- @node ns tag key attrs children@ creates a new node with tag @tag@
+-- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
+-- the node is created and its children are initialized to @children@.
+node :: NS
+     -> MisoString
+     -> Maybe Key
+     -> [Attribute action]
+     -> [View action]
+     -> View action
+node = Node
+
+-- | Create a new @Text@ with the given content.
+text :: MisoString -> View action
+text = Text
+
+-- | `TextRaw` creation. Don't use directly
+textRaw :: MisoString -> View action
+textRaw = TextRaw
+
+-- | `IsString` instance
+instance IsString (View a) where
+  fromString = text . fromString
 
 -- | Namespace of DOM elements.
 data NS
@@ -94,6 +150,7 @@ data Attribute action
     = P MisoString Value
     | E (Sink action -> Object -> JSM ())
     | S (M.Map MisoString MisoString)
+    deriving Functor
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
