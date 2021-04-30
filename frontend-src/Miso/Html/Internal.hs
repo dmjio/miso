@@ -88,9 +88,6 @@ import           Miso.Html.Types
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
 
--- | Convenience class for using View
-class ToView v where toView :: v -> View m
-
 runView :: View action -> Sink action -> JSM VTree
 runView (Node ns tag key attrs kids) sink = do
   vnode <- create

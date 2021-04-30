@@ -154,9 +154,6 @@ toHtmlFromJSON Null = "null"
 toHtmlFromJSON (Object o) = pack (show o)
 toHtmlFromJSON (Array a) = pack (show a)
 
--- | Convenience class for using View
-class ToView v where toView :: v -> View action
-
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml

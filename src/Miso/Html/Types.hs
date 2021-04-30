@@ -10,6 +10,7 @@
 module Miso.Html.Types (
     -- * Core types and interface
       View   (..)
+    , ToView (..)
     -- * Smart `View` constructors
     , node
     , text
@@ -69,6 +70,9 @@ instance HasLink (View a) where
   type MkLink (View a) = MkLink (Get '[] ())
   toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
 #endif
+
+-- | Convenience class for using View
+class ToView v where toView :: v -> View action
 
 -- | Create a new @Miso.Html.Types.Node@.
 --
