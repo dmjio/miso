@@ -61,7 +61,6 @@ import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
 import           Miso.Html
-import           Miso.Html.Internal
 import           Miso.Router
 import           Miso.Subscription
 import           Miso.Types

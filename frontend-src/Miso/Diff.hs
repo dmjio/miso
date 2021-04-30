@@ -14,7 +14,7 @@ module Miso.Diff ( diff
 import GHCJS.Foreign.Internal     hiding (Object)
 import GHCJS.Types
 import JavaScript.Object.Internal
-import Miso.Html.Internal
+import Miso.Html.Types
 import Miso.FFI
 import Miso.String
 

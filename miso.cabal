@@ -194,7 +194,6 @@ library
     other-modules:
       Miso.Diff
       Miso.Delegate
-      Miso.Html.Internal
   else
     build-depends:
       vector
