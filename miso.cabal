@@ -114,6 +114,8 @@ library
     Miso.Html.Event
     Miso.Html.Property
     Miso.Html.Types
+    Miso.Delegate
+    Miso.Diff
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
@@ -191,9 +193,6 @@ library
       unordered-containers,
       transformers,
       vector
-    other-modules:
-      Miso.Diff
-      Miso.Delegate
   else
     build-depends:
       vector
