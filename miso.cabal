@@ -157,6 +157,7 @@ library
     base < 5,
     bytestring,
     containers,
+    file-embed,
     http-api-data,
     http-types,
     jsaddle,
@@ -176,9 +177,6 @@ library
       if flag (ios)
         cpp-options:
           -DIOS
-      else
-        build-depends:
-          file-embed
     else
       js-sources:
         jsbits/diff.js
