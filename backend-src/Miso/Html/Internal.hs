@@ -24,12 +24,9 @@
 ----------------------------------------------------------------------------
 module Miso.Html.Internal (
   -- * Core types and interface
-    VTree  (..)
-  , View   (..)
+    View   (..)
   , ToView (..)
   , Attribute (..)
-  -- * `View` runner
-  , runView
   -- * Smart `View` constructors
   , node
   , text
@@ -67,80 +64,57 @@ import           Miso.Event
 import           Miso.Html.Types
 import           Miso.String hiding (map)
 
--- | Virtual DOM implemented as a Rose `Vector`.
---   Used for diffing, patching and event delegation.
---   Not meant to be constructed directly, see `View` instead.
-data VTree action where
-  VNode :: { vType :: Text -- ^ Element type (i.e. "div", "a", "p")
-           , vNs :: NS -- ^ HTML or SVG
-           , vProps :: Props -- ^ Fields present on DOM Node
-           , vKey :: Maybe Key -- ^ Key used for child swap patch
-           , vChildren :: V.Vector (VTree action) -- ^ Child nodes
-           } -> VTree action
-  VText :: { vText :: Text -- ^ TextNode content
-           } -> VTree action
-  -- Invariant: To avoid complexity with collapsing mixed VText and
-  -- VTextRaw nodes, VTextRaw node is always the only child.
-  -- That's not a big limitation, since the intended purpose is to be able
-  -- to use <style> and <script> tags. That means we can't support HTML
-  -- entities like &nbsp; with VTextRaw, but the same can be achieved with
-  -- Unicode.
-  VTextRaw :: { vText :: Text -- ^ Raw TextNode content
-              } -> VTree action
-  deriving Functor
-
-instance Show (VTree action) where
-  show = show . L.toHtml
-
--- | Converting `VTree` to Lucid's `L.Html`
-instance L.ToHtml (VTree action) where
+-- | Converting `View` to Lucid's `L.Html`
+instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (VText x) | T.null x = L.toHtml (" " :: MisoString)
-                   | otherwise = L.toHtml x
-  toHtml (VTextRaw x) | T.null x = L.toHtml (" " :: MisoString)
-                      | otherwise = L.toHtmlRaw x
-  toHtml VNode{..} =
-    let
+  toHtml (Node vNs vType vKey attrs vChildren) = L.with ele lattrs
+    where
       noEnd = ["img", "input", "br", "hr", "meta"]
       tag = toTag vType
-      ele =
-          if tag `elem` noEnd
-            then L.makeElementNoEnd tag
-            else L.makeElement tag kids
-    in L.with ele as
-      where
-        Props xs = vProps
-        as = [ L.makeAttribute k (if k `elem` exceptions && v == Bool True then k else v')
-             | (k,v) <- M.toList xs
-             , let v' = toHtmlFromJSON v
-             , not (k `elem` exceptions && v == Bool False)
-             ]
-        exceptions = [ "checked"
-                     , "disabled"
-                     , "selected"
-                     , "hidden"
-                     , "readOnly"
-                     , "autoplay"
-                     , "required"
-                     , "default"
-                     , "autofocus"
-                     , "multiple"
-                     , "noValidate"
-                     , "autocomplete"
-                     ]
-        toTag = T.toLower
-        kids
-          = foldMap L.toHtml
-          . V.fromList
-          . collapseSiblingTextNodes
-          . V.toList
-          $ vChildren
+      ele = if tag `elem` noEnd
+          then L.makeElementNoEnd tag
+          else L.makeElement tag kids
+      classes = intercalate " " [ v | P "class" (String v) <- attrs ]
+      propClass = M.fromList $ attrs >>= \case
+          P k v -> [(k, v)]
+          E _ -> []
+          S m -> [("style", String (M.foldrWithKey go mempty m))]
+            where
+              go :: MisoString -> MisoString -> MisoString -> MisoString
+              go k v ys = mconcat [ k, ":", v, ";" ] <> ys
+      xs = if not (null classes)
+          then M.insert "class" (String classes) propClass
+          else propClass
+      lattrs = [ L.makeAttribute k (if k `elem` exceptions && v == Bool True then k else v')
+           | (k,v) <- M.toList xs
+           , let v' = toHtmlFromJSON v
+           , not (k `elem` exceptions && v == Bool False)
+           ]
+      exceptions = [ "checked"
+                   , "disabled"
+                   , "selected"
+                   , "hidden"
+                   , "readOnly"
+                   , "autoplay"
+                   , "required"
+                   , "default"
+                   , "autofocus"
+                   , "multiple"
+                   , "noValidate"
+                   , "autocomplete"
+                   ]
+      toTag = T.toLower
+      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
+  toHtml (Text x) | T.null x = L.toHtml (" " :: MisoString)
+                  | otherwise = L.toHtml x
+  toHtml (TextRaw x) | T.null x = L.toHtml (" " :: MisoString)
+                     | otherwise = L.toHtmlRaw x
 
-collapseSiblingTextNodes :: [VTree a] -> [VTree a]
+collapseSiblingTextNodes :: [View a] -> [View a]
 collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (VText x : VText y : xs) =
-  collapseSiblingTextNodes (VText (x <> y) : xs)
--- VTextRaw is the only child, so no need to collapse.
+collapseSiblingTextNodes (Text x : Text y : xs) =
+  collapseSiblingTextNodes (Text (x <> y) : xs)
+-- TextRaw is the only child, so no need to collapse.
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 
@@ -153,31 +127,3 @@ toHtmlFromJSON (Bool b) = if b then "true" else "false"
 toHtmlFromJSON Null = "null"
 toHtmlFromJSON (Object o) = pack (show o)
 toHtmlFromJSON (Array a) = pack (show a)
-
--- | Converting `View` to Lucid's `L.Html`
-instance L.ToHtml (View action) where
-  toHtmlRaw = L.toHtml
-  toHtml v = L.toHtml $ runView v
-
-runView :: View action -> VTree action
-runView (Node vNs vType vKey as xs) =
-  let classes = intercalate " " [ v | P "class" (String v) <- as ]
-      vProps  = Props $ do
-        let propClass = M.fromList $ as >>= \case
-              P k v -> [(k, v)]
-              E _ -> []
-              S m -> [("style", String (M.foldrWithKey go mempty m))]
-                where
-                  go :: MisoString -> MisoString -> MisoString -> MisoString
-                  go k v xs = mconcat [ k, ":", v, ";" ] <> xs
-        if not (null classes)
-          then M.insert "class" (String classes) propClass
-          else propClass
-      vChildren = V.fromList $ map runView xs
-  in VNode {..}
-runView (Text t) = VText t
-runView (TextRaw t) = VTextRaw t
-
--- | Properties
-newtype Props = Props (M.Map MisoString Value)
-  deriving (Show, Eq)
