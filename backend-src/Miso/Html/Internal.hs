@@ -212,8 +212,3 @@ instance IsString (View a) where
 -- | Properties
 newtype Props = Props (M.Map MisoString Value)
   deriving (Show, Eq)
-
--- | DMJ: this used to get set on preventDefault on Options... if options are dynamic now what
--- | Useful for `drop` events
-newtype AllowDrop = AllowDrop Bool
-  deriving (Show, Eq)
