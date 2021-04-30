@@ -108,6 +108,7 @@ library
   exposed-modules:
     Miso
     Miso.Util
+    Miso.Dev
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event
@@ -116,10 +117,28 @@ library
     Miso.Event.Decoder
     Miso.Event.Types
     Miso.Router
+    Miso.Effect
+    Miso.Effect.Storage
+    Miso.Effect.DOM
+    Miso.FFI
+    Miso.FFI.History
+    Miso.FFI.SSE
+    Miso.FFI.Storage
+    Miso.FFI.WebSocket
+    Miso.JSBits
+    Miso.Subscription
+    Miso.Subscription.History
+    Miso.Subscription.Keyboard
+    Miso.Subscription.Mouse
+    Miso.Subscription.WebSocket
+    Miso.Subscription.Window
+    Miso.Subscription.SSE
     Miso.Svg
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
+    Miso.TypeLevel
+    Miso.Types
     Miso.Mathml
     Miso.Mathml.Element
     Miso.String
@@ -138,8 +157,10 @@ library
     containers,
     http-api-data,
     http-types,
+    jsaddle,
     network-uri,
     servant,
+    servant-lucid,
     text,
     transformers
   if impl(ghcjs) || flag (jsaddle)
@@ -152,8 +173,6 @@ library
       if flag (ios)
         cpp-options:
           -DIOS
-        other-modules:
-          Miso.JSBits
       else
         build-depends:
           file-embed
@@ -167,38 +186,16 @@ library
       frontend-src
     build-depends:
       containers,
-      jsaddle,
       scientific,
       unordered-containers,
       transformers,
       vector
-    exposed-modules:
-      Miso.Dev
-      Miso.Effect
-      Miso.Effect.Storage
-      Miso.Effect.DOM
-      Miso.Subscription
-      Miso.Subscription.History
-      Miso.Subscription.Keyboard
-      Miso.Subscription.Mouse
-      Miso.Subscription.WebSocket
-      Miso.Subscription.Window
-      Miso.Subscription.SSE
-      Miso.Types
     other-modules:
       Miso.Diff
-      Miso.FFI
-      Miso.FFI.History
-      Miso.FFI.SSE
-      Miso.FFI.Storage
-      Miso.FFI.WebSocket
       Miso.Delegate
   else
-    exposed-modules:
-      Miso.TypeLevel
     build-depends:
       lucid,
-      servant-lucid,
       vector
     hs-source-dirs:
       backend-src

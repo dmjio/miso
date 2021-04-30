@@ -25,6 +25,7 @@ module Miso.Event.Decoder
 
 import Data.Aeson.Types
 import Control.Applicative
+import GHCJS.Marshal (ToJSVal, toJSVal)
 
 import Miso.Event.Types
 import Miso.String
@@ -33,6 +34,11 @@ import Miso.String
 data DecodeTarget
   = DecodeTarget [MisoString] -- ^ Specify single path within Event object, where a decoder should be applied.
   | DecodeTargets [[MisoString]] -- ^ Specify multiple paths withing Event object, where decoding should be attempted. The first path where decoding suceeds is the one taken.
+
+-- | `ToJSVal` instance for `Decoder`
+instance ToJSVal DecodeTarget where
+  toJSVal (DecodeTarget xs) = toJSVal xs
+  toJSVal (DecodeTargets xs) = toJSVal xs
 
 -- | Decoder data type for parsing events
 data Decoder a = Decoder {

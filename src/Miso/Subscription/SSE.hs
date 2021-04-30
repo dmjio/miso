@@ -19,8 +19,8 @@ module Miso.Subscription.SSE
 
 import           Control.Monad.IO.Class
 import           Data.Aeson
+import           Miso.Effect (Sub)
 import           Miso.FFI
-import           Miso.Html.Internal ( Sub )
 import           Miso.String
 
 import qualified Miso.FFI.SSE as SSE

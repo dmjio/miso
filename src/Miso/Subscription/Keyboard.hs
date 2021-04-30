@@ -29,8 +29,8 @@ import           GHCJS.Marshal
 import           JavaScript.Object
 import           JavaScript.Object.Internal
 
+import           Miso.Effect (Sub)
 import           Miso.FFI
-import           Miso.Html.Internal ( Sub )
 
 -- | type for arrow keys currently pressed
 --  37 left arrow  ( x = -1 )
