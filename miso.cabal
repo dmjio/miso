@@ -146,7 +146,6 @@ library
     Miso.WebSocket
   other-modules:
     Miso.Concurrent
-    Miso.Html.Internal
   ghc-options:
     -Wall
   hs-source-dirs:
@@ -195,6 +194,7 @@ library
     other-modules:
       Miso.Diff
       Miso.Delegate
+      Miso.Html.Internal
   else
     build-depends:
       vector

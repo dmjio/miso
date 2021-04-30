@@ -122,7 +122,7 @@ module Miso.Html.Property
    , styleInline_
    ) where
 
-import           Miso.Html.Internal
+import           Miso.Html.Types
 import           Miso.String (MisoString, intercalate)
 
 #if __GLASGOW_HASKELL__ < 841

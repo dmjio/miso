@@ -57,7 +57,7 @@ module Miso.Html.Event
   , onDrop
   ) where
 
-import Miso.Html.Internal ( Attribute, on, onWithOptions )
+import Miso.Html.Types ( Attribute, on, onWithOptions )
 import Miso.Event
 import Miso.String (MisoString)
 

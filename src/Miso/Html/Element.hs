@@ -134,7 +134,7 @@ module Miso.Html.Element
     , menu_
     ) where
 
-import           Miso.Html.Internal
+import           Miso.Html.Types
 import           Miso.String (MisoString)
 
 -- | Used to construct `VNode`'s in `View`
