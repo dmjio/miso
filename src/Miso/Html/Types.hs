@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE TypeFamilies         #-}
@@ -37,6 +38,7 @@ module Miso.Html.Types (
 
 import           Control.Monad ((<=<))
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as A
 import           Data.Aeson (ToJSON, Value, toJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.JSString (JSString)
@@ -47,6 +49,9 @@ import qualified Data.Text as T
 import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
+import qualified Lucid       as L
+import qualified Lucid.Base  as L
+import           Prelude     hiding (null)
 import           Servant.API (Get, HasLink, MkLink, toLink)
 
 import           Miso.Effect
@@ -98,6 +103,71 @@ textRaw = TextRaw
 -- | `IsString` instance
 instance IsString (View a) where
   fromString = text . fromString
+
+-- | Converting `View` to Lucid's `L.Html`
+instance L.ToHtml (View action) where
+  toHtmlRaw = L.toHtml
+  toHtml (Node vNs vType vKey attrs vChildren) = L.with ele lattrs
+    where
+      noEnd = ["img", "input", "br", "hr", "meta"]
+      tag = toTag $ fromMisoString vType
+      ele = if tag `elem` noEnd
+          then L.makeElementNoEnd tag
+          else L.makeElement tag kids
+      classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
+      propClass = M.fromList $ attrs >>= \case
+          P k v -> [(k, v)]
+          E _ -> []
+          S m -> [("style", A.String . fromMisoString $ M.foldrWithKey go mempty m)]
+            where
+              go :: MisoString -> MisoString -> MisoString -> MisoString
+              go k v ys = mconcat [ k, ":", v, ";" ] <> ys
+      xs = if not (T.null classes)
+          then M.insert "class" (A.String classes) propClass
+          else propClass
+      lattrs = [ L.makeAttribute k' (if k `elem` exceptions && v == A.Bool True then k' else v')
+               | (k,v) <- M.toList xs
+               , let k' = fromMisoString k
+               , let v' = toHtmlFromJSON v
+               , not (k `elem` exceptions && v == A.Bool False)
+               ]
+      exceptions = [ "checked"
+                   , "disabled"
+                   , "selected"
+                   , "hidden"
+                   , "readOnly"
+                   , "autoplay"
+                   , "required"
+                   , "default"
+                   , "autofocus"
+                   , "multiple"
+                   , "noValidate"
+                   , "autocomplete"
+                   ]
+      toTag = T.toLower
+      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
+  toHtml (Text x) | null x = L.toHtml (" " :: T.Text)
+                  | otherwise = L.toHtml (fromMisoString x :: T.Text)
+  toHtml (TextRaw x) | null x = L.toHtml (" " :: T.Text)
+                     | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
+
+collapseSiblingTextNodes :: [View a] -> [View a]
+collapseSiblingTextNodes [] = []
+collapseSiblingTextNodes (Text x : Text y : xs) =
+  collapseSiblingTextNodes (Text (x <> y) : xs)
+-- TextRaw is the only child, so no need to collapse.
+collapseSiblingTextNodes (x:xs) =
+  x : collapseSiblingTextNodes xs
+
+-- | Helper for turning JSON into Text
+-- Object, Array and Null are kind of non-sensical here
+toHtmlFromJSON :: Value -> T.Text
+toHtmlFromJSON (A.String t) = t
+toHtmlFromJSON (A.Number t) = T.pack (show t)
+toHtmlFromJSON (A.Bool b) = if b then "true" else "false"
+toHtmlFromJSON A.Null = "null"
+toHtmlFromJSON (A.Object o) = T.pack (show o)
+toHtmlFromJSON (A.Array a) = T.pack (show a)
 
 -- | Namespace of DOM elements.
 data NS

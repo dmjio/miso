@@ -159,6 +159,7 @@ library
     http-api-data,
     http-types,
     jsaddle,
+    lucid,
     network-uri,
     servant,
     servant-lucid,
@@ -196,7 +197,6 @@ library
       Miso.Delegate
   else
     build-depends:
-      lucid,
       vector
     hs-source-dirs:
       backend-src
