@@ -148,13 +148,6 @@ node ns tag key attrs kids = View $ \sink -> do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
         ghcjsPure (JSArray.fromList kidsViews)
 
-instance ToJSVal Key where toJSVal (Key x) = toJSVal x
-
-instance ToJSVal NS where
-  toJSVal SVG  = toJSVal ("svg" :: JSString)
-  toJSVal HTML = toJSVal ("html" :: JSString)
-  toJSVal MATHML = toJSVal ("mathml" :: JSString)
-
 -- | Create a new @VText@ with the given content.
 text :: MisoString -> View m
 text t = View . const $ do

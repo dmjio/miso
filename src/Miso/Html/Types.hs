@@ -30,7 +30,7 @@ import           Data.Aeson.Types (parseEither)
 import           Data.JSString (JSString)
 import qualified Data.Map as M
 import qualified Data.Text as T
-import           GHCJS.Marshal (fromJSVal, toJSVal)
+import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
 
@@ -46,6 +46,11 @@ data NS
   | MATHML  -- ^ MATHML Namespace
   deriving (Show, Eq)
 
+instance ToJSVal NS where
+  toJSVal SVG  = toJSVal ("svg" :: JSString)
+  toJSVal HTML = toJSVal ("html" :: JSString)
+  toJSVal MATHML = toJSVal ("mathml" :: JSString)
+
 -- | A unique key for a dom node.
 --
 -- This key is only used to speed up diffing the children of a DOM
@@ -53,6 +58,8 @@ data NS
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
+
+instance ToJSVal Key where toJSVal (Key x) = toJSVal x
 
 -- | Convert custom key types to `Key`.
 --
