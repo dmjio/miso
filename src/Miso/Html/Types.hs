@@ -10,8 +10,11 @@
 
 module Miso.Html.Types (
     -- * Core types and interface
-      View   (..)
+      VTree  (..)
+    , View   (..)
     , ToView (..)
+    -- * `View` runner
+    , runView
     -- * Smart `View` constructors
     , node
     , text
@@ -36,7 +39,7 @@ module Miso.Html.Types (
     , onBeforeDestroyed
     ) where
 
-import           Control.Monad ((<=<))
+import           Control.Monad (forM_, (<=<))
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as A
 import           Data.Aeson (ToJSON, Value, toJSON)
@@ -47,6 +50,8 @@ import           Data.Proxy (Proxy(Proxy))
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
+import           GHCJS.Types (jsval)
+import qualified JavaScript.Array as JSArray
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
 import qualified Lucid       as L
@@ -168,6 +173,51 @@ toHtmlFromJSON (A.Bool b) = if b then "true" else "false"
 toHtmlFromJSON A.Null = "null"
 toHtmlFromJSON (A.Object o) = T.pack (show o)
 toHtmlFromJSON (A.Array a) = T.pack (show a)
+
+-- | Virtual DOM implemented as a JavaScript `Object`.
+--   Used for diffing, patching and event delegation.
+--   Not meant to be constructed directly, see `View` instead.
+newtype VTree = VTree { getTree :: Object }
+
+runView :: View action -> Sink action -> JSM VTree
+runView (Node ns tag key attrs kids) sink = do
+  vnode <- create
+  cssObj <- objectToJSVal =<< create
+  propsObj <- objectToJSVal =<< create
+  eventObj <- objectToJSVal =<< create
+  set "css" cssObj vnode
+  set "props" propsObj vnode
+  set "events" eventObj vnode
+  set "type" ("vnode" :: JSString) vnode
+  set "ns" ns vnode
+  set "tag" tag vnode
+  set "key" key vnode
+  setAttrs vnode sink
+  flip (set "children") vnode
+    =<< ghcjsPure . jsval
+    =<< setKids sink
+  pure $ VTree vnode
+    where
+      setAttrs vnode sink =
+        forM_ attrs $ \case
+          P k v -> do
+            val <- toJSVal v
+            o <- getProp "props" vnode
+            set k val (Object o)
+          E attr -> attr sink vnode
+          S m -> do
+            cssObj <- getProp "css" vnode
+            forM_ (M.toList m) $ \(k,v) -> do
+              set k v (Object cssObj)
+      setKids sink = do
+        kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
+        ghcjsPure (JSArray.fromList kidsViews)
+runView (Text t) _ = do
+  vtree <- create
+  set "type" ("vtext" :: JSString) vtree
+  set "text" t vtree
+  pure $ VTree vtree
+runView (TextRaw t) s = runView (Text t) s
 
 -- | Namespace of DOM elements.
 data NS
