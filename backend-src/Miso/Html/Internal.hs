@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE ConstraintKinds      #-}
 {-# LANGUAGE TypeFamilies         #-}
@@ -183,7 +184,13 @@ node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> 
 node vNs vType vKey as xs =
   let classes = intercalate " " [ v | P "class" (String v) <- as ]
       vProps  = Props $ do
-        let propClass = M.fromList [ (k,v) | P k v <- as ]
+        let propClass = M.fromList $ as >>= \case
+              P k v -> [(k, v)]
+              E _ -> []
+              S m -> [("style", String (M.foldrWithKey go mempty m))]
+                where
+                  go :: MisoString -> MisoString -> MisoString -> MisoString
+                  go k v xs = mconcat [ k, ":", v, ";" ] <> xs
         if not (null classes)
           then M.insert "class" (String classes) propClass
           else propClass
@@ -206,71 +213,7 @@ instance IsString (View a) where
 newtype Props = Props (M.Map MisoString Value)
   deriving (Show, Eq)
 
--- | `View` Attributes to annotate DOM, converted into Events, Props, Attrs and CSS
-data Attribute action
-  = P MisoString Value
-  | E ()
-  deriving (Show, Eq)
-
 -- | DMJ: this used to get set on preventDefault on Options... if options are dynamic now what
 -- | Useful for `drop` events
 newtype AllowDrop = AllowDrop Bool
   deriving (Show, Eq)
-
--- | Constructs a property on a `VNode`, used to set fields on a DOM Node
-prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = P k (toJSON v)
-
--- | For defining delegated events
---
--- > let clickHandler = on "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
---
-on :: MisoString
-   -> Decoder r
-   -> (r -> action)
-   -> Attribute action
-on _ _ _ = E ()
-
--- | For defining delegated events with options
---
--- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
---
-onWithOptions
-   :: Options
-   -> MisoString
-   -> Decoder r
-   -> (r -> action)
-   -> Attribute action
-onWithOptions _ _ _ _ = E ()
-
--- | @onCreated action@ is an event that gets called after the actual DOM
--- element is created.
-onCreated :: action -> Attribute action
-onCreated _ = E ()
-
--- | @onDestroyed action@ is an event that gets called after the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
-onDestroyed :: action -> Attribute action
-onDestroyed _ = E ()
-
--- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
-onBeforeDestroyed :: action -> Attribute action
-onBeforeDestroyed _ = E ()
-
--- | Constructs CSS for a DOM Element
---
--- > import qualified Data.Map as M
--- > div_ [ style_  $ M.singleton "background" "red" ] [ ]
---
--- <https://developer.mozilla.org/en-US/docs/Web/CSS>
---
-style_ :: M.Map MisoString MisoString -> Attribute action
-style_ map' = P "style" $ String (M.foldrWithKey go mempty map')
-  where
-    go :: MisoString -> MisoString -> MisoString -> MisoString
-    go k v xs = mconcat [ k, ":", v, ";" ] <> xs
