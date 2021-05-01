@@ -78,7 +78,7 @@ common
   -> (Sink action -> JSM (IORef VTree))
   -> JSM ()
 common App {..} m getView = do
-#ifdef JSADDLE
+#ifndef __GHCJS__
 #ifdef IOS
   mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
 #else

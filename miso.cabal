@@ -172,8 +172,6 @@ library
       build-depends:
         ghcjs-base
     if flag(jsaddle)
-      cpp-options:
-        -DJSADDLE
       if flag (ios)
         cpp-options:
           -DIOS
