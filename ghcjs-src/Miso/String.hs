@@ -24,9 +24,7 @@ module Miso.String (
   , ms
   ) where
 
-#if !defined(JSADDLE) || defined(__GHCJS__)
 import           Data.Aeson
-#endif
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import           Data.Char
@@ -42,9 +40,6 @@ import           Prelude hiding (foldr)
 -- | String type swappable based on compiler
 type MisoString = JSString
 
-#if !defined(JSADDLE) || defined(__GHCJS__)
-
-
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
@@ -54,7 +49,6 @@ instance FromJSON MisoString where
   parseJSON =
     withText "Not a valid string" $ \x ->
       pure (toMisoString x)
-#endif
 
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where

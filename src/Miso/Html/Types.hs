@@ -1,93 +1,75 @@
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE CPP                        #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE KindSignatures             #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE ConstraintKinds            #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE UndecidableInstances       #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# OPTIONS_GHC -fno-warn-orphans       #-}
------------------------------------------------------------------------------
--- |
--- Module      :  Miso.Html.Internal
--- Copyright   :  (C) 2016-2018 David M. Johnson
--- License     :  BSD3-style (see the file LICENSE)
--- Maintainer  :  David M. Johnson <djohnson.m@gmail.com>
--- Stability   :  experimental
--- Portability :  non-portable
-----------------------------------------------------------------------------
-module Miso.Html.Internal (
-  -- * Core types and interface
-    VTree  (..)
-  , View   (..)
-  , ToView (..)
-  , Attribute (..)
-  -- * Smart `View` constructors
-  , node
-  , text
-  , textRaw
-  -- * Key patch internals
-  , Key    (..)
-  , ToKey  (..)
-  -- * Namespace
-  , NS     (..)
-  -- * Setting properties on virtual DOM nodes
-  , prop
-  -- * Setting css
-  , style_
-  -- * Handling events
-  , on
-  , onWithOptions
-  -- * Life cycle events
-  , onCreated
-  , onDestroyed
-  , onBeforeDestroyed
-  -- * Events
-  , defaultEvents
-  -- * Subscription type
-  , Sub
-  ) where
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-import           Control.Monad
-import           Control.Monad.IO.Class
+module Miso.Html.Types (
+    -- * Core types and interface
+      VTree  (..)
+    , View   (..)
+    , ToView (..)
+    -- * `View` runner
+    , runView
+    -- * Smart `View` constructors
+    , node
+    , text
+    , textRaw
+    -- * Core types and interface
+    , Attribute (..)
+    -- * Key patch internals
+    , Key    (..)
+    , ToKey  (..)
+    -- * Namespace
+    , NS(..)
+    -- * Setting properties on virtual DOM nodes
+    , prop
+    -- * Setting css
+    , style_
+    -- * Handling events
+    , on
+    , onWithOptions
+    -- * Life cycle events
+    , onCreated
+    , onDestroyed
+    , onBeforeDestroyed
+    ) where
+
+import           Control.Monad (forM_, (<=<))
+import           Control.Monad.IO.Class (liftIO)
+import qualified Data.Aeson as A
+import           Data.Aeson (ToJSON, Value, toJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.JSString (JSString)
 import qualified Data.Map as M
-import           Data.Proxy
-import           Data.String (IsString(..))
+import           Data.Proxy (Proxy(Proxy))
+import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           GHCJS.Marshal
-import           GHCJS.Types
+import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
+import           GHCJS.Types (jsval)
 import qualified JavaScript.Array as JSArray
-import           JavaScript.Object
-import           JavaScript.Object.Internal (Object (Object))
-import           Servant.API
+import           JavaScript.Object (create, getProp)
+import           JavaScript.Object.Internal (Object(Object))
+import qualified Lucid       as L
+import qualified Lucid.Base  as L
+import           Prelude     hiding (null)
+import           Servant.API (Get, HasLink, MkLink, toLink)
 
-import           Miso.Effect (Sub)
-import           Miso.Event.Decoder
-import           Miso.Event.Types
-import           Miso.String
-import           Miso.Effect (Sink)
+import           Miso.Effect
+import           Miso.Event
 import           Miso.FFI
-
--- | Virtual DOM implemented as a JavaScript `Object`.
---   Used for diffing, patching and event delegation.
---   Not meant to be constructed directly, see `View` instead.
-newtype VTree = VTree { getTree :: Object }
+import           Miso.String
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-newtype View action = View {
-  runView :: Sink action -> JSM VTree
-} deriving Functor
+data View action
+    = Node NS MisoString (Maybe Key) [Attribute action] [View action]
+    | Text MisoString
+    | TextRaw MisoString
+    deriving Functor
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -100,9 +82,9 @@ instance HasLink (View a) where
 #endif
 
 -- | Convenience class for using View
-class ToView v where toView :: v -> View m
+class ToView v where toView :: v -> View action
 
--- | Create a new @Miso.Types.VNode@.
+-- | Create a new @Miso.Html.Types.Node@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
 -- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
@@ -110,10 +92,95 @@ class ToView v where toView :: v -> View m
 node :: NS
      -> MisoString
      -> Maybe Key
-     -> [Attribute m]
-     -> [View m]
-     -> View m
-node ns tag key attrs kids = View $ \sink -> do
+     -> [Attribute action]
+     -> [View action]
+     -> View action
+node = Node
+
+-- | Create a new @Text@ with the given content.
+text :: MisoString -> View action
+text = Text
+
+-- | `TextRaw` creation. Don't use directly
+textRaw :: MisoString -> View action
+textRaw = TextRaw
+
+-- | `IsString` instance
+instance IsString (View a) where
+  fromString = text . fromString
+
+-- | Converting `View` to Lucid's `L.Html`
+instance L.ToHtml (View action) where
+  toHtmlRaw = L.toHtml
+  toHtml (Node vNs vType vKey attrs vChildren) = L.with ele lattrs
+    where
+      noEnd = ["img", "input", "br", "hr", "meta"]
+      tag = toTag $ fromMisoString vType
+      ele = if tag `elem` noEnd
+          then L.makeElementNoEnd tag
+          else L.makeElement tag kids
+      classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
+      propClass = M.fromList $ attrs >>= \case
+          P k v -> [(k, v)]
+          E _ -> []
+          S m -> [("style", A.String . fromMisoString $ M.foldrWithKey go mempty m)]
+            where
+              go :: MisoString -> MisoString -> MisoString -> MisoString
+              go k v ys = mconcat [ k, ":", v, ";" ] <> ys
+      xs = if not (T.null classes)
+          then M.insert "class" (A.String classes) propClass
+          else propClass
+      lattrs = [ L.makeAttribute k' (if k `elem` exceptions && v == A.Bool True then k' else v')
+               | (k,v) <- M.toList xs
+               , let k' = fromMisoString k
+               , let v' = toHtmlFromJSON v
+               , not (k `elem` exceptions && v == A.Bool False)
+               ]
+      exceptions = [ "checked"
+                   , "disabled"
+                   , "selected"
+                   , "hidden"
+                   , "readOnly"
+                   , "autoplay"
+                   , "required"
+                   , "default"
+                   , "autofocus"
+                   , "multiple"
+                   , "noValidate"
+                   , "autocomplete"
+                   ]
+      toTag = T.toLower
+      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
+  toHtml (Text x) | null x = L.toHtml (" " :: T.Text)
+                  | otherwise = L.toHtml (fromMisoString x :: T.Text)
+  toHtml (TextRaw x) | null x = L.toHtml (" " :: T.Text)
+                     | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
+
+collapseSiblingTextNodes :: [View a] -> [View a]
+collapseSiblingTextNodes [] = []
+collapseSiblingTextNodes (Text x : Text y : xs) =
+  collapseSiblingTextNodes (Text (x <> y) : xs)
+-- TextRaw is the only child, so no need to collapse.
+collapseSiblingTextNodes (x:xs) =
+  x : collapseSiblingTextNodes xs
+
+-- | Helper for turning JSON into Text
+-- Object, Array and Null are kind of non-sensical here
+toHtmlFromJSON :: Value -> T.Text
+toHtmlFromJSON (A.String t) = t
+toHtmlFromJSON (A.Number t) = T.pack (show t)
+toHtmlFromJSON (A.Bool b) = if b then "true" else "false"
+toHtmlFromJSON A.Null = "null"
+toHtmlFromJSON (A.Object o) = T.pack (show o)
+toHtmlFromJSON (A.Array a) = T.pack (show a)
+
+-- | Virtual DOM implemented as a JavaScript `Object`.
+--   Used for diffing, patching and event delegation.
+--   Not meant to be constructed directly, see `View` instead.
+newtype VTree = VTree { getTree :: Object }
+
+runView :: View action -> Sink action -> JSM VTree
+runView (Node ns tag key attrs kids) sink = do
   vnode <- create
   cssObj <- objectToJSVal =<< create
   propsObj <- objectToJSVal =<< create
@@ -132,19 +199,25 @@ node ns tag key attrs kids = View $ \sink -> do
   pure $ VTree vnode
     where
       setAttrs vnode sink =
-        forM_ attrs $ \(Attribute attr) ->
-          attr sink vnode
+        forM_ attrs $ \case
+          P k v -> do
+            val <- toJSVal v
+            o <- getProp "props" vnode
+            set k val (Object o)
+          E attr -> attr sink vnode
+          S m -> do
+            cssObj <- getProp "css" vnode
+            forM_ (M.toList m) $ \(k,v) -> do
+              set k v (Object cssObj)
       setKids sink = do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
         ghcjsPure (JSArray.fromList kidsViews)
-
-instance ToJSVal Options
-instance ToJSVal Key where toJSVal (Key x) = toJSVal x
-
-instance ToJSVal NS where
-  toJSVal SVG  = toJSVal ("svg" :: JSString)
-  toJSVal HTML = toJSVal ("html" :: JSString)
-  toJSVal MATHML = toJSVal ("mathml" :: JSString)
+runView (Text t) _ = do
+  vtree <- create
+  set "type" ("vtext" :: JSString) vtree
+  set "text" t vtree
+  pure $ VTree vtree
+runView (TextRaw t) s = runView (Text t) s
 
 -- | Namespace of DOM elements.
 data NS
@@ -153,21 +226,10 @@ data NS
   | MATHML  -- ^ MATHML Namespace
   deriving (Show, Eq)
 
--- | Create a new @VText@ with the given content.
-text :: MisoString -> View m
-text t = View . const $ do
-  vtree <- create
-  set "type" ("vtext" :: JSString) vtree
-  set "text" t vtree
-  pure $ VTree vtree
-
--- | For parity with server-side rendering. Don't use directly.
-textRaw :: MisoString -> View m
-textRaw = text
-
--- | `IsString` instance
-instance IsString (View a) where
-  fromString = text . fromString
+instance ToJSVal NS where
+  toJSVal SVG  = toJSVal ("svg" :: JSString)
+  toJSVal HTML = toJSVal ("html" :: JSString)
+  toJSVal MATHML = toJSVal ("mathml" :: JSString)
 
 -- | A unique key for a dom node.
 --
@@ -176,6 +238,8 @@ instance IsString (View a) where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
+
+instance ToJSVal Key where toJSVal (Key x) = toJSVal x
 
 -- | Convert custom key types to `Key`.
 --
@@ -206,15 +270,16 @@ instance ToKey Word where toKey = Key . toMisoString
 -- the @update@ function. This is especially useful for event handlers
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
-newtype Attribute action = Attribute (Sink action -> Object -> JSM ())
+data Attribute action
+    = P MisoString Value
+    | E (Sink action -> Object -> JSM ())
+    | S (M.Map MisoString MisoString)
+    deriving Functor
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
-prop :: ToJSVal a => MisoString -> a -> Attribute action
-prop k v = Attribute . const $ \n -> do
-  val <- toJSVal v
-  o <- getProp "props" n
-  set k val (Object o)
+prop :: ToJSON a => MisoString -> a -> Attribute action
+prop k v = P k (toJSON v)
 
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
@@ -244,7 +309,7 @@ onWithOptions
   -> (r -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
    eventObj <- getProp "events" n
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
@@ -266,7 +331,7 @@ onWithOptions options eventName Decoder{..} toAction =
 -- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onCreated" cb n
     registerCallback cb
@@ -279,7 +344,7 @@ onCreated action =
 -- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onDestroyed" cb n
     registerCallback cb
@@ -292,7 +357,7 @@ onDestroyed action =
 -- otherwise the event may not be reliably called!
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  Attribute $ \sink n -> do
+  E $ \sink n -> do
     cb <- callbackToJSVal =<< asyncCallback (liftIO (sink action))
     set "onBeforeDestroyed" cb n
     registerCallback cb
@@ -308,7 +373,4 @@ onBeforeDestroyed action =
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: M.Map MisoString MisoString -> Attribute action
-style_ m = Attribute . const $ \n -> do
-   cssObj <- getProp "css" n
-   forM_ (M.toList m) $ \(k,v) ->
-     set k v (Object cssObj)
+style_ = S

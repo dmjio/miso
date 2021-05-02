@@ -14,7 +14,7 @@ module Miso.Mathml.Element
       nodeMathml
   ) where
 
-import           Miso.Html.Internal
+import           Miso.Html.Types
 import           Miso.String (MisoString)
 import qualified Prelude            as P
 

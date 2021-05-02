@@ -103,7 +103,7 @@ module Miso.Svg.Element
   , view_
   ) where
 
-import           Miso.Html.Internal hiding (style_)
+import           Miso.Html.Types hiding (style_)
 import           Miso.String        (MisoString)
 import qualified Prelude            as P
 

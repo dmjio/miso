@@ -16,7 +16,7 @@ import           GHCJS.Marshal
 import           GHCJS.Types (JSVal)
 import qualified JavaScript.Object.Internal as OI
 import           Miso.FFI
-import           Miso.Html.Internal
+import           Miso.Html.Types
 import           Miso.String
 
 -- | Entry point for event delegation

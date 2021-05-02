@@ -270,7 +270,7 @@ module Miso.Svg.Attribute
   , writingMode_
   ) where
 
-import Miso.Html.Internal ( Attribute )
+import Miso.Html.Types ( Attribute )
 import Miso.Html.Property ( textProp )
 import Miso.String        ( MisoString )
 

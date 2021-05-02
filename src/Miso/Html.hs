@@ -30,11 +30,11 @@
 module Miso.Html
    ( module Miso.Html.Element
    , module Miso.Html.Event
-   , module Miso.Html.Internal
+   , module Miso.Html.Types
    , module Miso.Html.Property
    ) where
 
 import Miso.Html.Element hiding (style_)
 import Miso.Html.Event
-import Miso.Html.Internal hiding (textRaw)
+import Miso.Html.Types hiding (textRaw)
 import Miso.Html.Property hiding (form_)

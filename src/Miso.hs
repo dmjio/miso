@@ -26,10 +26,12 @@ module Miso
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
+  , module Miso.TypeLevel
   , module Miso.Types
   , module Miso.Router
   , module Miso.Util
   , module Miso.FFI
+  , module Miso.WebSocket
   ) where
 
 import           Control.Concurrent
@@ -42,7 +44,7 @@ import           System.Mem.StableName
 import qualified Data.Sequence as S
 import qualified JavaScript.Object.Internal as OI
 
-#ifdef JSADDLE
+#ifndef __GHCJS__
 import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
 #ifdef IOS
 import           Miso.JSBits
@@ -63,8 +65,10 @@ import           Miso.FFI
 import           Miso.Html
 import           Miso.Router
 import           Miso.Subscription
+import           Miso.TypeLevel
 import           Miso.Types
 import           Miso.Util
+import           Miso.WebSocket
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -74,7 +78,7 @@ common
   -> (Sink action -> JSM (IORef VTree))
   -> JSM ()
 common App {..} m getView = do
-#ifdef JSADDLE
+#ifndef __GHCJS__
 #ifdef IOS
   mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
 #else

@@ -14,6 +14,7 @@ module Miso.Event.Types where
 
 import qualified Data.Map as M
 import           GHC.Generics
+import           GHCJS.Marshal (ToJSVal)
 import           Miso.String
 import           Data.Aeson (FromJSON)
 
@@ -39,6 +40,8 @@ data Options = Options {
     preventDefault :: Bool
   , stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
+
+instance ToJSVal Options
 
 -- | Default value for 'Options'.
 --

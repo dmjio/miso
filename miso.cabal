@@ -113,6 +113,9 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Html.Types
+    Miso.Delegate
+    Miso.Diff
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
@@ -145,7 +148,6 @@ library
     Miso.WebSocket
   other-modules:
     Miso.Concurrent
-    Miso.Html.Internal
   ghc-options:
     -Wall
   hs-source-dirs:
@@ -155,9 +157,11 @@ library
     base < 5,
     bytestring,
     containers,
+    file-embed,
     http-api-data,
     http-types,
     jsaddle,
+    lucid,
     network-uri,
     servant,
     servant-lucid,
@@ -168,14 +172,9 @@ library
       build-depends:
         ghcjs-base
     if flag(jsaddle)
-      cpp-options:
-        -DJSADDLE
       if flag (ios)
         cpp-options:
           -DIOS
-      else
-        build-depends:
-          file-embed
     else
       js-sources:
         jsbits/diff.js
@@ -190,12 +189,8 @@ library
       unordered-containers,
       transformers,
       vector
-    other-modules:
-      Miso.Diff
-      Miso.Delegate
   else
     build-depends:
-      lucid,
       vector
     hs-source-dirs:
       backend-src
