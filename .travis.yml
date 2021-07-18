@@ -12,5 +12,5 @@ before_install:
  - nix-build -A pkgs.yarn default.nix && nix-env -i ./result
 
 script:
- - nix-build --arg examples true
+ - nix-build -A miso
  - cd tests && yarn && yarn test

@@ -1,0 +1,122 @@
+{
+    "ghcjs-dom": {
+        "branch": "master",
+        "description": "Make Document Object Model (DOM) apps that run in any browser and natively using WebKitGtk",
+        "homepage": "",
+        "owner": "ghcjs",
+        "repo": "ghcjs-dom",
+        "rev": "749963557d878d866be2d0184079836f367dd0ea",
+        "sha256": "0cv4avpjp6j6z9i1w4405vi13h76baaw29s99rmndbi2phm1agcf",
+        "type": "tarball",
+        "url": "https://github.com/ghcjs/ghcjs-dom/archive/749963557d878d866be2d0184079836f367dd0ea.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "haskellNix": {
+        "branch": "master",
+        "description": "Alternative Haskell Infrastructure for Nixpkgs",
+        "homepage": "https://input-output-hk.github.io/haskell.nix",
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "rev": "ac52977939bb0462b45189274e5b89ab36ee4a17",
+        "sha256": "0zzygwi5pv74msnva3akaa86r2bpzqgkcl7xqsh43cpnqjgxsiff",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/ac52977939bb0462b45189274e5b89ab36ee4a17.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "hs-flatris": {
+        "branch": "master",
+        "description": "An implementation of Flatris using Haskell and Miso",
+        "homepage": "https://flatris.haskell-miso.org",
+        "owner": "ptigwe",
+        "repo": "hs-flatris",
+        "rev": "e428d3825a0cf60e4182f8e7c6de652fbc1f3360",
+        "sha256": "033qj2j4fv5xdis2sxxpiiwka8qsb17q71rkglx4gn5ggcqp0vaw",
+        "type": "tarball",
+        "url": "https://github.com/ptigwe/hs-flatris/archive/e428d3825a0cf60e4182f8e7c6de652fbc1f3360.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "hs2048": {
+        "branch": "master",
+        "description": null,
+        "homepage": null,
+        "owner": "dmjio",
+        "repo": "hs2048",
+        "rev": "07dbed79a012240bfe19b836b6d445bb16a0602a",
+        "sha256": "00rqix5g8s8y6ngxnjskvcyj19g639havn9pgpkdpxp8ni6g7xsm",
+        "type": "tarball",
+        "url": "https://github.com/dmjio/hs2048/archive/07dbed79a012240bfe19b836b6d445bb16a0602a.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "jsaddle": {
+        "branch": "master",
+        "description": "JavaScript interface that works with GHCJS or GHC",
+        "homepage": "",
+        "owner": "ghcjs",
+        "repo": "jsaddle",
+        "rev": "376df8ecf96a809d4088786989c7885f53c00a4e",
+        "sha256": "1vmm7s39a56dm13fb4nmzbfprkwsir22faj9ja1rc670s7hlrq99",
+        "type": "tarball",
+        "url": "https://github.com/ghcjs/jsaddle/archive/376df8ecf96a809d4088786989c7885f53c00a4e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "jsaddle-dom": {
+        "branch": "master",
+        "description": "DOM library that uses jsaddle to support both GHCJS and WebKitGTK",
+        "homepage": null,
+        "owner": "ghcjs",
+        "repo": "jsaddle-dom",
+        "rev": "5f5094277d4b11f3dc3e2df6bb437b75712d268f",
+        "sha256": "07azigc19wjkni49f5mrvr75vd276w0616sb28j0y63q54gp2k3p",
+        "type": "tarball",
+        "url": "https://github.com/ghcjs/jsaddle-dom/archive/5f5094277d4b11f3dc3e2df6bb437b75712d268f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "miso-snake": {
+        "branch": "master",
+        "description": "Snake game, made with haskell-miso",
+        "homepage": null,
+        "owner": "dmjio",
+        "repo": "miso-snake",
+        "rev": "c38947cd9417ab8bf8a8d3652d8bf549e35f14af",
+        "sha256": "17rdc7fisqgf8zq90c3cw9c08b1qac6wirqmwifw2a0xxbigz4qc",
+        "type": "tarball",
+        "url": "https://github.com/dmjio/miso-snake/archive/c38947cd9417ab8bf8a8d3652d8bf549e35f14af.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "niv": {
+        "branch": "master",
+        "description": "Easy dependency management for Nix projects",
+        "homepage": "https://github.com/nmattia/niv",
+        "owner": "nmattia",
+        "repo": "niv",
+        "rev": "e0ca65c81a2d7a4d82a189f1e23a48d59ad42070",
+        "sha256": "1pq9nh1d8nn3xvbdny8fafzw87mj7gsmp6pxkdl65w2g18rmcmzx",
+        "type": "tarball",
+        "url": "https://github.com/nmattia/niv/archive/e0ca65c81a2d7a4d82a189f1e23a48d59ad42070.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "release-20.03",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "eb73405ecceb1dc505b7cbbd234f8f94165e2696",
+        "sha256": "06k21wbyhhvq2f1xczszh3c2934p0m02by3l2ixvd6nkwrqklax7",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/eb73405ecceb1dc505b7cbbd234f8f94165e2696.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "webkit-javascriptcore": {
+        "branch": "master",
+        "description": "webkit javascriptcore library FFI",
+        "homepage": null,
+        "owner": "gtk2hs",
+        "repo": "webkit-javascriptcore",
+        "rev": "099f587d87ffeaaa8d734a9c9472211b834ad050",
+        "sha256": "1mxmwn39hp8icvh42cyyxzi3w9ar7xf7nrk25rzw3zah7alkpqf5",
+        "type": "tarball",
+        "url": "https://github.com/gtk2hs/webkit-javascriptcore/archive/099f587d87ffeaaa8d734a9c9472211b834ad050.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
