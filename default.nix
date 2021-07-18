@@ -1,58 +1,26 @@
-{ haddock ? true
-, tests ? false
-, examples ? false
-, ios ? false
-, overlays ? []
-, system ? builtins.currentSystem
-, crossSystem ? null
-, crossOverlays ? []
-, allowBroken ? false
-, allowUnfree ? true
-}:
 let
-  options =
-    { inherit
-        haddock
-        tests
-        examples
-        ios
-        overlays
-        system
-        crossSystem
-        crossOverlays
-        allowBroken
-        allowUnfree;
+  sources = import ./nix/sources.nix {};
+  haskellNix = import sources.haskellNix {};
+  args = haskellNix.nixpkgsArgs // { config.allowUnfree = true; };
+  pkgs = import haskellNix.sources.nixpkgs-unstable args;
+  miso = pkgs.haskell-nix.project {
+    src = pkgs.haskell-nix.haskellLib.cleanGit {
+      name = "miso";
+      src = ./.;
     };
-  pkgs = import ./nix options;
-  armPkgs =
-    with pkgs; with pkgs.lib;
-     optionalAttrs (options.ios && stdenv.isDarwin)
-       { miso-arm = pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; };
-  release =
-    with pkgs.haskell.packages.ghc865;
-    with pkgs.haskell.lib;
-    sdistTarball (buildStrictly miso);
-  release-examples =
-    with pkgs.haskell.packages.ghc865;
-    with pkgs.haskell.lib;
-    sdistTarball (buildStrictly miso-examples-jsaddle);
-   examplePkgs = with pkgs; with pkgs.lib;
-     let
-       examplePkgs = optionalAttrs options.examples {
-         inherit (haskell.packages.ghc865) miso-examples-jsaddle;
-         inherit (haskell.packages.ghcjs86) miso-examples;
-         inherit s3;
-        };
-     in
-      examplePkgs //
-        optionalAttrs (stdenv.isDarwin && options.examples && options.ios)
-          { inherit (pkgsCross.iphone64.haskell.packages.integer-simple.ghc865) miso-examples-arm;
-          };
+    compiler-nix-name = "ghc8105";
+  };
+  examples = pkgs.haskell-nix.project {
+    src = pkgs.haskell-nix.haskellLib.cleanGit {
+      name = "miso-examples";
+      src = ./examples;
+    };
+    compiler-nix-name = "ghc8105";
+  };
 in
 {
   inherit pkgs;
-  miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
-  inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
-  inherit release release-examples;
-} // examplePkgs // armPkgs
+  miso = miso.projectCross.ghcjs.hsPkgs.miso.components.library;
+}
+
+

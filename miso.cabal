@@ -10,7 +10,7 @@ copyright:           Copyright (c) 2017-2020 David M. Johnson
 bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
 extra-source-files:  README.md
-cabal-version:       >=1.22
+cabal-version:       1.22
 synopsis:            A tasty Haskell front-end framework
 description:
             Miso is a small, production-ready, "isomorphic" Haskell front-end framework featuring a virtual-dom, recursive diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHCJS FFI and therefore has minimal dependencies.
@@ -20,7 +20,7 @@ extra-source-files:
 
 flag tests
   default:
-    False
+    True
   description:
     Builds Miso's tests
 
@@ -181,8 +181,6 @@ library
         jsbits/delegate.js
         jsbits/isomorphic.js
         jsbits/util.js
-    hs-source-dirs:
-      frontend-src
     build-depends:
       containers,
       scientific,
@@ -192,8 +190,6 @@ library
   else
     build-depends:
       vector
-    hs-source-dirs:
-      backend-src
   if impl(ghcjs)
     hs-source-dirs:
       ghcjs-src
