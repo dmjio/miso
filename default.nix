@@ -54,5 +54,5 @@ in
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
   miso-ghc = pkgs.haskell.packages.ghc865.miso;
   inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
-  inherit release release-examples;
+  # inherit release release-examples;
 } // examplePkgs // armPkgs
