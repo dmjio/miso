@@ -62,4 +62,5 @@ viewModel x = div_ [] [
    button_ [ onClick AddOne ] [ text "+" ]
  , text (ms x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
+ , rawHtml "<div><p>hey expandable!</div></p>"
  ]

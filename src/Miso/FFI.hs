@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
@@ -54,12 +55,15 @@ module Miso.FFI
 import           Control.Concurrent
 import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
-import           Data.JSString (JSString)
 import qualified Data.JSString as JSS
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
+#ifdef __GHCJS__
+import           Language.Javascript.JSaddle hiding (obj, val)
+#else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
+#endif
 import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.

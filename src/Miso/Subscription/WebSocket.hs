@@ -39,7 +39,7 @@ import           Data.IORef
 import           Data.Maybe
 import           GHCJS.Marshal
 import           GHCJS.Foreign
-import           GHCJS.Types
+import           GHCJS.Types ()
 import           Prelude hiding (map)
 import           System.IO.Unsafe
 
