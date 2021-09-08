@@ -29,5 +29,5 @@ jobs:
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - run: echo ${{matrix.os}}
      - run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
-     - run: nix-build --arg examples true
+     - run: nix-build
      - run: cd tests && yarn && yarn test

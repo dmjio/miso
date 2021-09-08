@@ -19,6 +19,7 @@ module Miso.Html.Types (
     , node
     , text
     , textRaw
+    , rawHtml
     -- * Core types and interface
     , Attribute (..)
     -- * Key patch internals
@@ -39,30 +40,32 @@ module Miso.Html.Types (
     , onBeforeDestroyed
     ) where
 
-import           Control.Monad (forM_, (<=<))
-import           Control.Monad.IO.Class (liftIO)
-import qualified Data.Aeson as A
-import           Data.Aeson (ToJSON, Value, toJSON)
-import           Data.Aeson.Types (parseEither)
-import           Data.JSString (JSString)
-import qualified Data.Map as M
-import           Data.Proxy (Proxy(Proxy))
-import           Data.String (IsString, fromString)
-import qualified Data.Text as T
-import           GHCJS.Marshal (ToJSVal, fromJSVal, toJSVal)
-import           GHCJS.Types (jsval)
-import qualified JavaScript.Array as JSArray
-import           JavaScript.Object (create, getProp)
+import           Control.Monad              (forM_, (<=<), guard)
+import           Control.Monad.IO.Class     (liftIO)
+import           Data.Aeson                 (ToJSON, Value, toJSON)
+import qualified Data.Aeson                 as A
+import           Data.Aeson.Types           (parseEither)
+import           Data.JSString              (JSString)
+import qualified Data.Map                   as M
+import           Data.Proxy                 (Proxy(Proxy))
+import           Data.String                (IsString, fromString)
+import qualified Data.Text                  as T
+import           GHCJS.Marshal              (ToJSVal, fromJSVal, toJSVal)
+import           GHCJS.Types                (jsval)
+import qualified JavaScript.Array           as JSArray
+import           JavaScript.Object          (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
-import qualified Lucid       as L
-import qualified Lucid.Base  as L
-import           Prelude     hiding (null)
-import           Servant.API (Get, HasLink, MkLink, toLink)
+import qualified Lucid                      as L
+import qualified Lucid.Base                 as L
+import           Prelude                    hiding (null)
+import           Servant.API                (Get, HasLink, MkLink, toLink)
+import           Text.HTML.TagSoup.Tree     (parseTree, TagTree(..))
+import           Text.HTML.TagSoup          (Tag(..))
 
 import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
-import           Miso.String
+import           Miso.String hiding (reverse)
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 data View action
@@ -83,6 +86,18 @@ instance HasLink (View a) where
 
 -- | Convenience class for using View
 class ToView v where toView :: v -> View action
+
+-- | Create a new @Miso.Html.Types.TextRaw@.
+--
+-- @expandable@
+-- a 'rawHtml' node takes raw HTML and attempts to convert it to a 'VTree'
+-- at runtime. This is a way to dynamically populate the virtual DOM from
+-- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
+rawHtml
+  :: MisoString
+  -> View action
+rawHtml = TextRaw
+
 
 -- | Create a new @Miso.Html.Types.Node@.
 --
@@ -112,7 +127,7 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (Node vNs vType vKey attrs vChildren) = L.with ele lattrs
+  toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where
       noEnd = ["img", "input", "br", "hr", "meta"]
       tag = toTag $ fromMisoString vType
@@ -153,8 +168,9 @@ instance L.ToHtml (View action) where
       kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
   toHtml (Text x) | null x = L.toHtml (" " :: T.Text)
                   | otherwise = L.toHtml (fromMisoString x :: T.Text)
-  toHtml (TextRaw x) | null x = L.toHtml (" " :: T.Text)
-                     | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
+  toHtml (TextRaw x)
+    | null x = L.toHtml (" " :: T.Text)
+    | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
 
 collapseSiblingTextNodes :: [View a] -> [View a]
 collapseSiblingTextNodes [] = []
@@ -192,13 +208,13 @@ runView (Node ns tag key attrs kids) sink = do
   set "ns" ns vnode
   set "tag" tag vnode
   set "key" key vnode
-  setAttrs vnode sink
+  setAttrs vnode
   flip (set "children") vnode
     =<< ghcjsPure . jsval
-    =<< setKids sink
+    =<< setKids
   pure $ VTree vnode
     where
-      setAttrs vnode sink =
+      setAttrs vnode =
         forM_ attrs $ \case
           P k v -> do
             val <- toJSVal v
@@ -209,7 +225,7 @@ runView (Node ns tag key attrs kids) sink = do
             cssObj <- getProp "css" vnode
             forM_ (M.toList m) $ \(k,v) -> do
               set k v (Object cssObj)
-      setKids sink = do
+      setKids = do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView sink) kids
         ghcjsPure (JSArray.fromList kidsViews)
 runView (Text t) _ = do
@@ -217,7 +233,36 @@ runView (Text t) _ = do
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
-runView (TextRaw t) s = runView (Text t) s
+runView (TextRaw str) sink =
+  case parseView str of
+    [] ->
+      runView (Text (" " :: MisoString)) sink
+    [parent] ->
+      runView parent sink
+    kids -> do
+      runView (Node HTML "div" Nothing mempty kids) sink
+
+-- Filters tree to only branches and leaves w/ Text tags.
+-- converts to View a. Note: if HTML is malformed,
+-- (e.g. closing tags and opening tags are present) they will
+-- be removed.
+parseView :: MisoString -> [View a]
+parseView html = reverse (go (parseTree html) [])
+  where
+    go [] xs = xs
+    go (TagLeaf (TagText s) : next) views =
+      go next (Text s : views)
+    go (TagBranch name attrs kids : next) views =
+      let
+        attrs' = [ P key $ A.String (fromMisoString val)
+                 | (key, val) <- attrs
+                 ]
+        newNode =
+          Node HTML name Nothing attrs' (reverse (go kids []))
+      in
+        go next (newNode:views)
+    go (TagLeaf _ : next) views =
+      go next views
 
 -- | Namespace of DOM elements.
 data NS
