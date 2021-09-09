@@ -3,6 +3,7 @@ let
   region = "us-east-2";
   awsBox = { pkgs, config, lib, resources, ... }: {
    imports = [ ./config.nix ];
+   boot.loader.grub.device = pkgs.lib.mkForce "/dev/nvme0n1";
    networking.firewall = {
      allowedTCPPorts = [ 80 22 443 ];
      enable = true;
