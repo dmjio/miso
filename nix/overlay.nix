@@ -37,7 +37,9 @@ options: self: super: {
       };
     };
   };
-  more-examples = { inherit (self.haskell.packages.ghcjs) flatris the2048 snake; };
+  more-examples = with super.haskell.lib; {
+    inherit (self.haskell.packages.ghcjs) flatris the2048 snake miso-plane;
+  };
   uploadCoverage = self.writeScriptBin "upload-coverage.sh" ''
     #!/usr/bin/env bash
     export PATH=$PATH:${self.nodePackages.yarn}/bin
