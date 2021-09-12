@@ -15,7 +15,19 @@ self: super:
   ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${source.ghcjs-dom}/ghcjs-dom-jsffi" {};
   ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${source.ghcjs-dom}/ghcjs-dom" {};
   flatris = self.callCabal2nix "hs-flatris" source.flatris {};
-  the2048 = self.callCabal2nix "2048" source.the2048 {};
+  miso-plane =
+    let
+      miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
+    in
+      pkgs.runCommand "miso-plane" {} ''
+         mkdir $out
+         cp -rv ${source.miso-plane}/public/images $out
+         cp ${miso-plane}/bin/client.jsexe/* $out
+         rm $out/index.html
+         cp -v ${source.miso-plane}/public/index.html $out
+      '';
+
+  the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
   mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
   doctest = null;
@@ -23,8 +35,10 @@ self: super:
     doHaddock = options.haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
+      mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
+      cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
       ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
          --jscomp_off=checkVars \
          --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
