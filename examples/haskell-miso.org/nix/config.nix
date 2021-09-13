@@ -38,6 +38,15 @@
             };
           };
         };
+        "haddocks.haskell-miso.org" = {
+           forceSSL = true;
+           enableACME = true;
+           locations = {
+           "/" = {
+             root = "${pkgs.misoPkgs.miso-ghcjs.doc}/share/doc/miso-1.8.0.0/html";
+            };
+          };
+        };
         "flatris.haskell-miso.org" = {
            forceSSL = true;
            enableACME = true;
