@@ -17,13 +17,13 @@
   <a href="https://miso-haskell.cachix.org">
 	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
-  <a href="https://travis-ci.org/dmjio/miso">
-    <img src="https://img.shields.io/travis/dmjio/miso.svg?style=flat-square" alt="Travis CI">
+  <a href="https://github.com/dmjio/miso/actions">
+    <img src="https://github.com/dmjio/miso/workflows/test%20matrix/badge.svg" alt="GitHub Actions">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
 	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
-  <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
+  <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.libera.chat&amp;port=6697&amp;ssl=1">
 	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
@@ -180,49 +180,49 @@ For constructing client and server applications, we recommend using one `cabal` 
 ## Examples
 
 ### TodoMVC
-  - [Link](http://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
+  - [Link](https://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
 
 ### Flatris
-  - [Link](http://flatris.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs-flatris/)
+  - [Link](https://flatris.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs-flatris/)
 
 ### 2048
-  - [Link](http://2048.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs2048/)
+  - [Link](https://2048.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs2048/)
 
 ### Snake
-  - [Link](http://snake.haskell-miso.org/) / [Source](https://github.com/lbonn/miso-snake)
+  - [Link](https://snake.haskell-miso.org/) / [Source](https://github.com/lbonn/miso-snake)
 
 ### Mario
-  - [Link](http://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
+  - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
 
 ### Miso Plane (Flappy Birds)
-  - [Link](http://miso-plane.lermex.net/) / [Source](https://github.com/Lermex/miso-plane)
+  - [Link](http://miso-plane.haskell-miso.org) / [Source](https://github.com/Lermex/miso-plane)
 
 ### Websocket
-  - [Link](http://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
+  - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
 
 ### SSE
   - [Link](http://sse.haskell-miso.org/) / [Client](https://github.com/dmjio/miso/blob/master/examples/sse/client/Main.hs) / [Server](https://github.com/dmjio/miso/blob/master/examples/sse/server/Main.hs)
 
 ### XHR
-  - [Link](http://xhr.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/xhr/Main.hs)
+  - [Link](https://xhr.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/xhr/Main.hs)
 
 ### Router
-  - [Link](http://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
+  - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
 
 ### SVG
-  - [Link](http://svg.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)
+  - [Link](https://svg.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)
 
 ### Canvas 2D
-  - [Link](http://canvas.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
+  - [Link](https://canvas.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
 
 ### ThreeJS
-  - [Link](http://threejs.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs)
+  - [Link](https://threejs.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs)
 
 ### Simple
-  - [Link](http://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
+  - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/exe/Main.hs)
 
 ### File Reader
-  - [Link](http://file-reader.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs)
+  - [Link](https://file-reader.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs)
 
 ### WebVR
   - [Link](http://fizruk.github.io/fpconf-2017-talk/miso-aframe-demo/dist/demo.jsexe/index.html) / [Source](https://github.com/fizruk/miso-aframe)

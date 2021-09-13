@@ -1,5 +1,5 @@
 name:                miso
-version:             1.7.1.0
+version:             1.8.0.0
 category:            Web, Miso, Data Structures
 license:             BSD3
 license-file:        LICENSE
@@ -182,8 +182,6 @@ library
         jsbits/delegate.js
         jsbits/isomorphic.js
         jsbits/util.js
-    hs-source-dirs:
-      frontend-src
     build-depends:
       containers,
       scientific,
@@ -193,8 +191,6 @@ library
   else
     build-depends:
       vector
-    hs-source-dirs:
-      backend-src
   if impl(ghcjs)
     hs-source-dirs:
       ghcjs-src

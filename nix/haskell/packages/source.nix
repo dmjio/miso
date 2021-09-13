@@ -52,6 +52,12 @@ in
     rev = "5b386e35db143205b4bd8d45cdf98423ed51b713";
     sha256 = "0wll5fizkdmj2hgd71v9klnnr6wxvvf36imchh2chm1slqm78zca";
   };
+  miso-plane = fetchFromGitHub {
+    repo = "miso-plane";
+    owner = "dmjio";
+    rev = "9fc9a913a5cf702e65d37068c95d955b001fe3ec";
+    sha256 = "1k112f2gnk3q3j6c3zkql9wdgkv2mbbyb2jrn5192w5vy09vqh40";
+  };
   the2048 = fetchFromGitHub {
     repo = "hs2048";
     owner = "dmjio";
