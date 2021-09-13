@@ -4,6 +4,7 @@
   nixpkgs.config.packageOverrides = pkgs: {
     haskell-miso = import ./../default.nix {};
     misoPkgs = import ../../../default.nix { examples = true; };
+    coverage = import ../../../tests {};
   };
   services = {
     haskell-miso.enable = true;
@@ -25,6 +26,15 @@
            locations = {
            "/" = {
              root = "${pkgs.misoPkgs.miso-examples}/bin/todo-mvc.jsexe";
+            };
+          };
+        };
+        "coverage.haskell-miso.org" = {
+           forceSSL = true;
+           enableACME = true;
+           locations = {
+           "/" = {
+             root = "${pkgs.coverage}/lcov-report";
             };
           };
         };

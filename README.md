@@ -17,13 +17,13 @@
   <a href="https://miso-haskell.cachix.org">
 	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
-  <a href="https://travis-ci.org/dmjio/miso">
-    <img src="https://img.shields.io/travis/dmjio/miso.svg?style=flat-square" alt="Travis CI">
+  <a href="https://github.com/dmjio/miso/actions">
+    <img src="https://github.com/dmjio/miso/workflows/test%20matrix/badge.svg" alt="GitHub Actions">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
 	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
-  <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1">
+  <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.libera.chat&amp;port=6697&amp;ssl=1">
 	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
