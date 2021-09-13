@@ -77,7 +77,7 @@ community = template v
                ]
             [ text "Slack" ]
           , text " / "
-          , a_ [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.freenode.net&port=6697&ssl=1"
+          , a_ [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
                , target_  "_blank"
                ] [ text "#haskell-miso" ]
          ]
