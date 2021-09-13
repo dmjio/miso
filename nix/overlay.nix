@@ -37,6 +37,27 @@ options: self: super: {
       };
     };
   };
+  deploy = rev: super.writeScript "deploy" ''
+    export PATH=$PATH:${self.nixops}/bin
+    export PATH=$PATH:${self.jq}/bin
+    rm -rf ~/.nixops
+    mkdir -p ~/.aws
+    echo "[dev]" >> ~/.aws/credentials
+    echo "aws_access_key_id = $AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+    echo "aws_secret_access_key = $AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+    mkdir -p ~/.ssh
+    echo "Host *" > ~/.ssh/config
+    echo "  StrictHostKeyChecking=no" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
+    chown $USER ~/.ssh/config
+    echo $DEPLOY | jq > deploy.json
+    nixops import < deploy.json
+    rm deploy.json
+    nixops set-args --argstr email $EMAIL -d haskell-miso
+    nixops modify examples/haskell-miso.org/nix/aws.nix -d haskell-miso \
+      -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
+    nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
+  '';
   more-examples = with super.haskell.lib; {
     inherit (self.haskell.packages.ghcjs) flatris the2048 snake miso-plane;
   };
