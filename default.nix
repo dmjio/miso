@@ -1,3 +1,4 @@
+with (builtins.fromJSON (builtins.readFile ./nix/nixpkgs.json));
 { haddock ? true
 , tests ? false
 , examples ? false
@@ -50,6 +51,7 @@ let
           };
 in
 {
+  deploy = pkgs.deploy rev;
   inherit pkgs;
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
   miso-ghc = pkgs.haskell.packages.ghc865.miso;
