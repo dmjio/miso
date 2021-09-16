@@ -39,7 +39,7 @@ jobs:
      - name: Diffing tests
        run: cd tests && yarn && yarn test
      - name: Deploy
-       if: ${{ github.ref == 'refs/heads/deploy' && matrix.TARGET == 'x86_64-unknown-linux-musl' }}
+       if: ${{ github.ref == 'refs/heads/master' && matrix.TARGET == 'x86_64-unknown-linux-musl' }}
        run: nix-build -A deploy && ./result
        env:
          AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
