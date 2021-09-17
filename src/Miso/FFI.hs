@@ -240,7 +240,12 @@ jsStringToDouble = read . unpack
 -- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
 delegateEvent mountPoint events getVTree = do
+-- using asyncfunction on GHC causes an XHR request loop with JSaddle
+#ifdef __GHCJS__
+  cb' <- asyncFunction $ \_ _ [continuation] -> do
+#else
   cb' <- function $ \_ _ [continuation] -> do
+#endif
     res <- getVTree
     _ <- call continuation global res
     pure ()
