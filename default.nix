@@ -42,7 +42,6 @@ let
        examplePkgs = optionalAttrs options.examples {
          inherit (haskell.packages.ghc865) miso-examples-jsaddle;
          inherit (haskell.packages.ghcjs86) miso-examples;
-         inherit s3;
         };
      in
       examplePkgs //
