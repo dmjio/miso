@@ -49,4 +49,7 @@ in
     inherit region accessKeyId;
   };
   inherit awsBox;
+
+  network.enableRollback = true;
+  network.description = "Miso network";
 }
