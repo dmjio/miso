@@ -10,3 +10,4 @@ dist
 *.o
 *.hi
 *.jsexe
+TAGS
