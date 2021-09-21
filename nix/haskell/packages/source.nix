@@ -71,4 +71,16 @@ in
     rev = "c38947cd9417ab8bf8a8d3652d8bf549e35f14af";
     sha256 = "17rdc7fisqgf8zq90c3cw9c08b1qac6wirqmwifw2a0xxbigz4qc";
   };
+  todomvc-common = fetchFromGitHub {
+    owner = "tastejs";
+    repo = "todomvc-common";
+    rev = "3b6156d98fdc7070fc284038ac10e4ec4a5d1d1f";
+    sha256 = "1hvjvvrvbcfqgs77vg923w409cpkjisdyzxsd7b9zibrcqxz15l7";
+  };
+  todomvc-app-css = fetchFromGitHub {
+    owner = "tastejs";
+    repo = "todomvc-app-css";
+    rev = "d99f1965654568c0ced7bcd54c0d5083e08fce9c";
+    sha256 = "1fz4wac1if0lc54gvga640dybwlchi1ybzxw8yjz5836674mdkid";
+  };
 }
