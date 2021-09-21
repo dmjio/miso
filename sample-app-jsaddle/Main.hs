@@ -31,9 +31,7 @@ data Action
 
 #ifndef __GHCJS__
 runApp :: JSM () -> IO ()
-runApp f =
-  Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
-    JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) JSaddle.jsaddleApp
+runApp f = JSaddle.debugOr 8080 (f >> syncPoint) JSaddle.jsaddleApp
 #else
 runApp :: IO () -> IO ()
 runApp app = app

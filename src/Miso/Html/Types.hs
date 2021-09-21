@@ -40,7 +40,7 @@ module Miso.Html.Types (
     , onBeforeDestroyed
     ) where
 
-import           Control.Monad              (forM_, (<=<), guard)
+import           Control.Monad              (forM_, (<=<))
 import           Control.Monad.IO.Class     (liftIO)
 import           Data.Aeson                 (ToJSON, Value, toJSON)
 import qualified Data.Aeson                 as A
