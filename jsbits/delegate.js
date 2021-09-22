@@ -115,15 +115,26 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
 
   /* If obj is a non-list-like object */
   newObj = {};
-  var isInput = obj['localName'] === 'input';
-  for (var i in obj){
+  for (var i in getAllPropertyNames(obj)){
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
     /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (isInput && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
+    if ((obj['localName'] === 'input') && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
       continue;
     if (typeof obj[i] == 'string' || typeof obj[i] == 'number' || typeof obj[i] == 'boolean')
       newObj[i] = obj[i];
   }
   return newObj;
+};
+
+/* get static and dynamic properties */
+function getAllPropertyNames(obj) {
+    var props = {}, i = 0;
+    do {
+	var names = Object.getOwnPropertyNames(obj);
+	for (i = 0; i < names.length; i++) {
+	  props [names[i]] = null;
+	}
+    } while (obj = Object.getPrototypeOf(obj));
+  return props;
 };

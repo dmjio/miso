@@ -168,7 +168,6 @@ viewModel :: Model -> View Msg
 viewModel m@Model{..} =
  div_
     [ class_ "todomvc-wrapper"
-    , style_  $ M.singleton "visibility" "hidden"
     ]
     [ section_
         [ class_ "todoapp" ]
@@ -177,10 +176,6 @@ viewModel m@Model{..} =
         , viewControls m visibility entries
         ]
     , infoFooter
-    , link_
-        [ rel_ "stylesheet"
-        , href_ "https://d33wubrfki0l68.cloudfront.net/css/d0175a264698385259b5f1638f2a39134ee445a0/style.css"
-        ]
     ]
 
 viewEntries :: MisoString -> [ Entry ] -> View Msg
