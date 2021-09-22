@@ -30,14 +30,6 @@ self: super:
    });
   aeson = dontCheck super.aeson;
   QuickCheck = disableCabalFlag (super.QuickCheck) "templatehaskell";
-  miso-examples-arm = self.callCabal2nixWithOptions "miso-examples" source.examples "-fjsaddle -fios" {};
-  miso = pkgs.lib.overrideDerivation
-    (self.callCabal2nixWithOptions "miso" source.miso "-fjsaddle -fios" {})
-    (drv: {
-      preConfigure =
-        let
-          ghc = pkgs.haskellPackages.ghcWithPackages (p: with p; [hjsmin]);
-        in
-          "${ghc}/bin/runghc minify-inline/Main.hs && mv JSBits.hs frontend-src/Miso/";
-    });
+  miso-examples-arm = self.callCabal2nix "miso-examples" source.examples {};
+  miso = self.callCabal2nix "miso" source.miso  {};
 }

@@ -13,14 +13,9 @@ import           Data.Monoid
 import           Miso
 import           Miso.String
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
 import qualified Language.Javascript.JSaddle.Warp as JSaddle
-#ifdef ghcjs_HOST_OS
+
+#ifdef __GHCJS__
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
 
@@ -31,14 +26,12 @@ import qualified Network.Wai.Handler.Warp as Warp
 import           Network.WebSockets
 
 runApp :: JSM () -> IO ()
-runApp f =
-    Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
-        JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) app
-    where app req sendResp =
-            case Wai.pathInfo req of
-              ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
-              _ -> JSaddle.jsaddleApp req sendResp
-#endif
+runApp f = JSaddle.debugOr defaultConnectionOptions app (f >> syncPoint)
+  where
+    app req sendResp =
+      case Wai.pathInfo req of
+        ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
+        _ -> JSaddle.jsaddleApp req sendResp
 #endif
 
 data Action

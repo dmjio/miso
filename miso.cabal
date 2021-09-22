@@ -24,24 +24,10 @@ flag tests
   description:
     Builds Miso's tests
 
-flag jsaddle
-  manual: True
-  default:
-    False
-  description:
-    Compile with JSaddle
-
-flag ios
-  manual: True
-  default:
-    False
-  description:
-    Cross compile to iOS
-
 executable simple
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
+  if !impl(ghcjs)
     buildable: False
   else
     ghcjs-options:
@@ -54,20 +40,11 @@ executable simple
       aeson,
       base < 5,
       containers,
+      jsaddle-warp,
       miso,
       transformers
     default-language:
       Haskell2010
-    if flag(ios)
-      cpp-options:
-        -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    else
-      build-depends:
-        jsaddle-warp
 
 executable tests
   main-is:
@@ -128,7 +105,6 @@ library
     Miso.FFI.SSE
     Miso.FFI.Storage
     Miso.FFI.WebSocket
-    Miso.JSBits
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
@@ -168,33 +144,24 @@ library
     tagsoup,
     text,
     transformers
-  if impl(ghcjs) || flag (jsaddle)
-    if impl(ghcjs)
-      build-depends:
-        ghcjs-base
-    if flag(jsaddle)
-      if flag (ios)
-        cpp-options:
-          -DIOS
-    else
-      js-sources:
-        jsbits/diff.js
-        jsbits/delegate.js
-        jsbits/isomorphic.js
-        jsbits/util.js
+  if impl(ghcjs)
+    js-sources:
+      jsbits/diff.js
+      jsbits/delegate.js
+      jsbits/isomorphic.js
+      jsbits/util.js
     build-depends:
       containers,
+      ghcjs-base,
       scientific,
       unordered-containers,
       transformers,
       vector
-  else
-    build-depends:
-      vector
-  if impl(ghcjs)
     hs-source-dirs:
       ghcjs-src
   else
+    build-depends:
+      vector
     hs-source-dirs:
       ghc-src
 

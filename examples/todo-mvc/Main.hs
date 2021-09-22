@@ -10,7 +10,6 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExtendedDefaultRules       #-}
-{-# LANGUAGE CPP                        #-}
 module Main where
 
 import           Data.Aeson hiding (Object)
@@ -24,17 +23,10 @@ import qualified Miso.String as S
 
 import           Control.Monad.IO.Class
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
 import Language.Javascript.JSaddle.Warp as JSaddle
 
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
-#endif
 
 default (MisoString)
 

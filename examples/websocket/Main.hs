@@ -21,17 +21,10 @@ import           Miso
 import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
 import Language.Javascript.JSaddle.Warp as JSaddle
 
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
-#endif
 
 main :: IO ()
 main = runApp $ startApp App { initialAction = Id, ..}

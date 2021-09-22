@@ -16,298 +16,203 @@ license-file:        LICENSE
 extra-source-files:
   mario/imgs/mario.png
 
-flag jsaddle
-  manual: True
-  default:
-    False
-  description:
-    Compile with JSaddle
-
-flag ios
-  manual: True
-  default:
-    False
-  description:
-    Cross compile to iOS
-
 executable todo-mvc
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
-    buildable: False
-  else
-    if flag(jsaddle)
-      build-depends:
-        jsaddle
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      todo-mvc
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      miso,
-      transformers
-    default-language:
-      Haskell2010
-    if flag(ios)
-      cpp-options:
-        -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    else
-      build-depends:
-        jsaddle-warp
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    jsaddle-warp,
+    miso,
+    transformers
+  hs-source-dirs:
+    todo-mvc
+  default-language:
+    Haskell2010
 
 executable threejs
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      three
-    build-depends:
-      aeson,
-      base < 5,
-      ghcjs-base,
-      containers,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    three
+  build-depends:
+    aeson,
+    base < 5,
+    ghcjs-base,
+    containers,
+    miso
+  default-language:
+    Haskell2010
 
 executable file-reader
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      file-reader
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      ghcjs-base,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    file-reader
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    ghcjs-base,
+    miso
+  default-language:
+    Haskell2010
 
 executable xhr
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      xhr
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      ghcjs-base,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    xhr
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    ghcjs-base,
+    miso
+  default-language:
+    Haskell2010
 
 executable canvas2d
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      canvas2d
-    build-depends:
-      aeson,
-      base < 5,
-      ghcjs-base,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    canvas2d
+  build-depends:
+    aeson,
+    base < 5,
+    ghcjs-base,
+    miso
+  default-language:
+    Haskell2010
 
 executable router
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
-    buildable: False
-  else
-    if flag(jsaddle)
-      build-depends:
-        jsaddle
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      router
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      miso,
-      servant,
-      transformers
-    default-language:
-      Haskell2010
-    if flag(ios)
-      cpp-options:
-        -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    else
-      build-depends:
-        jsaddle-warp
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    router
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    jsaddle-warp,
+    miso,
+    servant,
+    transformers
+  default-language:
+    Haskell2010
 
 executable websocket
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
-    buildable: False
-  else
-    if flag(jsaddle)
-      build-depends:
-        jsaddle
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      websocket
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      miso,
-      transformers
-    default-language:
-      Haskell2010
-    if flag(ios)
-      cpp-options:
-       -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    else
-      build-depends:
-        jsaddle-warp
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    websocket
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    jsaddle-warp,
+    miso,
+    transformers
+  default-language:
+    Haskell2010
 
 executable mario
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
-    buildable: False
-  else
-    if flag(jsaddle)
-      build-depends:
-        jsaddle
+  if impl(ghcjs)
     ghcjs-options:
       -dedupe
     cpp-options:
       -DGHCJS_BROWSER
-    hs-source-dirs:
-      mario
+  else
     build-depends:
-      base < 5,
-      containers,
-      miso
-    if flag(jsaddle) && !impl(ghcjs) && !flag(ios)
-      build-depends:
-        wai,
-        wai-app-static,
-        warp,
-        websockets
-    if flag(ios) && !impl(ghcjs)
-      cpp-options:
-       -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    if !flag(ios)
-      build-depends:
-        jsaddle-warp
-    default-language:
-      Haskell2010
+      wai,
+      wai-app-static,
+      warp
+  hs-source-dirs:
+    mario
+  build-depends:
+    base < 5,
+    containers,
+    jsaddle-warp,
+    miso
+  default-language:
+    Haskell2010
 
 executable svg
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      svg
-    other-modules:
-      Touch
-    build-depends:
-      base < 5,
-      containers,
-      aeson,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    svg
+  other-modules:
+    Touch
+  build-depends:
+    base < 5,
+    containers,
+    aeson,
+    miso
+  default-language:
+    Haskell2010
 
 executable compose-update
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      compose-update
-    build-depends:
-      base < 5,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    compose-update
+  build-depends:
+    base < 5,
+    miso
+  default-language:
+    Haskell2010
 
 executable mathml
   main-is:
     Main.hs
-  if !impl(ghcjs)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      mathml
-    build-depends:
-      base < 5,
-      miso
-    default-language:
-      Haskell2010
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    mathml
+  build-depends:
+    base < 5,
+    miso
+  default-language:
+    Haskell2010
