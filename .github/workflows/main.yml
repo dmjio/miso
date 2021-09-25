@@ -1,6 +1,8 @@
 name: test matrix
 on:
   push:
+    branches:
+      - master
   pull_request:
 jobs:
   build:
@@ -9,12 +11,8 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [ubuntu-latest]
         include:
-        - os: macos-latest
-          TARGET: x86_64-apple-darwin
-          COMPILER: clang
-          LINKER: clang
         - os: ubuntu-latest
           TARGET: x86_64-unknown-linux-musl
           COMPILER: gcc
