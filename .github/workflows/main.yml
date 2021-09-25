@@ -40,6 +40,8 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+     - name: Miso build
+       run: nix-build
      - name: Deploy
        run: nix-build -A deploy && ./result
        env:
