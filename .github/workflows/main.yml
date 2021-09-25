@@ -4,21 +4,15 @@ on:
     branches:
       - master
   pull_request:
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    env:
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        include:
-        - os: ubuntu-latest
-          TARGET: x86_64-unknown-linux-musl
-          COMPILER: gcc
-          LINKER: gcc
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/master'
     steps:
-     - run: echo ${{matrix.TARGET}}
      - uses: actions/checkout@v2.3.1
      - uses: cachix/install-nix-action@v10
      - name: Cancel Previous Runs
@@ -29,15 +23,24 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-     - run: echo ${{matrix.os}}
-     - name: Dep. install
+     - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
      - name: Miso build
        run: nix-build
      - name: Diffing tests
        run: cd tests && yarn && yarn test
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+     - uses: actions/checkout@v2.3.1
+     - uses: cachix/install-nix-action@v10
+     - uses: cachix/cachix-action@v6
+       with:
+         name: miso-haskell
+         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Deploy
-       if: ${{ github.ref == 'refs/heads/master' && matrix.TARGET == 'x86_64-unknown-linux-musl' }}
        run: nix-build -A deploy && ./result
        env:
          AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
