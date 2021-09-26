@@ -1,4 +1,4 @@
-{ options, lib, config, pkgs, modulesPath }:
+{ options, lib, config, pkgs, ... }:
 let
   cfg = config.services.haskell-miso;
 in {

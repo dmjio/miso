@@ -10,19 +10,14 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted,linux]
     if: github.ref != 'refs/heads/master'
     steps:
      - uses: actions/checkout@v2.3.1
-     - uses: cachix/install-nix-action@v10
      - name: Cancel Previous Runs
        uses: styfle/cancel-workflow-action@0.9.1
        with:
          access_token: ${{ github.token }}
-     - uses: cachix/cachix-action@v6
-       with:
-         name: miso-haskell
-         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
      - name: Miso build
@@ -31,15 +26,12 @@ jobs:
        run: cd tests && yarn && yarn test
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted,linux]
     if: github.ref == 'refs/heads/master'
     steps:
      - uses: actions/checkout@v2.3.1
-     - uses: cachix/install-nix-action@v10
-     - uses: cachix/cachix-action@v6
-       with:
-         name: miso-haskell
-         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+     - name: Dependency install
+       run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
      - name: Miso build
        run: nix-build
      - name: Deploy
