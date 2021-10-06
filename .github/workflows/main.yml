@@ -26,7 +26,7 @@ jobs:
      - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
      - name: Miso build
-       run: nix-build
+       run: nix-build -j1
      - name: Diffing tests
        run: cd tests && yarn && yarn test
 
@@ -41,9 +41,9 @@ jobs:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Miso build
-       run: nix-build
+       run: nix-build -j1
      - name: Deploy
-       run: nix-build -A deploy && ./result
+       run: nix-build -A deploy -j1 && ./result
        env:
          AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
          AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
