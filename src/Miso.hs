@@ -26,7 +26,9 @@ module Miso
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
+  #ifndef __GHCJS__
   , module Miso.TypeLevel
+  #endif
   , module Miso.Types
   , module Miso.Router
   , module Miso.Util
@@ -65,7 +67,9 @@ import           Miso.FFI
 import           Miso.Html
 import           Miso.Router
 import           Miso.Subscription
+#ifndef __GHCJS__
 import           Miso.TypeLevel
+#endif
 import           Miso.Types
 import           Miso.Util
 import           Miso.WebSocket
