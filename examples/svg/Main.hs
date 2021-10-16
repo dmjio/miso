@@ -34,8 +34,6 @@ emptyModel = Model (0,0)
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleTouch (TouchEvent touch)) model =
   model <# do
-    putStrLn "Touch did move"
-    print touch
     return $ HandleMouse $ trunc . page $ touch
 updateModel (HandleMouse newCoords) model =
   noEff model { mouseCoords = newCoords }

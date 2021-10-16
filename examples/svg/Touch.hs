@@ -9,7 +9,7 @@ import Miso
 
 data Touch = Touch
   { identifier :: Int
-  , screen :: (Int, Int)
+  , screen :: (Double, Double)
   , client :: (Double, Double)
   , page :: (Double, Double)
   } deriving (Eq, Show)
