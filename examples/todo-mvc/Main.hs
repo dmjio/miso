@@ -188,6 +188,7 @@ viewEntries visibility entries =
         [ class_ "toggle-all"
         , type_ "checkbox"
         , name_ "toggle"
+        , id_ "toggle-all"
         , checked_ allCompleted
         , onClick $ CheckAll (not allCompleted)
         ]
