@@ -6,14 +6,14 @@ with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
-  inherit (pkgs.haskell.packages.ghc865) hpack;
-  jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
-  jsaddle-dom = self.callCabal2nix "jsaddle-dom" source.jsaddle-dom {};
-  jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
-  jsaddle-webkit2gtk = self.callCabal2nix "jsaddle-webkit2gtk" "${source.jsaddle}/jsaddle-webkit2gtk" {};
-  ghcjs-dom-jsaddle = self.callCabal2nix "ghcjs-dom-jsaddle" "${source.ghcjs-dom}/ghcjs-dom-jsaddle" {};
-  ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${source.ghcjs-dom}/ghcjs-dom-jsffi" {};
-  ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${source.ghcjs-dom}/ghcjs-dom" {};
+  inherit (pkgs.haskell.packages.ghc8107) hpack;
+#  jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
+#  jsaddle-dom = self.callCabal2nix "jsaddle-dom" source.jsaddle-dom {};
+#  jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+#  jsaddle-webkit2gtk = self.callCabal2nix "jsaddle-webkit2gtk" "${source.jsaddle}/jsaddle-webkit2gtk" {};
+#  ghcjs-dom-jsaddle = self.callCabal2nix "ghcjs-dom-jsaddle" "${source.ghcjs-dom}/ghcjs-dom-jsaddle" {};
+#  ghcjs-dom-jsffi = self.callCabal2nix "ghcjs-dom-jsffi" "${source.ghcjs-dom}/ghcjs-dom-jsffi" {};
+#  ghcjs-dom = self.callCabal2nix "ghcjs-dom" "${source.ghcjs-dom}/ghcjs-dom" {};
   flatris = self.callCabal2nix "hs-flatris" source.flatris {};
   miso-plane =
     let
