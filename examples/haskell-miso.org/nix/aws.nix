@@ -123,7 +123,7 @@ let
           enableACME = true;
           locations = {
           "/" = {
-            root = "${pkgs.misoPkgs.miso-ghcjs}/bin/simple.jsexe";
+            root = "${pkgs.misoPkgs.miso-examples}/bin/simple.jsexe";
            };
          };
        };
