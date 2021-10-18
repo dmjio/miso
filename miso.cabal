@@ -38,37 +38,6 @@ flag ios
   description:
     Cross compile to iOS
 
-executable simple
-  main-is:
-    Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      exe
-    build-depends:
-      aeson,
-      base < 5,
-      containers,
-      miso,
-      transformers
-    default-language:
-      Haskell2010
-    if flag(ios)
-      cpp-options:
-        -DIOS
-      ghc-options:
-        -threaded
-      build-depends:
-        jsaddle-wkwebview
-    else
-      build-depends:
-        jsaddle-warp
-
 executable tests
   main-is:
     Main.hs
@@ -140,18 +109,26 @@ library
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
-    Miso.TypeLevel
     Miso.Types
     Miso.Mathml
     Miso.Mathml.Element
     Miso.String
     Miso.WebSocket
+  if !impl(ghcjs)
+    exposed-modules:
+      Miso.TypeLevel
   other-modules:
     Miso.Concurrent
   ghc-options:
     -Wall
   hs-source-dirs:
     src
+  if impl(ghcjs)
+    hs-source-dirs:
+      ghcjs-src
+  else
+    hs-source-dirs:
+      ghc-src
   build-depends:
     aeson,
     base < 5,
@@ -164,39 +141,25 @@ library
     lucid,
     network-uri,
     servant,
-    servant-lucid,
     tagsoup,
     text,
     transformers
-  if impl(ghcjs) || flag (jsaddle)
-    if impl(ghcjs)
-      build-depends:
-        ghcjs-base
-    if flag(jsaddle)
-      if flag (ios)
-        cpp-options:
-          -DIOS
-    else
-      js-sources:
-        jsbits/diff.js
-        jsbits/delegate.js
-        jsbits/isomorphic.js
-        jsbits/util.js
-    build-depends:
-      containers,
-      scientific,
-      unordered-containers,
-      transformers,
-      vector
-  else
-    build-depends:
-      vector
   if impl(ghcjs)
-    hs-source-dirs:
-      ghcjs-src
+    build-depends:
+      ghcjs-base
   else
-    hs-source-dirs:
-      ghc-src
+    build-depends:
+      servant-lucid
+  if impl(ghcjs) || flag (jsaddle)
+    if flag (ios)
+      cpp-options:
+        -DIOS
+  if impl(ghcjs)
+    js-sources:
+      jsbits/diff.js
+      jsbits/delegate.js
+      jsbits/isomorphic.js
+      jsbits/util.js
 
 source-repository head
    type: git
