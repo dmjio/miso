@@ -106,7 +106,7 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
 
   /* If obj is a list-like object */
   var newObj;
-  if (obj instanceof Array || 'length' in obj) {
+  if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
     newObj = [];
     for (var i = 0; i < obj.length; i++)
       newObj.push(window['objectToJSON']([], obj[i]));
