@@ -30,7 +30,7 @@ window['delegate'] = function delegate(mountPointElement, events, getVTree) {
   for (var event in events) {
     mountPointElement.addEventListener(events[event][0], function(e) {
       getVTree(function (obj) {
-	window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
+        window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
       });
     }, events[event][1]);
   }
@@ -57,15 +57,15 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
   else {
       var eventObj = obj['events'][event.type];
       if (eventObj) {
-	var options = eventObj.options;
+        var options = eventObj.options;
         if (options['preventDefault'])
-  	  event.preventDefault();
+            event.preventDefault();
         eventObj['runEvent'](event);
         if (!options['stopPropagation'])
- 	  window['propogateWhileAble'] (parentStack, event);
+           window['propogateWhileAble'] (parentStack, event);
       } else {
-	/* still propagate to parent handlers even if event not defined */
-	window['propogateWhileAble'] (parentStack, event);
+        /* still propagate to parent handlers even if event not defined */
+        window['propogateWhileAble'] (parentStack, event);
       }
    }
 };
@@ -83,7 +83,7 @@ window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) 
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i]['events'][event.type]) {
       var eventObj = parentStack[i]['events'][event.type],
-	  options = eventObj['options'];
+          options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
       if (options['stopPropagation']) break;
@@ -131,10 +131,10 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
 function getAllPropertyNames(obj) {
     var props = {}, i = 0;
     do {
-	var names = Object.getOwnPropertyNames(obj);
-	for (i = 0; i < names.length; i++) {
-	  props [names[i]] = null;
-	}
+        var names = Object.getOwnPropertyNames(obj);
+        for (i = 0; i < names.length; i++) {
+          props [names[i]] = null;
+        }
     } while (obj = Object.getPrototypeOf(obj));
   return props;
 };

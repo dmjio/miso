@@ -60,7 +60,7 @@ function vtextKeyed(txt, key) {
     return {
         'type': 'vtext',
         'text': txt,
-	'key': key
+        'key': key
     };
 }
 
@@ -603,7 +603,7 @@ test('Should diff keys properly when keys are prepended', () => {
         vnode('div', [vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](null, currentNode, body, document)
     var newNode =
-	vnode('div', [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, null, "key-1");
+        vnode('div', [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')], {}, {}, "html", null, null, null, null, "key-1");
     window['diff'](currentNode, newNode, body, document)
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -659,8 +659,8 @@ test('Should execute flip-flop case', () => {
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
     for (var i = 0; i < 3; i++) {
-	expect(currentNode.children[i]).not.toBe(undefined);
-	expect(newNode.children[i]).not.toBe(undefined);
+        expect(currentNode.children[i]).not.toBe(undefined);
+        expect(newNode.children[i]).not.toBe(undefined);
     }
 });
 
@@ -674,13 +674,13 @@ test('Should execute swapped case on 1k nodes', () => {
 
     var newKids = [];
     for (var i = 1; i < 1001; i++) {
-	if (i == 3) {
+        if (i == 3) {
             newKids.push(vnodeKeyed('div', 999))
-	} else if (i == 999) {
+        } else if (i == 999) {
             newKids.push(vnodeKeyed('div', 3))
-	} else {
+        } else {
             newKids.push(vnodeKeyed('div', i))
-	}
+        }
     }
     window['diff'](null, currentNode, body, document)
     var newNode =  vnode('div', newKids, {}, {}, "html", null, null, null, null, "key-1");
