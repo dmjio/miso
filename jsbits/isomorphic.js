@@ -4,8 +4,8 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
     if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
-	adjusted[ax]['text'] += vs[ix]['text'];
-	continue;
+      adjusted[ax]['text'] += vs[ix]['text'];
+      continue;
     }
     adjusted[++ax] = vs[ix];
   }
@@ -17,21 +17,21 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
     var mountChildIdx = 0, node;
     // If script tags are rendered first in body, skip them.
     if (!mountPoint) {
-	if (doc.body.childNodes.length > 0) {
-	    node = doc.body.firstChild;
-	} else {
-	    node = doc.body.appendChild (doc.createElement('div'));
-	}
+      if (doc.body.childNodes.length > 0) {
+          node = doc.body.firstChild;
+      } else {
+          node = doc.body.appendChild (doc.createElement('div'));
+      }
     } else if (mountPoint.childNodes.length === 0) {
-	node = mountPoint.appendChild (doc.createElement('div'));
+      node = mountPoint.appendChild (doc.createElement('div'));
     } else {
-	while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
-	  mountChildIdx++;
-	}
-	if (!mountPoint.childNodes[mountChildIdx]) {
-	    node = doc.body.appendChild (doc.createElement('div'));
-	} else {
-	    node = mountPoint.childNodes[mountChildIdx];
+      while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
+        mountChildIdx++;
+      }
+      if (!mountPoint.childNodes[mountChildIdx]) {
+          node = doc.body.appendChild (doc.createElement('div'));
+      } else {
+          node = mountPoint.childNodes[mountChildIdx];
         }
     }
 
@@ -72,21 +72,21 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
       if (!domChild) {
-	  window['diagnoseError'](logLevel,vdomChild, domChild);
-	  return false;
+        window['diagnoseError'](logLevel,vdomChild, domChild);
+        return false;
       }
     if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== Node.TEXT_NODE) {
-  	    window['diagnoseError'](logLevel, vdomChild, domChild);
-	    return false;
-	}
+            window['diagnoseError'](logLevel, vdomChild, domChild);
+          return false;
+      }
 
         if (vdomChild['text'] === domChild.textContent) {
           vdomChild['domRef'] = domChild;
         } else {
           window['diagnoseError'](logLevel, vdomChild, domChild);
           return false;
-	}
+      }
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;
