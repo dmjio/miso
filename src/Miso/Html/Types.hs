@@ -132,7 +132,7 @@ instance L.ToHtml (View action) where
       noEnd = ["img", "input", "br", "hr", "meta"]
       tag = toTag $ fromMisoString vType
       ele = if tag `elem` noEnd
-          then L.makeElementNoEnd tag
+          then L.makeXmlElementNoEnd tag
           else L.makeElement tag kids
       classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
       propClass = M.fromList $ attrs >>= \case
