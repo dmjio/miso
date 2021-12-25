@@ -252,6 +252,8 @@ parseView html = reverse (go (parseTree html) [])
     go [] xs = xs
     go (TagLeaf (TagText s) : next) views =
       go next (Text s : views)
+    go (TagLeaf (TagOpen name attrs) : next) views =
+      go (TagBranch name attrs [] : next) views
     go (TagBranch name attrs kids : next) views =
       let
         attrs' = [ P key $ A.String (fromMisoString val)
