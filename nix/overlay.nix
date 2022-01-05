@@ -22,23 +22,25 @@ options: self: super: {
       ghc8107 = super.haskell.packages.ghc8107.override {
         overrides = import ./haskell/packages/ghc8107 self;
       };
-      # ghc864 = super.haskell.packages.ghc864.override {
-      #   overrides = selfGhc864: superGhc864: with super.haskell.lib; {
-      #     happy = dontCheck (selfGhc864.callHackage "happy" "1.19.9" {});
-      #     mkDerivation = args: superGhc864.mkDerivation (args // {
-      #       enableLibraryProfiling = false;
-      #       doCheck = false;
-      #       doHaddock = false;
-      #     });
-      #   };
-      # };
       ghcjs = super.haskell.packages.ghcjs.override {
         overrides = import ./haskell/packages/ghcjs options self;
       };
     };
   };
+  nixops =
+    let
+      pkg =
+        import (super.fetchFromGitHub {
+          owner = "NixOS";
+          repo = "nixops";
+          rev = "3d5e816e622b7863daa76732902fd20dba72a0b8";
+          sha256 = "0lb9rdnmi91hkyij10lgv1chi6cgviyxc5g6070hz03g2w8039kb";
+        }) {};
+    in
+      super.callPackage pkg {};
+
   deploy = rev: super.writeScript "deploy" ''
-    export PATH=$PATH:${self.nixopsUnstable}/bin
+    export PATH=$PATH:${self.nixops}/bin
     export PATH=$PATH:${self.jq}/bin
     rm -rf ~/.nixops
     mkdir -p ~/.aws

@@ -68,8 +68,8 @@ in
   the2048 = fetchFromGitHub {
     repo = "hs2048";
     owner = "dmjio";
-    rev = "07dbed79a012240bfe19b836b6d445bb16a0602a";
-    sha256 = "00rqix5g8s8y6ngxnjskvcyj19g639havn9pgpkdpxp8ni6g7xsm";
+    rev = "0d91626e01aba742874e5ae6ba1405d2ce15e68d";
+    sha256 = "1fbrs1dmd8s7l1p34g1nmignga9a9ifr8jhgmckzdrywx6f5k583";
   };
   snake = fetchFromGitHub {
     repo = "miso-snake";

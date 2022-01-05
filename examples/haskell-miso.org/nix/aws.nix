@@ -55,15 +55,15 @@ let
            };
          };
        };
-       "flatris.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = "${pkgs.misoPkgs.pkgs.more-examples.flatris}/bin/app.jsexe";
-           };
-         };
-       };
+       # "flatris.haskell-miso.org" = {
+       #    forceSSL = true;
+       #    enableACME = true;
+       #    locations = {
+       #    "/" = {
+       #      root = "${pkgs.misoPkgs.pkgs.more-examples.flatris}/bin/app.jsexe";
+       #     };
+       #   };
+       # };
        "miso-plane.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;

@@ -16,6 +16,8 @@ cabal-version:       >=1.10
 executable server
   main-is:
     Main.hs
+  other-modules:
+    Common
   if impl(ghcjs)
     buildable: False
   else
@@ -46,6 +48,8 @@ executable server
 executable client
   main-is:
     Main.hs
+  other-modules:
+    Common
   if !impl(ghcjs)
     buildable: False
   else

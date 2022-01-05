@@ -11,7 +11,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     steps:
      - uses: actions/checkout@v2.3.1
      - uses: cachix/install-nix-action@v16
@@ -32,7 +32,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref != 'refs/heads/master'
     steps:
      - uses: actions/checkout@v2.3.1
      - uses: cachix/install-nix-action@v16
