@@ -28,32 +28,32 @@ let
   armPkgs =
     with pkgs; with pkgs.lib;
      optionalAttrs (options.ios && stdenv.isDarwin)
-       { miso-arm = pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.miso; };
+       { miso-arm = pkgsCross.iphone64.haskell.packages.integer-simple.ghc8107.miso; };
   release =
-    with pkgs.haskell.packages.ghc865;
+    with pkgs.haskell.packages.ghc8107;
     with pkgs.haskell.lib;
     sdistTarball (buildStrictly miso);
   release-examples =
-    with pkgs.haskell.packages.ghc865;
+    with pkgs.haskell.packages.ghc8107;
     with pkgs.haskell.lib;
     sdistTarball (buildStrictly miso-examples-jsaddle);
    examplePkgs = with pkgs; with pkgs.lib;
      let
        examplePkgs = optionalAttrs options.examples {
-         inherit (haskell.packages.ghc865) miso-examples-jsaddle;
-         inherit (haskell.packages.ghcjs86) miso-examples;
+         inherit (haskell.packages.ghc8107) miso-examples-jsaddle;
+         inherit (haskell.packages.ghcjs) miso-examples;
         };
      in
       examplePkgs //
         optionalAttrs (stdenv.isDarwin && options.examples && options.ios)
-          { inherit (pkgsCross.iphone64.haskell.packages.integer-simple.ghc865) miso-examples-arm;
+          { inherit (pkgsCross.iphone64.haskell.packages.integer-simple.ghc8107) miso-examples-arm;
           };
 in
 {
   deploy = pkgs.deploy rev;
   inherit pkgs;
-  miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
-  inherit (pkgs.haskell.packages.ghc865) miso-jsaddle;
+  miso-ghcjs = pkgs.haskell.packages.ghcjs.miso;
+  miso-ghc = pkgs.haskell.packages.ghc8107.miso;
+  inherit (pkgs.haskell.packages.ghc8107) miso-jsaddle;
   # inherit release release-examples;
 } // examplePkgs // armPkgs
