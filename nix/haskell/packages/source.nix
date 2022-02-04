@@ -26,32 +26,26 @@ in
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "c4b7c6cebf09447a25105d7c839914d7378bf5a7";
-    sha256 = "0p57n94w196cigncppq8wldha5rrslhgp5i5pfnd2klj6nwq77dv";
+    rev = "d569be43f92b9b8c01dc3ee4c41401ab406a2076";
+    sha256 = "1m1xxy4l9ii91k1k504qkxh9k1ybprm1m66mkb9dqlwcpyhcccmv";
   };
   jsaddle-dom = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle-dom";
-    rev = "fa40dd223c3128e7f2560e4f49486ca1673b78f6";
-    sha256 = "0zczgvmg3vvvdf9q0h7z3yx6fj117rhf0ljcz68g2v4w6a6kmlkb";
+    rev = "6ce23c5";
+    sha256 = "1wpwf025czibkw6770c99zk7r30j6nh7jdzhzqbi2z824qyqzbnw";
   };
   ghcjs-dom = fetchFromGitHub {
     owner = "ghcjs";
     repo = "ghcjs-dom";
-    rev = "90779f212a6fdc6a4884aff6a0e6b8d2e8850513";
-    sha256 = "0py54fyp4zrnabgdnvwvdliyz65hi20ii1qyalwzji4f9dd3cqlf";
+    rev = "b8e483a";
+    sha256 = "06qlbbhjd0mlv5cymp5q0rb69a333l0fcif5zwa83h94dh25c1g7";
   };
   webkit2gtk3-javascriptcore = fetchFromGitHub {
     owner = "gtk2hs";
     repo = "webkit-javascriptcore";
-    rev = "b092a700f04b1001f7f7b58c2f90392a3da5c410";
-    sha256 = "0yshacbjxgkdv8hd83chf4qshf9rv5my14vz66ja1883dwignsbj";
-  };
-  ref-tf = fetchFromGitHub {
-    owner = "mainland";
-    repo = "ref-tf";
-    rev = "2405763a78cb49839a25e0da5e15bb7524c8b224";
-    sha256 = "0j28rq8706yc5mm2753jnxn81p43j2bvwblc3ys790njxarc03v5";
+    rev = "5868624";
+    sha256 = "0aj0cvcbnzrdi1ynahpb4034vadfrs99n5qa8dar1srhijv55g8b";
   };
   flatris = fetchFromGitHub {
     repo = "hs-flatris";
