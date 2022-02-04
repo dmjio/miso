@@ -6,7 +6,7 @@ with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
-  inherit (pkgs.haskell.packages.ghc8107) hpack;
+  inherit (pkgs.haskell.packages.ghc865) hpack;
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-dom = self.callCabal2nix "jsaddle-dom" source.jsaddle-dom {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
