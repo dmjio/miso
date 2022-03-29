@@ -42,6 +42,7 @@ import           Text.StringLike         (StringLike(..))
 -- | String type swappable based on compiler
 type MisoString = JS.JSString
 
+#ifdef __GHCJS__
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
@@ -51,6 +52,7 @@ instance FromJSON MisoString where
   parseJSON =
     withText "Not a valid string" $ \x ->
       pure (toMisoString x)
+#endif
 
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
