@@ -38,6 +38,13 @@ flag ios
   description:
     Cross compile to iOS
 
+flag jsstring-only
+  manual: True
+  default:
+    False
+  description:
+    Always set MisoString = JSString
+
 executable tests
   main-is:
     Main.hs
@@ -123,12 +130,12 @@ library
     -Wall
   hs-source-dirs:
     src
-  if impl(ghcjs)
+  if impl(ghcjs) || flag (jsstring-only)
     hs-source-dirs:
-      ghcjs-src
+      jsstring-src
   else
     hs-source-dirs:
-      ghc-src
+      text-src
   build-depends:
     aeson,
     base < 5,
