@@ -65,10 +65,10 @@ window['callCreated'] = function callCreated(obj) {
 
 window['populate'] = function populate(c, n, doc) {
   if (!c) c = {
-              props: null,
-              css: null,
-              children: []
-              }
+    props: null,
+    css: null,
+    children: []
+  }
   window['diffProps'](c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
   window['diffCss'](c['css'], n['css'], n['domRef']);
   window['diffChildren'](c['children'], n['children'], n['domRef'], doc);
@@ -186,15 +186,15 @@ window['createNode'] = function createNode(obj, parent, doc) {
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
 window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
   var oldFirstIndex = 0,
-  newFirstIndex = 0,
-  oldLastIndex = os.length - 1,
-  newLastIndex = ns.length - 1,
-  nFirst, nLast, oLast, oFirst, tmp, found, node;
+    newFirstIndex = 0,
+    oldLastIndex = os.length - 1,
+    newLastIndex = ns.length - 1,
+    nFirst, nLast, oLast, oFirst, tmp, found, node;
   for (;;) {
     /* check base case, first > last for both new and old
       [ ] -- old children empty (fully-swapped)
       [ ] -- new children empty (fully-swapped)
-    */
+      */
     if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
       break;
     }
@@ -207,7 +207,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
     /* No more old nodes, create and insert all remaining nodes
        -> [ ] <- old children
        -> [ a b c ] <- new children
-    */
+       */
     if (oldFirstIndex > oldLastIndex) {
       window['diff'](null, nFirst, parent, doc);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
@@ -219,7 +219,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
     /* No more new nodes, delete all remaining nodes in old list
        -> [ a b c ] <- old children
        -> [ ] <- new children
-    */
+       */
     else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
@@ -232,7 +232,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        -> oldFirstIndex -> [ a b c ] <- oldLastIndex
        -> newFirstIndex -> [ a b c ] <- newLastIndex
        check if nFirst and oFirst align, if so, check nLast and oLast
-    */
+       */
     else if (oFirst['key'] === nFirst['key']) {
       window['diff'](os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
     } else if (oLast['key'] === nLast['key']) {
@@ -242,7 +242,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        both could have been swapped.
        -> [ a b c ] <- old children
        -> [ c b a ] <- new children
-    */
+       */
     else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
       window['swapDomRefs'](node, oLast['domRef'], oFirst['domRef'], parent);
       window['swap'](os, oldFirstIndex, oldLastIndex);
@@ -259,7 +259,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
            -> [ a b d ] <- old children
            -> [ a b d ] <- new children
            and now we happy path
-       */
+           */
     else if (oFirst['key'] === nLast['key']) {
       /* insertAfter */
       parent.insertBefore(oFirst['domRef'], oLast['domRef'].nextSibling);
@@ -275,7 +275,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        -> [ d b a ] <- old children
        -> [ d b a ] <- new children
        and now we happy path
-    */
+       */
     else if (oLast['key'] === nFirst['key']) {
       /* insertAfter */
       parent.insertBefore(oLast['domRef'], oFirst['domRef']);
@@ -289,7 +289,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
        This can happen when the list is sorted, for example.
        -> [ a e c ] <- old children
        -> [ b e d ] <- new children
-    */
+       */
     else {
       /* final case, perform linear search to check if new key exists in old map, decide what to do from there */
       found = false;
@@ -302,7 +302,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
         }
         tmp++;
       }
-          /* If new key was found in old map this means it was moved, hypothetically as below
+      /* If new key was found in old map this means it was moved, hypothetically as below
          -> [ a e b c ] <- old children
          -> [ b e a j ] <- new children
           ^
@@ -313,7 +313,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
          -> [ b a e c ] <- old children
          -> [ b e a j ] <- new children
             ^
-      */
+            */
       if (found) {
         /* Move item to correct position */
         os.splice(oldFirstIndex,0, os.splice(tmp,1)[0]);
@@ -324,7 +324,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
         /* increment counters */
         newFirstIndex++;
       }
-        /* If new key was *not* found in the old map this means it must now be created, example below
+      /* If new key was *not* found in the old map this means it must now be created, example below
            -> [ a e d c ] <- old children
            -> [ b e a j ] <- new children
             ^
@@ -335,7 +335,7 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
            -> [ b a e d c ] <- old children
            -> [ b e a j   ] <- new children
               ^
-           */
+              */
       else {
         window['createElement'](nFirst, doc);
         parent.insertBefore(nFirst['domRef'], oFirst['domRef']);

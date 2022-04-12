@@ -14,28 +14,28 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
 
 window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtree, doc) {
   if (!doc) { doc = window.document; }
-    var mountChildIdx = 0, node;
-    // If script tags are rendered first in body, skip them.
-    if (!mountPoint) {
-      if (doc.body.childNodes.length > 0) {
-          node = doc.body.firstChild;
-      } else {
-          node = doc.body.appendChild (doc.createElement('div'));
-      }
-    } else if (mountPoint.childNodes.length === 0) {
-      node = mountPoint.appendChild (doc.createElement('div'));
+  var mountChildIdx = 0, node;
+  // If script tags are rendered first in body, skip them.
+  if (!mountPoint) {
+    if (doc.body.childNodes.length > 0) {
+      node = doc.body.firstChild;
     } else {
-      while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
-        mountChildIdx++;
-      }
-      if (!mountPoint.childNodes[mountChildIdx]) {
-          node = doc.body.appendChild (doc.createElement('div'));
-      } else {
-          node = mountPoint.childNodes[mountChildIdx];
-        }
+      node = doc.body.appendChild (doc.createElement('div'));
     }
+  } else if (mountPoint.childNodes.length === 0) {
+    node = mountPoint.appendChild (doc.createElement('div'));
+  } else {
+    while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
+      mountChildIdx++;
+    }
+    if (!mountPoint.childNodes[mountChildIdx]) {
+      node = doc.body.appendChild (doc.createElement('div'));
+    } else {
+      node = mountPoint.childNodes[mountChildIdx];
+    }
+  }
 
-    if (!window['walk'](logLevel,vtree, node, doc)) {
+  if (!window['walk'](logLevel,vtree, node, doc)) {
     if (logLevel) {
       console.warn('Could not copy DOM into virtual DOM, falling back to diff');
     }
@@ -52,7 +52,7 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
 }
 
 window['diagnoseError'] = function diagnoseError(logLevel, vtree, node) {
-    if (logLevel) console.warn('VTree differed from node', vtree, node);
+  if (logLevel) console.warn('VTree differed from node', vtree, node);
 }
 
 window['walk'] = function walk(logLevel, vtree, node, doc) {
@@ -60,7 +60,7 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
   var vdomChild,
-      domChild;
+    domChild;
 
   vtree['domRef'] = node;
 
@@ -71,21 +71,21 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
-      if (!domChild) {
-        window['diagnoseError'](logLevel,vdomChild, domChild);
+    if (!domChild) {
+      window['diagnoseError'](logLevel,vdomChild, domChild);
+      return false;
+    }
+    if (vdomChild.type === 'vtext') {
+      if (domChild.nodeType !== Node.TEXT_NODE) {
+        window['diagnoseError'](logLevel, vdomChild, domChild);
         return false;
       }
-    if (vdomChild.type === 'vtext') {
-        if (domChild.nodeType !== Node.TEXT_NODE) {
-            window['diagnoseError'](logLevel, vdomChild, domChild);
-          return false;
-      }
 
-        if (vdomChild['text'] === domChild.textContent) {
-          vdomChild['domRef'] = domChild;
-        } else {
-          window['diagnoseError'](logLevel, vdomChild, domChild);
-          return false;
+      if (vdomChild['text'] === domChild.textContent) {
+        vdomChild['domRef'] = domChild;
+      } else {
+        window['diagnoseError'](logLevel, vdomChild, domChild);
+        return false;
       }
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
