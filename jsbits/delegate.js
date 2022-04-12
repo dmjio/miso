@@ -4,7 +4,7 @@ window['currentCallbacks'] = [];
 
 /* Callbacks in ghcjs need to be released. With this function one can register
    callbacks that should be released right before diffing.
-*/
+   */
 window['registerCallback'] = function registerCallback(cb) {
   window['currentCallbacks'].push(cb);
 };
@@ -55,19 +55,19 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
 
   /* stack.length == 1 */
   else {
-      var eventObj = obj['events'][event.type];
-      if (eventObj) {
-        var options = eventObj.options;
-        if (options['preventDefault'])
-            event.preventDefault();
-        eventObj['runEvent'](event);
-        if (!options['stopPropagation'])
-           window['propogateWhileAble'] (parentStack, event);
-      } else {
-        /* still propagate to parent handlers even if event not defined */
+    var eventObj = obj['events'][event.type];
+    if (eventObj) {
+      var options = eventObj.options;
+      if (options['preventDefault'])
+        event.preventDefault();
+      eventObj['runEvent'](event);
+      if (!options['stopPropagation'])
         window['propogateWhileAble'] (parentStack, event);
-      }
-   }
+    } else {
+      /* still propagate to parent handlers even if event not defined */
+      window['propogateWhileAble'] (parentStack, event);
+    }
+  }
 };
 
 window['buildTargetToElement'] = function buildTargetToElement (element, target) {
@@ -83,7 +83,7 @@ window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) 
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i]['events'][event.type]) {
       var eventObj = parentStack[i]['events'][event.type],
-          options = eventObj['options'];
+        options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
       if (options['stopPropagation']) break;
@@ -129,12 +129,12 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
 
 /* get static and dynamic properties */
 function getAllPropertyNames(obj) {
-    var props = {}, i = 0;
-    do {
-        var names = Object.getOwnPropertyNames(obj);
-        for (i = 0; i < names.length; i++) {
-          props [names[i]] = null;
-        }
-    } while (obj = Object.getPrototypeOf(obj));
+  var props = {}, i = 0;
+  do {
+    var names = Object.getOwnPropertyNames(obj);
+    for (i = 0; i < names.length; i++) {
+      props [names[i]] = null;
+    }
+  } while (obj = Object.getPrototypeOf(obj));
   return props;
 };
