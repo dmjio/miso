@@ -99,6 +99,7 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
           L.link_ [ L.rel_ "manifest"
                   , L.href_ "/manifest.json"
                   ]
+          L.link_ [ L.rel_ "icon", L.href_ "https://www.haskell.org/img/favicon.ico", L.type_ "image/x-icon" ]
           L.meta_ [ L.charset_ "utf-8" ]
           L.meta_ [ L.name_ "theme-color", L.content_ "#00d1b2" ]
           L.meta_ [ L.httpEquiv_ "X-UA-Compatible"
