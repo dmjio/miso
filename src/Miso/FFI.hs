@@ -92,7 +92,7 @@ objectToJSVal = toJSVal
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
 set (unpack -> "class") v obj = do
-  classSet <- ((JSS.pack "class") `elem`) <$> listProps obj
+  classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps obj
   if classSet
     then do
       classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") obj
