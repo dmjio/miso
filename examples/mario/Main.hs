@@ -24,6 +24,8 @@ import qualified Language.Javascript.JSaddle.Warp as JSaddle
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
 
+foreign import javascript unsafe "(new Audio($1)).play()" play :: MisoString -> IO ()
+
 #else
 import           Network.Wai.Application.Static
 import qualified Network.Wai as Wai
@@ -45,6 +47,7 @@ data Action
   = GetArrows !Arrows
   | Time !Double
   | WindowCoords !(Int,Int)
+  | PlaySound MisoString
   | NoOp
 
 spriteFrames :: [MisoString]
@@ -100,7 +103,17 @@ mario = Model
 
 updateMario :: Action -> Model -> Effect Action Model
 updateMario NoOp m = step m
-updateMario (GetArrows arrs) m = noEff newModel
+updateMario (PlaySound url) m = m <# do
+#ifdef __GHCJS__
+  play url >> pure NoOp
+#else
+  pure NoOp
+#endif
+updateMario (GetArrows arrs) m = newModel <# do
+    pure $
+      if arrowY arrs > arrowY (arrows m)
+      then (PlaySound "https://www.virtualdrumming.com/drums/virtual-drum-sounds/hip-hop/snare1.ogg")
+      else NoOp
   where
     newModel = m { arrows = arrs }
 updateMario (Time newTime) m = step newModel
