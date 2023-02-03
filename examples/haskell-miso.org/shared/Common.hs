@@ -111,7 +111,7 @@ docs = template v
        ]
 
 misoSrc :: MisoString
-misoSrc = pack "https://camo.githubusercontent.com/d6641458f09e24e8fef783de8278886949085960/68747470733a2f2f656d6f6a6970656469612d75732e73332e616d617a6f6e6177732e636f6d2f7468756d62732f3234302f6170706c652f39362f737465616d696e672d626f776c5f31663335632e706e67"
+misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png"
 
 examples :: Model -> View Action
 examples = template v
