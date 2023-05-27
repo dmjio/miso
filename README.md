@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://haskell-miso-slack.herokuapp.com">
+  <a href="https://join.slack.com/t/haskell-miso/shared_invite/zt-1vwjv1stc-KnoYop0dbAtdxJBybH4~FQ">
 <img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
   </a>
   <a href="https://haskell.org">
