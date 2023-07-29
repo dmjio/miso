@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'
     steps:
-     - uses: actions/checkout@v2.3.1
-     - uses: cachix/install-nix-action@v21
+     - uses: actions/checkout@v3.5.3
+     - uses: cachix/install-nix-action@v22
      - name: Cancel Previous Runs
        uses: styfle/cancel-workflow-action@0.9.1
        with:
@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
-     - uses: actions/checkout@v2.3.1
-     - uses: cachix/install-nix-action@v21
+     - uses: actions/checkout@v3.5.3
+     - uses: cachix/install-nix-action@v22
      - uses: cachix/cachix-action@v12
        with:
          name: miso-haskell
