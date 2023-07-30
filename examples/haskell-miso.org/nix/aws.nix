@@ -217,6 +217,6 @@ in
 
   inherit awsBox;
 
-  network.enableRollback = true;
+  network.enableRollback = false;
   network.description = "Miso network";
 }
