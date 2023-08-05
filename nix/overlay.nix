@@ -57,6 +57,7 @@ options: self: super: {
     nixops modify examples/haskell-miso.org/nix/aws.nix -d haskell-miso \
       -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
     nix upgrade-nix # https://github.com/NixOS/nix/issues/8480
+    nix --version
     nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
   more-examples = with super.haskell.lib; {
