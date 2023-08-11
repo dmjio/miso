@@ -56,9 +56,10 @@ options: self: super: {
     nixops set-args --argstr email $EMAIL -d haskell-miso
     nixops modify examples/haskell-miso.org/nix/aws.nix -d haskell-miso \
       -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
-    nix upgrade-nix # https://github.com/NixOS/nix/issues/8480
     nix --version
-    nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
+    # https://github.com/NixOS/nixops/issues/1557
+    nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
+      nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
   more-examples = with super.haskell.lib; {
     inherit (self.haskell.packages.ghcjs) flatris the2048 snake miso-plane;
