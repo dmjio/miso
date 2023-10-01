@@ -140,6 +140,10 @@ examples = template v
           , a_ [ target_  "_blank"
                , href_  "http://flatris.haskell-miso.org/" ]
             [ text "Flatris" ]
+          , text " / "
+          , a_ [ target_  "_blank"
+               , href_  "http://2048.haskell-miso.org/" ]
+            [ text "2048" ]
          ]
        ]
 
