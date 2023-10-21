@@ -98,7 +98,7 @@ The above commands will add miso's binary cache to your nix installation (suppor
 ### Nix
 `Nix` is a more powerful option for building web applications with `miso` since it encompasses development workflow, configuration management, and deployment. The source code for [`haskell-miso.org`](https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org) is an example of this.
 
-If unfamiliar with `nix`, we recommend [@Gabriel439](https://github.com/Gabriel439)'s ["Nix and Haskell in production"](https://github.com/Gabriel439/haskell-nix) guide.
+If unfamiliar with `nix`, we recommend [@Gabriella439](https://github.com/Gabriella439)'s ["Nix and Haskell in production"](https://github.com/Gabriella439/haskell-nix) guide.
 
 To begin, make the following directory layout:
 ```bash
