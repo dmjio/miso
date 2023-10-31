@@ -7,61 +7,74 @@
 module Main where
 
 -- | Miso framework import
-import           Miso
-import           Miso.String
+import Miso
+import Miso.String
 
--- | JSAddle import
-#ifndef __GHCJS__
-import           Language.Javascript.JSaddle.Warp as JSaddle
-import qualified Network.Wai.Handler.Warp         as Warp
-import           Network.WebSockets
+import Control.Monad.IO.Class
+
+#ifdef IOS
+import Language.Javascript.JSaddle.WKWebView as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run
+#else
+import Language.Javascript.JSaddle.Warp as JSaddle
+
+runApp :: JSM () -> IO ()
+runApp = JSaddle.run 8080
 #endif
-import           Control.Monad.IO.Class
 
 -- | Type synonym for an application model
-type Model = Int
+type Model = ()
 
 -- | Sum type for application events
 data Action
-  = AddOne
-  | SubtractOne
+  = SetupTextArea
+  | SubmitForm
   | NoOp
-  | SayHelloWorld
   deriving (Show, Eq)
-
-#ifndef __GHCJS__
-runApp :: JSM () -> IO ()
-runApp f = JSaddle.debugOr 8080 (f >> syncPoint) JSaddle.jsaddleApp
-#else
-runApp :: IO () -> IO ()
-runApp app = app
-#endif
 
 -- | Entry point for a miso application
 main :: IO ()
-main = runApp $ startApp App {..}
+main = runApp $ miso $ \_ -> App {..}
   where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel          -- update function
-    view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in synch (only used with `miso` function)
+    initialAction = NoOp
+    model  = ()
+    update = updateModel
+    view   = viewModel
+    events = defaultEvents
+    subs   = []
+    mountPoint = Nothing
+    logLevel = Off
 
--- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
+updateModel :: Action -> () -> Effect Action ()
+updateModel SetupTextArea m = m <# do
+  d <- jsg "document"
+  de <- d ^. js1 @MisoString "getElementById" "thetextarea"
+  addEventListener de "keypress" (handleKeyPress m)
+
+handleKeyPress :: () -> JSVal -> JSM ()
+handleKeyPress m e = do
+  shiftKey <- e ^. js @_ @Bool "shiftKey"
+  enterKey <- e ^. js @_ @Int "keyCode"
+  when (not shiftKey && enterKey == 13) $ do
+    jsf @MisoString "preventDefault" ()
+    updateModel SubmitForm m
+
+updateModel SubmitForm m = () <# do
+  putStrLn "Submitted Form!"
+
 updateModel NoOp m = noEff m
-updateModel SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World") >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
- , text (ms x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
+  textarea_
+    [ onCreated SetupTextArea
+    , id_ "thetextarea"
+    ] []
+  , button_
+    [ onClick SubmitForm
+    ]
+    [ text "submit"
+    ]
