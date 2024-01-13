@@ -72,7 +72,7 @@ community = template v
                                      ]
            ] [ text "community" ]
        , h2_ [ class_  "subtitle animated pulse" ] [
-            a_ [ href_  "https://haskell-miso-slack.herokuapp.com/"
+            a_ [ href_  "https://join.slack.com/t/haskell-miso/shared_invite/zt-1w80x404h-AF2Be_BDQixNMadzadnUNg"
                , target_  "_blank"
                ]
             [ text "Slack" ]
