@@ -64,7 +64,7 @@ import           Language.Javascript.JSaddle hiding (obj, val)
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
-import           Miso.String hiding (elem)
+import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ()
