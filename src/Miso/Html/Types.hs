@@ -58,7 +58,7 @@ import           JavaScript.Object.Internal (Object(Object))
 import qualified Lucid                      as L
 import qualified Lucid.Base                 as L
 import           Prelude                    hiding (null)
-import           Servant.API                (Get, HasLink, MkLink, toLink)
+import           Servant.API                (Get, HasLink(MkLink, toLink))
 import           Text.HTML.TagSoup.Tree     (parseTree, TagTree(..))
 import           Text.HTML.TagSoup          (Tag(..))
 
