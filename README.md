@@ -56,6 +56,7 @@
   - [File Reader](#file-reader)
   - [WebVR](#webvr)
   - [Pixel Card Wars](#pixel-card-wars)
+  - [Currency Converter](#currency-converter)
 - [Haddocks](#haddocks)
   - [GHC](#ghc)
   - [GHCJS](#ghcjs)
@@ -229,6 +230,9 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ### Pixel Card Wars
   - [Link](https://www.schplaf.org/hgames/darkcraw/) / [Source](https://github.com/smelc/miso-darkcraw)
+
+### Currency Converter
+  - [Link](https://functora.github.io/apps/currency-converter) / [Source](https://github.com/functora/functora.github.io/tree/master/ghcjs/currency-converter)
 
 ## Haddocks
 
