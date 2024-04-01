@@ -429,7 +429,7 @@ footer =
                       ] [  text" here."]
                  ]
          , p_ [] [ a_ [href_"https://bulma.io"] [ img_
-                                                    [ src_ "https://bulma.io/images/made-with-bulma.png"
+                                                    [ src_ "https://bulma.io/assets/images/made-with-bulma.png"
                                                     , alt_ "Made with Bulma"
                                                     , width_ "128"
                                                     , height_ "24"
