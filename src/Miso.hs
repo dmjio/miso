@@ -26,7 +26,7 @@ module Miso
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
   , module Miso.TypeLevel
 #endif
   , module Miso.Types
@@ -46,7 +46,7 @@ import           System.Mem.StableName
 import qualified Data.Sequence as S
 import qualified JavaScript.Object.Internal as OI
 
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
 #ifdef IOS
 import           Miso.JSBits
@@ -67,7 +67,7 @@ import           Miso.FFI
 import           Miso.Html
 import           Miso.Router
 import           Miso.Subscription
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel
 #endif
 import           Miso.Types
@@ -82,7 +82,7 @@ common
   -> (Sink action -> JSM (IORef VTree))
   -> JSM ()
 common App {..} m getView = do
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
 #ifdef IOS
   mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
 #else

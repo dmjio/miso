@@ -42,7 +42,7 @@ import           Text.StringLike         (StringLike(..))
 -- | String type swappable based on compiler
 type MisoString = JS.JSString
 
-#ifdef __GHCJS__
+#ifdef ghcjs_HOST_OS
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString

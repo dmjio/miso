@@ -48,7 +48,7 @@ flag jsstring-only
 executable tests
   main-is:
     Main.hs
-  if !impl(ghcjs) || !flag(tests)
+  if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
     buildable: False
   else
     ghcjs-options:
@@ -121,7 +121,7 @@ library
     Miso.Mathml.Element
     Miso.String
     Miso.WebSocket
-  if !impl(ghcjs)
+  if !(impl(ghcjs) || arch(javascript))
     exposed-modules:
       Miso.TypeLevel
   other-modules:
@@ -130,7 +130,7 @@ library
     -Wall
   hs-source-dirs:
     src
-  if impl(ghcjs) || flag (jsstring-only)
+  if impl(ghcjs) || arch(javascript) || flag (jsstring-only)
     hs-source-dirs:
       jsstring-src
   else
@@ -151,17 +151,17 @@ library
     tagsoup,
     text,
     transformers
-  if impl(ghcjs)
+  if impl(ghcjs) || arch(javascript)
     build-depends:
       ghcjs-base
   else
     build-depends:
       servant-lucid
-  if impl(ghcjs) || flag (jsaddle)
+  if impl(ghcjs) || arch(javascript) || flag (jsaddle)
     if flag (ios)
       cpp-options:
         -DIOS
-  if impl(ghcjs)
+  if impl(ghcjs) || arch(javascript)
     js-sources:
       jsbits/diff.js
       jsbits/delegate.js
