@@ -1,6 +1,0 @@
-packages:
- ./
- sample-app/
- examples/
- examples/haskell-miso.org/
- examples/sse/
