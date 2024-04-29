@@ -87,7 +87,7 @@ websocketSub (URL u) (Protocols ps) f sink = do
   WS.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
     d' <- WS.data' v
-#ifndef __GHCJS__        
+#ifndef ghcjs_HOST_OS
     undef <- ghcjsPure (isUndefined d')
 #else
     let undef = isUndefined d'

@@ -64,7 +64,7 @@ executable simple
 executable todo-mvc
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
+  if !impl(ghcjs) && !arch(javascript) && !flag(jsaddle)
     buildable: False
   else
     if flag(jsaddle)
@@ -98,7 +98,7 @@ executable todo-mvc
 executable threejs
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -119,7 +119,7 @@ executable threejs
 executable file-reader
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -140,7 +140,7 @@ executable file-reader
 executable xhr
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -161,7 +161,7 @@ executable xhr
 executable canvas2d
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -181,7 +181,7 @@ executable canvas2d
 executable router
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
+  if !impl(ghcjs) && !arch(javascript) && !flag(jsaddle)
     buildable: False
   else
     if flag(jsaddle)
@@ -216,7 +216,7 @@ executable router
 executable websocket
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
+  if !impl(ghcjs) && !arch(javascript) && !flag(jsaddle)
     buildable: False
   else
     if flag(jsaddle)
@@ -250,7 +250,7 @@ executable websocket
 executable mario
   main-is:
     Main.hs
-  if !impl(ghcjs) && !flag(jsaddle)
+  if !impl(ghcjs) && !arch(javascript) && !flag(jsaddle)
     buildable: False
   else
     if flag(jsaddle)
@@ -266,13 +266,13 @@ executable mario
       base < 5,
       containers,
       miso
-    if flag(jsaddle) && !impl(ghcjs) && !flag(ios)
+    if flag(jsaddle) && !impl(ghcjs) && !arch(javascript) && !flag(ios)
       build-depends:
         wai,
         wai-app-static,
         warp,
         websockets
-    if flag(ios) && !impl(ghcjs)
+    if flag(ios) && !impl(ghcjs) && !arch(javascript)
       cpp-options:
        -DIOS
       ghc-options:
@@ -288,7 +288,7 @@ executable mario
 executable svg
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -310,7 +310,7 @@ executable svg
 executable compose-update
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:
@@ -328,7 +328,7 @@ executable compose-update
 executable mathml
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     ghcjs-options:

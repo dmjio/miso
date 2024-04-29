@@ -11,7 +11,7 @@ import           Miso
 import           Miso.String
 
 -- | JSAddle import
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle.Warp as JSaddle
 import qualified Network.Wai.Handler.Warp         as Warp
 import           Network.WebSockets
@@ -29,7 +29,7 @@ data Action
   | SayHelloWorld
   deriving (Show, Eq)
 
-#ifndef __GHCJS__
+#ifndef ghcjs_HOST_OS
 runApp :: JSM () -> IO ()
 runApp f = JSaddle.debugOr 8080 (f >> syncPoint) JSaddle.jsaddleApp
 #else

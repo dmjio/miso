@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 executable server
   main-is:
     Main.hs
-  if impl(ghcjs)
+  if impl(ghcjs) || arch(javascript)
     buildable: False
   else
     ghc-options:
@@ -44,7 +44,7 @@ executable server
 executable client
   main-is:
     Main.hs
-  if !impl(ghcjs)
+  if !impl(ghcjs) && !arch(javascript)
     buildable: False
   else
     hs-source-dirs:
