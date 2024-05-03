@@ -19,9 +19,9 @@ data Action
 main :: IO ()
 main = do
   [sun, moon, earth] <- replicateM 3 newImage
-  setSrc sun "https://mdn.mozillademos.org/files/1456/Canvas_sun.png"
-  setSrc moon "https://mdn.mozillademos.org/files/1443/Canvas_moon.png"
-  setSrc earth "https://mdn.mozillademos.org/files/1429/Canvas_earth.png"
+  setSrc sun "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_sun.png"
+  setSrc moon "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_moon.png"
+  setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
   startApp App { initialAction = GetTime
                , update = updateModel (sun,moon,earth)
                , ..
