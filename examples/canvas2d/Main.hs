@@ -70,27 +70,27 @@ updateModel (sun,moon,earth) (SetTime m@(secs,millis)) _ = m <# do
   drawImage sun 0 0 300 300 ctx
   pure GetTime
 
-foreign import javascript unsafe "$1.globalCompositeOperation = 'destination-over';"
+foreign import javascript unsafe "((x) => { x.globalCompositeOperation = 'destination-over'; })"
   setGlobalCompositeOperation :: Context -> IO ()
 
-foreign import javascript unsafe "$4.drawImage($1,$2,$3);"
+foreign import javascript unsafe "((x, y, z, w) => { w.drawImage(x,y,z); })"
   drawImage' :: Image -> Double -> Double -> Context -> IO ()
 
-foreign import javascript unsafe "$r = document.getElementById('canvas').getContext('2d');"
+foreign import javascript unsafe "(() => { return document.getElementById('canvas').getContext('2d'); })"
   getCtx :: IO Context
 
-foreign import javascript unsafe "$r = new Image();"
+foreign import javascript unsafe "(() => { return new Image(); })"
   newImage :: IO Image
 
-foreign import javascript unsafe "$1.src = $2;"
+foreign import javascript unsafe "((x, y) => { x.src = y; })"
   setSrc :: Image -> MisoString -> IO ()
 
-foreign import javascript unsafe "$r = new Date();"
+foreign import javascript unsafe "(() => { return new Date(); })"
   newDate :: IO JSVal
 
-foreign import javascript unsafe "$r = $1.getSeconds();"
+foreign import javascript unsafe "((x) => { return x.getSeconds(); })"
   getSecs :: JSVal -> IO Double
 
-foreign import javascript unsafe "$r = $1.getMilliseconds();"
+foreign import javascript unsafe "((x) => { return x.getMilliseconds(); })"
   getMillis :: JSVal -> IO Double
 
