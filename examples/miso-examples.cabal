@@ -7,7 +7,7 @@ homepage:            http://github.com/dmjio/miso
 copyright:           Copyright (c) 2017-2020 David M. Johnson
 bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
-cabal-version:       >=1.22
+cabal-version:       1.22
 synopsis:            A tasty Haskell front-end framework
 description:         Examples for miso
 license:             BSD3
