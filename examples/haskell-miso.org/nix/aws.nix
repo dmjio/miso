@@ -31,6 +31,7 @@ let
        "todo-mvc.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;
+          recommendedGzipSettings = true;
           locations = {
           "/" = {
             root = "${pkgs.misoPkgs.miso-examples}/bin/todo-mvc.jsexe";
