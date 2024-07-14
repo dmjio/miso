@@ -18,6 +18,7 @@ let
    services.haskell-miso.enable = true;
    services.nginx = {
      enable = true;
+     recommendedGzipSettings = true;
      virtualHosts = {
        "haskell-miso.org" = {
           forceSSL = true;
@@ -31,7 +32,6 @@ let
        "todo-mvc.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;
-          recommendedGzipSettings = true;
           locations = {
           "/" = {
             root = "${pkgs.misoPkgs.miso-examples}/bin/todo-mvc.jsexe";
