@@ -19,6 +19,7 @@ let
    services.nginx = {
      enable = true;
      recommendedGzipSettings = true;
+     recommendedOptimisation = true;
      virtualHosts = {
        "haskell-miso.org" = {
           forceSSL = true;
