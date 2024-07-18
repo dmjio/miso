@@ -12,7 +12,7 @@ import           Miso.String
 import           Control.Concurrent.MVar
 
 import GHCJS.Types
-import GHCJS.Foreign.Callback
+import GHC.JS.Foreign.Callback
 
 -- | Model
 data Model
@@ -71,17 +71,17 @@ viewModel Model {..} = view
       , div_ [] [ text info ]
       ]
 
-foreign import javascript unsafe "$r = new FileReader();"
+foreign import javascript unsafe "(() => { return new FileReader(); })"
   newReader :: IO JSVal
 
-foreign import javascript unsafe "$r = $1.files[0];"
+foreign import javascript unsafe "((x) => { return x.files[0]; })"
   getFile :: JSVal -> IO JSVal
 
-foreign import javascript unsafe "$1.onload = $2;"
+foreign import javascript unsafe "((x, y) => { x.onload = y; })"
   setOnLoad :: JSVal -> Callback (IO ()) -> IO ()
 
-foreign import javascript unsafe "$r = $1.result;"
+foreign import javascript unsafe "((x) => { return x.result; })"
   getResult :: JSVal -> IO MisoString
 
-foreign import javascript unsafe "$1.readAsText($2);"
+foreign import javascript unsafe "((x, y) => { x.readAsText(y); })"
   readText :: JSVal -> JSVal -> IO ()
