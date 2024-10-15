@@ -442,7 +442,7 @@ For more information on how `miso` handles isomorphic javascript, we recommend [
 
 ## Pinning nixpkgs
 
-By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nixpkgs.json).
+By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json).
 
 ## Binary cache
 
