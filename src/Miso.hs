@@ -22,6 +22,7 @@
 module Miso
   ( miso
   , startApp
+  , sink
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -41,17 +42,18 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.List
-import           Data.Sequence ((|>))
+import           Data.Sequence                 ((|>))
+import qualified Data.Sequence                 as S
+import qualified JavaScript.Object.Internal    as OI
+import           System.IO.Unsafe
 import           System.Mem.StableName
-import qualified Data.Sequence as S
-import qualified JavaScript.Object.Internal as OI
 
 #ifndef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
+import           Language.Javascript.JSaddle   (eval, waitForAnimationFrame)
 #ifdef IOS
 import           Miso.JSBits
 #else
-import           GHCJS.Types (JSString)
+import           GHCJS.Types                   (JSString)
 import           Data.FileEmbed
 #endif
 #else
@@ -99,6 +101,8 @@ common App {..} m getView = do
   let writeEvent a = void . liftIO . forkIO $ do
         atomicModifyIORef' actionsRef $ \as -> (as |> a, ())
         notify
+  -- init global sink
+  liftIO (writeIORef sinkRef writeEvent)
   -- init Subs
   forM_ subs $ \sub ->
     sub writeEvent
@@ -151,6 +155,16 @@ miso f = do
     let initialVTree = VTree (OI.Object iv)
     -- Create virtual dom, perform initial diff
     liftIO (newIORef initialVTree)
+
+sinkRef :: IORef (Sink action)
+{-# NOINLINE sinkRef #-}
+sinkRef = unsafePerformIO $ newIORef (\_ -> pure ())
+
+-- | Global sink exposed as a backdoor
+-- Meant for usage in long running IO actions, or custom callbacks
+-- Good for integrating with third-party components.
+sink :: Sink action
+sink = unsafePerformIO (readIORef sinkRef)
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
