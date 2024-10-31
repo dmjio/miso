@@ -53,7 +53,7 @@ let
           enableACME = true;
           locations = {
           "/" = {
-            root = "${pkgs.misoPkgs.miso-ghcjs.doc}/share/doc/*/html";
+            root = "${pkgs.misoPkgs.miso-ghcjs.doc}/share/doc/miso-1.8.5.0/html";
            };
          };
        };
