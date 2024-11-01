@@ -29,7 +29,7 @@ import Miso.Concurrent
 import Miso.Effect (Sub)
 import Miso.FFI
 import qualified Miso.FFI.History as FFI
-import Miso.String
+import Miso.String hiding (show)
 import Network.URI hiding (path)
 import System.IO.Unsafe
 

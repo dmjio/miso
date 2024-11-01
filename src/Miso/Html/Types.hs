@@ -65,7 +65,7 @@ import           Text.HTML.TagSoup          (Tag(..))
 import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
-import           Miso.String                hiding (reverse, elem)
+import           Miso.String                hiding (reverse, elem, show )
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
 data View action
