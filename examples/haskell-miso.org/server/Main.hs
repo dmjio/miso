@@ -77,7 +77,7 @@ misoManifest =
            , start_url = "."
            , display = "standalone"
            , theme_color = "#00d1b2"
-           , description = "A tasty Haskell front-end framework"
+           , description = "A tasty Haskell front-end web framework"
            }
 
 handle404 :: Application
@@ -92,7 +92,7 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
       L.doctype_
       L.html_ [ L.lang_ "en" ] $ do
         L.head_ $ do
-          L.title_ "Miso: A tasty Haskell front-end framework"
+          L.title_ "Miso: A tasty Haskell front-end web framework"
           L.link_ [ L.rel_ "stylesheet"
                   , L.href_ "https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.2/gh-fork-ribbon.min.css"
                   ]

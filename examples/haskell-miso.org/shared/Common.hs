@@ -169,7 +169,7 @@ home = template v
               , rel_ "noopener"
               , target_ "_blank"][
              strong_ [] [text "Haskell" ]]
-         , text  " front-end framework"
+         , text  " front-end web framework"
          ]
         ]
 
