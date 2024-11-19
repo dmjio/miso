@@ -195,7 +195,7 @@ middle =
       div_ [class_ "container"] [
         nav_ [class_ "columns"] [
                a_ [ class_ "column has-text-centered"
-                   , href_ "https://rawgit.com/krausest/js-framework-benchmark/master/webdriver-ts-results/table.html"
+                   , href_ "https://krausest.github.io/js-framework-benchmark/2024/table_chrome_130.0.6723.58.html"
                    , target_ "_blank"
                    , rel_ "noopener"
                    ] [
