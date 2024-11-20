@@ -38,12 +38,22 @@ main = do
 
 app :: Application
 #if MIN_VERSION_servant(0,11,0)
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
+app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> Tagged handle404)
 #else
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> handle404)
+app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> handle404)
 #endif
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
+
+robotsTxt :: Text
+robotsTxt =
+  T.unlines
+  [ "# www.robotstxt.org/"
+  , ""
+  , "# Allow crawling of all content"
+  , "User-agent: *"
+  , "Disallow:"
+  ]
 
 -- | Wrapper for setting HTML doctype and header
 newtype Wrapper a = Wrapper a
@@ -52,10 +62,14 @@ newtype Wrapper a = Wrapper a
 -- | Convert client side routes into server-side web handlers
 type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
+-- | robots.txt
+type RobotsTXT = "robots.txt" :> Get '[PlainText] Text
+
 -- | API type
 type API = ("static" :> Raw)
   :<|> ServerRoutes
   :<|> ("manifest.json" :> Get '[JSON] Manifest)
+  :<|> RobotsTXT
   :<|> Raw
 
 data Manifest
