@@ -3,10 +3,10 @@ version:             1.8.5.0
 category:            Web, Miso, Data Structures
 license:             BSD3
 license-file:        LICENSE
-author:              David M. Johnson <djohnson.m@gmail.com>
-maintainer:          David M. Johnson <djohnson.m@gmail.com>
+author:              David M. Johnson <code@dmj.io>
+maintainer:          David M. Johnson <code@dmj.io>
 homepage:            http://github.com/dmjio/miso
-copyright:           Copyright (c) 2017-2020 David M. Johnson
+copyright:           Copyright (c) 2016-2025 David M. Johnson
 bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
 extra-source-files:  README.md

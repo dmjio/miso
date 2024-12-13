@@ -5,8 +5,8 @@ homepage:            https://sse.haskell-miso.org
 license:             BSD3
 license-file:        LICENSE
 author:              David Johnson
-maintainer:          djohnson.m@gmail.com
-copyright:           David Johnson (c) 2017-2018
+maintainer:          code@dmj.io
+copyright:           David Johnson (c) 2016-2025
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
