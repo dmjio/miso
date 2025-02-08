@@ -38,6 +38,7 @@
   - [Begin](#begin)
   - [Nix](#nix)
   - [Architecture](#architecture)
+  - [Under the hood](#under-the-hood)
 - [Examples](#examples)
   - [TodoMVC](#todomvc)
   - [Flatris](#flatris)
@@ -177,6 +178,10 @@ ag -l | entr sh -c 'cabal build'
 
 ### Architecture
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/haskell-miso.cabal#L16-L60). For more info on how to use `stack` with a `client`/`server` setup, see this [link](https://docs.haskellstack.org/en/stable/ghcjs/#project-with-both-client-and-server). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/examples/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
+
+## Under the hood
+
+For details of the internals and general overview of how `miso` works, see the [Internals](docs/Internals.md).
 
 ## Examples
 
