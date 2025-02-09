@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
@@ -70,6 +71,7 @@ updateModel (sun,moon,earth) (SetTime m@(secs,millis)) _ = m <# do
   drawImage sun 0 0 300 300 ctx
   pure GetTime
 
+#ifndef ghcjs_HOST_OS
 foreign import javascript unsafe "((x) => { x.globalCompositeOperation = 'destination-over'; })"
   setGlobalCompositeOperation :: Context -> IO ()
 
@@ -93,4 +95,29 @@ foreign import javascript unsafe "((x) => { return x.getSeconds(); })"
 
 foreign import javascript unsafe "((x) => { return x.getMilliseconds(); })"
   getMillis :: JSVal -> IO Double
+#else
+foreign import javascript unsafe "$1.globalCompositeOperation = 'destination-over';"
+  setGlobalCompositeOperation :: Context -> IO ()
+
+foreign import javascript unsafe "$4.drawImage($1,$2,$3);"
+  drawImage' :: Image -> Double -> Double -> Context -> IO ()
+
+foreign import javascript unsafe "$r = document.getElementById('canvas').getContext('2d');"
+  getCtx :: IO Context
+
+foreign import javascript unsafe "$r = new Image();"
+  newImage :: IO Image
+
+foreign import javascript unsafe "$1.src = $2;"
+  setSrc :: Image -> MisoString -> IO ()
+
+foreign import javascript unsafe "$r = new Date();"
+  newDate :: IO JSVal
+
+foreign import javascript unsafe "$r = $1.getSeconds();"
+  getSecs :: JSVal -> IO Double
+
+foreign import javascript unsafe "$r = $1.getMilliseconds();"
+  getMillis :: JSVal -> IO Double
+#endif
 
