@@ -16,17 +16,20 @@ module Miso.String
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-  , module Data.Monoid
-  , module Data.Text
+  , module S
   , ms
   ) where
 
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
-import           Data.Monoid
+import           Data.Monoid             as S
 import           Data.JSString
 import           Data.JSString.Text
-import           Data.Text
+#if MIN_VERSION_text(2,1,2)
+import           Data.Text               as S hiding (show)
+#else
+import           Data.Text               as S
+#endif 
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
