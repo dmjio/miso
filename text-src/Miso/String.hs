@@ -73,13 +73,13 @@ instance ToMisoString B.ByteString where
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
 instance ToMisoString Float where
-  toMisoString = T.pack . Prelude.show
+  toMisoString = T.pack . show
 instance ToMisoString Double where
-  toMisoString = T.pack . Prelude.show
+  toMisoString = T.pack . show
 instance ToMisoString Int where
-  toMisoString = T.pack . Prelude.show
+  toMisoString = T.pack . show
 instance ToMisoString Word where
-  toMisoString = T.pack . Prelude.show
+  toMisoString = T.pack . show
 
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
