@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
@@ -19,9 +20,9 @@ data Action
 main :: IO ()
 main = do
   [sun, moon, earth] <- replicateM 3 newImage
-  setSrc sun "https://mdn.mozillademos.org/files/1456/Canvas_sun.png"
-  setSrc moon "https://mdn.mozillademos.org/files/1443/Canvas_moon.png"
-  setSrc earth "https://mdn.mozillademos.org/files/1429/Canvas_earth.png"
+  setSrc sun "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_sun.png"
+  setSrc moon "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_moon.png"
+  setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
   startApp App { initialAction = GetTime
                , update = updateModel (sun,moon,earth)
                , ..
@@ -70,6 +71,31 @@ updateModel (sun,moon,earth) (SetTime m@(secs,millis)) _ = m <# do
   drawImage sun 0 0 300 300 ctx
   pure GetTime
 
+#ifndef ghcjs_HOST_OS
+foreign import javascript unsafe "((x) => { x.globalCompositeOperation = 'destination-over'; })"
+  setGlobalCompositeOperation :: Context -> IO ()
+
+foreign import javascript unsafe "((x, y, z, w) => { w.drawImage(x,y,z); })"
+  drawImage' :: Image -> Double -> Double -> Context -> IO ()
+
+foreign import javascript unsafe "(() => { return document.getElementById('canvas').getContext('2d'); })"
+  getCtx :: IO Context
+
+foreign import javascript unsafe "(() => { return new Image(); })"
+  newImage :: IO Image
+
+foreign import javascript unsafe "((x, y) => { x.src = y; })"
+  setSrc :: Image -> MisoString -> IO ()
+
+foreign import javascript unsafe "(() => { return new Date(); })"
+  newDate :: IO JSVal
+
+foreign import javascript unsafe "((x) => { return x.getSeconds(); })"
+  getSecs :: JSVal -> IO Double
+
+foreign import javascript unsafe "((x) => { return x.getMilliseconds(); })"
+  getMillis :: JSVal -> IO Double
+#else
 foreign import javascript unsafe "$1.globalCompositeOperation = 'destination-over';"
   setGlobalCompositeOperation :: Context -> IO ()
 
@@ -93,4 +119,5 @@ foreign import javascript unsafe "$r = $1.getSeconds();"
 
 foreign import javascript unsafe "$r = $1.getMilliseconds();"
   getMillis :: JSVal -> IO Double
+#endif
 

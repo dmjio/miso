@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Main where
@@ -97,6 +98,61 @@ updateModel ref GetTime m = m <# do
 updateModel _ (SetTime m) _ =
   m <# pure GetTime
 
+#ifndef ghcjs_HOST_OS
+foreign import javascript unsafe "(() => { return new Stats(); })"
+  newStats :: IO JSVal
+
+foreign import javascript unsafe "((x) => { x.begin(); })"
+  statsBegin :: JSVal -> IO ()
+
+foreign import javascript unsafe "((x) => { x.end(); })"
+  statsEnd :: JSVal -> IO ()
+
+foreign import javascript unsafe "((x) => { x.showPanel(0); })"
+  showPanel :: JSVal -> IO ()
+
+foreign import javascript unsafe "(() => { return new THREE.Scene();})"
+  newScene :: IO JSVal
+
+foreign import javascript unsafe "((x,y,z) => { return new THREE.BoxGeometry(x,y,z); })"
+  newBoxGeometry :: Int -> Int -> Int -> IO JSVal
+
+foreign import javascript unsafe "(() => { return new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 ); })"
+  newCamera :: IO JSVal
+
+foreign import javascript unsafe "((x,y) => { return new THREE.Mesh( x, y ); })"
+  newMesh :: JSVal -> JSVal -> IO JSVal
+
+foreign import javascript unsafe "(() => { return new THREE.MeshBasicMaterial( { color: 0x00ff00 } ); })"
+  newMeshBasicMaterial :: IO JSVal
+
+foreign import javascript unsafe "((x) => { return new THREE.WebGLRenderer({canvas:x, antialias : true}); })"
+  newRenderer :: JSVal -> IO JSVal
+
+foreign import javascript unsafe "((x) => { x.setSize( window.innerWidth, window.innerHeight ); })"
+  setSize :: JSVal -> IO ()
+
+foreign import javascript unsafe "((x, y) => { x.add(y); })"
+  addToScene :: JSVal -> JSVal -> IO ()
+
+foreign import javascript unsafe "((x, y) => { x.position.z = y; })"
+  cameraZ :: JSVal -> Int -> IO ()
+
+foreign import javascript unsafe "((a, y) => { a.rotation.x += y; })"
+  rotateX :: JSVal -> Double -> IO ()
+
+foreign import javascript unsafe "((x, a) => { x.rotation.y += a; })"
+  rotateY :: JSVal -> Double -> IO ()
+
+foreign import javascript unsafe "((x, y, z) => { x.render(y, z); })"
+  render :: JSVal -> JSVal -> JSVal -> IO ()
+
+foreign import javascript unsafe "((x, y) => { x.position.z = y; })"
+  positionCamera :: JSVal -> Double -> IO ()
+
+foreign import javascript unsafe "((x, y) => { x.appendChild( y.domElement ); })"
+  addStatsToDOM :: JSVal -> JSVal -> IO ()
+#else
 foreign import javascript unsafe "$r = new Stats();"
   newStats :: IO JSVal
 
@@ -150,3 +206,4 @@ foreign import javascript unsafe "$1.position.z = $2;"
 
 foreign import javascript unsafe "$1.appendChild( $2.domElement );"
   addStatsToDOM :: JSVal -> JSVal -> IO ()
+#endif

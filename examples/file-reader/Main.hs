@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,7 +13,11 @@ import           Miso.String
 import           Control.Concurrent.MVar
 
 import GHCJS.Types
+#ifndef ghcjs_HOST_OS
+import GHC.JS.Foreign.Callback
+#else
 import GHCJS.Foreign.Callback
+#endif
 
 -- | Model
 data Model
@@ -71,6 +76,22 @@ viewModel Model {..} = view
       , div_ [] [ text info ]
       ]
 
+#ifndef ghcjs_HOST_OS
+foreign import javascript unsafe "(() => { return new FileReader(); })"
+  newReader :: IO JSVal
+
+foreign import javascript unsafe "((x) => { return x.files[0]; })"
+  getFile :: JSVal -> IO JSVal
+
+foreign import javascript unsafe "((x, y) => { x.onload = y; })"
+  setOnLoad :: JSVal -> Callback (IO ()) -> IO ()
+
+foreign import javascript unsafe "((x) => { return x.result; })"
+  getResult :: JSVal -> IO MisoString
+
+foreign import javascript unsafe "((x, y) => { x.readAsText(y); })"
+  readText :: JSVal -> JSVal -> IO ()
+#else
 foreign import javascript unsafe "$r = new FileReader();"
   newReader :: IO JSVal
 
@@ -85,3 +106,4 @@ foreign import javascript unsafe "$r = $1.result;"
 
 foreign import javascript unsafe "$1.readAsText($2);"
   readText :: JSVal -> JSVal -> IO ()
+#endif
