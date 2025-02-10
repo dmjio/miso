@@ -180,11 +180,11 @@ foldEffects
   :: Sink action
   -> (action -> model -> Effect action model)
   -> Acc model -> action -> Acc model
-foldEffects sink update = \(Acc model as) action ->
+foldEffects snk update = \(Acc model as) action ->
   case update action model of
     Effect newModel effs -> Acc newModel newAs
       where
         newAs = as >> do
-          forM_ effs $ \eff -> forkJSM (eff sink)
+          forM_ effs $ \eff -> forkJSM (eff snk)
 
 data Acc model = Acc !model !(JSM ())
