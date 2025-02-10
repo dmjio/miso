@@ -1,7 +1,8 @@
+cabal-version:       2.2
 name:                miso
 version:             1.8.6.0
 category:            Web, Miso, Data Structures
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
 author:              David M. Johnson <code@dmj.io>
 maintainer:          David M. Johnson <code@dmj.io>
@@ -10,7 +11,6 @@ copyright:           Copyright (c) 2016-2025 David M. Johnson
 bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
 extra-source-files:  README.md
-cabal-version:       1.22
 synopsis:            A tasty Haskell front-end web framework
 description:
             Miso is a small, production-ready, "isomorphic" Haskell front-end framework featuring a virtual-dom, recursive diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHCJS FFI and therefore has minimal dependencies.

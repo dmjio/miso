@@ -1,3 +1,4 @@
+cabal-version:       2.2
 name:                miso-examples
 version:             1.8.6.0
 category:            Web, Miso, Data Structures
@@ -7,10 +8,9 @@ homepage:            http://github.com/dmjio/miso
 copyright:           Copyright (c) 2016-2025 David M. Johnson
 bug-reports:         https://github.com/dmjio/miso/issues
 build-type:          Simple
-cabal-version:       1.22
 synopsis:            A tasty Haskell front-end web framework
 description:         Examples for miso
-license:             BSD3
+license:             BSD-3-Clause
 license-file:        LICENSE
 
 extra-source-files:
