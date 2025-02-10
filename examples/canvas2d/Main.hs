@@ -71,7 +71,7 @@ updateModel (sun,moon,earth) (SetTime m@(secs,millis)) _ = m <# do
   drawImage sun 0 0 300 300 ctx
   pure GetTime
 
-#ifndef ghcjs_HOST_OS
+#ifdef javascript_HOST_ARCH
 foreign import javascript unsafe "((x) => { x.globalCompositeOperation = 'destination-over'; })"
   setGlobalCompositeOperation :: Context -> IO ()
 

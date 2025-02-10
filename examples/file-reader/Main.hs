@@ -13,7 +13,7 @@ import           Miso.String
 import           Control.Concurrent.MVar
 
 import GHCJS.Types
-#ifndef ghcjs_HOST_OS
+#ifdef javascript_HOST_ARCH
 import GHC.JS.Foreign.Callback
 #else
 import GHCJS.Foreign.Callback
@@ -76,7 +76,7 @@ viewModel Model {..} = view
       , div_ [] [ text info ]
       ]
 
-#ifndef ghcjs_HOST_OS
+#ifdef javascript_HOST_ARCH
 foreign import javascript unsafe "(() => { return new FileReader(); })"
   newReader :: IO JSVal
 

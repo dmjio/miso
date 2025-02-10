@@ -98,7 +98,7 @@ updateModel ref GetTime m = m <# do
 updateModel _ (SetTime m) _ =
   m <# pure GetTime
 
-#ifndef ghcjs_HOST_OS
+#ifdef javascript_HOST_ARCH
 foreign import javascript unsafe "(() => { return new Stats(); })"
   newStats :: IO JSVal
 
