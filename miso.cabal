@@ -46,6 +46,8 @@ flag jsstring-only
     Always set MisoString = JSString
 
 executable tests
+  default-language:
+    Haskell2010
   main-is:
     Main.hs
   if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
@@ -75,8 +77,6 @@ executable tests
       unordered-containers,
       transformers,
       vector
-    default-language:
-      Haskell2010
 
 library
   default-language:
