@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                miso-examples
-version:             1.8.6.0
+version:             1.8.7.0
 category:            Web, Miso, Data Structures
 author:              David M. Johnson <code@dmj.io>
 maintainer:          David M. Johnson <code@dmj.io>
