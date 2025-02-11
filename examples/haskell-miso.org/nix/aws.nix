@@ -16,6 +16,9 @@ let
      acceptTerms = true;
    };
    services.haskell-miso.enable = true;
+   nix.gc = {
+     automatic = true;
+   };
    services.nginx = {
      enable = true;
      recommendedGzipSettings = true;
