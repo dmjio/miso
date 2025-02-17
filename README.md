@@ -8,9 +8,11 @@
 </p>
 
 <p align="center">
-  <a href="https://join.slack.com/t/haskell-miso/shared_invite/zt-1w80x404h-AF2Be_BDQixNMadzadnUNg">
-<img src="https://img.shields.io/badge/slack-miso-E01563.svg?style=flat-square" alt="Miso Slack">
+
+  <a href="https://matrix.to/#/#haskell-miso:matrix.org">
+	<img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
   </a>
+
   <a href="https://haskell.org">
 	<img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
   </a>
@@ -22,9 +24,6 @@
   </a>
   <a href="http://hackage.haskell.org/package/miso">
 	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
-  </a>
-  <a href="https://www.irccloud.com/invite?channel=%23haskell-miso&amp;hostname=irc.libera.chat&amp;port=6697&amp;ssl=1">
-	<img src="https://img.shields.io/badge/irc-%23haskell--miso-1e72ff.svg?style=flat-square" alt="IRC #haskell-miso">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
 	<img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
