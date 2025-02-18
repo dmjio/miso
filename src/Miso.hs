@@ -80,10 +80,9 @@ import           Miso.WebSocket
 common
   :: Eq model
   => App model action
-  -> model
   -> (Sink action -> JSM (IORef VTree))
   -> JSM ()
-common App {..} m getView = do
+common App {..} getView = do
 #ifndef ghcjs_HOST_OS
 #ifdef IOS
   mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
@@ -139,14 +138,14 @@ common App {..} m getView = do
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
         loop newModel
-  loop m
+  loop model
 
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = do
   app@App {..} <- f <$> getCurrentURI
-  common app model $ \writeEvent -> do
+  common app $ \writeEvent -> do
     let initialView = view model
     VTree (OI.Object iv) <- flip runView writeEvent initialView
     mountEl <- mountElement mountPoint
@@ -169,7 +168,7 @@ sink = unsafePerformIO (readIORef sinkRef)
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} =
-  common app model $ \writeEvent -> do
+  common app $ \writeEvent -> do
     let initialView = view model
     initialVTree <- flip runView writeEvent initialView
     (diff mountPoint) Nothing (Just initialVTree)
