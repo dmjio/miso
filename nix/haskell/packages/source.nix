@@ -26,20 +26,20 @@ in
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "d569be43f92b9b8c01dc3ee4c41401ab406a2076";
-    sha256 = "1m1xxy4l9ii91k1k504qkxh9k1ybprm1m66mkb9dqlwcpyhcccmv";
+    rev = "b72b4d01fdc186d2c7447beb7273ad13358ff593";
+    sha256 = "sha256-vZTzL8vX+/ehiTwQTUSN0XBu67X4bmqMdvRDu/dRL4A=";
   };
   jsaddle-dom = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle-dom";
-    rev = "6ce23c5";
-    sha256 = "1wpwf025czibkw6770c99zk7r30j6nh7jdzhzqbi2z824qyqzbnw";
+    rev = "206393c375c4c1937f9fe691975f27c7a80dbfc5";
+    sha256 = "1i3xq1a3v6fknv6kv057vcy63vnvwdx4vb8bzhw7mi1pw4agj25n";
   };
   ghcjs-dom = fetchFromGitHub {
     owner = "ghcjs";
     repo = "ghcjs-dom";
-    rev = "b8e483a";
-    sha256 = "06qlbbhjd0mlv5cymp5q0rb69a333l0fcif5zwa83h94dh25c1g7";
+    rev = "b1cec84d25e75815eb08e4323a7d8161d5da3dd6";
+    sha256 = "sha256-TmkB7y5LhiSG4rdhNuPdDHsAvlv0Y0vNhrOGnh+kttQ=";
   };
   webkit2gtk3-javascriptcore = fetchFromGitHub {
     owner = "gtk2hs";
