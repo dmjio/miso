@@ -19,14 +19,17 @@ data Action
   | Toggle4
   deriving (Show, Eq)
 
+data MainAction = MainNoOp
+type MainModel = (Int,Int)
+
 main :: IO ()
 main = startApp app
 
-app :: App Model Action
+app :: App MainModel MainAction
 app = App {..}
   where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model         = 0             -- initial model
+    initialAction = MainNoOp      -- initial action to be executed on application load
+    model         = (1,1)         -- initial model
     update        = updateModel1  -- update function
     view          = viewModel1    -- view function
     events        = defaultEvents -- default delegated events
@@ -35,18 +38,16 @@ app = App {..}
     logLevel      = Off           -- Used to copy DOM into VDOM, applies only to `miso` function
 
 -- | Constructs a virtual DOM from a model
-viewModel1 :: Model -> View Action
-viewModel1 x = div_ [ id_ "main div" ]
+viewModel1 :: MainModel -> View MainAction
+viewModel1 _ = div_ [ id_ "main div" ]
   [ "Main app - two sub components below me"
-  , Component counterApp2
-  , Component counterApp3
+  , component counterApp2
+  , component counterApp3
   ]
 
 -- | Updates model, optionally introduces side effects
-updateModel1 :: Action -> Model -> Effect Action Model
-updateModel1 NoOp m          = noEff m
-updateModel1 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World1") >> pure NoOp
+updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
+updateModel1 MainNoOp m = noEff m
 
 -- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
@@ -116,7 +117,7 @@ viewModel3 (toggle, x) = div_ [] $
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , button_ [ onClick Toggle4 ] [ text "toggle component 4" ]
   , rawHtml "<div><p>hey expandable 3!</div></p>"
-  ] ++ [ Component counterApp4 | toggle ]
+  ] ++ [ component counterApp4 | toggle ]
 
 counterApp4 :: App Model Action
 counterApp4 = App {..}

@@ -1,12 +1,13 @@
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE LambdaCase                #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE TypeSynonymInstances      #-}
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE CPP                       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -20,6 +21,7 @@ module Miso.Types
   ( App (..)
   , View (..)
   , component
+  , Component (..)
   , ToView (..)
   , Key (..)
   , toKey
@@ -187,10 +189,12 @@ data View action where
   Node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
   Text :: MisoString -> View action
   TextRaw :: MisoString -> View action
-  Component :: Eq model => App model a -> View action
+  ComponentNode :: Component -> View action
+
+data Component = forall model action . Eq model => Component (App model action)
 
 component :: Eq model => App model a -> View action
-component = Component
+component app = ComponentNode (Component app)
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -268,7 +272,7 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (Component app) =
+  toHtml (ComponentNode (Component app)) =
     L.div_ [ L.id_ (fromMisoString (mountPoint app)) ] $ L.toHtml (view app (model app))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where

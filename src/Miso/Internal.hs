@@ -198,7 +198,7 @@ initApp App {..} snk = do
   liftIO (newIORef vtree)
 
 runView :: View action -> Sink action -> JSM VTree
-runView (Component app) _ = do
+runView (ComponentNode (Component app)) _ = do
   vcomp <- create
   let name = mountPoint app
 

@@ -53,7 +53,7 @@ import           Miso.Subscription
 #ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel
 #endif
-import           Miso.Types
+import           Miso.Types hiding (Component(..))
 import           Miso.Util
 import           Miso.Internal
 import           Miso.WebSocket
