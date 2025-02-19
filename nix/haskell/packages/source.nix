@@ -22,7 +22,7 @@ in
 {
   miso = make-src-filter ../../..;
   examples = make-src-filter ../../../examples;
-  haskell-miso-src = make-src-filter ../../../examples/haskell-miso.org;
+  haskell-miso-src = make-src-filter ../../../haskell-miso.org;
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
