@@ -59,7 +59,7 @@ main = do
   startApp App { model = m
                , initialAction = Init
                , update = updateModel ref
-               , mountPoint = Nothing
+               , mountPoint = "body"
                , logLevel = Off
                , ..
                }

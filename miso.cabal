@@ -126,6 +126,7 @@ library
       Miso.TypeLevel
   other-modules:
     Miso.Concurrent
+    Miso.Internal
   ghc-options:
     -Wall
   hs-source-dirs:

@@ -26,7 +26,7 @@ main = startApp App {..}
                     M.insert (pack "touchmove") False defaultEvents
     subs          = [ mouseSub HandleMouse ]
     logLevel      = Off
-    mountPoint    = Nothing
+    mountPoint    = "body"
 
 emptyModel :: Model
 emptyModel = Model (0,0)

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
@@ -34,7 +35,7 @@ main :: IO ()
 main = do
   startApp App { model = Model Nothing
                , initialAction = NoOp
-               , mountPoint = Nothing
+               , mountPoint = "body"
                , ..
                }
     where

@@ -62,10 +62,10 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
         event.preventDefault();
       eventObj['runEvent'](event);
       if (!options['stopPropagation'])
-        window['propogateWhileAble'] (parentStack, event);
+        window['propagateWhileAble'] (parentStack, event);
     } else {
       /* still propagate to parent handlers even if event not defined */
-      window['propogateWhileAble'] (parentStack, event);
+      window['propagateWhileAble'] (parentStack, event);
     }
   }
 };
@@ -79,14 +79,16 @@ window['buildTargetToElement'] = function buildTargetToElement (element, target)
   return stack;
 };
 
-window['propogateWhileAble'] = function propogateWhileAble (parentStack, event) {
+window['propagateWhileAble'] = function propagateWhileAble (parentStack, event) {
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i]['events'][event.type]) {
-      var eventObj = parentStack[i]['events'][event.type],
-        options = eventObj['options'];
+      var eventObj = parentStack[i]['events'][event.type], options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
-      if (options['stopPropagation']) break;
+      if (options['stopPropagation']) {
+        event.stopPropagation();
+        break;
+      }
     }
   }
 };

@@ -24,7 +24,9 @@ module Miso.String (
   , ms
   ) where
 
+#ifdef ghcjs_HOST_OS
 import           Data.Aeson
+#endif
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Char

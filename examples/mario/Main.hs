@@ -65,7 +65,7 @@ main = runApp $ do
     subs   = [ arrowsSub GetArrows
              , windowCoordsSub WindowCoords
              ]
-    mountPoint = Nothing
+    mountPoint = "body"
     logLevel = Off
 
 data Model = Model

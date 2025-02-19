@@ -35,7 +35,7 @@ main = do
     model  = (0.0, 0.0)
     subs   = []
     events = defaultEvents
-    mountPoint = Nothing -- default to body
+    mountPoint = "body" -- default to body
     logLevel = Off
 
 updateModel

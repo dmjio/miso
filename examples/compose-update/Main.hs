@@ -96,7 +96,7 @@ main = startApp App { initialAction = NoOp, ..}
     view   = viewModel
     events = defaultEvents
     subs   = []
-    mountPoint = Nothing
+    mountPoint = "body"
     logLevel = Off
 
 viewModel :: Model -> View Action

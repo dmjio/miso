@@ -99,7 +99,7 @@ main = runApp $ startApp App { initialAction = NoOp, ..}
     update     = updateModel
     view       = viewModel
     events     = defaultEvents
-    mountPoint = Nothing
+    mountPoint = "body"
     subs       = []
     logLevel   = Off
 

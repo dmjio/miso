@@ -30,6 +30,37 @@ flag ios
   description:
     Cross compile to iOS
 
+executable components
+  default-language:
+    Haskell2010
+  main-is:
+    Main.hs
+  if !impl(ghcjs) && !flag(jsaddle)
+    buildable: False
+  else
+    ghcjs-options:
+      -dedupe
+    cpp-options:
+      -DGHCJS_BROWSER
+    hs-source-dirs:
+      components
+    build-depends:
+      aeson,
+      base < 5,
+      containers,
+      miso,
+      transformers
+    if flag(ios)
+      cpp-options:
+        -DIOS
+      ghc-options:
+        -threaded
+      build-depends:
+        jsaddle-wkwebview
+    else
+      build-depends:
+        jsaddle-warp
+
 executable simple
   default-language:
     Haskell2010
