@@ -31,17 +31,18 @@ module Miso.Router
   ) where
 
 import qualified Data.ByteString.Char8 as BS
+import           Data.Kind
 import           Data.Proxy
-import           Data.Text             (Text)
-import qualified Data.Text             as T
+import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Text.Encoding
 import           GHC.TypeLits
-import           Network.HTTP.Types    hiding (Header)
+import           Network.HTTP.Types hiding (Header)
 import           Network.URI
 import           Servant.API
 import           Web.HttpApiData
 
-import           Miso.Html             hiding (text)
+import           Miso.Html hiding (text)
 
 -- | Router terminator.
 -- The 'HasRouter' instance for 'View' finalizes the router.
@@ -79,7 +80,7 @@ data Router a where
 -- 'Router' is returned, to be interpretted by 'routeLoc'.
 class HasRouter layout where
   -- | A mkRouter handler.
-  type RouteT layout a :: *
+  type RouteT layout a :: Type
   -- | Transform a mkRouter handler into a 'Router'.
   mkRouter :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
 
@@ -119,7 +120,7 @@ instance (HasRouter sublayout, KnownSymbol sym)
     (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
 
 -- | Header
-instance HasRouter sublayout => HasRouter (Header sym (x :: *) :> sublayout) where
+instance HasRouter sublayout => HasRouter (Header sym (x :: Type) :> sublayout) where
     type RouteT (Header sym x :> sublayout) a = Maybe x -> RouteT sublayout a
     mkRouter _ a f = mkRouter (Proxy :: Proxy sublayout) a (f Nothing)
 

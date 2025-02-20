@@ -20,7 +20,6 @@ module Miso.FFI.SSE
 
 import           GHCJS.Types
 
-import           Miso.FFI (JSM)
 import qualified Miso.FFI as FFI
 import           Miso.String
 

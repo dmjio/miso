@@ -29,7 +29,7 @@ import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
 import           Control.Monad.Trans.Writer.Strict (WriterT(WriterT), Writer, runWriter, tell, mapWriter)
 import           Data.Bifunctor (second)
-import           Data.Foldable (Foldable, for_)
+import           Data.Foldable (for_)
 import qualified Data.Map as M
 import           Miso.Effect
 import           Miso.FFI (JSM)

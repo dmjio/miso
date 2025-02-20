@@ -28,7 +28,6 @@ import           GHCJS.Types
 
 import           Language.Javascript.JSaddle hiding (create)
 
-import           Miso.FFI (JSM)
 import qualified Miso.FFI as FFI
 import           Miso.String
 import           Miso.WebSocket
