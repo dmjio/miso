@@ -19,6 +19,7 @@ module Miso
   ( miso
   , startApp
   , sink
+  , run
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -60,6 +61,7 @@ import           Miso.Event
 import           Miso.FFI
 import           Miso.Html
 import           Miso.Router
+import           Miso.Runner (run)
 import           Miso.Subscription
 #ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel

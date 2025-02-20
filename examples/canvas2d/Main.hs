@@ -18,7 +18,7 @@ data Action
   | SetTime Model
 
 main :: IO ()
-main = do
+main = run $ do
   [sun, moon, earth] <- replicateM 3 newImage
   setSrc sun "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_sun.png"
   setSrc moon "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_moon.png"

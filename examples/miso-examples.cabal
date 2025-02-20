@@ -16,7 +16,20 @@ license-file:        LICENSE
 extra-source-files:
   mario/imgs/mario.png
 
+common common-options
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+  ghc-options:
+    -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
+
+common js-only
+  if arch(wasm32) || !(impl(ghcjs) || arch(javascript))
+     buildable: False
+
 executable simple
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -32,10 +45,11 @@ executable simple
     base < 5,
     containers,
     miso,
-    transformers,
-    jsaddle-warp
+    transformers
 
 executable todo-mvc
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -51,10 +65,11 @@ executable todo-mvc
     base < 5,
     containers,
     miso,
-    transformers,
-    jsaddle-warp
+    transformers
 
 executable threejs
+  import:
+    common-options, js-only
   default-language:
     Haskell2010
   main-is:
@@ -68,11 +83,13 @@ executable threejs
   build-depends:
     aeson,
     base < 5,
-    ghcjs-base,
     containers,
+    jsaddle,
     miso
 
 executable file-reader
+  import:
+    common-options, js-only
   default-language:
     Haskell2010
   main-is:
@@ -91,6 +108,8 @@ executable file-reader
     miso
 
 executable xhr
+  import:
+    common-options, js-only
   default-language:
     Haskell2010
   main-is:
@@ -109,6 +128,8 @@ executable xhr
     miso
 
 executable canvas2d
+  import:
+    common-options, js-only
   default-language:
     Haskell2010
   main-is:
@@ -126,6 +147,8 @@ executable canvas2d
     miso
 
 executable router
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -142,10 +165,11 @@ executable router
     containers,
     miso,
     servant,
-    transformers,
-    jsaddle-warp
+    transformers
 
 executable websocket
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -161,10 +185,11 @@ executable websocket
     base < 5,
     containers,
     miso,
-    transformers,
-    jsaddle-warp
+    transformers
 
 executable mario
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -178,36 +203,11 @@ executable mario
   build-depends:
     base < 5,
     containers,
-    miso,
-    jsaddle-warp
-  if !impl(ghcjs) && !arch(javascript)
-    build-depends:
-      wai,
-      wai-app-static,
-      warp,
-      websockets,
-
-
-executable svg
-  default-language:
-    Haskell2010
-  main-is:
-    Main.hs
-  ghcjs-options:
-    -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
-  hs-source-dirs:
-    svg
-  other-modules:
-    Touch
-  build-depends:
-    base < 5,
-    containers,
-    aeson,
     miso
 
 executable compose-update
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -223,6 +223,8 @@ executable compose-update
     miso
 
 executable mathml
+  import:
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -235,4 +237,25 @@ executable mathml
     mathml
   build-depends:
     base < 5,
+    miso
+
+executable svg
+  import:
+    common-options
+  other-modules:
+    Touch
+  default-language:
+    Haskell2010
+  main-is:
+    Main.hs
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    svg
+  build-depends:
+    base < 5,
+    containers,
+    aeson,
     miso

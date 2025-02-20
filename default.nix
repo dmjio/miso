@@ -23,11 +23,22 @@ let
 in
 {
   inherit pkgs;
-  deploy = pkgs.deploy rev;
+
+  #js
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
   inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app;
+  
+  #native
+  miso-ghc = pkgs.haskell.packages.ghc865.miso;
+  miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
   inherit (pkgs.haskell.packages.ghc865) sample-app-jsaddle;
+
+  #hackage releases
   inherit release release-examples;
+
+  #website
   inherit (pkgs) haskell-miso;
+
+  #ci
+  deploy = pkgs.deploy rev;
 }

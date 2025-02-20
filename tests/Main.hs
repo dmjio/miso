@@ -23,7 +23,7 @@ import           Test.QuickCheck hiding (total)
 import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
 
-import           Miso
+import           Miso hiding (run)
 
 instance Arbitrary Value where
   arbitrary = sized sizedArbitraryValue

@@ -8,7 +8,7 @@ import Data.Proxy
 import Miso
 
 main :: IO ()
-main = do
+main = run $ do
   miso $ \currentURI ->
     App { initialAction = NoOp
         , model = Model currentURI "No event received"

@@ -21,13 +21,12 @@ import           Miso
 import           Miso.String  (MisoString)
 import qualified Miso.String  as S
 
-import Language.Javascript.JSaddle.Warp as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run 8080
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 main :: IO ()
-main = runApp $ startApp App { initialAction = Id, ..}
+main = run $ startApp App { initialAction = Id, ..}
   where
     model = Model (Message "") mempty
     events = defaultEvents

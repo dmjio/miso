@@ -1,33 +1,36 @@
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE CPP                        #-}
 module Main where
 
 import           Common
 import           Data.Aeson
 import           Data.Proxy
-import           Data.Text                            (Text)
-import qualified Data.Text                            as T
+import           Data.Text (Text)
+import qualified Data.Text as T
 import           GHC.Generics
-import qualified Lucid                                as L
+import qualified Lucid as L
 import           Lucid.Base
 import           Network.HTTP.Types hiding (Header)
 import           Network.Wai
+import           Network.Wai.Application.Static
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Gzip
-import           Network.Wai.Application.Static
 import           Network.Wai.Middleware.RequestLogger
 import           Servant
-import           Servant.Server.Internal
-import qualified System.IO                            as IO
+import qualified System.IO as IO
 
-import           Miso
+import           Miso hiding (run, send)
 import           Miso.String
+
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 main :: IO ()
 main = do
@@ -37,11 +40,7 @@ main = do
       compress = gzip def { gzipFiles = GzipCompress }
 
 app :: Application
-#if MIN_VERSION_servant(0,11,0)
 app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> Tagged handle404)
-#else
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> handle404)
-#endif
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
 

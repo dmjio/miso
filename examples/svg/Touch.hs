@@ -2,9 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Touch where
 
-import Control.Monad
 import Data.Aeson.Types
-import Debug.Trace
 import Miso
 
 data Touch = Touch
@@ -41,4 +39,5 @@ touchDecoder = Decoder {..}
 onTouchMove :: (TouchEvent -> action) -> Attribute action
 onTouchMove = on "touchmove" touchDecoder
 
+onTouchStart :: (TouchEvent -> action) -> Attribute action
 onTouchStart = on "touchstart" touchDecoder

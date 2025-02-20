@@ -1,21 +1,24 @@
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeOperators     #-}
 module Main where
 
-import qualified Data.Map      as M
+import qualified Data.Map as M
 
 import           Control.Arrow
 import           Miso
-import           Miso.String   (MisoString, pack, ms)
-import           Miso.Svg      hiding (height_, id_, style_, width_)
+import           Miso.String (MisoString, pack, ms)
+import           Miso.Svg hiding (height_, id_, style_, width_)
 import           Touch
 
-trunc = truncate *** truncate
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 main :: IO ()
-main = startApp App {..}
+main = run $ startApp App {..}
   where
     initialAction = Id
     model         = emptyModel
@@ -27,6 +30,9 @@ main = startApp App {..}
     subs          = [ mouseSub HandleMouse ]
     logLevel      = Off
     mountPoint    = Nothing
+
+trunc :: (Double, Double) -> (Int, Int)
+trunc = truncate *** truncate
 
 emptyModel :: Model
 emptyModel = Model (0,0)
