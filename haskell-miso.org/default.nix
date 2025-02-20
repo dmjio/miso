@@ -1,7 +1,7 @@
 {}:
-with (import ../.. {});
+with (import ../default.nix {});
 let
-  src = import ../../nix/haskell/packages/source.nix pkgs;
+  src = import ../nix/haskell/packages/source.nix pkgs;
   inherit (pkgs) runCommand closurecompiler;
   inherit (pkgs.haskell.packages) ghcjs86 ghc865;
   client = ghcjs86.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};

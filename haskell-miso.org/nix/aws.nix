@@ -7,9 +7,9 @@ let
   awsBox = { pkgs, config, lib, resources, ... }: {
    imports = [ ./module.nix ];
    nixpkgs.config.packageOverrides = pkgs: {
-     haskell-miso = import ./../default.nix {};
-     misoPkgs = import ../../../default.nix { examples = true; };
-     coverage = import ../../../tests {};
+     haskell-miso = import ../default.nix {};
+     misoPkgs = import ../../default.nix { examples = true; };
+     coverage = import ../../tests {};
    };
    security.acme = {
      inherit email;
