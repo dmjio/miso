@@ -13,13 +13,8 @@ import           Data.Monoid
 import           Miso
 import           Miso.String
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
 import qualified Language.Javascript.JSaddle.Warp as JSaddle
+
 #ifdef ghcjs_HOST_OS
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
@@ -38,7 +33,6 @@ runApp f =
             case Wai.pathInfo req of
               ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
               _ -> JSaddle.jsaddleApp req sendResp
-#endif
 #endif
 
 data Action

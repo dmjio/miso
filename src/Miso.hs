@@ -5,11 +5,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
-
-#ifdef IOS
-#else
 {-# LANGUAGE TemplateHaskell     #-}
-#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -50,12 +46,8 @@ import           System.Mem.StableName
 
 #ifndef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle   (eval, waitForAnimationFrame)
-#ifdef IOS
-import           Miso.JSBits
-#else
 import           GHCJS.Types                   (JSString)
 import           Data.FileEmbed
-#endif
 #else
 import           JavaScript.Web.AnimationFrame
 #endif
@@ -84,14 +76,10 @@ common
   -> JSM ()
 common App {..} getView = do
 #ifndef ghcjs_HOST_OS
-#ifdef IOS
-  mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
-#else
   _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
-#endif
 #endif
   -- init Notifier
   Notify {..} <- liftIO newNotify

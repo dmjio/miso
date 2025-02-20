@@ -23,29 +23,13 @@ in
   miso = make-src-filter ../../..;
   examples = make-src-filter ../../../examples;
   haskell-miso-src = make-src-filter ../../../haskell-miso.org;
+  sample-app = make-src-filter ../../../sample-app;
+  sample-app-jsaddle = make-src-filter ../../../sample-app-jsaddle;
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "d569be43f92b9b8c01dc3ee4c41401ab406a2076";
-    sha256 = "1m1xxy4l9ii91k1k504qkxh9k1ybprm1m66mkb9dqlwcpyhcccmv";
-  };
-  jsaddle-dom = fetchFromGitHub {
-    owner = "ghcjs";
-    repo = "jsaddle-dom";
-    rev = "6ce23c5";
-    sha256 = "1wpwf025czibkw6770c99zk7r30j6nh7jdzhzqbi2z824qyqzbnw";
-  };
-  ghcjs-dom = fetchFromGitHub {
-    owner = "ghcjs";
-    repo = "ghcjs-dom";
-    rev = "b8e483a";
-    sha256 = "06qlbbhjd0mlv5cymp5q0rb69a333l0fcif5zwa83h94dh25c1g7";
-  };
-  webkit2gtk3-javascriptcore = fetchFromGitHub {
-    owner = "gtk2hs";
-    repo = "webkit-javascriptcore";
-    rev = "5868624";
-    sha256 = "0aj0cvcbnzrdi1ynahpb4034vadfrs99n5qa8dar1srhijv55g8b";
+    rev = "0d5e427cb99391179b143dc93dfbac9c1019237b";
+    sha256 = "sha256-jyJ7bdz0gNLOSzRxOWcv7eWGIwo3N/O4PcY7HyNF8Fo=";
   };
   flatris = fetchFromGitHub {
     repo = "hs-flatris";

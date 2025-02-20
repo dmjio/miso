@@ -10,6 +10,5 @@ let
   overlays = [ (import ./overlay.nix options) ] ++ options.overlays;
 in
   import nixpkgs
-    { inherit (options) crossSystem crossOverlays system;
-      inherit overlays config;
+    { inherit overlays config;
     }

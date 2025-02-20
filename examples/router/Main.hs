@@ -17,17 +17,10 @@ import Servant.Utils.Links
 
 import Miso
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
 import Language.Javascript.JSaddle.Warp as JSaddle
 
 runApp :: JSM () -> IO ()
 runApp = JSaddle.run 8080
-#endif
 
 -- | Model
 data Model
