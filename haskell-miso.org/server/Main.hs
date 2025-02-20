@@ -40,7 +40,7 @@ main = do
       compress = gzip def { gzipFiles = GzipCompress }
 
 app :: Application
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> Tagged handle404)
+app = serve (Proxy @API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> Tagged handle404)
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
 
