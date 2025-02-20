@@ -11,10 +11,6 @@ import Miso
 import Miso.String
 
 import Control.Monad.IO.Class
-import Language.Javascript.JSaddle.Warp as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run 8080
 
 -- | Type synonym for an application model
 type Model = Int
@@ -27,9 +23,13 @@ data Action
   | SayHelloWorld
   deriving (Show, Eq)
 
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 -- | Entry point for a miso application
 main :: IO ()
-main = runApp $ miso $ \_ -> App {..}
+main = run $ miso $ \_ -> App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
     model  = 0                    -- initial model

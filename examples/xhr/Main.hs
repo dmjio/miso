@@ -126,7 +126,7 @@ data APIInfo
   } deriving (Show, Eq, Generic)
 
 instance FromJSON APIInfo where
-  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo '_' }
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' }
 
 getGitHubAPIInfo :: IO APIInfo
 getGitHubAPIInfo = do

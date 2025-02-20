@@ -1,1 +1,2 @@
-(import ./default.nix {}).miso-ghcjs.env
+{ pkg ? "ghcjs" }:
+(import ./default.nix {})."miso-${pkg}".env

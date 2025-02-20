@@ -1,13 +1,4 @@
-{-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE KindSignatures            #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE CPP                       #-}
-{-# LANGUAGE TypeFamilies              #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Event
