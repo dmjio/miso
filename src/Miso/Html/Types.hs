@@ -58,6 +58,7 @@ import           JavaScript.Object.Internal (Object(Object))
 import qualified Lucid                      as L
 import qualified Lucid.Base                 as L
 import           Prelude                    hiding (null)
+import qualified Prelude                    as P
 import           Servant.API                (Get, HasLink(MkLink, toLink))
 import           Text.HTML.TagSoup.Tree     (parseTree, TagTree(..))
 import           Text.HTML.TagSoup          (Tag(..))
@@ -131,7 +132,7 @@ instance L.ToHtml (View action) where
     where
       noEnd = ["img", "input", "br", "hr", "meta"]
       tag = toTag $ fromMisoString vType
-      ele = if tag `elem` noEnd
+      ele = if tag `P.elem` noEnd
           then L.makeElementNoEnd tag
           else L.makeElement tag kids
       classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
@@ -145,11 +146,11 @@ instance L.ToHtml (View action) where
       xs = if not (T.null classes)
           then M.insert "class" (A.String classes) propClass
           else propClass
-      lattrs = [ L.makeAttribute k' (if k `elem` exceptions && v == A.Bool True then k' else v')
+      lattrs = [ L.makeAttribute k' (if k `P.elem` exceptions && v == A.Bool True then k' else v')
                | (k,v) <- M.toList xs
                , let k' = fromMisoString k
                , let v' = toHtmlFromJSON v
-               , not (k `elem` exceptions && v == A.Bool False)
+               , not (k `P.elem` exceptions && v == A.Bool False)
                ]
       exceptions = [ "checked"
                    , "disabled"
