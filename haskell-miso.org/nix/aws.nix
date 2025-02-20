@@ -8,7 +8,7 @@ let
    imports = [ ./module.nix ];
    nixpkgs.config.packageOverrides = pkgs: {
      haskell-miso = import ../default.nix {};
-     misoPkgs = import ../../default.nix { examples = true; };
+     misoPkgs = import ../../default.nix {};
      coverage = import ../../tests {};
    };
    security.acme = {
