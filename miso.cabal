@@ -24,20 +24,6 @@ flag tests
   description:
     Builds Miso's tests
 
-flag jsaddle
-  manual: True
-  default:
-    False
-  description:
-    Compile with JSaddle
-
-flag ios
-  manual: True
-  default:
-    False
-  description:
-    Cross compile to iOS
-
 flag jsstring-only
   manual: True
   default:
@@ -157,10 +143,6 @@ library
   else
     build-depends:
       servant-lucid
-  if impl(ghcjs) || arch(javascript) || flag (jsaddle)
-    if flag (ios)
-      cpp-options:
-        -DIOS
   if impl(ghcjs) || arch(javascript)
     js-sources:
       jsbits/diff.js
