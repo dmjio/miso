@@ -27,8 +27,31 @@ jobs:
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
-     - name: Miso build
-       run: nix-build -j1
+
+     - name: (JS) Miso GHCJS
+       run: nix-build -A miso-ghcjs
+
+     - name: (x86) Miso GHC
+       run: nix-build -A miso-ghc
+
+     - name: (x86) Haskell-miso.org server
+       run: nix-build -A haskell-miso-server
+
+     - name: (JS) Haskell-miso.org client
+       run: nix-build -A haskell-miso-client
+
+     - name: (JS) Miso examples
+       run: nix-build -A miso-examples
+
+     - name: (x86) Miso examples
+       run: nix-build -A miso-examples-ghc
+
+     - name: (JS) Miso sample app
+       run: nix-build -A sample-app 
+
+     - name: (x86) Miso sample app jsaddle
+       run: nix-build -A sample-app-jsaddle
+
      - name: Diffing tests
        run: cd tests && yarn && yarn test
 

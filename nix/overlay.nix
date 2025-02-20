@@ -3,8 +3,11 @@ options: self: super: {
   sample-app-jsaddle =
     (import ../sample-app-jsaddle self).release;
 
-  haskell-miso =
-    import ../haskell-miso.org {};
+  inherit (import ../haskell-miso.org {})
+    haskell-miso-client
+    haskell-miso-server
+    haskell-miso-runner;
+
   haskell = super.haskell // {
     packages = super.haskell.packages // {
       ghc865 = super.haskell.packages.ghc865.override {
@@ -42,7 +45,7 @@ options: self: super: {
     nixops import < deploy.json
     rm deploy.json
     nixops set-args --argstr email $EMAIL -d haskell-miso
-    nixops modify haskell-miso.org/nix/aws.nix -d haskell-miso \
+    nixops modify haskell-miso.org/nix/server.nix -d haskell-miso \
       -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
     nix --version
     # https://github.com/NixOS/nixops/issues/1557

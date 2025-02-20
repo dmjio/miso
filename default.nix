@@ -37,7 +37,10 @@ in
   inherit release release-examples;
 
   #website
-  inherit (pkgs) haskell-miso;
+  inherit (pkgs)
+    haskell-miso-client
+    haskell-miso-server
+    haskell-miso-runner;
 
   #ci
   deploy = pkgs.deploy rev;

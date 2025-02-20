@@ -5,7 +5,10 @@ in {
    options.services.haskell-miso.enable = lib.mkEnableOption "Enable the haskell-miso.org service";
    config = lib.mkIf cfg.enable {
      systemd.services.haskell-miso = {
-       path = with pkgs; [ haskell-miso bash ];
+       path = with pkgs;
+         [ misoPkgs.haskell-miso-runner 
+           bash
+         ];
        wantedBy = [ "multi-user.target" ];
        script = ''
          ./bin/server +RTS -N -A4M -RTS
