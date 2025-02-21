@@ -7,7 +7,9 @@ import qualified Language.Javascript.JSaddle.Wasm as J
 #elif defined (ghcjs_HOST_OS)
 #else
 import qualified Language.Javascript.JSaddle.Warp as J
+import           Data.Maybe
 import           System.Environment
+import           Text.Read
 #endif
 
 import           Language.Javascript.JSaddle
@@ -20,6 +22,7 @@ run = J.run
 run = id
 #else
 run action = do
+    port <- (readMaybe =<<) <$> lookupEnv "PORT"
     isGhci <- (== "<interactive>") <$> getProgName
-    (if isGhci then J.debug else J.run) 8008 action
+    (if isGhci then J.debug else J.run) (fromMaybe 8008 port) action
 #endif
