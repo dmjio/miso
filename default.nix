@@ -46,6 +46,12 @@ in
   #hackage releases
   inherit release release-examples;
 
+  # tagged releases
+  inherit (pkgs)
+    sample-app-tagged
+    sample-app-jsaddle-tagged-release
+    sample-app-jsaddle-tagged-dev;
+
   #website
   inherit (pkgs)
     haskell-miso-client
