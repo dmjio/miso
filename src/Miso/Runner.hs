@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE LambdaCase #-}
 module Miso.Runner (run) where
 
 #if defined(wasm32_HOST_ARCH)
