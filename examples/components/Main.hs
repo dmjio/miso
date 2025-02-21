@@ -26,7 +26,7 @@ main :: IO ()
 main = startApp app
 
 app :: App MainModel MainAction
-app = App {..}
+app = run App {..}
   where
     initialAction = MainNoOp      -- initial action to be executed on application load
     model         = (1,1)         -- initial model
