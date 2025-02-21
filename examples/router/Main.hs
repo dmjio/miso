@@ -41,7 +41,7 @@ main =
     events = defaultEvents
     subs   = [ uriSub HandleURI ]
     view   = viewModel
-    mountPoint = Nothing
+    mountPoint = "body"
     logLevel = Off
 
 -- | Update your model

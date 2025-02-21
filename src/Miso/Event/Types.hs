@@ -47,7 +47,11 @@ instance ToJSVal Options
 --
 -- > defaultOptions = Options { preventDefault = False, stopPropagation = False }
 defaultOptions :: Options
-defaultOptions = Options False False
+defaultOptions
+  = Options
+  { preventDefault = False
+  , stopPropagation = False
+  }
 
 -- | Related to using drop-related events
 newtype AllowDrop = AllowDrop Bool

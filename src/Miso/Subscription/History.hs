@@ -81,9 +81,9 @@ go :: Int -> JSM ()
 {-# INLINE go #-}
 go n = FFI.go n
 
-chan :: Notify
+chan :: Waiter
 {-# NOINLINE chan #-}
-chan = unsafePerformIO newEmptyNotify
+chan = unsafePerformIO emptyWaiter
 
 -- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
@@ -98,10 +98,10 @@ pushStateNoModel :: URI -> JSM ()
 {-# INLINE pushStateNoModel #-}
 pushStateNoModel u = do
   FFI.pushState . pack . show $ u
-  liftIO (notify chan)
+  liftIO (serve chan)
 
 replaceTo' :: URI -> JSM ()
 {-# INLINE replaceTo' #-}
 replaceTo' u = do
   FFI.replaceState . pack . show $ u
-  liftIO (notify chan)
+  liftIO (serve chan)

@@ -67,11 +67,10 @@ import           Language.Javascript.JSaddle hiding (Success, obj, val)
 import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
-forkJSM :: JSM () -> JSM ()
+forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
-  _ <- liftIO (forkIO (runJSM a ctx))
-  pure ()
+  liftIO (forkIO (runJSM a ctx))
 
 -- | Creates an asynchronous callback function
 asyncCallback :: JSM () -> JSM Function

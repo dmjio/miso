@@ -162,7 +162,9 @@ library
   if !(impl(ghcjs) || arch(javascript))
     exposed-modules:
       Miso.TypeLevel
-
+      
+  other-modules:
+    Miso.Internal
   ghc-options:
     -Wall
   hs-source-dirs:

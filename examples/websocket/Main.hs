@@ -35,7 +35,7 @@ main = run $ startApp App { initialAction = Id, ..}
     view = appView
     uri = URL "wss://echo.websocket.org"
     protocols = Protocols [ ]
-    mountPoint = Nothing
+    mountPoint = "body"
     logLevel = Off
 
 updateModel :: Action -> Model -> Effect Action Model

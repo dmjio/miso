@@ -6,18 +6,54 @@ window['diff'] = function diff(currentObj, newObj, parent, doc) {
   else if (currentObj && !newObj) window['destroyNode'](currentObj, parent);
   else {
     if (currentObj.type === 'vtext') {
-      if (newObj.type === 'vnode') window['replaceTextWithElement'](currentObj, newObj, parent, doc);
-      else window['diffTextNodes'](currentObj, newObj);
-    } else {
+      if (newObj.type === 'vnode') {
+          window['replaceTextWithElement'](currentObj, newObj, parent, doc);
+       } else if (newObj.type === 'vtext') {
+           window['diffTextNodes'](currentObj, newObj);
+       } else {
+           window['replaceTextWithComponent'](currentObj, newObj, parent, doc);
+       }
+    } else if (currentObj.type == 'vnode') {
       if (newObj.type === 'vnode') window['diffVNodes'](currentObj, newObj, parent, doc);
-      else window['replaceElementWithText'](currentObj, newObj, parent, doc);
+      else if (newObj.type === 'vtext') window['replaceElementWithText'](currentObj, newObj, parent, doc);
+      else window['replaceElementWithComponent'](currentObj, newObj, parent, doc);
+    }
+    else {
+      if (newObj.type === 'vnode') window['replaceComponentWithElement'](currentObj, newObj, parent, doc);
+      else if (newObj.type === 'vtext') window['replaceComponentWithText'](currentObj, newObj, parent, doc);
+      else window['diffComponents'](currentObj, newObj, parent, doc);
     }
   }
 };
 
+window['diffComponents'] = function (n, o, parent, doc) {
+  diffVNodes(n, o, parent, doc);
+}
+
+window['replaceComponentWithText'] = function (n, o, parent, doc) {
+    console.log('replaceComponentWithText');
+}
+
+window['replaceComponentWithElement'] = function (n, o, parent, doc) {
+    console.log('replaceComponentWithElement');
+}
+
+window['replaceTextWithComponent'] = function (n, o, parent, doc) {
+    console.log('replaceTextWithComponent');
+}
+
+window['replaceElementWithComponent'] = function (n, o, parent, doc) {
+    console.log('replaceElementWithComponent');
+}
+
 window['destroyNode'] = function destroyNode(obj, parent) {
   window['callBeforeDestroyedRecursive'](obj);
   parent.removeChild(obj['domRef']);
+  if (obj.type === 'vcomp') {
+    obj['unmount'](function () {
+       console.log('unmounted');
+    });
+  }
   window['callDestroyedRecursive'](obj);
 };
 
@@ -54,8 +90,9 @@ window['replaceElementWithText'] = function replaceElementWithText(c, n, parent,
 };
 
 window['replaceTextWithElement'] = function replaceTextWithElement(c, n, parent, doc) {
-  window['createElement'](n, doc);
-  parent.replaceChild(n['domRef'], c['domRef']);
+  window['createElement'](n, doc, function(ref) {
+     parent.replaceChild(ref, c['domRef']);
+  });
   window['callCreated'](n);
 };
 
@@ -79,9 +116,10 @@ window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
     n['domRef'] = c['domRef'];
     window['populate'](c, n, doc);
   } else {
-    window['createElement'](n, doc);
-    window['callBeforeDestroyedRecursive'](c);
-    parent.replaceChild(n['domRef'], c['domRef']);
+    window['createElement'](n, doc, function (ref) {
+        window['callBeforeDestroyedRecursive'](c);
+        parent.replaceChild(ref, c['domRef']);
+    });
     window['callDestroyedRecursive'](c);
     window['callCreated'](n);
   }
@@ -165,7 +203,7 @@ window['diffChildren'] = function diffChildren(cs, ns, parent, doc) {
   }
 };
 
-window['createElement'] = function createElement(obj, doc) {
+window['createElement'] = function createElement(obj, doc, cb) {
   if (obj['ns'] === 'svg') {
     obj['domRef'] = doc.createElementNS('http://www.w3.org/2000/svg', obj['tag']);
   } else if (obj['ns'] === 'mathml') {
@@ -173,14 +211,41 @@ window['createElement'] = function createElement(obj, doc) {
   } else {
     obj['domRef'] = doc.createElement(obj['tag']);
   }
+  cb(obj['domRef']);
   window['populate'](null, obj, doc);
 };
 
+window['mountComponent'] = function mountComponent(obj, doc) {
+   obj['mount'] (function (component) {
+       obj['domRef'].appendChild(component['domRef']);
+   });
+}
+
+window['unmountComponent'] = function unmountComponent(obj, doc) {
+   obj['unmount'] (function () {
+       window['destroyNode'](obj, doc);
+   });
+}
+
 window['createNode'] = function createNode(obj, parent, doc) {
-  if (obj.type === 'vnode') window['createElement'](obj, doc);
-  else obj['domRef'] = doc.createTextNode(obj['text']);
-  parent.appendChild(obj['domRef']);
-  window['callCreated'](obj);
+  if (obj.type === 'vnode') {
+      window['createElement'](obj, doc, function (ref) {
+          parent.appendChild(ref);
+      });
+      window['callCreated'](obj);
+  }
+  else if (obj.type === 'vcomp') {
+      window['createElement'](obj, doc, function (ref) {
+        parent.appendChild(ref);
+      });
+      parent.appendChild(obj['domRef']);
+      window['mountComponent'](obj, doc);
+  }
+  else {
+      obj['domRef'] = doc.createTextNode(obj['text']);
+      parent.appendChild(obj['domRef']);
+      window['callCreated'](obj);
+  }
 };
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
@@ -337,8 +402,9 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
               ^
               */
       else {
-        window['createElement'](nFirst, doc);
-        parent.insertBefore(nFirst['domRef'], oFirst['domRef']);
+        window['createElement'](nFirst, doc, function (ref) {
+           parent.insertBefore(ref, oFirst['domRef']);
+        });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
