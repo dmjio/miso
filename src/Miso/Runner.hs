@@ -19,7 +19,7 @@ run = J.run
 #elif defined(ghcjs_HOST_OS)
 run = id
 #else
-run x = getProgName >>= \case
-    "<interactive>" -> J.debug 8008 x
-    _ -> J.run 8008 x
+run action = do
+    isGhci <- (== "<interactive>") <$> getProgName
+    (if isGhci then J.debug else J.run) 8008 action
 #endif
