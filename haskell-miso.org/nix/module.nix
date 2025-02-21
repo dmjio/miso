@@ -16,8 +16,8 @@ in {
        description = ''
          https://haskell-miso.org
        '';
-       serviceConfig = {
-         WorkingDirectory=pkgs.haskell-miso;
+       serviceConfig = with pkgs.misoPkgs; {
+         WorkingDirectory=haskell-miso-runner;
          KillSignal="INT";
          Type = "simple";
          Restart = "on-abort";
