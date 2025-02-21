@@ -1,4 +1,4 @@
-with (import ./default.nix);
+with (import ./default.nix {});
 let
   reload-script = pkgs.writeScriptBin "reload" ''
       ${pkgs.haskell.packages.ghc865.ghcid}/bin/ghcid -c \
