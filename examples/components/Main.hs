@@ -23,10 +23,10 @@ data MainAction = MainNoOp
 type MainModel = (Int,Int)
 
 main :: IO ()
-main = startApp app
+main = run (startApp app)
 
 app :: App MainModel MainAction
-app = run App {..}
+app = App {..}
   where
     initialAction = MainNoOp      -- initial action to be executed on application load
     model         = (1,1)         -- initial model
