@@ -4,12 +4,13 @@
 module Main where
 
 import           Control.Monad
+import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef
-import qualified Data.Map      as M
-import           GHCJS.Types
+import qualified Data.Map as M
+
+import           Language.Javascript.JSaddle hiding ((<#))
 
 import           Miso
-import           Miso.String
 
 data Action
   = GetTime
@@ -52,7 +53,7 @@ initContext ref = do
   }
 
 main :: IO ()
-main = do
+main = run $ do
   stats <- newStats
   ref <- newIORef $ Context (pure ()) (pure ()) stats
   m <- now
@@ -85,11 +86,11 @@ updateModel
   -> Double
   -> Effect Action Double
 updateModel ref Init m = m <# do
-  initContext ref
+  liftIO (initContext ref)
   pure GetTime
 
 updateModel ref GetTime m = m <# do
-  Context {..} <- readIORef ref
+  Context {..} <- liftIO (readIORef ref)
   withStats stats $ do
     rotateCube
     renderScene

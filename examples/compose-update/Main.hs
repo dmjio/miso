@@ -1,6 +1,7 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE RankNTypes        #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
@@ -10,7 +11,6 @@ module Main where
 -- model which combines their effects.
 
 import Control.Monad
-import Data.Monoid
 
 import Miso
 import Miso.String
@@ -88,8 +88,12 @@ updateModel act =
      -- @(<=<) :: (b -> Effect Action c) -> (a -> Effect Action b) -> a -> Effect Action c
      liftedUpdateFirst <=< liftedUpdateSecond
 
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 main :: IO ()
-main = startApp App { initialAction = NoOp, ..}
+main = run $ startApp App { initialAction = NoOp, ..}
   where
     model  = (0, 0)
     update = updateModel

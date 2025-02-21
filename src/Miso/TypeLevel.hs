@@ -4,12 +4,14 @@
 {-# LANGUAGE TypeOperators #-}
 module Miso.TypeLevel ( ToServerRoutes ) where
 
-import Miso.Html
+import Data.Kind
 import Servant.API
 import Servant.HTML.Lucid
 
+import Miso.Html
+
 -- | Convert client route type to a server web handler type
-type family ToServerRoutes (layout :: k) (wrapper :: * -> *) (action :: *) :: k where
+type family ToServerRoutes (layout :: k) (wrapper :: Type -> Type) (action :: Type) :: k where
   ToServerRoutes (a :<|> b) wrapper action =
     ToServerRoutes a wrapper action :<|>
       ToServerRoutes b wrapper action

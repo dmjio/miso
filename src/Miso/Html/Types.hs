@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -45,12 +44,12 @@ import qualified Data.Map as M
 import           GHCJS.Marshal (fromJSVal, toJSVal)
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))
-import           Miso.Types
 import           Prelude hiding (null)
 
 import           Miso.Event
 import           Miso.FFI
-import           Miso.String hiding (reverse)
+import           Miso.String                hiding (reverse)
+import           Miso.Types
 
 -- | Create a new @Miso.Html.Types.TextRaw@.
 --
@@ -62,7 +61,6 @@ rawHtml
   :: MisoString
   -> View action
 rawHtml = TextRaw
-
 
 -- | Create a new @Miso.Html.Types.Node@.
 --

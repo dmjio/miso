@@ -9,24 +9,11 @@ module Main where
 
 import Data.Proxy
 import Servant.API
-#if MIN_VERSION_servant(0,14,1)
 import Servant.Links
-#elif MIN_VERSION_servant(0,10,0)
-import Servant.Utils.Links
-#endif
-
 import Miso
 
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
-import Language.Javascript.JSaddle.Warp as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run 8080
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
 #endif
 
 -- | Model
@@ -46,7 +33,7 @@ data Action
 -- | Main entry point
 main :: IO ()
 main =
-  runApp $ do
+  run $ do
     currentURI <- getCurrentURI
     startApp App { model = Model currentURI, initialAction = NoOp, ..}
   where
@@ -96,11 +83,7 @@ type About = "about" :> View Action
 goAbout, goHome :: Action
 (goHome, goAbout) = (goto api home, goto api about)
   where
-#if MIN_VERSION_servant(0,10,0)
-    goto a b = ChangeURI (linkURI (safeLink a b))
-#else
-    goto a b = ChangeURI (safeLink a b)
-#endif
+    goto a b = ChangeURI $ linkURI (safeLink a b)
     home  = Proxy :: Proxy Home
     about = Proxy :: Proxy About
     api   = Proxy :: Proxy API

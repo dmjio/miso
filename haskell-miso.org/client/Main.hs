@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP             #-}
 module Main where
 
 import Common
@@ -7,8 +8,12 @@ import Data.Proxy
 import Miso
 import Miso.String
 
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 main :: IO ()
-main = miso $ \currentURI -> App
+main = run $ miso $ \currentURI -> App
         { model = Model currentURI False
         , view = viewModel
         , ..

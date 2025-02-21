@@ -13,30 +13,21 @@
 {-# LANGUAGE CPP                        #-}
 module Main where
 
+import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
 import           Data.Bool
 import qualified Data.Map as M
-import           Data.Monoid
 import           GHC.Generics
+
 import           Miso
 import           Miso.String (MisoString)
 import qualified Miso.String as S
 
-import           Control.Monad.IO.Class
-
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
-import Language.Javascript.JSaddle.Warp as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run 8080
-#endif
-
 default (MisoString)
+
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 data Model = Model
   { entries :: [Entry]
@@ -93,7 +84,7 @@ data Msg
    deriving Show
 
 main :: IO ()
-main = runApp $ startApp App { initialAction = NoOp, ..}
+main = run $ startApp App { initialAction = NoOp, ..}
   where
     model      = emptyModel
     update     = updateModel

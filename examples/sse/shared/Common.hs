@@ -1,12 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
 module Common where
 
 import Data.Proxy
 import Servant.API
-#if MIN_VERSION_servant(0,10,0)
 import Servant.Utils.Links
-#endif
 
 import Miso
 import Miso.String
@@ -43,8 +40,4 @@ the404 =
 
 goHome :: URI
 goHome =
-#if MIN_VERSION_servant(0,10,0)
   linkURI (safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy Home))
-#else
-  safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy Home)
-#endif

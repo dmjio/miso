@@ -1,26 +1,17 @@
 options: self: super: {
-  darwin = super.darwin // {
-    xcode = super.darwin.xcode.overrideAttrs (drv: {
-      outputHash = "ec9f78b948abe341000d31f21b66051741b71163d778702b3e2e01659d60e3d2";
-    });
-  };
-  pkgsCross = super.pkgsCross // {
-    iphone64 = super.pkgsCross.iphone64 // {
-      haskell = super.pkgsCross.iphone64.haskell // {
-        packages = super.pkgsCross.iphone64.haskell.packages // {
-          integer-simple = super.pkgsCross.iphone64.haskell.packages.integer-simple // {
-            ghc865 = super.pkgsCross.iphone64.haskell.packages.integer-simple.ghc865.override {
-              overrides = import ./haskell/packages/ghcARM self;
-            };
-          };
-        };
-      };
-    };
-  };
+
+  sample-app-jsaddle =
+    (import ../sample-app-jsaddle self).release;
+
+  inherit (import ../haskell-miso.org {})
+    haskell-miso-client
+    haskell-miso-server
+    haskell-miso-runner;
+
   haskell = super.haskell // {
     packages = super.haskell.packages // {
       ghc865 = super.haskell.packages.ghc865.override {
-        overrides = import ./haskell/packages/ghc865 self;
+        overrides = import ./haskell/packages/ghc self;
       };
       ghc864 = super.haskell.packages.ghc864.override {
         overrides = selfGhc864: superGhc864: with super.haskell.lib; {
@@ -54,7 +45,7 @@ options: self: super: {
     nixops import < deploy.json
     rm deploy.json
     nixops set-args --argstr email $EMAIL -d haskell-miso
-    nixops modify examples/haskell-miso.org/nix/aws.nix -d haskell-miso \
+    nixops modify haskell-miso.org/nix/server.nix -d haskell-miso \
       -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
     nix --version
     # https://github.com/NixOS/nixops/issues/1557

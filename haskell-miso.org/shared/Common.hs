@@ -3,20 +3,15 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE CPP                  #-}
 module Common where
 
 import           Data.Bool
-import qualified Data.Map    as M
-import           Data.Monoid
+import qualified Data.Map as M
 import           Data.Proxy
-import           Servant.API
-#if MIN_VERSION_servant(0,10,0)
-import Servant.Utils.Links
-#endif
-
 import           Miso
 import           Miso.String
+import           Servant.API
+import           Servant.Links
 
 -- | We can pretty much share everything
 --
@@ -45,6 +40,11 @@ type ClientRoutes = Examples
   :<|> Home
 
 -- | Handlers
+handlers
+    :: (Model -> View Action)
+  :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
 handlers = examples
   :<|> docs
   :<|> community
@@ -72,10 +72,10 @@ community = template v
                                      ]
            ] [ text "community" ]
        , h2_ [ class_  "subtitle animated pulse" ] [
-            a_ [ href_  "https://join.slack.com/t/haskell-miso/shared_invite/zt-1w80x404h-AF2Be_BDQixNMadzadnUNg"
+            a_ [ href_  "https://matrix.to/#/#haskell-miso:matrix.org"
                , target_  "_blank"
                ]
-            [ text "Slack" ]
+            [ text "Matrix.org" ]
           , text " / "
           , a_ [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
                , target_  "_blank"
@@ -189,6 +189,7 @@ template content Model{..} =
   , footer
   ]
 
+middle :: View action
 middle =
   section_ [class_ "hero" ] [
     div_ [class_ "hero-body"] [
@@ -304,19 +305,11 @@ the404 = template v
 -- | Links
 goHome, goExamples, goDocs, goCommunity :: URI
 ( goHome, goExamples, goDocs, goCommunity ) =
-#if MIN_VERSION_servant(0,10,0)
     ( linkURI (safeLink routes homeProxy)
     , linkURI (safeLink routes examplesProxy)
     , linkURI (safeLink routes docsProxy)
     , linkURI (safeLink routes communityProxy)
     )
-#else
-    ( safeLink routes homeProxy
-    , safeLink routes examplesProxy
-    , safeLink routes docsProxy
-    , safeLink routes communityProxy
-    )
-#endif
 
 homeProxy :: Proxy Home
 homeProxy = Proxy
@@ -446,6 +439,7 @@ footer =
       ]
     ]
 
+newNav :: Bool -> View Action
 newNav navMenuOpen' =
   div_ [ class_ "container" ] [
     nav_ [class_ "navbar is-transparent"] [

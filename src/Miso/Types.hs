@@ -48,7 +48,7 @@ import           Control.Monad.Trans.Writer.Strict (Writer, runWriter, tell, map
 import           Data.Aeson (Value)
 import qualified Data.Aeson as A
 import           Data.Bifunctor (second)
-import           Data.Foldable (Foldable, for_)
+import           Data.Foldable (for_)
 import qualified Data.Map as M
 import           Data.Proxy
 import           Data.String (IsString, fromString)

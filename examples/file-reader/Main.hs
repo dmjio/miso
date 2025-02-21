@@ -34,7 +34,7 @@ data Action
 
 -- | Main entry point
 main :: IO ()
-main = do
+main = run $ do
   startApp App { model = Model ""
                , initialAction = NoOp
                , ..

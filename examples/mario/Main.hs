@@ -8,38 +8,9 @@ module Main where
 import           Data.Bool
 import           Data.Function
 import qualified Data.Map as M
-import           Data.Monoid
 
 import           Miso
 import           Miso.String
-
-#ifdef IOS
-import Language.Javascript.JSaddle.WKWebView as JSaddle
-
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run
-#else
-import qualified Language.Javascript.JSaddle.Warp as JSaddle
-#ifdef ghcjs_HOST_OS
-runApp :: JSM () -> IO ()
-runApp = JSaddle.run 8080
-
-#else
-import           Network.Wai.Application.Static
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
-import           Network.WebSockets
-
-runApp :: JSM () -> IO ()
-runApp f =
-    Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
-        JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) app
-    where app req sendResp =
-            case Wai.pathInfo req of
-              ("imgs" : _) -> staticApp (defaultWebAppSettings "examples/mario") req sendResp
-              _ -> JSaddle.jsaddleApp req sendResp
-#endif
-#endif
 
 data Action
   = GetArrows !Arrows
@@ -50,8 +21,12 @@ data Action
 spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0","-111px 0","-148px 0","-185px 0","-222px 0","-259px 0","-296px 0"]
 
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 main :: IO ()
-main = runApp $ do
+main = run $ do
     time <- now
     let m = mario { time = time }
     startApp App { model = m

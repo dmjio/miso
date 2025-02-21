@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -6,11 +6,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
-
-#ifdef IOS
-#else
 {-# LANGUAGE TemplateHaskell     #-}
-#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -25,6 +21,7 @@ module Miso
   , startApp
   , sink
   , notify
+  , run
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -49,6 +46,7 @@ import           Miso.Event
 import           Miso.FFI
 import           Miso.Html
 import           Miso.Router
+import           Miso.Runner (run)
 import           Miso.Subscription
 #ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel

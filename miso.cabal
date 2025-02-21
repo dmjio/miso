@@ -18,67 +18,101 @@ description:
 extra-source-files:
   README.md
 
+source-repository head
+   type: git
+   location: https://github.com/dmjio/miso.git
+
+common js-only-tests
+  if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
+    buildable: False
+
+common jsaddle-selector
+  if arch(wasm32)
+    build-depends:
+      jsaddle-wasm
+  else
+    build-depends:
+      jsaddle-warp
+
+common string-selector
+  if impl(ghcjs) || arch(javascript) || flag (jsstring-only) || arch(wasm32)
+    hs-source-dirs:
+      jsstring-src
+  else
+    hs-source-dirs:
+      text-src
+
+common server
+  if !(impl(ghcjs) || arch(javascript))
+    build-depends:
+      servant-lucid
+
+common client
+  if impl(ghcjs) || arch(javascript)
+    build-depends:
+      ghcjs-base
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    js-sources:
+      jsbits/diff.js
+      jsbits/delegate.js
+      jsbits/isomorphic.js
+      jsbits/util.js
+
 flag tests
+  manual:
+    True
   default:
     False
   description:
     Builds Miso's tests
 
-flag jsaddle
-  manual: True
-  default:
-    False
-  description:
-    Compile with JSaddle
-
-flag ios
-  manual: True
-  default:
-    False
-  description:
-    Cross compile to iOS
-
 flag jsstring-only
-  manual: True
+  manual:
+    True
   default:
     False
   description:
     Always set MisoString = JSString
 
 executable tests
+  import:
+    js-only-tests
   default-language:
     Haskell2010
   main-is:
     Main.hs
-  if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
-    buildable: False
-  else
-    ghcjs-options:
-      -dedupe
-    cpp-options:
-      -DGHCJS_BROWSER
-    hs-source-dirs:
-      tests
-    build-depends:
-      aeson,
-      base < 5,
-      bytestring,
-      ghcjs-base,
-      QuickCheck,
-      quickcheck-instances,
-      miso,
-      http-types,
-      network-uri,
-      http-api-data,
-      containers,
-      scientific,
-      servant,
-      text,
-      unordered-containers,
-      transformers,
-      vector
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    tests
+  build-depends:
+    aeson,
+    base < 5,
+    bytestring,
+    ghcjs-base,
+    QuickCheck,
+    quickcheck-instances,
+    miso,
+    http-types,
+    network-uri,
+    http-api-data,
+    containers,
+    scientific,
+    servant,
+    text,
+    unordered-containers,
+    transformers,
+    vector
 
 library
+  import:
+    jsaddle-selector,
+    string-selector,
+    server,
+    client
   default-language:
     Haskell2010
   exposed-modules:
@@ -105,6 +139,7 @@ library
     Miso.FFI.Storage
     Miso.FFI.WebSocket
     Miso.JSBits
+    Miso.Runner
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
@@ -121,22 +156,19 @@ library
     Miso.Mathml.Element
     Miso.String
     Miso.WebSocket
+    Miso.Concurrent
+
+  -- dmj: see if common-stanzas can suport 'exposed-modules'
   if !(impl(ghcjs) || arch(javascript))
     exposed-modules:
       Miso.TypeLevel
+      
   other-modules:
-    Miso.Concurrent
     Miso.Internal
   ghc-options:
     -Wall
   hs-source-dirs:
     src
-  if impl(ghcjs) || arch(javascript) || flag (jsstring-only)
-    hs-source-dirs:
-      jsstring-src
-  else
-    hs-source-dirs:
-      text-src
   build-depends:
     aeson,
     base < 5,
@@ -152,23 +184,3 @@ library
     tagsoup,
     text,
     transformers
-  if impl(ghcjs) || arch(javascript)
-    build-depends:
-      ghcjs-base
-  else
-    build-depends:
-      servant-lucid
-  if impl(ghcjs) || arch(javascript) || flag (jsaddle)
-    if flag (ios)
-      cpp-options:
-        -DIOS
-  if impl(ghcjs) || arch(javascript)
-    js-sources:
-      jsbits/diff.js
-      jsbits/delegate.js
-      jsbits/isomorphic.js
-      jsbits/util.js
-
-source-repository head
-   type: git
-   location: https://github.com/dmjio/miso.git

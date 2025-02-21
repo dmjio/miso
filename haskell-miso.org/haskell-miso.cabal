@@ -1,0 +1,82 @@
+cabal-version:       2.2
+name:                haskell-miso
+version:             0.1.0.1
+synopsis:            https://haskell-miso.org
+description:         Website for the Miso web framework
+homepage:            https://haskell-miso.org
+license:             BSD-3-Clause
+license-file:        LICENSE
+author:              David Johnson
+maintainer:          code@dmj.io
+copyright:           David Johnson (c) 2016-2025
+category:            Web
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+
+common server-only
+  if impl(ghcjs) || arch(javascript)
+    buildable: False
+
+common client-only
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: True
+  else
+    buildable: False
+
+common common-options
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+  ghc-options:
+    -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively
+
+common common-modules
+  other-modules:
+     Common
+
+executable server
+  import:
+     server-only, common-modules, common-options
+  main-is:
+    Main.hs
+  ghc-options:
+    -threaded -Wall -rtsopts
+  hs-source-dirs:
+    server, shared
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    http-types,
+    lucid,
+    miso,
+    mtl,
+    network-uri,
+    servant,
+    servant-lucid,
+    servant-server,
+    text,
+    wai,
+    wai-app-static,
+    wai-extra,
+    warp
+  default-language:
+    Haskell2010
+
+executable client
+  import:
+    client-only, common-modules, common-options
+  main-is:
+    Main.hs
+  ghcjs-options:
+    -dedupe -DGHCJS_GC_INTERVAL=5000
+  hs-source-dirs:
+    client, shared
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    miso,
+    servant
+  default-language:
+    Haskell2010
