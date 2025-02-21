@@ -6,10 +6,10 @@ module Miso.Runner (run) where
 import qualified Language.Javascript.JSaddle.Wasm as J
 #else
 import qualified Language.Javascript.JSaddle.Warp as J
+import           System.Environment
 #endif
 
 import           Language.Javascript.JSaddle
-import           System.Environment
 
 -- | Entry point for a miso application
 #if defined(wasm32_HOST_ARCH)
