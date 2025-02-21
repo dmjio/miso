@@ -30,7 +30,7 @@ common jsaddle-selector
   if arch(wasm32)
     build-depends:
       jsaddle-wasm
-  else
+  elif !impl(ghcjs)
     build-depends:
       jsaddle-warp
 
