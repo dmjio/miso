@@ -7,7 +7,9 @@ let
   };
   config.allowUnfree = options.allowUnfree;
   config.allowBroken = options.allowBroken;
-  overlays = [ (import ./overlay.nix options) ] ++ options.overlays;
+  overlays = [ (import ./wasm)
+               (import ./overlay.nix options)
+             ] ++ options.overlays;
 in
   import nixpkgs
     { inherit overlays config;

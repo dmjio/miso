@@ -33,6 +33,15 @@ in
   miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
   inherit (pkgs.haskell.packages.ghc865) sample-app-jsaddle;
 
+  #wasm
+  inherit (pkgs) ghc-wasm ghc-wasm-meta;
+  hello-world-wasm-web = with pkgs;
+    wasmWebBuilder
+      { name = "hello-world";
+        title = "Hello world Example";
+        src = wasmHelloWorld;
+      };
+
   #hackage releases
   inherit release release-examples;
 

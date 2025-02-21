@@ -52,6 +52,9 @@ jobs:
      - name: (x86) Miso sample app jsaddle
        run: nix-build -A sample-app-jsaddle
 
+     - name: (WASM) GHC-WASM web build (not miso)
+       run: nix-build -A hello-world-wasm-web
+
      - name: Diffing tests
        run: cd tests && yarn && yarn test
 
