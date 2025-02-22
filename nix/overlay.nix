@@ -68,7 +68,7 @@ options: self: super: {
     nixops import < deploy.json
     rm deploy.json
     nixops set-args --argstr email $EMAIL -d haskell-miso
-    nixops modify haskell-miso.org/nix/machine.nix -d haskell-miso -Inixpkgs=${self.nixosPkgsSrc}
+    nixops modify haskell-miso.org/nix/aws.nix -d haskell-miso -Inixpkgs=${self.nixosPkgsSrc}
     nix --version
     # https://github.com/NixOS/nixops/issues/1557
     nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
