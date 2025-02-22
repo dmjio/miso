@@ -60,4 +60,5 @@ in
 
   #ci
   deploy = pkgs.deploy rev;
+  inherit (pkgs) haskell-miso-org-test;
 }

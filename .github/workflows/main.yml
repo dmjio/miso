@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'
     steps:
+     - uses: DeterminateSystems/nix-installer-action@v12
      - uses: actions/checkout@v3.5.3
      - uses: cachix/install-nix-action@v22
        with:
@@ -63,6 +64,9 @@ jobs:
 
      - name: (WASM) GHC-WASM web build (not miso)
        run: nix-build -A hello-world-web-wasm
+
+     - name: (x86) NixOS test runner for haskell-miso.org
+       run: nix-build -A haskell-miso-org-test
 
      - name: Diffing tests
        run: cd tests && yarn && yarn test

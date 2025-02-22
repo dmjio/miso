@@ -1,13 +1,14 @@
+with (import ../../default.nix {});
 { options, lib, config, pkgs, ... }:
 let
   cfg = config.services.haskell-miso;
 in {
-   options.services.haskell-miso.enable = lib.mkEnableOption "Enable the haskell-miso.org service";
+  options.services.haskell-miso.enable =
+    lib.mkEnableOption "Enable the haskell-miso.org service";
    config = lib.mkIf cfg.enable {
      systemd.services.haskell-miso = {
-       path = with pkgs;
-         [ misoPkgs.haskell-miso-runner 
-           bash
+       path =
+         [ pkgs.bash
          ];
        wantedBy = [ "multi-user.target" ];
        script = ''
@@ -16,7 +17,7 @@ in {
        description = ''
          https://haskell-miso.org
        '';
-       serviceConfig = with pkgs.misoPkgs; {
+       serviceConfig = {
          WorkingDirectory=haskell-miso-runner;
          KillSignal="INT";
          Type = "simple";
