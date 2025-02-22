@@ -75,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
+     - uses: DeterminateSystems/nix-installer-action@v12
      - uses: actions/checkout@v3.5.3
      - uses: cachix/install-nix-action@v22
        with:
