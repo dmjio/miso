@@ -1,5 +1,22 @@
 options: self: super: {
 
+  nixosPkgsSrc =
+    "https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz";
+
+  haskell-miso-org-test = self.nixosTest {
+    nodes.machine = { config, pkgs, ... }: {
+      imports = [ ../haskell-miso.org/nix/machine.nix ];
+    };
+    testScript = {nodes, ...}: with nodes;
+      ''
+      startAll;
+      $machine->waitForUnit("haskell-miso.service");
+      $machine->succeed("curl localhost:3002");
+      '';
+  };
+
+  coverage = import ../tests {};
+
   sample-app-tagged =
     import ../sample-app {};
 
@@ -51,8 +68,7 @@ options: self: super: {
     nixops import < deploy.json
     rm deploy.json
     nixops set-args --argstr email $EMAIL -d haskell-miso
-    nixops modify haskell-miso.org/nix/server.nix -d haskell-miso \
-      -Inixpkgs=https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz
+    nixops modify haskell-miso.org/nix/aws.nix -d haskell-miso -Inixpkgs=${self.nixosPkgsSrc}
     nix --version
     # https://github.com/NixOS/nixops/issues/1557
     nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
