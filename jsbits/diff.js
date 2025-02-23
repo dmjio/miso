@@ -1,106 +1,112 @@
 /* virtual-dom diffing algorithm, applies patches as detected */
 window = typeof window === 'undefined' ? {} : window;
-window['diff'] = function diff(currentObj, newObj, parent, doc) {
+
+window['diff'] = function (currentObj, newObj, parent, doc) {
   if (!currentObj && !newObj) return;
-  else if (!currentObj && newObj) window['createNode'](newObj, parent, doc);
-  else if (currentObj && !newObj) window['destroyNode'](currentObj, parent);
+  else if (!currentObj && newObj) window['create'](newObj, parent, doc);
+  else if (currentObj && !newObj) window['destroy'](currentObj, parent);
   else {
-    if (currentObj.type === 'vtext') {
-      if (newObj.type === 'vnode') {
-          window['replaceTextWithElement'](currentObj, newObj, parent, doc);
-       } else if (newObj.type === 'vtext') {
-           window['diffTextNodes'](currentObj, newObj);
-       } else {
-           window['replaceTextWithComponent'](currentObj, newObj, parent, doc);
-       }
-    } else if (currentObj.type == 'vnode') {
-      if (newObj.type === 'vnode') window['diffVNodes'](currentObj, newObj, parent, doc);
-      else if (newObj.type === 'vtext') window['replaceElementWithText'](currentObj, newObj, parent, doc);
-      else window['replaceElementWithComponent'](currentObj, newObj, parent, doc);
-    }
-    else {
-      if (newObj.type === 'vnode') window['replaceComponentWithElement'](currentObj, newObj, parent, doc);
-      else if (newObj.type === 'vtext') window['replaceComponentWithText'](currentObj, newObj, parent, doc);
-      else window['diffComponents'](currentObj, newObj, parent, doc);
-    }
+      if (currentObj['type'] === newObj['type'])
+        window['diffNodes'](currentObj, newObj, parent, doc);
+      else
+        window['replace'](currentObj, newObj, parent, doc);
   }
 };
 
-window['diffComponents'] = function (n, o, parent, doc) {
-  diffVNodes(n, o, parent, doc);
-}
-
-window['replaceComponentWithText'] = function (n, o, parent, doc) {
-    console.log('replaceComponentWithText');
-}
-
-window['replaceComponentWithElement'] = function (n, o, parent, doc) {
-    console.log('replaceComponentWithElement');
-}
-
-window['replaceTextWithComponent'] = function (n, o, parent, doc) {
-    console.log('replaceTextWithComponent');
-}
-
-window['replaceElementWithComponent'] = function (n, o, parent, doc) {
-    console.log('replaceElementWithComponent');
-}
-
-window['destroyNode'] = function destroyNode(obj, parent) {
-  window['callBeforeDestroyedRecursive'](obj);
-  parent.removeChild(obj['domRef']);
-  if (obj.type === 'vcomp') {
-    obj['unmount'](function () {
-       console.log('unmounted');
+// replace everything function
+window['replace'] = function (c, n, parent, doc) {
+  // step1 : prepare to delete, unmount things
+  if (c['type'] !== 'vtext') {
+     window['callBeforeDestroyedRecursive'](c);
+      // ^ this will unmount sub components before we replace the child
+      // and will recursively call hooks on nodes
+  }
+  // step2 : create new things, replace old things with new things
+  if (n['type'] === 'vtext') {
+    n['domRef'] = doc.createTextNode(n['text']);
+    parent.replaceChild(n['domRef'], c['domRef']);
+  } else {
+    window['createElement'](n, doc, function(ref) {
+      parent.replaceChild(ref, c['domRef']);
+      if (n['type'] === 'vcomp') window['mountComponent'](n);
     });
   }
-  window['callDestroyedRecursive'](obj);
+  // step 3: call destroyed hooks, call created hooks
+  if (c['type'] !== 'vtext') {
+    window['callDestroyedRecursive'](c);
+    window['callCreated'](n);
+  }
+}
+
+// destroy vtext, vnode, vcomp
+window['destroy'] = function (obj, parent) {
+  // step 1: invoke destroy pre-hooks on vnode and vcomp
+  if (obj['type'] !== 'vtext') {
+      console.log('calling destroy on', obj);
+      window['callBeforeDestroyedRecursive'](obj);
+  }
+
+  // step 2: destroy
+  parent.removeChild(obj['domRef']);
+
+  // step 3: invoke post-hooks for vnode and vcomp
+  if (obj['type'] !== 'vtext')
+    window['callDestroyedRecursive'](obj);
 };
 
-window['callDestroyedRecursive'] = function callDestroyedRecursive(obj) {
+window['diffNodes'] = function (c, n, parent, doc) {
+  // bail out on easy vtext case
+  if (c['type'] === 'vtext') {
+      if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
+      n['domRef'] = c['domRef'];
+      return;
+  }
+  // check children
+  if (c['tag'] === n['tag'] && n['key'] === c['key'] && n['id'] === c['id']) {
+      n['domRef'] = c['domRef'];
+      if (c['type'] === 'vnode') {
+        // we don't diff properties / css / children on vcomps (dmj: should we?)
+        // vcomps are just divs, and divs have no semantic meaning so :shrug-man:
+        window['populate'](c, n, doc);
+      }
+  } else {
+    // dmj: we replace when things just don't line up during the diff
+    window['replace'](c,n,parent,doc);
+  }
+};
+
+// ** recursive calls to hooks
+window['callDestroyedRecursive'] = function (obj) {
   window['callDestroyed'](obj);
   for (var i in obj.children)
     window['callDestroyedRecursive'](obj.children[i]);
 };
 
-window['callDestroyed'] = function callDestroyed(obj) {
+window['callDestroyed'] = function (obj) {
   if (obj['onDestroyed']) obj['onDestroyed']();
 };
 
-window['callBeforeDestroyed'] = function callBeforeDestroyed(obj) {
+window['callBeforeDestroyed'] = function (obj) {
+    if (obj['type'] === 'vcomp') {
+        console.log('calling unmount...', obj);
+        obj['unmount']();
+  }
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
 };
 
-window['callBeforeDestroyedRecursive'] = function callBeforeDestroyedRecursive(obj) {
-  window['callBeforeDestroyed'](obj);
-  for (var i in obj.children)
-    window['callBeforeDestroyedRecursive'](obj.children[i]);
+window['callBeforeDestroyedRecursive'] = function (obj) {
+    window['callBeforeDestroyed'](obj);
+    for (var i in obj.children) {
+        window['callBeforeDestroyedRecursive'](obj.children[i]);
+    }
 };
+// ** </> recursive calls to hooks
 
-window['diffTextNodes'] = function diffTextNodes(c, n) {
-  if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
-  n['domRef'] = c['domRef'];
-};
-
-window['replaceElementWithText'] = function replaceElementWithText(c, n, parent, doc) {
-  n['domRef'] = doc.createTextNode(n['text']);
-  window['callBeforeDestroyedRecursive'](c);
-  parent.replaceChild(n['domRef'], c['domRef']);
-  window['callDestroyedRecursive'](c);
-};
-
-window['replaceTextWithElement'] = function replaceTextWithElement(c, n, parent, doc) {
-  window['createElement'](n, doc, function(ref) {
-     parent.replaceChild(ref, c['domRef']);
-  });
-  window['callCreated'](n);
-};
-
-window['callCreated'] = function callCreated(obj) {
+window['callCreated'] = function (obj) {
   if (obj['onCreated']) obj['onCreated']();
 };
 
-window['populate'] = function populate(c, n, doc) {
+window['populate'] = function (c, n, doc) {
   if (!c) c = {
     props: null,
     css: null,
@@ -111,21 +117,7 @@ window['populate'] = function populate(c, n, doc) {
   window['diffChildren'](c['children'], n['children'], n['domRef'], doc);
 };
 
-window['diffVNodes'] = function diffVNodes(c, n, parent, doc) {
-  if (c['tag'] === n['tag'] && n['key'] === c['key']) {
-    n['domRef'] = c['domRef'];
-    window['populate'](c, n, doc);
-  } else {
-    window['createElement'](n, doc, function (ref) {
-        window['callBeforeDestroyedRecursive'](c);
-        parent.replaceChild(ref, c['domRef']);
-    });
-    window['callDestroyedRecursive'](c);
-    window['callCreated'](n);
-  }
-};
-
-window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
+window['diffProps'] = function (cProps, nProps, node, isSvg) {
   var newProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
@@ -170,7 +162,7 @@ window['diffProps'] = function diffProps(cProps, nProps, node, isSvg) {
   }
 };
 
-window['diffCss'] = function diffCss(cCss, nCss, node) {
+window['diffCss'] = function (cCss, nCss, node) {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {
@@ -189,7 +181,7 @@ window['diffCss'] = function diffCss(cCss, nCss, node) {
   }
 };
 
-window['hasKeys'] = function hasKeys(ns, cs) {
+window['hasKeys'] = function (ns, cs) {
   return ns.length > 0 && cs.length > 0 && ns[0]['key'] != null && cs[0]['key'] != null;
 };
 
@@ -203,7 +195,7 @@ window['diffChildren'] = function diffChildren(cs, ns, parent, doc) {
   }
 };
 
-window['createElement'] = function createElement(obj, doc, cb) {
+window['populateDomRef'] = function (obj, doc) {
   if (obj['ns'] === 'svg') {
     obj['domRef'] = doc.createElementNS('http://www.w3.org/2000/svg', obj['tag']);
   } else if (obj['ns'] === 'mathml') {
@@ -211,35 +203,40 @@ window['createElement'] = function createElement(obj, doc, cb) {
   } else {
     obj['domRef'] = doc.createElement(obj['tag']);
   }
+}
+
+// dmj: refactor this, the callback function feels meh
+window['createElement'] = function (obj, doc, cb) {
+  window['populateDomRef'](obj,doc);
   cb(obj['domRef']);
-  window['populate'](null, obj, doc);
+  if (obj['type'] === 'vnode') window['populate'](null, obj, doc);
 };
 
-window['mountComponent'] = function mountComponent(obj, doc) {
-   obj['mount'] (function (component) {
-       obj['domRef'].appendChild(component['domRef']);
-   });
+// mounts vcomp by calling into Haskell side.
+// unmount is handled with pre-destroy recursive hooks
+window['mountComponent'] = function (obj, doc) {
+    // dmj, the component placeholder div[id=name] is already on the dom and vdom
+    // Now we gen the component and append it to the vdom and real dom
+    obj['domRef']['id'] = obj['id'];
+    // ^ we have to set this before 'mount()' is called, since `diff` requires it.
+    var component = obj['mount']();
+    // mount() gives us the VTree from the Haskell side, so we just attach it here
+    // to tie the knot (attach to both vdom and real dom).
+    obj.children.push(component);
+    obj['domRef'].appendChild(component['domRef']);
 }
 
-window['unmountComponent'] = function unmountComponent(obj, doc) {
-   obj['unmount'] (function () {
-       window['destroyNode'](obj, doc);
-   });
-}
-
-window['createNode'] = function createNode(obj, parent, doc) {
-  if (obj.type === 'vnode') {
-      window['createElement'](obj, doc, function (ref) {
-          parent.appendChild(ref);
-      });
-      window['callCreated'](obj);
-  }
-  else if (obj.type === 'vcomp') {
+// creates nodes on virtual and dom (vtext, vcomp, vnode)
+window['create'] = function (obj, parent, doc) {
+  if (obj.type !== 'vtext') {
       window['createElement'](obj, doc, function (ref) {
         parent.appendChild(ref);
       });
-      parent.appendChild(obj['domRef']);
-      window['mountComponent'](obj, doc);
+      if (obj['type'] === 'vcomp') {
+         window['mountComponent'](obj, doc);
+      }
+      window['callCreated'](obj);
+      // dmj: reuse same hook names for component lifecycle events?
   }
   else {
       obj['domRef'] = doc.createTextNode(obj['text']);
@@ -249,7 +246,7 @@ window['createNode'] = function createNode(obj, parent, doc) {
 };
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
+window['syncChildren'] = function(os, ns, parent, doc) {
   var oldFirstIndex = 0,
     newFirstIndex = 0,
     oldLastIndex = os.length - 1,
@@ -413,13 +410,13 @@ window['syncChildren'] = function syncChildren(os, ns, parent, doc) {
   }
 };
 
-window['swapDomRefs'] = function swapDomRefs(tmp,a,b,p) {
+window['swapDomRefs'] = function (tmp,a,b,p) {
   tmp = a.nextSibling;
   p.insertBefore(a,b);
   p.insertBefore(b,tmp);
 };
 
-window['swap']= function swap(os,l,r) {
+window['swap']= function (os,l,r) {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;

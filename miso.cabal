@@ -45,7 +45,8 @@ common string-selector
 common server
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
-      servant-lucid
+      servant-lucid,
+      file-embed
 
 common client
   if impl(ghcjs) || arch(javascript)
@@ -174,7 +175,6 @@ library
     base < 5,
     bytestring,
     containers,
-    file-embed,
     http-api-data,
     http-types,
     jsaddle,

@@ -8,8 +8,12 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Delegate where
+module Miso.Delegate
+  ( delegator
+  , undelegator
+  ) where
 
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
 import qualified Data.Map as M
@@ -29,5 +33,19 @@ delegator
 delegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
   delegateEvent mountPointElement evts $ do
+    VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
+    pure val
+
+-- | Entry point for deinitalizing event delegation
+undelegator
+  :: JSVal
+  -> IORef VTree
+  -> M.Map MisoString Bool
+  -> JSM ()
+undelegator mountPointElement vtreeRef es = do
+  evts <- toJSVal (M.toList es)
+  forM_  (M.keys es) $ \k ->
+    consoleLog ("undelegator "  <> k)
+  undelegateEvent mountPointElement evts $ do
     VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
     pure val

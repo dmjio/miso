@@ -19,8 +19,8 @@ data Action
   | Toggle4
   deriving (Show, Eq)
 
-data MainAction = MainNoOp
-type MainModel = (Int,Int)
+data MainAction = MainNoOp | Toggle
+type MainModel = Bool
 
 main :: IO ()
 main = run (startApp app)
@@ -29,7 +29,7 @@ app :: App MainModel MainAction
 app = App {..}
   where
     initialAction = MainNoOp      -- initial action to be executed on application load
-    model         = (1,1)         -- initial model
+    model         = True         -- initial model
     update        = updateModel1  -- update function
     view          = viewModel1    -- view function
     events        = defaultEvents -- default delegated events
@@ -39,15 +39,16 @@ app = App {..}
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
-viewModel1 _ = div_ [ id_ "main div" ]
+viewModel1 x = div_ [ id_ "main div" ]
   [ "Main app - two sub components below me"
-  , component counterApp2
-  , component counterApp3
+  , button_ [ onClick Toggle ] [ text "toggle component 2" ]
+  , if x then component counterApp2 else div_ [ id_ "other test" ] [ "foo bah" ]
   ]
 
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
+updateModel1 Toggle m = noEff (not m)
 
 -- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
@@ -74,12 +75,13 @@ updateModel2 SayHelloWorld m = m <# do
 
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
-viewModel2 x = div_ []
+viewModel2 x = div_ [ id_ "something here" ]
   [ "counter app 2"
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , rawHtml "<div><p>hey expandable 2!</div></p>"
+  , component counterApp3
   ]
 
 counterApp3 :: App (Bool, Model) Action
@@ -152,4 +154,3 @@ viewModel4 x = div_ []
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , rawHtml "<div><p>hey expandable 4!</div></p>"
   ]
-

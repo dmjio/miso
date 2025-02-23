@@ -482,8 +482,7 @@ test('Should call onCreated and onDestroyed', () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0;
-  destroy = 0;
+  var create = 0, destroy = 0;
   var currentNode = vnode('div', [], {}, {}, "html", null, function() {
     create++;
   }, function() {
@@ -502,8 +501,7 @@ test('Should call onCreated and onBeforeDestroyed', () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0;
-  destroy = 0;
+  var create = 0, destroy = 0;
   var currentNode = vnode('div', [], {}, {}, "html", null, function() {
     create++;
   }, null, function() {
@@ -521,8 +519,7 @@ test('Should call onDestroyed recursively', () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
   // populate DOM
-  var destroy = 0;
-  childDestroy = 0;
+  var destroy = 0, childDestroy = 0;
   var currentNode =
     vnode('div', [vnode('div', [], {}, {}, "html", null, null, function() {
       childDestroy++;

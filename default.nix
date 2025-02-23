@@ -58,6 +58,9 @@ in
     haskell-miso-server
     haskell-miso-runner;
 
+  #code covergae
+  inherit (pkgs) coverage;
+
   #ci
   deploy = pkgs.deploy rev;
   inherit (pkgs) haskell-miso-org-test;

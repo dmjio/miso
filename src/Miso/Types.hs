@@ -21,6 +21,7 @@ module Miso.Types
   ( App (..)
   , View (..)
   , component
+  , componentKey
   , Component (..)
   , ToView (..)
   , Key (..)
@@ -191,10 +192,15 @@ data View action where
   TextRaw :: MisoString -> View action
   ComponentNode :: Component -> View action
 
-data Component = forall model action . Eq model => Component (App model action)
+data Component
+  = forall model action . Eq model
+  => Component (Maybe Key) (App model action)
 
 component :: Eq model => App model a -> View action
-component app = ComponentNode (Component app)
+component app = ComponentNode (Component Nothing app)
+
+componentKey :: Eq model => App model a -> Key -> View action
+componentKey app key = ComponentNode (Component (Just key) app)
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -272,7 +278,7 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (ComponentNode (Component app)) =
+  toHtml (ComponentNode (Component _ app)) =
     L.div_ [ L.id_ (fromMisoString (mountPoint app)) ] $ L.toHtml (view app (model app))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where

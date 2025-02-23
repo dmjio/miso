@@ -63,19 +63,20 @@ miso f = void $ do
   app@App {..} <- f <$> getCurrentURI
   common app $ \snk -> do
     VTree (OI.Object iv) <- runView (view model) snk
-    registerSink app snk
     e <- mountElement mountPoint
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) e iv
     -- Create virtual dom, perform initial diff
-    liftIO $ newIORef $ VTree (OI.Object iv)
+    ref <- liftIO $ newIORef $ VTree (OI.Object iv)
+    registerSink app ref snk
+    pure ref
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = void $
   common app $ \snk -> do
     vtree <- runView (view model) snk
-    registerSink app snk
-    consoleLog "diffing in start app"
     diff mountPoint Nothing (Just vtree)
-    liftIO (newIORef vtree)
+    ref <- liftIO (newIORef vtree)
+    registerSink app ref snk
+    pure ref

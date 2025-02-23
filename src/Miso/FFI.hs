@@ -42,6 +42,7 @@ module Miso.FFI
    , realFloatToJSString
    , jsStringToDouble
    , delegateEvent
+   , undelegateEvent
    , copyDOMIntoVTree
    , swapCallbacks
    , releaseCallbacks
@@ -243,11 +244,23 @@ delegateEvent mountPoint events getVTree = do
     res <- getVTree
     _ <- call continuation global res
     pure ()
-  delegateEvent' mountPoint events cb'
+  delegate mountPoint events cb'
+
+-- | deinitialize event delegation from a mount point.
+undelegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
+undelegateEvent mountPoint events getVTree = do
+  cb' <- function $ \_ _ [continuation] -> do
+    res <- getVTree
+    _ <- call continuation global res
+    pure ()
+  undelegate mountPoint events cb'
 
 -- | Call 'delegateEvent' JavaScript function
-delegateEvent' :: JSVal -> JSVal -> Function -> JSM ()
-delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+delegate :: JSVal -> JSVal -> Function -> JSM ()
+delegate mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+
+undelegate :: JSVal -> JSVal -> Function -> JSM ()
+undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript

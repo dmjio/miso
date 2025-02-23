@@ -44,6 +44,8 @@ import qualified JavaScript.Object.Internal as OI
 
 #ifdef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle hiding (obj, val)
+import           GHCJS.Foreign.Callback hiding (asyncCallback)
+import           GHCJS.Types
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
@@ -51,23 +53,28 @@ import           Language.Javascript.JSaddle hiding (Success, obj, val)
 
 #ifndef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
-#ifdef IOS
-import           Miso.JSBits
-#else
 import           Data.FileEmbed
-#endif
 #else
 -- import           JavaScript.Web.AnimationFrame
 #endif
 
 import           Miso.Concurrent
-import           Miso.Delegate
+import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
 import           Miso.Types
+
+-- ghcjs-base
+
+
+-- new ghc w/ js backend
+-- import GHC.JS.Foreign.Callback
+
+-- wasm
+-- ?
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -77,14 +84,10 @@ common
   -> JSM (IORef VTree)
 common App {..} getView = do
 #ifndef ghcjs_HOST_OS
-#ifdef IOS
-  mapM_ eval [delegateJs,diffJs,isomorphicJs,utilJs]
-#else
   _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
-#endif
 #endif
   -- init Waiter
   Waiter {..} <- liftIO waiter
@@ -121,7 +124,6 @@ common App {..} getView = do
           newVTree <- runView (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void $ waitForAnimationFrame
-          -- consoleLog mountPoint
           diff mountPoint (Just oldVTree) (Just newVTree)
           releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
@@ -129,13 +131,13 @@ common App {..} getView = do
         loop newModel
 
   tid <- forkJSM (loop model)
-  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, eventSink))
+  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, viewRef, eventSink))
   delegator mountEl viewRef events
   pure viewRef
 
 componentMap
   :: forall action
-   . IORef (Map MisoString (ThreadId, action -> IO ()))
+   . IORef (Map MisoString (ThreadId, IORef VTree, action -> IO ()))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 
@@ -169,7 +171,7 @@ sink :: App action model -> Sink action
 sink app = \a -> do
   M.lookup (mountPoint app) <$> readIORef componentMap >>= \case
     Nothing -> pure ()
-    Just (_, f) -> f a
+    Just (_, _, f) -> f a
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -177,7 +179,7 @@ sink app = \a -> do
 -- > AddTodo n :: TodoAction -> do
 -- >   notify (calendarApp :: App CalendarModel CalendarAction) (MakeCalendarEntry Now n :: CalendarAction)
 -- >   pure (m :: TodoModel)
--- 
+--
 notify
   :: model
   -> App m a
@@ -187,7 +189,7 @@ notify m app action = Effect m [ \_ -> io ]
   where
     io = liftIO $ do
       dispatch <- liftIO (readIORef componentMap)
-      forM_ (M.lookup (mountPoint app) dispatch) $ \(_, f) ->
+      forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
         f action
 
 -- | Internally used for runView and startApp
@@ -198,38 +200,55 @@ initApp App {..} snk = do
   liftIO (newIORef vtree)
 
 runView :: View action -> Sink action -> JSM VTree
-runView (ComponentNode (Component app)) _ = do
+runView (ComponentNode (Component maybeKey app)) _ = do
   vcomp <- create
   let name = mountPoint app
 
-  mount <- function $ \_ _ [continuation] -> do
-    vtreeRef <- common app (initApp app)
-    VTree (OI.Object res) <- liftIO (readIORef vtreeRef)
-    _ <- call continuation global res
-    pure ()
+#ifndef ghcjs_HOST_OS
+-- dmj: TODO: we need these for wasm and x86
+  let syncCallback' = undefined
+      releaseCallback = undefined
+#endif
 
-  unmount <- function $ \_ _ [continuation] -> do
-    M.lookup name <$> liftIO (readIORef componentMap) >>= \case
-      Nothing -> pure ()
-      Just (tid, _) -> liftIO $ do
-        killThread tid
-        modifyIORef' componentMap (M.delete name)
-    _ <- call continuation global ()
-    pure ()
+  -- mounting causes a recursive diff to occur, creating subcomponents
+  -- and setting up infrastructure for each sub-component
+  mountCb <-
+    syncCallback' $ do
+      vtreeRef <- common app (initApp app)
+      VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
+      pure jval
+
+  -- unmounting kills the thread and state
+  -- associated with it (queue, lock, model closure)
+  unmountCb <-
+    syncCallback' $ do
+      releaseCallback mountCb
+      M.lookup name <$> liftIO (readIORef componentMap) >>= \case
+        Nothing ->
+          pure jsNull
+        Just (tid, ref, _) -> do
+          mount <- mountElement (mountPoint app)
+          undelegator mount ref (events app)
+          liftIO $ do
+            killThread tid
+            modifyIORef' componentMap (M.delete name)
+            pure jsNull
 
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
-  -- dmj: components are just divs (allow css + props on them?), we need to support key
+  -- dmj: components are just divs
+  -- (allow css + props on them?), we need to support key
+  forM_ maybeKey $ \(Key key) -> set "key" key vcomp
   propsObj <- create
   set "props" propsObj vcomp
   eventsObj <- create
   set "events" eventsObj vcomp
-  set "id" name propsObj
+  set "id" name vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  set "mount" mount vcomp
-  set "unmount" unmount vcomp
+  set "mount" (jsval mountCb) vcomp
+  set "unmount" (jsval unmountCb) vcomp
   pure (VTree vcomp)
-  
+
 runView (Node ns tag key attrs kids) snk = do
   vnode <- create
   cssObj <- objectToJSVal =<< create
@@ -300,7 +319,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => App model action -> Sink action -> m ()
-registerSink App {..} snk = liftIO $ do
+registerSink :: MonadIO m => App model action -> IORef VTree -> Sink action -> m ()
+registerSink App {..} vtree snk = liftIO $ do
   tid <- myThreadId
-  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, snk))
+  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, vtree, snk))

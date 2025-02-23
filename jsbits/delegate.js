@@ -26,18 +26,33 @@ window['releaseCallbacks'] = function releaseCallbacks() {
 };
 
 /* event delegation algorithm */
-window['delegate'] = function delegate(mountPointElement, events, getVTree) {
-  for (var event in events) {
-    mountPointElement.addEventListener(events[event][0], function(e) {
-      getVTree(function (obj) {
-        window['delegateEvent'](e, obj, window['buildTargetToElement'](mountPointElement, e.target), []);
-      });
-    }, events[event][1]);
-  }
+window['delegate'] = function (mount, events, getVTree) {
+  for (var event in events)
+    mount.addEventListener
+      ( events[event][0]
+      , function (e) { window['listener'](e, mount, getVTree); }
+      , events[event][1]
+      );
+};
+
+window['listener'] = function(e, mount, getVTree) {
+   getVTree(function (obj) {
+      window['delegateEvent'](e, obj, window['buildTargetToElement'](mount, e.target), []);
+   });
+}
+
+/* event delegation algorithm */
+window['undelegate'] = function (mount, events, getVTree) {
+  for (var event in events)
+    mount.removeEventListener
+      ( events[event][0]
+      , function (e) { window['listener'](e, mount, getVTree); }
+      , events[event][1]
+      );
 };
 
 /* Accumulate parent stack as well for propagation */
-window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack) {
+window['delegateEvent'] = function (event, obj, stack, parentStack) {
 
   /* base case, not found */
   if (!stack.length) return;
@@ -46,6 +61,7 @@ window['delegateEvent'] = function delegateEvent (event, obj, stack, parentStack
   else if (stack.length > 1) {
     parentStack.unshift(obj);
     for (var o = 0; o < obj.children.length; o++) {
+      if (obj['type'] === 'vcomp') continue;
       if (obj.children[o]['domRef'] === stack[1]) {
         delegateEvent( event, obj.children[o], stack.slice(1), parentStack );
         break;
