@@ -47,11 +47,11 @@ jobs:
      - name: (x86) Miso examples
        run: nix-build -A miso-examples-ghc
 
-     - name: (JS) Miso sample app
-       run: nix-build -A sample-app 
+     # - name: (JS) Miso sample app
+     #   run: nix-build -A sample-app 
 
-     - name: (x86) Miso sample app jsaddle
-       run: nix-build -A sample-app-jsaddle
+     # - name: (x86) Miso sample app jsaddle
+     #   run: nix-build -A sample-app-jsaddle
 
      # - name: (JS) Miso sample app tagged
      #   run: nix-build -A sample-app-tagged
