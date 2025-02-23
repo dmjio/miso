@@ -19,8 +19,7 @@ module Miso.Internal
 where
 
 import           Control.Concurrent
-import           Control.Monad
-import           Control.Monad (forM_, (<=<))
+import           Control.Monad (forM_, (<=<), when, forever, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
@@ -40,12 +39,10 @@ import           System.Mem.StableName
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-import qualified JavaScript.Object.Internal as OI
-
 #ifdef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle hiding (obj, val)
 import           GHCJS.Foreign.Callback hiding (asyncCallback)
-import           GHCJS.Types
+import qualified JavaScript.Object.Internal as OI
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
@@ -54,27 +51,19 @@ import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #ifndef ghcjs_HOST_OS
 import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
 import           Data.FileEmbed
-#else
--- import           JavaScript.Web.AnimationFrame
 #endif
 
+import           Miso.Delegate (delegator)
+#ifdef ghcjs_HOST_OS
+import           Miso.Delegate (undelegator)
+#endif
 import           Miso.Concurrent
-import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
 import           Miso.Types
-
--- ghcjs-base
-
-
--- new ghc w/ js backend
--- import GHC.JS.Foreign.Callback
-
--- wasm
--- ?
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -192,26 +181,23 @@ notify m app action = Effect m [ \_ -> io ]
       forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
         f action
 
+#ifdef ghcjs_HOST_OS
 -- | Internally used for runView and startApp
 initApp :: App model action -> Sink action -> JSM (IORef VTree)
 initApp App {..} snk = do
   vtree <- runView (view model) snk
   diff mountPoint Nothing (Just vtree)
   liftIO (newIORef vtree)
+#endif
 
 runView :: View action -> Sink action -> JSM VTree
 runView (ComponentNode (Component maybeKey app)) _ = do
   vcomp <- create
   let name = mountPoint app
 
-#ifndef ghcjs_HOST_OS
--- dmj: TODO: we need these for wasm and x86
-  let syncCallback' = undefined
-      releaseCallback = undefined
-#endif
-
   -- mounting causes a recursive diff to occur, creating subcomponents
   -- and setting up infrastructure for each sub-component
+#ifdef ghcjs_HOST_OS
   mountCb <-
     syncCallback' $ do
       vtreeRef <- common app (initApp app)
@@ -233,6 +219,7 @@ runView (ComponentNode (Component maybeKey app)) _ = do
             killThread tid
             modifyIORef' componentMap (M.delete name)
             pure jsNull
+#endif
 
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
@@ -245,9 +232,12 @@ runView (ComponentNode (Component maybeKey app)) _ = do
   set "events" eventsObj vcomp
   set "id" name vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
+#ifdef ghcjs_HOST_OS
   set "mount" (jsval mountCb) vcomp
   set "unmount" (jsval unmountCb) vcomp
+#endif
   pure (VTree vcomp)
+
 
 runView (Node ns tag key attrs kids) snk = do
   vnode <- create

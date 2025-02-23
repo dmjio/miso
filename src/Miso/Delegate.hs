@@ -13,7 +13,6 @@ module Miso.Delegate
   , undelegator
   ) where
 
-import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
 import qualified Data.Map.Strict as M
@@ -44,8 +43,6 @@ undelegator
   -> JSM ()
 undelegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
-  forM_  (M.keys es) $ \k ->
-    consoleLog ("undelegator "  <> k)
   undelegateEvent mountPointElement evts $ do
     VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
     pure val

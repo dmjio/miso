@@ -42,7 +42,6 @@ import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Writer.Strict (tell)
 import           Data.IORef
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified JavaScript.Object.Internal as OI
 import           Miso.Diff

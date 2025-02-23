@@ -47,7 +47,7 @@ main = runApp $ startApp App {..}
     view   = viewModel            -- view function
     events = defaultEvents        -- default delegated events
     subs   = []                   -- empty subscription list
-    mountPoint = "body"          -- mount point for application (Nothing defaults to 'body')
+    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
     logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in synch (only used with `miso` function)
 
 -- | Updates model, optionally introduces side effects
