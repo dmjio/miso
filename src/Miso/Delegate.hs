@@ -16,7 +16,7 @@ module Miso.Delegate
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           GHCJS.Marshal
 import           GHCJS.Types (JSVal)
 import qualified JavaScript.Object.Internal as OI

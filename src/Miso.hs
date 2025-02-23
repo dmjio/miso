@@ -22,6 +22,7 @@ module Miso
   , sink
   , notify
   , run
+  , mail
   , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
@@ -38,7 +39,11 @@ module Miso
 
 import           Control.Monad
 import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.Writer.Strict (tell)
 import           Data.IORef
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import qualified JavaScript.Object.Internal as OI
 import           Miso.Diff
 import           Miso.Effect
@@ -80,3 +85,16 @@ startApp app@App {..} = void $
     ref <- liftIO (newIORef vtree)
     registerSink app ref snk
     pure ref
+
+-- | 'send' will send an 'action' to a different 'App'
+-- Like 'notify' for 'Effect' interface, but doesn't require the model as an argument
+mail
+  :: App m a
+  -> a
+  -> Transition action model ()
+mail app action = lift $ tell [ \_ -> io ]
+  where
+    io = liftIO $ do
+      dispatch <- liftIO (readIORef componentMap)
+      forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
+        f action

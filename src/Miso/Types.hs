@@ -50,7 +50,7 @@ import           Data.Aeson (Value)
 import qualified Data.Aeson as A
 import           Data.Bifunctor (second)
 import           Data.Foldable (for_)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T

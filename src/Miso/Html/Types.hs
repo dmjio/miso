@@ -40,7 +40,7 @@ import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (ToJSON, toJSON)
 import           Data.Aeson.Types (parseEither)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           GHCJS.Marshal (fromJSVal, toJSVal)
 import           JavaScript.Object (create, getProp)
 import           JavaScript.Object.Internal (Object(Object))

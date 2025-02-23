@@ -12,7 +12,7 @@
 ----------------------------------------------------------------------------
 module Miso.Event.Types where
 
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           GHC.Generics
 import           GHCJS.Marshal (ToJSVal)
 import           Miso.String
