@@ -13,9 +13,9 @@ module Miso.Util
   , (=:)
   ) where
 
-import Data.Foldable
-import qualified Data.Map as M
-import Miso.Html (View)
+import           Data.Foldable
+import qualified Data.Map.Strict as M
+import           Miso.Html (View)
 
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
