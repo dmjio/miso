@@ -22,6 +22,7 @@ module Miso.Types
   , View (..)
   , component
   , componentKey
+  , componentMount
   , Component (..)
   , ToView (..)
   , Key (..)
@@ -29,6 +30,7 @@ module Miso.Types
   , Attribute (..)
   , NS (..)
   , LogLevel (..)
+  , Mount (..)
   , Effect
   , Sub
     -- * The Transition Monad
@@ -190,17 +192,25 @@ data View action where
   Node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
   Text :: MisoString -> View action
   TextRaw :: MisoString -> View action
-  ComponentNode :: Component -> View action
+  ComponentNode :: Component -> Maybe (Mount action) -> View action
+
+data Mount a
+  = Mount
+  { onMounted, onUnmounted :: a
+  }
 
 data Component
   = forall model action . Eq model
   => Component (Maybe Key) (App model action)
 
 component :: Eq model => App model a -> View action
-component app = ComponentNode (Component Nothing app)
+component app = ComponentNode (Component Nothing app) Nothing
+
+componentMount :: Eq model => App model a -> Mount action -> View action
+componentMount app m = ComponentNode (Component Nothing app) (Just m)
 
 componentKey :: Eq model => App model a -> Key -> View action
-componentKey app key = ComponentNode (Component (Just key) app)
+componentKey app key = ComponentNode (Component (Just key) app) Nothing
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -271,6 +281,7 @@ data Attribute action
     | E (Sink action -> Object -> JSM ())
     | S (M.Map MisoString MisoString)
 
+
 -- | `IsString` instance
 instance IsString (View a) where
   fromString = Text . fromString
@@ -278,7 +289,7 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (ComponentNode (Component _ app)) =
+  toHtml (ComponentNode (Component _ app) _) =
     L.div_ [ L.id_ (fromMisoString (mountPoint app)) ] $ L.toHtml (view app (model app))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where

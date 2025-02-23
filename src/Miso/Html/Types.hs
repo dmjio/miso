@@ -34,9 +34,6 @@ module Miso.Html.Types (
     , onCreated
     , onDestroyed
     , onBeforeDestroyed
-    -- * Component life cycle events
-    , onMount
-    , onUnmount
     ) where
 
 import           Control.Monad
@@ -163,18 +160,6 @@ onDestroyed action =
     cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
     set "onDestroyed" cb n
     registerCallback cb
-
--- | @onMount action@ is an event that gets called after the @Component@
--- has been created and attached to the Virtual DOM + DOM
--- Note: it is implemented identically to `onCreated` but only valid
--- when working with components
-onMount :: action -> Attribute action
-onMount = onCreated
-
--- | @onUnmount action@ is an event that gets called after the @Component@
--- is removed from the DOM.
-onUnmount :: action -> Attribute action
-onUnmount = onDestroyed
 
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was

@@ -42,7 +42,6 @@ window['replace'] = function (c, n, parent, doc) {
 window['destroy'] = function (obj, parent) {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
   if (obj['type'] !== 'vtext') {
-      console.log('calling destroy on', obj);
       window['callBeforeDestroyedRecursive'](obj);
   }
 
@@ -87,11 +86,8 @@ window['callDestroyed'] = function (obj) {
 };
 
 window['callBeforeDestroyed'] = function (obj) {
-    if (obj['type'] === 'vcomp') {
-        console.log('calling unmount...', obj);
-        obj['unmount']();
-  }
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
+  if (obj['type'] === 'vcomp') obj['unmount']();
 };
 
 window['callBeforeDestroyedRecursive'] = function (obj) {

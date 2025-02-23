@@ -191,7 +191,7 @@ initApp App {..} snk = do
 #endif
 
 runView :: View action -> Sink action -> JSM VTree
-runView (ComponentNode (Component maybeKey app)) _ = do
+runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
   vcomp <- create
   let name = mountPoint app
 
@@ -200,6 +200,7 @@ runView (ComponentNode (Component maybeKey app)) _ = do
 #ifdef ghcjs_HOST_OS
   mountCb <-
     syncCallback' $ do
+      forM_ mountHooks $ \(Mount m _) -> snk m
       vtreeRef <- common app (initApp app)
       VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
       pure jval
@@ -208,6 +209,7 @@ runView (ComponentNode (Component maybeKey app)) _ = do
   -- associated with it (queue, lock, model closure)
   unmountCb <-
     syncCallback' $ do
+      forM_ mountHooks $ \(Mount _ u) -> snk u
       releaseCallback mountCb
       M.lookup name <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
@@ -220,11 +222,8 @@ runView (ComponentNode (Component maybeKey app)) _ = do
             modifyIORef' componentMap (M.delete name)
             pure jsNull
 #endif
-
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
-  -- dmj: components are just divs
-  -- (allow css + props on them?), we need to support key
   forM_ maybeKey $ \(Key key) -> set "key" key vcomp
   propsObj <- create
   set "props" propsObj vcomp

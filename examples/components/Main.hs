@@ -17,9 +17,11 @@ data Action
   | NoOp
   | SayHelloWorld
   | Toggle4
+  | UnMount
+  | Mount'
   deriving (Show, Eq)
 
-data MainAction = MainNoOp | Toggle
+data MainAction = MainNoOp | Toggle | Mount1 | UnMount1
 type MainModel = Bool
 
 main :: IO ()
@@ -42,13 +44,25 @@ viewModel1 :: MainModel -> View MainAction
 viewModel1 x = div_ [ id_ "main div" ]
   [ "Main app - two sub components below me"
   , button_ [ onClick Toggle ] [ text "toggle component 2" ]
-  , if x then component counterApp2 else div_ [ id_ "other test" ] [ "foo bah" ]
-  ]
+  , if x then componentMount counterApp2 mount else div_ [ id_ "other test" ] [ "foo bah" ]
+  ] where
+      mount
+        = Mount
+        { onMounted = Mount1
+        , onUnmounted =  UnMount1
+        }
 
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
+updateModel1 UnMount1 m = do
+  m <# do consoleLog "component 2 was unmounted!"
+          pure MainNoOp
+updateModel1 Mount1 m = do
+  m <# do
+    consoleLog "component 2 was mounted!"
+    pure MainNoOp
 
 -- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
@@ -72,6 +86,14 @@ updateModel2 SubtractOne m   = do
 updateModel2 NoOp m          = noEff m
 updateModel2 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World2") >> pure NoOp
+updateModel2 UnMount m = do
+  m <# do consoleLog "component 3 was unmounted!"
+          pure NoOp
+updateModel2 Mount' m = do
+  m <# do
+    consoleLog "component 3 was mounted!"
+    pure NoOp
+
 
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
@@ -108,18 +130,28 @@ updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World3") >> pure NoOp
 updateModel3 Toggle4 (t,n) = pure (not t, n)
-  -- ^ this tests mounting and unmounting a componente
+-- dmj: tests lifecycle hooks
+updateModel3 UnMount m = do
+  m <# do consoleLog "component 4 was unmounted!"
+          pure NoOp
+updateModel3 Mount' m = do
+  m <# do
+    consoleLog "component 4 was mounted!"
+    pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel3 :: (Bool, Model) -> View Action
 viewModel3 (toggle, x) = div_ [] $
-  [ "counter app 3"
+  [ "counter app 3, this is the one that should show you the "
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , button_ [ onClick Toggle4 ] [ text "toggle component 4" ]
   , rawHtml "<div><p>hey expandable 3!</div></p>"
-  ] ++ [ component counterApp4 | toggle ]
+  ] ++
+  [ component counterApp4
+  | toggle
+  ]
 
 counterApp4 :: App Model Action
 counterApp4 = App {..}
