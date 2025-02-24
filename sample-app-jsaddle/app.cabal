@@ -10,8 +10,5 @@ executable app-jsaddle
     Main.hs
   build-depends:
     base, miso
-  if !impl(ghcjs)
-    build-depends:
-       jsaddle, jsaddle-warp, transformers, warp, websockets
   default-language:
      Haskell2010
