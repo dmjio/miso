@@ -1,11 +1,11 @@
-name:                app
+name:                app-jsaddle
 version:             0.1.0.0
 synopsis:            First miso app
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable app
+executable app-jsaddle
   main-is:
     Main.hs
   build-depends:
