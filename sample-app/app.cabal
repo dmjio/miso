@@ -9,5 +9,8 @@ executable app
   main-is:             Main.hs
   ghcjs-options:
     -dedupe
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
   build-depends:       base, miso
   default-language:    Haskell2010

@@ -1,6 +1,7 @@
 -- | Haskell language pragma
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 
 -- | Haskell module declaration
 module Main where
@@ -19,6 +20,10 @@ data Action
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
+
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 -- | Entry point for a miso application
 main :: IO ()
