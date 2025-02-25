@@ -12,7 +12,7 @@
 ----------------------------------------------------------------------------
 module Miso.Event.Types where
 
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           GHC.Generics
 import           GHCJS.Marshal (ToJSVal)
 import           Miso.String
@@ -47,7 +47,11 @@ instance ToJSVal Options
 --
 -- > defaultOptions = Options { preventDefault = False, stopPropagation = False }
 defaultOptions :: Options
-defaultOptions = Options False False
+defaultOptions
+  = Options
+  { preventDefault = False
+  , stopPropagation = False
+  }
 
 -- | Related to using drop-related events
 newtype AllowDrop = AllowDrop Bool

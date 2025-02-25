@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE CPP             #-}
 module Main where
@@ -20,7 +21,7 @@ main = run $ miso $ \currentURI -> App
         }
     where
       initialAction = NoOp
-      mountPoint = Nothing
+      mountPoint = "body"
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]
