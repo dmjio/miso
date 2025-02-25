@@ -10,12 +10,6 @@ module Main where
 import           Miso
 import           Miso.String
 
--- | JSAddle import
-#ifndef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle.Warp as JSaddle
-import qualified Network.Wai.Handler.Warp         as Warp
-import           Network.WebSockets
-#endif
 import           Control.Monad.IO.Class
 
 -- | Type synonym for an application model
@@ -29,17 +23,13 @@ data Action
   | SayHelloWorld
   deriving (Show, Eq)
 
-#ifndef ghcjs_HOST_OS
-runApp :: JSM () -> IO ()
-runApp f = JSaddle.debugOr 8080 (f >> syncPoint) JSaddle.jsaddleApp
-#else
-runApp :: IO () -> IO ()
-runApp app = app
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
 #endif
 
 -- | Entry point for a miso application
 main :: IO ()
-main = runApp $ startApp App {..}
+main = run $ startApp App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
     model  = 0                    -- initial model

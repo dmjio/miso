@@ -2,6 +2,8 @@ packages:
   .
   examples/
   haskell-miso.org/
+  sample-app/
+  sample-app-jsaddle/
 
 index-state: 2025-02-11T14:26:56Z
 
