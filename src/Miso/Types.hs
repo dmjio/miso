@@ -1,9 +1,9 @@
+{-# LANGUAGE DeriveFunctor             #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
 {-# LANGUAGE DataKinds                 #-}
@@ -207,16 +207,17 @@ scheduleSub :: Sub action -> Transition action model ()
 scheduleSub sub = lift $ tell [ sub ]
 
 -- | Core type for constructing a `VTree`, use this instead of `VTree` directly.
-data View action where
-  Node :: NS -> MisoString -> Maybe Key -> [Attribute action] -> [View action] -> View action
-  Text :: MisoString -> View action
-  TextRaw :: MisoString -> View action
-  ComponentNode :: Component -> Maybe (Mount action) -> View action
+data View action
+  = Node NS MisoString (Maybe Key) [Attribute action] [View action]
+  | Text MisoString
+  | TextRaw MisoString
+  | ComponentNode Component (Maybe (Mount action))
+  deriving Functor
 
 data Mount a
   = Mount
   { onMounted, onUnmounted :: a
-  }
+  } deriving Functor
 
 data Component
   = forall model action . Eq model
@@ -296,10 +297,10 @@ instance ToKey Word where toKey = Key . toMisoString
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
 data Attribute action
-    = P MisoString Value
-    | E (Sink action -> Object -> JSM ())
-    | S (M.Map MisoString MisoString)
-
+  = P MisoString Value
+  | E (Sink action -> Object -> JSM ())
+  | S (M.Map MisoString MisoString)
+  deriving Functor
 
 -- | `IsString` instance
 instance IsString (View a) where
