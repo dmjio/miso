@@ -28,16 +28,7 @@ main :: IO ()
 main = run (startApp app)
 
 app :: App MainModel MainAction
-app = App {..}
-  where
-    initialAction = MainNoOp      -- initial action to be executed on application load
-    model         = True         -- initial model
-    update        = updateModel1  -- update function
-    view          = viewModel1    -- view function
-    events        = defaultEvents -- default delegated events
-    subs          = []            -- empty subscription list
-    mountPoint    = "body"        -- mount point for application (Nothing defaults to 'body')
-    logLevel      = Off           -- Used to copy DOM into VDOM, applies only to `miso` function
+app = defaultApp True updateModel1 viewModel1 MainNoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
@@ -66,16 +57,9 @@ updateModel1 Mount1 m = do
 
 -- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
-counterApp2 = App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel2         -- update function
-    view   = viewModel2           -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = "counter-app-2"    -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- Used to copy DOM into VDOM, applies only to `miso` function
+counterApp2 = (defaultApp 0 updateModel2 viewModel2 SayHelloWorld)
+  { mountPoint = "counter-app-2"
+  }
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Model -> Effect Action Model
@@ -94,7 +78,6 @@ updateModel2 Mount' m = do
     consoleLog "component 3 was mounted!"
     pure NoOp
 
-
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
 viewModel2 x = div_ [ id_ "something here" ]
@@ -107,16 +90,9 @@ viewModel2 x = div_ [ id_ "something here" ]
   ]
 
 counterApp3 :: App (Bool, Model) Action
-counterApp3 = App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = (True,0)                    -- initial model
-    update = updateModel3         -- update function
-    view   = viewModel3           -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = "counter-app-3"    -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- Used to copy DOM into VDOM, applies only to `miso` function
+counterApp3 = (defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld)
+  { mountPoint = "counter-app-3"
+  }
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
@@ -154,16 +130,9 @@ viewModel3 (toggle, x) = div_ [] $
   ]
 
 counterApp4 :: App Model Action
-counterApp4 = App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel4         -- update function
-    view   = viewModel4           -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = "counter-app-4"    -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- Used to copy DOM into VDOM, applies only to `miso` function
+counterApp4 = (defaultApp 0 updateModel4 viewModel4 SayHelloWorld)
+  { mountPoint = "counter-app-4"
+  }
 
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model

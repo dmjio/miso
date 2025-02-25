@@ -19,6 +19,7 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( App (..)
+  , defaultApp
   , View (..)
   , component
   , componentKey
@@ -66,6 +67,7 @@ import           JavaScript.Object.Internal (Object)
 import           GHCJS.Marshal (ToJSVal, toJSVal)
 
 import           Miso.Effect
+import           Miso.Event.Types
 import           Miso.FFI (JSM)
 import           Miso.String
 
@@ -89,7 +91,24 @@ data App model action = App
   , mountPoint :: MisoString
   -- ^ Id of the root element for DOM diff. If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
-  -- ^ Display warning messages when prerendering if the DOM and VDOM are not in sync.
+  }
+
+-- | Smart constructor for @App@ with sane defaults.
+defaultApp
+  :: model
+  -> (action -> model -> Effect action model)
+  -> (model -> View action)
+  -> action
+  -> App model action
+defaultApp m u v a = App
+  { initialAction = a
+  , model = m
+  , view = v
+  , update = u
+  , subs = []
+  , events = defaultEvents
+  , mountPoint = "body"
+  , logLevel = Off
   }
 
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
