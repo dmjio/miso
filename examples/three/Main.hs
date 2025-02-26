@@ -60,7 +60,7 @@ main = run $ do
   startApp App { model = m
                , initialAction = Init
                , update = updateModel ref
-               , mountPoint = "body"
+               , mountPoint = Nothing
                , logLevel = Off
                , ..
                }

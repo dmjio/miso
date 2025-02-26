@@ -40,7 +40,7 @@ main = run $ do
                , ..
                }
     where
-      mountPoint = "body"
+      mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs   = []

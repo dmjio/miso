@@ -21,7 +21,7 @@ main = run $ miso $ \currentURI -> App
         }
     where
       initialAction = NoOp
-      mountPoint = "body"
+      mountPoint = Nothing
       update = updateModel
       events = defaultEvents
       subs = [ uriSub HandleURI ]

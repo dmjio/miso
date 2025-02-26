@@ -29,7 +29,7 @@ main = run $ startApp App {..}
                     M.insert (pack "touchmove") False defaultEvents
     subs          = [ mouseSub HandleMouse ]
     logLevel      = Off
-    mountPoint    = "body"
+    mountPoint    = Nothing
 
 trunc :: (Double, Double) -> (Int, Int)
 trunc = truncate *** truncate

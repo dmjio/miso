@@ -9,6 +9,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Diff ( diff
+                 , diffElement
                  , mountElement
                  ) where
 

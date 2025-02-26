@@ -12,6 +12,7 @@ module Miso.Internal
   ( common
   , componentMap
   , sink
+  , sinkRaw
   , notify
   , runView
   , registerSink
@@ -63,7 +64,7 @@ import           Miso.String hiding (reverse)
 common
   :: Eq model
   => App model action
-  -> (Sink action -> JSM (IORef VTree))
+  -> (Sink action -> JSM (MisoString, IORef VTree))
   -> JSM (IORef VTree)
 common App {..} getView = do
 #ifndef ghcjs_HOST_OS
@@ -88,13 +89,12 @@ common App {..} getView = do
   -- and `notify` is no longer in scope
   void . liftIO . forkIO . forever $ threadDelay (1000000 * 86400) >> serve
   -- Retrieves reference view
-  viewRef <- getView eventSink
+  (mount, viewRef) <- getView eventSink
   -- know thy mountElement
-  mountEl <- mountElement mountPoint
+  mountEl <- mountElement mount
   -- Process initial action of application
   liftIO (eventSink initialAction)
   -- Program loop, blocking on SkipChan
-
   let
     loop !oldModel = liftIO wait >> do
         -- Apply actions to model
@@ -107,14 +107,15 @@ common App {..} getView = do
           newVTree <- runView (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void $ waitForAnimationFrame
-          diff mountPoint (Just oldVTree) (Just newVTree)
+          diffElement mountEl (Just oldVTree) (Just newVTree)
           releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
         loop newModel
 
   tid <- forkJSM (loop model)
-  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, viewRef, eventSink))
+  liftIO $ modifyIORef'
+     componentMap (M.insert mount (tid, viewRef, eventSink))
   delegator mountEl viewRef events
   pure viewRef
 
@@ -150,11 +151,18 @@ foldEffects update snk (e:es) m =
 -- If the component is not mounted it does not exist
 -- in the global component map and it will be a no-op
 -- this is a backdoor function so it comes with warnings
-sink :: App action model -> Sink action
-sink app = \a -> do
-  M.lookup (mountPoint app) <$> readIORef componentMap >>= \case
+sink :: MisoString -> App action model -> Sink action
+sink name _ = \a -> do
+  M.lookup name <$> readIORef componentMap >>= \case
     Nothing -> pure ()
     Just (_, _, f) -> f a
+
+-- | Link 'sink' but without `App` argument
+sinkRaw :: MisoString -> Sink action
+sinkRaw name = \x -> do
+  M.lookup name <$> readIORef componentMap >>= \case
+    Nothing -> pure ()
+    Just (_, _, f) -> f x
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -164,25 +172,27 @@ sink app = \a -> do
 -- >   pure (m :: TodoModel)
 --
 notify
-  :: App m a
+  :: MisoString
+  -> App m a
   -> a
   -> Effect action model
-notify app action = scheduleIO_ $ liftIO $ do
+notify name _ action = scheduleIO_ $ liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
-  forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
+  forM_ (M.lookup name dispatch) $ \(_, _, f) ->
     f action
 
 -- | Internally used for runView and startApp
-initApp :: App model action -> Sink action -> JSM (IORef VTree)
-initApp App {..} snk = do
+initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoString, IORef VTree)
+initComponent name App {..} snk = do
   vtree <- runView (view model) snk
-  diff mountPoint Nothing (Just vtree)
-  liftIO (newIORef vtree)
+  diff name Nothing (Just vtree)
+  ref <- liftIO (newIORef vtree)
+  pure (name, ref)
 
 runView :: View action -> Sink action -> JSM VTree
-runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
+runView (ComponentNode name (Component maybeKey app) mountHooks) snk = do
   vcomp <- create
-  let name = mountPoint app
+  let mount = name
 
   -- By default components should be mounted sychronously.
   -- We also include async mounting for tools like jsaddle-warp.
@@ -194,7 +204,7 @@ runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
   mountCb <-
         syncCallback' $ do
           forM_ mountHooks $ \(Mount m _) -> snk m
-          vtreeRef <- common app (initApp app)
+          vtreeRef <- common app (initComponent mount app)
           VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
           consoleLog "Sync component mounting enabled"
           pure jval
@@ -202,7 +212,7 @@ runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
   mountCb <- do
     asyncCallback1 $ \continuation -> do
       forM_ mountHooks $ \(Mount m _) -> liftIO $ snk m
-      vtreeRef <- common app (initApp app)
+      vtreeRef <- common app (initComponent mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       consoleLog "Async component mounting enabled"
       void $ call continuation global [vtree]
@@ -211,21 +221,20 @@ runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
   unmountCb <- toJSVal =<< do
     syncCallback $ do
       forM_ mountHooks $ \(Mount _ u) -> liftIO $ snk u
-      M.lookup name <$> liftIO (readIORef componentMap) >>= \case
+      M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
           pure ()
         Just (tid, ref, _) -> do
-          mount <- mountElement (mountPoint app)
-          undelegator mount ref (events app)
+          mountEl <- mountElement mount
+          undelegator mountEl ref (events app)
 #ifdef ghcjs_HOST_OS
           releaseCallback mountCb
 #else
           freeFunction mountCb
 #endif
-
           liftIO $ do
             killThread tid
-            modifyIORef' componentMap (M.delete name)
+            modifyIORef' componentMap (M.delete mount)
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
   forM_ maybeKey $ \(Key key) -> set "key" key vcomp
@@ -233,7 +242,7 @@ runView (ComponentNode (Component maybeKey app) mountHooks) snk = do
   set "props" propsObj vcomp
   eventsObj <- create
   set "events" eventsObj vcomp
-  set "id" name vcomp
+  set "id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
 #ifdef ghcjs_HOST_OS
   set "mount" (jsval mountCb) vcomp
@@ -314,7 +323,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => App model action -> IORef VTree -> Sink action -> m ()
-registerSink App {..} vtree snk = liftIO $ do
+registerSink :: MonadIO m => MisoString -> IORef VTree -> Sink action -> m ()
+registerSink mount vtree snk = liftIO $ do
   tid <- myThreadId
-  liftIO $ modifyIORef' componentMap (M.insert mountPoint (tid, vtree, snk))
+  liftIO $ modifyIORef' componentMap (M.insert mount (tid, vtree, snk))

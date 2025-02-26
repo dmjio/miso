@@ -35,7 +35,7 @@ viewModel1 :: MainModel -> View MainAction
 viewModel1 x = div_ [ id_ "main div" ]
   [ "Main app - two sub components below me"
   , button_ [ onClick Toggle ] [ text "toggle component 2" ]
-  , if x then componentMount counterApp2 mount else div_ [ id_ "other test" ] [ "foo bah" ]
+  , if x then componentMount "counter-app2" counterApp2 mount else div_ [ id_ "other test" ] [ "foo bah" ]
   ] where
       mount
         = Mount
@@ -57,9 +57,7 @@ updateModel1 Mount1 m = do
 
 -- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
-counterApp2 = (defaultApp 0 updateModel2 viewModel2 SayHelloWorld)
-  { mountPoint = "counter-app-2"
-  }
+counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Model -> Effect Action Model
@@ -87,21 +85,19 @@ viewModel2 x = div_ [ id_ "something here" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , rawHtml "<div><p>hey expandable 2!</div></p>"
-  , component counterApp3
+  , component "counter-app3" counterApp3
   ]
 
 counterApp3 :: App (Bool, Model) Action
-counterApp3 = (defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld)
-  { mountPoint = "counter-app-3"
-  }
+counterApp3 = defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
 updateModel3 AddOne (t,n) = do
-  notify counterApp2 AddOne
+  notify "counter-app2" counterApp2 AddOne
   noEff (t, n + 1)
 updateModel3 SubtractOne (t,n)   = do
-  notify counterApp2 SubtractOne
+  notify "counter-app2" counterApp2 SubtractOne
   noEff (t, n - 1)
 updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
@@ -126,22 +122,20 @@ viewModel3 (toggle, x) = div_ [] $
   , button_ [ onClick Toggle4 ] [ text "toggle component 4" ]
   , rawHtml "<div><p>hey expandable 3!</div></p>"
   ] ++
-  [ component counterApp4
+  [ component "counter-app4" counterApp4
   | toggle
   ]
 
 counterApp4 :: App Model Action
-counterApp4 = (defaultApp 0 updateModel4 viewModel4 SayHelloWorld)
-  { mountPoint = "counter-app-4"
-  }
+counterApp4 = defaultApp 0 updateModel4 viewModel4 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model
 updateModel4 AddOne m = do
-  notify counterApp2 AddOne
+  notify "counter-app2" counterApp2 AddOne
   noEff (m + 1)
 updateModel4 SubtractOne m   = do
-  notify counterApp2 SubtractOne
+  notify "counter-app2" counterApp2 SubtractOne
   noEff (m - 1)
 updateModel4 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World4") >> pure NoOp

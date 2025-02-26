@@ -63,21 +63,23 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = void $ do
   app@App {..} <- f <$> getCurrentURI
   common app $ \snk -> do
+    let mount = getMountPoint mountPoint
     VTree (OI.Object iv) <- runView (view model) snk
-    e <- mountElement mountPoint
+    e <- mountElement mount
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) e iv
     -- Create virtual dom, perform initial diff
     ref <- liftIO $ newIORef $ VTree (OI.Object iv)
-    registerSink app ref snk
-    pure ref
+    registerSink mount ref snk
+    pure (mount, ref)
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = void $
   common app $ \snk -> do
+    let mount = getMountPoint mountPoint
     vtree <- runView (view model) snk
-    diff mountPoint Nothing (Just vtree)
+    diff (getMountPoint mountPoint) Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
-    registerSink app ref snk
-    pure ref
+    registerSink mount ref snk
+    pure (mount, ref)

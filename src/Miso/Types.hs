@@ -21,10 +21,10 @@ module Miso.Types
   ( App (..)
   , defaultApp
   , View (..)
+  , Component (..)
   , component
   , componentKey
   , componentMount
-  , Component (..)
   , ToView (..)
   , Key (..)
   , toKey
@@ -32,6 +32,7 @@ module Miso.Types
   , NS (..)
   , LogLevel (..)
   , Mount (..)
+  , getMountPoint
     -- * The Transition Monad
   , Transition
   , mapAction
@@ -63,6 +64,7 @@ import qualified Data.Aeson as A
 import           Data.Bifunctor (second, Bifunctor(..))
 import           Data.Foldable (for_)
 import qualified Data.Map.Strict as M
+import           Data.Maybe (fromMaybe)
 import           Data.Proxy
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
@@ -95,10 +97,14 @@ data App model action = App
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , initialAction :: action
   -- ^ Initial action that is run after the application has loaded
-  , mountPoint :: MisoString
+  , mountPoint :: Maybe MisoString
   -- ^ Id of the root element for DOM diff. If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   }
+
+-- | Convenience for extracting mount point
+getMountPoint :: Maybe MisoString -> MisoString
+getMountPoint = fromMaybe "body"
 
 -- | Smart constructor for @App@ with sane defaults.
 defaultApp
@@ -114,7 +120,7 @@ defaultApp m u v a = App
   , update = u
   , subs = []
   , events = defaultEvents
-  , mountPoint = "body"
+  , mountPoint = Nothing
   , logLevel = Off
   }
 
@@ -215,7 +221,7 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | ComponentNode Component (Maybe (Mount action))
+  | ComponentNode MisoString Component (Maybe (Mount action))
   deriving Functor
 
 data Mount a
@@ -227,14 +233,14 @@ data Component
   = forall model action . Eq model
   => Component (Maybe Key) (App model action)
 
-component :: Eq model => App model a -> View action
-component app = ComponentNode (Component Nothing app) Nothing
+component :: Eq model => MisoString -> App model a -> View action
+component name app = ComponentNode name (Component Nothing app) Nothing
 
-componentMount :: Eq model => App model a -> Mount action -> View action
-componentMount app m = ComponentNode (Component Nothing app) (Just m)
+componentMount :: Eq model => MisoString -> App model a -> Mount action -> View action
+componentMount name app m = ComponentNode name (Component Nothing app) (Just m)
 
-componentKey :: Eq model => App model a -> Key -> View action
-componentKey app key = ComponentNode (Component (Just key) app) Nothing
+componentKey :: Eq model => MisoString -> App model a -> Key -> View action
+componentKey name app key = ComponentNode name (Component (Just key) app) Nothing
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -313,8 +319,9 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (ComponentNode (Component _ app) _) =
-    L.div_ [ L.id_ (fromMisoString (mountPoint app)) ] $ L.toHtml (view app (model app))
+  toHtml (ComponentNode mount (Component _ app) _) =
+    L.div_ [ L.id_ (fromMisoString mount) ] $
+      L.toHtml (view app (model app))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where
       noEnd = ["img", "input", "br", "hr", "meta"]

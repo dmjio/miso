@@ -24,7 +24,7 @@ main = run $ startApp App {..}
     view   = viewModel            -- view function
     events = defaultEvents        -- default delegated events
     subs   = []                   -- empty subscription list
-    mountPoint = "body"          -- mount point for application (Nothing defaults to 'body')
+    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
     logLevel = Off
 
 data Model = Empty deriving Eq

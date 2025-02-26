@@ -227,23 +227,6 @@ executable mario
     containers,
     miso
 
-executable compose-update
-  import:
-    common-options
-  default-language:
-    Haskell2010
-  main-is:
-    Main.hs
-  ghcjs-options:
-    -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
-  hs-source-dirs:
-    compose-update
-  build-depends:
-    base < 5,
-    miso
-
 executable mathml
   import:
     common-options

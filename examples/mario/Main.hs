@@ -40,7 +40,7 @@ main = run $ do
     subs   = [ arrowsSub GetArrows
              , windowCoordsSub WindowCoords
              ]
-    mountPoint = "body"
+    mountPoint = Nothing
     logLevel = Off
 
 data Model = Model

@@ -35,7 +35,7 @@ main :: IO ()
 main = do
   startApp App { model = Model Nothing
                , initialAction = NoOp
-               , mountPoint = "body"
+               , mountPoint = Nothing
                , ..
                }
     where
