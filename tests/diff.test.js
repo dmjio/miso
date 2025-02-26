@@ -311,7 +311,7 @@ test('Should replace Text with Component', () => {
   var body = document.body;
 
   // populate DOM
-  var node = vtext('foo', []);
+  var node = vtext('foo');
   window['diff'](null, node, body, document);
 
   // Test node was populated
