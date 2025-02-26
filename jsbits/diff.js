@@ -28,7 +28,7 @@ window['replace'] = function (c, n, parent, doc) {
   } else {
     window['createElement'](n, doc, function(ref) {
       parent.replaceChild(ref, c['domRef']);
-      if (n['type'] === 'vcomp') window['mountComponent'](n);
+      if (n['type'] === 'vcomp') window['mountComponent'](n,doc);
     });
   }
   // step 3: call destroyed hooks, call created hooks
@@ -205,14 +205,14 @@ window['createElement'] = function (obj, doc, cb) {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 window['mountComponent'] = function (obj, doc) {
-    var componentId = obj['data-component-id'];
-    if ('querySelectorAll' in doc) { //dmj: jsdom lacks this in test
-        var nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
-        if (nodeList.length > 0) {
-            console.error ('Recursive component mount detected');
-            console.error ('Component ' + componentId + ' is already mounted');
-            return;
-        }
+    var componentId = obj['data-component-id'],
+        nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
+
+    // dmj: bail out if recursive mounting detected
+    if (nodeList.length > 0) {
+        console.error ('Recursive component mount detected');
+        console.error ('Component ' + componentId + ' is already mounted');
+        return;
     }
     // dmj, the component placeholder div[id=name] is already on the dom and vdom
     // Now we gen the component and append it to the vdom and real dom
