@@ -417,7 +417,7 @@ footer =
               [ text " licensed." ]
          ]
          , p_ [] [ text "The source code for this website is located "
-                 , a_ [ href_  "https://github.com/dmjio/miso/tree/master/examples/haskell-miso.org"
+                 , a_ [ href_  "https://github.com/dmjio/miso/tree/master/haskell-miso.org"
                       , style_ $ M.singleton "color" "#363636"
                       ] [  text" here."]
                  ]
