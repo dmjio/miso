@@ -106,7 +106,7 @@ common App {..} getView = do
           newVTree <- runView (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void $ waitForAnimationFrame
-          diffElement mountEl (Just oldVTree) (Just newVTree)
+          diff mountEl (Just oldVTree) (Just newVTree)
           releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
@@ -193,7 +193,7 @@ initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoStrin
 initComponent name App {..} snk = do
   vtree <- runView (view model) snk
   el <- getComponent name
-  diffElement el Nothing (Just vtree)
+  diff el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 

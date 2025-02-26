@@ -83,7 +83,7 @@ startApp app@App {..} = void $
     vtree <- runView (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
-    diffElement mountEl Nothing (Just vtree)
+    diff mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
     registerSink mount ref snk
     pure (mount, mountEl, ref)

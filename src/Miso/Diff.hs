@@ -9,7 +9,6 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Diff ( diff
-                 , diffElement
                  , mountElement
                  ) where
 
@@ -20,20 +19,9 @@ import Miso.Html.Types
 import Miso.FFI
 import Miso.String
 
--- | Entry point for diffing / patching algorithm
--- Uses 'id' property, unless 'body' is specified
--- 'body' should only be specified for top-level 'App'.
-diff :: MisoString -> Maybe VTree -> Maybe VTree -> JSM ()
-diff "body" current new = do
-  body <- getBody
-  diffElement body current new
-diff element current new = do
-  e <- getElementById element
-  diffElement e current new
-
 -- | diffing / patching a given element
-diffElement :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
-diffElement mountEl current new = do
+diff :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
+diff mountEl current new = do
   doc <- getDoc
   case (current, new) of
     (Nothing, Nothing) -> pure ()
