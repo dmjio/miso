@@ -57,14 +57,14 @@ updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
 updateModel1 UnMount1 m = do
-  m <# do consoleLog "component 2 was unmounted!"
-          pure MainNoOp
+  m <# do
+    consoleLog "component 2 was unmounted!"
+    pure MainNoOp
 updateModel1 Mount1 m = do
   m <# do
     consoleLog "component 2 was mounted!"
     pure MainNoOp
 
--- are you sure counter-app is on the DOM before you start the delegator?
 counterApp2 :: App Model Action
 counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
 
@@ -102,21 +102,23 @@ counterApp3 = defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
-updateModel3 AddOne (t,n) = do
-  notify component2 AddOne
-  noEff (t, n + 1)
+updateModel3 AddOne (t,n) =
+  (t, n + 1) <# do
+    mail component2 AddOne
+    pure NoOp
 updateModel3 SubtractOne (t,n)   = do
-  notify component2 SubtractOne
-  noEff (t, n - 1)
+  (t, n - 1) <# do
+    mail component2 SubtractOne
+    pure NoOp
 updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World3") >> pure NoOp
 updateModel3 Toggle4 (t,n) = noEff (not t, n)
--- dmj: tests lifecycle hooks
-updateModel3 UnMount m = do
-  m <# do consoleLog "component 4 was unmounted!"
-          pure NoOp
-updateModel3 Mount' m = do
+updateModel3 UnMount m =
+  m <# do
+    consoleLog "component 4 was unmounted!"
+    pure NoOp
+updateModel3 Mount' m =
   m <# do
     consoleLog "component 4 was mounted!"
     pure NoOp
@@ -140,12 +142,14 @@ counterApp4 = defaultApp 0 updateModel4 viewModel4 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model
-updateModel4 AddOne m = do
-  notify component2 AddOne
-  noEff (m + 1)
-updateModel4 SubtractOne m   = do
-  notify component2 SubtractOne
-  noEff (m - 1)
+updateModel4 AddOne m =
+  (m + 1) <# do
+    mail component2 AddOne
+    pure NoOp
+updateModel4 SubtractOne m = do
+  (m - 1) <# do
+    mail component2 SubtractOne
+    pure NoOp
 updateModel4 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World4") >> pure NoOp
 updateModel4 _ m          = noEff m

@@ -123,6 +123,7 @@ library
     Miso.Html
     Miso.Delegate
     Miso.Diff
+    Miso.Effect
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types

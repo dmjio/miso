@@ -14,6 +14,7 @@ module Miso.Internal
   , initComponent
   , sink
   , sinkRaw
+  , mail
   , notify
   , runView
   , registerSink
@@ -53,13 +54,14 @@ import           Data.FileEmbed
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
 
-import           Miso.Delegate (delegator, undelegator)
 import           Miso.Concurrent
+import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
-import           Miso.Types
+import           Miso.Effect
 import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
+import           Miso.Types
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -133,7 +135,20 @@ componentMap
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 
--- | Helper
+-- | Like @mail@ but lifted to work with the @Transition@ interface.
+-- This function is used to send messages to @Component@s on other parts of the application
+notify
+  :: Component name m a
+  -> a
+  -> Transition action model ()
+notify (Component name _) action = scheduleIO_ (liftIO io)
+  where
+    io = do
+      dispatch <- liftIO (readIORef componentMap)
+      forM_ (M.lookup name dispatch) $ \(_, _, f) ->
+        f action
+
+-- | Helper for processing effects in the event loop.
 foldEffects
   :: (action -> model -> Effect action model)
   -> Sink action
@@ -141,10 +156,10 @@ foldEffects
   -> model
   -> JSM model
 foldEffects _ _ [] m = pure m
-foldEffects update snk (e:es) m =
-  case runTransition m (update e m) of
-    (n, subs) -> do
-      forM_ subs $ \sub -> forkJSM (sub snk)
+foldEffects update snk (e:es) old =
+  case update e old of
+    Effect n effects -> do
+      forM_ effects $ \effect -> forkJSM (effect snk)
       foldEffects update snk es n
 
 -- | Component sink exposed as a backdoor
@@ -175,15 +190,14 @@ sinkRaw name = \x -> do
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
 --
--- > AddTodo n :: TodoAction -> do
--- >   notify (calendarApp :: App CalendarModel CalendarAction) (MakeCalendarEntry Now n :: CalendarAction)
--- >   pure (m :: TodoModel)
+-- > update (MakeTodo entry) m -> do
+-- >   m <# mail calendarComponent (NewCalendarEntry entry)
 --
-notify
+mail
   :: Component name m a
   -> a
-  -> Effect action model
-notify (Component name _) action = scheduleIO_ $ liftIO $ do
+  -> JSM ()
+mail (Component name _) action = liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \(_, _, f) ->
     f action

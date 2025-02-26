@@ -17,11 +17,17 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso
-  ( miso
+  ( -- * Miso
+    miso
   , startApp
   , startComponent
+    -- * Third-party integration helpers
   , sink
+  , sinkRaw
+    -- * Component communication
   , notify
+  , mail
+    -- * Abstraction for jsaddle
   , run
   , MT.Component
   , module Miso.Event
