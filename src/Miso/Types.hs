@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
 {-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE CPP                       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -244,13 +243,8 @@ componentKey name app key = ComponentNode name (Component (Just key) app) Nothin
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
-#if MIN_VERSION_servant(0,14,0)
   type MkLink (View a) b = MkLink (Get '[] ()) b
   toLink toA Proxy = toLink toA (Proxy :: Proxy (Get '[] ()))
-#else
-  type MkLink (View a) = MkLink (Get '[] ())
-  toLink _ = toLink (Proxy :: Proxy (Get '[] ()))
-#endif
 
 -- | Convenience class for using View
 class ToView v where toView :: v -> View action
