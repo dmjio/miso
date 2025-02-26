@@ -2,7 +2,7 @@ const diff = require('./diff');
 const isomorphic = require('./isomorphic.js');
 const jsdom = require('jsdom');
 
-function vcomp(mount, unmount, children, props, ref, oc, od, bd, key) {
+function vcomp(mount, unmount, props, ref, oc, od, bd, key) {
   return {
     'type': 'vcomp',
     'tag': 'div',
@@ -159,11 +159,12 @@ test('Should mount and unmount a component', () => {
       diff (null, node, body, document);
       cb (node);
   }
-  var newNode = vcomp(mountFunc, (x) => unmountCount++);
+  var newNode = vcomp(mountFunc, (x) => unmountCount++, { 'id' : "vcomp-foo"});
   window['diff'](null, newNode, body, document);
   expect(mountCount).toBe(1);
   expect(newNode.children.length).toBe(1);
   expect(newNode.domRef.children.length).toBe(1);
+  expect(newNode.domRef.id).toBe("vcomp-foo");
   window['diff'](newNode, null, body, document);
   expect(unmountCount).toBe(1);
 });

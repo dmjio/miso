@@ -41,16 +41,13 @@ window['replace'] = function (c, n, parent, doc) {
 // destroy vtext, vnode, vcomp
 window['destroy'] = function (obj, parent) {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
-  if (obj['type'] !== 'vtext') {
-      window['callBeforeDestroyedRecursive'](obj);
-  }
+  window['callBeforeDestroyedRecursive'](obj);
 
   // step 2: destroy
   parent.removeChild(obj['domRef']);
 
   // step 3: invoke post-hooks for vnode and vcomp
-  if (obj['type'] !== 'vtext')
-    window['callDestroyedRecursive'](obj);
+  window['callDestroyedRecursive'](obj);
 };
 
 window['diffNodes'] = function (c, n, parent, doc) {
@@ -59,15 +56,12 @@ window['diffNodes'] = function (c, n, parent, doc) {
       if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
       n['domRef'] = c['domRef'];
       return;
-  }
+  }  
   // check children
-  if (c['tag'] === n['tag'] && n['key'] === c['key'] && n['id'] === c['id']) {
+  if (c['tag'] === n['tag'] && n['key'] === c['key'] && n['data-component-id'] === c['data-component-id']) {
       n['domRef'] = c['domRef'];
-      if (c['type'] === 'vnode') {
-        // we don't diff properties / css / children on vcomps (dmj: should we?)
-        // vcomps are just divs, and divs have no semantic meaning so :shrug-man:
-        window['populate'](c, n, doc);
-      }
+      // dmj: we will diff properties on 'vcomp' as well
+      window['populate'](c, n, doc);
   } else {
     // dmj: we replace when things just don't line up during the diff
     window['replace'](c,n,parent,doc);
@@ -205,7 +199,7 @@ window['populateDomRef'] = function (obj, doc) {
 window['createElement'] = function (obj, doc, cb) {
   window['populateDomRef'](obj,doc);
   cb(obj['domRef']);
-  if (obj['type'] === 'vnode') window['populate'](null, obj, doc);
+  window['populate'](null, obj, doc);
 };
 
 // mounts vcomp by calling into Haskell side.
