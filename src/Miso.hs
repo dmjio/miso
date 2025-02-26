@@ -22,6 +22,7 @@ module Miso
   , sink
   , notify
   , run
+  , MT.Component
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
@@ -53,7 +54,8 @@ import           Miso.Subscription
 #ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel
 #endif
-import           Miso.Types hiding (Component(..))
+import           Miso.Types hiding (Component(..), SomeComponent(SomeComponent))
+import qualified Miso.Types as MT
 import           Miso.Util
 import           Miso.WebSocket
 
@@ -63,23 +65,24 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = void $ do
   app@App {..} <- f <$> getCurrentURI
   common app $ \snk -> do
-    let mount = getMountPoint mountPoint
     VTree (OI.Object iv) <- runView (view model) snk
-    e <- mountElement mount
+    let mount = getMountPoint mountPoint
+    mountEl <- mountElement mount
     -- Initial diff can be bypassed, just copy DOM into VTree
-    copyDOMIntoVTree (logLevel == DebugPrerender) e iv
+    copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
     -- Create virtual dom, perform initial diff
     ref <- liftIO $ newIORef $ VTree (OI.Object iv)
     registerSink mount ref snk
-    pure (mount, ref)
+    pure (mount, mountEl, ref)
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = void $
   common app $ \snk -> do
-    let mount = getMountPoint mountPoint
     vtree <- runView (view model) snk
-    diff (getMountPoint mountPoint) Nothing (Just vtree)
+    let mount = getMountPoint mountPoint
+    mountEl <- mountElement mount
+    diffElement mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
     registerSink mount ref snk
-    pure (mount, ref)
+    pure (mount, mountEl, ref)

@@ -52,6 +52,7 @@ module Miso.FFI
    , blur
    , scrollIntoView
    , alert
+   , getComponent
    ) where
 
 import           Control.Concurrent
@@ -66,6 +67,8 @@ import           Language.Javascript.JSaddle hiding (obj, val)
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
+import           Prelude hiding ((!!))
+
 import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
@@ -202,6 +205,15 @@ objectToJSON
     -> JSVal -- ^ object with impure references to the DOM
     -> JSM JSVal
 objectToJSON = jsg2 "objectToJSON"
+
+-- | Retrieves the component id
+getComponent :: MisoString -> JSM JSVal
+getComponent name = nodeList !! 0
+  where
+    nodeList
+      = jsg "document"
+      # "querySelectorAll"
+      $ [ "[data-component-id='" <> fromMisoString name <> "']" ]
 
 -- | Retrieves a reference to document body.
 --

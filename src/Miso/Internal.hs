@@ -64,7 +64,7 @@ import           Miso.String hiding (reverse)
 common
   :: Eq model
   => App model action
-  -> (Sink action -> JSM (MisoString, IORef VTree))
+  -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -> JSM (IORef VTree)
 common App {..} getView = do
 #ifndef ghcjs_HOST_OS
@@ -89,9 +89,7 @@ common App {..} getView = do
   -- and `notify` is no longer in scope
   void . liftIO . forkIO . forever $ threadDelay (1000000 * 86400) >> serve
   -- Retrieves reference view
-  (mount, viewRef) <- getView eventSink
-  -- know thy mountElement
-  mountEl <- mountElement mount
+  (mount, mountEl, viewRef) <- getView eventSink
   -- Process initial action of application
   liftIO (eventSink initialAction)
   -- Program loop, blocking on SkipChan
@@ -114,10 +112,19 @@ common App {..} getView = do
         loop newModel
 
   tid <- forkJSM (loop model)
-  liftIO $ modifyIORef'
-     componentMap (M.insert mount (tid, viewRef, eventSink))
+  addToComponentMap mount tid viewRef eventSink
   delegator mountEl viewRef events
   pure viewRef
+
+addToComponentMap
+  :: MonadIO m
+  => MisoString
+  -> ThreadId
+  -> IORef VTree
+  -> (action -> IO ())
+  -> m ()
+addToComponentMap mount thread view snk =
+  liftIO $ modifyIORef' componentMap (M.insert mount (thread, view, snk))
 
 componentMap
   :: forall action
@@ -172,25 +179,25 @@ sinkRaw name = \x -> do
 -- >   pure (m :: TodoModel)
 --
 notify
-  :: MisoString
-  -> App m a
+  :: Component name m a
   -> a
   -> Effect action model
-notify name _ action = scheduleIO_ $ liftIO $ do
+notify (Component name _) action = scheduleIO_ $ liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \(_, _, f) ->
     f action
 
 -- | Internally used for runView and startApp
-initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoString, IORef VTree)
+initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoString, JSVal, IORef VTree)
 initComponent name App {..} snk = do
   vtree <- runView (view model) snk
-  diff name Nothing (Just vtree)
+  el <- getComponent name
+  diffElement el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
-  pure (name, ref)
+  pure (name, el, ref)
 
 runView :: View action -> Sink action -> JSM VTree
-runView (ComponentNode name (Component maybeKey app) mountHooks) snk = do
+runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   vcomp <- create
   let mount = name
 
@@ -203,29 +210,29 @@ runView (ComponentNode name (Component maybeKey app) mountHooks) snk = do
 #ifdef ghcjs_HOST_OS
   mountCb <-
         syncCallback' $ do
-          forM_ mountHooks $ \(Mount m _) -> snk m
+          forM_ onMounted $ \m -> liftIO $ snk m
           vtreeRef <- common app (initComponent mount app)
           VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
-          consoleLog "Sync component mounting enabled"
+          -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
           pure jval
 #else
   mountCb <- do
     asyncCallback1 $ \continuation -> do
-      forM_ mountHooks $ \(Mount m _) -> liftIO $ snk m
+      forM_ onMounted $ \m -> liftIO $ snk m
       vtreeRef <- common app (initComponent mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
-      consoleLog "Async component mounting enabled"
+      -- consoleLog "Async component mounting enabled"
       void $ call continuation global [vtree]
 #endif
 
   unmountCb <- toJSVal =<< do
     syncCallback $ do
-      forM_ mountHooks $ \(Mount _ u) -> liftIO $ snk u
+      forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
           pure ()
         Just (tid, ref, _) -> do
-          mountEl <- mountElement mount
+          mountEl <- getComponent mount
           undelegator mountEl ref (events app)
 #ifdef ghcjs_HOST_OS
           releaseCallback mountCb
@@ -237,12 +244,14 @@ runView (ComponentNode name (Component maybeKey app) mountHooks) snk = do
             modifyIORef' componentMap (M.delete mount)
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
-  forM_ maybeKey $ \(Key key) -> set "key" key vcomp
+  forM_ componentKey $ \(Key key) -> set "key" key vcomp
   propsObj <- create
   set "props" propsObj vcomp
   eventsObj <- create
+  setAttrs vcomp attributes snk
   set "events" eventsObj vcomp
-  set "id" mount vcomp
+  set "ns" HTML vcomp
+  set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
 #ifdef ghcjs_HOST_OS
   set "mount" (jsval mountCb) vcomp
@@ -251,8 +260,6 @@ runView (ComponentNode name (Component maybeKey app) mountHooks) snk = do
 #endif
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)
-
-
 runView (Node ns tag key attrs kids) snk = do
   vnode <- create
   cssObj <- objectToJSVal =<< create
@@ -265,23 +272,12 @@ runView (Node ns tag key attrs kids) snk = do
   set "ns" ns vnode
   set "tag" tag vnode
   set "key" key vnode
-  setAttrs vnode
+  setAttrs vnode attrs snk
   flip (set "children") vnode
     =<< ghcjsPure . jsval
     =<< setKids
   pure $ VTree vnode
     where
-      setAttrs vnode =
-        forM_ attrs $ \case
-          P k v -> do
-            val <- toJSVal v
-            o <- getProp "props" vnode
-            set k val (Object o)
-          E attr -> attr snk vnode
-          S m -> do
-            cssObj <- getProp "css" vnode
-            forM_ (M.toList m) $ \(k,v) -> do
-              set k v (Object cssObj)
       setKids = do
         kidsViews <- traverse (objectToJSVal . getTree <=< flip runView snk) kids
         ghcjsPure (JSArray.fromList kidsViews)
@@ -298,6 +294,19 @@ runView (TextRaw str) snk =
       runView parent snk
     kids -> do
       runView (Node HTML "div" Nothing mempty kids) snk
+
+setAttrs :: Object -> [Attribute action] -> Sink action -> JSM ()
+setAttrs vnode attrs snk =
+  forM_ attrs $ \case
+    P k v -> do
+      val <- toJSVal v
+      o <- getProp "props" vnode
+      set k val (Object o)
+    E attr -> attr snk vnode
+    S m -> do
+      cssObj <- getProp "css" vnode
+      forM_ (M.toList m) $ \(k,v) -> do
+        set k v (Object cssObj)
 
 -- Filters tree to only branches and leaves w/ Text tags.
 -- converts to View a. Note: if HTML is malformed,

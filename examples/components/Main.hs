@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE CPP #-}
@@ -30,19 +31,27 @@ main = run (startApp app)
 app :: App MainModel MainAction
 app = defaultApp True updateModel1 viewModel1 MainNoOp
 
+component2 :: Component "app2" Model Action
+component2 = component counterApp2
+
+component3 :: Component "app3" (Bool, Model) Action
+component3 = component counterApp3
+
+component4 :: Component "app4" Model Action
+component4 = component counterApp4
+
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
 viewModel1 x = div_ [ id_ "main div" ]
   [ "Main app - two sub components below me"
   , button_ [ onClick Toggle ] [ text "toggle component 2" ]
-  , if x then componentMount "counter-app2" counterApp2 mount else div_ [ id_ "other test" ] [ "foo bah" ]
-  ] where
-      mount
-        = Mount
-        { onMounted = Mount1
-        , onUnmounted =  UnMount1
-        }
-
+  , if x
+    then embedWith component2 componentOptions
+         { onMounted = Just Mount1
+         , onUnmounted = Just UnMount1
+         }
+    else div_ [ id_ "other test" ] [ "foo bah" ]
+  ]
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
@@ -85,7 +94,7 @@ viewModel2 x = div_ [ id_ "something here" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , rawHtml "<div><p>hey expandable 2!</div></p>"
-  , component "counter-app3" counterApp3
+  , embed component3
   ]
 
 counterApp3 :: App (Bool, Model) Action
@@ -94,10 +103,10 @@ counterApp3 = defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
 updateModel3 AddOne (t,n) = do
-  notify "counter-app2" counterApp2 AddOne
+  notify component2 AddOne
   noEff (t, n + 1)
 updateModel3 SubtractOne (t,n)   = do
-  notify "counter-app2" counterApp2 SubtractOne
+  notify component2 SubtractOne
   noEff (t, n - 1)
 updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
@@ -122,7 +131,7 @@ viewModel3 (toggle, x) = div_ [] $
   , button_ [ onClick Toggle4 ] [ text "toggle component 4" ]
   , rawHtml "<div><p>hey expandable 3!</div></p>"
   ] ++
-  [ component "counter-app4" counterApp4
+  [ embed component4
   | toggle
   ]
 
@@ -132,10 +141,10 @@ counterApp4 = defaultApp 0 updateModel4 viewModel4 SayHelloWorld
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model
 updateModel4 AddOne m = do
-  notify "counter-app2" counterApp2 AddOne
+  notify component2 AddOne
   noEff (m + 1)
 updateModel4 SubtractOne m   = do
-  notify "counter-app2" counterApp2 SubtractOne
+  notify component2 SubtractOne
   noEff (m - 1)
 updateModel4 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World4") >> pure NoOp

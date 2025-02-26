@@ -1,3 +1,6 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE DeriveFunctor             #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE LambdaCase                #-}
@@ -17,21 +20,23 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Types
-  ( App (..)
-  , defaultApp
-  , View (..)
-  , Component (..)
-  , component
-  , componentKey
-  , componentMount
-  , ToView (..)
-  , Key (..)
+  ( App              (..)
+  , View             (..)
+  , Component        (..)
+  , SomeComponent    (..)
+  , ComponentOptions (..)
+  , ToView           (..)
+  , Key              (..)
+  , Attribute        (..)
+  , NS               (..)
+  , LogLevel         (..)
   , toKey
-  , Attribute (..)
-  , NS (..)
-  , LogLevel (..)
-  , Mount (..)
+  , defaultApp
+  , component
+  , embed
+  , embedWith
   , getMountPoint
+  , componentOptions
     -- * The Transition Monad
   , Transition
   , mapAction
@@ -67,6 +72,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Proxy
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
+import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import qualified Lucid as L
 import qualified Lucid.Base as L
 import           Prelude hiding (null)
@@ -220,26 +226,53 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | ComponentNode MisoString Component (Maybe (Mount action))
+  | Embed SomeComponent (ComponentOptions action)
   deriving Functor
 
-data Mount a
-  = Mount
-  { onMounted, onUnmounted :: a
+data ComponentOptions action
+  = ComponentOptions
+  { onMounted :: Maybe action
+  , onUnmounted :: Maybe action
+  , attributes :: [ Attribute action ]
+  , componentKey :: Maybe Key
   } deriving Functor
 
-data Component
-  = forall model action . Eq model
-  => Component (Maybe Key) (App model action)
+componentOptions :: ComponentOptions action
+componentOptions
+  = ComponentOptions
+  { onMounted = Nothing
+  , onUnmounted = Nothing
+  , attributes = []
+  , componentKey = Nothing
+  }
 
-component :: Eq model => MisoString -> App model a -> View action
-component name app = ComponentNode name (Component Nothing app) Nothing
+data SomeComponent
+   = forall name model action . Eq model
+   => SomeComponent (Component name model action)
 
-componentMount :: Eq model => MisoString -> App model a -> Mount action -> View action
-componentMount name app m = ComponentNode name (Component Nothing app) (Just m)
+data Component (name :: Symbol) model action
+  = Component
+  { componentName :: MisoString
+  , componentApp :: App model action
+  }
 
-componentKey :: Eq model => MisoString -> App model a -> Key -> View action
-componentKey name app key = ComponentNode name (Component (Just key) app) Nothing
+
+component
+  :: forall name model action
+  . KnownSymbol name
+  => App model action
+  -> Component name model action
+component = Component (MS.ms (symbolVal (Proxy @name)))
+
+embed :: Eq model => Component name model a -> View action
+embed comp = Embed (SomeComponent comp) componentOptions
+
+embedWith
+  :: Eq model
+  => Component name model a
+  -> ComponentOptions action
+  -> View action
+embedWith comp opts = Embed (SomeComponent comp) opts
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -313,9 +346,10 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (ComponentNode mount (Component _ app) _) =
-    L.div_ [ L.id_ (fromMisoString mount) ] $
-      L.toHtml (view app (model app))
+  toHtml (Embed (SomeComponent (Component mount _)) ComponentOptions{..}) = 
+    L.toHtml (Node HTML "div" componentKey (attr : attributes) [])
+       where
+         attr = P "data-component-id" (A.String (fromMisoString mount))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where
       noEnd = ["img", "input", "br", "hr", "meta"]
