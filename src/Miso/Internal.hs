@@ -11,6 +11,7 @@
 module Miso.Internal
   ( common
   , componentMap
+  , initComponent
   , sink
   , sinkRaw
   , notify

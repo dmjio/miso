@@ -19,6 +19,7 @@
 module Miso
   ( miso
   , startApp
+  , startComponent
   , sink
   , notify
   , run
@@ -86,3 +87,9 @@ startApp app@App {..} = void $
     ref <- liftIO (newIORef vtree)
     registerSink mount ref snk
     pure (mount, mountEl, ref)
+
+-- | Runs a miso application (as a @Component@)
+-- Note: uses the 'name' as the mount point.
+startComponent :: Eq model => MT.Component name model action -> JSM ()
+startComponent (MT.Component mount app) =
+  void $ common app (initComponent mount app)

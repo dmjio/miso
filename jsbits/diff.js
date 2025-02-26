@@ -216,7 +216,7 @@ window['mountComponent'] = function (obj, doc) {
     }
     // dmj, the component placeholder div[id=name] is already on the dom and vdom
     // Now we gen the component and append it to the vdom and real dom
-    obj['domRef'].setAttribute('data-component-id', obj['data-component-id']);
+    obj['domRef'].setAttribute('data-component-id', componentId);
     // ^ we have to set this before 'mount()' is called, since `diff` requires it.
     obj['mount'](function(component) {
       // mount() gives us the VTree from the Haskell side, so we just attach it here
