@@ -18,6 +18,15 @@ with (import ../../default.nix {});
            };
          };
        };
+       "components.haskell-miso.org" = {
+          forceSSL = true;
+          enableACME = true;
+          locations = {
+          "/" = {
+            root = "${miso-examples}/bin/components.jsexe";
+           };
+         };
+       };
        "todo-mvc.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;

@@ -54,11 +54,10 @@ import           Language.Javascript.JSaddle hiding (Success, obj, val)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Concurrent
 import           Miso.Diff
-import           Miso.Effect
+import           Miso.Types
 import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
-import           Miso.Types
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -133,10 +132,10 @@ foldEffects
   -> model
   -> JSM model
 foldEffects _ _ [] m = pure m
-foldEffects update snk (e:es) old =
-  case update e old of
-    Effect n effects -> do
-      forM_ effects $ \effect -> forkJSM (effect snk)
+foldEffects update snk (e:es) m =
+  case runTransition m (update e m) of
+    (n, subs) -> do
+      forM_ subs $ \sub -> forkJSM (sub snk)
       foldEffects update snk es n
 
 -- | Component sink exposed as a backdoor
@@ -165,16 +164,13 @@ sink app = \a -> do
 -- >   pure (m :: TodoModel)
 --
 notify
-  :: model
-  -> App m a
+  :: App m a
   -> a
   -> Effect action model
-notify m app action = Effect m [ \_ -> io ]
-  where
-    io = liftIO $ do
-      dispatch <- liftIO (readIORef componentMap)
-      forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
-        f action
+notify app action = scheduleIO_ $ liftIO $ do
+  dispatch <- liftIO (readIORef componentMap)
+  forM_ (M.lookup (mountPoint app) dispatch) $ \(_, _, f) ->
+    f action
 
 -- | Internally used for runView and startApp
 initApp :: App model action -> Sink action -> JSM (IORef VTree)

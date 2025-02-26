@@ -19,7 +19,7 @@ module Miso.Subscription.SSE
 
 import           Control.Monad.IO.Class
 import           Data.Aeson
-import           Miso.Effect (Sub)
+import           Miso.Types (Sub)
 import           Miso.FFI
 import           Miso.String
 

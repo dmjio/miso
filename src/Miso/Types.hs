@@ -32,8 +32,6 @@ module Miso.Types
   , NS (..)
   , LogLevel (..)
   , Mount (..)
-  , Effect
-  , Sub
     -- * The Transition Monad
   , Transition
   , mapAction
@@ -43,15 +41,26 @@ module Miso.Types
   , scheduleIO_
   , scheduleIOFor_
   , scheduleSub
+  , runTransition
+  -- * The Effect Monad
+  , Effect
+  , Sub
+  , Sink
+  , mapSub
+  , noEff
+  , (<#)
+  , (#>)
+  , batchEff
+  , effectSub
   ) where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
-import           Control.Monad.Trans.Writer.Strict (Writer, runWriter, tell, mapWriter)
+import           Control.Monad.Trans.State.Strict (StateT(StateT), runStateT, execStateT, mapStateT, put)
+import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
 import           Data.Aeson (Value)
 import qualified Data.Aeson as A
-import           Data.Bifunctor (second)
+import           Data.Bifunctor (second, Bifunctor(..))
 import           Data.Foldable (for_)
 import qualified Data.Map.Strict as M
 import           Data.Proxy
@@ -65,12 +74,10 @@ import           Servant.API (Get, HasLink(MkLink, toLink))
 import           Data.JSString (JSString)
 import           JavaScript.Object.Internal (Object)
 import           GHCJS.Marshal (ToJSVal, toJSVal)
-
-import           Miso.Effect
 import           Miso.Event.Types
 import           Miso.FFI (JSM)
-import           Miso.String
-
+import           Miso.String (MisoString, fromMisoString, toMisoString)
+import qualified Miso.String as MS
 
 -- | Application entry point
 data App model action = App
@@ -147,6 +154,10 @@ data LogLevel
 -- @
 type Transition action model = StateT model (Writer [Sub action])
 
+-- | Evaluate transition
+runTransition :: model -> Transition action model a -> (model, [Sub action])
+runTransition m transition = runWriter (execStateT transition m)
+  
 -- | Turn a transition that schedules subscriptions that consume
 -- actions of type @a@ into a transition that schedules subscriptions
 -- that consume actions of type @b@ using the supplied function of
@@ -158,20 +169,13 @@ mapAction = mapStateT . mapWriter . second . fmap . mapSub
 fromTransition
     :: Transition action model ()
     -> (model -> Effect action model) -- ^ model 'update' function.
-fromTransition act = \m ->
-  case runWriter (execStateT act m) of
-    (n, actions) -> Effect n actions
+fromTransition act = \m -> act <* put m
 
 -- | Convert an 'update' function to a @Transition@ computation.
 toTransition
     :: (model -> Effect action model) -- ^ model 'update' function
     -> Transition action model ()
-toTransition f =
-  StateT $ \m ->
-    case f m of
-      Effect n actions -> do
-        tell actions
-        pure ((), n)
+toTransition f = StateT $ \m -> runStateT (f m) m
 
 -- | Schedule a single IO action for later execution.
 --
@@ -350,10 +354,10 @@ instance L.ToHtml (View action) where
                    ]
       toTag = T.toLower
       kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
-  toHtml (Text x) | null x = L.toHtml (" " :: T.Text)
+  toHtml (Text x) | MS.null x = L.toHtml (" " :: T.Text)
                   | otherwise = L.toHtml (fromMisoString x :: T.Text)
   toHtml (TextRaw x)
-    | null x = L.toHtml (" " :: T.Text)
+    | MS.null x = L.toHtml (" " :: T.Text)
     | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
 
 collapseSiblingTextNodes :: [View a] -> [View a]
@@ -374,3 +378,54 @@ toHtmlFromJSON A.Null = "null"
 toHtmlFromJSON (A.Object o) = T.pack (show o)
 toHtmlFromJSON (A.Array a) = T.pack (show a)
 
+-- | An effect represents the results of an update action.
+--
+-- It consists of the updated model and a list of subscriptions. Each 'Sub' is
+-- run in a new thread so there is no risk of accidentally blocking the
+-- application.
+type Effect action model = Transition action model ()
+
+-- | Type synonym for constructing event subscriptions.
+--
+-- The 'Sink' callback is used to dispatch actions which are then fed
+-- back to the 'Miso.Types.update' function.
+type Sub action = Sink action -> JSM ()
+
+-- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
+type Sink action = action -> IO ()
+
+-- | Turn a subscription that consumes actions of type @a@ into a subscription
+-- that consumes actions of type @b@ using the supplied function of type @a -> b@.
+mapSub :: (a -> b) -> Sub a -> Sub b
+mapSub f sub = \g -> sub (g . f)
+
+-- | Smart constructor for an 'Effect' with no actions.
+noEff :: model -> Effect action model
+noEff = put
+
+-- | Smart constructor for an 'Effect' with exactly one action.
+(<#) :: model -> JSM action -> Effect action model
+(<#) m a = effectSub m $ \sink -> a >>= liftIO . sink
+
+-- | `Effect` smart constructor, flipped
+(#>) :: JSM action -> model -> Effect action model
+(#>) = flip (<#)
+
+-- | Smart constructor for an 'Effect' with multiple actions.
+batchEff :: model -> [JSM action] -> Effect action model
+batchEff m actions = do
+  mapM_ scheduleIO actions
+  put m
+
+-- | Like '<#' but schedules a subscription which is an IO computation which has
+-- access to a 'Sink' which can be used to asynchronously dispatch actions to
+-- the 'Miso.Types.update' function.
+--
+-- A use-case is scheduling an IO computation which creates a 3rd-party JS
+-- widget which has an associated callback. The callback can then call the sink
+-- to turn events into actions. To do this without accessing a sink requires
+-- going via a @'Sub'scription@ which introduces a leaky-abstraction.
+effectSub :: model -> Sub action -> Effect action model
+effectSub m sub = do
+  scheduleSub sub
+  put m

@@ -23,7 +23,6 @@ module Miso
   , notify
   , run
   , mail
-  , module Miso.Effect
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
@@ -35,6 +34,7 @@ module Miso
   , module Miso.Util
   , module Miso.FFI
   , module Miso.WebSocket
+  , module Miso.Storage
   ) where
 
 import           Control.Monad
@@ -44,20 +44,21 @@ import           Control.Monad.Trans.Writer.Strict (tell)
 import           Data.IORef
 import qualified Data.Map.Strict as M
 import qualified JavaScript.Object.Internal as OI
+
 import           Miso.Diff
-import           Miso.Effect
 import           Miso.Event
 import           Miso.FFI
 import           Miso.Html
+import           Miso.Internal
 import           Miso.Router
 import           Miso.Runner (run)
+import           Miso.Storage
 import           Miso.Subscription
 #ifndef ghcjs_HOST_OS
 import           Miso.TypeLevel
 #endif
 import           Miso.Types hiding (Component(..))
 import           Miso.Util
-import           Miso.Internal
 import           Miso.WebSocket
 
 -- | Runs an isomorphic miso application.

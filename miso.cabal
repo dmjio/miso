@@ -118,28 +118,26 @@ library
     Haskell2010
   exposed-modules:
     Miso
-    Miso.Util
+    Miso.Concurrent
     Miso.Dev
     Miso.Html
-    Miso.Html.Element
-    Miso.Html.Event
-    Miso.Html.Property
-    Miso.Html.Types
     Miso.Delegate
     Miso.Diff
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
-    Miso.Router
-    Miso.Effect
-    Miso.Effect.Storage
-    Miso.Effect.DOM
+    Miso.Html.Element
+    Miso.Html.Event
+    Miso.Html.Property
+    Miso.Html.Types
+    Miso.Mathml
+    Miso.Mathml.Element
     Miso.FFI
     Miso.FFI.History
     Miso.FFI.SSE
     Miso.FFI.Storage
     Miso.FFI.WebSocket
-    Miso.JSBits
+    Miso.Router
     Miso.Runner
     Miso.Subscription
     Miso.Subscription.History
@@ -148,17 +146,15 @@ library
     Miso.Subscription.WebSocket
     Miso.Subscription.Window
     Miso.Subscription.SSE
+    Miso.Storage
     Miso.Svg
     Miso.Svg.Attribute
     Miso.Svg.Element
     Miso.Svg.Event
-    Miso.Types
-    Miso.Mathml
-    Miso.Mathml.Element
     Miso.String
+    Miso.Types
+    Miso.Util
     Miso.WebSocket
-    Miso.Concurrent
-
   -- dmj: see if common-stanzas can suport 'exposed-modules'
   if !(impl(ghcjs) || arch(javascript))
     exposed-modules:

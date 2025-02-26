@@ -43,7 +43,7 @@ import           GHCJS.Types ()
 import           Prelude hiding (map)
 import           System.IO.Unsafe
 
-import           Miso.Effect (Sub)
+import           Miso.Types (Sub)
 import           Miso.FFI
 import           Miso.FFI.WebSocket (Socket)
 import qualified Miso.FFI.WebSocket as WS
