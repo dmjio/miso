@@ -240,7 +240,7 @@ diff'
     -> JSVal  -- ^ parent node
     -> JSVal -- ^ document
     -> JSM ()
-diff' a b c d = () <$ jsg4 "diff" a b c d
+diff' a b c d = () <$ jsg4 "window['miso']['vdom']['diff']" a b c d
 
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -274,15 +274,15 @@ undelegateEvent mountPoint events getVTree = do
 
 -- | Call 'delegateEvent' JavaScript function
 delegate :: JSVal -> JSVal -> Function -> JSM ()
-delegate mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+delegate mountPoint events cb = () <$ jsg3 "window['miso']['event']['delegate']" mountPoint events cb
 
 undelegate :: JSVal -> JSVal -> Function -> JSM ()
-undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
+undelegate mountPoint events cb = () <$ jsg3 "window['miso']['event']['undelegate']" mountPoint events cb
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
-copyDOMIntoVTree logLevel mountPoint a = () <$ jsg3 "copyDOMIntoVTree" logLevel mountPoint a
+copyDOMIntoVTree logLevel mountPoint a = () <$ jsg3 "window['miso']['iso']['copyDOMIntoVTree']" logLevel mountPoint a
 
 -- TODO For now, we do not free callbacks when compiling with JSaddle
 
@@ -302,13 +302,13 @@ registerCallback _ = pure ()
 --
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> JSM ()
-focus a = () <$ jsg1 "callFocus" a
+focus a = () <$ jsg1 "window['miso']['util']['callFocus']" a
 
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
-blur a = () <$ jsg1 "callBlur" a
+blur a = () <$ jsg1 "window['miso']['util']['callBlur']" a
 
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
