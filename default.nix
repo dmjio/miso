@@ -64,4 +64,7 @@ in
   #ci
   deploy = pkgs.deploy rev;
   inherit (pkgs) haskell-miso-org-test;
+
+  # utils
+  inherit (pkgs.haskell.packages.ghc865) miso-from-html;
 }
