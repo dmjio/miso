@@ -2,7 +2,7 @@ const diff = require('./diff');
 const isomorphic = require('./isomorphic.js');
 const jsdom = require('jsdom');
 
-function vcomp(mount, unmount, props, css, ref, oc, od, bd, key) {
+function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
   return {
     'type': 'vcomp',
     'tag': 'div',
@@ -148,6 +148,18 @@ test('Should create a new DOM node', () => {
   expect(body.children[0]).toBe(newNode.domRef);
 });
 
+test('Should detect duplicate component mounting', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var mountCount = 0;
+  var newComp1 = vcomp((x) => mountCount++, null, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  window['diff'](null, newComp1, body, document);
+  var newComp2 = vcomp((x) => mountCount++, null, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  var newNode = vnode('div', [newComp2], {}, {}, 'svg');
+  window['diff'](null, newNode, body, document);
+  expect(mountCount).toBe(1);
+});
+
 test('Should mount and unmount a component', () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
@@ -159,7 +171,8 @@ test('Should mount and unmount a component', () => {
       diff (null, node, body, document);
       cb (node);
   }
-  var newNode = vcomp(mountFunc, (x) => unmountCount++, { 'id' : "vcomp-foo"}, {"background-color":"red"});
+  var newNode =
+    vcomp(mountFunc, (x) => unmountCount++, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
   window['diff'](null, newNode, body, document);
   expect(mountCount).toBe(1);
   expect(newNode.children.length).toBe(1);

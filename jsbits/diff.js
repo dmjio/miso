@@ -208,9 +208,9 @@ window['mountComponent'] = function (obj, doc) {
     var componentId = obj['data-component-id'],
         nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
 
-    // dmj: bail out if recursive mounting detected
+    // dmj: bail out if duplicate mounting detected
     if (nodeList.length > 0) {
-        console.error ('Recursive component mount detected');
+        console.error ('Duplicate component mounting detected');
         console.error ('Component ' + componentId + ' is already mounted');
         return;
     }
