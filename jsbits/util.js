@@ -1,14 +1,24 @@
-window = typeof window === 'undefined' ? {} : window;
-window['callFocus'] = function callFocus(id) {
-  setTimeout(function(){
-    var ele = document.getElementById(id);
-    if (ele && ele.focus) ele.focus()
-  }, 50);
-}
+window['miso'] = window['miso'] || {};
 
-window['callBlur'] = function callBlur(id) {
-  setTimeout(function(){
-    var ele = document.getElementById(id);
-    if (ele && ele.blur) ele.blur()
-  }, 50);
-}
+window['miso']['utils'] = (function() {
+
+    var callFocus = function(id) {
+        setTimeout(function(){
+            var ele = document.getElementById(id);
+            if (ele && ele.focus) ele.focus()
+        }, 50);
+    };
+
+    var callBlur = function (id) {
+      setTimeout(function(){
+        var ele = document.getElementById(id);
+        if (ele && ele.blur) ele.blur()
+      }, 50);
+    };
+
+    return {
+      'callFocus' : callFocus,
+      'callBlur' : callBlur
+    };
+
+})();

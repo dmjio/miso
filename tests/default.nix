@@ -26,10 +26,12 @@ in
       cp ${miso-ghcjs.src}/jsbits/diff.js $out
       chmod +w $out/diff.js
       cp ${miso-ghcjs.src}/jsbits/isomorphic.js $out
+      chmod +w $out/isomorphic.js
       cp ${src}/package.json $out
       cp ${src}/diff.test.js $out
       cp -r ${deps}/libexec/miso/node_modules $out
-      echo 'module.exports = diff;' >> $out/diff.js
+      echo 'module.exports = window.miso.vdom;' >> $out/diff.js
+      echo 'module.exports = window.miso.iso;' >> $out/isomorphic.js
       cd $out
       ${deps}/libexec/miso/node_modules/jest/./bin/jest.js --collectCoverage=true
       cp -rv $out/coverage/lcov-report $out
