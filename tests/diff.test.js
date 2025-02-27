@@ -152,9 +152,9 @@ test('Should detect duplicate component mounting', () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
   var mountCount = 0;
-  var newComp1 = vcomp((x) => mountCount++, null, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  var newComp1 = vcomp((x) => mountCount++, null, { 'data-component-id' : "vcomp-foo"}, {"background-color":"red"}, []);
   window['diff'](null, newComp1, body, document);
-  var newComp2 = vcomp((x) => mountCount++, null, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  var newComp2 = vcomp((x) => mountCount++, null, { 'data-component-id' : "vcomp-foo"}, {"background-color":"red"}, []);
   var newNode = vnode('div', [newComp2], {}, {}, 'svg');
   window['diff'](null, newNode, body, document);
   expect(mountCount).toBe(1);
@@ -297,6 +297,39 @@ test('Should remove a child', () => {
   var newNode = vnode('div', []);
   window['diff'](node, newNode, body, document);
   expect(node.domRef.children.length).toBe(0);
+});
+
+test('Should Diff attrs of two Components', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var mountCount = 0;
+  var compNode1 =
+      vcomp( (x) => mountCount++
+             , null
+             , { 'data-component-id' : "vcomp-foo"}
+             , {"background-color":"red"}
+           );
+
+  window['diff'](null, compNode1, body, document);
+  expect(mountCount).toBe(1);
+
+  // Test node was populated
+  expect(body.childNodes.length).toBe(1);
+  expect(body.childNodes[0].style['background-color']).toBe('red');
+
+  // Replace node
+  var mountCount = 0;
+  var compNode2 =
+      vcomp( (x) => mountCount++
+             , null
+             , { 'data-component-id' : "vcomp-foo"}
+             , {"background-color":"green"}
+           );
+
+  window['diff'](compNode1, compNode2, body, document);
+  expect(body.childNodes[0].style['background-color']).toBe('green');
 });
 
 test('Should replace Node with Component', () => {

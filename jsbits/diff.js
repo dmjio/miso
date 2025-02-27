@@ -104,6 +104,7 @@ window['populate'] = function (c, n, doc) {
   }
   window['diffProps'](c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
   window['diffCss'](c['css'], n['css'], n['domRef']);
+  if (n['type'] === 'vcomp') return; // dmj: don't diff vcomp children
   window['diffChildren'](c['children'], n['children'], n['domRef'], doc);
 };
 
