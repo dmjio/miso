@@ -46,8 +46,6 @@ executable components
     containers,
     miso,
     transformers
-  ghc-options:
-    -threaded
 
 executable simple
   import:

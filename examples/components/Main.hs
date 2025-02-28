@@ -12,6 +12,10 @@ import Miso.String
 
 type Model = Int
 
+#if defined(wasm32_HOST_ARCH)
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 data Action
   = AddOne
   | SubtractOne
