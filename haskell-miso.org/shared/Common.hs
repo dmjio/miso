@@ -6,7 +6,7 @@
 module Common where
 
 import           Data.Bool
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Miso
 import           Miso.String

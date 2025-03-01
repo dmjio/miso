@@ -14,6 +14,7 @@
 module Miso.FFI
    ( JSM
    , forkJSM
+   , syncCallback
    , asyncCallback
    , asyncCallback1
    , callbackToJSVal
@@ -42,6 +43,7 @@ module Miso.FFI
    , realFloatToJSString
    , jsStringToDouble
    , delegateEvent
+   , undelegateEvent
    , copyDOMIntoVTree
    , swapCallbacks
    , releaseCallbacks
@@ -50,6 +52,7 @@ module Miso.FFI
    , blur
    , scrollIntoView
    , alert
+   , getComponent
    ) where
 
 import           Control.Concurrent
@@ -64,14 +67,19 @@ import           Language.Javascript.JSaddle hiding (obj, val)
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
+import           Prelude hiding ((!!))
+
 import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
-forkJSM :: JSM () -> JSM ()
+forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
-  _ <- liftIO (forkIO (runJSM a ctx))
-  pure ()
+  liftIO (forkIO (runJSM a ctx))
+
+-- | Creates a synchronous callback function (no return value)
+syncCallback :: JSM () -> JSM Function
+syncCallback a = function (\_ _ _ -> a)
 
 -- | Creates an asynchronous callback function
 asyncCallback :: JSM () -> JSM Function
@@ -198,6 +206,15 @@ objectToJSON
     -> JSM JSVal
 objectToJSON = jsg2 "objectToJSON"
 
+-- | Retrieves the component id
+getComponent :: MisoString -> JSM JSVal
+getComponent name = nodeList !! 0
+  where
+    nodeList
+      = jsg "document"
+      # "querySelectorAll"
+      $ [ "[data-component-id='" <> fromMisoString name <> "']" ]
+
 -- | Retrieves a reference to document body.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
@@ -244,11 +261,23 @@ delegateEvent mountPoint events getVTree = do
     res <- getVTree
     _ <- call continuation global res
     pure ()
-  delegateEvent' mountPoint events cb'
+  delegate mountPoint events cb'
+
+-- | deinitialize event delegation from a mount point.
+undelegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
+undelegateEvent mountPoint events getVTree = do
+  cb' <- function $ \_ _ [continuation] -> do
+    res <- getVTree
+    _ <- call continuation global res
+    pure ()
+  undelegate mountPoint events cb'
 
 -- | Call 'delegateEvent' JavaScript function
-delegateEvent' :: JSVal -> JSVal -> Function -> JSM ()
-delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+delegate :: JSVal -> JSVal -> Function -> JSM ()
+delegate mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+
+undelegate :: JSVal -> JSVal -> Function -> JSM ()
+undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript

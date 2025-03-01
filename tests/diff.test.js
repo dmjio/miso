@@ -2,6 +2,25 @@ const diff = require('./diff');
 const isomorphic = require('./isomorphic.js');
 const jsdom = require('jsdom');
 
+function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
+  return {
+    'type': 'vcomp',
+    'tag': 'div',
+    'children': [],
+    'props': props,
+    'data-component-id': 'vcomp-id',
+    'css': css,
+    'ns': 'HTML',
+    'domRef': ref,
+    'onCreated': oc,
+    'onDestroyed': od,
+    'onBeforeDestroyed': bd,
+    'key': key,
+    'mount': mount,
+    'unmount': unmount
+  };
+}
+
 function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) {
   return {
     'type': 'vnode',
@@ -129,6 +148,41 @@ test('Should create a new DOM node', () => {
   expect(body.children[0]).toBe(newNode.domRef);
 });
 
+test('Should detect duplicate component mounting', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var mountCount = 0;
+  var newComp1 = vcomp((x) => mountCount++, null, { 'data-component-id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  window['diff'](null, newComp1, body, document);
+  var newComp2 = vcomp((x) => mountCount++, null, { 'data-component-id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  var newNode = vnode('div', [newComp2], {}, {}, 'svg');
+  window['diff'](null, newNode, body, document);
+  expect(mountCount).toBe(1);
+});
+
+test('Should mount and unmount a component', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var mountCount = 0;
+  var unmountCount = 0;
+  var mountFunc = function (cb) {
+      mountCount++;
+      var node = vnode("div", []);
+      diff (null, node, body, document);
+      cb (node);
+  }
+  var newNode =
+    vcomp(mountFunc, (x) => unmountCount++, { 'id' : "vcomp-foo"}, {"background-color":"red"}, []);
+  window['diff'](null, newNode, body, document);
+  expect(mountCount).toBe(1);
+  expect(newNode.children.length).toBe(1);
+  expect(newNode.domRef.children.length).toBe(1);
+  expect(newNode.domRef.id).toBe("vcomp-foo");
+  expect(newNode.domRef.style['background-color']).toBe("red");
+  window['diff'](newNode, null, body, document);
+  expect(unmountCount).toBe(1);
+});
+
 test('Should create an SVG DOM node', () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
@@ -245,6 +299,81 @@ test('Should remove a child', () => {
   expect(node.domRef.children.length).toBe(0);
 });
 
+test('Should Diff attrs of two Components', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var mountCount = 0;
+  var compNode1 =
+      vcomp( (x) => mountCount++
+             , null
+             , { 'data-component-id' : "vcomp-foo"}
+             , {"background-color":"red"}
+           );
+
+  window['diff'](null, compNode1, body, document);
+  expect(mountCount).toBe(1);
+
+  // Test node was populated
+  expect(body.childNodes.length).toBe(1);
+  expect(body.childNodes[0].style['background-color']).toBe('red');
+
+  // Replace node
+  var mountCount = 0;
+  var compNode2 =
+      vcomp( (x) => mountCount++
+             , null
+             , { 'data-component-id' : "vcomp-foo"}
+             , {"background-color":"green"}
+           );
+
+  window['diff'](compNode1, compNode2, body, document);
+  expect(body.childNodes[0].style['background-color']).toBe('green');
+});
+
+test('Should replace Node with Component', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var node = vnode('div', []);
+  window['diff'](null, node, body, document);
+
+  // Test node was populated
+  expect(body.childNodes.length).toBe(1);
+
+  // Replace node
+  var mountCount = 0;
+  compNode = vcomp((x) => mountCount++);
+  window['diff'](node, compNode, body, document);
+
+  // Node is removed from DOM, Component is on the DOM
+  expect(body.childNodes[0].getAttribute('data-component-id')).toBe('vcomp-id');
+  expect(mountCount).toBe(1);
+});
+
+test('Should replace Text with Component', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var node = vtext('foo');
+  window['diff'](null, node, body, document);
+
+  // Test node was populated
+  expect(node.domRef.wholeText).toBe('foo')
+  expect(body.childNodes.length).toBe(1);
+
+  // Replace node
+  var mountCount = 0;
+  compNode = vcomp((x) => mountCount++);
+  window['diff'](node, compNode, body, document);
+
+  // Node is removed from DOM, Component is on the DOM
+  expect(body.childNodes[0].getAttribute('data-component-id')).toBe('vcomp-id');
+  expect(mountCount).toBe(1);
+});
 
 test('Should replace Node with TextNode', () => {
   var document = new jsdom.JSDOM().window.document;
@@ -263,6 +392,52 @@ test('Should replace Node with TextNode', () => {
 
   // Test node is removed from DOM
   expect(body.childNodes[0].wholeText).toBe('fooo');
+});
+
+test('Should replace Component with TextNode', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var mountCount = 0, unmountCount = 0;
+  var component = vcomp((x) => mountCount++, (x) => unmountCount++);
+  window['diff'](null, component, body, document);
+
+  // Test component was populated
+  expect(body.childNodes.length).toBe(1);
+  expect(mountCount).toBe(1);
+  expect(unmountCount).toBe(0);
+
+  // Replace component
+  textNode = vtext('fooo');
+  window['diff'](component, textNode, body, document);
+
+  // Test node is removed from DOM
+  expect(body.childNodes[0].wholeText).toBe('fooo');
+  expect(unmountCount).toBe(1);
+});
+
+test('Should replace Component with Node', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+
+  // populate DOM
+  var mountCount = 0, unmountCount = 0;
+  var component = vcomp((x) => mountCount++, (x) => unmountCount++);
+  window['diff'](null, component, body, document);
+
+  // Test component was populated
+  expect(body.childNodes.length).toBe(1);
+  expect(mountCount).toBe(1);
+  expect(unmountCount).toBe(0);
+
+  // Replace component
+  node = vnode('div', []);
+  window['diff'](component, node, body, document);
+
+  // Test node is removed from DOM
+  expect(body.children[0].tagName).toBe('DIV');
+  expect(unmountCount).toBe(1);
 });
 
 test('Should replace TextNode with Node', () => {
@@ -482,8 +657,7 @@ test('Should call onCreated and onDestroyed', () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0;
-  destroy = 0;
+  var create = 0, destroy = 0;
   var currentNode = vnode('div', [], {}, {}, "html", null, function() {
     create++;
   }, function() {
@@ -502,8 +676,7 @@ test('Should call onCreated and onBeforeDestroyed', () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0;
-  destroy = 0;
+  var create = 0, destroy = 0;
   var currentNode = vnode('div', [], {}, {}, "html", null, function() {
     create++;
   }, null, function() {
@@ -521,8 +694,7 @@ test('Should call onDestroyed recursively', () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
   // populate DOM
-  var destroy = 0;
-  childDestroy = 0;
+  var destroy = 0, childDestroy = 0;
   var currentNode =
     vnode('div', [vnode('div', [], {}, {}, "html", null, null, function() {
       childDestroy++;
@@ -552,7 +724,6 @@ test('Should call onBeforeDestroyed recursively', () => {
   expect(destroy).toBe(1);
   expect(childDestroy).toBe(1);
 });
-
 
 test('Should recreate a DOM node when tags are the same but keys are window different', () => {
   var document = new jsdom.JSDOM().window.document;

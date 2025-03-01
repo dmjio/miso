@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Diff
@@ -18,33 +19,20 @@ import Miso.Html.Types
 import Miso.FFI
 import Miso.String
 
--- | Entry point for diffing / patching algorithm
-diff :: Maybe MisoString -> Maybe VTree -> Maybe VTree -> JSM ()
-diff mayElem current new =
-  case mayElem of
-    Nothing -> do
-      body <- getBody
-      diffElement body current new
-    Just elemId -> do
-      e <- getElementById elemId
-      diffElement e current new
-
 -- | diffing / patching a given element
-diffElement :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
-diffElement mountEl current new = do
+diff :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
+diff mountEl current new = do
   doc <- getDoc
   case (current, new) of
     (Nothing, Nothing) -> pure ()
-    (Just (VTree current'), Just (VTree new')) -> do
+    (Just (VTree current'), Just (VTree new')) ->
       diff' current' new' mountEl doc
     (Nothing, Just (VTree new')) -> do
       diff' (Object jsNull) new' mountEl doc
-    (Just (VTree current'), Nothing) -> do
+    (Just (VTree current'), Nothing) ->
       diff' current' (Object jsNull) mountEl doc
 
 -- | return the configured mountPoint element or the body
-mountElement :: Maybe MisoString -> JSM JSVal
-mountElement mayMp =
-  case mayMp of
-    Nothing -> getBody
-    Just eid -> getElementById eid
+mountElement :: MisoString -> JSM JSVal
+mountElement "body" = getBody
+mountElement e = getElementById e

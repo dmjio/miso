@@ -34,18 +34,60 @@ self: super:
       '';
     };
 
-  # dmj: ghc-wasm-meta already provides
-  nodeLatest =
-    super.stdenv.mkDerivation rec {
-      name = "nodejs";
-      src = builtins.fetchTarball
-        "https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz";
-      installPhase = ''
-        mkdir $out
-        cp -r $src/bin $out
-        cp -r $src/include $out
-        cp -r $src/lib $out
-        cp -r $src/share $out
+  hello-world-web-wasm =
+    self.wasmWebBuilder
+      { name = "hello-world";
+        title = "Hello world Example";
+        src = self.wasmHelloWorld;
+      };
+
+  svgWasm =
+    self.wasmPkgExample {
+       name = "svg";
+       title = "SVG WASM Example";
+    };
+
+  componentsWasm =
+    self.wasmPkgExample {
+       name = "components";
+       title = "Components WASM Example";
+    };
+
+  todoWasm =
+    self.wasmPkgExample {
+       name = "todo-mvc";
+       title = "Todo-mvc WASM Example";
+    };
+
+  # call nix-build -A wasmExamples && ./result/bin/build.sh
+  # to populate examples
+  wasmExamples = self.writeScriptBin "build.sh" ''
+    nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
+      --command wasm32-wasi-cabal build miso-examples --allow-newer
+  '';
+
+  # Used for packaging up cabal-built wasm packages
+  # since GHC WASM isn't in nixpkgs yet (pending LLVM patches)
+  # we must build the executables first w/ cabal and then package them up w/nix
+  # Call "nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
+  #            --command wasm32-wasi-cabal build miso-examples --allow-newer"
+  wasmPkgExample = args: with args;
+    super.stdenv.mkDerivation {
+      inherit (args) name;
+      src = ../../dist-newstyle/build/wasm32-wasi;
+      buildInputs = [ self.ghc-wasm-meta.all_9_12 ];
+      buildCommand = ''
+
+         export WASMPATH=$src/ghc-*/*/x/${name}/build/${name}/
+
+         mkdir -p $out/${name}.jsexe
+         $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \
+              --input $WASMPATH/${name}.wasm \
+              --output $out/${name}.jsexe/ghc_wasm_jsffi.js
+
+         cp -v $WASMPATH/${name}.wasm            $out/${name}.jsexe/
+         cat ${self.wasmIndexJs name}          > $out/${name}.jsexe/index.js
+         cat ${self.wasmIndexHtml title name}  > $out/${name}.jsexe/index.html
       '';
     };
 

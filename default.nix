@@ -1,28 +1,21 @@
 with (builtins.fromJSON (builtins.readFile ./nix/nixpkgs.json));
-{ haddock ? true
-, tests ? false
-, overlays ? []
-, allowBroken ? false
-, allowUnfree ? true
-}:
+{ haddock ? true, tests ? false, overlays ? [] }:
 let
-  options = {
-    inherit
-      haddock tests overlays
-      allowBroken allowUnfree;
+  pkgs = import ./nix {
+    inherit haddock tests overlays;
   };
-  pkgs = import ./nix options;
-  release =
-    with pkgs.haskell.packages.ghc865;
-    with pkgs.haskell.lib;
-    sdistTarball (buildStrictly miso);
-  release-examples =
-    with pkgs.haskell.packages.ghcjs;
-    with pkgs.haskell.lib;
-    sdistTarball (buildStrictly miso-examples);
-in
+in with pkgs.haskell.lib;
 {
   inherit pkgs;
+
+  # hacakge release
+  release =
+    with pkgs.haskell.packages.ghc865;
+    sdistTarball (buildStrictly miso);
+
+  release-examples =
+    with pkgs.haskell.packages.ghcjs;
+    sdistTarball (buildStrictly miso-examples);
 
   #js
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
@@ -33,18 +26,19 @@ in
   miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
   inherit (pkgs.haskell.packages.ghc865) sample-app-jsaddle;
 
-  #wasm
-  inherit (pkgs) wasm-ghc ghc-wasm-meta;
+  # miso wasm examples
+  # nix-build -A wasmExamples && ./result/bin/build.sh && nix-build -A svgWasm && http-server ./result/svg.wasmexe
+  inherit (pkgs)
+    wasmExamples
+    svgWasm
+    componentsWasm
+    todoWasm;
 
-  hello-world-web-wasm = with pkgs;
-    wasmWebBuilder
-      { name = "hello-world";
-        title = "Hello world Example";
-        src = wasmHelloWorld;
-      };
-
-  #hackage releases
-  inherit release release-examples;
+  #wasm utils
+  inherit (pkgs)
+    wasm-ghc
+    ghc-wasm-meta
+    hello-world-web-wasm;
 
   # tagged releases
   inherit (pkgs)
@@ -58,7 +52,13 @@ in
     haskell-miso-server
     haskell-miso-runner;
 
+  #code covergae
+  inherit (pkgs) coverage;
+
   #ci
   deploy = pkgs.deploy rev;
   inherit (pkgs) haskell-miso-org-test;
+
+  # utils
+  inherit (pkgs.haskell.packages.ghc865) miso-from-html;
 }
