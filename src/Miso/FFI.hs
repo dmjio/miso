@@ -180,11 +180,11 @@ import qualified Data.Aeson.KeyMap as KM
 
 default (JSString)
 
-foreign import javascript "window.requestAnimationFrame($1)"
+foreign import javascript unsafe "window.requestAnimationFrame($1)"
   waitForAnimationFrame :: JSCallback a -> IO ()
 
-foreign import javascript "[]" newJsArray :: IO JSArray
-foreign import javascript "$1.push($2)" pushJsArray :: JSArray -> JSVal -> IO ()
+foreign import javascript unsafe "[]" newJsArray :: IO JSArray
+foreign import javascript unsafe "$1.push($2)" pushJsArray :: JSArray -> JSVal -> IO ()
 
 fromList :: ToJSVal a => [a] -> IO JSArray
 fromList xs = do
@@ -223,22 +223,22 @@ instance {-# OVERLAPS #-} ToJSVal String where
   toJSVal s | JSString x <- toJSString s = pure x
 
 #ifdef WASM
-foreign import javascript "null" jsNull      :: JSVal
-foreign import javascript "false" jsFalse    :: JSVal
-foreign import javascript "true" jsTrue      :: JSVal
+foreign import javascript unsafe "null" jsNull      :: JSVal
+foreign import javascript unsafe "false" jsFalse    :: JSVal
+foreign import javascript unsafe "true" jsTrue      :: JSVal
 #else
-foreign import javascript "(function (x) { return null; })" jsNull      :: JSVal
-foreign import javascript "(function (x) { return false; })" jsFalse    :: JSVal
-foreign import javascript "(function (x) { return true; })" jsTrue      :: JSVal
+foreign import javascript unsafe "(function (x) { return null; })" jsNull      :: JSVal
+foreign import javascript unsafe "(function (x) { return false; })" jsFalse    :: JSVal
+foreign import javascript unsafe "(function (x) { return true; })" jsTrue      :: JSVal
 #endif
-foreign import javascript "$1" toJSValInt    :: Int -> IO JSVal
-foreign import javascript "$1" fromJSValInt  :: JSVal -> IO Int
-foreign import javascript "$1" toJSValDouble :: Double -> IO JSVal
-foreign import javascript "$1" toJSValChar   :: Char -> IO JSVal
-foreign import javascript "$1" fromJSValChar :: JSVal -> IO Char
+foreign import javascript unsafe "$1" toJSValInt    :: Int -> IO JSVal
+foreign import javascript unsafe "$1" fromJSValInt  :: JSVal -> IO Int
+foreign import javascript unsafe "$1" toJSValDouble :: Double -> IO JSVal
+foreign import javascript unsafe "$1" toJSValChar   :: Char -> IO JSVal
+foreign import javascript unsafe "$1" fromJSValChar :: JSVal -> IO Char
 
-foreign import javascript "$1 === 1.0 ? true : false" toJSValBool:: Bool -> IO JSVal
-foreign import javascript "$1" fromJSValBool :: JSVal -> IO Bool
+foreign import javascript unsafe "$1 === 1.0 ? true : false" toJSValBool:: Bool -> IO JSVal
+foreign import javascript unsafe "$1" fromJSValBool :: JSVal -> IO Bool
 instance ToJSVal Bool where toJSVal = toJSValBool
 
 instance FromJSVal Bool where fromJSVal = fromJSValBool
@@ -456,10 +456,10 @@ instance FromJSVal a => FromJSVal (Maybe a) where
       then pure Nothing
       else Just <$> fromJSVal x
 
-foreign import javascript "($1 === null || $1 === undefined)"
+foreign import javascript unsafe "($1 === null || $1 === undefined)"
   isNullOrUndefined :: JSVal -> IO Bool
 
-foreign import javascript "$1" jsvalDouble :: JSVal -> IO Double
+foreign import javascript unsafe "$1" jsvalDouble :: JSVal -> IO Double
 
 instance FromJSVal Double where
   fromJSVal = jsvalDouble 
@@ -473,7 +473,7 @@ instance ToJSVal Scientific where
 instance FromJSVal Scientific where
   fromJSVal jval = fromFloatDigits <$> fromJSVal @Double jval
 
-foreign import javascript "$2[$1]"
+foreign import javascript unsafe "$2[$1]"
   indexAt :: Int -> JSArray -> IO JSVal
 
 instance {-# OVERLAPPABLE #-} FromJSVal a => FromJSVal [a] where
@@ -488,7 +488,7 @@ instance FromJSVal a => FromJSVal (Vector a) where
       MV.write mv idx element
     V.unsafeFreeze mv
 
-foreign import javascript "Object.keys($1)"
+foreign import javascript unsafe "Object.keys($1)"
   js_object_keys :: JSObject -> IO JSArray
 
 #ifdef GHCJS_OLD
@@ -532,12 +532,12 @@ instance FromJSVal Value where
     | isBoolean jval = Bool <$> fromJSVal jval
     | otherwise = error "Couldn't fromJSVal into Value"
 
-foreign import javascript "typeof($1) === 'boolean'" isBoolean :: JSVal -> Bool
-foreign import javascript "typeof($1) === 'number'" isNumber :: JSVal -> Bool
-foreign import javascript "typeof($1) === 'string'" isString :: JSVal -> Bool
-foreign import javascript "typeof($1) === 'object'" isObject :: JSVal -> Bool
-foreign import javascript "Array.isArray($1)" isArray        :: JSVal -> Bool
-foreign import javascript "null === $1" isNull               :: JSVal -> Bool
+foreign import javascript unsafe "typeof($1) === 'boolean'" isBoolean :: JSVal -> Bool
+foreign import javascript unsafe "typeof($1) === 'number'" isNumber :: JSVal -> Bool
+foreign import javascript unsafe "typeof($1) === 'string'" isString :: JSVal -> Bool
+foreign import javascript unsafe "typeof($1) === 'object'" isObject :: JSVal -> Bool
+foreign import javascript unsafe "Array.isArray($1)" isArray        :: JSVal -> Bool
+foreign import javascript unsafe "null === $1" isNull               :: JSVal -> Bool
 
 instance FromJSVal Int where
   fromJSVal = fromJSValInt
@@ -554,32 +554,32 @@ newtype JSObject     = JSObject   { unJSObject   :: JSVal }
 newtype JSCallback a = JSCallback { unJSCallback :: JSVal }
 
 -- | For objects
-foreign import javascript "$2[$1]"
+foreign import javascript unsafe "$2[$1]"
   getProp :: JSString -> JSObject -> IO JSVal
 
-foreign import javascript "$2[$1]"
+foreign import javascript unsafe "$2[$1]"
   getByIndex :: Int -> JSArray -> IO JSVal
 
-foreign import javascript "{}" newJSObject :: IO JSObject
+foreign import javascript unsafe "{}" newJSObject :: IO JSObject
 
 -- | Creates a synchronous callback function (no return value)
 #ifdef WASM
-foreign import javascript "wrapper sync"
+foreign import javascript unsafe "wrapper sync"
   syncCallback :: IO () -> IO (JSCallback (IO ()))
 
-foreign import javascript "wrapper sync"
+foreign import javascript unsafe "wrapper sync"
   syncCallback' :: IO JSVal -> IO (JSCallback (IO JSVal))
 
-foreign import javascript "wrapper sync"
+foreign import javascript unsafe "wrapper sync"
   syncCallback1' :: (JSVal -> IO JSVal) -> IO (JSCallback (JSVal -> IO JSVal))
 
-foreign import javascript "wrapper"
+foreign import javascript unsafe "wrapper"
   asyncCallback :: IO () -> IO (JSCallback (IO ()))
 
-foreign import javascript "wrapper"
+foreign import javascript unsafe "wrapper"
   asyncCallback1 :: (JSVal -> IO ()) -> IO (JSCallback (JSVal -> IO ()))
 
-foreign import javascript "wrapper"
+foreign import javascript unsafe "wrapper"
   asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO (JSCallback (JSVal -> JSVal -> IO ()))
 
 releaseCallback :: JSCallback a -> IO ()
@@ -654,7 +654,7 @@ set k v obj = do
   v' <- toJSVal v
   setProp k obj v' 
 
-foreign import javascript "$2[$1] = $3"
+foreign import javascript unsafe "$2[$1] = $3"
   setProp
     :: JSString
     -> JSObject
@@ -662,7 +662,7 @@ foreign import javascript "$2[$1] = $3"
     -> IO ()
 
 -- | Register an event listener on given target.
-foreign import javascript "$1.addEventListener($1,$2,$3)"
+foreign import javascript unsafe "$1.addEventListener($1,$2,$3)"
   addEventListener
     :: JSVal      -- ^ Event target on which we want to register event listener
     -> JSString   -- ^ Type of event to listen to (e.g. "click")
@@ -670,7 +670,7 @@ foreign import javascript "$1.addEventListener($1,$2,$3)"
     -> IO ()
 
 -- | Registers an event listener on window
-foreign import javascript "window.addEventListener($1,$2)"
+foreign import javascript unsafe "window.addEventListener($1,$2)"
   windowAddEventListener
       :: JSString
       -- ^ Type of event to listen to (e.g. "click")
@@ -679,37 +679,37 @@ foreign import javascript "window.addEventListener($1,$2)"
       -> IO ()
 
 -- | Stop propagation of events
-foreign import javascript "$1.stopPropagation()" eventStopPropagation :: JSVal -> IO ()
+foreign import javascript unsafe "$1.stopPropagation()" eventStopPropagation :: JSVal -> IO ()
 
 -- | Prevent default event behavior
-foreign import javascript "$1.preventDefault()" eventPreventDefault :: JSVal -> IO ()
+foreign import javascript unsafe "$1.preventDefault()" eventPreventDefault :: JSVal -> IO ()
 
 -- | Retrieves the height (in pixels) of the browser window viewport including, if rendered, the horizontal scrollbar.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerHeight>
-foreign import javascript "window.innerHeight" windowInnerHeight :: IO Int
+foreign import javascript unsafe "window.innerHeight" windowInnerHeight :: IO Int
 
 -- | Retrieves the width (in pixels) of the browser window viewport including, if rendered, the vertical scrollbar.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth>
-foreign import javascript "window.innerWidth" windowInnerWidth :: IO Int
+foreign import javascript unsafe "window.innerWidth" windowInnerWidth :: IO Int
 
 -- | Retrieve high resolution time stamp
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
-foreign import javascript "performance.now()" now :: IO Double
+foreign import javascript unsafe "performance.now()" now :: IO Double
 
 -- | Outputs a message to the web console
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
-foreign import javascript "console.log($1)" consoleLogJSVal :: JSVal -> IO ()
+foreign import javascript unsafe "console.log($1)" consoleLogJSVal :: JSVal -> IO ()
 
 -- | Converts a JS object into a JSON string
 stringify :: ToJSON json => json -> IO JSString
 {-# INLINE stringify #-}
 stringify value = jsonStringify =<< toJSVal (toJSON value)
 
-foreign import javascript "JSON.stringify($1)" jsonStringify :: JSVal -> IO JSString
+foreign import javascript unsafe "JSON.stringify($1)" jsonStringify :: JSVal -> IO JSString
 
 -- | Parses a JSString
 parse :: FromJSON json => JSVal -> IO json
@@ -720,17 +720,17 @@ parse js = do
     Success x -> pure x
     Error y -> error y
 
-foreign import javascript "JSON.parse($1)"
+foreign import javascript unsafe "JSON.parse($1)"
   jsonParse :: JSVal -> IO JSVal
 
 -- | Clear the document body. This is particularly useful to avoid
 -- creating multiple copies of your app when running in GHCJSi.
 -- dmj: this is legacy, figure out if we still need it
-foreign import javascript "document.body.innerHtml = ''"
+foreign import javascript unsafe "document.body.innerHtml = ''"
   clearBody :: IO ()
 
--- | Convert a JavaScript object to JSON
-foreign import javascript "window['objectToJSON']($1,$2)"
+-- | Convert a Javascript Unsafe object to JSON
+foreign import javascript unsafe "window['objectToJSON']($1,$2)"
   objectToJSON
      :: JSVal
      -- ^ decodeAt :: [JSString]
@@ -738,8 +738,8 @@ foreign import javascript "window['objectToJSON']($1,$2)"
      -- ^ object with impure references to the DOM
      -> IO JSVal
 
-foreign import javascript "document.querySelectorAll($1)" querySelectorAll :: JSString -> IO JSArray
-foreign import javascript "$1[0]" getFirstItem :: JSArray -> IO JSVal
+foreign import javascript unsafe "document.querySelectorAll($1)" querySelectorAll :: JSString -> IO JSArray
+foreign import javascript unsafe "$1[0]" getFirstItem :: JSArray -> IO JSVal
 
 -- | Retrieves the component id
 getComponent :: JSString -> IO JSVal
@@ -748,17 +748,17 @@ getComponent name = do
   getFirstItem nodeList
 
 #ifdef WASM
-foreign import javascript "document.body" getBody :: IO JSVal
-foreign import javascript "document" getDoc :: IO JSVal
+foreign import javascript unsafe "document.body" getBody :: IO JSVal
+foreign import javascript unsafe "document" getDoc :: IO JSVal
 #else
-foreign import javascript "(function(x) { return document.body; })" getBody :: IO JSVal
-foreign import javascript "(function(x) { return document; })" getDoc :: IO JSVal
+foreign import javascript unsafe "(function(x) { return document.body; })" getBody :: IO JSVal
+foreign import javascript unsafe "(function(x) { return document; })" getDoc :: IO JSVal
 #endif
 
-foreign import javascript "document.getElementById($1)" getElementById :: JSString -> IO JSVal
+foreign import javascript unsafe "document.getElementById($1)" getElementById :: JSString -> IO JSVal
 
 -- | Diff two virtual DOMs
-foreign import javascript "window['diff']($1,$2,$3,$4)"
+foreign import javascript unsafe "window['diff']($1,$2,$3,$4)"
   diff'
     :: JSObject -- ^ current object
     -> JSObject -- ^ new object
@@ -766,15 +766,15 @@ foreign import javascript "window['diff']($1,$2,$3,$4)"
     -> JSVal -- ^ document
     -> IO ()
 
--- | Helper function for converting Integral types to JavaScript strings
+-- | Helper function for converting Integral types to Javascript Unsafe strings
 integralToJSString :: Integral a => a -> JSString
 integralToJSString = toJSString . show . toInteger
 
--- | Helper function for converting RealFloat types to JavaScript strings
+-- | Helper function for converting RealFloat types to Javascript Unsafe strings
 realFloatToJSString :: RealFloat a => a -> JSString
 realFloatToJSString x = (toJSString . show) (realToFrac x :: Double)
 
--- | Helper function for converting RealFloat types to JavaScript strings
+-- | Helper function for converting RealFloat types to Javascript Unsafe strings
 jsStringToDouble :: JSString -> Double
 jsStringToDouble = read . fromJSString
 
@@ -783,7 +783,7 @@ delegateEvent :: JSVal -> JSVal -> IO JSVal -> IO ()
 delegateEvent mountPoint events getVTree = do
   delegate mountPoint events =<< syncCallback' getVTree
 
--- | Virtual DOM implemented as a JavaScript `Object`.
+-- | Virtual DOM implemented as a Javascript Unsafe `Object`.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: JSObject }
@@ -794,16 +794,16 @@ undelegateEvent :: JSVal -> JSVal -> IO JSVal -> IO ()
 undelegateEvent mountPoint events getVTree =
   undelegate mountPoint events =<< syncCallback' getVTree
 
--- | Call 'delegateEvent' JavaScript function
-foreign import javascript "window['delegate']($1,$2,$3)"
+-- | Call 'delegateEvent' Javascript Unsafe function
+foreign import javascript unsafe "window['delegate']($1,$2,$3)"
   delegate :: JSVal -> JSVal -> JSCallback a -> IO ()
 
-foreign import javascript "window['undelegate']($1,$2,$3)"
+foreign import javascript unsafe "window['undelegate']($1,$2,$3)"
   undelegate :: JSVal -> JSVal -> JSCallback a -> IO ()
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
-foreign import javascript "window['copyDOMIntoVTree']($1,$2,$3)"
+foreign import javascript unsafe "window['copyDOMIntoVTree']($1,$2,$3)"
   copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> IO ()
 
 -- | Pins down the current callbacks for clearing later
@@ -821,12 +821,12 @@ registerCallback _ = pure ()
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
-foreign import javascript "window['callFocus']($1)" focus :: JSString -> IO ()
+foreign import javascript unsafe "window['callFocus']($1)" focus :: JSString -> IO ()
 
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
-foreign import javascript "window['callBlur']($1)" blur :: JSString -> IO ()
+foreign import javascript unsafe "window['callBlur']($1)" blur :: JSString -> IO ()
 
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: JSString -> IO ()
@@ -834,17 +834,17 @@ scrollIntoView name = do
   jval <- js_get_element_by_id name
   js_scroll_into_view jval
 
-foreign import javascript "document.getElementById($1)" js_get_element_by_id :: JSString -> IO JSVal
-foreign import javascript "$1.scrollIntoView()" js_scroll_into_view :: JSVal -> IO ()
-foreign import javascript "alert($1)" alert :: JSString -> IO ()
-foreign import javascript "$1.length === 0"  jsstring_null :: JSString -> Bool
-foreign import javascript "parseInt($1)" jsstring_parseInt :: JSString -> IO Int
-foreign import javascript "isNaN(parseInt($1))" jsstring_parseInt_isNaN :: JSString -> IO Bool
-foreign import javascript "isNaN(parseFloat($1))" jsstring_parseFloat_isNaN :: JSString -> IO Bool
-foreign import javascript "parseInt($1)" jsstring_parseFloat :: JSString -> IO Float
-foreign import javascript "parseFloat($1)" jsstring_parseDouble :: JSString -> IO Double
-foreign import javascript "$1 + $2" jsstring_concat :: JSString -> JSString -> JSString
-foreign import javascript "$1 === $2" jsstring_eq :: JSString -> JSString -> Bool
+foreign import javascript unsafe "document.getElementById($1)" js_get_element_by_id :: JSString -> IO JSVal
+foreign import javascript unsafe "$1.scrollIntoView()" js_scroll_into_view :: JSVal -> IO ()
+foreign import javascript unsafe "alert($1)" alert :: JSString -> IO ()
+foreign import javascript unsafe "$1.length === 0"  jsstring_null :: JSString -> Bool
+foreign import javascript unsafe "parseInt($1)" jsstring_parseInt :: JSString -> IO Int
+foreign import javascript unsafe "isNaN(parseInt($1))" jsstring_parseInt_isNaN :: JSString -> IO Bool
+foreign import javascript unsafe "isNaN(parseFloat($1))" jsstring_parseFloat_isNaN :: JSString -> IO Bool
+foreign import javascript unsafe "parseInt($1)" jsstring_parseFloat :: JSString -> IO Float
+foreign import javascript unsafe "parseFloat($1)" jsstring_parseDouble :: JSString -> IO Double
+foreign import javascript unsafe "$1 + $2" jsstring_concat :: JSString -> JSString -> JSString
+foreign import javascript unsafe "$1 === $2" jsstring_eq :: JSString -> JSString -> Bool
 
 parseFloat :: JSString -> Either String Float
 parseFloat s = unsafePerformIO $ do
@@ -876,10 +876,10 @@ parseInt s = unsafePerformIO $ do
     else
       Right <$> jsstring_parseInt s
 
-foreign import javascript "$1 > $2" jsstring_gt :: JSString -> JSString -> Bool
-foreign import javascript "$1 >= $2" jsstring_gte :: JSString -> JSString -> Bool
-foreign import javascript "$1 <= $2" jsstring_lte :: JSString -> JSString -> Bool
-foreign import javascript "$1 < $2" jsstring_lt :: JSString -> JSString -> Bool
+foreign import javascript unsafe "$1 > $2" jsstring_gt :: JSString -> JSString -> Bool
+foreign import javascript unsafe "$1 >= $2" jsstring_gte :: JSString -> JSString -> Bool
+foreign import javascript unsafe "$1 <= $2" jsstring_lte :: JSString -> JSString -> Bool
+foreign import javascript unsafe "$1 < $2" jsstring_lt :: JSString -> JSString -> Bool
 
 instance Eq JSString where
   (==) = jsstring_eq
@@ -902,8 +902,8 @@ instance Monoid JSString where
 instance Show JSString where
   show = fromJSString
 
-foreign import javascript "''" emptyString :: JSString
-foreign import javascript "$1 === ''" isEmpty :: JSString -> Bool
+foreign import javascript unsafe "''" emptyString :: JSString
+foreign import javascript unsafe "$1 === ''" isEmpty :: JSString -> Bool
 
 -- dmj: this is slow, make it faster
 -- jsffi for head and tail
@@ -930,44 +930,44 @@ instance StringLike JSString where
   strMap f   = toJSString . fmap f . fromJSString
 
 -- History
-foreign import javascript "history" getHistory :: IO JSVal
-foreign import javascript "window.location.href" getWindowLocationHref :: IO JSString
-foreign import javascript "history.go($1)" go :: Int -> IO ()
-foreign import javascript "history.back()" back :: IO ()
-foreign import javascript "history.forward()" forward :: IO ()
-foreign import javascript "history.pushState(null,null,$1)" pushState :: JSString -> IO ()
-foreign import javascript "history.replaceState(null,null,$1)" replaceState :: JSString -> IO ()
+foreign import javascript unsafe "history" getHistory :: IO JSVal
+foreign import javascript unsafe "window.location.href" getWindowLocationHref :: IO JSString
+foreign import javascript unsafe "history.go($1)" go :: Int -> IO ()
+foreign import javascript unsafe "history.back()" back :: IO ()
+foreign import javascript unsafe "history.forward()" forward :: IO ()
+foreign import javascript unsafe "history.pushState(null,null,$1)" pushState :: JSString -> IO ()
+foreign import javascript unsafe "history.replaceState(null,null,$1)" replaceState :: JSString -> IO ()
 
 -- SSE
 newtype EventSource = EventSource JSVal
-foreign import javascript "$1.data" sseData :: JSVal -> IO JSVal
-foreign import javascript "new EventSource($1)" newSSE :: JSString -> IO EventSource
+foreign import javascript unsafe "$1.data" sseData :: JSVal -> IO JSVal
+foreign import javascript unsafe "new EventSource($1)" newSSE :: JSString -> IO EventSource
 
 -- storage
 newtype Storage = Storage JSVal
-foreign import javascript "window.localStorage" localStorage     :: IO Storage
-foreign import javascript "window.sessionStorage" sessionStorage :: IO Storage
-foreign import javascript "$1.getItem($2)" getItem               :: Storage -> JSString -> IO JSVal
-foreign import javascript "$1.removeItem($2)" removeItem         :: Storage -> JSString -> IO ()
-foreign import javascript "$1.setItem($2,$3)" setItem            :: Storage -> JSString -> JSString -> IO ()
-foreign import javascript "$1.length" storageLength              :: Storage -> IO Int
-foreign import javascript "$1.clear()" clearStorage              :: Storage -> IO ()
+foreign import javascript unsafe "window.localStorage" localStorage     :: IO Storage
+foreign import javascript unsafe "window.sessionStorage" sessionStorage :: IO Storage
+foreign import javascript unsafe "$1.getItem($2)" getItem               :: Storage -> JSString -> IO JSVal
+foreign import javascript unsafe "$1.removeItem($2)" removeItem         :: Storage -> JSString -> IO ()
+foreign import javascript unsafe "$1.setItem($2,$3)" setItem            :: Storage -> JSString -> JSString -> IO ()
+foreign import javascript unsafe "$1.length" storageLength              :: Storage -> IO Int
+foreign import javascript unsafe "$1.clear()" clearStorage              :: Storage -> IO ()
 
 -- web socket
 newtype Socket = Socket JSVal
 
-foreign import javascript "new WebSocket($1,$2)" create :: JSString -> JSVal -> IO Socket
-foreign import javascript "$1.readyState" socketState   :: Socket -> IO Int
-foreign import javascript "$1.send($2)" send            :: Socket -> JSString -> IO ()
-foreign import javascript "$1.close()" close            :: Socket -> IO ()
-foreign import javascript "$1.wasClean" wasClean        :: JSVal -> IO Bool
-foreign import javascript "$1.code" code                :: JSVal -> IO Int
-foreign import javascript "$1.reason" reason            :: JSVal -> IO JSString
-foreign import javascript "$1.data" websocketData       :: JSVal -> IO JSVal
+foreign import javascript unsafe "new WebSocket($1,$2)" create :: JSString -> JSVal -> IO Socket
+foreign import javascript unsafe "$1.readyState" socketState   :: Socket -> IO Int
+foreign import javascript unsafe "$1.send($2)" send            :: Socket -> JSString -> IO ()
+foreign import javascript unsafe "$1.close()" close            :: Socket -> IO ()
+foreign import javascript unsafe "$1.wasClean" wasClean        :: JSVal -> IO Bool
+foreign import javascript unsafe "$1.code" code                :: JSVal -> IO Int
+foreign import javascript unsafe "$1.reason" reason            :: JSVal -> IO JSString
+foreign import javascript unsafe "$1.data" websocketData       :: JSVal -> IO JSVal
 
 -- jseval
 #ifdef WASM
-foreign import javascript "(($1) => { return eval($1); })" eval :: JSString -> IO JSVal
+foreign import javascript unsafe "(($1) => { return eval($1); })" eval :: JSString -> IO JSVal
 #endif
 
 
