@@ -8,7 +8,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Dev
-  ( clearBody
+  ( -- clearBody
   ) where
 
-import Miso.FFI (clearBody)
+-- import Miso.FFI (clearBody)

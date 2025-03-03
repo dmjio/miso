@@ -25,8 +25,8 @@ module Miso.Event.Decoder
 
 import Data.Aeson.Types
 import Control.Applicative
-import GHCJS.Marshal (ToJSVal, toJSVal)
 
+import Miso.FFI (ToJSVal(..))
 import Miso.Event.Types
 import Miso.String
 

@@ -22,19 +22,14 @@ source-repository head
    type: git
    location: https://github.com/dmjio/miso.git
 
-common js-only-tests
-  if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
+-- Disable the test build if the arch isn't js/ghcjs
+common enable-tests
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32)) || !flag(tests)
     buildable: False
 
-common jsaddle-selector
-  if arch(wasm32)
-    build-depends:
-      jsaddle-wasm
-  else
-    build-depends:
-      jsaddle-warp
-
-common string-selector
+-- | JSString should always be used when compiling to WASM or JS
+-- Text should be used when building a server w/ Miso types
+common string
   if impl(ghcjs) || arch(javascript) || flag (jsstring-only) || arch(wasm32)
     hs-source-dirs:
       jsstring-src
@@ -42,23 +37,53 @@ common string-selector
     hs-source-dirs:
       text-src
 
+common options
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+  ghc-options:
+    -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
+
 common server
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
-      servant-lucid,
-      file-embed
+      servant-lucid
 
 common client
   if impl(ghcjs) || arch(javascript)
     build-depends:
-      ghcjs-base
+      ghcjs-base,
+      unordered-containers,
+      deepseq
+
+  if arch(wasm32)
+    build-depends:
+      ghc-experimental
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     js-sources:
       jsbits/diff.js
+      jsbits/callbacks.js
       jsbits/delegate.js
       jsbits/isomorphic.js
       jsbits/util.js
+
+common cpp
+  if arch(wasm32)
+    cpp-options:
+      -DWASM
+  elif impl(ghcjs)
+    cpp-options:
+     -DGHCJS_OLD
+  elif arch(javascript)
+    cpp-options:
+     -DGHCJS_NEW
+  elif impl(ghcjs) || arch(javascript)
+    cpp-options:
+     -DGHCJS_BOTH
+  else
+    cpp-options:
+     -DNATIVE
 
 flag tests
   manual:
@@ -78,42 +103,42 @@ flag jsstring-only
 
 executable tests
   import:
-    js-only-tests
+    client,
+    enable-tests,
+    cpp,
+    options
   default-language:
     Haskell2010
   main-is:
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
+  other-modules:
+     Miso.FFI
+     Miso.String
+     Miso.Storage
   hs-source-dirs:
-    tests
+    tests, src, jsstring-src
   build-depends:
     aeson,
-    base < 5,
     bytestring,
-    ghcjs-base,
+    base < 5,
     QuickCheck,
-    quickcheck-instances,
-    miso,
-    http-types,
-    network-uri,
-    http-api-data,
-    containers,
+    deepseq,
+    -- quickcheck-instances,
     scientific,
-    servant,
+    tagsoup,
     text,
-    unordered-containers,
+    -- unordered-containers,
     transformers,
     vector
 
 library
   import:
-    jsaddle-selector,
-    string-selector,
+    string,
     server,
-    client
+    client,
+    cpp
   default-language:
     Haskell2010
   exposed-modules:
@@ -163,8 +188,8 @@ library
       
   other-modules:
     Miso.Internal
-  ghc-options:
-    -Wall
+  -- ghc-options:
+  --   -Wall
   hs-source-dirs:
     src
   build-depends:
@@ -172,12 +197,15 @@ library
     base < 5,
     bytestring,
     containers,
+    file-embed,
     http-api-data,
     http-types,
-    jsaddle,
     lucid,
     network-uri,
+    scientific,
     servant,
     tagsoup,
     text,
-    transformers
+    transformers,
+    unordered-containers,
+    vector

@@ -63,15 +63,15 @@ import           Data.Aeson (Value)
 import qualified Data.Aeson as A
 import           Data.Bifunctor (second, Bifunctor(..))
 import           Data.Foldable (for_)
-import           Data.JSString (JSString)
+-- import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.Proxy
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
-import           GHCJS.Marshal (ToJSVal, toJSVal)
-import           JavaScript.Object.Internal (Object)
+-- import           GHCJS.Marshal (ToJSVal, toJSVal)
+-- import           JavaScript.Object.Internal (Object)
 import qualified Lucid as L
 import qualified Lucid.Base as L
 import           Prelude hiding (null)
@@ -79,9 +79,9 @@ import           Servant.API (Get, HasLink(MkLink, toLink))
 
 import           Miso.Effect
 import           Miso.Event.Types
-import           Miso.FFI (JSM)
 import           Miso.String (MisoString, fromMisoString, toMisoString)
 import qualified Miso.String as MS
+import           Miso.FFI
 
 -- | Application entry point
 data App model action = App
@@ -192,7 +192,7 @@ toTransition f =
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: JSM action -> Transition action model ()
+scheduleIO :: IO action -> Transition action model ()
 scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= liftIO . sink
 
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
@@ -200,13 +200,13 @@ scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= liftIO . sink
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: JSM () -> Transition action model ()
+scheduleIO_ :: IO () -> Transition action model ()
 scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
 
 -- | Like `scheduleIO_` but generalized to any instance of `Foldable`
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
+scheduleIOFor_ :: Foldable f => IO (f action) -> Transition action model ()
 scheduleIOFor_ io = scheduleSub $ \sink -> io >>= \m -> liftIO (for_ m sink)
 
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
@@ -298,9 +298,9 @@ data NS
   deriving (Show, Eq)
 
 instance ToJSVal NS where
-  toJSVal SVG  = toJSVal ("svg" :: JSString)
-  toJSVal HTML = toJSVal ("html" :: JSString)
-  toJSVal MATHML = toJSVal ("mathml" :: JSString)
+  toJSVal SVG  = toJSVal ("svg" :: MisoString)
+  toJSVal HTML = toJSVal ("html" :: MisoString)
+  toJSVal MATHML = toJSVal ("mathml" :: MisoString)
 
 -- | A unique key for a dom node.
 --
@@ -321,7 +321,7 @@ class ToKey key where toKey :: key -> Key
 -- | Identity instance
 instance ToKey Key where toKey = id
 -- | Convert `MisoString` to `Key`
-instance ToKey JSString where toKey = Key . toMisoString
+-- instance ToKey JSString where toKey = Key . toMisoString
 -- | Convert `T.Text` to `Key`
 instance ToKey T.Text where toKey = Key . toMisoString
 -- | Convert `String` to `Key`
@@ -343,7 +343,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- vnode the attribute is attached to.
 data Attribute action
   = P MisoString Value
-  | E (Sink action -> Object -> JSM ())
+  | E (Sink action -> JSObject -> IO ())
   | S (M.Map MisoString MisoString)
   deriving Functor
 
@@ -397,10 +397,10 @@ instance L.ToHtml (View action) where
                    ]
       toTag = T.toLower
       kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
-  toHtml (Text x) | MS.null x = L.toHtml (" " :: T.Text)
+  toHtml (Text x) | x == mempty = L.toHtml (" " :: T.Text)
                   | otherwise = L.toHtml (fromMisoString x :: T.Text)
   toHtml (TextRaw x)
-    | MS.null x = L.toHtml (" " :: T.Text)
+    | x == mempty = L.toHtml (" " :: T.Text)
     | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
 
 collapseSiblingTextNodes :: [View a] -> [View a]

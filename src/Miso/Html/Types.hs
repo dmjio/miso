@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleInstances    #-}
@@ -41,15 +42,17 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (ToJSON, toJSON)
 import           Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as M
-import           GHCJS.Marshal (fromJSVal, toJSVal)
-import           JavaScript.Object (create, getProp)
-import           JavaScript.Object.Internal (Object(Object))
+-- import           GHCJS.Marshal (fromJSVal, toJSVal)
+-- import           JavaScript.Object (create, getProp)
+-- import           JavaScript.Object.Internal (Object(Object))
 import           Prelude hiding (null)
 
 import           Miso.Event
 import           Miso.FFI
 import           Miso.String                hiding (reverse)
 import           Miso.Types
+
+default (MisoString)
 
 -- | Create a new @Miso.Html.Types.TextRaw@.
 --
@@ -82,11 +85,6 @@ text = Text
 -- | `TextRaw` creation. Don't use directly
 textRaw :: MisoString -> View action
 textRaw = TextRaw
-
--- | Virtual DOM implemented as a JavaScript `Object`.
---   Used for diffing, patching and event delegation.
---   Not meant to be constructed directly, see `View` instead.
-newtype VTree = VTree { getTree :: Object }
 
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
@@ -123,18 +121,21 @@ onWithOptions
 onWithOptions options eventName Decoder{..} toAction =
   E $ \sink n -> do
    eventObj <- getProp "events" n
-   eventHandlerObject@(Object eo) <- create
+   eventHandlerObject@(JSObject eo) <- newJSObject
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
-   cb <- callbackToJSVal <=< asyncCallback1 $ \e -> do
-       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
+   JSCallback cb <- asyncCallback1 $ \e -> do
+       v <- fromJSVal =<< objectToJSON decodeAtVal e
+       print v
        case parseEither decoder v of
-         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> liftIO (sink (toAction r))
+         Left s -> do
+           error $ "Parse error on " <> fromMisoString eventName <> ": " <> s
+         Right r -> do
+           liftIO (sink (toAction r))
    set "runEvent" cb eventHandlerObject
    registerCallback cb
    set "options" jsOptions eventHandlerObject
-   set eventName eo (Object eventObj)
+   set eventName eo (JSObject eventObj)
 
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
@@ -144,7 +145,7 @@ onWithOptions options eventName Decoder{..} toAction =
 onCreated :: action -> Attribute action
 onCreated action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    JSCallback cb <- asyncCallback (sink action)
     set "onCreated" cb n
     registerCallback cb
 
@@ -157,7 +158,7 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    JSCallback cb <- asyncCallback (sink action)
     set "onDestroyed" cb n
     registerCallback cb
 
@@ -170,7 +171,7 @@ onDestroyed action =
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    JSCallback cb <- asyncCallback (sink action)
     set "onBeforeDestroyed" cb n
     registerCallback cb
 

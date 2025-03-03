@@ -1,4 +1,3 @@
-window = typeof window === 'undefined' ? {} : window;
 window['oldCallbacks'] = [];
 window['currentCallbacks'] = [];
 
@@ -53,7 +52,6 @@ window['undelegate'] = function (mount, events, getVTree) {
 
 /* Accumulate parent stack as well for propagation */
 window['delegateEvent'] = function (event, obj, stack, parentStack) {
-
   /* base case, not found */
   if (!stack.length) return;
 

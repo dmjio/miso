@@ -15,7 +15,8 @@ options: self: super: {
       '';
   };
 
-  coverage = import ../tests {};
+  coverage =
+    import ../tests {};
 
   sample-app-tagged =
     import ../sample-app {};
@@ -30,6 +31,12 @@ options: self: super: {
     haskell-miso-client
     haskell-miso-server
     haskell-miso-runner;
+
+  miso-ghc = self.haskell.packages.ghc865.miso;
+  miso-examples-ghc = self.haskell.packages.ghcjs.miso-examples;
+
+  miso-ghcjs = self.haskell.packages.ghcjs.miso;
+  miso-examples-ghcjs = self.haskell.packages.ghcjs.miso-examples;
 
   haskell = super.haskell // {
     packages = super.haskell.packages // {

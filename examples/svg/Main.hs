@@ -9,13 +9,15 @@ import qualified Data.Map as M
 
 import           Control.Arrow
 import           Miso
-import           Miso.String (MisoString, pack, ms)
+import           Miso.String (MisoString, ms)
 import           Miso.Svg hiding (height_, id_, style_, width_)
 import           Touch
 
 #if defined(wasm32_HOST_ARCH)
 foreign export javascript "hs_start" main :: IO ()
 #endif
+
+default (MisoString)
 
 main :: IO ()
 main = run $ startApp App {..}
@@ -24,9 +26,9 @@ main = run $ startApp App {..}
     model         = emptyModel
     update        = updateModel
     view          = viewModel
-    events        = M.insert (pack "mousemove") False $
-                    M.insert (pack "touchstart") False $
-                    M.insert (pack "touchmove") False defaultEvents
+    events        = M.insert "mousemove" False $
+                    M.insert "touchstart" False $
+                    M.insert "touchmove" False mempty
     subs          = [ mouseSub HandleMouse ]
     logLevel      = Off
     mountPoint    = Nothing

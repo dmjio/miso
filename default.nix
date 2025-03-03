@@ -8,29 +8,38 @@ in with pkgs.haskell.lib;
 {
   inherit pkgs;
 
-  # hacakge release
+  # hackage miso release
   release =
-    with pkgs.haskell.packages.ghc865;
-    sdistTarball (buildStrictly miso);
+    sdistTarball (buildStrictly pkgs.miso-ghc);
 
+  # hackage miso release examples
   release-examples =
-    with pkgs.haskell.packages.ghcjs;
-    sdistTarball (buildStrictly miso-examples);
+    sdistTarball (buildStrictly pkgs.miso-examples);
 
   #js
-  miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app;
+  inherit (pkgs)
+    miso-ghcjs
+    miso-examples-ghcjs;
   
   #native
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
-  miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
+  inherit (pkgs)
+    miso-ghc
+    miso-examples-ghc;
+
   inherit (pkgs.haskell.packages.ghc865) sample-app-jsaddle;
 
-  # miso wasm examples
-  # nix-build -A wasmExamples && ./result/bin/build.sh && nix-build -A svgWasm && http-server ./result/svg.wasmexe
+  # |=========================
+  # |   Miso wasm examples
+  # |=========================
+  # | nix-build -A svgWasm
+  # |  && ./result/bin/build.sh
+  # |  && nix-build -A svgWasm
+  # |  && http-server ./result/svg.wasmexe
+  # | =========================
   inherit (pkgs)
     wasmExamples
     svgWasm
+    simpleWasm
     componentsWasm
     todoWasm;
 
@@ -51,6 +60,10 @@ in with pkgs.haskell.lib;
     haskell-miso-client
     haskell-miso-server
     haskell-miso-runner;
+
+  # testsing
+  inherit (pkgs)
+    testsWasm;
 
   #code covergae
   inherit (pkgs) coverage;

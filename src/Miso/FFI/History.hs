@@ -8,50 +8,43 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI.History
-  ( getWindowLocationHref
-  , go
-  , back
-  , forward
-  , pushState
-  , replaceState
+  ( 
   ) where
 
-import Control.Monad
-import GHCJS.Types
-import Language.Javascript.JSaddle
-import Miso.String
+-- import Control.Monad
+-- import GHCJS.Types
+-- import Language.Javascript.JSaddle
+-- import Miso.String
+-- import Miso.FFI
 
-getWindowLocationHref :: JSM MisoString
-getWindowLocationHref = do
-  href <- fromJSVal =<< jsg "window" ! "location" ! "href"
-  case join href of
-    Nothing -> pure mempty
-    Just uri -> pure uri
+-- getWindowLocationHref :: IO MisoString
+-- getWindowLocationHref = undefined -- do
+  -- href <- fromJSVal =<< jsg "window" ! "location" ! "href"
+  -- case join href of
+  --   Nothing -> pure mempty
+  --   Just uri -> pure uri
 
-getHistory :: JSM JSVal
-getHistory = jsg "window" ! "history"
+-- go :: Int -> IO ()
+-- go i = undefined -- do
+  -- _ <- getHistory # "go" $ [i]
+  -- pure ()
 
-go :: Int -> JSM ()
-go i = do
-  _ <- getHistory # "go" $ [i]
-  pure ()
+-- back :: IO ()
+-- back = undefined -- do
+  -- _ <- getHistory # "back" $ ()
+  -- pure ()
 
-back :: JSM ()
-back = do
-  _ <- getHistory # "back" $ ()
-  pure ()
+-- forward :: IO ()
+-- forward = undefined -- do
+  -- _ <- getHistory # "forward" $ ()
+  -- pure ()
 
-forward :: JSM ()
-forward = do
-  _ <- getHistory # "forward" $ ()
-  pure ()
+-- pushState :: MisoString -> IO ()
+-- pushState url = undefined -- do
+  -- _ <- getHistory # "pushState" $ (jsNull, jsNull, url)
+  -- pure ()
 
-pushState :: MisoString -> JSM ()
-pushState url = do
-  _ <- getHistory # "pushState" $ (jsNull, jsNull, url)
-  pure ()
-
-replaceState :: MisoString -> JSM ()
-replaceState url = do
-  _ <- getHistory # "replaceState" $ (jsNull, jsNull, url)
-  pure ()
+-- replaceState :: MisoString -> IO ()
+-- replaceState url = undefined -- do
+  -- _ <- getHistory # "replaceState" $ (jsNull, jsNull, url)
+  -- pure ()

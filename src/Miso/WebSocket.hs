@@ -27,9 +27,6 @@ module Miso.WebSocket
 
 import GHC.Generics
 import Prelude                hiding (map)
-#ifdef ghcjs_HOST_OS
-import GHCJS.Marshal
-#endif
 
 import Miso.String
 
@@ -97,9 +94,3 @@ data CloseCode
   | OtherCode Int
    -- ^ OtherCode that is reserved and not in the range 0999
   deriving (Show, Eq, Generic)
-
-#ifdef ghcjs_HOST_OS
--- Defined here to avoid an orphan instance
-instance ToJSVal CloseCode
-instance FromJSVal CloseCode
-#endif

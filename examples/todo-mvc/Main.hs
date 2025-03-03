@@ -102,12 +102,12 @@ updateModel Add model@Model{..} =
   noEff model {
     uid = uid + 1
   , field = mempty
-  , entries = entries <> [ newEntry field uid | not $ S.null field ]
+  , entries = entries <> [ newEntry field uid | not $ field == "" ]
   }
 updateModel (UpdateField str) model = noEff model { field = str }
 updateModel (EditingEntry id' isEditing) model@Model{..} =
   model { entries = newEntries } <# do
-    focus $ S.pack $ "todo-" ++ show id'
+    focus $ "todo-" <> S.ms (show id')
     pure NoOp
     where
       newEntries = filterMap entries (\t -> eid t == id') $
@@ -185,7 +185,7 @@ viewEntries visibility entries =
         ]
       , label_
         [ for_ "toggle-all" ]
-          [ text $ S.pack "Mark all as complete" ]
+          [ text "Mark all as complete" ]
       , ul_ [ class_ "todo-list" ] $
          flip map (filter isVisible entries) $ \t ->
            viewKeyedEntry t
@@ -204,8 +204,8 @@ viewKeyedEntry = viewEntry
 
 viewEntry :: Entry -> View Msg
 viewEntry Entry {..} = liKeyed_ (toKey eid)
-    [ class_ $ S.intercalate " " $
-       [ "completed" | completed ] <> [ "editing" | editing ]
+    [ class_ $ mconcat $
+       [ "completed " | completed ] <> [ "editing " | editing ]
     ]
     [ div_
         [ class_ "view" ]
@@ -254,7 +254,7 @@ viewControlsCount entriesLeft =
      , text (item_ <> " left")
      ]
   where
-    item_ = S.pack $ bool " items" " item" (entriesLeft == 1)
+    item_ = bool " items" " item" (entriesLeft == 1)
 
 viewControlsFilters :: MisoString -> View Msg
 viewControlsFilters visibility =
@@ -271,7 +271,7 @@ visibilitySwap :: MisoString -> MisoString -> MisoString -> View Msg
 visibilitySwap uri visibility actualVisibility =
   li_ [  ]
       [ a_ [ href_ uri
-           , class_ $ S.concat [ "selected" | visibility == actualVisibility ]
+           , class_ $ mconcat [ "selected" | visibility == actualVisibility ]
            , onClick (ChangeVisibility visibility)
            ] [ text visibility ]
       ]

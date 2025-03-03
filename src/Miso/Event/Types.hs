@@ -14,8 +14,8 @@ module Miso.Event.Types where
 
 import qualified Data.Map.Strict as M
 import           GHC.Generics
-import           GHCJS.Marshal (ToJSVal)
 import           Miso.String
+import           Miso.FFI
 import           Data.Aeson (FromJSON)
 
 -- | Type useful for both KeyCode and additional key press information.
@@ -41,7 +41,12 @@ data Options = Options {
   , stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
 
-instance ToJSVal Options
+instance ToJSVal Options where
+  toJSVal (Options pd sp) = do
+    o <- newJSObject
+    setProp "preventDefault" o =<< toJSVal pd
+    setProp "stopPropagation" o =<< toJSVal sp
+    pure (jsval o)
 
 -- | Default value for 'Options'.
 --

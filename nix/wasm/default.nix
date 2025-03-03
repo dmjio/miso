@@ -2,7 +2,8 @@ self: super:
 {
 
   ghc-wasm-meta =
-    (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org")
+    (builtins.getFlake
+      "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org&ref=wip/wasm-jsffi-sync-export")
       .outputs.packages."${super.system}";
 
   wasm-cabal =
@@ -41,6 +42,12 @@ self: super:
         src = self.wasmHelloWorld;
       };
 
+  testsWasm =
+    self.wasmPkgExample {
+       name = "tests";
+       title = "Tests WASM Example";
+    };
+
   svgWasm =
     self.wasmPkgExample {
        name = "svg";
@@ -59,25 +66,29 @@ self: super:
        title = "Todo-mvc WASM Example";
     };
 
+  simpleWasm =
+    self.wasmPkgExample {
+       name = "simple";
+       title = "Simple WASM Example";
+    };
+
   # call nix-build -A wasmExamples && ./result/bin/build.sh
   # to populate examples
   wasmExamples = self.writeScriptBin "build.sh" ''
-    nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
-      --command wasm32-wasi-cabal build miso-examples --allow-newer
+    nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org&ref=wip/wasm-jsffi-sync-export#all_9_12' --command cabal build exe:components --allow-newer
   '';
 
   # Used for packaging up cabal-built wasm packages
   # since GHC WASM isn't in nixpkgs yet (pending LLVM patches)
   # we must build the executables first w/ cabal and then package them up w/nix
   # Call "nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
-  #            --command wasm32-wasi-cabal build miso-examples --allow-newer"
+  #    --command wasm32-wasi-cabal build miso-examples --allow-newer"
   wasmPkgExample = args: with args;
     super.stdenv.mkDerivation {
       inherit (args) name;
       src = ../../dist-newstyle/build/wasm32-wasi;
       buildInputs = [ self.ghc-wasm-meta.all_9_12 ];
       buildCommand = ''
-
          export WASMPATH=$src/ghc-*/*/x/${name}/build/${name}/
 
          mkdir -p $out/${name}.jsexe
@@ -86,6 +97,7 @@ self: super:
               --output $out/${name}.jsexe/ghc_wasm_jsffi.js
 
          cp -v $WASMPATH/${name}.wasm            $out/${name}.jsexe/
+         cp -rv ${self.miso-ghc.src}/jsbits      $out/${name}.jsexe/
          cat ${self.wasmIndexJs name}          > $out/${name}.jsexe/index.js
          cat ${self.wasmIndexHtml title name}  > $out/${name}.jsexe/index.html
       '';
@@ -104,6 +116,10 @@ self: super:
                  <head>
                    <meta charset="utf-8">
                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                   <script src="jsbits/diff.js" type="module"></script>
+                   <script src="jsbits/util.js" type="module"></script>
+                   <script src="jsbits/isomorphic.js" type="module"></script>
+                   <script src="jsbits/delegate.js" type="module"></script>
                    <title>${title}</title>
                  </head>
                  <body>
@@ -129,7 +145,7 @@ self: super:
           ConsoleStdout.lineBuffered((msg) => console.log(`[WASI stdout] ''${msg}`)),
           ConsoleStdout.lineBuffered((msg) => console.warn(`[WASI stderr] ''${msg}`)),
         ];
-        const options = { debug: false };
+        const options = { debug: true };
         const wasi = new WASI(args, env, fds, options);
 
         const instance_exports = {};

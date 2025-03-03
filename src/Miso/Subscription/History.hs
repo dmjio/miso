@@ -23,23 +23,24 @@ module Miso.Subscription.History
   , URI (..)
   ) where
 
-import Control.Monad
-import Control.Monad.IO.Class
-import Miso.Concurrent
-import Miso.Types (Sub)
-import Miso.FFI
-import qualified Miso.FFI.History as FFI
-import Miso.String
-import Network.URI hiding (path)
-import System.IO.Unsafe
+import           Control.Concurrent
+import           Control.Monad
+import           Control.Monad.IO.Class
+import           Network.URI hiding (path)
+import           System.IO.Unsafe
+
+import           Miso.Concurrent
+import qualified Miso.FFI as FFI
+import           Miso.String
+import           Miso.Types (Sub)
 
 -- | Retrieves current URI of page
-getCurrentURI :: JSM URI
+getCurrentURI :: IO URI
 {-# INLINE getCurrentURI #-}
 getCurrentURI = getURI
 
 -- | Retrieves current URI of page
-getURI :: JSM URI
+getURI :: IO URI
 {-# INLINE getURI #-}
 getURI = do
   href <- fromMisoString <$> FFI.getWindowLocationHref
@@ -48,7 +49,7 @@ getURI = do
     Just uri -> return uri
 
 -- | Pushes a new URI onto the History stack
-pushURI :: URI -> JSM ()
+pushURI :: URI -> IO ()
 {-# INLINE pushURI #-}
 pushURI uri = pushStateNoModel uri { uriPath = toPath uri }
 
@@ -62,22 +63,22 @@ toPath uri =
     xs -> '/' : xs
 
 -- | Replaces current URI on stack
-replaceURI :: URI -> JSM ()
+replaceURI :: URI -> IO ()
 {-# INLINE replaceURI #-}
 replaceURI uri = replaceTo' uri { uriPath = toPath uri }
 
 -- | Navigates backwards
-back :: JSM ()
+back :: IO ()
 {-# INLINE back #-}
 back = FFI.back
 
 -- | Navigates forwards
-forward :: JSM ()
+forward :: IO ()
 {-# INLINE forward #-}
 forward = FFI.forward
 
 -- | Jumps to a specific position in history
-go :: Int -> JSM ()
+go :: Int -> IO ()
 {-# INLINE go #-}
 go n = FFI.go n
 
@@ -88,20 +89,20 @@ chan = unsafePerformIO emptyWaiter
 -- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
-  void.forkJSM.forever $ do
+  void.forkIO.forever $ do
     liftIO (wait chan)
     liftIO . sink . f =<< getURI
-  windowAddEventListener "popstate" $ \_ ->
-      liftIO . sink . f =<< getURI
+  FFI.windowAddEventListener "popstate" =<< do
+    FFI.asyncCallback (sink . f =<< getURI)
 
-pushStateNoModel :: URI -> JSM ()
+pushStateNoModel :: URI -> IO ()
 {-# INLINE pushStateNoModel #-}
 pushStateNoModel u = do
-  FFI.pushState . pack . show $ u
+  FFI.pushState . ms . show $ u
   liftIO (serve chan)
 
-replaceTo' :: URI -> JSM ()
+replaceTo' :: URI -> IO ()
 {-# INLINE replaceTo' #-}
 replaceTo' u = do
-  FFI.replaceState . pack . show $ u
+  FFI.replaceState . ms . show $ u
   liftIO (serve chan)

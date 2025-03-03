@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -19,50 +20,54 @@ module Miso.String (
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-  , module Data.JSString
   , module Data.Monoid
   , ms
+  -- , pack
+  -- , unpack
+  -- , null
+  -- , concat
   ) where
 
-#ifdef ghcjs_HOST_OS
+import           Control.Monad
 import           Data.Aeson
-#endif
-import qualified Data.ByteString         as B
-import qualified Data.ByteString.Lazy    as BL
-import           Data.Char
-import           Data.JSString
-import qualified Data.JSString as JS
-import           Data.JSString.Text
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
 import           Data.Monoid
-import qualified Data.Text               as T
-import qualified Data.Text.Encoding      as T
-import qualified Data.Text.Lazy          as LT
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import           Prelude                 hiding (foldr)
-import           Text.StringLike         (StringLike(..))
+import           Prelude hiding (null)
+
+import           Miso.FFI
 
 -- | String type swappable based on compiler
-type MisoString = JS.JSString
+type MisoString = JSString
 
-#ifdef ghcjs_HOST_OS
+-- pack = toJSString
+-- unpack = fromJSString
+
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
-  toJSON = String . textFromJSString
+  toJSON = String . fromMisoString
 
 -- | `FromJSON` for `MisoString`
 instance FromJSON MisoString where
   parseJSON =
     withText "Not a valid string" $ \x ->
       pure (toMisoString x)
-#endif
 
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
   toMisoString :: str -> MisoString
+  default toMisoString :: Show str => str -> MisoString
+  toMisoString = ms . show
+
+instance ToMisoString Value
 
 -- | Class used to parse a 'MisoString'. Like a safe 'Read' for 'MisoString'
 class FromMisoString t where
-  -- -- | Reads a `MisoString`
+  -- | Reads a `MisoString`
   fromMisoStringEither :: MisoString -> Either String t
 
 -- | Reads a 'MisoString', throws an error when decoding
@@ -80,72 +85,40 @@ ms = toMisoString
 instance ToMisoString MisoString where
   toMisoString = id
 instance ToMisoString String where
-  toMisoString = JS.pack
+  toMisoString = toJSString
 instance ToMisoString T.Text where
   toMisoString = textToJSString
 instance ToMisoString LT.Text where
-  toMisoString = lazyTextToJSString
+  toMisoString = toMisoString . LT.unpack
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
 instance ToMisoString Float where
-  toMisoString = JS.pack . show
+  toMisoString = toJSString . show
 instance ToMisoString Double where
-  toMisoString = JS.pack . show
+  toMisoString = toJSString . show
 instance ToMisoString Int where
-  toMisoString = JS.pack . show
+  toMisoString = toJSString . show
 instance ToMisoString Word where
-  toMisoString = JS.pack . show
-
+  toMisoString = toJSString . show
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
 instance FromMisoString String where
-  fromMisoStringEither = Right . JS.unpack
+  fromMisoStringEither = Right . fromJSString
 instance FromMisoString T.Text where
   fromMisoStringEither = Right . textFromJSString
 instance FromMisoString LT.Text where
-  fromMisoStringEither = Right . lazyTextFromJSString
+  fromMisoStringEither = Right . LT.pack . fromMisoString
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
 instance FromMisoString BL.ByteString where
   fromMisoStringEither = fmap LT.encodeUtf8 . fromMisoStringEither
 instance FromMisoString Float where
-  fromMisoStringEither = fmap realToFrac . jsStringToDoubleEither
+  fromMisoStringEither = parseFloat
 instance FromMisoString Double where
-  fromMisoStringEither = jsStringToDoubleEither
+  fromMisoStringEither = parseDouble
 instance FromMisoString Int where
   fromMisoStringEither = parseInt
 instance FromMisoString Word where
   fromMisoStringEither = parseWord
-
-jsStringToDoubleEither :: JS.JSString -> Either String Double
-jsStringToDoubleEither s = let d = read $ JS.unpack s
-                           in if isNaN d then Left "jsStringToDoubleEither: parse failed"
-                                         else Right d
-
-
-parseWord   :: MisoString -> Either String Word
-parseWord s = case JS.uncons s of
-                Nothing     -> Left "parseWord: parse error"
-                Just (c,s') -> JS.foldl' k (pDigit c) s'
-  where
-    pDigit c | isDigit c = Right . fromIntegral . digitToInt $ c
-             | otherwise = Left "parseWord: parse error"
-    k ea c = (\a x -> 10*a + x) <$> ea <*> pDigit c
-
-parseInt   :: MisoString -> Either String Int
-parseInt s = case JS.uncons s of
-               Just ('-',s') -> ((-1)*) . fromIntegral <$> parseWord s'
-               _             ->           fromIntegral <$> parseWord s
-
-instance StringLike MisoString where
-  uncons = JS.uncons
-  toString = JS.unpack
-  fromChar = JS.singleton
-  strConcat = JS.concat
-  empty = JS.empty
-  strNull = JS.null
-  cons = JS.cons
-  append = JS.append
-  strMap = JS.map

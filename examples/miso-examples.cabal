@@ -20,8 +20,23 @@ common common-options
   if arch(wasm32)
     ghc-options:
       -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+    cpp-options:
+     -DWASM
+  elif impl(ghcjs)
+    cpp-options:
+     -DGHCJS_OLD
+  elif arch(javascript)
+    cpp-options:
+     -DGHCJS_NEW
+  else
+    cpp-options:
+     -DNATIVE
   ghc-options:
-    -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
+    -funbox-strict-fields
+    -O2
+    -ferror-spans
+    -fspecialise-aggressively
+    -Wall
 
 common js-only
   if arch(wasm32) || !(impl(ghcjs) || arch(javascript))

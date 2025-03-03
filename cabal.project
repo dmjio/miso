@@ -10,6 +10,12 @@ index-state: 2025-02-11T14:26:56Z
 allow-newer:
   all:base
 
+with-compiler:
+  wasm32-wasi-ghc
+
+with-hc-pkg:
+  wasm32-wasi-ghc-pkg
+
 if arch(wasm32)
   -- Required for TemplateHaskell. When using wasm32-wasi-cabal from
   -- ghc-wasm-meta, this is superseded by the global cabal.config.

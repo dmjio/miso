@@ -33,16 +33,13 @@ module Miso.Storage
   ) where
 
 import           Data.Aeson hiding (Object, String)
-import           GHCJS.Marshal
-import           GHCJS.Types
 
 import           Miso.FFI
-import qualified Miso.FFI.Storage as Storage
 import           Miso.String
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
-  :: FromJSON b => (t -> JSM (Maybe JSVal)) -> t -> JSM (Either String b)
+  :: FromJSON b => (t -> IO (Maybe JSVal)) -> t -> IO (Either String b)
 getStorageCommon f key = do
   result :: Maybe JSVal <- f key
   case result of
@@ -54,72 +51,72 @@ getStorageCommon f key = do
         Error y -> Left y
 
 -- | Retrieve a value stored under given key in session storage
-getSessionStorage :: FromJSON model => MisoString -> JSM (Either String model)
+getSessionStorage :: FromJSON model => MisoString -> IO (Either String model)
 getSessionStorage =
   getStorageCommon $ \t -> do
-    s <- Storage.sessionStorage
-    r <- Storage.getItem s t
-    fromJSVal r
+    s <- sessionStorage
+    r <- getItem s t
+    undefined -- fromJSVal r
 
 -- | Retrieve a value stored under given key in local storage
-getLocalStorage :: FromJSON model => MisoString -> JSM (Either String model)
+getLocalStorage :: FromJSON model => MisoString -> IO (Either String model)
 getLocalStorage = getStorageCommon $ \t -> do
-    s <- Storage.localStorage
-    r <- Storage.getItem s t
-    fromJSVal r
+    s <- localStorage
+    r <- getItem s t
+    undefined -- fromJSVal r
 
 -- | Set the value of a key in local storage.
 --
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
-setLocalStorage :: ToJSON model => MisoString -> model -> JSM ()
+setLocalStorage :: ToJSON model => MisoString -> model -> IO ()
 setLocalStorage key model = do
-  s <- Storage.localStorage
-  Storage.setItem s key =<< stringify model
+  s <- localStorage
+  setItem s key =<< stringify model
 
 -- | Set the value of a key in session storage.
 --
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
-setSessionStorage :: ToJSON model => MisoString -> model -> JSM ()
+setSessionStorage :: ToJSON model => MisoString -> model -> IO ()
 setSessionStorage key model = do
-  s <- Storage.sessionStorage
-  Storage.setItem s key =<< stringify model
+  s <- sessionStorage
+  setItem s key =<< stringify model
 
 -- | Removes an item from local storage
 --
 -- @removeLocalStorage key@ removes the value of @key@.
-removeLocalStorage :: MisoString -> JSM ()
+removeLocalStorage :: MisoString -> IO ()
 removeLocalStorage key = do
-  s <- Storage.localStorage
-  Storage.removeItem s key
+  s <- localStorage
+  removeItem s key
 
 -- | Removes an item from session storage.
 --
 -- @removeSessionStorage key@ removes the value of @key@.
-removeSessionStorage :: MisoString -> JSM ()
+removeSessionStorage :: MisoString -> IO ()
 removeSessionStorage key = do
-  s <- Storage.sessionStorage
-  Storage.removeItem s key
+  s <- sessionStorage
+  removeItem s key
 
 -- | Clear local storage
 --
 -- @clearLocalStorage@ removes all values from local storage.
-clearLocalStorage :: JSM ()
-clearLocalStorage = Storage.clear =<< Storage.localStorage
+clearLocalStorage :: IO ()
+clearLocalStorage = clearStorage =<< localStorage
 
 -- | Clear session storage
 --
 -- @clearSessionStorage@ removes all values from session storage.
-clearSessionStorage :: JSM ()
-clearSessionStorage = Storage.clear =<< Storage.sessionStorage
+clearSessionStorage :: IO ()
+clearSessionStorage = clearStorage =<< sessionStorage
 
 -- | Local storage length
 --
 -- @localStorageLength@ returns the count of items in local storage
-localStorageLength :: JSM Int
-localStorageLength = Storage.length =<< Storage.localStorage
+localStorageLength :: IO Int
+localStorageLength = storageLength =<< localStorage
 
 -- | Session storage length
 --
 -- @sessionStorageLength@ returns the count of items in session storage
-sessionStorageLength :: JSM Int
-sessionStorageLength = Storage.length =<< Storage.sessionStorage
+sessionStorageLength :: IO Int
+sessionStorageLength = storageLength =<< sessionStorage

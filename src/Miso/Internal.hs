@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE BangPatterns        #-}
@@ -7,7 +8,6 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
-
 module Miso.Internal
   ( common
   , componentMap
@@ -22,59 +22,48 @@ module Miso.Internal
 where
 
 import           Control.Concurrent
-import           Control.Monad (forM_, (<=<), when, forever, void)
+import           Control.Exception
+import           Control.Monad (forM_, (<=<), when, forever, void, forM)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
+import           Data.Coerce
+import           Data.FileEmbed
 import           Data.Foldable (toList)
+import           Data.Function
 import           Data.IORef
-import           Data.JSString (JSString)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
-import           GHCJS.Marshal (toJSVal)
-import           GHCJS.Types (jsval)
-import qualified JavaScript.Array as JSArray
-import           JavaScript.Object (create, getProp)
-import           JavaScript.Object.Internal (Object(Object))
 import           Prelude hiding (null)
 import           System.IO.Unsafe
 import           System.Mem.StableName
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-#ifdef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle hiding (obj, val)
-import           GHCJS.Foreign.Callback (syncCallback', releaseCallback)
-import qualified JavaScript.Object.Internal as OI
-#endif
-
-#ifndef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
-import           Data.FileEmbed
-import           Language.Javascript.JSaddle hiding (Success, obj, val)
-#endif
-
+import           Miso.FFI
 import           Miso.Concurrent
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
 import           Miso.Effect
-import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
 import           Miso.Types
+
+default (MisoString)
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
   :: Eq model
   => App model action
-  -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
-  -> JSM (IORef VTree)
+  -> (Sink action -> IO (MisoString, JSVal, IORef VTree))
+  -> IO (IORef VTree)
 common App {..} getView = do
-#ifndef ghcjs_HOST_OS
-  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
+#ifdef WASM
+  -- _ <- eval ($(embedStringFile "jsbits/delegate.js") :: MisoString)
+  -- _ <- eval ($(embedStringFile "jsbits/diff.js") :: MisoString)
+  -- _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: MisoString)
+  -- _ <- eval ($(embedStringFile "jsbits/util.js") :: MisoString)
+  -- _ <- eval ($(embedStringFile "jsbits/callbacks.js") :: MisoString)
 #endif
   -- init Waiter
   Waiter {..} <- liftIO waiter
@@ -107,14 +96,13 @@ common App {..} getView = do
           swapCallbacks
           newVTree <- runView (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
-          void $ waitForAnimationFrame
-          diff mountEl (Just oldVTree) (Just newVTree)
-          releaseCallbacks
-          liftIO (atomicWriteIORef viewRef newVTree)
-        syncPoint
+          waitForAnimationFrame =<< do
+            asyncCallback $ do
+              diff mountEl (Just oldVTree) (Just newVTree)
+              atomicWriteIORef viewRef newVTree
         loop newModel
 
-  tid <- forkJSM (loop model)
+  tid <- forkIO (loop model)
   addToComponentMap mount tid viewRef eventSink
   delegator mountEl viewRef events
   pure viewRef
@@ -154,12 +142,12 @@ foldEffects
   -> Sink action
   -> [action]
   -> model
-  -> JSM model
+  -> IO model
 foldEffects _ _ [] m = pure m
 foldEffects update snk (e:es) old =
   case update e old of
     Effect n effects -> do
-      forM_ effects $ \effect -> forkJSM (effect snk)
+      forM_ effects $ \effect -> forkIO (effect snk)
       foldEffects update snk es n
 
 -- | Component sink exposed as a backdoor
@@ -196,109 +184,111 @@ sinkRaw name = \x -> do
 mail
   :: Component name m a
   -> a
-  -> JSM ()
+  -> IO ()
 mail (Component name _) action = liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \(_, _, f) ->
     f action
 
 -- | Internally used for runView and startApp
-initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoString, JSVal, IORef VTree)
+initComponent
+  :: MisoString
+  -> App model action
+  -> Sink action
+  -> IO (MisoString, JSVal, IORef VTree)
 initComponent name App {..} snk = do
+  consoleLog ("IN INIT COMPONENT" :: MisoString)
   vtree <- runView (view model) snk
+  consoleLog ("IN RUNVIEW" :: MisoString)
   el <- getComponent name
+  consoleLog ("GOT COMPONENT" :: MisoString)
+  consoleLog el
+  consoleLog ("EXECUTING DIFF" :: MisoString)
   diff el Nothing (Just vtree)
+  consoleLog ("DONE DIFFING" :: MisoString)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
-runView :: View action -> Sink action -> JSM VTree
+runView :: View action -> Sink action -> IO VTree
 runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
-  vcomp <- create
+  consoleLog ("IN RUN VIEW" :: MisoString)
+  vcomp <- newJSObject
+  consoleLog ("NEW OBJ" :: MisoString)
   let mount = name
 
-  -- By default components should be mounted sychronously.
-  -- We also include async mounting for tools like jsaddle-warp.
-  -- mounting causes a recursive diff to occur, creating subcomponents
-  -- and setting up infrastructure for each sub-component. During this
-  -- process we go between the haskell heap and the js heap.
-  -- It's important that things remain synchronous during this process.
-#ifdef ghcjs_HOST_OS
-  mountCb <-
-        syncCallback' $ do
-          forM_ onMounted $ \m -> liftIO $ snk m
-          vtreeRef <- common app (initComponent mount app)
-          VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
-          -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
-          pure jval
-#else
   mountCb <- do
-    asyncCallback1 $ \continuation -> do
-      forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent mount app)
-      VTree vtree <- liftIO (readIORef vtreeRef)
-      -- consoleLog "Async component mounting enabled"
-      void $ call continuation global [vtree]
-#endif
+    syncCallback' $ do
+      fix $ \loop -> do
+        consoleLog ("IN MOUNT HASKELL SIDE" :: MisoString)
+        forM_ onMounted $ \m -> snk m
+        vtreeRef <-
+          (common app (initComponent mount app)) `catch`
+            (\(e :: SomeException) -> print e >> putStrLn "woohoo")
+        consoleLog ("MOUNTED HASKELL SIDE (done with common)" :: MisoString)
+        VTree (JSObject vtree) <- readIORef vtreeRef
+        pure vtree
+
+  consoleLog ("DEFINED mountCb" :: MisoString)
+  consoleLog mountCb
 
   unmountCb <- toJSVal =<< do
-    syncCallback $ do
+    syncCallback' $ do
       forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
-          pure ()
+          pure jsNull
         Just (tid, ref, _) -> do
           mountEl <- getComponent mount
           undelegator mountEl ref (events app)
-#ifdef ghcjs_HOST_OS
           releaseCallback mountCb
-#else
-          freeFunction mountCb
-#endif
           liftIO $ do
             killThread tid
             modifyIORef' componentMap (M.delete mount)
-  set "type" ("vcomp" :: JSString) vcomp
-  set "tag" ("div" :: JSString) vcomp
+            pure jsNull
+
+  consoleLog ("DEFINED unmountCb" :: MisoString)
+  consoleLog unmountCb
+
+  set "type" ("vcomp" :: MisoString) vcomp
+  set "tag" ("div" :: MisoString) vcomp
   forM_ componentKey $ \(Key key) -> set "key" key vcomp
-  propsObj <- create
+  propsObj <- newJSObject
   set "props" propsObj vcomp
-  eventsObj <- create
+  eventsObj <- newJSObject
   setAttrs vcomp attributes snk
   set "events" eventsObj vcomp
   set "ns" HTML vcomp
   set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-#ifdef ghcjs_HOST_OS
-  set "mount" (jsval mountCb) vcomp
-#else
   flip (set "mount") vcomp =<< toJSVal mountCb
-#endif
   set "unmount" unmountCb vcomp
+
+  consoleLog ("RETURNING VTREE" :: MisoString)
   pure (VTree vcomp)
 runView (Node ns tag key attrs kids) snk = do
-  vnode <- create
-  cssObj <- objectToJSVal =<< create
-  propsObj <- objectToJSVal =<< create
-  eventObj <- objectToJSVal =<< create
+  vnode <- newJSObject
+  JSObject cssObj   <- newJSObject
+  JSObject propsObj <- newJSObject
+  JSObject eventObj <- newJSObject
   set "css" cssObj vnode
   set "props" propsObj vnode
   set "events" eventObj vnode
-  set "type" ("vnode" :: JSString) vnode
+  set "type" ("vnode" :: MisoString) vnode
   set "ns" ns vnode
   set "tag" tag vnode
   set "key" key vnode
   setAttrs vnode attrs snk
-  flip (set "children") vnode
-    =<< ghcjsPure . jsval
-    =<< setKids
+  flip (set "children") vnode =<< toJSVal =<< setKids
   pure $ VTree vnode
     where
       setKids = do
-        kidsViews <- traverse (objectToJSVal . getTree <=< flip runView snk) kids
-        ghcjsPure (JSArray.fromList kidsViews)
+        kidsViews <- forM kids $ \kid -> do
+          VTree jval <- runView kid snk
+          pure jval
+        fromList kidsViews
 runView (Text t) _ = do
-  vtree <- create
-  set "type" ("vtext" :: JSString) vtree
+  vtree <- newJSObject
+  set "type" ("vtext" :: MisoString) vtree
   set "text" t vtree
   pure $ VTree vtree
 runView (TextRaw str) snk =
@@ -310,18 +300,18 @@ runView (TextRaw str) snk =
     kids -> do
       runView (Node HTML "div" Nothing mempty kids) snk
 
-setAttrs :: Object -> [Attribute action] -> Sink action -> JSM ()
+setAttrs :: JSObject -> [Attribute action] -> Sink action -> IO ()
 setAttrs vnode attrs snk =
   forM_ attrs $ \case
     P k v -> do
       val <- toJSVal v
       o <- getProp "props" vnode
-      set k val (Object o)
+      set k val (JSObject o)
     E attr -> attr snk vnode
     S m -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList m) $ \(k,v) -> do
-        set k v (Object cssObj)
+        set k v (JSObject cssObj)
 
 -- Filters tree to only branches and leaves w/ Text tags.
 -- converts to View a. Note: if HTML is malformed,

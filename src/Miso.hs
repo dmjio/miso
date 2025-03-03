@@ -27,7 +27,7 @@ module Miso
     -- * Component communication
   , notify
   , mail
-    -- * Abstraction for jsaddle
+    -- * Abstraction for hot reload
   , run
   , MT.Component
   , module Miso.Event
@@ -44,14 +44,14 @@ module Miso
   , module Miso.Storage
   ) where
 
+import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
-import qualified JavaScript.Object.Internal as OI
 
 import           Miso.Diff
 import           Miso.Event
-import           Miso.FFI
+import           Miso.FFI hiding (close, go, back, send, forward)
 import           Miso.Html
 import           Miso.Internal
 import           Miso.Router
@@ -68,23 +68,23 @@ import           Miso.WebSocket
 
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present
-miso :: Eq model => (URI -> App model action) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> IO ()
 miso f = void $ do
   app@App {..} <- f <$> getCurrentURI
   common app $ \snk -> do
-    VTree (OI.Object iv) <- runView (view model) snk
+    VTree (JSObject iv) <- runView (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
     -- Create virtual dom, perform initial diff
-    ref <- liftIO $ newIORef $ VTree (OI.Object iv)
+    ref <- liftIO $ newIORef $ VTree (JSObject iv)
     registerSink mount ref snk
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application
-startApp :: Eq model => App model action -> JSM ()
-startApp app@App {..} = void $
+startApp :: Eq model => App model action -> IO ()
+startApp app@App {..} = void $ do
   common app $ \snk -> do
     vtree <- runView (view model) snk
     let mount = getMountPoint mountPoint
@@ -94,8 +94,11 @@ startApp app@App {..} = void $
     registerSink mount ref snk
     pure (mount, mountEl, ref)
 
+secs :: Int -> Int
+secs = (*1000000)
+
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
-startComponent :: Eq model => MT.Component name model action -> JSM ()
+startComponent :: Eq model => MT.Component name model action -> IO ()
 startComponent (MT.Component mount app) =
   void $ common app (initComponent mount app)

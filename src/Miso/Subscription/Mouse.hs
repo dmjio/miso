@@ -12,19 +12,19 @@
 module Miso.Subscription.Mouse (mouseSub) where
 
 import Control.Monad.IO.Class
-import GHCJS.Marshal
-import JavaScript.Object
-import JavaScript.Object.Internal
 
 import Miso.Types (Sub)
 import Miso.FFI
+import Miso.String
+
+default (MisoString)
 
 -- | Captures mouse coordinates as they occur and writes them to
 -- an event sink
 mouseSub :: ((Int,Int) -> action) -> Sub action
 mouseSub f = \sink -> do
-  windowAddEventListener "mousemove" $
-    \mouseEvent -> do
-      Just x <- fromJSVal =<< getProp "clientX" (Object mouseEvent)
-      Just y <- fromJSVal =<< getProp "clientY" (Object mouseEvent)
+  windowAddEventListener "mousemove" =<< do
+    asyncCallback1 $ \mouseEvent -> do
+      Just x <- fromJSVal =<< getProp "clientX" (JSObject mouseEvent)
+      Just y <- fromJSVal =<< getProp "clientY" (JSObject mouseEvent)
       liftIO (sink $ f (x,y))

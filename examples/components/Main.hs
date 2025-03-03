@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE CPP               #-}
 
 module Main where
 
@@ -12,7 +12,9 @@ import Miso.String
 
 type Model = Int
 
-#if defined(wasm32_HOST_ARCH)
+default (MisoString)
+
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
@@ -62,11 +64,11 @@ updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
 updateModel1 UnMount1 m = do
   m <# do
-    consoleLog "component 2 was unmounted!"
+    consoleLog ("component 2 was unmounted!" :: MisoString)
     pure MainNoOp
 updateModel1 Mount1 m = do
   m <# do
-    consoleLog "component 2 was mounted!"
+    consoleLog ("component 2 was mounted!" :: MisoString)
     pure MainNoOp
 
 counterApp2 :: App Model Action
@@ -82,11 +84,11 @@ updateModel2 NoOp m          = noEff m
 updateModel2 SayHelloWorld m = m <# do
   liftIO (putStrLn "Hello World2") >> pure NoOp
 updateModel2 UnMount m = do
-  m <# do consoleLog "component 3 was unmounted!"
+  m <# do consoleLog ("component 3 was unmounted!" :: MisoString)
           pure NoOp
 updateModel2 Mount' m = do
   m <# do
-    consoleLog "component 3 was mounted!"
+    consoleLog ("component 3 was mounted!" :: MisoString)
     pure NoOp
 updateModel2 _ m = noEff m
 
@@ -120,11 +122,11 @@ updateModel3 SayHelloWorld m = m <# do
 updateModel3 Toggle4 (t,n) = noEff (not t, n)
 updateModel3 UnMount m =
   m <# do
-    consoleLog "component 4 was unmounted!"
+    consoleLog ("component 4 was unmounted!" :: MisoString)
     pure NoOp
 updateModel3 Mount' m =
   m <# do
-    consoleLog "component 4 was mounted!"
+    consoleLog ("component 4 was mounted!" :: MisoString)
     pure NoOp
 
 -- | Constructs a virtual DOM from a model

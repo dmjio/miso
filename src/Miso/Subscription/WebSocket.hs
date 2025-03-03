@@ -37,16 +37,12 @@ import           Control.Monad.IO.Class
 import           Data.Aeson
 import           Data.IORef
 import           Data.Maybe
-import           GHCJS.Marshal
-import           GHCJS.Foreign
-import           GHCJS.Types ()
 import           Prelude hiding (map)
 import           System.IO.Unsafe
 
 import           Miso.Types (Sub)
-import           Miso.FFI
-import           Miso.FFI.WebSocket (Socket)
-import qualified Miso.FFI.WebSocket as WS
+import           Miso.FFI hiding (send, close)
+import qualified Miso.FFI as FFI
 import           Miso.String
 import           Miso.WebSocket
 
@@ -69,84 +65,82 @@ websocketSub
   -> (WebSocket m -> action)
   -> Sub action
 websocketSub (URL u) (Protocols ps) f sink = do
-  socket <- createWebSocket u ps
-  liftIO (writeIORef websocket (Just socket))
-  void . forkJSM $ handleReconnect
-  WS.addEventListener socket "open" $ \_ -> liftIO $ do
-    writeIORef closedCode Nothing
-    sink (f WebSocketOpen)
-  WS.addEventListener socket "message" $ \v -> do
-    d <- parse =<< WS.data' v
-    liftIO . sink $ f (WebSocketMessage d)
-  WS.addEventListener socket "close" $ \e -> do
-    code <- codeToCloseCode <$> WS.code e
-    liftIO (writeIORef closedCode (Just code))
-    reason <- WS.reason e
-    clean <- WS.wasClean e
-    liftIO . sink $ f (WebSocketClose code clean reason)
-  WS.addEventListener socket "error" $ \v -> do
-    liftIO (writeIORef closedCode Nothing)
-    d' <- WS.data' v
-#ifndef ghcjs_HOST_OS
-    undef <- ghcjsPure (isUndefined d')
-#else
-    let undef = isUndefined d'
-#endif
-    if undef
-      then do
-         liftIO . sink $ f (WebSocketError mempty)
-      else do
-         Just d <- fromJSVal d'
-         liftIO . sink $ f (WebSocketError d)
-  where
-    handleReconnect = do
-      liftIO (threadDelay (secs 3))
-      Just s <- liftIO (readIORef websocket)
-      status <- WS.socketState s
-      code <- liftIO (readIORef closedCode)
-      if status == 3
+  Socket socket <- createWebSocket u ps
+  liftIO (writeIORef websocket (Just (Socket socket)))
+  void . forkIO $ handleReconnect
+  addEventListener socket "open" =<< do
+    asyncCallback $ do
+      writeIORef closedCode Nothing
+      sink (f WebSocketOpen)
+  addEventListener socket "message" =<< do
+    asyncCallback1 $ \v -> do
+      d <- parse =<< FFI.websocketData v 
+      liftIO . sink $ f (WebSocketMessage d)
+  addEventListener socket "close" =<< do
+    asyncCallback1 $ \e -> do
+      code <- codeToCloseCode <$> code e
+      liftIO (writeIORef closedCode (Just code))
+      reason <- reason e
+      clean <- wasClean e
+      liftIO . sink $ f (WebSocketClose code (WasClean clean) (Reason reason))
+  addEventListener socket "error" =<< do
+    asyncCallback1 $ \v -> do
+      writeIORef closedCode Nothing
+      dater <- websocketData v
+      undef <- isNullOrUndefined dater
+      if undef
         then do
-          unless (code == Just CLOSE_NORMAL) $
-            websocketSub (URL u) (Protocols ps) f sink
-        else handleReconnect
+           liftIO . sink $ f (WebSocketError mempty)
+        else do
+           Just d <- fromJSVal dater
+           liftIO . sink $ f (WebSocketError d)
+       where
+         handleReconnect = do
+           liftIO (threadDelay (secs 3))
+           Just s <- liftIO (readIORef websocket)
+           status <- socketState s
+           code <- liftIO (readIORef closedCode)
+           if status == 3
+             then do
+               unless (code == Just CLOSE_NORMAL) $
+                 websocketSub (URL u) (Protocols ps) f sink
+             else handleReconnect
 
 -- | Sends message to a websocket server
-send :: ToJSON a => a -> JSM ()
+send :: ToJSON a => a -> IO ()
 {-# INLINE send #-}
 send x = do
   Just socket <- liftIO (readIORef websocket)
   sendJson' socket x
 
 -- | Sends message to a websocket server
-close :: JSM ()
+close :: IO ()
 {-# INLINE close #-}
-close =
-  mapM_ WS.close =<<
-    liftIO (readIORef websocket)
+close = mapM_ FFI.close =<< readIORef websocket
 
 -- | Connects to a websocket server
-connect :: URL -> Protocols -> JSM ()
+connect :: URL -> Protocols -> IO ()
 {-# INLINE connect #-}
 connect (URL url') (Protocols ps) = do
-  Just ws <- liftIO (readIORef websocket)
-  s <- WS.socketState ws
+  Just ws <- readIORef websocket
+  s <- socketState ws
   when (s == 3) $ do
     socket <- createWebSocket url' ps
     liftIO (atomicWriteIORef websocket (Just socket))
 
 -- | Retrieves current status of `WebSocket`
-getSocketState :: JSM SocketState
+getSocketState :: IO SocketState
 getSocketState = do
   Just ws <- liftIO (readIORef websocket)
-  toEnum <$> WS.socketState ws
+  toEnum <$> socketState ws
 
-sendJson' :: ToJSON json => Socket -> json -> JSM ()
-sendJson' socket m = WS.send socket =<< stringify m
+sendJson' :: ToJSON json => Socket -> json -> IO ()
+sendJson' socket m = FFI.send socket =<< stringify m
 
-createWebSocket :: MisoString -> [MisoString] -> JSM Socket
+createWebSocket :: MisoString -> [MisoString] -> IO Socket
 {-# INLINE createWebSocket #-}
 createWebSocket url' protocols =
-  WS.create url' =<< toJSVal protocols
+  create url' =<< toJSVal protocols
 
 codeToCloseCode :: Int -> CloseCode
 codeToCloseCode = go

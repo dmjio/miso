@@ -25,9 +25,9 @@ import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.Set
 import qualified Data.Set as S
-import           GHCJS.Marshal
-import           JavaScript.Object
-import           JavaScript.Object.Internal
+-- import           GHCJS.Marshal
+-- import           JavaScript.Object
+-- import           JavaScript.Object.Internal
 
 import           Miso.Types (Sub)
 import           Miso.FFI
@@ -79,19 +79,19 @@ directionSub dirs = keyboardSub . (. toArrows dirs)
 keyboardSub :: (Set Int -> action) -> Sub action
 keyboardSub f sink = do
   keySetRef <- liftIO (newIORef mempty)
-  windowAddEventListener "keyup" $ keyUpCallback keySetRef
-  windowAddEventListener "keydown" $ keyDownCallback keySetRef
-  windowAddEventListener "blur" $ blurCallback keySetRef
+  windowAddEventListener "keyup" =<< asyncCallback1 (keyUpCallback keySetRef)
+  windowAddEventListener "keydown" =<< asyncCallback1 (keyDownCallback keySetRef)
+  windowAddEventListener "blur" =<< asyncCallback1 (blurCallback keySetRef)
     where
       keyDownCallback keySetRef = \keyDownEvent -> do
-          Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)
+          Just key <- fromJSVal =<< getProp "keyCode" (JSObject keyDownEvent)
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.insert key keys
              in (new, new)
           liftIO (sink (f newKeys))
 
       keyUpCallback keySetRef = \keyUpEvent -> do
-          Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
+          Just key <- fromJSVal =<< getProp "keyCode" (JSObject keyUpEvent)
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.delete key keys
              in (new, new)

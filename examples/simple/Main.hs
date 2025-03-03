@@ -29,7 +29,7 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ miso $ \_ -> App {..}
+main = run $ startApp App {..}
   where
     initialAction = SayHelloWorld -- initial action to be executed on application load
     model  = 0                    -- initial model
@@ -50,8 +50,8 @@ updateModel SayHelloWorld m = m <# do
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
-viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
+viewModel x = div_ []
+ [ button_ [ onClick AddOne ] [ text "+" ]
  , text (ms x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  , rawHtml "<div><p>hey expandable!</div></p>"

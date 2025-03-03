@@ -122,7 +122,7 @@ module Miso.Html.Property
    ) where
 
 import           Miso.Html.Types
-import           Miso.String (MisoString, intercalate)
+import           Miso.String (MisoString)
 
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action
@@ -148,7 +148,7 @@ doubleProp = prop
 --
 classList_ ::  [(MisoString, Bool)] -> Attribute action
 classList_ xs =
-  textProp "class" $ intercalate (" " :: MisoString) [ t | (t, True) <- xs ]
+  textProp "class" $ mconcat [ t <> " " | (t, True) <- xs ] -- intercalate (" " :: MisoString)
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/title>
 title_ ::  MisoString -> Attribute action
 title_ = textProp "title"

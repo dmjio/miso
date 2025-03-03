@@ -12,56 +12,34 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI.WebSocket
-  ( Socket(..)
-  , create
-  , socketState
-  , send
-  , close
-  , addEventListener
-  , data'
-  , wasClean
-  , code
-  , reason
+  ( 
   ) where
 
-import           GHCJS.Types
+-- import           Miso.WebSocket
 
-import           Language.Javascript.JSaddle hiding (create)
+-- send :: Socket -> MisoString -> IO ()
+-- send (Socket s) msg = undefined -- do
+  -- _ <- s # ("send" :: JSString) $ [msg]
+  -- pure ()
 
-import qualified Miso.FFI as FFI
-import           Miso.String
-import           Miso.WebSocket
+-- close :: Socket -> IO ()
+-- close (Socket s) = undefined -- do
+  -- _ <- s # ("close" :: JSString) $ ([] :: [JSString])
+  -- pure ()
 
-newtype Socket = Socket JSVal
+-- addEventListener :: Socket -> MisoString -> (JSVal -> IO ()) -> IO ()
+-- addEventListener (Socket s) name cb = undefined -- do
+--  FFI.addEventListener s name cb
 
-create :: MisoString -> JSVal -> JSM Socket
-create url protocols = Socket <$> new (jsg ("WebSocket" :: JSString)) (url, protocols)
+-- data' :: JSVal -> IO JSVal
+-- data' v = undefined -- v ! ("data" :: JSString)
 
-socketState :: Socket -> JSM Int
-socketState (Socket s) = fromJSValUnchecked =<< s ! ("readyState" :: JSString)
+-- wasClean :: JSVal -> IO WasClean
+-- wasClean v = undefined -- WasClean <$> (fromJSValUnchecked =<< v ! ("wasClean" :: JSString))
 
-send :: Socket -> MisoString -> JSM ()
-send (Socket s) msg = do
-  _ <- s # ("send" :: JSString) $ [msg]
-  pure ()
 
-close :: Socket -> JSM ()
-close (Socket s) = do
-  _ <- s # ("close" :: JSString) $ ([] :: [JSString])
-  pure ()
+-- code :: JSVal -> IO Int
+-- code v = undefined -- fromJSValUnchecked =<< v ! ("code" :: JSString)
 
-addEventListener :: Socket -> MisoString -> (JSVal -> JSM ()) -> JSM ()
-addEventListener (Socket s) name cb = do
-  FFI.addEventListener s name cb
-
-data' :: JSVal -> JSM JSVal
-data' v = v ! ("data" :: JSString)
-
-wasClean :: JSVal -> JSM WasClean
-wasClean v = WasClean <$> (fromJSValUnchecked =<< v ! ("wasClean" :: JSString))
-
-code :: JSVal -> JSM Int
-code v = fromJSValUnchecked =<< v ! ("code" :: JSString)
-
-reason :: JSVal -> JSM Reason
-reason v = Reason <$> (fromJSValUnchecked =<< v ! ("reason" :: JSString))
+-- reason :: JSVal -> IO Reason
+-- reason v = undefined -- Reason <$> (fromJSValUnchecked =<< v ! ("reason" :: JSString))

@@ -1,6 +1,4 @@
 /* virtual-dom diffing algorithm, applies patches as detected */
-window = typeof window === 'undefined' ? {} : window;
-
 window['diff'] = function (currentObj, newObj, parent, doc) {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) window['create'](newObj, parent, doc);
@@ -206,6 +204,10 @@ window['createElement'] = function (obj, doc, cb) {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 window['mountComponent'] = function (obj, doc) {
+
+    // dmj: instead of using querySelectorAll
+    // just traverse the vdom to find a dupe, then console.error and return
+    // querySelectorAll is slow and introduces layout recalc
     var componentId = obj['data-component-id'],
         nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
 
@@ -219,7 +221,9 @@ window['mountComponent'] = function (obj, doc) {
     // Now we gen the component and append it to the vdom and real dom
     obj['domRef'].setAttribute('data-component-id', componentId);
     // ^ we have to set this before 'mount()' is called, since `diff` requires it.
+    console.log('MOUNTING');
     obj['mount'](function(component) {
+      console.log('IN MOUNTING JS');
       // mount() gives us the VTree from the Haskell side, so we just attach it here
       // to tie the knot (attach to both vdom and real dom).
       obj.children.push(component);

@@ -14,9 +14,9 @@ module Miso.Subscription.Window where
 import Control.Monad
 import Control.Monad.IO.Class
 
-import GHCJS.Marshal
-import JavaScript.Object
-import JavaScript.Object.Internal
+-- import GHCJS.Marshal
+-- import JavaScript.Object
+-- import JavaScript.Object.Internal
 
 import Miso.Types (Sub)
 import Miso.Event
@@ -30,11 +30,11 @@ import Data.Aeson.Types (parseEither)
 windowCoordsSub :: ((Int, Int) -> action) -> Sub action
 windowCoordsSub f = \sink -> do
   liftIO . sink . f =<< (,) <$> windowInnerHeight <*> windowInnerWidth
-  windowAddEventListener "resize" $
-    \windowEvent -> do
-      target <- getProp "target" (Object windowEvent)
-      Just w <- fromJSVal =<< getProp "innerWidth" (Object target)
-      Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
+  windowAddEventListener "resize" =<< do
+    asyncCallback1 $ \windowEvent -> do
+      target <- getProp "target" (JSObject windowEvent)
+      Just w <- fromJSVal =<< getProp "innerWidth" (JSObject target)
+      Just h <- fromJSVal =<< getProp "innerHeight" (JSObject target)
       liftIO . sink $ f (h, w)
 
 -- | @windowSub eventName decoder toAction@ is a subscription which parallels the
@@ -46,12 +46,12 @@ windowSub  = windowSubWithOptions defaultOptions
 -- attribute handler `on`, providing a subscription to listen to window level events.
 windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> Sub action
 windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
-  windowAddEventListener eventName $
-    \e -> do
+  windowAddEventListener eventName =<< do
+    asyncCallback1 $ \e -> do
       decodeAtVal <- toJSVal decodeAt
       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
       case parseEither decoder v of
-        Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+        Left s -> error $ "Parse error on " <> fromMisoString eventName <> ": " <> s
         Right r -> do
           when stopPropagation $ eventStopPropagation e
           when preventDefault $ eventPreventDefault e
