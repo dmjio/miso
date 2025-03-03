@@ -598,6 +598,10 @@ syncCallback1' = js_syncCallback1' . unsafeCoerce
 foreign import javascript unsafe "window['syncCallback1_']($1)"
    js_syncCallback1' :: Any -> IO (JSCallback a)
 
+-- | Async callbacks that don't return values like syncCallbacks that dont' return values
+syncCallback :: IO () -> IO (JSCallback (IO ()))
+syncCallback = asyncCallback
+
 asyncCallback :: IO () -> IO (JSCallback (IO ()))
 asyncCallback = js_asyncCallback . unsafeCoerce
 

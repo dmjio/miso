@@ -35,9 +35,9 @@ window['delegate'] = function (mount, events, getVTree) {
 };
 
 window['listener'] = function(e, mount, getVTree) {
-   getVTree(function (obj) {
-      window['delegateEvent'](e, obj, window['buildTargetToElement'](mount, e.target), []);
-   });
+    var obj = getVTree();
+    window['delegateEvent']
+      (e, obj, window['buildTargetToElement'](mount, e.target), []);
 }
 
 /* event delegation algorithm */

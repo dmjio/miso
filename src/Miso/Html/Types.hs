@@ -126,7 +126,6 @@ onWithOptions options eventName Decoder{..} toAction =
    decodeAtVal <- toJSVal decodeAt
    JSCallback cb <- asyncCallback1 $ \e -> do
        v <- fromJSVal =<< objectToJSON decodeAtVal e
-       print v
        case parseEither decoder v of
          Left s -> do
            error $ "Parse error on " <> fromMisoString eventName <> ": " <> s

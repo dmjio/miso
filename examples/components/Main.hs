@@ -5,10 +5,10 @@
 
 module Main where
 
-import Control.Monad.IO.Class
+import           Data.Map (singleton)
 
-import Miso
-import Miso.String
+import           Miso
+import           Miso.String
 
 type Model = Int
 
@@ -24,11 +24,9 @@ data Action
   | NoOp
   | SayHelloWorld
   | Toggle4
-  | UnMount
-  | Mount'
   deriving (Show, Eq)
 
-data MainAction = MainNoOp | Toggle | Mount1 | UnMount1
+data MainAction = MainNoOp | Toggle | Mount | UnMount
 type MainModel = Bool
 
 main :: IO ()
@@ -53,8 +51,8 @@ viewModel1 x = div_ [ id_ "main div" ]
   , button_ [ onClick Toggle ] [ text "toggle component 2" ]
   , if x
     then embedWith component2 componentOptions
-         { onMounted = Just Mount1
-         , onUnmounted = Just UnMount1
+         { onMounted = Just Mount
+         , onUnmounted = Just UnMount
          }
     else div_ [ id_ "other test" ] [ "foo bah" ]
   ]
@@ -62,17 +60,18 @@ viewModel1 x = div_ [ id_ "main div" ]
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
-updateModel1 UnMount1 m = do
+updateModel1 UnMount m = do
   m <# do
-    consoleLog ("component 2 was unmounted!" :: MisoString)
+    consoleLog ("Unounted Component 2" :: MisoString)
     pure MainNoOp
-updateModel1 Mount1 m = do
+updateModel1 Mount m = do
   m <# do
-    consoleLog ("component 2 was mounted!" :: MisoString)
+    consoleLog ("Mounted Component 2" :: MisoString)
     pure MainNoOp
 
 counterApp2 :: App Model Action
-counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
+counterApp2 =
+  (defaultApp 0 updateModel2 viewModel2 SayHelloWorld) { events = singleton "click" True }
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Model -> Effect Action Model
@@ -82,15 +81,7 @@ updateModel2 SubtractOne m   = do
   noEff (m - 1)
 updateModel2 NoOp m          = noEff m
 updateModel2 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World2") >> pure NoOp
-updateModel2 UnMount m = do
-  m <# do consoleLog ("component 3 was unmounted!" :: MisoString)
-          pure NoOp
-updateModel2 Mount' m = do
-  m <# do
-    consoleLog ("component 3 was mounted!" :: MisoString)
-    pure NoOp
-updateModel2 _ m = noEff m
+  consoleLog "Hello World2" >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
@@ -104,7 +95,7 @@ viewModel2 x = div_ [ id_ "something here" ]
   ]
 
 counterApp3 :: App (Bool, Model) Action
-counterApp3 = defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld
+counterApp3 = (defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld) { events = singleton "click" True }
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
@@ -118,16 +109,8 @@ updateModel3 SubtractOne (t,n)   = do
     pure NoOp
 updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World3") >> pure NoOp
+   (consoleLog "Hello World3") >> pure NoOp
 updateModel3 Toggle4 (t,n) = noEff (not t, n)
-updateModel3 UnMount m =
-  m <# do
-    consoleLog ("component 4 was unmounted!" :: MisoString)
-    pure NoOp
-updateModel3 Mount' m =
-  m <# do
-    consoleLog ("component 4 was mounted!" :: MisoString)
-    pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel3 :: (Bool, Model) -> View Action
@@ -144,7 +127,7 @@ viewModel3 (toggle, x) = div_ [] $
   ]
 
 counterApp4 :: App Model Action
-counterApp4 = defaultApp 0 updateModel4 viewModel4 SayHelloWorld
+counterApp4 = (defaultApp 0 updateModel4 viewModel4 SayHelloWorld) { events = singleton "click" True }
 
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model
@@ -157,7 +140,7 @@ updateModel4 SubtractOne m = do
     mail component2 SubtractOne
     pure NoOp
 updateModel4 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World4") >> pure NoOp
+   (consoleLog "Hello World4") >> pure NoOp
 updateModel4 _ m          = noEff m
 
 -- | Constructs a virtual DOM from a model

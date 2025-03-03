@@ -197,39 +197,27 @@ initComponent
   -> Sink action
   -> IO (MisoString, JSVal, IORef VTree)
 initComponent name App {..} snk = do
-  consoleLog ("IN INIT COMPONENT" :: MisoString)
   vtree <- runView (view model) snk
-  consoleLog ("IN RUNVIEW" :: MisoString)
   el <- getComponent name
-  consoleLog ("GOT COMPONENT" :: MisoString)
-  consoleLog el
-  consoleLog ("EXECUTING DIFF" :: MisoString)
   diff el Nothing (Just vtree)
-  consoleLog ("DONE DIFFING" :: MisoString)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
 runView :: View action -> Sink action -> IO VTree
 runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
-  consoleLog ("IN RUN VIEW" :: MisoString)
   vcomp <- newJSObject
-  consoleLog ("NEW OBJ" :: MisoString)
   let mount = name
 
   mountCb <- do
     syncCallback' $ do
       fix $ \loop -> do
-        consoleLog ("IN MOUNT HASKELL SIDE" :: MisoString)
         forM_ onMounted $ \m -> snk m
         vtreeRef <-
           (common app (initComponent mount app)) `catch`
-            (\(e :: SomeException) -> print e >> error "caught WouldBlock and died")
-        consoleLog ("MOUNTED HASKELL SIDE (done with common)" :: MisoString)
+            (\(e :: SomeException) ->
+               print e >> error "caught WouldBlock and died")
         VTree (JSObject vtree) <- readIORef vtreeRef
         pure vtree
-
-  consoleLog ("DEFINED mountCb" :: MisoString)
-  consoleLog mountCb
 
   unmountCb <- toJSVal =<< do
     syncCallback' $ do
@@ -240,14 +228,10 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
         Just (tid, ref, _) -> do
           mountEl <- getComponent mount
           undelegator mountEl ref (events app)
-          releaseCallback mountCb
           liftIO $ do
             killThread tid
             modifyIORef' componentMap (M.delete mount)
             pure jsNull
-
-  consoleLog ("DEFINED unmountCb" :: MisoString)
-  consoleLog unmountCb
 
   set "type" ("vcomp" :: MisoString) vcomp
   set "tag" ("div" :: MisoString) vcomp
@@ -262,8 +246,6 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (set "mount") vcomp =<< toJSVal mountCb
   set "unmount" unmountCb vcomp
-
-  consoleLog ("RETURNING VTREE" :: MisoString)
   pure (VTree vcomp)
 runView (Node ns tag key attrs kids) snk = do
   vnode <- newJSObject

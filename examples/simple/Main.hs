@@ -10,7 +10,10 @@ module Main where
 import Miso
 import Miso.String
 
+import Data.Map (singleton)
 import Control.Monad.IO.Class
+
+default (MisoString)
 
 -- | Type synonym for an application model
 type Model = Int
@@ -35,7 +38,7 @@ main = run $ startApp App {..}
     model  = 0                    -- initial model
     update = updateModel          -- update function
     view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
+    events = singleton "click" True -- default delegated events
     subs   = []                   -- empty subscription list
     mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
     logLevel = Off                -- Used to copy DOM into VDOM, applies only to `miso` function

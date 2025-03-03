@@ -221,14 +221,11 @@ window['mountComponent'] = function (obj, doc) {
     // Now we gen the component and append it to the vdom and real dom
     obj['domRef'].setAttribute('data-component-id', componentId);
     // ^ we have to set this before 'mount()' is called, since `diff` requires it.
-    console.log('MOUNTING');
-    obj['mount'](function(component) {
-      console.log('IN MOUNTING JS');
-      // mount() gives us the VTree from the Haskell side, so we just attach it here
-      // to tie the knot (attach to both vdom and real dom).
-      obj.children.push(component);
-      obj['domRef'].appendChild(component['domRef']);
-    });
+    var component = obj['mount']();
+    // mount() gives us the VTree from the Haskell side, so we just attach it here
+    // to tie the knot (attach to both vdom and real dom).
+    obj.children.push(component);
+    obj['domRef'].appendChild(component['domRef']);
 }
 
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
