@@ -223,7 +223,7 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
         forM_ onMounted $ \m -> snk m
         vtreeRef <-
           (common app (initComponent mount app)) `catch`
-            (\(e :: SomeException) -> print e >> putStrLn "woohoo")
+            (\(e :: SomeException) -> print e >> error "caught WouldBlock and died")
         consoleLog ("MOUNTED HASKELL SIDE (done with common)" :: MisoString)
         VTree (JSObject vtree) <- readIORef vtreeRef
         pure vtree
