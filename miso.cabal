@@ -48,13 +48,6 @@ common string-selector
     hs-source-dirs:
       text-src
 
-common server
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
-    exposed-modules:
-      Miso.TypeLevel
-    build-depends:
-      servant-lucid
-
 common jsaddle
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
@@ -130,7 +123,6 @@ executable tests
 library
   import:
     string-selector,
-    server,
     jsaddle,
     client,
     cpp
@@ -178,6 +170,12 @@ library
     Miso.WebSocket
   other-modules:
     Miso.Internal
+  -- dmj: figure out why 'exposed-modules' doesn't work w/ cpp-options
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
+    exposed-modules:
+      Miso.TypeLevel
+    build-depends:
+      servant-lucid
   ghc-options:
     -Wall
   hs-source-dirs:
