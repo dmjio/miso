@@ -1,9 +1,13 @@
 self: super:
 {
 
+  wasm-flake = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org&ref=wip/wasm-jsffi-sync-export";
+
   ghc-wasm-meta =
-    (builtins.getFlake "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org")
-      .outputs.packages."${super.system}";
+    let
+      src = self.wasm-flake;
+    in
+      (builtins.getFlake src).outputs.packages."${super.system}";
 
   wasm-cabal =
     self.ghc-wasm-meta.wasm32-wasi-cabal-9_12;
@@ -62,7 +66,7 @@ self: super:
   # call nix-build -A wasmExamples && ./result/bin/build.sh
   # to populate examples
   wasmExamples = self.writeScriptBin "build.sh" ''
-    nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
+    nix shell '${self.wasmFlake}' \
       --command wasm32-wasi-cabal build miso-examples --allow-newer
   '';
 
