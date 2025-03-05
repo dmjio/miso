@@ -240,7 +240,6 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
       forM_ onMounted $ \m -> liftIO $ snk m
       vtreeRef <- common app (initComponent mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
-      -- consoleLog "Async component mounting enabled"
       void $ call continuation global [vtree]
 #endif
 
