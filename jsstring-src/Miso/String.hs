@@ -15,17 +15,13 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.String (
-    ToMisoString (..)
+module Miso.String
+  ( ToMisoString (..)
   , FromMisoString (..)
   , fromMisoString
   , MisoString
   , module Data.Monoid
   , ms
-  -- , pack
-  -- , unpack
-  -- , null
-  -- , concat
   ) where
 
 import           Control.Monad
@@ -43,9 +39,6 @@ import           Miso.FFI
 
 -- | String type swappable based on compiler
 type MisoString = JSString
-
--- pack = toJSString
--- unpack = fromJSString
 
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where

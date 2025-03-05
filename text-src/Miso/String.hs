@@ -20,11 +20,9 @@ module Miso.String
   , ms
   ) where
 
-import qualified Data.ByteString         as B
-import qualified Data.ByteString.Lazy    as BL
-import           Data.Monoid             as S
-import           Data.JSString
-import           Data.JSString.Text
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as BL
+import           Data.Monoid as S
 import           Data.Text               as S hiding (
 #if MIN_VERSION_text(2,1,2)
   show,
@@ -33,12 +31,13 @@ import           Data.Text               as S hiding (
   elem,
 #endif
   )
-import qualified Data.Text               as T
-import qualified Data.Text.Encoding      as T
-import qualified Data.Text.Lazy          as LT
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import           Text.Read(readEither)
-import           Prelude                 as P
+import           Text.Read (readEither)
+import           Prelude as P
+import           Miso.FFI
 
 -- | String type swappable based on compiler
 type MisoString = Text
@@ -49,7 +48,7 @@ class ToMisoString str where
 
 -- | Class from safely parsing 'MisoString'
 class FromMisoString t where
-  -- -- | Parses a `MisoString`
+  -- | Parses a `MisoString`
   fromMisoStringEither :: MisoString -> Either String t
 
 -- | Parses a `MisoString`, throws an error when decoding
@@ -69,8 +68,8 @@ instance ToMisoString String where
   toMisoString = T.pack
 instance ToMisoString LT.Text where
   toMisoString = LT.toStrict
-instance ToMisoString JSString where
-  toMisoString = textFromJSString
+-- instance ToMisoString JSString where
+--   toMisoString = undefined -- T.unpack
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where
@@ -90,8 +89,8 @@ instance FromMisoString String where
   fromMisoStringEither = Right . T.unpack
 instance FromMisoString LT.Text where
   fromMisoStringEither = Right . LT.fromStrict
-instance FromMisoString JSString where
-  fromMisoStringEither = Right . textToJSString
+-- instance FromMisoString JSString where
+--   fromMisoStringEither = Right . textToJSString
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
 instance FromMisoString BL.ByteString where

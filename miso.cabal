@@ -45,9 +45,11 @@ common options
     -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
 
 common server
-  if !(impl(ghcjs) || arch(javascript))
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
       servant-lucid
+    exposed-modules:
+      Miso.TypeLevel
 
 common client
   if impl(ghcjs) || arch(javascript)
@@ -55,15 +57,25 @@ common client
       ghcjs-base,
       unordered-containers,
       deepseq
+    hs-source-dirs:
+      ffi/js
+    js-sources:
+      jsbits/callbacks.js
 
-  if arch(wasm32)
+  elif arch(wasm32)
     build-depends:
       ghc-experimental
+    hs-source-dirs:
+      ffi/wasm
 
+  -- dmj: ffi/native operates as stubs (for now)
+  else
+    hs-source-dirs:
+      ffi/native
+      
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     js-sources:
       jsbits/diff.js
-      jsbits/callbacks.js
       jsbits/delegate.js
       jsbits/isomorphic.js
       jsbits/util.js
@@ -159,10 +171,6 @@ library
     Miso.Mathml
     Miso.Mathml.Element
     Miso.FFI
-    Miso.FFI.History
-    Miso.FFI.SSE
-    Miso.FFI.Storage
-    Miso.FFI.WebSocket
     Miso.Router
     Miso.Runner
     Miso.Subscription
@@ -181,15 +189,8 @@ library
     Miso.Types
     Miso.Util
     Miso.WebSocket
-  -- dmj: see if common-stanzas can suport 'exposed-modules'
-  if !(impl(ghcjs) || arch(javascript))
-    exposed-modules:
-      Miso.TypeLevel
-      
   other-modules:
     Miso.Internal
-  -- ghc-options:
-  --   -Wall
   hs-source-dirs:
     src
   build-depends:
@@ -197,7 +198,6 @@ library
     base < 5,
     bytestring,
     containers,
-    file-embed,
     http-api-data,
     http-types,
     lucid,

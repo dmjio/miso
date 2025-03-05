@@ -13,25 +13,24 @@ module Miso.Diff
   , mountElement
   ) where
 
--- import GHCJS.Foreign.Internal     hiding (Object)
--- import GHCJS.Types
--- import JavaScript.Object.Internal
-import Miso.Html.Types
-import Miso.FFI
-import Miso.String
+import           Miso.FFI hiding (diff)
+import qualified Miso.FFI as FFI
+import           Miso.Html.Types
+import           Miso.String
 
--- | diffing / patching a given element
+-- | Diffing / patching a given element
 diff :: JSVal -> Maybe VTree -> Maybe VTree -> IO ()
-diff mountEl current new = do
+diff mount current new = do
   doc <- getDoc
   case (current, new) of
-    (Nothing, Nothing) -> pure ()
-    (Just (VTree current'), Just (VTree new')) ->
-      diff' current' new' mountEl doc
-    (Nothing, Just (VTree new')) -> do
-      diff' (JSObject jsNull) new' mountEl doc
-    (Just (VTree current'), Nothing) ->
-      diff' current' (JSObject jsNull) mountEl doc
+    (Nothing, Nothing) ->
+      pure ()
+    (Just (VTree c), Just (VTree n)) ->
+      FFI.diff c n mount doc
+    (Nothing, Just (VTree n)) ->
+      FFI.diff (JSObject jsNull) n mount doc
+    (Just (VTree c), Nothing) ->
+      FFI.diff c (JSObject jsNull) mount doc
 
 -- | return the configured mountPoint element or the body
 mountElement :: MisoString -> IO JSVal

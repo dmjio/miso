@@ -1,19 +1,7 @@
-{-# LANGUAGE ForeignFunctionInterface, JavaScriptFFI, UnliftedFFITypes, GHCForeignImportPrim, DeriveDataTypeable, GHCForeignImportPrim #-}
-{-# LANGUAGE MagicHash #-}
-{-# LANGUAGE UnboxedTuples #-}
-{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE LambdaCase #-}
-{-# OPTIONS_GHC -fno-warn-orphans    #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI
@@ -24,22 +12,24 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI
-   ( JSVal
+   ( -- * JSVal
+     JSVal
    , ToJSVal (..)
    , FromJSVal (..)
    , IsJSVal (..)
-   -- JSObject
+   -- * JSObject
    , JSObject (..)
    , getProp
    , setProp
+   , set
    , newJSObject
    , jsNull
-   -- JSArray
+   -- * JSArray
    , JSArray(..)
    , fromList
    , newJsArray
    , pushJsArray
-   -- JSString
+   -- * JSString
    , JSString
    , parseFloat
    , parseDouble
@@ -50,10 +40,10 @@ module Miso.FFI
    , textFromJSString
    , textToJSString
    , isEmpty
-   -- JSBool
+   -- * JSBool
    , jsFalse
    , jsTrue
-   -- JSCallbacks
+   -- * JSCallbacks
    , JSCallback (..)
    , syncCallback
    , syncCallback'
@@ -63,52 +53,61 @@ module Miso.FFI
    , asyncCallback2
    , releaseCallback
    , releaseCallbacks
-   -- ConsoleLog
-   , ConsoleLog(..)
-   -- VTree
+   , swapCallbacks
+   , registerCallback
+   -- * VTree
    , VTree (..)
-   -- * waitAnimationFrame
+   -- * ConsoleLog
+   , ConsoleLog(..)
    , waitForAnimationFrame
-   -- Conversion
-   -- Utilities
+   -- * Utilities
    , isNullOrUndefined
+   -- * Events
+   , eventPreventDefault
+   , eventStopPropagation
+   , objectToJSON
+   , delegateEvent
+   , undelegateEvent
    , addEventListener
+   -- * Alert
+   , alert
+   -- * Window
    , windowAddEventListener
    , windowInnerHeight
    , windowInnerWidth
-   , eventPreventDefault
-   , eventStopPropagation
+   -- * Document
+   , getDoc
+   , getElementById   
+   -- * Body
+   , clearBody
+   , getBody
+   -- * Performance.now()
    , now
+   -- * JSON
    , stringify
    , parse
-   , clearBody
-   , objectToJSON
-   , set
-   , getBody
-   , getDoc
-   , getElementById
-   , diff'
+   -- * Diffing
+   , diff
+   -- * Isomorphic ("rehydration")
+   , copyDOMIntoVTree
+   -- * Conversion
    , integralToJSString
    , realFloatToJSString
    , jsStringToDouble
-   , delegateEvent
-   , undelegateEvent
-   , copyDOMIntoVTree
-   , swapCallbacks
-   , registerCallback
+   -- * Focus / Blur
    , focus
    , blur
    , scrollIntoView
-   , alert
+   -- * Components
    , getComponent
     -- * History
-   , getWindowLocationHref
    , go
    , back
    , forward
    , pushState
    , replaceState
    , getHistory
+   , getWindowLocationHref
    -- * Event Source
    , EventSource(..)
    , newSSE
@@ -131,14 +130,15 @@ module Miso.FFI
    , code
    , reason
    , websocketData
-    -- eval
-#ifdef WASM   
    , eval
-#endif
    ) where
 
 import           Control.Monad (forM_, foldM, (<=<))
+import           Data.Aeson (Key)
 import           Data.Aeson (Value(..), ToJSON(..), FromJSON(..), Result(..), Object, fromJSON)
+import qualified Data.Aeson.Key as K
+import qualified Data.Aeson.KeyMap as KM
+import           Data.Aeson.KeyMap (KeyMap)
 import           Data.Scientific (Scientific, toRealFloat, fromFloatDigits)
 import           Data.String (IsString(..))
 import           Data.Text (Text)
@@ -154,29 +154,7 @@ import           Prelude hiding ((!!))
 import           System.IO.Unsafe (unsafeDupablePerformIO, unsafePerformIO)
 import           Text.StringLike (StringLike(..))
 
-#ifndef WASM
-import           GHC.Exts (Any, ByteArray#, Int#, Int(..))
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Internal as T
-import qualified Data.Text.Array as A
-import           Control.DeepSeq (rnf)
-#endif
-
-#ifdef WASM
 import           GHC.Wasm.Prim (JSVal, freeJSVal)
-#endif
-
-#ifdef GHCJS_OLD
-import           GHCJS.Types (JSVal)
-import qualified Data.HashMap.Strict as HM
-import           Data.List (foldl')
-import           Unsafe.Coerce
-#else
-import           Data.Aeson (Key)
-import qualified Data.Aeson.Key as K
-import           Data.Aeson.KeyMap (KeyMap)
-import qualified Data.Aeson.KeyMap as KM
-#endif
 
 default (JSString)
 
@@ -189,9 +167,7 @@ foreign import javascript unsafe "$1.push($2)" pushJsArray :: JSArray -> JSVal -
 fromList :: ToJSVal a => [a] -> IO JSArray
 fromList xs = do
   jsArray <- newJsArray
-  jvals <- mapM toJSVal xs
-  forM_ jvals $ \jval ->
-    pushJsArray jsArray jval
+  mapM_ (pushJsArray jsArray) =<< mapM toJSVal xs
   pure jsArray
 
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
@@ -222,23 +198,17 @@ instance ToJSVal JSString where
 instance {-# OVERLAPS #-} ToJSVal String where
   toJSVal s | JSString x <- toJSString s = pure x
 
-#ifdef WASM
 foreign import javascript unsafe "null" jsNull      :: JSVal
 foreign import javascript unsafe "false" jsFalse    :: JSVal
 foreign import javascript unsafe "true" jsTrue      :: JSVal
-#else
-foreign import javascript unsafe "(function (x) { return null; })" jsNull      :: JSVal
-foreign import javascript unsafe "(function (x) { return false; })" jsFalse    :: JSVal
-foreign import javascript unsafe "(function (x) { return true; })" jsTrue      :: JSVal
-#endif
 foreign import javascript unsafe "$1" toJSValInt    :: Int -> IO JSVal
 foreign import javascript unsafe "$1" fromJSValInt  :: JSVal -> IO Int
 foreign import javascript unsafe "$1" toJSValDouble :: Double -> IO JSVal
 foreign import javascript unsafe "$1" toJSValChar   :: Char -> IO JSVal
 foreign import javascript unsafe "$1" fromJSValChar :: JSVal -> IO Char
-
 foreign import javascript unsafe "$1 === 1.0 ? true : false" toJSValBool:: Bool -> IO JSVal
 foreign import javascript unsafe "$1" fromJSValBool :: JSVal -> IO Bool
+
 instance ToJSVal Bool where toJSVal = toJSValBool
 
 instance FromJSVal Bool where fromJSVal = fromJSValBool
@@ -277,26 +247,16 @@ instance ToJSVal Value where
     pure (jsval array)
   toJSVal (Object keymap) = do
     obj <- newJSObject
-#ifdef GHCJS_OLD
-    forM_ (HM.toList keymap) $ \(k, v) -> do
-      jkey <- toJSVal k
-      jval <- toJSVal v
-      setProp (JSString jkey) obj jval
-    pure (jsval obj)
-#else
     forM_ (KM.toList keymap) $ \(k, v) -> do
       jkey <- toJSVal k
       jval <- toJSVal v
       setProp (JSString jkey) obj jval
     pure (jsval obj)
-#endif
 
-#ifndef GHCJS_OLD
 instance ToJSVal Key where
   toJSVal key =
     case textToJSString (K.toText key) of
       JSString j -> pure j
-#endif
 
 class ToJSVal a => ConsoleLog a where
   consoleLog :: a -> IO ()
@@ -326,7 +286,6 @@ instance IsJSVal (JSCallback a) where
 instance IsJSVal JSString where
   jsval (JSString x) = x
 
-#ifdef WASM
 textToJSString :: Text -> JSString
 textToJSString s =
   unsafeDupablePerformIO $
@@ -358,81 +317,6 @@ fromJSString s = unsafeDupablePerformIO $ do
 
 foreign import javascript unsafe "(new TextEncoder()).encodeInto($1, new Uint8Array(__exports.memory.buffer, $2, $3)).written"
   js_encodeInto :: JSString -> Ptr a -> Int -> IO Int
-
-#else
-
-fromJSString :: JSString -> String
-{-# INLINE fromJSString #-}
-fromJSString = unsafeCoerce . js_fromJSString . jsval
-
-foreign import javascript unsafe "h$toHsString"
-  js_fromJSString :: JSVal -> Any
-
-toJSString :: String -> JSString
-{-# INLINE toJSString #-}
-toJSString x = JSString $ js_toJSString (unsafeCoerce x)
-
-foreign import javascript unsafe "h$fromHsString"
-  js_toJSString :: Any -> JSVal
-
-textToJSString :: T.Text -> JSString
-{-# INLINE textToJSString #-}
-
-#ifdef GHCJS_OLD
-textToJSString (T.Text (A.Array ba) (I# offset) (I# length)) =
-  js_toString ba offset length
-#else
-textToJSString (T.Text (A.ByteArray ba) (I# offset) (I# length)) =
-  js_toString ba offset length
-#endif
-
-textFromJSString :: JSString -> T.Text
-{-# INLINE  textFromJSString #-}
-textFromJSString j =
-  case js_fromString j of
-    (# _ , 0#     #) -> T.empty
-#ifdef GHCJS_OLD
-    (# ba, length #) -> T.Text (A.Array ba) 0 (I# length)
-#else
-    (# ba, length #) -> T.Text (A.ByteArray ba) 0 (I# length)
-#endif
-
-lazyTextToJSString :: TL.Text -> JSString
-{-# INLINE lazyTextToJSString #-}
-lazyTextToJSString t = rnf t `seq` js_lazyTextToString (unsafeCoerce t)
-
-lazyTextFromJSString :: JSString -> TL.Text
-{-# INLINE lazyTextFromJSString #-}
-lazyTextFromJSString = TL.fromStrict . textFromJSString
-
--- | returns the empty Text if not a string
-textFromJSVal :: JSVal -> T.Text
-{-# INLINE textFromJSVal #-}
-textFromJSVal j = case js_fromString' j of
-    (# _,  0#     #) -> T.empty
-#ifdef GHCJS_OLD
-    (# ba, length #) -> T.Text (A.Array ba) 0 (I# length)
-#else
-    (# ba, length #) -> T.Text (A.ByteArray ba) 0 (I# length)
-#endif
-
--- | returns the empty Text if not a string
-lazyTextFromJSVal :: JSVal -> TL.Text
-{-# INLINE lazyTextFromJSVal #-}
-lazyTextFromJSVal = TL.fromStrict . textFromJSVal
-
-foreign import javascript unsafe "h$textToString"
-  js_toString :: ByteArray# -> Int# -> Int# -> JSString
-
-foreign import javascript unsafe "h$textFromString"
-  js_fromString :: JSString -> (# ByteArray#, Int# #)
-
-foreign import javascript unsafe "h$textFromString"
-  js_fromString' :: JSVal -> (# ByteArray#, Int# #)
-
-foreign import javascript unsafe "h$lazyTextToString"
-  js_lazyTextToString :: Any -> JSString
-#endif
 
 foreign import javascript unsafe "$1.length"
   js_arrayLength :: JSArray -> IO Int
@@ -491,20 +375,6 @@ instance FromJSVal a => FromJSVal (Vector a) where
 foreign import javascript unsafe "Object.keys($1)"
   js_object_keys :: JSObject -> IO JSArray
 
-#ifdef GHCJS_OLD
-instance FromJSVal Object where
-  fromJSVal jval = do
-    keysArray <- js_object_keys (JSObject jval)
-    keysLength <- js_arrayLength keysArray
-    foldM (accum keysArray) HM.empty [ 0 .. keysLength - 1 ]
-      where
-        accum keysArray m index = do
-          keyJsval <- getByIndex index keysArray
-          valJsval <- getProp (JSString keyJsval) (JSObject jval)
-          key <- fromJSVal keyJsval
-          val <- fromJSVal valJsval
-          pure (HM.insert key val m)
-#else
 instance FromJSVal Key where
   fromJSVal jval = K.fromText <$> fromJSVal jval
 
@@ -520,7 +390,6 @@ instance FromJSVal (KeyMap Value) where
           key <- fromJSVal keyJsval
           val <- fromJSVal valJsval
           pure (KM.insert key val m)
-#endif
 
 instance FromJSVal Value where
   fromJSVal jval
@@ -563,7 +432,6 @@ foreign import javascript unsafe "$2[$1]"
 foreign import javascript unsafe "{}" newJSObject :: IO JSObject
 
 -- | Creates a synchronous callback function (no return value)
-#ifdef WASM
 foreign import javascript unsafe "wrapper sync"
   syncCallback :: IO () -> IO (JSCallback (IO ()))
 
@@ -584,62 +452,6 @@ foreign import javascript unsafe "wrapper"
 
 releaseCallback :: JSCallback a -> IO ()
 releaseCallback = freeJSVal . jsval
-#elif GHCJS_OLD || GHCJS_NEW
-
-syncCallback':: IO JSVal -> IO (JSCallback (IO JSVal))
-syncCallback' = js_syncCallback' . unsafeCoerce
-
-foreign import javascript unsafe "window['syncCallback_']($1)"
-  js_syncCallback' :: Any -> IO (JSCallback (IO JSVal))
-
-syncCallback1' :: (JSVal -> IO JSVal) -> IO (JSCallback (JSVal -> IO JSVal))
-syncCallback1' = js_syncCallback1' . unsafeCoerce
-
-foreign import javascript unsafe "window['syncCallback1_']($1)"
-   js_syncCallback1' :: Any -> IO (JSCallback a)
-
--- | Async callbacks that don't return values like syncCallbacks that dont' return values
-syncCallback :: IO () -> IO (JSCallback (IO ()))
-syncCallback = asyncCallback
-
-asyncCallback :: IO () -> IO (JSCallback (IO ()))
-asyncCallback = js_asyncCallback . unsafeCoerce
-
-foreign import javascript unsafe "window['asyncCallback']($1)"
-  js_asyncCallback :: Any -> IO (JSCallback (IO a))
-
-asyncCallback1 :: (JSVal -> IO ()) -> IO (JSCallback (JSVal -> IO ()))
-asyncCallback1 x = js_asyncCallback1 (unsafeCoerce x)
-
-foreign import javascript unsafe "window['asyncCallback1']($1)"
-  js_asyncCallback1 :: Any -> IO (JSCallback a)
-
-asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO (JSCallback (JSVal -> JSVal -> IO ()))
-asyncCallback2 = js_asyncCallback2 . unsafeCoerce
-
-foreign import javascript unsafe "window['asyncCallback2']($1)"
-  js_asyncCallback2 :: Any -> IO (JSCallback a)
-
-foreign import javascript unsafe "h$release"
-  releaseCallback :: JSCallback a -> IO ()
-#else
-syncCallback1' :: (JSVal -> IO JSVal) -> IO (JSCallback (JSVal -> IO JSVal))
-syncCallback1' = undefined
-
-syncCallback' :: IO JSVal -> IO (JSCallback (IO JSVal))
-syncCallback' = undefined
-
-asyncCallback :: IO () -> IO (JSCallback (IO ()))
-asyncCallback = undefined
-
-asyncCallback1 :: (JSVal -> IO ()) -> IO (JSCallback (JSVal -> IO ()))
-asyncCallback1 = undefined
-
-asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO (JSCallback (JSVal -> JSVal -> IO ()))
-asyncCallback2 = undefined
-
-releaseCallback = undefined
-#endif
 
 -- | Set property on object
 set :: ToJSVal v => JSString -> v -> JSObject -> IO ()
@@ -751,19 +563,13 @@ getComponent name = do
   nodeList <- querySelectorAll ("[data-component-id='" <> name <> "']")
   getFirstItem nodeList
 
-#ifdef WASM
 foreign import javascript unsafe "document.body" getBody :: IO JSVal
 foreign import javascript unsafe "document" getDoc :: IO JSVal
-#else
-foreign import javascript unsafe "(function(x) { return document.body; })" getBody :: IO JSVal
-foreign import javascript unsafe "(function(x) { return document; })" getDoc :: IO JSVal
-#endif
-
 foreign import javascript unsafe "document.getElementById($1)" getElementById :: JSString -> IO JSVal
 
 -- | Diff two virtual DOMs
 foreign import javascript unsafe "window['diff']($1,$2,$3,$4)"
-  diff'
+  diff
     :: JSObject -- ^ current object
     -> JSObject -- ^ new object
     -> JSVal  -- ^ parent node
@@ -791,7 +597,7 @@ delegateEvent mountPoint events getVTree = do
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: JSObject }
-  deriving newtype (IsJSVal, ToJSVal)
+  deriving (IsJSVal, ToJSVal)
 
 -- | deinitialize event delegation from a mount point.
 undelegateEvent :: JSVal -> JSVal -> IO JSVal -> IO ()
@@ -970,8 +776,4 @@ foreign import javascript unsafe "$1.reason" reason            :: JSVal -> IO JS
 foreign import javascript unsafe "$1.data" websocketData       :: JSVal -> IO JSVal
 
 -- jseval
-#ifdef WASM
 foreign import javascript unsafe "(($1) => { return eval($1); })" eval :: JSString -> IO JSVal
-#endif
-
-

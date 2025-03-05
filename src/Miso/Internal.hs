@@ -27,7 +27,7 @@ import           Control.Monad (forM_, (<=<), when, forever, void, forM)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Coerce
-import           Data.FileEmbed
+-- import           Data.FileEmbed
 import           Data.Foldable (toList)
 import           Data.Function
 import           Data.IORef
@@ -40,11 +40,11 @@ import           System.Mem.StableName
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-import           Miso.FFI
 import           Miso.Concurrent
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
 import           Miso.Effect
+import           Miso.FFI hiding (diff)
 import           Miso.Html
 import           Miso.String hiding (reverse)
 import           Miso.Types
@@ -210,14 +210,13 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
 
   mountCb <- do
     syncCallback' $ do
-      fix $ \loop -> do
-        forM_ onMounted $ \m -> snk m
-        vtreeRef <-
-          (common app (initComponent mount app)) `catch`
-            (\(e :: SomeException) ->
-               print e >> error "caught WouldBlock and died")
-        VTree (JSObject vtree) <- readIORef vtreeRef
-        pure vtree
+      forM_ onMounted $ \m -> snk m
+      vtreeRef <-
+        (common app (initComponent mount app)) `catch`
+          (\(e :: SomeException) ->
+             print e >> error "caught WouldBlock and died")
+      VTree (JSObject vtree) <- readIORef vtreeRef
+      pure vtree
 
   unmountCb <- toJSVal =<< do
     syncCallback' $ do
