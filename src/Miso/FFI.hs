@@ -15,6 +15,7 @@ module Miso.FFI
    ( JSM
    , forkJSM
    , syncCallback
+   , syncCallback1
    , asyncCallback
    , asyncCallback1
    , callbackToJSVal
@@ -88,6 +89,9 @@ asyncCallback a = asyncFunction (\_ _ _ -> a)
 -- | Creates an asynchronous callback function with a single argument
 asyncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 asyncCallback1 f = asyncFunction (\_ _ [x] -> f x)
+
+syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
+syncCallback1 f = function (\_ _ [x] -> f x)
 
 -- | Convert a Callback into a JSVal
 callbackToJSVal :: Function -> JSM JSVal

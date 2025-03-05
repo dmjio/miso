@@ -236,7 +236,7 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
           pure jval
 #else
   mountCb <- do
-    asyncCallback1 $ \continuation -> do
+    syncCallback1 $ \continuation -> do
       forM_ onMounted $ \m -> liftIO $ snk m
       vtreeRef <- common app (initComponent mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
@@ -252,11 +252,11 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
           pure ()
         Just (tid, ref, _) -> do
           mountEl <- getComponent mount
-          -- undelegator mountEl ref (events app)
+          undelegator mountEl ref (events app)
 #ifdef ghcjs_HOST_OS
           releaseCallback mountCb
 #else
-          -- freeFunction mountCb
+          freeFunction mountCb
 #endif
           liftIO $ do
             killThread tid
