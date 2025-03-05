@@ -62,7 +62,7 @@ common jsaddle
   if arch(wasm32)
     build-depends:
       jsaddle-wasm
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
+  else
     build-depends:
       jsaddle-warp
       -- ^ dmj: maybe make this configurable w/ flag
