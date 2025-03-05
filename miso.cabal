@@ -40,14 +40,6 @@ common js-only-tests
   if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
     buildable: False
 
-common jsaddle-selector
-  if arch(wasm32)
-    build-depends:
-      jsaddle-wasm
-  else
-    build-depends:
-      jsaddle-warp
-
 common string-selector
   if impl(ghcjs) || arch(javascript) || flag (jsstring-only) || arch(wasm32)
     hs-source-dirs:
@@ -61,8 +53,19 @@ common server
     exposed-modules:
       Miso.TypeLevel
     build-depends:
-      servant-lucid,
+      servant-lucid
+
+common jsaddle
+  if !(impl(ghcjs) || arch(javascript))
+    build-depends:
       file-embed
+  if arch(wasm32)
+    build-depends:
+      jsaddle-wasm
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
+    build-depends:
+      jsaddle-warp
+      -- ^ dmj: maybe make this configurable w/ flag
 
 common client
   if impl(ghcjs) || arch(javascript)
@@ -126,9 +129,9 @@ executable tests
 
 library
   import:
-    jsaddle-selector,
     string-selector,
     server,
+    jsaddle,
     client,
     cpp
   default-language:
@@ -175,10 +178,6 @@ library
     Miso.WebSocket
   other-modules:
     Miso.Internal
-  -- dmj: see if common-stanzas can suport 'exposed-modules'
-  if !(impl(ghcjs) || arch(javascript))
-    exposed-modules:
-      Miso.TypeLevel
   ghc-options:
     -Wall
   hs-source-dirs:
