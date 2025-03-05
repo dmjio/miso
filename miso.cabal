@@ -22,6 +22,20 @@ source-repository head
    type: git
    location: https://github.com/dmjio/miso.git
 
+common cpp
+  if impl(ghcjs)
+    cpp-options:
+      -DGHCJS_OLD
+  elif arch(javascript)
+    cpp-options:
+      -DGHCJS_NEW
+  elif arch(wasm32)
+    cpp-options:
+      -DWASM
+  else
+    cpp-options:
+      -DNATIVE
+
 common js-only-tests
   if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
     buildable: False
@@ -43,7 +57,9 @@ common string-selector
       text-src
 
 common server
-  if !(impl(ghcjs) || arch(javascript))
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
+    exposed-modules:
+      Miso.TypeLevel
     build-depends:
       servant-lucid,
       file-embed
@@ -113,7 +129,8 @@ library
     jsaddle-selector,
     string-selector,
     server,
-    client
+    client,
+    cpp
   default-language:
     Haskell2010
   exposed-modules:
@@ -156,13 +173,12 @@ library
     Miso.Types
     Miso.Util
     Miso.WebSocket
+  other-modules:
+    Miso.Internal
   -- dmj: see if common-stanzas can suport 'exposed-modules'
   if !(impl(ghcjs) || arch(javascript))
     exposed-modules:
       Miso.TypeLevel
-      
-  other-modules:
-    Miso.Internal
   ghc-options:
     -Wall
   hs-source-dirs:

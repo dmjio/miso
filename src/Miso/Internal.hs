@@ -42,10 +42,14 @@ import           System.Mem.StableName
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_OLD
 import           Language.Javascript.JSaddle hiding (obj, val)
 import           GHCJS.Foreign.Callback (syncCallback', releaseCallback)
 import qualified JavaScript.Object.Internal as OI
+#endif
+
+#ifdef GHCJS_NEW
+import           GHC.JS.Foreign.Callback (syncCallback', releaseCallback)
 #endif
 
 #ifndef ghcjs_HOST_OS

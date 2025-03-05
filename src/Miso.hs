@@ -33,7 +33,7 @@ module Miso
   , module Miso.Event
   , module Miso.Html
   , module Miso.Subscription
-#ifndef ghcjs_HOST_OS
+#ifdef NATIVE
   , module Miso.TypeLevel
 #endif
   , module Miso.Types
@@ -58,7 +58,7 @@ import           Miso.Router
 import           Miso.Runner (run)
 import           Miso.Storage
 import           Miso.Subscription
-#ifndef ghcjs_HOST_OS
+#ifdef NATIVE
 import           Miso.TypeLevel
 #endif
 import           Miso.Types hiding (Component(..), SomeComponent(SomeComponent))
