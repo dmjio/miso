@@ -245,13 +245,12 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
 #endif
 
   unmountCb <- toJSVal =<< do
-    syncCallback $ do
+    syncCallback1 $ \mountEl -> do
       forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
           pure ()
         Just (tid, ref, _) -> do
-          mountEl <- getComponent mount
           undelegator mountEl ref (events app)
 #ifdef ghcjs_HOST_OS
           releaseCallback mountCb
