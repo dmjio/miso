@@ -23,6 +23,9 @@ source-repository head
    location: https://github.com/dmjio/miso.git
 
 common cpp
+  if impl(ghcjs) || arch(javascript)
+    cpp-options:
+      -DGHCJS_BOTH
   if impl(ghcjs)
     cpp-options:
       -DGHCJS_OLD
