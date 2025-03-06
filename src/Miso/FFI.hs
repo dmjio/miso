@@ -65,7 +65,7 @@ import qualified Data.JSString as JSS
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle hiding (obj, val)
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)

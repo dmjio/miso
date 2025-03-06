@@ -230,7 +230,7 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
   -- and setting up infrastructure for each sub-component. During this
   -- process we go between the haskell heap and the js heap.
   -- It's important that things remain synchronous during this process.
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
   mountCb <-
     syncCallback' $ do
       forM_ onMounted $ \m -> liftIO $ snk m
@@ -255,7 +255,7 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
           pure ()
         Just (tid, ref, _) -> do
           undelegator mountEl ref (events app)
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
           releaseCallback mountCb
 #else
           freeFunction mountCb
@@ -274,7 +274,7 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
   set "ns" HTML vcomp
   set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
   set "mount" (jsval mountCb) vcomp
 #else
   flip (set "mount") vcomp =<< toJSVal mountCb

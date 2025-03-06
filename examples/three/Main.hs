@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import           Control.Monad
@@ -99,7 +99,7 @@ updateModel ref GetTime m = m <# do
 updateModel _ (SetTime m) _ =
   m <# pure GetTime
 
-#ifdef javascript_HOST_ARCH
+#ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new Stats(); })"
   newStats :: IO JSVal
 
@@ -153,7 +153,9 @@ foreign import javascript unsafe "((x, y) => { x.position.z = y; })"
 
 foreign import javascript unsafe "((x, y) => { x.appendChild( y.domElement ); })"
   addStatsToDOM :: JSVal -> JSVal -> IO ()
-#else
+#endif
+
+#ifdef GHCJS_OLD
 foreign import javascript unsafe "$r = new Stats();"
   newStats :: IO JSVal
 
