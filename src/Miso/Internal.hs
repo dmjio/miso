@@ -207,7 +207,11 @@ mail (Component name _) action = liftIO $ do
     f action
 
 -- | Internally used for runView and startApp
-initComponent :: MisoString -> App model action -> Sink action -> JSM (MisoString, JSVal, IORef VTree)
+initComponent
+  :: MisoString
+  -> App model action
+  -> Sink action
+  -> JSM (MisoString, JSVal, IORef VTree)
 initComponent name App {..} snk = do
   vtree <- runView (view model) snk
   el <- getComponent name
@@ -228,12 +232,12 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
   -- It's important that things remain synchronous during this process.
 #ifdef ghcjs_HOST_OS
   mountCb <-
-        syncCallback' $ do
-          forM_ onMounted $ \m -> liftIO $ snk m
-          vtreeRef <- common app (initComponent mount app)
-          VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
-          -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
-          pure jval
+    syncCallback' $ do
+      forM_ onMounted $ \m -> liftIO $ snk m
+      vtreeRef <- common app (initComponent mount app)
+      VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
+      -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
+      pure jval
 #else
   mountCb <- do
     syncCallback1 $ \continuation -> do

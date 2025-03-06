@@ -30,7 +30,7 @@ data MainAction = MainNoOp | Toggle | Mount1 | UnMount1
 type MainModel = Bool
 
 main :: IO ()
-main = startComponent componentApp
+main = run (startComponent componentApp)
 
 componentApp :: Component "app" MainModel MainAction
 componentApp = component app

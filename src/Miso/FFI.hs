@@ -54,9 +54,11 @@ module Miso.FFI
    , scrollIntoView
    , alert
    , getComponent
+   , setBodyComponent
    ) where
 
 import           Control.Concurrent
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
 import qualified Data.JSString as JSS
@@ -324,3 +326,6 @@ scrollIntoView elId = do
 -- | Calls the @alert()@ function.
 alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
+
+setBodyComponent :: MisoString -> JSM ()
+setBodyComponent x = void $ jsg "window" # "setBodyComponent" $ [x]

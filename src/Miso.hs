@@ -97,5 +97,6 @@ startApp app@App {..} = void $
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
 startComponent :: Eq model => MT.Component name model action -> JSM ()
-startComponent (MT.Component mount app) =
-  void $ common app (initComponent mount app)
+startComponent (MT.Component name app) = void $ common app $ \snk -> do
+  setBodyComponent name
+  initComponent name app snk
