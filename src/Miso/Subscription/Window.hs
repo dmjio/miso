@@ -18,7 +18,7 @@ import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
 
-import Miso.Effect (Sub)
+import Miso.Types (Sub)
 import Miso.Event
 import Miso.FFI
 import Miso.String

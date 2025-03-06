@@ -10,25 +10,22 @@
 -- This module defines `Effect` and `Sub` types, which are used to define
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
-module Miso.Effect (
-  module Miso.Effect.Storage
-, module Miso.Effect.DOM
-, Effect (..), Sub, Sink
-, mapSub
-, noEff
-, (<#)
-, (#>)
-, batchEff
-, effectSub
-) where
+module Miso.Effect
+  ( Effect (..)
+  , Sub
+  , Sink
+  , mapSub
+  , noEff
+  , (<#)
+  , (#>)
+  , batchEff
+  , effectSub
+  ) where
 
 import Data.Bifunctor
 
 import Control.Monad.IO.Class
 import Miso.FFI (JSM)
-
-import Miso.Effect.Storage
-import Miso.Effect.DOM
 
 -- | An effect represents the results of an update action.
 --

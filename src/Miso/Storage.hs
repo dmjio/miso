@@ -4,7 +4,7 @@
 {-# LANGUAGE LambdaCase                #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Effect.Storage
+-- Module      :  Miso.Storage
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
@@ -14,7 +14,7 @@
 -- This module provides an interface to the
 -- [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API).
 ----------------------------------------------------------------------------
-module Miso.Effect.Storage
+module Miso.Storage
   ( -- * Retrieve storage
     getLocalStorage
   , getSessionStorage

@@ -35,7 +35,7 @@ main = run $ do
     model  = (0.0, 0.0)
     subs   = []
     events = defaultEvents
-    mountPoint = Nothing -- default to body
+    mountPoint = Nothing
     logLevel = Off
 
 updateModel
@@ -71,7 +71,7 @@ updateModel (sun,moon,earth) (SetTime m@(secs,millis)) _ = m <# do
   drawImage sun 0 0 300 300 ctx
   pure GetTime
 
-#ifdef javascript_HOST_ARCH
+#ifdef GHCJS_NEW
 foreign import javascript unsafe "((x) => { x.globalCompositeOperation = 'destination-over'; })"
   setGlobalCompositeOperation :: Context -> IO ()
 
@@ -95,7 +95,9 @@ foreign import javascript unsafe "((x) => { return x.getSeconds(); })"
 
 foreign import javascript unsafe "((x) => { return x.getMilliseconds(); })"
   getMillis :: JSVal -> IO Double
-#else
+#endif
+
+#ifdef GHCJS_OLD
 foreign import javascript unsafe "$1.globalCompositeOperation = 'destination-over';"
   setGlobalCompositeOperation :: Context -> IO ()
 

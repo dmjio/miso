@@ -14,6 +14,8 @@
 module Miso.FFI
    ( JSM
    , forkJSM
+   , syncCallback
+   , syncCallback1
    , asyncCallback
    , asyncCallback1
    , callbackToJSVal
@@ -42,6 +44,7 @@ module Miso.FFI
    , realFloatToJSString
    , jsStringToDouble
    , delegateEvent
+   , undelegateEvent
    , copyDOMIntoVTree
    , swapCallbacks
    , releaseCallbacks
@@ -50,28 +53,36 @@ module Miso.FFI
    , blur
    , scrollIntoView
    , alert
+   , getComponent
+   , setBodyComponent
    ) where
 
 import           Control.Concurrent
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.Aeson hiding (Object)
 import qualified Data.JSString as JSS
 import           GHCJS.Marshal
 import           GHCJS.Types
 import qualified JavaScript.Object.Internal as OI
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle hiding (obj, val)
 #else
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
+import           Prelude hiding ((!!))
+
 import           Miso.String
 
 -- | Run given `JSM` action asynchronously, in a separate thread.
-forkJSM :: JSM () -> JSM ()
+forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
-  _ <- liftIO (forkIO (runJSM a ctx))
-  pure ()
+  liftIO (forkIO (runJSM a ctx))
+
+-- | Creates a synchronous callback function (no return value)
+syncCallback :: JSM () -> JSM Function
+syncCallback a = function (\_ _ _ -> a)
 
 -- | Creates an asynchronous callback function
 asyncCallback :: JSM () -> JSM Function
@@ -80,6 +91,9 @@ asyncCallback a = asyncFunction (\_ _ _ -> a)
 -- | Creates an asynchronous callback function with a single argument
 asyncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 asyncCallback1 f = asyncFunction (\_ _ [x] -> f x)
+
+syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
+syncCallback1 f = function (\_ _ [x] -> f x)
 
 -- | Convert a Callback into a JSVal
 callbackToJSVal :: Function -> JSM JSVal
@@ -198,6 +212,15 @@ objectToJSON
     -> JSM JSVal
 objectToJSON = jsg2 "objectToJSON"
 
+-- | Retrieves the component id
+getComponent :: MisoString -> JSM JSVal
+getComponent name = nodeList !! 0
+  where
+    nodeList
+      = jsg "document"
+      # "querySelectorAll"
+      $ [ "[data-component-id='" <> fromMisoString name <> "']" ]
+
 -- | Retrieves a reference to document body.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
@@ -244,11 +267,23 @@ delegateEvent mountPoint events getVTree = do
     res <- getVTree
     _ <- call continuation global res
     pure ()
-  delegateEvent' mountPoint events cb'
+  delegate mountPoint events cb'
+
+-- | deinitialize event delegation from a mount point.
+undelegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
+undelegateEvent mountPoint events getVTree = do
+  cb' <- function $ \_ _ [continuation] -> do
+    res <- getVTree
+    _ <- call continuation global res
+    pure ()
+  undelegate mountPoint events cb'
 
 -- | Call 'delegateEvent' JavaScript function
-delegateEvent' :: JSVal -> JSVal -> Function -> JSM ()
-delegateEvent' mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+delegate :: JSVal -> JSVal -> Function -> JSM ()
+delegate mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+
+undelegate :: JSVal -> JSVal -> Function -> JSM ()
+undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
 
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
@@ -291,3 +326,6 @@ scrollIntoView elId = do
 -- | Calls the @alert()@ function.
 alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
+
+setBodyComponent :: MisoString -> JSM ()
+setBodyComponent x = void $ jsg "window" # "setBodyComponent" $ [x]

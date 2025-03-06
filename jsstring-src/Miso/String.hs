@@ -24,7 +24,9 @@ module Miso.String (
   , ms
   ) where
 
+#ifdef GHCJS_BOTH
 import           Data.Aeson
+#endif
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Char
@@ -42,7 +44,7 @@ import           Text.StringLike         (StringLike(..))
 -- | String type swappable based on compiler
 type MisoString = JS.JSString
 
-#ifdef ghcjs_HOST_OS
+#ifdef GHCJS_BOTH
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString

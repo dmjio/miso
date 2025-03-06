@@ -26,7 +26,7 @@ module Miso.Subscription.History
 import Control.Monad
 import Control.Monad.IO.Class
 import Miso.Concurrent
-import Miso.Effect (Sub)
+import Miso.Types (Sub)
 import Miso.FFI
 import qualified Miso.FFI.History as FFI
 import Miso.String
@@ -81,9 +81,9 @@ go :: Int -> JSM ()
 {-# INLINE go #-}
 go n = FFI.go n
 
-chan :: Notify
+chan :: Waiter
 {-# NOINLINE chan #-}
-chan = unsafePerformIO newEmptyNotify
+chan = unsafePerformIO emptyWaiter
 
 -- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
@@ -98,10 +98,10 @@ pushStateNoModel :: URI -> JSM ()
 {-# INLINE pushStateNoModel #-}
 pushStateNoModel u = do
   FFI.pushState . pack . show $ u
-  liftIO (notify chan)
+  liftIO (serve chan)
 
 replaceTo' :: URI -> JSM ()
 {-# INLINE replaceTo' #-}
 replaceTo' u = do
   FFI.replaceState . pack . show $ u
-  liftIO (notify chan)
+  liftIO (serve chan)

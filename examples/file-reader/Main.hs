@@ -12,10 +12,11 @@ import           Miso hiding (asyncCallback)
 import           Miso.String
 import           Control.Concurrent.MVar
 
-import GHCJS.Types
-#ifdef javascript_HOST_ARCH
+#ifdef GHCJS_NEW
 import GHC.JS.Foreign.Callback
-#else
+#endif
+import GHCJS.Types
+#ifdef GHCJS_OLD
 import GHCJS.Foreign.Callback
 #endif
 
@@ -76,7 +77,7 @@ viewModel Model {..} = view
       , div_ [] [ text info ]
       ]
 
-#ifdef javascript_HOST_ARCH
+#ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new FileReader(); })"
   newReader :: IO JSVal
 
@@ -91,7 +92,9 @@ foreign import javascript unsafe "((x) => { return x.result; })"
 
 foreign import javascript unsafe "((x, y) => { x.readAsText(y); })"
   readText :: JSVal -> JSVal -> IO ()
-#else
+#endif
+
+#ifdef GHCJS_OLD
 foreign import javascript unsafe "$r = new FileReader();"
   newReader :: IO JSVal
 

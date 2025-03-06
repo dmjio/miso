@@ -22,10 +22,65 @@ common common-options
       -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
   ghc-options:
     -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
+  if impl(ghcjs) || arch(javascript)
+    cpp-options:
+      -DGHCJS_BOTH
+  if impl(ghcjs)
+    cpp-options:
+      -DGHCJS_OLD
+  elif arch(javascript)
+    cpp-options:
+      -DGHCJS_NEW
+  elif arch(wasm32)
+    cpp-options:
+      -DWASM
+  else
+    cpp-options:
+      -DNATIVE
 
 common js-only
   if arch(wasm32) || !(impl(ghcjs) || arch(javascript))
      buildable: False
+
+executable compose-update
+  import:
+    common-options
+  default-language:
+    Haskell2010
+  main-is:
+    Main.hs
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    compose-update
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    miso,
+    transformers
+
+executable components
+  import:
+    common-options
+  default-language:
+    Haskell2010
+  main-is:
+    Main.hs
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    components
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    miso,
+    transformers
 
 executable simple
   import:
@@ -203,23 +258,6 @@ executable mario
   build-depends:
     base < 5,
     containers,
-    miso
-
-executable compose-update
-  import:
-    common-options
-  default-language:
-    Haskell2010
-  main-is:
-    Main.hs
-  ghcjs-options:
-    -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
-  hs-source-dirs:
-    compose-update
-  build-depends:
-    base < 5,
     miso
 
 executable mathml

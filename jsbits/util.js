@@ -12,3 +12,7 @@ window['callBlur'] = function callBlur(id) {
     if (ele && ele.blur) ele.blur()
   }, 50);
 }
+
+window['setBodyComponent'] = function callBlur(componentId) {
+   document.body.setAttribute('data-component-id', componentId);
+}

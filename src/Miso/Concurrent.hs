@@ -8,33 +8,38 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Concurrent (
-    Notify (..)
-  , newNotify
-  , newEmptyNotify
+module Miso.Concurrent
+  ( Waiter (..)
+  , waiter
+  , emptyWaiter
   ) where
 
 import Control.Concurrent
 
--- | Concurrent API for SkipChan implementation
-data Notify = Notify {
-    wait :: IO ()
-  , notify :: IO ()
+data Waiter
+  = Waiter
+  { wait :: IO ()
+  , serve :: IO ()
   }
 
--- | Create a new 'Notify'
-newNotify :: IO Notify
-newNotify = do
+-- | Create a new 'Waiter'
+waiter :: IO Waiter
+waiter = do
   mvar <- newMVar ()
-  pure $ Notify
-   (takeMVar mvar)
-   (() <$ do tryPutMVar mvar $! ())
+  pure Waiter
+    { wait = takeMVar mvar
+    , serve = do
+        _ <- tryPutMVar mvar ()
+        pure ()
+    }
 
--- | Create a new 'Notify'
-newEmptyNotify :: IO Notify
-newEmptyNotify = do
+emptyWaiter :: IO Waiter
+emptyWaiter = do
   mvar <- newEmptyMVar
-  pure $ Notify
-   (takeMVar mvar)
-   (() <$ do tryPutMVar mvar $! ())
+  pure Waiter
+    { wait = takeMVar mvar
+    , serve = do
+        _ <- tryPutMVar mvar ()
+        pure ()
+    }
 
