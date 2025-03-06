@@ -5,8 +5,8 @@ let
     url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
     inherit sha256;
   };
-  config.allowUnfree = options.allowUnfree;
-  config.allowBroken = options.allowBroken;
+  config.allowUnfree = true;
+  config.allowBroken = false;
   overlays = [ (import ./wasm)
                (import ./overlay.nix options)
              ] ++ options.overlays;

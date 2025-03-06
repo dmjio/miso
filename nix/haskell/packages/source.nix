@@ -25,6 +25,12 @@ in
   haskell-miso-src = make-src-filter ../../../haskell-miso.org;
   sample-app = make-src-filter ../../../sample-app;
   sample-app-jsaddle = make-src-filter ../../../sample-app-jsaddle;
+  miso-from-html = fetchFromGitHub {
+    owner = "dmjio";
+    repo = "miso-from-html";
+    rev = "8c7635889ca0a5aaac36a8b21db7f5e5ec0ae4c9";
+    sha256 = "0s6kzqxbshsnqbqfj7rblqkrr5mzkjxknb6k8m8z4h10mcv1zh7j";
+  };
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";

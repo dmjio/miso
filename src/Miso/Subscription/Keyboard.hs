@@ -29,7 +29,7 @@ import           GHCJS.Marshal
 import           JavaScript.Object
 import           JavaScript.Object.Internal
 
-import           Miso.Effect (Sub)
+import           Miso.Types (Sub)
 import           Miso.FFI
 
 -- | type for arrow keys currently pressed
