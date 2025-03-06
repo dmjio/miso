@@ -1,11 +1,11 @@
 {-# LANGUAGE CPP #-}
 module Miso.Runner (run) where
 
-#if defined(wasm32_HOST_ARCH)
+#if WASM
 import qualified Language.Javascript.JSaddle.Wasm as J
 #else
 import qualified Language.Javascript.JSaddle.Warp as J
-#if !defined (ghcjs_HOST_OS)
+#if !GHCJS_BOTH
 import           Data.Maybe
 import           System.Environment
 import           Text.Read
@@ -16,9 +16,9 @@ import           Language.Javascript.JSaddle
 
 -- | Entry point for a miso application
 run :: JSM () -> IO ()
-#if defined(wasm32_HOST_ARCH)
+#if WASM
 run = J.run
-#elif defined(ghcjs_HOST_OS)
+#elif GHCJS_BOTH
 run = J.run (error "unused argument")
 #else
 run action = do
