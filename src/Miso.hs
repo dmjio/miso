@@ -102,9 +102,13 @@ startApp app@App {..} = withJS $
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
 startComponent :: Eq model => MT.Component name model action -> JSM ()
-startComponent (MT.Component name app) = withJS $ common app $ \snk -> do
-  setBodyComponent name
-  initComponent name app snk
+startComponent comp@(MT.Component name app) = withJS $ common app $ \snk -> do
+  vtree <- runView (Embed (MT.SomeComponent comp) componentOptions) snk
+  body <- getBody
+  diff body Nothing (Just vtree)
+  vcomp <- getComponent name
+  ref <- liftIO (newIORef vtree)
+  pure (name, vcomp, ref)
 
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
