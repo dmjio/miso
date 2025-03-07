@@ -21,6 +21,7 @@ module Miso
     miso
   , startApp
   , startComponent
+  , misoComponent
     -- * Third-party integration helpers
   , sink
   , sinkRaw
@@ -77,7 +78,6 @@ miso f = void $ do
     mountEl <- mountElement mount
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
-    -- Create virtual dom, perform initial diff
     ref <- liftIO $ newIORef $ VTree (OI.Object iv)
     registerSink mount ref snk
     pure (mount, mountEl, ref)
@@ -100,3 +100,20 @@ startComponent :: Eq model => MT.Component name model action -> JSM ()
 startComponent (MT.Component name app) = void $ common app $ \snk -> do
   setBodyComponent name
   initComponent name app snk
+
+-- | Runs a miso application (as a @Component@)
+-- Note: uses the 'name' as the mount point.
+-- Copies page into the virtual dom.
+misoComponent :: Eq model => (URI -> MT.Component name model action) -> JSM ()
+misoComponent f = void $ do
+  (MT.Component name app@App{..}) <- f <$> getCurrentURI
+  setBodyComponent name
+  common app $ \snk -> do
+    VTree (OI.Object iv) <- runView (view model) snk
+    let mount = name
+    mountEl <- getComponent mount
+    -- Initial diff can be bypassed, just copy DOM into VTree
+    copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
+    ref <- liftIO $ newIORef $ VTree (OI.Object iv)
+    registerSink mount ref snk
+    pure (mount, mountEl, ref)
