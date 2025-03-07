@@ -1,7 +1,7 @@
 self: super:
 {
 
-  wasm-flake = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org&ref=wip/wasm-jsffi-sync-export";
+  wasm-flake = "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
 
   ghc-wasm-meta =
     let
