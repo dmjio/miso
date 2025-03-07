@@ -53,8 +53,7 @@ import           GHC.JS.Foreign.Callback (syncCallback', releaseCallback)
 #endif
 
 #ifndef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
-import           Data.FileEmbed
+import           Language.Javascript.JSaddle (waitForAnimationFrame)
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
 
@@ -74,12 +73,6 @@ common
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -> JSM (IORef VTree)
 common App {..} getView = do
-#ifndef ghcjs_HOST_OS
-  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
-#endif
   -- init Waiter
   Waiter {..} <- liftIO waiter
   -- init empty actions
