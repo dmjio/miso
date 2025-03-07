@@ -354,10 +354,13 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (Embed (SomeComponent (Component mount _)) ComponentOptions{..}) = 
-    L.toHtml (Node HTML "div" componentKey (attr : attributes) [])
-       where
-         attr = P "data-component-id" (A.String (fromMisoString mount))
+  toHtml (Embed (SomeComponent (Component mount app)) ComponentOptions{..}) =
+    case (view app) (model app) of
+      Node ns el mk attrs kids ->
+        L.toHtml (Node ns el mk (attr:attrs) kids)
+      t -> L.toHtml t
+     where
+       attr = P "data-component-id" (A.String (fromMisoString mount))
   toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
     where
       noEnd = ["img", "input", "br", "hr", "meta"]
