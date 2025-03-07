@@ -354,20 +354,28 @@ instance IsString (View a) where
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
   toHtmlRaw = L.toHtml
-  toHtml (Embed (SomeComponent (Component mount app)) ComponentOptions{..}) =
-    case (view app) (model app) of
-      Node ns el mk attrs kids ->
-        L.toHtml (Node ns el mk (attr:attrs) kids)
-      t -> L.toHtml t
-     where
-       attr = P "data-component-id" (A.String (fromMisoString mount))
-  toHtml (Node _ vType _ attrs vChildren) = L.with ele lattrs
+  toHtml (Embed (SomeComponent (Component mount App{..})) ComponentOptions{..}) =
+    case L.toHtml (view model) of
+      html -> L.div_ (L.data_ "component-id" (fromMisoString mount) : makeAttrs attributes) html
+  toHtml (Node _ vType _ attrs vChildren) = L.with ele (makeAttrs attrs)
     where
       noEnd = ["img", "input", "br", "hr", "meta"]
       tag = toTag $ fromMisoString vType
       ele = if tag `elem` noEnd
           then L.makeElementNoEnd tag
           else L.makeElement tag kids
+      toTag = T.toLower
+      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
+
+  toHtml (Text x) | MS.null x = L.toHtml (" " :: T.Text)
+                  | otherwise = L.toHtml (fromMisoString x :: T.Text)
+  toHtml (TextRaw x)
+    | MS.null x = L.toHtml (" " :: T.Text)
+    | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
+
+makeAttrs :: [Attribute action] -> [L.Attribute]
+makeAttrs attrs = lattrs
+  where
       classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
       propClass = M.fromList $ attrs >>= \case
           P k v -> [(k, v)]
@@ -398,13 +406,6 @@ instance L.ToHtml (View action) where
                    , "noValidate"
                    , "autocomplete"
                    ]
-      toTag = T.toLower
-      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
-  toHtml (Text x) | MS.null x = L.toHtml (" " :: T.Text)
-                  | otherwise = L.toHtml (fromMisoString x :: T.Text)
-  toHtml (TextRaw x)
-    | MS.null x = L.toHtml (" " :: T.Text)
-    | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
 
 collapseSiblingTextNodes :: [View a] -> [View a]
 collapseSiblingTextNodes [] = []

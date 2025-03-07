@@ -106,14 +106,11 @@ startComponent (MT.Component name app) = void $ common app $ \snk -> do
 -- Copies page into the virtual dom.
 misoComponent :: Eq model => (URI -> MT.Component name model action) -> JSM ()
 misoComponent f = void $ do
-  (MT.Component name app@App{..}) <- f <$> getCurrentURI
-  setBodyComponent name
+  comp@(MT.Component name app) <- f <$> getCurrentURI
   common app $ \snk -> do
-    VTree (OI.Object iv) <- runView (view model) snk
-    let mount = name
-    mountEl <- getComponent mount
-    -- Initial diff can be bypassed, just copy DOM into VTree
-    copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
-    ref <- liftIO $ newIORef $ VTree (OI.Object iv)
-    registerSink mount ref snk
-    pure (mount, mountEl, ref)
+    vtree@(VTree (OI.Object vdom)) <- runView (Embed (MT.SomeComponent comp) componentOptions) snk
+    mount <- getComponent name -- dmj: we assume we have received the HTML from the server
+    copyDOMIntoVTree (logLevel app == DebugPrerender) mount vdom
+    ref <- liftIO (newIORef vtree)
+    registerSink name ref snk
+    pure (name, mount, ref)
