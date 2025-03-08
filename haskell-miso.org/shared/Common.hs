@@ -8,10 +8,12 @@ module Common where
 import           Data.Bool
 import qualified Data.Map.Strict as M
 import           Data.Proxy
-import           Miso
-import           Miso.String
 import           Servant.API
 import           Servant.Links
+import           Servant.HTML.Lucid
+
+import           Miso
+import           Miso.String
 
 -- | We can pretty much share everything
 --
@@ -33,11 +35,9 @@ data Action
   | NoOp
   deriving (Show, Eq)
 
--- | Router
-type ClientRoutes = Examples
-  :<|> Docs
-  :<|> Community
-  :<|> Home
+-- | Page for setting HTML doctype and header
+newtype Page a = Page a
+  deriving (Show, Eq)
 
 -- | Handlers
 handlers
@@ -45,16 +45,71 @@ handlers
   :<|> (Model -> View Action)
   :<|> (Model -> View Action)
   :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
 handlers = examples
   :<|> docs
   :<|> community
   :<|> home
+  :<|> the404
 
--- | Client Routes
-type Examples  = "examples" :> View Action
-type Docs      = "docs" :> View Action
-type Community = "community" :> View Action
-type Home      = View Action
+-- | Routes (server / client agnostic)
+type Home a      = a
+type Docs a      = "docs" :> a
+type The404 a    = "404" :> a
+type Examples a  = "examples" :> a
+type Community a = "community" :> a
+
+-- | Routes skeleton
+type Routes a
+     = Examples a
+  :<|> Docs a
+  :<|> Community a
+  :<|> Home a
+  :<|> The404 a
+
+-- | Client routing
+type ClientRoutes = Routes (View Action)
+
+-- | Server routing
+type ServerRoutes = Routes (Get '[HTML] (Page HaskellMisoComponent))
+
+-- | Component synonym
+type HaskellMisoComponent = Component "client" Model Action
+
+
+haskellMisoComponent
+  :: URI
+  -> HaskellMisoComponent
+haskellMisoComponent currentURI
+  = component $ App
+    { model = Model currentURI False
+    , view = viewModel
+    , ..
+    }
+  where
+    initialAction = NoOp
+    mountPoint = Nothing
+    update = updateModel
+    events = defaultEvents
+    subs = [ uriSub HandleURI ]
+    logLevel = DebugPrerender
+    viewModel m =
+      case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
+        Left _ -> the404 m
+        Right v -> v
+
+updateModel :: Action -> Model -> Effect Action Model
+updateModel (HandleURI u) m = m { uri = u } <# do
+  pure NoOp
+updateModel (ChangeURI u) m = m { navMenuOpen = False } <# do
+  pushURI u
+  pure NoOp
+updateModel Alert m@Model{..} = m <# do
+  alert $ pack (show uri)
+  pure NoOp
+updateModel ToggleNavMenu m@Model{..} = m { navMenuOpen = not navMenuOpen } <# do
+  pure NoOp
+updateModel NoOp m = noEff m
 
 -- | Views
 community :: Model -> View Action
@@ -303,22 +358,30 @@ the404 = template v
        ]
 
 -- | Links
-goHome, goExamples, goDocs, goCommunity :: URI
-( goHome, goExamples, goDocs, goCommunity ) =
+goHome, goExamples, goDocs, goCommunity, go404 :: URI
+( goHome, goExamples, goDocs, goCommunity, go404 ) =
     ( linkURI (safeLink routes homeProxy)
     , linkURI (safeLink routes examplesProxy)
     , linkURI (safeLink routes docsProxy)
     , linkURI (safeLink routes communityProxy)
+    , linkURI (safeLink routes the404Proxy)
     )
 
-homeProxy :: Proxy Home
+homeProxy :: Proxy (Home (View Action))
 homeProxy = Proxy
-examplesProxy :: Proxy Examples
+
+examplesProxy :: Proxy (Examples (View Action))
 examplesProxy = Proxy
-docsProxy :: Proxy Docs
+
+docsProxy :: Proxy (Docs (View Action))
 docsProxy = Proxy
-communityProxy :: Proxy Community
+
+communityProxy :: Proxy (Community (View Action))
 communityProxy = Proxy
+
+the404Proxy :: Proxy (The404 (View Action))
+the404Proxy = Proxy
+
 routes :: Proxy ClientRoutes
 routes = Proxy
 

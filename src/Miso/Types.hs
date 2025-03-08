@@ -352,9 +352,9 @@ instance IsString (View a) where
   fromString = Text . fromString
 
 -- | Converting @Component@ to Lucid's @L.Html@
-instance L.ToHtml (Component name model action) where
+instance Eq model => L.ToHtml (Component name model action) where
   toHtmlRaw = L.toHtml
-  toHtml component = L.toHtml (Embed (SomeComponent component) componentOptions)
+  toHtml vcomp = L.toHtml (Embed (SomeComponent vcomp) componentOptions)
 
 -- | Converting `View` to Lucid's `L.Html`
 instance L.ToHtml (View action) where
