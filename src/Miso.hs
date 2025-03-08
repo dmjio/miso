@@ -108,6 +108,7 @@ startComponent comp@(MT.Component name app) = withJS $ common app $ \snk -> do
   diff body Nothing (Just vtree)
   vcomp <- getComponent name
   ref <- liftIO (newIORef vtree)
+  registerSink name ref snk
   pure (name, vcomp, ref)
 
 -- | Runs a miso application (as a @Component@)
