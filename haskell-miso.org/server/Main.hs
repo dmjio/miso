@@ -163,20 +163,13 @@ analytics =
     , "ga('send', 'pageview');"
     ]
 
--- | Convert client side routes into server-side web handlers
+-- | Server handlers
 serverHandlers :: Server ServerRoutes
-serverHandlers
-     = examplesHandler
-  :<|> docsHandler
-  :<|> communityHandler
-  :<|> homeHandler
-  :<|> the404Handler
+serverHandlers = mkPage goExamples
+  :<|> mkPage goDocs
+  :<|> mkPage goCommunity
+  :<|> mkPage goHome
+  :<|> mkPage go404
      where
        mkPage :: URI -> Handler (Page HaskellMisoComponent)
        mkPage url = pure $ Page (haskellMisoComponent url)
-       homeHandler = mkPage goHome
-       examplesHandler  = mkPage goExamples
-       docsHandler = mkPage goDocs
-       communityHandler = mkPage goCommunity
-       the404Handler = mkPage go404
-

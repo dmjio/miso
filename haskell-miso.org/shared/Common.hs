@@ -1,7 +1,8 @@
-{-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE RecordWildCards      #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DataKinds            #-}
 module Common where
 
@@ -9,8 +10,8 @@ import           Data.Bool
 import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Servant.API
-import           Servant.Links
 import           Servant.HTML.Lucid
+import           Servant.Links
 
 import           Miso
 import           Miso.String
@@ -35,22 +36,6 @@ data Action
   | NoOp
   deriving (Show, Eq)
 
--- | Page for setting HTML doctype and header
-newtype Page a = Page a
-  deriving (Show, Eq)
-
--- | Handlers
-handlers
-    :: (Model -> View Action)
-  :<|> (Model -> View Action)
-  :<|> (Model -> View Action)
-  :<|> (Model -> View Action)
-  :<|> (Model -> View Action)
-handlers = examples
-  :<|> docs
-  :<|> community
-  :<|> home
-  :<|> the404
 
 -- | Routes (server / client agnostic)
 type Home a      = a
@@ -76,6 +61,30 @@ type ServerRoutes = Routes (Get '[HTML] (Page HaskellMisoComponent))
 -- | Component synonym
 type HaskellMisoComponent = Component "client" Model Action
 
+-- | Links
+goHome, goExamples, goDocs, goCommunity, go404 :: URI
+goExamples
+  :<|> goDocs
+  :<|> goCommunity
+  :<|> goHome
+  :<|> go404 = allLinks' linkURI (Proxy @ClientRoutes)
+
+-- | Page for setting HTML doctype and header
+newtype Page a = Page a
+  deriving (Show, Eq)
+
+-- | Client Handlers
+clientHandlers
+    :: (Model -> View Action)
+  :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
+  :<|> (Model -> View Action)
+clientHandlers = examples
+  :<|> docs
+  :<|> community
+  :<|> home
+  :<|> the404
 
 haskellMisoComponent
   :: URI
@@ -94,7 +103,7 @@ haskellMisoComponent currentURI
     subs = [ uriSub HandleURI ]
     logLevel = DebugPrerender
     viewModel m =
-      case runRoute (Proxy :: Proxy ClientRoutes) handlers uri m of
+      case runRoute (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
         Left _ -> the404 m
         Right v -> v
 
@@ -115,28 +124,45 @@ updateModel NoOp m = noEff m
 community :: Model -> View Action
 community = template v
   where
-    v = div_ [ class_  "animated fadeIn" ] [ a_ [ href_ "https://github.com/dmjio/miso" ] [ img_ [
-           width_  "100"
-         , class_  "animated bounceInDown"
-         , src_ misoSrc
-         , alt_ "miso logo"
-         ] ]
-         , h1_ [ class_  "title animated pulse"
-               , style_ $ M.fromList [ (pack "font-size", pack "82px")
-                                     , (pack "font-weight", pack "100")
-                                     ]
-           ] [ text "community" ]
-       , h2_ [ class_  "subtitle animated pulse" ] [
-            a_ [ href_  "https://matrix.to/#/#haskell-miso:matrix.org"
-               , target_  "_blank"
-               ]
-            [ text "Matrix.org" ]
-          , text " / "
-          , a_ [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
-               , target_  "_blank"
-               ] [ text "#haskell-miso" ]
-         ]
-       ]
+    v = div_
+      [ class_  "animated fadeIn" ]
+      [ a_
+        [ href_ "https://github.com/dmjio/miso" ]
+        [ img_
+          [  width_  "100"
+          , class_  "animated bounceInDown"
+          , src_ misoSrc
+          , alt_ "miso logo"
+          ]
+        ]
+      , h1_
+        [ class_  "title animated pulse"
+        , style_ $
+          M.fromList [ (pack "font-size", pack "82px")
+                     , (pack "font-weight", pack "100")
+                     ]
+        ]
+        [ text "community" ]
+      , button_
+        [ onClick Alert ]
+        [ "alert me!" ]
+      , h2_
+        [ class_  "subtitle animated pulse" ]
+        [ a_
+          [ href_  "https://matrix.to/#/#haskell-miso:matrix.org"
+          , target_  "_blank"
+          ]
+          [ text "Matrix.org"
+          ]
+        , text " / "
+        , a_
+          [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
+          , target_  "_blank"
+          ]
+          [ text "#haskell-miso"
+          ]
+        ]
+      ]
 
 docs :: Model -> View Action
 docs = template v
@@ -356,34 +382,6 @@ the404 = template v
           , a_ [ href_ "/", onPreventClick (ChangeURI goHome) ] [ text " - Go Home" ]
          ]
        ]
-
--- | Links
-goHome, goExamples, goDocs, goCommunity, go404 :: URI
-( goHome, goExamples, goDocs, goCommunity, go404 ) =
-    ( linkURI (safeLink routes homeProxy)
-    , linkURI (safeLink routes examplesProxy)
-    , linkURI (safeLink routes docsProxy)
-    , linkURI (safeLink routes communityProxy)
-    , linkURI (safeLink routes the404Proxy)
-    )
-
-homeProxy :: Proxy (Home (View Action))
-homeProxy = Proxy
-
-examplesProxy :: Proxy (Examples (View Action))
-examplesProxy = Proxy
-
-docsProxy :: Proxy (Docs (View Action))
-docsProxy = Proxy
-
-communityProxy :: Proxy (Community (View Action))
-communityProxy = Proxy
-
-the404Proxy :: Proxy (The404 (View Action))
-the404Proxy = Proxy
-
-routes :: Proxy ClientRoutes
-routes = Proxy
 
 -- | Github stars
 starMiso :: View action
