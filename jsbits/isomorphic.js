@@ -86,14 +86,9 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
         return false;
       }
     } else if (vdomChild['type'] === 'vcomp') {
-        console.log('why yes I am a vcomp', vdomChild, domChild);
-        vdomChild['mount'](function (component) {
-           vdomChild.children.push(component);
-           console.log('why yes I have children now', vdomChild);
-           // obj['domRef'].appendChild(component['domRef']);
-           // dmj: we don't appendChild because it's all connected alredy
-           // window['walk'](logLevel, vdomChild, domChild, doc);
-        });
+        var component = vdomChild['mount']();
+        vdomChild.children.push(component);
+        window['walk'](logLevel, vdomChild, domChild, doc);
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;
