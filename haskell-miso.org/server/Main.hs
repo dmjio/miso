@@ -6,6 +6,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 module Main where
 
 import           Common
@@ -25,7 +26,6 @@ import           Network.Wai.Middleware.RequestLogger
 import           Servant
 import qualified System.IO as IO
 
-import           Miso hiding (run, send)
 import           Miso.String
 
 #if defined(wasm32_HOST_ARCH)
@@ -40,9 +40,13 @@ main = do
       compress = gzip def { gzipFiles = GzipCompress }
 
 app :: Application
-app = serve (Proxy @API) (static :<|> serverHandlers :<|> pure misoManifest :<|> pure robotsTxt :<|> Tagged handle404)
+app = serve (Proxy @API) website
   where
-    static = serveDirectoryWith (defaultWebAppSettings "static")
+    website = serveDirectoryWith (defaultWebAppSettings "static")
+      :<|> serverHandlers
+      :<|> pure misoManifest
+      :<|> pure robotsTxt
+      :<|> Tagged handle404
 
 robotsTxt :: Text
 robotsTxt =
@@ -53,13 +57,6 @@ robotsTxt =
   , "User-agent: *"
   , "Disallow:"
   ]
-
--- | Wrapper for setting HTML doctype and header
-newtype Wrapper a = Wrapper a
-  deriving (Show, Eq)
-
--- | Convert client side routes into server-side web handlers
-type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
 -- | robots.txt
 type RobotsTXT = "robots.txt" :> Get '[PlainText] Text
@@ -97,11 +94,11 @@ handle404 :: Application
 handle404 _ respond = respond $ responseLBS
     status404
     [("Content-Type", "text/html")] $
-      renderBS $ toHtml $ Wrapper $ the404 Model { uri = goHome, navMenuOpen = False }
+      renderBS $ toHtml $ Page (haskellMisoComponent go404)
 
-instance L.ToHtml a => L.ToHtml (Wrapper a) where
+instance L.ToHtml a => L.ToHtml (Page a) where
   toHtmlRaw = L.toHtml
-  toHtml (Wrapper x) = do
+  toHtml (Page x) = do
       L.doctype_
       L.html_ [ L.lang_ "en" ] $ do
         L.head_ $ do
@@ -157,7 +154,6 @@ bulmaRef = "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css
 
 analytics :: MisoString
 analytics =
-  -- Multiline strings don’t work well with CPP
   mconcat
     [ "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){"
     , "(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),"
@@ -167,19 +163,13 @@ analytics =
     , "ga('send', 'pageview');"
     ]
 
-serverHandlers ::
-       Handler (Wrapper (View Action))
-  :<|> Handler (Wrapper (View Action))
-  :<|> Handler (Wrapper (View Action))
-  :<|> Handler (Wrapper (View Action))
-serverHandlers = examplesHandler
-  :<|> docsHandler
-  :<|> communityHandler
-  :<|> homeHandler
+-- | Server handlers
+serverHandlers :: Server ServerRoutes
+serverHandlers = mkPage goExamples
+  :<|> mkPage goDocs
+  :<|> mkPage goCommunity
+  :<|> mkPage goHome
+  :<|> mkPage go404
      where
-       send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False}
-       homeHandler = send home goHome
-       examplesHandler = send examples goExamples
-       docsHandler  = send docs goDocs
-       communityHandler = send community goCommunity
-
+       mkPage :: URI -> Handler (Page HaskellMisoComponent)
+       mkPage url = pure $ Page (haskellMisoComponent url)

@@ -18,6 +18,7 @@ module Miso.Internal
   , notify
   , runView
   , registerSink
+  , Prerender(..)
   )
 where
 
@@ -44,17 +45,14 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
 #ifdef GHCJS_OLD
 import           Language.Javascript.JSaddle hiding (obj, val)
-import           GHCJS.Foreign.Callback (syncCallback', releaseCallback)
-import qualified JavaScript.Object.Internal as OI
 #endif
 
 #ifdef GHCJS_NEW
 import           GHC.JS.Foreign.Callback (syncCallback', releaseCallback)
 #endif
 
-#ifndef ghcjs_HOST_OS
-import           Language.Javascript.JSaddle (eval, waitForAnimationFrame)
-import           Data.FileEmbed
+#ifndef GHCJS_BOTH
+import           Language.Javascript.JSaddle (waitForAnimationFrame)
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
 
@@ -74,20 +72,14 @@ common
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -> JSM (IORef VTree)
 common App {..} getView = do
-#ifndef ghcjs_HOST_OS
-  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
-#endif
   -- init Waiter
   Waiter {..} <- liftIO waiter
   -- init empty actions
   actions <- liftIO (newIORef S.empty)
   let
-    eventSink = \a -> void . liftIO . forkIO $ do
-        atomicModifyIORef' actions $ \as -> (as S.|> a, ())
-        serve
+    eventSink = \a -> liftIO $ do
+      atomicModifyIORef' actions $ \as -> (as S.|> a, ())
+      serve
 
   -- init Subs
   forM_ subs $ \sub -> sub eventSink
@@ -109,7 +101,7 @@ common App {..} getView = do
         newName <- liftIO $ newModel `seq` makeStableName newModel
         when (oldName /= newName && oldModel /= newModel) $ do
           swapCallbacks
-          newVTree <- runView (view newModel) eventSink
+          newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void $ waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
@@ -118,24 +110,22 @@ common App {..} getView = do
         syncPoint
         loop newModel
 
-  tid <- forkJSM (loop model)
-  addToComponentMap mount tid viewRef eventSink
+  void $ forkJSM $ do
+    registerSink mount mountEl viewRef eventSink
+    loop model
   delegator mountEl viewRef events
   pure viewRef
 
-addToComponentMap
-  :: MonadIO m
-  => MisoString
-  -> ThreadId
-  -> IORef VTree
-  -> (action -> IO ())
-  -> m ()
-addToComponentMap mount thread view snk =
-  liftIO $ modifyIORef' componentMap (M.insert mount (thread, view, snk))
+-- | Prerender avoids calling @diff@
+-- and instead calls @copyDOMIntoVTree@
+data Prerender
+  = DontPrerender
+  | Prerender
+  deriving (Show, Eq)
 
 componentMap
   :: forall action
-   . IORef (Map MisoString (ThreadId, IORef VTree, action -> IO ()))
+   . IORef (Map MisoString (ThreadId, JSVal, IORef VTree, action -> IO ()))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 
@@ -149,7 +139,7 @@ notify (Component name _) action = scheduleIO_ (liftIO io)
   where
     io = do
       dispatch <- liftIO (readIORef componentMap)
-      forM_ (M.lookup name dispatch) $ \(_, _, f) ->
+      forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
         f action
 
 -- | Helper for processing effects in the event loop.
@@ -182,14 +172,14 @@ sink :: MisoString -> App action model -> Sink action
 sink name _ = \a -> do
   M.lookup name <$> readIORef componentMap >>= \case
     Nothing -> pure ()
-    Just (_, _, f) -> f a
+    Just (_, _, _, f) -> f a
 
 -- | Link 'sink' but without `App` argument
 sinkRaw :: MisoString -> Sink action
 sinkRaw name = \x -> do
   M.lookup name <$> readIORef componentMap >>= \case
     Nothing -> pure ()
-    Just (_, _, f) -> f x
+    Just (_, _, _, f) -> f x
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -203,66 +193,58 @@ mail
   -> JSM ()
 mail (Component name _) action = liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name dispatch) $ \(_, _, f) ->
+  forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
     f action
 
 -- | Internally used for runView and startApp
+-- Initial draw helper
+-- If prerendering bypass diff and continue copying
 initComponent
-  :: MisoString
+  :: Prerender
+  -> MisoString
   -> App model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
-initComponent name App {..} snk = do
-  vtree <- runView (view model) snk
+initComponent prerender name App {..} snk = do
+  vtree@(VTree (Object jval)) <- runView prerender (view model) snk
   el <- getComponent name
-  diff el Nothing (Just vtree)
+  if prerender == Prerender
+    then
+      copyDOMIntoVTree (logLevel == DebugPrerender) el jval
+    else
+      diff el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
-runView :: View action -> Sink action -> JSM VTree
-runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
+runView :: Prerender -> View action -> Sink action -> JSM VTree
+runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   vcomp <- create
   let mount = name
-
   -- By default components should be mounted sychronously.
   -- We also include async mounting for tools like jsaddle-warp.
   -- mounting causes a recursive diff to occur, creating subcomponents
   -- and setting up infrastructure for each sub-component. During this
   -- process we go between the haskell heap and the js heap.
   -- It's important that things remain synchronous during this process.
-#ifdef GHCJS_BOTH
-  mountCb <-
-    syncCallback' $ do
-      forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent mount app)
-      VTree (OI.Object jval) <- liftIO (readIORef vtreeRef)
-      -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
-      pure jval
-#else
   mountCb <- do
     syncCallback1 $ \continuation -> do
       forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent mount app)
+      vtreeRef <- common app (initComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
-#endif
 
   unmountCb <- toJSVal =<< do
-    syncCallback1 $ \mountEl -> do
+    syncCallback1 $ \_ -> do
       forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
           pure ()
-        Just (tid, ref, _) -> do
-          undelegator mountEl ref (events app)
-#ifdef GHCJS_BOTH
-          releaseCallback mountCb
-#else
+        Just (tid, compNode, ref, _) -> do
+          undelegator compNode ref (events app)
           freeFunction mountCb
-#endif
-          liftIO $ do
-            killThread tid
-            modifyIORef' componentMap (M.delete mount)
+          liftIO (killThread tid)
+          liftIO $ modifyIORef' componentMap (M.delete mount)
+
   set "type" ("vcomp" :: JSString) vcomp
   set "tag" ("div" :: JSString) vcomp
   forM_ componentKey $ \(Key key) -> set "key" key vcomp
@@ -274,14 +256,10 @@ runView (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk
   set "ns" HTML vcomp
   set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-#ifdef GHCJS_BOTH
-  set "mount" (jsval mountCb) vcomp
-#else
   flip (set "mount") vcomp =<< toJSVal mountCb
-#endif
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)
-runView (Node ns tag key attrs kids) snk = do
+runView prerender (Node ns tag key attrs kids) snk = do
   vnode <- create
   cssObj <- objectToJSVal =<< create
   propsObj <- objectToJSVal =<< create
@@ -300,21 +278,21 @@ runView (Node ns tag key attrs kids) snk = do
   pure $ VTree vnode
     where
       setKids = do
-        kidsViews <- traverse (objectToJSVal . getTree <=< flip runView snk) kids
+        kidsViews <- traverse (objectToJSVal . getTree <=< flip (runView prerender) snk) kids
         ghcjsPure (JSArray.fromList kidsViews)
-runView (Text t) _ = do
+runView _ (Text t) _ = do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
-runView (TextRaw str) snk =
+runView prerender (TextRaw str) snk =
   case parseView str of
     [] ->
-      runView (Text (" " :: MisoString)) snk
+      runView prerender (Text (" " :: MisoString)) snk
     [parent] ->
-      runView parent snk
+      runView prerender parent snk
     kids -> do
-      runView (Node HTML "div" Nothing mempty kids) snk
+      runView prerender (Node HTML "div" Nothing mempty kids) snk
 
 setAttrs :: Object -> [Attribute action] -> Sink action -> JSM ()
 setAttrs vnode attrs snk =
@@ -353,7 +331,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => MisoString -> IORef VTree -> Sink action -> m ()
-registerSink mount vtree snk = liftIO $ do
+registerSink :: MonadIO m => MisoString -> JSVal -> IORef VTree -> Sink action -> m ()
+registerSink mount mountEl vtree snk = liftIO $ do
   tid <- myThreadId
-  liftIO $ modifyIORef' componentMap (M.insert mount (tid, vtree, snk))
+  liftIO $ modifyIORef' componentMap (M.insert mount (tid, mountEl, vtree, snk))

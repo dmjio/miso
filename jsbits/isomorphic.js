@@ -57,15 +57,15 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
-  var vdomChild,
-    domChild;
-
+  // We handle this in collapseSiblingTextNodes
+  var vdomChild, domChild;
   vtree['domRef'] = node;
 
   // Fire onCreated events as though the elements had just been created.
   window['callCreated'](vtree);
 
   vtree.children = window['collapseSiblingTextNodes'](vtree.children);
+
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
     domChild = node.childNodes[i];
@@ -85,10 +85,15 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
         window['diagnoseError'](logLevel, vdomChild, domChild);
         return false;
       }
+    } else if (vdomChild['type'] === 'vcomp') {
+        vdomChild['mount'](function(component) {
+           vdomChild.children.push(component);
+           window['walk'](logLevel, vdomChild, domChild, doc);
+        });
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;
-      if(!window['walk'](logLevel, vdomChild, domChild, doc)) return false;
+      window['walk'](logLevel, vdomChild, domChild, doc);
     }
   }
   return true;

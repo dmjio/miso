@@ -21,6 +21,7 @@ module Miso
     miso
   , startApp
   , startComponent
+  , misoComponent
     -- * Third-party integration helpers
   , sink
   , sinkRaw
@@ -29,74 +30,107 @@ module Miso
   , mail
     -- * Abstraction for jsaddle
   , run
-  , MT.Component
-  , module Miso.Event
-  , module Miso.Html
-  , module Miso.Subscription
+  , Component
 #ifdef NATIVE
   , module Miso.TypeLevel
 #endif
-  , module Miso.Types
-  , module Miso.Router
-  , module Miso.Util
-  , module Miso.FFI
-  , module Miso.WebSocket
-  , module Miso.Storage
+  , module Export
   ) where
 
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
-import qualified JavaScript.Object.Internal as OI
+import           JavaScript.Object.Internal (Object(Object))
 
-import           Miso.Diff
-import           Miso.Event
+import           Miso.Diff (diff, mountElement)
 import           Miso.FFI
-import           Miso.Html
+import           Miso.Types (Component(Component))
 import           Miso.Internal
-import           Miso.Router
-import           Miso.Runner (run)
-import           Miso.Storage
-import           Miso.Subscription
+
+import           Miso.Event as Export
+import           Miso.Html as Export
+import           Miso.Router as Export
+import           Miso.Runner as Runner
+import           Miso.Storage as Export
+import           Miso.Subscription as Export
+import           Miso.Types as Export hiding (Component(Component))
+import           Miso.Util as Export
+import           Miso.FFI as Export
+
 #ifdef NATIVE
 import           Miso.TypeLevel
 #endif
-import           Miso.Types hiding (Component(..), SomeComponent(SomeComponent))
-import qualified Miso.Types as MT
-import           Miso.Util
-import           Miso.WebSocket
+
+#ifndef GHCJS_BOTH
+import           Language.Javascript.JSaddle (eval)
+import           Data.FileEmbed
+import           Language.Javascript.JSaddle hiding (Success, obj, val)
+#endif
 
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present
 miso :: Eq model => (URI -> App model action) -> JSM ()
-miso f = void $ do
+miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   common app $ \snk -> do
-    VTree (OI.Object iv) <- runView (view model) snk
+    VTree (Object iv) <- runView Prerender (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
-    -- Create virtual dom, perform initial diff
-    ref <- liftIO $ newIORef $ VTree (OI.Object iv)
-    registerSink mount ref snk
+    ref <- liftIO $ newIORef $ VTree (Object iv)
+    registerSink mount mountEl ref snk
     pure (mount, mountEl, ref)
+
+-- | Runs a miso application (as a @Component@)
+-- Note: uses the 'name' as the key in @componentMap@
+-- Mounts to `body`. Copies page into the virtual dom.
+misoComponent
+  :: Eq model
+  => (URI -> Component name model action)
+  -> JSM ()
+misoComponent f = withJS $ do
+  Component name app@App {..} <- f <$> getCurrentURI
+  common app $ \snk -> do
+    vtree@(VTree (Object jval)) <- runView Prerender (view model) snk
+    mount <- getBody
+    setBodyComponent name
+    copyDOMIntoVTree (logLevel == DebugPrerender) mount jval
+    ref <- liftIO (newIORef vtree)
+    registerSink name mount ref snk
+    pure (name, mount, ref)
 
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
-startApp app@App {..} = void $
+startApp app@App {..} = withJS $
   common app $ \snk -> do
-    vtree <- runView (view model) snk
+    vtree <- runView DontPrerender (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
     diff mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
-    registerSink mount ref snk
+    registerSink mount mountEl ref snk
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
-startComponent :: Eq model => MT.Component name model action -> JSM ()
-startComponent (MT.Component name app) = void $ common app $ \snk -> do
+startComponent :: Eq model => Component name model action -> JSM ()
+startComponent (Component name app@App{..}) = withJS $ common app $ \snk -> do
+  vtree <- runView DontPrerender (view model) snk
+  mount <- getBody
   setBodyComponent name
-  initComponent name app snk
+  diff mount Nothing (Just vtree)
+  ref <- liftIO (newIORef vtree)
+  registerSink name mount ref snk
+  pure (name, mount, ref)
+
+withJS :: JSM a -> JSM ()
+withJS action = void $ do
+#ifndef ghcjs_HOST_OS
+  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
+  _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
+  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
+  _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
+#endif
+  action
+
