@@ -143,9 +143,6 @@ community = template v
                      ]
         ]
         [ text "community" ]
-      , button_
-        [ onClick Alert ]
-        [ "alert me!" ]
       , h2_
         [ class_  "subtitle animated pulse" ]
         [ a_
@@ -154,6 +151,7 @@ community = template v
           ]
           [ text "Matrix.org"
           ]
+        , embed alertComponent
         , text " / "
         , a_
           [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
@@ -382,6 +380,21 @@ the404 = template v
           , a_ [ href_ "/", onPreventClick (ChangeURI goHome) ] [ text " - Go Home" ]
          ]
        ]
+
+data Alert = AlertParent | DoNothing
+  
+alertComponent :: Component "alert" () Alert
+alertComponent =
+  component $ defaultApp () update_ view_ DoNothing
+    where
+      update_ DoNothing m = noEff m
+      update_ AlertParent m = m <# do
+        mail (haskellMisoComponent goHome) Alert
+        pure DoNothing
+      view_ () =
+        button_
+          [ onClick AlertParent ]
+          [ "Alert me!" ]
 
 -- | Github stars
 starMiso :: View action
