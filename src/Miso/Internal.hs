@@ -51,7 +51,7 @@ import           Language.Javascript.JSaddle hiding (obj, val)
 import           GHC.JS.Foreign.Callback (syncCallback', releaseCallback)
 #endif
 
-#ifndef ghcjs_HOST_OS
+#ifndef GHCJS_BOTH
 import           Language.Javascript.JSaddle (waitForAnimationFrame)
 import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
@@ -256,11 +256,7 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   set "ns" HTML vcomp
   set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
--- #ifdef GHCJS_BOTH
---   set "mount" (jsval mountCb) vcomp
--- #else
   flip (set "mount") vcomp =<< toJSVal mountCb
--- #endif
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)
 runView prerender (Node ns tag key attrs kids) snk = do
