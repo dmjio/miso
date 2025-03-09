@@ -78,9 +78,9 @@ common App {..} getView = do
   -- init empty actions
   actions <- liftIO (newIORef S.empty)
   let
-    eventSink = \a -> void . liftIO . forkIO $ do
-        atomicModifyIORef' actions $ \as -> (as S.|> a, ())
-        serve
+    eventSink = \a -> liftIO $ do
+      atomicModifyIORef' actions $ \as -> (as S.|> a, ())
+      serve
 
   -- init Subs
   forM_ subs $ \sub -> sub eventSink
@@ -221,7 +221,6 @@ runView :: Prerender -> View action -> Sink action -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   vcomp <- create
   let mount = name
-
   -- By default components should be mounted sychronously.
   -- We also include async mounting for tools like jsaddle-warp.
   -- mounting causes a recursive diff to occur, creating subcomponents
@@ -243,7 +242,6 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
 #endif
-
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
       forM_ onUnmounted $ \m -> liftIO $ snk m
