@@ -86,9 +86,10 @@ window['walk'] = function walk(logLevel, vtree, node, doc) {
         return false;
       }
     } else if (vdomChild['type'] === 'vcomp') {
-        var component = vdomChild['mount']();
-        vdomChild.children.push(component);
-        window['walk'](logLevel, vdomChild, domChild, doc);
+        vdomChild['mount'](function(component) {
+           vdomChild.children.push(component);
+           window['walk'](logLevel, vdomChild, domChild, doc);
+        });
     } else {
       if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
       vdomChild['domRef'] = domChild;

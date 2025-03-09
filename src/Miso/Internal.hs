@@ -45,7 +45,6 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
 #ifdef GHCJS_OLD
 import           Language.Javascript.JSaddle hiding (obj, val)
-import           GHCJS.Foreign.Callback (syncCallback', releaseCallback)
 #endif
 
 #ifdef GHCJS_NEW
@@ -227,21 +226,13 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   -- and setting up infrastructure for each sub-component. During this
   -- process we go between the haskell heap and the js heap.
   -- It's important that things remain synchronous during this process.
-#ifdef GHCJS_BOTH
-  mountCb <-
-    syncCallback' $ do
-      forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent prerender mount app)
-      VTree (Object jval) <- liftIO (readIORef vtreeRef)
-      pure jval
-#else
   mountCb <- do
     syncCallback1 $ \continuation -> do
       forM_ onMounted $ \m -> liftIO $ snk m
       vtreeRef <- common app (initComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
-#endif
+
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
       forM_ onUnmounted $ \m -> liftIO $ snk m
@@ -250,11 +241,7 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
           pure ()
         Just (tid, compNode, ref, _) -> do
           undelegator compNode ref (events app)
-#ifdef GHCJS_BOTH
-          releaseCallback mountCb
-#else
           freeFunction mountCb
-#endif
           liftIO (killThread tid)
           liftIO $ modifyIORef' componentMap (M.delete mount)
 
@@ -269,11 +256,11 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   set "ns" HTML vcomp
   set "data-component-id" mount vcomp
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-#ifdef GHCJS_BOTH
-  set "mount" (jsval mountCb) vcomp
-#else
+-- #ifdef GHCJS_BOTH
+--   set "mount" (jsval mountCb) vcomp
+-- #else
   flip (set "mount") vcomp =<< toJSVal mountCb
-#endif
+-- #endif
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)
 runView prerender (Node ns tag key attrs kids) snk = do
