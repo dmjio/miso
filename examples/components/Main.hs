@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE CPP #-}
-
 module Main where
 
 import Control.Monad.IO.Class
@@ -21,55 +20,62 @@ data Action
   | SubtractOne
   | NoOp
   | SayHelloWorld
-  | Toggle4
+  | ToggleAction
   | UnMount
-  | Mount'
+  | Mount
   deriving (Show, Eq)
 
-data MainAction = MainNoOp | Toggle | Mount1 | UnMount1
+data MainAction
+  = MainNoOp
+  | Toggle
+  | MountMain
+  | UnMountMain
+
 type MainModel = Bool
 
 main :: IO ()
-main = run (startComponent componentApp_)
+main = run (startComponent mainComponent)
 
-componentApp_ :: Component "app" MainModel MainAction
-componentApp_ = component app
+mainComponent :: Component "main" MainModel MainAction
+mainComponent = component app
 
 app :: App MainModel MainAction
 app = defaultApp True updateModel1 viewModel1 MainNoOp
 
-component2 :: Component "app2" Model Action
+component2 :: Component "component-2" Model Action
 component2 = component counterApp2
 
-component3 :: Component "app3" (Bool, Model) Action
+component3 :: Component "component-3" (Bool, Model) Action
 component3 = component counterApp3
 
-component4 :: Component "app4" Model Action
+component4 :: Component "component-4" Model Action
 component4 = component counterApp4
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
-viewModel1 x = div_ [ id_ "main div" ]
-  [ "Main app - two sub components below me"
-  , button_ [ onClick Toggle ] [ text "toggle component 2" ]
+viewModel1 x = div_ [ id_ "Main application" ]
+  [ "Component 1 - Three sub components nested recursively below me"
+  , "The +/- for Components 3 and 4 will affect the state of Component 2"
+  , "This is an example of component communication using the 'mail' / 'notify' functions"
+  , button_ [ onClick Toggle ] [ text "Toggle Component 2" ]
   , if x
     then embedWith component2 componentOptions
-         { onMounted = Just Mount1
-         , onUnmounted = Just UnMount1
+         { onMounted = Just MountMain
+         , onUnmounted = Just UnMountMain
          }
-    else div_ [ id_ "other test" ] [ "foo bah" ]
+    else div_ [ id_ "other test" ] [ "Main application content" ]
   ]
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
-updateModel1 UnMount1 m = do
+updateModel1 UnMountMain m = do
   m <# do
-    consoleLog "component 2 was unmounted!"
+    consoleLog "Component 2 was unmounted!"
     pure MainNoOp
-updateModel1 Mount1 m = do
+updateModel1 MountMain m = do
   m <# do
-    consoleLog "component 2 was mounted!"
+    consoleLog "Component 2 was mounted!"
     pure MainNoOp
 
 counterApp2 :: App Model Action
@@ -83,24 +89,23 @@ updateModel2 SubtractOne m   = do
   noEff (m - 1)
 updateModel2 NoOp m          = noEff m
 updateModel2 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World2") >> pure NoOp
+  liftIO (putStrLn "Hello World from Component 2") >> pure NoOp
 updateModel2 UnMount m = do
-  m <# do consoleLog "component 3 was unmounted!"
+  m <# do consoleLog "Component 3 was unmounted!"
           pure NoOp
-updateModel2 Mount' m = do
+updateModel2 Mount m = do
   m <# do
-    consoleLog "component 3 was mounted!"
+    consoleLog "Component 3 was mounted!"
     pure NoOp
 updateModel2 _ m = noEff m
 
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
-viewModel2 x = div_ [ id_ "something here" ]
-  [ "counter app 2"
+viewModel2 x = div_ []
+  [ "This is the view for Component 2"
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
-  , rawHtml "<div><p>hey expandable 2!</div></p>"
   , embed component3
   ]
 
@@ -119,13 +124,13 @@ updateModel3 SubtractOne (t,n)   = do
     pure NoOp
 updateModel3 NoOp m          = noEff m
 updateModel3 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World3") >> pure NoOp
-updateModel3 Toggle4 (t,n) = noEff (not t, n)
+  liftIO (putStrLn "Hello World from Component 3") >> pure NoOp
+updateModel3 ToggleAction (t,n) = noEff (not t, n)
 updateModel3 UnMount m =
   m <# do
-    consoleLog "component 4 was unmounted!"
+    consoleLog "Component 4 was unmounted!"
     pure NoOp
-updateModel3 Mount' m =
+updateModel3 Mount m =
   m <# do
     consoleLog "component 4 was mounted!"
     pure NoOp
@@ -133,12 +138,11 @@ updateModel3 Mount' m =
 -- | Constructs a virtual DOM from a model
 viewModel3 :: (Bool, Model) -> View Action
 viewModel3 (toggle, x) = div_ [] $
-  [ "counter app 3, this is the one that should show you the "
+  [ "This is the view for Component 3"
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
-  , button_ [ onClick Toggle4 ] [ text "toggle component 4" ]
-  , rawHtml "<div><p>hey expandable 3!</div></p>"
+  , button_ [ onClick ToggleAction ] [ text "Toggle Component 4" ]
   ] ++
   [ embed component4
   | toggle
@@ -158,15 +162,14 @@ updateModel4 SubtractOne m = do
     mail component2 SubtractOne
     pure NoOp
 updateModel4 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World4") >> pure NoOp
+  liftIO (putStrLn "Hello World from Component 4") >> pure NoOp
 updateModel4 _ m          = noEff m
 
 -- | Constructs a virtual DOM from a model
 viewModel4 :: Model -> View Action
 viewModel4 x = div_ []
-  [ "counter app 4"
+  [ "This is the view for Component 4"
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
-  , rawHtml "<div><p>hey expandable 4!</div></p>"
   ]
