@@ -29,8 +29,7 @@ data Model = Model
 
 -- | Event Actions
 data Action
-  = Alert
-  | ChangeURI URI
+  = ChangeURI URI
   | HandleURI URI
   | ToggleNavMenu
   | NoOp
@@ -113,9 +112,6 @@ updateModel (HandleURI u) m = m { uri = u } <# do
 updateModel (ChangeURI u) m = m { navMenuOpen = False } <# do
   pushURI u
   pure NoOp
-updateModel Alert m@Model{..} = m <# do
-  alert $ pack (show uri)
-  pure NoOp
 updateModel ToggleNavMenu m@Model{..} = m { navMenuOpen = not navMenuOpen } <# do
   pure NoOp
 updateModel NoOp m = noEff m
@@ -151,7 +147,6 @@ community = template v
           ]
           [ text "Matrix.org"
           ]
-        , embed alertComponent
         , text " / "
         , a_
           [ href_  "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1"
@@ -380,21 +375,6 @@ the404 = template v
           , a_ [ href_ "/", onPreventClick (ChangeURI goHome) ] [ text " - Go Home" ]
          ]
        ]
-
-data Alert = AlertParent | DoNothing
-  
-alertComponent :: Component "alert" () Alert
-alertComponent =
-  component $ defaultApp () update_ view_ DoNothing
-    where
-      update_ DoNothing m = noEff m
-      update_ AlertParent m = m <# do
-        mail (haskellMisoComponent goHome) Alert
-        pure DoNothing
-      view_ () =
-        button_
-          [ onClick AlertParent ]
-          [ "Alert me!" ]
 
 -- | Github stars
 starMiso :: View action
