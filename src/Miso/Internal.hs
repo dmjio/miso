@@ -217,12 +217,8 @@ initComponent
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 initComponent prerender name App {..} snk = do
-  consoleLog "inside of initComponent"
   vtree@(VTree (Object jval)) <- runView prerender (view model) snk
-  consoleLogJSVal jval
   el <- getComponent name
-  consoleLog ("Got component: " <> name)
-  consoleLogJSVal el
   if prerender == Prerender
     then
       copyDOMIntoVTree (logLevel == DebugPrerender) el jval
@@ -245,14 +241,9 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
 #ifdef GHCJS_BOTH
   mountCb <-
     syncCallback' $ do
-      consoleLog "I'm inside of mount now, with a prerender of: ... "
-      consoleLog $ ms (show prerender)
       forM_ onMounted $ \m -> liftIO $ snk m
-      consoleLog "just created a tree"
       vtreeRef <- common app (initComponent prerender mount app)
       VTree (Object jval) <- liftIO (readIORef vtreeRef)
-      consoleLogJSVal jval
-      -- consoleLog "Sync component mounting enabled" (dmj: enable logging)
       pure jval
 #else
   mountCb <- do
@@ -265,30 +256,18 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
 
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \mountEl -> do
-      consoleLog "I'm inside of unmount now"
-      consoleLogJSVal mountEl
       forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
-        Nothing -> do
-          consoleLog "couldn't find it"
+        Nothing ->
           pure ()
         Just (tid, compNode, ref, _) -> do
-          consoleLog "unmounting now ... "
-          consoleLog "unmounting this compNode"
-          consoleLogJSVal compNode
-          consoleLog "logging this mountEl"
-          consoleLogJSVal mountEl
-          consoleLog "calling undelegator on compNode"
           undelegator compNode ref (events app)
 #ifdef GHCJS_BOTH
-          consoleLog "calling release callback ... "
           releaseCallback mountCb
 #else
           freeFunction mountCb
 #endif
-          consoleLog "killing thread"
           liftIO (killThread tid)
-          consoleLog "removing component map"
           liftIO $ modifyIORef' componentMap (M.delete mount)
 
   set "type" ("vcomp" :: JSString) vcomp

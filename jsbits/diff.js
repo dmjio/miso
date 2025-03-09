@@ -81,10 +81,7 @@ window['callDestroyed'] = function (obj) {
 
 window['callBeforeDestroyed'] = function (obj) {
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
-    if (obj['type'] === 'vcomp') {
-        console.log('calling unmount on', obj);
-        obj['unmount'](obj.domRef);
-    }
+  if (obj['type'] === 'vcomp') obj['unmount'](obj.domRef);
 };
 
 window['callBeforeDestroyedRecursive'] = function (obj) {
