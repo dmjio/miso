@@ -111,8 +111,9 @@ common App {..} getView = do
         syncPoint
         loop newModel
 
-  tid <- forkJSM (loop model)
-  addToComponentMap mount tid mountEl viewRef eventSink
+  void $ forkJSM $ do
+    registerSink mount mountEl viewRef eventSink
+    loop model
   delegator mountEl viewRef events
   pure viewRef
 
@@ -122,17 +123,6 @@ data Prerender
   = DontPrerender
   | Prerender
   deriving (Show, Eq)
-
-addToComponentMap
-  :: MonadIO m
-  => MisoString
-  -> ThreadId
-  -> JSVal
-  -> IORef VTree
-  -> (action -> IO ())
-  -> m ()
-addToComponentMap mount thread mountEl view snk =
-  liftIO $ modifyIORef' componentMap (M.insert mount (thread, mountEl, view, snk))
 
 componentMap
   :: forall action
@@ -255,7 +245,7 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
 #endif
 
   unmountCb <- toJSVal =<< do
-    syncCallback1 $ \mountEl -> do
+    syncCallback1 $ \_ -> do
       forM_ onUnmounted $ \m -> liftIO $ snk m
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
