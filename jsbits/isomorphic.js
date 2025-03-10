@@ -43,8 +43,13 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
     window['populate'](null, vtree, doc);
     return false;
   }
-  if (logLevel) {
-    console.info ('Successfully prendered page');
+    if (logLevel) {
+      var result = window['integrityCheck'](true, vtree);
+      if (!result) {
+          console.warn ('Integrity check completed with errors');
+      } else {
+          console.info ('Successfully prerendered page');
+      }
   }
   return true;
 }
@@ -52,6 +57,128 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
 window['diagnoseError'] = function diagnoseError(logLevel, vtree, node) {
   if (logLevel) console.warn('VTree differed from node', vtree, node);
 }
+
+// https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
+window['parseColor'] = function(input) {
+    if (input.substr(0,1)=="#") {
+    var collen=(input.length-1)/3;
+    var fact=[17,1,0.062272][collen-1];
+    return [
+        Math.round(parseInt(input.substr(1,collen),16)*fact),
+        Math.round(parseInt(input.substr(1+collen,collen),16)*fact),
+        Math.round(parseInt(input.substr(1+2*collen,collen),16)*fact)
+    ];
+    }
+    else return input.split("(")[1].split(")")[0].split(",").map(x=>+x);
+}
+
+// dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
+window['integrityCheck'] = function integrityCheck(result, vtree) {
+    if (!vtree) return result;
+    // text nodes must be the same
+    if ('type' in vtree && vtree['type'] == 'vtext') {
+        if (vtree['text'] !== vtree['domRef'].textContent) {
+            console.error ('VText node content differs', vtree);
+            result = false;
+        } else {
+            console.info('VText nodes are identical proceed', '"' + vtree['text'] + '"');
+        }
+    }
+    // if vnode / vcomp, must be the same
+    if ('tag' in vtree) {
+
+        // tags must be identical
+        if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
+            console.error ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
+            result = false;
+        } else if (vtree['type'] === 'vnode') {
+            console.info('VNode tags are identical proceed', vtree['tag']);
+        } else {
+            console.info('VComp tags are identical proceed', vtree['tag']);
+        }
+
+        // properties must be identical
+        var keyLength = Object.keys(vtree['props']).length; key = null;
+        for (var i = 0; i < keyLength; i++) {
+            key = Object.keys(vtree['props'])[i];
+            if (key === 'height' || key === 'width') {
+                if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
+                    console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                    result = false;
+                } else {
+                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
+                }
+            }
+            else if (key === 'class' || key === 'className') {
+                if (vtree['props'][key] !== vtree['domRef'].className) {
+                    console.error ('Property class differs', vtree['props'][key], vtree['domRef'].className)
+                    result = false;
+                } else {
+                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
+                }
+            } else if (!vtree['domRef'][key]) {
+                if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
+                    console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'].getAttribute(key));
+                    result = false;
+                } else {
+                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
+                } 
+            }
+            else if (vtree['props'][key] !== vtree['domRef'][key]) {
+                console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                result = false;
+            } else {
+                console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
+            }
+        }
+
+        // styles must be identical
+        keyLength = Object.keys(vtree['css']).length;
+        for (var i = 0; i < keyLength; i++) {
+            key = Object.keys(vtree['css'])[i];
+            if (key === 'color') {
+                if (window['parseColor'](vtree['domRef'].style[key]).toString() !== window['parseColor'](vtree['css'][key]).toString()) {
+                    console.error ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                    result = false;                    
+                } else {
+                    console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
+                }
+            }
+            else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
+                console.error ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                result = false;
+            } else {
+                console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
+            }
+        }
+
+        // events must be identical
+        if (vtree['type'] === 'vcomp') {
+            // dmj: better idea, get all delegated events in children, ensure vcomp is listening on all of them
+            keyLength = Object.keys(vtree['domRef']).length;
+            for (var i = 0; i < keyLength; i++) {
+                key = Object.keys(vtree['events'])[i];
+                if ('on' + key in vtree['domRef'] && vtree['domRef']['on' + key]) {
+                    console.log('VComp is listening on: ' + 'on' + key);
+                }
+            }
+        }
+    }
+
+    // check child lengths
+    if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
+        console.error ('Integrity check failed, children lengths differ', vtree);
+        result = false;
+    }
+
+    // recursive call for `vnode` / `vcomp`
+    if ('children' in vtree) {
+        for (var i = 0; i < vtree.children.length; i++) {
+            window['integrityCheck'](result, vtree.children[i]);
+        }
+    }
+}
+
 
 window['walk'] = function walk(logLevel, vtree, node, doc) {
   // This is slightly more complicated than one might expect since
