@@ -4,8 +4,6 @@
 {-# LANGUAGE CPP #-}
 module Main where
 
-import Control.Monad.IO.Class
-
 import Miso
 import Miso.String
 
@@ -55,8 +53,11 @@ component4 = component counterApp4
 viewModel1 :: MainModel -> View MainAction
 viewModel1 x = div_ [ id_ "Main application" ]
   [ "Component 1 - Three sub components nested recursively below me"
+  , br_ []
   , "The +/- for Components 3 and 4 will affect the state of Component 2"
+  , br_ []
   , "This is an example of component communication using the 'mail' / 'notify' functions"
+  , br_ []
   , button_ [ onClick Toggle ] [ text "Toggle Component 2" ]
   , if x
     then embedWith component2 componentOptions
@@ -88,8 +89,7 @@ updateModel2 AddOne m = do
 updateModel2 SubtractOne m   = do
   noEff (m - 1)
 updateModel2 NoOp m          = noEff m
-updateModel2 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World from Component 2") >> pure NoOp
+updateModel2 SayHelloWorld m = noEff m
 updateModel2 UnMount m = do
   m <# do consoleLog "Component 3 was unmounted!"
           pure NoOp
@@ -106,7 +106,10 @@ viewModel2 x = div_ []
   , button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
-  , embed component3
+  , embedWith component3 componentOptions
+         { onMounted = Just Mount
+         , onUnmounted = Just UnMount
+         }
   ]
 
 counterApp3 :: App (Bool, Model) Action
@@ -123,8 +126,7 @@ updateModel3 SubtractOne (t,n)   = do
     mail component2 SubtractOne
     pure NoOp
 updateModel3 NoOp m          = noEff m
-updateModel3 SayHelloWorld m = m <# do
-  liftIO (putStrLn "Hello World from Component 3") >> pure NoOp
+updateModel3 SayHelloWorld m = noEff m
 updateModel3 ToggleAction (t,n) = noEff (not t, n)
 updateModel3 UnMount m =
   m <# do
@@ -132,7 +134,7 @@ updateModel3 UnMount m =
     pure NoOp
 updateModel3 Mount m =
   m <# do
-    consoleLog "component 4 was mounted!"
+    consoleLog "Component 4 was mounted!"
     pure NoOp
 
 -- | Constructs a virtual DOM from a model
@@ -144,7 +146,10 @@ viewModel3 (toggle, x) = div_ [] $
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , button_ [ onClick ToggleAction ] [ text "Toggle Component 4" ]
   ] ++
-  [ embed component4
+  [ embedWith component4 componentOptions
+    { onMounted = Just Mount
+    , onUnmounted = Just UnMount
+    }
   | toggle
   ]
 
