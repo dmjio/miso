@@ -4,6 +4,8 @@
 {-# LANGUAGE CPP #-}
 module Main where
 
+import Control.Monad.IO.Class (liftIO)
+
 import Miso
 import Miso.String
 
