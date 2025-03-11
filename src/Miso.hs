@@ -124,4 +124,3 @@ withJS action = void $ do
   _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
 #endif
   action
-

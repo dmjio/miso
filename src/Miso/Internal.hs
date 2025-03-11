@@ -189,19 +189,15 @@ initComponent
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 initComponent prerender name App {..} snk = do
-  vtree@(VTree (Object jval)) <- runView prerender (view model) snk
+  vtree <- runView prerender (view model) snk
   el <- getComponent name
-  if prerender == Prerender
-    then
-      copyDOMIntoVTree (logLevel == DebugPrerender) el jval
-    else
-      diff el Nothing (Just vtree)
+  when (prerender == DontPrerender) $
+    diff el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
 runView :: Prerender -> View action -> Sink action -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
-  vcomp <- create
   let mount = name
   -- By default components should be mounted sychronously.
   -- We also include async mounting for tools like jsaddle-warp.
@@ -228,17 +224,20 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
           liftIO (killThread tid)
           liftIO $ modifyIORef' componentMap (M.delete mount)
 
-  set "type" ("vcomp" :: JSString) vcomp
-  set "tag" ("div" :: JSString) vcomp
-  forM_ componentKey $ \(Key key) -> set "key" key vcomp
+  vcomp <- create
+  cssObj <- create
   propsObj <- create
-  set "props" propsObj vcomp
   eventsObj <- create
-  setAttrs vcomp attributes snk
+  set "css" cssObj vcomp
+  set "props" propsObj vcomp
   set "events" eventsObj vcomp
+  set "type" ("vcomp" :: JSString) vcomp
   set "ns" HTML vcomp
-  set "data-component-id" mount vcomp
+  set "tag" ("div" :: JSString) vcomp
+  set "key" componentKey vcomp
+  setAttrs vcomp attributes snk
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
+  set "data-component-id" mount vcomp
   flip (set "mount") vcomp =<< toJSVal mountCb
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)

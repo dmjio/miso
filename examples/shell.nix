@@ -15,4 +15,4 @@ then miso-examples-ghc.env.overrideAttrs (d: {
   '';
   })
 else 
-  miso-examples-ghcjs.env
+  miso-examples.env
