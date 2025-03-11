@@ -66,8 +66,8 @@ self: super:
   # call nix-build -A wasmExamples && ./result/bin/build.sh
   # to populate examples
   wasmExamples = self.writeScriptBin "build.sh" ''
-    nix shell '${self.wasmFlake}' \
-      --command wasm32-wasi-cabal build miso-examples --allow-newer
+    nix shell '${self.wasm-flake}' \
+      --command wasm32-wasi-cabal build miso miso-examples --allow-newer
   '';
 
   # Used for packaging up cabal-built wasm packages

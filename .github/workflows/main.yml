@@ -62,8 +62,8 @@ jobs:
      # - name: (x86) Miso sample app jsaddle tagged dev
      #   run: nix-build -A sample-app-jsaddle-tagged-dev
 
-     - name: (WASM) GHC-WASM web build (not miso)
-       run: nix-build -A hello-world-web-wasm
+     - name: (WASM) Miso examples
+       run: nix-build -A wasmExamples && ./result/bin/build.sh
 
      - name: (x86) NixOS test runner for haskell-miso.org
        run: nix-build -A haskell-miso-org-test
