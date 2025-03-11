@@ -31,9 +31,6 @@ module Miso
     -- * Abstraction for jsaddle
   , run
   , Component
-#ifdef NATIVE
-  , module Miso.TypeLevel
-#endif
   , module Export
   ) where
 
@@ -56,10 +53,6 @@ import           Miso.Subscription as Export
 import           Miso.Types as Export hiding (Component(Component))
 import           Miso.Util as Export
 import           Miso.FFI as Export
-
-#ifdef NATIVE
-import           Miso.TypeLevel
-#endif
 
 #ifndef GHCJS_BOTH
 import           Language.Javascript.JSaddle (eval)

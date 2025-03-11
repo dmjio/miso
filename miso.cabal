@@ -174,12 +174,6 @@ library
     Miso.WebSocket
   other-modules:
     Miso.Internal
-  -- dmj: figure out why 'exposed-modules' doesn't work w/ cpp-options
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
-    exposed-modules:
-      Miso.TypeLevel
-    build-depends:
-      servant-lucid
   ghc-options:
     -Wall
   hs-source-dirs:

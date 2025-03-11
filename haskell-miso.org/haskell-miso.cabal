@@ -75,7 +75,6 @@ executable client
   build-depends:
     aeson,
     base < 5,
-    servant-lucid,
     containers,
     miso,
     servant
