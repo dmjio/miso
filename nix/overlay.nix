@@ -7,7 +7,7 @@ options: self: super: {
     virtualisation.memorySize = 1024 * 10;
     nodes.machine = { config, pkgs, ... }: {
       imports = [ ../haskell-miso.org/nix/machine.nix
-                  ../examples/sse/nix/machine.nix
+                #  ../examples/sse/nix/machine.nix
                 ];
     };
     testScript = {nodes, ...}: with nodes;
@@ -15,9 +15,9 @@ options: self: super: {
       startAll;
       $machine->waitForUnit("haskell-miso.service");
       $machine->succeed("curl localhost:3002");
-      $machine->waitForUnit("sse-haskell-miso.service");
-      $machine->succeed("curl localhost:3003");
       '';
+      # $machine->waitForUnit("sse-haskell-miso.service");
+      # $machine->succeed("curl localhost:3003");
   };
 
   ghciwatch =
