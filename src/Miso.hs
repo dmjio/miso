@@ -37,7 +37,7 @@ module Miso
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
-import           JavaScript.Object.Internal (Object(Object))
+import           Language.Javascript.JSaddle
 
 import           Miso.Diff (diff, mountElement)
 import           Miso.FFI
@@ -55,9 +55,7 @@ import           Miso.Util as Export
 import           Miso.FFI as Export
 
 #ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle (eval)
 import           Data.FileEmbed
-import           Language.Javascript.JSaddle hiding (Success, obj, val)
 #endif
 
 -- | Runs an isomorphic miso application.
