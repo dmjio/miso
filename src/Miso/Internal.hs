@@ -28,33 +28,16 @@ import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
 import           Data.IORef
-import           Data.JSString (JSString)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
-import           GHCJS.Marshal (toJSVal)
-import           GHCJS.Types (jsval)
 import qualified JavaScript.Array as JSArray
-import           JavaScript.Object (create, getProp)
-import           JavaScript.Object.Internal (Object(Object))
+import           Language.Javascript.JSaddle
 import           Prelude hiding (null)
 import           System.IO.Unsafe
 import           System.Mem.StableName
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
-
-#ifdef GHCJS_OLD
-import           Language.Javascript.JSaddle hiding (obj, val)
-#endif
-
-#ifdef GHCJS_NEW
-import           GHC.JS.Foreign.Callback (syncCallback', releaseCallback)
-#endif
-
-#ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle (waitForAnimationFrame)
-import           Language.Javascript.JSaddle hiding (Success, obj, val)
-#endif
 
 import           Miso.Concurrent
 import           Miso.Delegate (delegator, undelegator)
@@ -261,9 +244,9 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   pure (VTree vcomp)
 runView prerender (Node ns tag key attrs kids) snk = do
   vnode <- create
-  cssObj <- objectToJSVal =<< create
-  propsObj <- objectToJSVal =<< create
-  eventObj <- objectToJSVal =<< create
+  cssObj <- toJSVal =<< create
+  propsObj <- toJSVal =<< create
+  eventObj <- toJSVal =<< create
   set "css" cssObj vnode
   set "props" propsObj vnode
   set "events" eventObj vnode
@@ -278,7 +261,7 @@ runView prerender (Node ns tag key attrs kids) snk = do
   pure $ VTree vnode
     where
       setKids = do
-        kidsViews <- traverse (objectToJSVal . getTree <=< flip (runView prerender) snk) kids
+        kidsViews <- traverse (toJSVal . getTree <=< flip (runView prerender) snk) kids
         ghcjsPure (JSArray.fromList kidsViews)
 runView _ (Text t) _ = do
   vtree <- create
@@ -298,9 +281,9 @@ setAttrs :: Object -> [Attribute action] -> Sink action -> JSM ()
 setAttrs vnode attrs snk =
   forM_ attrs $ \case
     P k v -> do
-      val <- toJSVal v
+      value <- toJSVal v
       o <- getProp "props" vnode
-      set k val (Object o)
+      set k value (Object o)
     E attr -> attr snk vnode
     S m -> do
       cssObj <- getProp "css" vnode
@@ -321,8 +304,8 @@ parseView html = reverse (go (parseTree html) [])
       go (TagBranch name attrs [] : next) views
     go (TagBranch name attrs kids : next) views =
       let
-        attrs' = [ P key $ A.String (fromMisoString val)
-                 | (key, val) <- attrs
+        attrs' = [ P key $ A.String (fromMisoString value)
+                 | (key, value) <- attrs
                  ]
         newNode =
           Node HTML name Nothing attrs' (reverse (go kids []))

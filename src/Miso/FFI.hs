@@ -19,7 +19,6 @@ module Miso.FFI
    , asyncCallback
    , asyncCallback1
    , callbackToJSVal
-   , objectToJSVal
    , ghcjsPure
    , syncPoint
    , addEventListener
@@ -98,10 +97,6 @@ syncCallback1 f = function (\_ _ [x] -> f x)
 -- | Convert a Callback into a JSVal
 callbackToJSVal :: Function -> JSM JSVal
 callbackToJSVal = toJSVal
-
--- | Convert an Object into a JSVal
-objectToJSVal :: Object -> JSM JSVal
-objectToJSVal = toJSVal
 
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
