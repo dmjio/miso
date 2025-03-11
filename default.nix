@@ -65,6 +65,9 @@ in with pkgs.haskell.lib;
   deploy = pkgs.deploy rev;
   inherit (pkgs) haskell-miso-org-test;
 
+  # ghciwatch
+  inherit (pkgs) ghciwatch;
+
   # utils
   inherit (pkgs.haskell.packages.ghc865) miso-from-html;
 }

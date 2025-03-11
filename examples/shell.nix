@@ -13,5 +13,6 @@ then miso-examples-ghc.env.overrideAttrs (d: {
         --test-ghci=Main.main
     }
   '';
- })
-else miso-examples-ghcjs.env
+  })
+else 
+  miso-examples-ghcjs.env

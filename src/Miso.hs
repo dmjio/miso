@@ -126,7 +126,7 @@ startComponent (Component name app@App{..}) = withJS $ common app $ \snk -> do
 
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
-#ifndef ghcjs_HOST_OS
+#ifndef GHCJS_BOTH
   _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
   _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)

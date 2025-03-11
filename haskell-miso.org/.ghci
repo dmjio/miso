@@ -1,0 +1,4 @@
+:set prompt ">>> "
+:set prompt2 "... "
+:set -isrc -ishared -i../src -i../text-src -i../jsbits
+:set -Wall

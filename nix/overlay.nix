@@ -19,6 +19,10 @@ options: self: super: {
       '';
   };
 
+  ghciwatch =
+    (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
+      .outputs.packages."${super.system}".ghciwatch;
+
   coverage = import ../tests {};
 
   ssePkgs = import ../examples/sse {};

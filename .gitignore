@@ -11,3 +11,4 @@ dist
 *.hi
 *.jsexe
 TAGS
+.direnv

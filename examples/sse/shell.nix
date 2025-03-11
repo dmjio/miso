@@ -4,7 +4,13 @@ with (import ./default.nix {});
 if pkg == "ghc"
 then sse-server.env.overrideAttrs (d: {  
   shellHook = ''
-    alias runner="${pkgs.haskell.packages.ghc865.ghcid}/bin/ghcid -c 'cabal repl'"
+    export PATH=$PATH:${pkgs.ghciwatch}/bin
+    function watch () {
+      ghciwatch \
+        --command "cabal repl $1" \
+        --watch $1 \
+        --test-ghci=Main.main
+    }
   '';
 })
 else sse-client.env
