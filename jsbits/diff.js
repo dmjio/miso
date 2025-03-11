@@ -402,6 +402,9 @@ window['syncChildren'] = function(os, ns, parent, doc) {
       else {
         window['createElement'](nFirst, doc, function (ref) {
            parent.insertBefore(ref, oFirst['domRef']);
+           if (nFirst['type'] === 'vcomp') {
+              window['mountComponent'](nFirst, doc);
+           }
         });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
