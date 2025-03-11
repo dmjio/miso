@@ -1,6 +1,7 @@
 packages:
   .
   examples/
+  examples/sse/
   haskell-miso.org/
   sample-app/
   sample-app-jsaddle/

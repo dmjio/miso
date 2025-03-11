@@ -1,15 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Common where
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
+module Common
+  ( -- * Component
+    sseComponent
+    -- * Types
+    , Model
+    , Action
+    -- * Exported links
+    , goHome
+    , the404
+    ) where
 
 import Data.Proxy
 import Servant.API
-import Servant.Utils.Links
+import Servant.Links
 
 import Miso
 import Miso.String
 
-data Model = Model { modelUri :: URI,  modelMsg :: String }
-  deriving (Show, Eq)
+data Model
+  = Model
+  { modelUri :: URI
+  , modelMsg :: String
+  } deriving (Show, Eq)
 
 data Action
   = ServerMsg String
@@ -19,16 +33,19 @@ data Action
   deriving (Show, Eq)
 
 home :: Model -> View Action
-home (Model _ msg) =
-  div_ [] [div_ [] [h3_ [] [text "SSE (Server-sent events) Example"]], text $ ms msg]
+home (Model _ msg) = div_ []
+  [ div_
+    []
+    [ h3_
+      []
+      [ text "SSE (Server-sent events) Example"
+      ]
+    ]
+  , text (ms msg)
+  ]
 
 -- There is only a single route in this example
-type ClientRoutes = Home
-
-type Home = View Action
-
-handlers :: Model -> View Action
-handlers = home
+type ClientRoutes = View Action
 
 the404 :: View Action
 the404 =
@@ -39,5 +56,34 @@ the404 =
     ]
 
 goHome :: URI
-goHome =
-  linkURI (safeLink (Proxy :: Proxy ClientRoutes) (Proxy :: Proxy Home))
+goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
+
+
+sseComponent :: URI -> Component "sse" Model Action
+sseComponent currentURI = component App
+  { initialAction = NoOp
+  , model = Model currentURI "No event received"
+  , ..
+  } where
+      update = updateModel
+      view m
+        | Right r <- runRoute (Proxy :: Proxy ClientRoutes) home modelUri m
+        = r
+        | otherwise = the404
+      events = defaultEvents
+      subs   = [ sseSub "/sse" handleSseMsg
+               , uriSub HandleURI
+               ]
+      mountPoint = Nothing
+      logLevel = Off
+
+handleSseMsg :: SSE String -> Action
+handleSseMsg (SSEMessage msg) = ServerMsg msg
+handleSseMsg SSEClose = ServerMsg "SSE connection closed"
+handleSseMsg SSEError = ServerMsg "SSE error"
+
+updateModel :: Action -> Model -> Effect Action Model
+updateModel (ServerMsg msg) m = pure (m {modelMsg = "Event received: " ++ msg})
+updateModel (HandleURI u) m = m {modelUri = u} <# pure NoOp
+updateModel (ChangeURI u) m = m <# (pushURI u >> pure NoOp)
+updateModel NoOp m = noEff m

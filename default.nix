@@ -40,6 +40,12 @@ in with pkgs.haskell.lib;
     ghc-wasm-meta
     hello-world-web-wasm;
 
+  # sse
+  inherit (pkgs.ssePkgs)
+    sse-runner
+    sse-client
+    sse-server;
+
   # tagged releases
   inherit (pkgs)
     sample-app-tagged
