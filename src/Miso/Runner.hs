@@ -3,9 +3,7 @@ module Miso.Runner (run) where
 
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm as J
-#endif
-
-#ifndef GHCJS_BOTH
+#elif !GHCJS_BOTH
 import           Data.Maybe
 import           System.Environment
 import           Text.Read
