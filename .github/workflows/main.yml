@@ -33,6 +33,8 @@ jobs:
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Nix channel update
        run: nix-channel --update
+     - name: Nix garbage collect
+       run: nix-collect-garbage -d
 
      - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
