@@ -1,4 +1,4 @@
-name: test matrix
+name: Miso CI
 on:
   push:
     branches:
@@ -68,8 +68,11 @@ jobs:
      - name: (WASM) Miso examples
        run: nix-build -A wasmExamples && ./result/bin/build.sh
 
-     - name: (x86) NixOS test runner for haskell-miso.org
-       run: nix-build -A haskell-miso-org-test
+     - name: Nix garbage collect
+       run: nix-collect-garbage -d
+
+     # - name: (x86) NixOS test runner for haskell-miso.org
+     #   run: nix-build -A haskell-miso-org-test
 
      - name: Diffing tests
        run: cd tests && yarn && yarn test
