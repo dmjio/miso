@@ -52,16 +52,17 @@ common string-selector
       text-src
 
 common jsaddle
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
+    build-depends:
+      jsaddle-warp
+
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
       file-embed
+
   if arch(wasm32)
     build-depends:
       jsaddle-wasm
-  else
-    build-depends:
-      jsaddle-warp
-      -- ^ dmj: maybe make this configurable w/ flag
 
 common client
   if impl(ghcjs) || arch(javascript)

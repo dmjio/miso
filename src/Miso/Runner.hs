@@ -1,25 +1,25 @@
 {-# LANGUAGE CPP #-}
 module Miso.Runner (run) where
 
-#if WASM
+#ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm as J
-#else
-import qualified Language.Javascript.JSaddle.Warp as J
-#if !GHCJS_BOTH
+#endif
+
+#ifndef GHCJS_BOTH
 import           Data.Maybe
 import           System.Environment
 import           Text.Read
-#endif
+import qualified Language.Javascript.JSaddle.Warp as J
 #endif
 
 import           Language.Javascript.JSaddle
 
 -- | Entry point for a miso application
 run :: JSM () -> IO ()
-#if WASM
+#ifdef WASM
 run = J.run
 #elif GHCJS_BOTH
-run = J.run (error "unused argument")
+run = id
 #else
 run action = do
     port <- (readMaybe =<<) <$> lookupEnv "PORT"
