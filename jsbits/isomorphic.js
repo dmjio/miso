@@ -73,10 +73,9 @@ window['parseColor'] = function(input) {
 }
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-window['integrityCheck'] = function integrityCheck(result, vtree) {
-    if (!vtree) return result;
+window['integrityCheck'] = function (result, vtree) {
     // text nodes must be the same
-    if ('type' in vtree && vtree['type'] == 'vtext') {
+    if (vtree['type'] == 'vtext') {
         if (vtree['text'] !== vtree['domRef'].textContent) {
             console.warn ('VText node content differs', vtree);
             result = false;
@@ -84,8 +83,9 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             console.info('VText nodes are identical proceed', '"' + vtree['text'] + '"');
         }
     }
+
     // if vnode / vcomp, must be the same
-    if ('tag' in vtree) {
+    else {
 
         // tags must be identical
         if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
@@ -95,6 +95,12 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             console.info('VNode tags are identical proceed', vtree['tag']);
         } else {
             console.info('VComp tags are identical proceed', vtree['tag']);
+        }
+
+        // Child lengths must be identical
+        if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
+            console.warn ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
+            result = false;
         }
 
         // properties must be identical
@@ -152,31 +158,12 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             }
         }
 
-        // events must be identical
-        if (vtree['type'] === 'vcomp') {
-            // dmj: better idea, get all delegated events in children, ensure vcomp is listening on all of them
-            keyLength = Object.keys(vtree['domRef']).length;
-            for (var i = 0; i < keyLength; i++) {
-                key = Object.keys(vtree['events'])[i];
-                if ('on' + key in vtree['domRef'] && vtree['domRef']['on' + key]) {
-                    console.log('VComp is listening on: ' + 'on' + key);
-                }
-            }
-        }
-    }
-
-    // check child lengths
-    if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
-        console.warn ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
-        result = false;
-    }
-
-    // recursive call for `vnode` / `vcomp`
-    if ('children' in vtree) {
+        // recursive call for `vnode` / `vcomp`
         for (var i = 0; i < vtree.children.length; i++) {
-            window['integrityCheck'](result, vtree.children[i]);
+            result &= window['integrityCheck'](result, vtree.children[i]);
         }
     }
+    return result;
 }
 
 
