@@ -78,7 +78,7 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
     // text nodes must be the same
     if ('type' in vtree && vtree['type'] == 'vtext') {
         if (vtree['text'] !== vtree['domRef'].textContent) {
-            console.error ('VText node content differs', vtree);
+            console.warn ('VText node content differs', vtree);
             result = false;
         } else {
             console.info('VText nodes are identical proceed', '"' + vtree['text'] + '"');
@@ -89,7 +89,7 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
 
         // tags must be identical
         if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
-            console.error ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
+            console.warn ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
             result = false;
         } else if (vtree['type'] === 'vnode') {
             console.info('VNode tags are identical proceed', vtree['tag']);
@@ -103,7 +103,7 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             key = Object.keys(vtree['props'])[i];
             if (key === 'height' || key === 'width') {
                 if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
-                    console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                     result = false;
                 } else {
                     console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
@@ -111,21 +111,21 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             }
             else if (key === 'class' || key === 'className') {
                 if (vtree['props'][key] !== vtree['domRef'].className) {
-                    console.error ('Property class differs', vtree['props'][key], vtree['domRef'].className)
+                    console.warn ('Property class differs', vtree['props'][key], vtree['domRef'].className)
                     result = false;
                 } else {
                     console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 }
             } else if (!vtree['domRef'][key]) {
                 if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
-                    console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'].getAttribute(key));
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'].getAttribute(key));
                     result = false;
                 } else {
                     console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 } 
             }
             else if (vtree['props'][key] !== vtree['domRef'][key]) {
-                console.error ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                 result = false;
             } else {
                 console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
@@ -138,14 +138,14 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
             key = Object.keys(vtree['css'])[i];
             if (key === 'color') {
                 if (window['parseColor'](vtree['domRef'].style[key]).toString() !== window['parseColor'](vtree['css'][key]).toString()) {
-                    console.error ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                    console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
                     result = false;                    
                 } else {
                     console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
                 }
             }
             else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
-                console.error ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
                 result = false;
             } else {
                 console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
@@ -167,7 +167,7 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
 
     // check child lengths
     if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
-        console.error ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
+        console.warn ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
         result = false;
     }
 
