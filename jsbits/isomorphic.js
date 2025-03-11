@@ -74,6 +74,7 @@ window['parseColor'] = function(input) {
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
 window['integrityCheck'] = function integrityCheck(result, vtree) {
+    console.info ('Starting integrity check');
     if (!vtree) return result;
     // text nodes must be the same
     if ('type' in vtree && vtree['type'] == 'vtext') {
