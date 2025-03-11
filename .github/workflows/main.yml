@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'
     steps:
+     - uses: easimon/maximize-build-space@master
+       with:
+         root-reserve-mb: 512
+         swap-size-mb: 1024
+         remove-dotnet: 'true'
      - uses: DeterminateSystems/nix-installer-action@v12
      - uses: actions/checkout@v3.5.3
      - uses: cachix/install-nix-action@v22
