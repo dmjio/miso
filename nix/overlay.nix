@@ -4,6 +4,7 @@ options: self: super: {
     "https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz";
 
   haskell-miso-org-test = self.nixosTest {
+    virtualisation.memorySize = 1024 * 10;
     nodes.machine = { config, pkgs, ... }: {
       imports = [ ../haskell-miso.org/nix/machine.nix
                   ../examples/sse/nix/machine.nix
