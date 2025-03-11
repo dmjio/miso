@@ -1,9 +1,6 @@
 { pkgs, config, ... }:
 {
   imports = [ ./module.nix ];
-  nixpkgs.config.packageOverrides = pkgs: {
-    sse-haskell-miso = import ../default.nix {};
-  };
   services = {
     sse-haskell-miso.enable = true;
     nginx = {
