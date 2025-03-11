@@ -79,9 +79,7 @@ executable components
     aeson,
     base < 5,
     containers,
-    lucid,
     miso,
-    text,
     transformers
 
 executable simple

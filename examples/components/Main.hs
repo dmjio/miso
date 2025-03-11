@@ -9,9 +9,6 @@ import           Control.Monad.IO.Class (liftIO)
 import           Miso
 import           Miso.String
 
-import qualified Data.Text.Lazy.IO as T
-import           Lucid (renderText, toHtml)
-
 type Model = Int
 
 #if defined(wasm32_HOST_ARCH)
@@ -36,11 +33,8 @@ data MainAction
 
 type MainModel = Bool
 
-test :: IO ()
-test = T.writeFile "index.html" (renderText (toHtml mainComponent))
-
 main :: IO ()
-main = run (misoComponent $ const mainComponent)
+main = run (startComponent mainComponent)
 
 mainComponent :: Component "main" MainModel MainAction
 mainComponent = component app { logLevel = DebugPrerender }
