@@ -7,6 +7,7 @@
 module Main where
 
 import           Common
+
 import           Control.Concurrent
 import           Control.Monad
 import           Data.Binary.Builder
@@ -22,10 +23,25 @@ import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Gzip
 import           Network.Wai.Middleware.RequestLogger
 import           Servant
+import           Servant.HTML.Lucid
 import qualified System.IO as IO
 
+import           Miso hiding (run, SSE)
 
-import           Miso
+type Website      = StaticFiles :<|> SSE :<|> ServerRoutes :<|> The404
+type ServerRoutes = Get '[HTML] (Page (Component "sse" Model Action))
+type StaticFiles  = "static" :> Raw
+type SSE          = "sse" :> Raw
+type The404       = Raw
+
+app :: Chan ServerEvent -> Application
+app chan = serve (Proxy @Website) website
+  where
+    website
+      = serveDirectoryFileServer "static"
+      :<|> Tagged (eventSourceAppChan chan)
+      :<|> pure (Page (sseComponent goHome))
+      :<|> Tagged handle404
 
 port :: Int
 port = 3003
@@ -49,13 +65,13 @@ sendEvents chan =
       (ServerEvent Nothing Nothing [putStringUtf8 (show (show time))])
     threadDelay (10 ^ (6 :: Int))
 
--- | Wrapper for setting HTML doctype and header
-newtype Wrapper a = Wrapper a
+-- | Page for setting HTML doctype and header
+newtype Page a = Page a
   deriving (Show, Eq)
 
-instance L.ToHtml a => L.ToHtml (Wrapper a) where
+instance L.ToHtml a => L.ToHtml (Page a) where
   toHtmlRaw = L.toHtml
-  toHtml (Wrapper x) =
+  toHtml (Page x) =
     L.doctypehtml_ $ do
       L.head_ $ do
         L.meta_ [L.charset_ "utf-8"]
@@ -70,32 +86,11 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
           , makeAttribute "defer" mempty
           ]
 
-type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
-
 handle404 :: Application
-handle404 _ respond =
-  respond $
-  responseLBS status404 [("Content-Type", "text/html")] $
-  renderBS $
-  toHtml $
-  Wrapper $ the404
-
-type API = "static" :> Raw :<|> "sse" :> Raw :<|> ServerRoutes :<|> Raw
-
-app :: Chan ServerEvent -> Application
-app chan =
-  serve
-    (Proxy @API)
-    (static :<|> sseApp chan :<|> (serverHandlers :<|> handle404))
-  where
-    static = serveDirectory "static"
-
-sseApp :: Chan ServerEvent -> Application
-sseApp chan = eventSourceAppChan chan
-
-serverHandlers :: Server ServerRoutes
-serverHandlers = homeHandler
-  where
-    send f u =
-      pure $ Wrapper $ f Model {modelUri = u, modelMsg = "No event received"}
-    homeHandler = send home goHome
+handle404 _ respond
+  = respond
+  $ responseLBS status404 [("Content-Type", "text/html")]
+  $ renderBS
+  $ toHtml
+  $ Page
+  $ the404

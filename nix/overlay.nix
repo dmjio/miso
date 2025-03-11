@@ -5,17 +5,23 @@ options: self: super: {
 
   haskell-miso-org-test = self.nixosTest {
     nodes.machine = { config, pkgs, ... }: {
-      imports = [ ../haskell-miso.org/nix/machine.nix ];
+      imports = [ ../haskell-miso.org/nix/machine.nix
+                  ../examples/sse/nix/machine.nix
+                ];
     };
     testScript = {nodes, ...}: with nodes;
       ''
       startAll;
       $machine->waitForUnit("haskell-miso.service");
       $machine->succeed("curl localhost:3002");
+      $machine->waitForUnit("sse-haskell-miso.service");
+      $machine->succeed("curl localhost:3003");
       '';
   };
 
   coverage = import ../tests {};
+
+  ssePkgs = import ../examples/sse {};
 
   sample-app-tagged =
     import ../sample-app {};
