@@ -16,11 +16,9 @@ window['diff'] = function (currentObj, newObj, parent, doc) {
 // replace everything function
 window['replace'] = function (c, n, parent, doc) {
   // step1 : prepare to delete, unmount things
-  if (c['type'] !== 'vtext') {
-     window['callBeforeDestroyedRecursive'](c);
-      // ^ this will unmount sub components before we replace the child
-      // and will recursively call hooks on nodes
-  }
+  window['callBeforeDestroyedRecursive'](c);
+  // ^ this will unmount sub components before we replace the child
+  // and will recursively call hooks on nodes
   // step2 : create new things, replace old things with new things
   if (n['type'] === 'vtext') {
     n['domRef'] = doc.createTextNode(n['text']);
@@ -28,14 +26,10 @@ window['replace'] = function (c, n, parent, doc) {
   } else {
     window['createElement'](n, doc, function(ref) {
       parent.replaceChild(ref, c['domRef']);
-      if (n['type'] === 'vcomp') window['mountComponent'](n,doc);
     });
   }
   // step 3: call destroyed hooks, call created hooks
-  if (c['type'] !== 'vtext') {
-    window['callDestroyedRecursive'](c);
-    window['callCreated'](n);
-  }
+  window['callDestroyedRecursive'](c);
 }
 
 // destroy vtext, vnode, vcomp
@@ -92,8 +86,9 @@ window['callBeforeDestroyedRecursive'] = function (obj) {
 };
 // ** </> recursive calls to hooks
 
-window['callCreated'] = function (obj) {
+window['callCreated'] = function (obj, doc) {
   if (obj['onCreated']) obj['onCreated']();
+  if (obj['type'] === 'vcomp') window['mountComponent'](obj, doc);
 };
 
 window['populate'] = function (c, n, doc) {
@@ -201,6 +196,7 @@ window['createElement'] = function (obj, doc, cb) {
   window['populateDomRef'](obj,doc);
   cb(obj['domRef']);
   window['populate'](null, obj, doc);
+  window['callCreated'](obj, doc);
 };
 
 // mounts vcomp by calling into Haskell side.
@@ -229,20 +225,14 @@ window['mountComponent'] = function (obj, doc) {
 
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
 window['create'] = function (obj, parent, doc) {
-  if (obj.type !== 'vtext') {
+  if (obj.type === 'vtext') {
+      obj['domRef'] = doc.createTextNode(obj['text']);
+      parent.appendChild(obj['domRef']);
+  }
+  else {
       window['createElement'](obj, doc, function (ref) {
         parent.appendChild(ref);
       });
-      if (obj['type'] === 'vcomp') {
-         window['mountComponent'](obj, doc);
-      }
-      window['callCreated'](obj);
-      // dmj: reuse same hook names for component lifecycle events?
-  }
-  else {
-      obj['domRef'] = doc.createTextNode(obj['text']);
-      parent.appendChild(obj['domRef']);
-      window['callCreated'](obj);
   }
 };
 
@@ -402,9 +392,6 @@ window['syncChildren'] = function(os, ns, parent, doc) {
       else {
         window['createElement'](nFirst, doc, function (ref) {
            parent.insertBefore(ref, oFirst['domRef']);
-           if (nFirst['type'] === 'vcomp') {
-              window['mountComponent'](nFirst, doc);
-           }
         });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
