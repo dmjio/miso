@@ -26,6 +26,9 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+     - name: Nix channel update
+       run: nix-channel --update
+
      - name: Dependency install
        run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
 
@@ -84,6 +87,8 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+     - name: Nix channel update
+       run: nix-channel --update
      - name: Build
        run: nix-build -A miso-ghcjs
      - name: Deploy
