@@ -1,4 +1,4 @@
-name: test matrix
+name: Miso CI
 on:
   push:
     branches:
