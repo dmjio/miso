@@ -206,13 +206,10 @@ initComponent
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 initComponent prerender name App {..} snk = do
-  vtree@(VTree (Object jval)) <- runView prerender (view model) snk
+  vtree <- runView prerender (view model) snk
   el <- getComponent name
-  if prerender == Prerender
-    then
-      copyDOMIntoVTree (logLevel == DebugPrerender) el jval
-    else
-      diff el Nothing (Just vtree)
+  when (prerender == DontPrerender) $
+    diff el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 

@@ -4,10 +4,13 @@
 {-# LANGUAGE CPP #-}
 module Main where
 
-import Control.Monad.IO.Class (liftIO)
+import           Control.Monad.IO.Class (liftIO)
 
-import Miso
-import Miso.String
+import           Miso
+import           Miso.String
+
+import qualified Data.Text.Lazy.IO as T
+import           Lucid (renderText, toHtml)
 
 type Model = Int
 
@@ -33,11 +36,14 @@ data MainAction
 
 type MainModel = Bool
 
+test :: IO ()
+test = T.writeFile "index.html" (renderText (toHtml mainComponent))
+
 main :: IO ()
-main = run (startComponent mainComponent)
+main = run (misoComponent $ const mainComponent)
 
 mainComponent :: Component "main" MainModel MainAction
-mainComponent = component app
+mainComponent = component app { logLevel = DebugPrerender }
 
 app :: App MainModel MainAction
 app = defaultApp True updateModel1 viewModel1 MainNoOp
@@ -53,7 +59,7 @@ component4 = component counterApp4
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
-viewModel1 x = div_ [ id_ "Main application" ]
+viewModel1 x = div_ []
   [ "Component 1 - Three sub components nested recursively below me"
   , br_ []
   , "The +/- for Components 3 and 4 will affect the state of Component 2"

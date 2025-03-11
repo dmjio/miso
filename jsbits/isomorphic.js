@@ -74,7 +74,6 @@ window['parseColor'] = function(input) {
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
 window['integrityCheck'] = function integrityCheck(result, vtree) {
-    console.info ('Starting integrity check');
     if (!vtree) return result;
     // text nodes must be the same
     if ('type' in vtree && vtree['type'] == 'vtext') {
@@ -168,7 +167,7 @@ window['integrityCheck'] = function integrityCheck(result, vtree) {
 
     // check child lengths
     if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
-        console.error ('Integrity check failed, children lengths differ', vtree);
+        console.error ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
         result = false;
     }
 
