@@ -17,7 +17,6 @@ module Miso.Subscription.SSE
  , SSE (..)
  ) where
 
-import           Control.Monad.IO.Class
 import           Data.Aeson
 import           Miso.Types (Sub)
 import           Miso.FFI
@@ -31,11 +30,11 @@ sseSub url f = \sink -> do
   es <- SSE.new url
   SSE.addEventListener es "message" $ \val -> do
     dat <- parse =<< SSE.data' val
-    (liftIO . sink) (f (SSEMessage dat))
+    sink (f (SSEMessage dat))
   SSE.addEventListener es "error" $ \_ ->
-    (liftIO . sink) (f SSEError)
+    sink (f SSEError)
   SSE.addEventListener es "close" $ \_ ->
-    (liftIO . sink) (f SSEClose)
+    sink (f SSEClose)
 
 -- | Server-sent events data
 data SSE message

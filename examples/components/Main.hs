@@ -44,24 +44,30 @@ mainComponent = component app { logLevel = DebugPrerender }
 secs :: Int -> Int
 secs = (*1000000)
 
+loggerSub :: MisoString -> Sub action
+loggerSub msg = \_ ->
+  forever $ do
+    liftIO $ threadDelay (secs 1)
+    consoleLog msg
+
 app :: App MainModel MainAction
 app = (defaultApp True updateModel1 viewModel1 MainNoOp)
-  { subs = [ \_ -> forever $ threadDelay (secs 1) >> consoleLog "main app" ]
+  { subs = [ loggerSub "main-app" ]
   }
 
 component2 :: Component "component-2" Model Action
 component2 = component counterApp2
-  { subs = [ \_ -> forever $ threadDelay (secs 1) >> consoleLog "component-2 sub" ]
+  { subs = [ loggerSub "component-2 sub" ]
   }
 
 component3 :: Component "component-3" (Bool, Model) Action
 component3 = component counterApp3
-  { subs = [ \_ -> forever $ threadDelay (secs 1) >> consoleLog "component-3 sub" ]
+  { subs = [ loggerSub "component-3 sub" ]
   }
 
 component4 :: Component "component-4" Model Action
 component4 = component counterApp4
-  { subs = [ \_ -> forever $ threadDelay (secs 1) >> consoleLog "component-4 sub" ]
+  { subs = [ loggerSub "component-4 sub" ]
   }
 
 -- | Constructs a virtual DOM from a model

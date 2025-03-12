@@ -21,7 +21,7 @@ module Miso.Internal
 where
 
 import           Control.Concurrent
-import           Control.Monad (forM, forM_, (<=<), when, forever, void)
+import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
@@ -87,10 +87,8 @@ initialize App {..} getView = do
         loop newModel
 
   tid <- forkJSM (loop model)
-
-  liftIO $ do
-     registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
-     eventSink initialAction
+  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
+  eventSink initialAction
 
   delegator mountEl viewRef events
   pure viewRef
@@ -109,7 +107,7 @@ data ComponentState action
   , componentSubThreads :: [ThreadId]
   , componentMount :: JSVal
   , componentVTree :: IORef VTree
-  , componentSink :: action -> IO ()
+  , componentSink :: action -> JSM ()
   }
 
 componentMap :: IORef (Map MisoString (ComponentState action))
@@ -122,7 +120,7 @@ notify
   :: Component name m a
   -> a
   -> Transition action model ()
-notify (Component name _) action = scheduleIO_ $ void (liftIO io)
+notify (Component name _) action = scheduleIO_ (void io)
   where
     io = do
       componentStateMap <- liftIO (readIORef componentMap)
@@ -157,7 +155,7 @@ foldEffects update snk (e:es) old =
 -- this is a backdoor function so it comes with warnings
 sink :: MisoString -> App action model -> Sink action
 sink name _ = \a ->
-  M.lookup name <$> readIORef componentMap >>= \case
+  M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
 
@@ -175,7 +173,7 @@ mail
   :: Component name m a
   -> a
   -> JSM ()
-mail (Component name _) action = liftIO $ do
+mail (Component name _) action = do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
     componentSink action
@@ -226,15 +224,14 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   -- It's important that things remain synchronous during this process.
   mountCb <- do
     syncCallback1 $ \continuation -> do
-      forM_ onMounted $ \m -> liftIO $ snk m
+      forM_ onMounted snk
       vtreeRef <- initialize app (drawComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
 
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
-      forM_ onUnmounted $ \m ->
-        liftIO $ snk m
+      forM_ onUnmounted snk
 
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()

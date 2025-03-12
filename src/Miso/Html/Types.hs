@@ -37,7 +37,6 @@ module Miso.Html.Types (
     ) where
 
 import           Control.Monad
-import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (ToJSON, toJSON)
 import           Data.Aeson.Types (parseEither)
 import qualified Data.Map.Strict as M
@@ -130,7 +129,7 @@ onWithOptions options eventName Decoder{..} toAction =
        Just v <- fromJSVal =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> liftIO (sink (toAction r))
+         Right r -> sink (toAction r)
    set "runEvent" cb eventHandlerObject
    registerCallback cb
    set "options" jsOptions eventHandlerObject
@@ -144,7 +143,7 @@ onWithOptions options eventName Decoder{..} toAction =
 onCreated :: action -> Attribute action
 onCreated action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    cb <- callbackToJSVal =<< syncCallback (sink action)
     set "onCreated" cb n
     registerCallback cb
 
@@ -157,7 +156,7 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    cb <- callbackToJSVal =<< syncCallback (sink action)
     set "onDestroyed" cb n
     registerCallback cb
 
@@ -170,7 +169,7 @@ onDestroyed action =
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (liftIO (sink action))
+    cb <- callbackToJSVal =<< syncCallback (sink action)
     set "onBeforeDestroyed" cb n
     registerCallback cb
 

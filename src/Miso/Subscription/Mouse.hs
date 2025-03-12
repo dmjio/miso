@@ -11,7 +11,6 @@
 ----------------------------------------------------------------------------
 module Miso.Subscription.Mouse (mouseSub) where
 
-import Control.Monad.IO.Class
 import GHCJS.Marshal
 import JavaScript.Object
 import JavaScript.Object.Internal
@@ -27,4 +26,4 @@ mouseSub f = \sink -> do
     \mouseEvent -> do
       Just x <- fromJSVal =<< getProp "clientX" (Object mouseEvent)
       Just y <- fromJSVal =<< getProp "clientY" (Object mouseEvent)
-      liftIO (sink $ f (x,y))
+      sink $ f (x,y)

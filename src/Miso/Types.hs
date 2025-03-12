@@ -55,7 +55,6 @@ module Miso.Types
   , module Miso.Effect
   ) where
 
-import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
 import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
@@ -193,7 +192,7 @@ toTransition f =
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 scheduleIO :: JSM action -> Transition action model ()
-scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= liftIO . sink
+scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
 
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
 -- the 'update' function.
@@ -207,7 +206,7 @@ scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
-scheduleIOFor_ io = scheduleSub $ \sink -> io >>= \m -> liftIO (for_ m sink)
+scheduleIOFor_ io = scheduleSub $ \sink -> io >>= flip for_ sink
 
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
 -- computation that has access to a 'Sink' which can be used to

@@ -90,9 +90,9 @@ uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
   void.forkJSM.forever $ do
     liftIO (wait chan)
-    liftIO . sink . f =<< getURI
+    sink . f =<< getURI
   windowAddEventListener "popstate" $ \_ ->
-      liftIO . sink . f =<< getURI
+    sink . f =<< getURI
 
 pushStateNoModel :: URI -> JSM ()
 {-# INLINE pushStateNoModel #-}
