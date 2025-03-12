@@ -23,7 +23,7 @@ module Miso.Internal
 where
 
 import           Control.Concurrent
-import           Control.Monad (forM_, (<=<), when, forever, void)
+import           Control.Monad (forM, forM_, (<=<), when, forever, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
@@ -46,7 +46,7 @@ import           Miso.Effect
 import           Miso.FFI
 import           Miso.Html
 import           Miso.String hiding (reverse)
-import           Miso.Types
+import           Miso.Types hiding (componentName)
 
 -- | Helper function to abstract out common functionality between `startApp` and `miso`
 common
@@ -64,8 +64,8 @@ common App {..} getView = do
       atomicModifyIORef' actions $ \as -> (as S.|> a, ())
       serve
 
-  -- init Subs
-  forM_ subs $ \sub -> sub eventSink
+  -- init Subs, save threads for destruction later
+  subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
   -- Hack to get around `BlockedIndefinitelyOnMVar` exception
   -- that occurs when no event handlers are present on a template
   -- and `notify` is no longer in scope
@@ -93,9 +93,12 @@ common App {..} getView = do
         syncPoint
         loop newModel
 
-  void $ forkJSM $ do
-    registerSink mount mountEl viewRef eventSink
+  void . forkJSM $ do
+    liftIO $ do
+      tid <- myThreadId
+      registerSink (ComponentState mount tid subThreads mountEl viewRef eventSink)
     loop model
+
   delegator mountEl viewRef events
   pure viewRef
 
@@ -106,9 +109,17 @@ data Prerender
   | Prerender
   deriving (Show, Eq)
 
-componentMap
-  :: forall action
-   . IORef (Map MisoString (ThreadId, JSVal, IORef VTree, action -> IO ()))
+data ComponentState action
+  = ComponentState
+  { componentName :: MisoString
+  , componentMainThread :: ThreadId
+  , componentSubThreads :: [ThreadId]
+  , componentMount :: JSVal
+  , componentVTree :: IORef VTree
+  , componentSink :: action -> IO ()
+  }
+
+componentMap :: IORef (Map MisoString (ComponentState action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 
@@ -118,12 +129,12 @@ notify
   :: Component name m a
   -> a
   -> Transition action model ()
-notify (Component name _) action = scheduleIO_ (liftIO io)
+notify (Component name _) action = scheduleIO_ $ void (liftIO io)
   where
     io = do
-      dispatch <- liftIO (readIORef componentMap)
-      forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
-        f action
+      componentStateMap <- liftIO (readIORef componentMap)
+      forM (M.lookup name componentStateMap) $ \ComponentState {..} ->
+        componentSink action
 
 -- | Helper for processing effects in the event loop.
 foldEffects
@@ -152,17 +163,14 @@ foldEffects update snk (e:es) old =
 -- in the global component map and it will be a no-op
 -- this is a backdoor function so it comes with warnings
 sink :: MisoString -> App action model -> Sink action
-sink name _ = \a -> do
+sink name _ = \a -> void $ do
   M.lookup name <$> readIORef componentMap >>= \case
+    Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
-    Just (_, _, _, f) -> f a
 
 -- | Link 'sink' but without `App` argument
 sinkRaw :: MisoString -> Sink action
-sinkRaw name = \x -> do
-  M.lookup name <$> readIORef componentMap >>= \case
-    Nothing -> pure ()
-    Just (_, _, _, f) -> f x
+sinkRaw name = sink name undefined
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -176,8 +184,8 @@ mail
   -> JSM ()
 mail (Component name _) action = liftIO $ do
   dispatch <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
-    f action
+  forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
+    componentSink action
 
 -- | Internally used for runView and startApp
 -- Initial draw helper
@@ -218,10 +226,12 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing ->
           pure ()
-        Just (tid, compNode, ref, _) -> do
-          undelegator compNode ref (events app)
+        Just ComponentState{..} -> do
+          undelegator componentMount componentVTree (events app)
           freeFunction mountCb
-          liftIO (killThread tid)
+          liftIO $ do
+            killThread componentMainThread
+            mapM_ killThread componentSubThreads
           liftIO $ modifyIORef' componentMap (M.delete mount)
 
   vcomp <- create
@@ -313,7 +323,19 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => MisoString -> JSVal -> IORef VTree -> Sink action -> m ()
-registerSink mount mountEl vtree snk = liftIO $ do
-  tid <- myThreadId
-  liftIO $ modifyIORef' componentMap (M.insert mount (tid, mountEl, vtree, snk))
+-- MisoString -> JSVal -> IORef VTree -> [ThreadId] -> Sink action
+
+-- mount mountEl vtree snk threads
+
+registerSink :: MonadIO m => ComponentState action -> m ()
+registerSink componentState = do
+  liftIO $ modifyIORef' componentMap (M.insertWith combine (componentName componentState) componentState)
+    where
+      combine
+        :: ComponentState action
+        -> ComponentState action 
+        -> ComponentState action 
+      combine c1 c2 =
+        c1 { componentSubThreads = componentSubThreads c1 ++ componentSubThreads c2 }
+
+-- [ThreadId], JSVal, IORef VTree, action -> IO ())
