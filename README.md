@@ -20,7 +20,7 @@
 	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://github.com/dmjio/miso/actions">
-    <img src="https://github.com/dmjio/miso/workflows/test%20matrix/badge.svg" alt="GitHub Actions">
+    <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
 	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
