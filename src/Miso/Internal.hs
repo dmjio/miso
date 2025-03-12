@@ -11,13 +11,11 @@
 module Miso.Internal
   ( initialize
   , componentMap
-  , drawComponent
   , sink
   , sinkRaw
   , mail
   , notify
   , runView
-  , registerSink
   , Prerender(..)
   )
 where
@@ -26,23 +24,21 @@ import           Control.Concurrent
 import           Control.Monad (forM, forM_, (<=<), when, forever, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
-import           Data.Foldable (toList)
-import           Data.IORef
+import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
 import qualified JavaScript.Array as JSArray
 import           Language.Javascript.JSaddle
 import           Prelude hiding (null)
-import           System.IO.Unsafe
-import           System.Mem.StableName
+import           System.IO.Unsafe (unsafePerformIO)
+import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-import           Miso.Concurrent
+import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.Delegate (delegator, undelegator)
-import           Miso.Diff
-import           Miso.Effect
+import           Miso.Diff (diff)
 import           Miso.FFI
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
@@ -95,7 +91,7 @@ initialize App {..} getView = do
   tid <- forkJSM (loop model)
 
   liftIO $ do
-     registerSink (ComponentState mount tid subThreads mountEl viewRef eventSink)
+     registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
      eventSink initialAction
 
   delegator mountEl viewRef events
@@ -335,7 +331,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => ComponentState action -> m ()
-registerSink componentState = liftIO
+registerComponent :: MonadIO m => ComponentState action -> m ()
+registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
