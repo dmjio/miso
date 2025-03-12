@@ -80,7 +80,7 @@ window['integrityCheck'] = function (result, vtree) {
             console.warn ('VText node content differs', vtree);
             result = false;
         } else {
-            console.info('VText nodes are identical proceed', '"' + vtree['text'] + '"');
+            console.info('VText nodes are identical', '"' + vtree['text'] + '"');
         }
     }
 
@@ -92,9 +92,9 @@ window['integrityCheck'] = function (result, vtree) {
             console.warn ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
             result = false;
         } else if (vtree['type'] === 'vnode') {
-            console.info('VNode tags are identical proceed', vtree['tag']);
+            console.info('VNode tags are identical', vtree['tag']);
         } else {
-            console.info('VComp tags are identical proceed', vtree['tag']);
+            console.info('VComp tags are identical', vtree['tag']);
         }
 
         // Child lengths must be identical
