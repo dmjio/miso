@@ -125,13 +125,12 @@ onWithOptions options eventName Decoder{..} toAction =
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
-   cb <- toJSVal <=< asyncCallback1 $ \e -> do
+   cb <- asyncCallback1 $ \e -> do
        Just v <- fromJSVal =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
          Right r -> sink (toAction r)
    set "runEvent" cb eventHandlerObject
-   registerCallback cb
    set "options" jsOptions eventHandlerObject
    set eventName eo (Object eventObj)
 
@@ -143,9 +142,8 @@ onWithOptions options eventName Decoder{..} toAction =
 onCreated :: action -> Attribute action
 onCreated action =
   E $ \sink n -> do
-    cb <- toJSVal =<< syncCallback (sink action)
+    cb <- syncCallback (sink action)
     set "onCreated" cb n
-    registerCallback cb
 
 -- | @onDestroyed action@ is an event that gets called after the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -156,9 +154,8 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   E $ \sink n -> do
-    cb <- toJSVal =<< syncCallback (sink action)
+    cb <- syncCallback (sink action)
     set "onDestroyed" cb n
-    registerCallback cb
 
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -169,9 +166,8 @@ onDestroyed action =
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   E $ \sink n -> do
-    cb <- toJSVal =<< syncCallback (sink action)
+    cb <- syncCallback (sink action)
     set "onBeforeDestroyed" cb n
-    registerCallback cb
 
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.

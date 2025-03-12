@@ -44,9 +44,6 @@ module Miso.FFI
    , delegateEvent
    , undelegateEvent
    , copyDOMIntoVTree
-   , swapCallbacks
-   , releaseCallbacks
-   , registerCallback
    , focus
    , blur
    , scrollIntoView
@@ -281,20 +278,6 @@ copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
   doc <- getDoc
   jsg4 "copyDOMIntoVTree" logLevel mountPoint vtree doc
-
--- TODO For now, we do not free callbacks when compiling with JSaddle
-
--- | Pins down the current callbacks for clearing later
-swapCallbacks :: JSM ()
-swapCallbacks = pure ()
-
--- | Releases callbacks registered by the virtual DOM.
-releaseCallbacks :: JSM ()
-releaseCallbacks = pure ()
-
--- | Mock for callback registration
-registerCallback :: JSVal -> JSM ()
-registerCallback _ = pure ()
 
 -- | Fails silently if the element is not found.
 --

@@ -69,7 +69,6 @@ miso f = withJS $ do
     VTree (Object iv) <- runView Prerender (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- getBody
-    -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
     ref <- liftIO $ newIORef $ VTree (Object iv)
     pure (mount, mountEl, ref)

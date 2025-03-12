@@ -76,12 +76,10 @@ initialize App {..} getView = do
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
         newName <- liftIO $ newModel `seq` makeStableName newModel
         when (oldName /= newName && oldModel /= newModel) $ do
-          swapCallbacks
           newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
-          releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
         loop newModel
