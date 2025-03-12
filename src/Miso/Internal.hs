@@ -27,7 +27,6 @@ import           Control.Monad (forM, forM_, (<=<), when, forever, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
-import           Data.Function (on)
 import           Data.IORef
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -73,12 +72,11 @@ common App {..} getView = do
   void . liftIO . forkIO . forever $ threadDelay (1000000 * 86400) >> serve
   -- Retrieves reference view
   (mount, mountEl, viewRef) <- getView eventSink
-  -- Process initial action of application
-  liftIO (eventSink initialAction)
   -- Program loop, blocking on SkipChan
   let
     loop !oldModel = liftIO wait >> do
         -- Apply actions to model
+        consoleLog "inside loop, mvar taken"
         as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
         newModel <- foldEffects update eventSink (toList as) oldModel
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
@@ -94,11 +92,11 @@ common App {..} getView = do
         syncPoint
         loop newModel
 
-  void . forkJSM $ do
-    liftIO $ do
-      tid <- myThreadId
-      registerSink (ComponentState mount tid subThreads mountEl viewRef eventSink)
-    loop model
+  tid <- forkJSM (loop model)
+
+  liftIO $ do
+     registerSink (ComponentState mount tid subThreads mountEl viewRef eventSink)
+     eventSink initialAction
 
   delegator mountEl viewRef events
   pure viewRef
@@ -164,7 +162,7 @@ foldEffects update snk (e:es) old =
 -- in the global component map and it will be a no-op
 -- this is a backdoor function so it comes with warnings
 sink :: MisoString -> App action model -> Sink action
-sink name _ = \a -> void $ do
+sink name _ = \a ->
   M.lookup name <$> readIORef componentMap >>= \case
     Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
@@ -338,14 +336,6 @@ parseView html = reverse (go (parseTree html) [])
       go next views
 
 registerSink :: MonadIO m => ComponentState action -> m ()
-registerSink componentState =
-  liftIO $ modifyIORef' componentMap
-    (M.insertWith combine (componentName componentState) componentState)
-    where
-      combine
-        :: ComponentState action
-        -> ComponentState action 
-        -> ComponentState action 
-      combine c1 c2 = c1
-        { componentSubThreads = on (++) componentSubThreads c1 c2 
-        }
+registerSink componentState = liftIO
+  $ modifyIORef' componentMap
+  $ M.insert (componentName componentState) componentState
