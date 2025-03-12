@@ -9,52 +9,50 @@
 {-# LANGUAGE KindSignatures      #-}
 
 module Miso.Internal
-  ( common
+  ( initialize
   , componentMap
-  , initComponent
   , sink
   , sinkRaw
   , mail
   , notify
   , runView
-  , registerSink
   , Prerender(..)
   )
 where
 
 import           Control.Concurrent
-import           Control.Monad (forM_, (<=<), when, forever, void)
+import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
-import           Data.IORef
+import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
 import qualified JavaScript.Array as JSArray
 import           Language.Javascript.JSaddle
 import           Prelude hiding (null)
-import           System.IO.Unsafe
-import           System.Mem.StableName
+import           System.IO.Unsafe (unsafePerformIO)
+import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 
-import           Miso.Concurrent
+import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.Delegate (delegator, undelegator)
-import           Miso.Diff
-import           Miso.Effect
+import           Miso.Diff (diff)
 import           Miso.FFI
-import           Miso.Html
+import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
-import           Miso.Types
+import           Miso.Types hiding (componentName)
 
--- | Helper function to abstract out common functionality between `startApp` and `miso`
-common
+-- | Helper function to abstract out initialize functionality between `startApp` and `miso`
+initialize
   :: Eq model
   => App model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
+  -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
-common App {..} getView = do
+initialize App {..} getView = do
   -- init Waiter
   Waiter {..} <- liftIO waiter
   -- init empty actions
@@ -64,16 +62,11 @@ common App {..} getView = do
       atomicModifyIORef' actions $ \as -> (as S.|> a, ())
       serve
 
-  -- init Subs
-  forM_ subs $ \sub -> sub eventSink
-  -- Hack to get around `BlockedIndefinitelyOnMVar` exception
-  -- that occurs when no event handlers are present on a template
-  -- and `notify` is no longer in scope
-  void . liftIO . forkIO . forever $ threadDelay (1000000 * 86400) >> serve
+  -- init Subs, save threads for destruction later
+  subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
+
   -- Retrieves reference view
   (mount, mountEl, viewRef) <- getView eventSink
-  -- Process initial action of application
-  liftIO (eventSink initialAction)
   -- Program loop, blocking on SkipChan
   let
     loop !oldModel = liftIO wait >> do
@@ -83,19 +76,18 @@ common App {..} getView = do
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
         newName <- liftIO $ newModel `seq` makeStableName newModel
         when (oldName /= newName && oldModel /= newModel) $ do
-          swapCallbacks
           newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
-          void $ waitForAnimationFrame
+          void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
-          releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
         loop newModel
 
-  void $ forkJSM $ do
-    registerSink mount mountEl viewRef eventSink
-    loop model
+  tid <- forkJSM (loop model)
+  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
+  eventSink initialAction
+
   delegator mountEl viewRef events
   pure viewRef
 
@@ -106,9 +98,17 @@ data Prerender
   | Prerender
   deriving (Show, Eq)
 
-componentMap
-  :: forall action
-   . IORef (Map MisoString (ThreadId, JSVal, IORef VTree, action -> IO ()))
+data ComponentState action
+  = ComponentState
+  { componentName :: MisoString
+  , componentMainThread :: ThreadId
+  , componentSubThreads :: [ThreadId]
+  , componentMount :: JSVal
+  , componentVTree :: IORef VTree
+  , componentSink :: action -> JSM ()
+  }
+
+componentMap :: IORef (Map MisoString (ComponentState action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 
@@ -118,12 +118,12 @@ notify
   :: Component name m a
   -> a
   -> Transition action model ()
-notify (Component name _) action = scheduleIO_ (liftIO io)
+notify (Component name _) action = scheduleIO_ (void io)
   where
     io = do
-      dispatch <- liftIO (readIORef componentMap)
-      forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
-        f action
+      componentStateMap <- liftIO (readIORef componentMap)
+      forM (M.lookup name componentStateMap) $ \ComponentState {..} ->
+        componentSink action
 
 -- | Helper for processing effects in the event loop.
 foldEffects
@@ -152,17 +152,14 @@ foldEffects update snk (e:es) old =
 -- in the global component map and it will be a no-op
 -- this is a backdoor function so it comes with warnings
 sink :: MisoString -> App action model -> Sink action
-sink name _ = \a -> do
-  M.lookup name <$> readIORef componentMap >>= \case
+sink name _ = \a ->
+  M.lookup name <$> liftIO (readIORef componentMap) >>= \case
+    Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
-    Just (_, _, _, f) -> f a
 
 -- | Link 'sink' but without `App` argument
 sinkRaw :: MisoString -> Sink action
-sinkRaw name = \x -> do
-  M.lookup name <$> readIORef componentMap >>= \case
-    Nothing -> pure ()
-    Just (_, _, _, f) -> f x
+sinkRaw name = sink name undefined
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -174,21 +171,21 @@ mail
   :: Component name m a
   -> a
   -> JSM ()
-mail (Component name _) action = liftIO $ do
+mail (Component name _) action = do
   dispatch <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name dispatch) $ \(_, _, _, f) ->
-    f action
+  forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
+    componentSink action
 
 -- | Internally used for runView and startApp
 -- Initial draw helper
 -- If prerendering bypass diff and continue copying
-initComponent
+drawComponent
   :: Prerender
   -> MisoString
   -> App model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
-initComponent prerender name App {..} snk = do
+drawComponent prerender name App {..} snk = do
   vtree <- runView prerender (view model) snk
   el <- getComponent name
   when (prerender == DontPrerender) $
@@ -196,33 +193,46 @@ initComponent prerender name App {..} snk = do
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
-runView :: Prerender -> View action -> Sink action -> JSM VTree
+-- | Helper function for cleanly destroying a @Component@
+unmount
+  :: Function
+  -> App model action
+  -> ComponentState action
+  -> JSM ()
+unmount mountCallback app ComponentState {..} = do
+  undelegator componentMount componentVTree (events app)
+  freeFunction mountCallback
+  liftIO $ do
+    killThread componentMainThread
+    mapM_ killThread componentSubThreads
+    modifyIORef' componentMap (M.delete componentName)
+
+runView
+  :: Prerender
+  -> View action
+  -> Sink action
+  -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   let mount = name
-  -- By default components should be mounted sychronously.
-  -- We also include async mounting for tools like jsaddle-warp.
-  -- mounting causes a recursive diff to occur, creating subcomponents
-  -- and setting up infrastructure for each sub-component. During this
-  -- process we go between the haskell heap and the js heap.
-  -- It's important that things remain synchronous during this process.
+  -- Component mounting should be sychronous.
+  -- Mounting causes a recursive diff to occur,
+  -- creating sub components as detected, setting up
+  -- infrastructure for each sub-component. During this
+  -- process we go between the Haskell heap and the JS heap.
   mountCb <- do
     syncCallback1 $ \continuation -> do
-      forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent prerender mount app)
+      forM_ onMounted snk
+      vtreeRef <- initialize app (drawComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
 
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
-      forM_ onUnmounted $ \m -> liftIO $ snk m
+      forM_ onUnmounted snk
+
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
-        Nothing ->
-          pure ()
-        Just (tid, compNode, ref, _) -> do
-          undelegator compNode ref (events app)
-          freeFunction mountCb
-          liftIO (killThread tid)
-          liftIO $ modifyIORef' componentMap (M.delete mount)
+        Nothing -> pure ()
+        Just componentState -> unmount mountCb app componentState
 
   vcomp <- create
   cssObj <- create
@@ -313,7 +323,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
-registerSink :: MonadIO m => MisoString -> JSVal -> IORef VTree -> Sink action -> m ()
-registerSink mount mountEl vtree snk = liftIO $ do
-  tid <- myThreadId
-  liftIO $ modifyIORef' componentMap (M.insert mount (tid, mountEl, vtree, snk))
+registerComponent :: MonadIO m => ComponentState action -> m ()
+registerComponent componentState = liftIO
+  $ modifyIORef' componentMap
+  $ M.insert (componentName componentState) componentState

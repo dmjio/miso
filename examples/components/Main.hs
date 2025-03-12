@@ -4,10 +4,12 @@
 {-# LANGUAGE CPP #-}
 module Main where
 
-import           Control.Monad.IO.Class (liftIO)
+import Control.Monad
+import Control.Concurrent
+import Control.Monad.IO.Class (liftIO)
 
-import           Miso
-import           Miso.String
+import Miso
+import Miso.String
 
 type Model = Int
 
@@ -39,17 +41,34 @@ main = run (startComponent mainComponent)
 mainComponent :: Component "main" MainModel MainAction
 mainComponent = component app { logLevel = DebugPrerender }
 
+secs :: Int -> Int
+secs = (*1000000)
+
+loggerSub :: MisoString -> Sub action
+loggerSub msg = \_ ->
+  forever $ do
+    liftIO $ threadDelay (secs 1)
+    consoleLog msg
+
 app :: App MainModel MainAction
-app = defaultApp True updateModel1 viewModel1 MainNoOp
+app = (defaultApp True updateModel1 viewModel1 MainNoOp)
+  { subs = [ loggerSub "main-app" ]
+  }
 
 component2 :: Component "component-2" Model Action
 component2 = component counterApp2
+  { subs = [ loggerSub "component-2 sub" ]
+  }
 
 component3 :: Component "component-3" (Bool, Model) Action
 component3 = component counterApp3
+  { subs = [ loggerSub "component-3 sub" ]
+  }
 
 component4 :: Component "component-4" Model Action
 component4 = component counterApp4
+  { subs = [ loggerSub "component-4 sub" ]
+  }
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction

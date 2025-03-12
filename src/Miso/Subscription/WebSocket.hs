@@ -72,18 +72,18 @@ websocketSub (URL u) (Protocols ps) f sink = do
   socket <- createWebSocket u ps
   liftIO (writeIORef websocket (Just socket))
   void . forkJSM $ handleReconnect
-  WS.addEventListener socket "open" $ \_ -> liftIO $ do
-    writeIORef closedCode Nothing
+  WS.addEventListener socket "open" $ \_ -> do
+    liftIO (writeIORef closedCode Nothing)
     sink (f WebSocketOpen)
   WS.addEventListener socket "message" $ \v -> do
     d <- parse =<< WS.data' v
-    liftIO . sink $ f (WebSocketMessage d)
+    sink $ f (WebSocketMessage d)
   WS.addEventListener socket "close" $ \e -> do
     code <- codeToCloseCode <$> WS.code e
     liftIO (writeIORef closedCode (Just code))
     reason <- WS.reason e
     clean <- WS.wasClean e
-    liftIO . sink $ f (WebSocketClose code clean reason)
+    sink $ f (WebSocketClose code clean reason)
   WS.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
     d' <- WS.data' v
@@ -94,10 +94,10 @@ websocketSub (URL u) (Protocols ps) f sink = do
 #endif
     if undef
       then do
-         liftIO . sink $ f (WebSocketError mempty)
+         sink $ f (WebSocketError mempty)
       else do
          Just d <- fromJSVal d'
-         liftIO . sink $ f (WebSocketError d)
+         sink $ f (WebSocketError d)
   where
     handleReconnect = do
       liftIO (threadDelay (secs 3))

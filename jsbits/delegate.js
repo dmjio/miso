@@ -1,29 +1,4 @@
 window = typeof window === 'undefined' ? {} : window;
-window['oldCallbacks'] = [];
-window['currentCallbacks'] = [];
-
-/* Callbacks in ghcjs need to be released. With this function one can register
-   callbacks that should be released right before diffing.
-   */
-window['registerCallback'] = function registerCallback(cb) {
-  window['currentCallbacks'].push(cb);
-};
-
-/* Swaps out the new calbacks for old callbacks.
-The old callbacks should be cleared once the new callbacks have replaced them.
-*/
-window['swapCallbacks'] = function swapCallbacks() {
-  window['oldCallbacks'] = window['currentCallbacks'];
-  window['currentCallbacks'] = [];
-};
-
-/* This releases the old callbacks. */
-window['releaseCallbacks'] = function releaseCallbacks() {
-  for (var i in window['oldCallbacks'])
-    h$release(window['oldCallbacks'][i]);
-
-  window['oldCallbacks'] = [];
-};
 
 /* event delegation algorithm */
 window['delegate'] = function (mount, events, getVTree) {

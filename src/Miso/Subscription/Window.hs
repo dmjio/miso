@@ -12,7 +12,6 @@
 module Miso.Subscription.Window where
 
 import Control.Monad
-import Control.Monad.IO.Class
 
 import GHCJS.Marshal
 import JavaScript.Object
@@ -29,13 +28,13 @@ import Data.Aeson.Types (parseEither)
 -- an event sink
 windowCoordsSub :: ((Int, Int) -> action) -> Sub action
 windowCoordsSub f = \sink -> do
-  liftIO . sink . f =<< (,) <$> windowInnerHeight <*> windowInnerWidth
+  sink . f =<< (,) <$> windowInnerHeight <*> windowInnerWidth
   windowAddEventListener "resize" $
     \windowEvent -> do
       target <- getProp "target" (Object windowEvent)
       Just w <- fromJSVal =<< getProp "innerWidth" (Object target)
       Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
-      liftIO . sink $ f (h, w)
+      sink $ f (h, w)
 
 -- | @windowSub eventName decoder toAction@ is a subscription which parallels the
 -- attribute handler `on`, providing a subscription to listen to window level events.
@@ -55,4 +54,4 @@ windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
         Right r -> do
           when stopPropagation $ eventStopPropagation e
           when preventDefault $ eventPreventDefault e
-          liftIO (sink (toAction r))
+          sink (toAction r)

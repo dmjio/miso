@@ -88,14 +88,14 @@ keyboardSub f sink = do
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.insert key keys
              in (new, new)
-          liftIO (sink (f newKeys))
+          sink (f newKeys)
 
       keyUpCallback keySetRef = \keyUpEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.delete key keys
              in (new, new)
-          liftIO (sink (f newKeys))
+          sink (f newKeys)
 
       -- Assume keys are released the moment focus is lost. Otherwise going
       -- back and forth to the app can cause keys to get stuck.
@@ -103,4 +103,4 @@ keyboardSub f sink = do
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \_ ->
             let !new = S.empty
             in (new, new)
-          liftIO (sink (f newKeys))
+          sink (f newKeys)
