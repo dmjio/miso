@@ -85,10 +85,16 @@ asyncCallback a = asyncFunction (\_ _ _ -> a)
 
 -- | Creates an asynchronous callback function with a single argument
 asyncCallback1 :: (JSVal -> JSM ()) -> JSM Function
-asyncCallback1 f = asyncFunction (\_ _ [x] -> f x)
+asyncCallback1 f = asyncFunction handle
+  where
+    handle _ _ []    = error "asyncCallback1: no args, impossible"
+    handle _ _ (x:_) = f x
 
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
-syncCallback1 f = function (\_ _ [x] -> f x)
+syncCallback1 f = function handle
+  where
+    handle _ _ []    = error "ssyncCallback1: no args, impossible"
+    handle _ _ (x:_) = f x
 
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
@@ -249,21 +255,21 @@ jsStringToDouble = read . unpack
 
 -- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
-delegateEvent mountPoint events getVTree = do
-  cb' <- function $ \_ _ [continuation] -> do
-    res <- getVTree
-    _ <- call continuation global res
-    pure ()
-  delegate mountPoint events cb'
+delegateEvent mountPoint events getVTree =
+  delegate mountPoint events =<< function handler
+    where
+      handler _ _ [] = error "delegate: no args - impossible state"
+      handler _ _ (continuation : _) =
+        void (call continuation global =<< getVTree)
 
 -- | deinitialize event delegation from a mount point.
 undelegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
-undelegateEvent mountPoint events getVTree = do
-  cb' <- function $ \_ _ [continuation] -> do
-    res <- getVTree
-    _ <- call continuation global res
-    pure ()
-  undelegate mountPoint events cb'
+undelegateEvent mountPoint events getVTree =
+  undelegate mountPoint events =<< function handler
+    where
+      handler _ _ [] = error "undelegate: no args - impossible state"
+      handler _ _ (continuation : _) =
+        void (call continuation global =<< getVTree)
 
 -- | Call 'delegateEvent' JavaScript function
 delegate :: JSVal -> JSVal -> Function -> JSM ()
