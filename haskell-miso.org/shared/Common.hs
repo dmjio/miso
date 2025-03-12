@@ -314,7 +314,7 @@ middle =
                        ]
                     ],
                   a_ [class_ "column has-text-centered"
-                     , href_  "https://github.com/ghcjs/ghcjs/blob/master/doc/foreign-function-interface.md"
+                     , href_  "https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend"
                      , rel_ "noopener"
                      , target_  "_blank"
                      ] [
@@ -324,7 +324,7 @@ middle =
                         strong_ [] [ text  "Interoperable" ]
                        ],
                       p_ [class_   "subtitle"] [
-                        text  "via the GHCJS FFI"
+                        text  "via the GHC FFI"
                         ]
                     ]
               ]
