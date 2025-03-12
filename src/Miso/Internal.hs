@@ -214,12 +214,11 @@ runView
   -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   let mount = name
-  -- By default components should be mounted sychronously.
-  -- We also include async mounting for tools like jsaddle-warp.
-  -- mounting causes a recursive diff to occur, creating subcomponents
-  -- and setting up infrastructure for each sub-component. During this
-  -- process we go between the haskell heap and the js heap.
-  -- It's important that things remain synchronous during this process.
+  -- Component mounting should be sychronous.
+  -- Mounting causes a recursive diff to occur,
+  -- creating sub components as detected, setting up
+  -- infrastructure for each sub-component. During this
+  -- process we go between the Haskell heap and the JS heap.
   mountCb <- do
     syncCallback1 $ \continuation -> do
       forM_ onMounted snk
