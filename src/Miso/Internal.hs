@@ -64,10 +64,7 @@ initialize App {..} getView = do
 
   -- init Subs, save threads for destruction later
   subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
-  -- Hack to get around `BlockedIndefinitelyOnMVar` exception
-  -- that occurs when no event handlers are present on a template
-  -- and `notify` is no longer in scope
-  void . liftIO . forkIO . forever $ threadDelay (1000000 * 86400) >> serve
+
   -- Retrieves reference view
   (mount, mountEl, viewRef) <- getView eventSink
   -- Program loop, blocking on SkipChan
