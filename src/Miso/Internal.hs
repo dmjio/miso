@@ -9,9 +9,9 @@
 {-# LANGUAGE KindSignatures      #-}
 
 module Miso.Internal
-  ( common
+  ( initialize
   , componentMap
-  , initComponent
+  , drawComponent
   , sink
   , sinkRaw
   , mail
@@ -48,13 +48,14 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 
--- | Helper function to abstract out common functionality between `startApp` and `miso`
-common
+-- | Helper function to abstract out initialize functionality between `startApp` and `miso`
+initialize
   :: Eq model
   => App model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
+  -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
-common App {..} getView = do
+initialize App {..} getView = do
   -- init Waiter
   Waiter {..} <- liftIO waiter
   -- init empty actions
@@ -76,7 +77,6 @@ common App {..} getView = do
   let
     loop !oldModel = liftIO wait >> do
         -- Apply actions to model
-        consoleLog "inside loop, mvar taken"
         as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
         newModel <- foldEffects update eventSink (toList as) oldModel
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
@@ -189,13 +189,13 @@ mail (Component name _) action = liftIO $ do
 -- | Internally used for runView and startApp
 -- Initial draw helper
 -- If prerendering bypass diff and continue copying
-initComponent
+drawComponent
   :: Prerender
   -> MisoString
   -> App model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
-initComponent prerender name App {..} snk = do
+drawComponent prerender name App {..} snk = do
   vtree <- runView prerender (view model) snk
   el <- getComponent name
   when (prerender == DontPrerender) $
@@ -233,7 +233,7 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   mountCb <- do
     syncCallback1 $ \continuation -> do
       forM_ onMounted $ \m -> liftIO $ snk m
-      vtreeRef <- common app (initComponent prerender mount app)
+      vtreeRef <- initialize app (drawComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
 

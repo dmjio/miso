@@ -63,7 +63,7 @@ import           Data.FileEmbed
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
-  common app $ \snk -> do
+  initialize app $ \snk -> do
     VTree (Object iv) <- runView Prerender (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
@@ -81,7 +81,7 @@ misoComponent
   -> JSM ()
 misoComponent f = withJS $ do
   Component name app@App {..} <- f <$> getCurrentURI
-  common app $ \snk -> do
+  initialize app $ \snk -> do
     vtree@(VTree (Object jval)) <- runView Prerender (view model) snk
     mount <- getBody
     setBodyComponent name
@@ -92,7 +92,7 @@ misoComponent f = withJS $ do
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
-  common app $ \snk -> do
+  initialize app $ \snk -> do
     vtree <- runView DontPrerender (view model) snk
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
@@ -103,7 +103,7 @@ startApp app@App {..} = withJS $
 -- | Runs a miso application (as a @Component@)
 -- Note: uses the 'name' as the mount point.
 startComponent :: Eq model => Component name model action -> JSM ()
-startComponent (Component name app@App{..}) = withJS $ common app $ \snk -> do
+startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do
   vtree <- runView DontPrerender (view model) snk
   mount <- getBody
   setBodyComponent name
