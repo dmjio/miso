@@ -27,6 +27,7 @@ import           Control.Monad (forM, forM_, (<=<), when, forever, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
+import           Data.Function (on)
 import           Data.IORef
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -44,7 +45,7 @@ import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.FFI
-import           Miso.Html
+import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 
@@ -86,7 +87,7 @@ common App {..} getView = do
           swapCallbacks
           newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
-          void $ waitForAnimationFrame
+          void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
           releaseCallbacks
           liftIO (atomicWriteIORef viewRef newVTree)
@@ -204,7 +205,25 @@ initComponent prerender name App {..} snk = do
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
 
-runView :: Prerender -> View action -> Sink action -> JSM VTree
+-- | Helper function for cleanly destroying a @Component@
+unmount
+  :: Function
+  -> App model action
+  -> ComponentState action
+  -> JSM ()
+unmount mountCallback app ComponentState {..} = do
+  undelegator componentMount componentVTree (events app)
+  freeFunction mountCallback
+  liftIO $ do
+    killThread componentMainThread
+    mapM_ killThread componentSubThreads
+    modifyIORef' componentMap (M.delete componentName)
+
+runView
+  :: Prerender
+  -> View action
+  -> Sink action
+  -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   let mount = name
   -- By default components should be mounted sychronously.
@@ -222,17 +241,12 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
 
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
-      forM_ onUnmounted $ \m -> liftIO $ snk m
+      forM_ onUnmounted $ \m ->
+        liftIO $ snk m
+
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
-        Nothing ->
-          pure ()
-        Just ComponentState{..} -> do
-          undelegator componentMount componentVTree (events app)
-          freeFunction mountCb
-          liftIO $ do
-            killThread componentMainThread
-            mapM_ killThread componentSubThreads
-          liftIO $ modifyIORef' componentMap (M.delete mount)
+        Nothing -> pure ()
+        Just componentState -> unmount mountCb app componentState
 
   vcomp <- create
   cssObj <- create
@@ -323,19 +337,15 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
--- MisoString -> JSVal -> IORef VTree -> [ThreadId] -> Sink action
-
--- mount mountEl vtree snk threads
-
 registerSink :: MonadIO m => ComponentState action -> m ()
-registerSink componentState = do
-  liftIO $ modifyIORef' componentMap (M.insertWith combine (componentName componentState) componentState)
+registerSink componentState =
+  liftIO $ modifyIORef' componentMap
+    (M.insertWith combine (componentName componentState) componentState)
     where
       combine
         :: ComponentState action
         -> ComponentState action 
         -> ComponentState action 
-      combine c1 c2 =
-        c1 { componentSubThreads = componentSubThreads c1 ++ componentSubThreads c2 }
-
--- [ThreadId], JSVal, IORef VTree, action -> IO ())
+      combine c1 c2 = c1
+        { componentSubThreads = on (++) componentSubThreads c1 c2 
+        }

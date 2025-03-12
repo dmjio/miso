@@ -70,7 +70,6 @@ miso f = withJS $ do
     -- Initial diff can be bypassed, just copy DOM into VTree
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
     ref <- liftIO $ newIORef $ VTree (Object iv)
-    registerSink mount mountEl ref snk
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application (as a @Component@)
@@ -88,7 +87,6 @@ misoComponent f = withJS $ do
     setBodyComponent name
     copyDOMIntoVTree (logLevel == DebugPrerender) mount jval
     ref <- liftIO (newIORef vtree)
-    registerSink name mount ref snk
     pure (name, mount, ref)
 
 -- | Runs a miso application
@@ -100,7 +98,6 @@ startApp app@App {..} = withJS $
     mountEl <- mountElement mount
     diff mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
-    registerSink mount mountEl ref snk
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application (as a @Component@)
@@ -112,7 +109,6 @@ startComponent (Component name app@App{..}) = withJS $ common app $ \snk -> do
   setBodyComponent name
   diff mount Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
-  registerSink name mount ref snk
   pure (name, mount, ref)
 
 withJS :: JSM a -> JSM ()
