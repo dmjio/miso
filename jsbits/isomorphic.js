@@ -107,7 +107,22 @@ window['integrityCheck'] = function (result, vtree) {
         var keyLength = Object.keys(vtree['props']).length; key = null;
         for (var i = 0; i < keyLength; i++) {
             key = Object.keys(vtree['props'])[i];
-            if (key === 'height' || key === 'width') {
+            if (key === 'href') {
+                var getHref = function (obj) {
+                    if (key in obj && URL['canParse'](obj[key])) {
+                        return URL['parse'](obj[key])['pathname'];
+                    } else {
+                        return obj[key];
+                    }
+                }
+                if (getHref (vtree['props']) !== getHref (vtree['domRef'])) {
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                    result = false;
+                } else {
+                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
+                }
+            }
+            else if (key === 'height' || key === 'width') {
                 if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
                     console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                     result = false;
