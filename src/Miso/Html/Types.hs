@@ -125,7 +125,7 @@ onWithOptions options eventName Decoder{..} toAction =
    eventHandlerObject@(Object eo) <- create
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
-   cb <- callbackToJSVal <=< asyncCallback1 $ \e -> do
+   cb <- toJSVal <=< asyncCallback1 $ \e -> do
        Just v <- fromJSVal =<< objectToJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
@@ -143,7 +143,7 @@ onWithOptions options eventName Decoder{..} toAction =
 onCreated :: action -> Attribute action
 onCreated action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (sink action)
+    cb <- toJSVal =<< syncCallback (sink action)
     set "onCreated" cb n
     registerCallback cb
 
@@ -156,7 +156,7 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (sink action)
+    cb <- toJSVal =<< syncCallback (sink action)
     set "onDestroyed" cb n
     registerCallback cb
 
@@ -169,7 +169,7 @@ onDestroyed action =
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   E $ \sink n -> do
-    cb <- callbackToJSVal =<< syncCallback (sink action)
+    cb <- toJSVal =<< syncCallback (sink action)
     set "onBeforeDestroyed" cb n
     registerCallback cb
 
