@@ -52,12 +52,13 @@ module Miso.Html.Element
     , math_
     , script_
     , link_
-    , Miso.Html.Element.style_
+    , style_
+    , style
     -- * Inputs
     , select_
     , option_
     , textarea_
-    , form_
+    , form
     , input_
     , button_
     -- * Sections
@@ -132,6 +133,11 @@ module Miso.Html.Element
     , summary_
     , menuitem_
     , menu_
+    -- * Top-level
+    , doctype_
+    , html_
+    , head_
+    , meta_
     ) where
 
 import           Miso.Html.Types
@@ -201,8 +207,8 @@ button_ :: [Attribute action] -> [View action] -> View action
 button_ = nodeHtml "button"
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
-form_ :: [Attribute action] -> [View action] -> View action
-form_ = nodeHtml "form"
+form :: [Attribute action] -> [View action] -> View action
+form = nodeHtml "form"
 
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/p
 p_ :: [Attribute action] -> [View action] -> View action
@@ -499,8 +505,8 @@ link_ = flip (nodeHtml "link") []
 -- You can also easily shoot yourself in the foot with something like:
 --
 -- @'style_' [] "\</style\>"@
-style_ :: [Attribute action] -> MisoString -> View action
-style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
+style :: [Attribute action] -> MisoString -> View action
+style attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
 --
 -- This takes the raw text to be put in the script tag.
@@ -514,3 +520,19 @@ style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 -- @'script_' [] "\</script\>"@
 script_ :: [Attribute action] -> MisoString -> View action
 script_ attrs rawText = node HTML "script" Nothing attrs [textRaw rawText]
+
+-- | https://developer.mozilla.org/en-US/docs/Glossary/Doctype
+doctype_ :: View action
+doctype_ = nodeHtml "doctype" [] []
+
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/html
+html_ :: [Attribute action] -> [View action] -> View action
+html_ = nodeHtml "html"
+
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head
+head_ :: [Attribute action] -> [View action] -> View action
+head_ = nodeHtml "head"
+
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+meta_ :: [Attribute action] -> View action
+meta_ = flip (nodeHtml "meta") []

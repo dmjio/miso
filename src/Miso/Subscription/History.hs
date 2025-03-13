@@ -45,7 +45,8 @@ getURI = do
   href <- fromMisoString <$> FFI.getWindowLocationHref
   case parseURI href of
     Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
-    Just uri -> return uri
+    Just uri ->
+      pure uri
 
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> JSM ()

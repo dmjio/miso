@@ -10,7 +10,6 @@ import           Data.Bool
 import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Servant.API
-import           Servant.HTML.Lucid
 import           Servant.Links
 
 import           Miso
@@ -55,7 +54,7 @@ type Routes a
 type ClientRoutes = Routes (View Action)
 
 -- | Server routing
-type ServerRoutes = Routes (Get '[HTML] (Page HaskellMisoComponent))
+type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
 type HaskellMisoComponent = Component "client" Model Action
@@ -69,8 +68,7 @@ goExamples
   :<|> go404 = allLinks' linkURI (Proxy @ClientRoutes)
 
 -- | Page for setting HTML doctype and header
-newtype Page a = Page a
-  deriving (Show, Eq)
+newtype Page = Page HaskellMisoComponent
 
 -- | Client Handlers
 clientHandlers
@@ -88,23 +86,21 @@ clientHandlers = examples
 haskellMisoComponent
   :: URI
   -> HaskellMisoComponent
-haskellMisoComponent currentURI
-  = component $ App
-    { model = Model currentURI False
-    , view = viewModel
-    , ..
-    }
-  where
-    initialAction = NoOp
-    mountPoint = Nothing
-    update = updateModel
-    events = defaultEvents
-    subs = [ uriSub HandleURI ]
-    logLevel = DebugPrerender
-    viewModel m =
-      case runRoute (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
-        Left _ -> the404 m
-        Right v -> v
+haskellMisoComponent currentURI = component $ App
+  { model = Model currentURI False
+  , view = viewModel
+  , ..
+  } where
+      initialAction = NoOp
+      mountPoint = Nothing
+      update = updateModel
+      events = defaultEvents
+      subs = [ uriSub HandleURI ]
+      logLevel = DebugPrerender
+      viewModel m =
+        case runRoute (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
+          Left _ -> the404 m
+          Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m = m { uri = u } <# do
@@ -407,38 +403,51 @@ hero content uri' navMenuOpen' =
           div_ [class_"nav-left"] [
             a_ [class_"nav-item"] []
             ],
-          span_ [class_$ "nav-toggle " <> bool mempty "is-active" navMenuOpen'
+          span_ [ class_$ "nav-toggle " <> bool mempty "is-active" navMenuOpen'
                 , onClick ToggleNavMenu ] [
             span_[][],
             span_[][],
             span_[][]
             ],
-          div_ [ class_ $ "nav-right nav-menu " <> do  bool mempty "is-active" navMenuOpen'] [
-            div_ [ classList_ [ ("nav-item",True)
-                              , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
-                 ]] [
-              a_ [ href_ "/", onPreventClick (ChangeURI goHome) ]
-                 [ text"Home" ]
-              ],
-            div_ [ classList_ [ ("nav-item",True)
-                              , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
-                 ]] [
-              a_ [ href_ "/examples", onPreventClick (ChangeURI goExamples)]
-                 [ text"Examples" ]
-              ],
-            div_ [ classList_ [ ("nav-item",True)
-                              , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
-                 ]] [
-              a_ [ href_ "/docs", onPreventClick (ChangeURI goDocs) ]
-                 [ text"Docs" ]
-              ],
-            div_ [ classList_ [ ("nav-item",True)
-                              , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
-                 ]] [
-              a_ [ href_ "/community", onPreventClick (ChangeURI goCommunity) ]
-                 [ text"Community" ]
+          div_
+            [ class_ $ "nav-right nav-menu " <> bool mempty "is-active" navMenuOpen']
+            [ div_
+              [ classList_
+                [ ("nav-item",True)
+                , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
+                ]
               ]
-      ]]]]
+              [ a_
+                [ href_ "/"
+                , onPreventClick (ChangeURI goHome)
+                ]
+                [ text"Home"
+                ]
+              ],
+              div_ [ classList_ [ ("nav-item",True)
+                                , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
+                   ]] [
+                a_ [ href_ "/examples", onPreventClick (ChangeURI goExamples)]
+                   [ text"Examples" ]
+                ],
+              div_ [ classList_ [ ("nav-item",True)
+                                , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
+                   ]] [
+                a_ [ href_ "/docs", onPreventClick (ChangeURI goDocs) ]
+                   [ text"Docs" ]
+                ],
+              div_ [ classList_ [ ("nav-item",True)
+                                , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
+                   ]
+                   ]
+              [
+                a_ [ href_ "/community", onPreventClick (ChangeURI goCommunity) ]
+                   [ text"Community" ]
+                ]
+            ]
+          ]
+        ]
+      ]
     , div_ [ class_  "hero-body" ] [
      div_ [ class_  "container" ] [
            content

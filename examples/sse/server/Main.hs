@@ -14,8 +14,6 @@ import           Data.Binary.Builder
 import           Data.Monoid ((<>))
 import           Data.Proxy
 import           Data.Time.Clock
-import qualified Lucid as L
-import           Lucid.Base
 import           Network.HTTP.Types
 import           Network.Wai
 import           Network.Wai.EventSource
@@ -23,13 +21,12 @@ import           Network.Wai.Handler.Warp
 import           Network.Wai.Middleware.Gzip
 import           Network.Wai.Middleware.RequestLogger
 import           Servant
-import           Servant.HTML.Lucid
 import qualified System.IO as IO
 
 import           Miso hiding (run, SSE)
 
 type Website      = StaticFiles :<|> SSE :<|> ServerRoutes :<|> The404
-type ServerRoutes = Get '[HTML] (Page (Component "sse" Model Action))
+type ServerRoutes = Get '[HTML] Page
 type StaticFiles  = "static" :> Raw
 type SSE          = "sse" :> Raw
 type The404       = Raw
@@ -66,31 +63,27 @@ sendEvents chan =
     threadDelay (10 ^ (6 :: Int))
 
 -- | Page for setting HTML doctype and header
-newtype Page a = Page a
-  deriving (Show, Eq)
+newtype Page = Page (Component "sse" Model Action)
 
-instance L.ToHtml a => L.ToHtml (Page a) where
-  toHtmlRaw = L.toHtml
-  toHtml (Page x) =
-    L.doctypehtml_ $ do
-      L.head_ $ do
-        L.meta_ [L.charset_ "utf-8"]
-        jsRef "static/all.js" -- Include the frontend
-      L.body_ (L.toHtml x)
-    where
-      jsRef href =
-        L.with
-          (L.script_ mempty)
-          [ makeAttribute "src" href
-          , makeAttribute "async" mempty
-          , makeAttribute "defer" mempty
-          ]
+instance ToHtml Page where
+  toHtml (Page x) = toHtml
+    [ doctype_
+    , head_
+      []
+      [ meta_ [charset_ "utf-8"]
+      , jsRef "static/all.js" -- Include the frontend
+      ]
+    , body_ [] [toView x]
+    ] where
+        jsRef href =
+          script_ 
+            [ src_ href
+            , async_ "true"
+            , defer_ "true"
+            ] ""
 
 handle404 :: Application
 handle404 _ respond
   = respond
   $ responseLBS status404 [("Content-Type", "text/html")]
-  $ renderBS
-  $ toHtml
-  $ Page
-  $ the404
+  $ toHtml the404

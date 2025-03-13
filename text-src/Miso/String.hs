@@ -21,6 +21,7 @@ module Miso.String
   ) where
 
 import qualified Data.ByteString         as B
+import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Monoid             as S
 import           Data.JSString
@@ -75,6 +76,8 @@ instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
 instance ToMisoString BL.ByteString where
   toMisoString = toMisoString . LT.decodeUtf8
+instance ToMisoString B.Builder where
+  toMisoString = toMisoString . B.toLazyByteString
 instance ToMisoString Float where
   toMisoString = T.pack . P.show
 instance ToMisoString Double where
@@ -96,6 +99,8 @@ instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
 instance FromMisoString BL.ByteString where
   fromMisoStringEither = fmap LT.encodeUtf8 . fromMisoStringEither
+instance FromMisoString B.Builder where
+  fromMisoStringEither = fmap B.byteString . fromMisoStringEither
 instance FromMisoString Float where
   fromMisoStringEither = readEither . T.unpack
 instance FromMisoString Double where

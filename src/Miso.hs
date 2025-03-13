@@ -29,7 +29,6 @@ module Miso
   , notify
   , mail
     -- * Abstraction for jsaddle
-  , run
   , Component
   , module Export
   ) where
@@ -44,15 +43,16 @@ import           Miso.FFI
 import           Miso.Types (Component(Component))
 import           Miso.Internal
 
-import           Miso.Event as Export
-import           Miso.Html as Export
-import           Miso.Router as Export
-import           Miso.Runner as Runner
-import           Miso.Storage as Export
+import           Miso.Event        as Export
+import           Miso.Html         as Export
+import           Miso.Render       as Export
+import           Miso.Router       as Export
+import           Miso.Runner       as Export
+import           Miso.Storage      as Export
 import           Miso.Subscription as Export
-import           Miso.Types as Export hiding (Component(Component))
-import           Miso.Util as Export
-import           Miso.FFI as Export
+import           Miso.Types        as Export hiding (Component(Component))
+import           Miso.Util         as Export
+import           Miso.FFI          as Export
 
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed

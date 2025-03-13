@@ -58,7 +58,6 @@ import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
 import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
 import           Data.Aeson (Value)
-import qualified Data.Aeson as A
 import           Data.Bifunctor (second, Bifunctor(..))
 import           Data.Foldable (for_)
 import           Data.JSString (JSString)
@@ -70,15 +69,14 @@ import qualified Data.Text as T
 import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           GHCJS.Marshal (ToJSVal, toJSVal)
 import           JavaScript.Object.Internal (Object)
-import qualified Lucid as L
-import qualified Lucid.Base as L
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
+import           Servant.API (Get, HasLink(MkLink, toLink))
 
 import           Miso.Effect
 import           Miso.Event.Types
 import           Miso.FFI (JSM)
-import           Miso.String (MisoString, fromMisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString)
 import qualified Miso.String as MS
 
 -- | Application entry point
@@ -286,7 +284,17 @@ instance HasLink (View a) where
   toLink x _ = x
 
 -- | Convenience class for using View
-class ToView v where toView :: v -> View action
+class ToView a where
+  toView :: a -> View action
+
+instance ToView (View action) where
+  toView = unsafeCoerce
+
+instance ToView (Component name model action) where
+  toView (Component _ app) = toView app
+
+instance ToView (App model action) where
+  toView App {..} = toView (view model)
 
 -- | Namespace of DOM elements.
 data NS
@@ -348,82 +356,3 @@ data Attribute action
 -- | `IsString` instance
 instance IsString (View a) where
   fromString = Text . fromString
-
--- | Converting @Component@ to Lucid's @L.Html@
-instance Eq model => L.ToHtml (Component name model action) where
-  toHtmlRaw = L.toHtml
-  toHtml (Component _ App {..}) = L.toHtml (view model)
-
--- | Converting `View` to Lucid's `L.Html`
-instance L.ToHtml (View action) where
-  toHtmlRaw = L.toHtml
-  toHtml (Embed (SomeComponent (Component mount App{..})) ComponentOptions{..}) =
-    case L.toHtml (view model) of
-      html -> L.div_ (L.data_ "component-id" (fromMisoString mount) : makeAttrs attributes) html
-  toHtml (Node _ vType _ attrs vChildren) = L.with ele (makeAttrs attrs)
-    where
-      noEnd = ["img", "input", "br", "hr", "meta"]
-      tag = toTag $ fromMisoString vType
-      ele = if tag `elem` noEnd
-          then L.makeElementNoEnd tag
-          else L.makeElement tag kids
-      toTag = T.toLower
-      kids = foldMap L.toHtml $ collapseSiblingTextNodes vChildren
-
-  toHtml (Text x) | MS.null x = L.toHtml (" " :: T.Text)
-                  | otherwise = L.toHtml (fromMisoString x :: T.Text)
-  toHtml (TextRaw x)
-    | MS.null x = L.toHtml (" " :: T.Text)
-    | otherwise = L.toHtmlRaw (fromMisoString x :: T.Text)
-
-makeAttrs :: [Attribute action] -> [L.Attribute]
-makeAttrs attrs = lattrs
-  where
-      classes = T.intercalate " " [ v | P "class" (A.String v) <- attrs ]
-      propClass = M.fromList $ attrs >>= \case
-          P k v -> [(k, v)]
-          E _ -> []
-          S m -> [("style", A.String . fromMisoString $ M.foldrWithKey go mempty m)]
-            where
-              go :: MisoString -> MisoString -> MisoString -> MisoString
-              go k v ys = mconcat [ k, ":", v, ";" ] <> ys
-      xs = if not (T.null classes)
-          then M.insert "class" (A.String classes) propClass
-          else propClass
-      lattrs = [ L.makeAttribute k' (if k `elem` exceptions && v == A.Bool True then k' else v')
-               | (k,v) <- M.toList xs
-               , let k' = fromMisoString k
-               , let v' = toHtmlFromJSON v
-               , not (k `elem` exceptions && v == A.Bool False)
-               ]
-      exceptions = [ "checked"
-                   , "disabled"
-                   , "selected"
-                   , "hidden"
-                   , "readOnly"
-                   , "autoplay"
-                   , "required"
-                   , "default"
-                   , "autofocus"
-                   , "multiple"
-                   , "noValidate"
-                   , "autocomplete"
-                   ]
-
-collapseSiblingTextNodes :: [View a] -> [View a]
-collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (Text x : Text y : xs) =
-  collapseSiblingTextNodes (Text (x <> y) : xs)
--- TextRaw is the only child, so no need to collapse.
-collapseSiblingTextNodes (x:xs) =
-  x : collapseSiblingTextNodes xs
-
--- | Helper for turning JSON into Text
--- Object, Array and Null are kind of non-sensical here
-toHtmlFromJSON :: Value -> T.Text
-toHtmlFromJSON (A.String t) = t
-toHtmlFromJSON (A.Number t) = T.pack (show t)
-toHtmlFromJSON (A.Bool b) = if b then "true" else "false"
-toHtmlFromJSON A.Null = "null"
-toHtmlFromJSON (A.Object o) = T.pack (show o)
-toHtmlFromJSON (A.Array a) = T.pack (show a)

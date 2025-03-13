@@ -48,12 +48,10 @@ executable server
     base < 5,
     containers,
     http-types,
-    lucid,
     miso,
     mtl,
     network-uri,
     servant,
-    servant-lucid,
     servant-server,
     text,
     wai,
@@ -78,6 +76,5 @@ executable client
     containers,
     miso,
     servant,
-    servant-lucid
   default-language:
     Haskell2010
