@@ -1,11 +1,10 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE DeriveFunctor             #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
@@ -74,7 +73,7 @@ import           JavaScript.Object.Internal (Object)
 import qualified Lucid as L
 import qualified Lucid.Base as L
 import           Prelude hiding (null)
-import           Servant.API (Get, HasLink(MkLink, toLink))
+import           Servant.API (HasLink(MkLink, toLink))
 
 import           Miso.Effect
 import           Miso.Event.Types
@@ -283,8 +282,8 @@ embedWith comp opts = Embed (SomeComponent comp) opts
 
 -- | For constructing type-safe links
 instance HasLink (View a) where
-  type MkLink (View a) b = MkLink (Get '[] ()) b
-  toLink toA Proxy = toLink toA (Proxy :: Proxy (Get '[] ()))
+  type MkLink (View a) b = b
+  toLink x _ = x
 
 -- | Convenience class for using View
 class ToView v where toView :: v -> View action
