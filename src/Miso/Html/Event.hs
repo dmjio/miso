@@ -46,6 +46,8 @@ module Miso.Html.Event
   , onDragOver
   -- * Drop events
   , onDrop
+  -- * Select events
+  , onSelect
   ) where
 
 import Miso.Html.Types ( Attribute, on, onWithOptions )
@@ -82,6 +84,10 @@ onInput = on "input" valueDecoder
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChange :: (MisoString -> action) -> Attribute action
 onChange = on "change" valueDecoder
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/select
+onSelect :: (MisoString -> action) -> Attribute action
+onSelect = on "select" valueDecoder
 
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDownWithInfo :: (KeyInfo -> action) -> Attribute action
