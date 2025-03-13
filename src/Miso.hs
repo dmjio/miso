@@ -104,12 +104,13 @@ startApp app@App {..} = withJS $
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application (as a @Component@)
--- Initializes application at `name` (defaults to <body> when @Nothing@)
+-- Initializes application at `name` (defaults to <body>)
 -- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)
 startComponent :: Eq model => Component name model action -> JSM ()
 startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do
   vtree <- runView DontPrerender (view model) snk
-  mount <- mountElement name
+  mount <- getBody
+  setBodyComponent name
   diff mount Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, mount, ref)
