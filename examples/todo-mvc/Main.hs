@@ -89,7 +89,7 @@ main = run $ startApp App { initialAction = NoOp, ..}
     model      = emptyModel
     update     = updateModel
     view       = viewModel
-    events     = defaultEvents
+    events     = defaultEvents <> keyboardEvents
     mountPoint = Nothing
     subs       = []
     logLevel   = Off

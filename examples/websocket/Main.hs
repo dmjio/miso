@@ -29,7 +29,7 @@ main :: IO ()
 main = run $ startApp App { initialAction = Id, ..}
   where
     model = Model (Message "") mempty
-    events = defaultEvents
+    events = defaultEvents <> keyboardEvents
     subs = [ websocketSub uri protocols HandleWebSocket ]
     update = updateModel
     view = appView

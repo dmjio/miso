@@ -59,28 +59,42 @@ newtype AllowDrop = AllowDrop Bool
 
 -- | Default delegated events
 defaultEvents :: M.Map MisoString Bool
-defaultEvents = M.fromList [
-    ("blur", True)
+defaultEvents = M.fromList
+  [ ("blur", True)
   , ("change", False)
   , ("click", False)
   , ("dblclick", False)
   , ("focus", False)
   , ("input", False)
-  , ("keydown", False)
+  , ("select", False)
+  , ("submit", False)
+  ]
+
+keyboardEvents :: M.Map MisoString Bool
+keyboardEvents = M.fromList
+  [ ("keydown", False)
   , ("keypress", False)
   , ("keyup", False)
-  , ("mouseup", False)
+  ]
+
+mouseEvents :: M.Map MisoString Bool
+mouseEvents = M.fromList
+  [ ("mouseup", False)
   , ("mousedown", False)
   , ("mouseenter", True)
   , ("mouseleave", False)
   , ("mouseover", False)
   , ("mouseout", False)
-  , ("dragstart", False)
+  ]
+
+dragEvents :: M.Map MisoString Bool
+dragEvents = M.fromList
+  [ ("dragstart", False)
   , ("dragover", False)
   , ("dragend", False)
   , ("dragenter", False)
   , ("dragleave", False)
   , ("drag", False)
   , ("drop", False)
-  , ("submit", False)
   ]
+
