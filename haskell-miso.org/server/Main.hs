@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -15,8 +16,6 @@ import           Data.Proxy
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Generics
-import qualified Lucid as L
-import           Lucid.Base
 import           Network.HTTP.Types hiding (Header)
 import           Network.Wai
 import           Network.Wai.Application.Static
@@ -26,6 +25,7 @@ import           Network.Wai.Middleware.RequestLogger
 import           Servant
 import qualified System.IO as IO
 
+import           Miso hiding (run)
 import           Miso.String
 
 #if defined(wasm32_HOST_ARCH)
@@ -91,57 +91,76 @@ misoManifest =
            }
 
 handle404 :: Application
-handle404 _ respond = respond $ responseLBS
-    status404
-    [("Content-Type", "text/html")] $
-      renderBS $ toHtml $ Page (haskellMisoComponent go404)
+handle404 _ respond
+  = respond
+  $ responseLBS status404 [("Content-Type", "text/html")]
+  $ toHtml
+  $ Page (haskellMisoComponent go404)
 
-instance L.ToHtml a => L.ToHtml (Page a) where
-  toHtmlRaw = L.toHtml
-  toHtml (Page x) = do
-      L.doctype_
-      L.html_ [ L.lang_ "en" ] $ do
-        L.head_ $ do
-          L.title_ "Miso: A tasty Haskell front-end web framework"
-          L.link_ [ L.rel_ "stylesheet"
-                  , L.href_ "https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.2/gh-fork-ribbon.min.css"
-                  ]
-          L.link_ [ L.rel_ "manifest"
-                  , L.href_ "/manifest.json"
-                  ]
-          L.link_ [ L.rel_ "icon", L.href_ "https://www.haskell.org/img/favicon.ico", L.type_ "image/x-icon" ]
-          L.meta_ [ L.charset_ "utf-8" ]
-          L.meta_ [ L.name_ "theme-color", L.content_ "#00d1b2" ]
-          L.meta_ [ L.httpEquiv_ "X-UA-Compatible"
-                  , L.content_ "IE=edge"
-                  ]
-          L.meta_ [ L.name_ "viewport"
-                  , L.content_ "width=device-width, initial-scale=1"
-                  ]
-          L.meta_ [ L.name_ "description"
-                  , L.content_ "Miso is a small isomorphic Haskell front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHC FFI and therefore has minimal dependencies."
-                  ]
-          L.style_ ".github-fork-ribbon:before { background-color: \"#e59751\" !important; } "
-          cssRef animateRef
-          cssRef bulmaRef
-          cssRef fontAwesomeRef
-          jsRef "https://buttons.github.io/buttons.js"
-          L.script_ analytics
-          jsRef "static/all.js"
-        L.body_ (L.toHtml x)
-          where
-            jsRef href =
-              L.with (L.script_ mempty)
-                [ makeAttribute "src" href
-                , makeAttribute "async" mempty
-                , makeAttribute "defer" mempty
-                ]
-            cssRef href =
-              L.with (L.link_ mempty) [
-                  L.rel_ "stylesheet"
-                , L.type_ "text/css"
-                , L.href_ href
-                ]
+instance ToHtml Page where
+  toHtml (Page x) = toHtml
+    [ doctype_
+    , html_
+      [ lang_ "en"
+      ]
+      [ head_
+        [ title_ "Miso: A tasty Haskell front-end web framework"
+        ]
+        [ link_
+          [ rel_ "stylesheet"
+          , href_ "https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.2/gh-fork-ribbon.min.css"
+          ]
+        , link_
+          [ rel_ "manifest"
+          , href_ "/manifest.json"
+          ]
+        , link_
+          [ rel_ "icon"
+          , href_ "https://www.haskell.org/img/favicon.ico"
+          , type_ "image/x-icon"
+          ]
+        , meta_
+          [ charset_ "utf-8"
+          ]
+        , meta_
+          [ name_ "theme-color"
+          , content_ "#00d1b2"
+          ]
+        , meta_
+          [ httpEquiv_ "X-UA-Compatible"
+          , content_ "IE=edge"
+          ]
+        , meta_
+          [ name_ "viewport"
+          , content_ "width=device-width, initial-scale=1"
+          ]
+        , meta_
+          [ name_ "description"
+          , content_ "Miso is a small isomorphic Haskell front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHC FFI and therefore has minimal dependencies."
+          ]
+        , style [] ".github-fork-ribbon:before { background-color: \"#e59751\" !important; } "
+        , cssRef animateRef
+        , cssRef bulmaRef
+        , cssRef fontAwesomeRef
+        , jsRef "https://buttons.github.io/buttons.js"
+        , script_ [] analytics
+        , jsRef "static/all.js"
+        , body_ [] [toView x]
+        ]
+      ]
+    ] where
+        jsRef href =
+          script_
+            [ src_ href
+            , async_ "true"
+            , defer_ "true"
+            ] ""
+        cssRef href =
+          link_
+          [ rel_ "stylesheet"
+          , type_ "text/css"
+          , href_ href
+          ]
 
 fontAwesomeRef :: MisoString
 fontAwesomeRef = "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
@@ -170,6 +189,8 @@ serverHandlers = mkPage goExamples
   :<|> mkPage goCommunity
   :<|> mkPage goHome
   :<|> mkPage go404
-     where
-       mkPage :: URI -> Handler (Page HaskellMisoComponent)
-       mkPage url = pure $ Page (haskellMisoComponent url)
+  where
+    mkPage :: URI -> Handler Page
+    mkPage url
+      = pure
+      $ Page (haskellMisoComponent url)

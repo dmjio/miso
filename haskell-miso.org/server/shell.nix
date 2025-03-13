@@ -1,2 +1,2 @@
-with (import ../../default.nix {});
+with (import ../default.nix {});
 haskell-miso-server.env

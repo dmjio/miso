@@ -27,6 +27,7 @@ module Miso.Html.Property
    , id_
    , title_
    , hidden_
+   , lang_
    -- * Inputs
    , type_
    , value_
@@ -158,6 +159,9 @@ selected_ = boolProp "selected"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/hidden>
 hidden_ ::  Bool -> Attribute action
 hidden_             = boolProp "hidden"
+-- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/lang>
+lang_ ::  MisoString -> Attribute action
+lang_             = textProp "lang"
 -- | <https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XUL/Attribute/value>
 value_ ::  MisoString -> Attribute action
 value_             = textProp "value"
