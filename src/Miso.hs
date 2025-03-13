@@ -28,7 +28,7 @@ module Miso
     -- * Component communication
   , notify
   , mail
-    -- * Abstraction for jsaddle
+    -- * Components
   , Component
   , module Export
   ) where

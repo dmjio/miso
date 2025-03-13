@@ -1,13 +1,13 @@
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeApplications          #-}
-{-# LANGUAGE DeriveFunctor             #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE LambdaCase                #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE TypeSynonymInstances      #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE DeriveFunctor             #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE DataKinds                 #-}
 -----------------------------------------------------------------------------
 -- |
@@ -71,7 +71,6 @@ import           GHCJS.Marshal (ToJSVal, toJSVal)
 import           JavaScript.Object.Internal (Object)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
-import           Servant.API (Get, HasLink(MkLink, toLink))
 
 import           Miso.Effect
 import           Miso.Event.Types
@@ -285,15 +284,19 @@ instance HasLink (View a) where
 
 -- | Convenience class for using View
 class ToView a where
-  toView :: a -> View action
+  type ToViewAction a :: *
+  toView :: a -> View (ToViewAction a)
 
 instance ToView (View action) where
-  toView = unsafeCoerce
+  type ToViewAction (View action) = action
+  toView = id
 
 instance ToView (Component name model action) where
+  type ToViewAction (Component name model action) = action
   toView (Component _ app) = toView app
 
 instance ToView (App model action) where
+  type ToViewAction (App model action) = action
   toView App {..} = toView (view model)
 
 -- | Namespace of DOM elements.
