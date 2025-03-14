@@ -418,7 +418,7 @@ hero content uri' navMenuOpen' =
                 ]
               ]
               [ a_
-                [ href_ "/"
+                [ href_ $ ms (uriPath uriHome)
                 , onPreventClick (ChangeURI uriHome)
                 , classList_
                   [ ("is-active", uriPath uri' == "")
@@ -430,7 +430,7 @@ hero content uri' navMenuOpen' =
               div_ [ classList_ [ ("nav-item",True)
                                 ]
                    ] [
-                a_ [ href_ "/examples"
+                a_ [ href_ $ ms (uriPath uriExamples)
                    , onPreventClick (ChangeURI uriExamples)
                    , textProp "current-uri-path" $ ms (uriPath uri')
                    , textProp "examples-uri-path" $ ms (uriPath uriExamples)
@@ -442,7 +442,7 @@ hero content uri' navMenuOpen' =
                                 ]
                    ]
               [
-                a_ [ href_ "/docs"
+                a_ [ href_ $ ms (uriPath uriDocs)
                    , onPreventClick (ChangeURI uriDocs)
                    , classList_ [ ("is-active", uriPath uri' == uriPath uriDocs)
                                 ]
@@ -453,7 +453,7 @@ hero content uri' navMenuOpen' =
                                 ]
                    ]
               [
-                a_ [ href_ "/community"
+                a_ [ href_ $ ms (uriPath uriCommunity)
                    , onPreventClick (ChangeURI uriCommunity)
                    , classList_ [ ("is-active", uriPath uri' == uriPath uriCommunity)
                                 ]
