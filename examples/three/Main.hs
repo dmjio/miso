@@ -1,103 +1,116 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Main where
 
-import           Control.Monad
-import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef
+import Control.Monad
+import Control.Monad.IO.Class (liftIO)
+import Data.IORef
 import qualified Data.Map as M
 
-import           Language.Javascript.JSaddle hiding ((<#))
+import Language.Javascript.JSaddle hiding ((<#))
 
-import           Miso
+import Miso
 
 data Action
-  = GetTime
-  | Init
-  | SetTime !Double
+    = GetTime
+    | Init
+    | SetTime !Double
 
 withStats :: JSVal -> IO () -> IO ()
 withStats stats m = do
-  statsBegin stats >> m
-  statsEnd stats
+    statsBegin stats >> m
+    statsEnd stats
 
 data Context = Context
-  { rotateCube :: IO ()
-  , renderScene :: IO ()
-  , stats :: JSVal
-  }
+    { rotateCube :: IO ()
+    , renderScene :: IO ()
+    , stats :: JSVal
+    }
 
 initContext :: IORef Context -> IO ()
 initContext ref = do
-  canvas <- getElementById "canvas"
-  scene <- newScene
-  camera <- newCamera
-  renderer <- newRenderer canvas
-  setSize renderer
-  cube <- join $ newMesh
-    <$> newBoxGeometry 1 1 1
-    <*> newMeshBasicMaterial
-  addToScene scene cube
-  positionCamera camera 5
-  stats <- newStats
-  statsContainer <- getElementById "stats"
-  addStatsToDOM statsContainer stats
-  writeIORef ref Context {
-    stats = stats
-  , rotateCube = do
-      rotateX cube 0.1
-      rotateY cube 0.1
-  , renderScene =
-      render renderer scene camera
-  }
+    canvas <- getElementById "canvas"
+    scene <- newScene
+    camera <- newCamera
+    renderer <- newRenderer canvas
+    setSize renderer
+    cube <-
+        join $
+            newMesh
+                <$> newBoxGeometry 1 1 1
+                <*> newMeshBasicMaterial
+    addToScene scene cube
+    positionCamera camera 5
+    stats <- newStats
+    statsContainer <- getElementById "stats"
+    addStatsToDOM statsContainer stats
+    writeIORef
+        ref
+        Context
+            { stats = stats
+            , rotateCube = do
+                rotateX cube 0.1
+                rotateY cube 0.1
+            , renderScene =
+                render renderer scene camera
+            }
 
 main :: IO ()
 main = run $ do
-  stats <- newStats
-  ref <- newIORef $ Context (pure ()) (pure ()) stats
-  m <- now
-  startApp App { model = m
-               , initialAction = Init
-               , update = updateModel ref
-               , mountPoint = Nothing
-               , logLevel = Off
-               , ..
-               }
-    where
-      events = defaultEvents
-      view   = viewModel
-      subs   = []
+    stats <- newStats
+    ref <- newIORef $ Context (pure ()) (pure ()) stats
+    m <- now
+    startApp
+        App
+            { model = m
+            , initialAction = Init
+            , update = updateModel ref
+            , mountPoint = Nothing
+            , logLevel = Off
+            , ..
+            }
+  where
+    events = defaultEvents
+    view = viewModel
+    subs = []
 
 viewModel :: Double -> View action
-viewModel _ = div_ [] [
-    div_ [ id_ "stats"
-         , style_ $ M.singleton "position" "absolute"
-         ] []
-  , canvas_ [ id_ "canvas"
+viewModel _ =
+    div_
+        []
+        [ div_
+            [ id_ "stats"
+            , style_ $ M.singleton "position" "absolute"
+            ]
+            []
+        , canvas_
+            [ id_ "canvas"
             , width_ "400"
             , height_ "300"
-            ] []
-  ]
+            ]
+            []
+        ]
 
-updateModel
-  :: IORef Context
-  -> Action
-  -> Double
-  -> Effect Action Double
-updateModel ref Init m = m <# do
-  liftIO (initContext ref)
-  pure GetTime
-
-updateModel ref GetTime m = m <# do
-  Context {..} <- liftIO (readIORef ref)
-  withStats stats $ do
-    rotateCube
-    renderScene
-  SetTime <$> now
-
+updateModel ::
+    IORef Context ->
+    Action ->
+    Double ->
+    Effect Action Double
+updateModel ref Init m =
+    m <# do
+        liftIO (initContext ref)
+        pure GetTime
+updateModel ref GetTime m =
+    m <# do
+        Context{..} <- liftIO (readIORef ref)
+        withStats stats $ do
+            rotateCube
+            renderScene
+        SetTime <$> now
 updateModel _ (SetTime m) _ =
-  m <# pure GetTime
+    m <# pure GetTime
 
 #ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new Stats(); })"

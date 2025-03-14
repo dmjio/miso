@@ -1,16 +1,17 @@
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Main where
 
-import           Miso hiding (asyncCallback)
-import           Miso.String
-import           Control.Concurrent.MVar
+import Control.Concurrent.MVar
+import Miso hiding (asyncCallback)
+import Miso.String
 
 #ifdef GHCJS_NEW
 import GHC.JS.Foreign.Callback
@@ -21,61 +22,67 @@ import GHCJS.Foreign.Callback
 #endif
 
 -- | Model
-data Model
-  = Model
-  { info :: MisoString
-  } deriving (Eq, Show)
+data Model = Model
+    { info :: MisoString
+    }
+    deriving (Eq, Show)
 
 -- | Action
 data Action
-  = ReadFile
-  | NoOp
-  | SetContent MisoString
-  deriving (Show, Eq)
+    = ReadFile
+    | NoOp
+    | SetContent MisoString
+    deriving (Show, Eq)
 
 -- | Main entry point
 main :: IO ()
 main = run $ do
-  startApp App { model = Model ""
-               , initialAction = NoOp
-               , ..
-               }
-    where
-      mountPoint = Nothing
-      update = updateModel
-      events = defaultEvents
-      subs   = []
-      view   = viewModel
-      logLevel = Off
+    startApp
+        App
+            { model = Model ""
+            , initialAction = NoOp
+            , ..
+            }
+  where
+    mountPoint = Nothing
+    update = updateModel
+    events = defaultEvents
+    subs = []
+    view = viewModel
+    logLevel = Off
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
-updateModel ReadFile m = m <# do
-  fileReaderInput <- getElementById "fileReader"
-  file <- getFile fileReaderInput
-  reader <- newReader
-  mvar <- newEmptyMVar
-  setOnLoad reader =<< do
-    asyncCallback $ do
-      r <- getResult reader
-      putMVar mvar r
-  readText reader file
-  SetContent <$> readMVar mvar
-updateModel (SetContent c) m = noEff m { info = c }
+updateModel ReadFile m =
+    m <# do
+        fileReaderInput <- getElementById "fileReader"
+        file <- getFile fileReaderInput
+        reader <- newReader
+        mvar <- newEmptyMVar
+        setOnLoad reader =<< do
+            asyncCallback $ do
+                r <- getResult reader
+                putMVar mvar r
+        readText reader file
+        SetContent <$> readMVar mvar
+updateModel (SetContent c) m = noEff m{info = c}
 updateModel NoOp m = noEff m
 
 -- | View function, with routing
 viewModel :: Model -> View Action
-viewModel Model {..} = view
+viewModel Model{..} = view
   where
-    view = div_ [] [
-        "FileReader API example"
-      , input_ [ id_ "fileReader"
-             , type_ "file"
-             , onChange (const ReadFile)
-             ]
-      , div_ [] [ text info ]
-      ]
+    view =
+        div_
+            []
+            [ "FileReader API example"
+            , input_
+                [ id_ "fileReader"
+                , type_ "file"
+                , onChange (const ReadFile)
+                ]
+            , div_ [] [text info]
+            ]
 
 #ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new FileReader(); })"
