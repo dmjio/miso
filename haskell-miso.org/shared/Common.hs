@@ -60,12 +60,12 @@ type ServerRoutes = Routes (Get '[HTML] Page)
 type HaskellMisoComponent = Component "client" Model Action
 
 -- | Links
-goHome, goExamples, goDocs, goCommunity, go404 :: URI
-goExamples
-  :<|> goDocs
-  :<|> goCommunity
-  :<|> goHome
-  :<|> go404 = allLinks' linkURI (Proxy @ClientRoutes)
+uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
+uriExamples
+  :<|> uriDocs
+  :<|> uriCommunity
+  :<|> uriHome
+  :<|> uri404 = allLinks' linkURI (Proxy @ClientRoutes)
 
 -- | Page for setting HTML doctype and header
 newtype Page = Page HaskellMisoComponent
@@ -103,13 +103,14 @@ haskellMisoComponent currentURI = component $ App
           Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m = m { uri = u } <# do
-  pure NoOp
-updateModel (ChangeURI u) m = m { navMenuOpen = False } <# do
-  pushURI u
-  pure NoOp
-updateModel ToggleNavMenu m@Model{..} = m { navMenuOpen = not navMenuOpen } <# do
-  pure NoOp
+updateModel (HandleURI u) m =
+  m { uri = u } <# pure NoOp
+updateModel (ChangeURI u) m =
+  m { navMenuOpen = False } <# do
+    NoOp <$ pushURI u
+
+updateModel ToggleNavMenu m@Model{..} =
+  m { navMenuOpen = not navMenuOpen } <# pure NoOp
 updateModel NoOp m = noEff m
 
 -- | Views
@@ -368,7 +369,7 @@ the404 = template v
          ] [ text "404" ]
        , h2_ [ class_  "subtitle animated pulse" ] [
           text "No soup for you! "
-          , a_ [ href_ "/", onPreventClick (ChangeURI goHome) ] [ text " - Go Home" ]
+          , a_ [ href_ "/", onPreventClick (ChangeURI uriHome) ] [ text " - Go Home" ]
          ]
        ]
 
@@ -414,34 +415,49 @@ hero content uri' navMenuOpen' =
             [ div_
               [ classList_
                 [ ("nav-item",True)
-                , ("is-active", uriPath uri' == "/" || uriPath uri' == "")
                 ]
               ]
               [ a_
                 [ href_ "/"
-                , onPreventClick (ChangeURI goHome)
+                , onPreventClick (ChangeURI uriHome)
+                , classList_
+                  [ ("is-active", uriPath uri' == "")
+                  ]
                 ]
                 [ text"Home"
                 ]
               ],
               div_ [ classList_ [ ("nav-item",True)
-                                , ("is-active", uriPath uri' == ("/" <> uriPath goExamples))
-                   ]] [
-                a_ [ href_ "/examples", onPreventClick (ChangeURI goExamples)]
+                                ]
+                   ] [
+                a_ [ href_ "/examples"
+                   , onPreventClick (ChangeURI uriExamples)
+                   , textProp "current-uri-path" $ ms (uriPath uri')
+                   , textProp "examples-uri-path" $ ms (uriPath uriExamples)
+                   , classList_ [ ("is-active", uriPath uri' == uriPath uriExamples) ]
+                   ]
                    [ text"Examples" ]
                 ],
               div_ [ classList_ [ ("nav-item",True)
-                                , ("is-active", uriPath uri' == ("/" <> uriPath goDocs))
-                   ]] [
-                a_ [ href_ "/docs", onPreventClick (ChangeURI goDocs) ]
+                                ]
+                   ]
+              [
+                a_ [ href_ "/docs"
+                   , onPreventClick (ChangeURI uriDocs)
+                   , classList_ [ ("is-active", uriPath uri' == uriPath uriDocs)
+                                ]
+                   ]
                    [ text"Docs" ]
                 ],
               div_ [ classList_ [ ("nav-item",True)
-                                , ("is-active", uriPath uri' == ("/" <> uriPath goCommunity))
-                   ]
+                                ]
                    ]
               [
-                a_ [ href_ "/community", onPreventClick (ChangeURI goCommunity) ]
+                a_ [ href_ "/community"
+                   , onPreventClick (ChangeURI uriCommunity)
+                   , classList_ [ ("is-active", uriPath uri' == uriPath uriCommunity)
+                                ]
+                   ]
                    [ text"Community" ]
                 ]
             ]

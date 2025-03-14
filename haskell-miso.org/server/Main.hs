@@ -10,18 +10,28 @@
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 module Main where
 
+import Control.Monad.IO.Class (liftIO)
+
 import           Common
-import           Data.Aeson
-import           Data.Proxy
+  ( ServerRoutes
+  , Page(..)
+  , haskellMisoComponent
+  , uriHome
+  , uriCommunity
+  , uri404
+  , uriExamples
+  , uriDocs
+  )
+import           Data.Aeson (ToJSON)
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           GHC.Generics
+import           GHC.Generics (Generic)
 import           Network.HTTP.Types hiding (Header)
-import           Network.Wai
-import           Network.Wai.Application.Static
-import           Network.Wai.Handler.Warp
-import           Network.Wai.Middleware.Gzip
-import           Network.Wai.Middleware.RequestLogger
+import           Network.Wai (responseLBS)
+import           Network.Wai.Application.Static (defaultWebAppSettings)
+import           Network.Wai.Handler.Warp (run)
+import           Network.Wai.Middleware.Gzip (gzip, def, gzipFiles, GzipFiles(..))
+import           Network.Wai.Middleware.RequestLogger (logStdout)
 import           Servant
 import qualified System.IO as IO
 
@@ -70,12 +80,12 @@ type API = ("static" :> Raw)
 
 data Manifest
   = Manifest
-  { name :: Text
-  , short_name :: Text
-  , start_url :: Text
-  , display :: Text
-  , theme_color :: Text
-  , description :: Text
+  { name :: MisoString
+  , short_name :: MisoString
+  , start_url :: MisoString
+  , display :: MisoString
+  , theme_color :: MisoString
+  , description :: MisoString
   } deriving (Show, Eq, Generic)
 
 instance ToJSON Manifest
@@ -95,7 +105,7 @@ handle404 _ respond
   = respond
   $ responseLBS status404 [("Content-Type", "text/html")]
   $ toHtml
-  $ Page (haskellMisoComponent go404)
+  $ Page (haskellMisoComponent uri404)
 
 instance ToHtml Page where
   toHtml (Page x) = toHtml
@@ -184,13 +194,11 @@ analytics =
 
 -- | Server handlers
 serverHandlers :: Server ServerRoutes
-serverHandlers = mkPage goExamples
-  :<|> mkPage goDocs
-  :<|> mkPage goCommunity
-  :<|> mkPage goHome
-  :<|> mkPage go404
+serverHandlers = mkPage uriExamples
+  :<|> mkPage uriDocs
+  :<|> mkPage uriCommunity
+  :<|> mkPage uriHome
+  :<|> mkPage uri404
   where
     mkPage :: URI -> Handler Page
-    mkPage url
-      = pure
-      $ Page (haskellMisoComponent url)
+    mkPage uri = pure $ Page (haskellMisoComponent uri)

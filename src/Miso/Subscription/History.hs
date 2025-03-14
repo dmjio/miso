@@ -46,7 +46,11 @@ getURI = do
   case parseURI href of
     Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
     Just uri ->
-      pure uri
+      pure (dropPrefix uri)
+  where
+    dropPrefix u@URI{..}
+      | '/' : xs <- uriPath = u { uriPath = xs }
+      | otherwise = u
 
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> JSM ()
