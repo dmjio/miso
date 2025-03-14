@@ -1,6 +1,7 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE CPP             #-}
+
 module Main where
 
 import Common (haskellMisoComponent)

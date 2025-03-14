@@ -1,10 +1,11 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Main where
 
 import Common (sseComponent)
 
-import Miso (run, misoComponent)
+import Miso (misoComponent, run)
 
 main :: IO ()
 main = run (misoComponent sseComponent)
