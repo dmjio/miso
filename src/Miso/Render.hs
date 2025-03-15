@@ -68,8 +68,9 @@ renderBuilder (Node _ tag _ attrs children) =
   mconcat $
   [ "<"
   , fromMisoString tag
-  , " "
-  , intercalate " " (renderAttrs <$> attrs)
+  , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
+            | not (Prelude.null attrs)
+            ] 
   , ">"
   , mconcat
     [ mconcat
@@ -96,7 +97,7 @@ renderAttrs (P key value) =
   [ fromMisoString key
   , stringUtf8 "=\""
   , toHtmlFromJSON value
-  , stringUtf8 "\" "
+  , stringUtf8 "\""
   ]
 renderAttrs (E _) = mempty
 renderAttrs (S styles) =
@@ -112,7 +113,7 @@ renderAttrs (S styles) =
       ]
     | (k,v) <- M.toList styles
     ]
-  , stringUtf8 "\" "
+  , stringUtf8 "\""
   ]
   
 collapseSiblingTextNodes :: [View a] -> [View a]
