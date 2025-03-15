@@ -48,6 +48,15 @@ module Miso.Html.Event
   , onDrop
   -- * Select events
   , onSelect
+  -- * Pointer events
+  , onPointerDown
+  , onPointerUp
+  , onPointerEnter
+  , onPointerLeave
+  , onPointerOver
+  , onPointerOut
+  , onPointerCancel
+  , onPointerMove
   ) where
 
 import Miso.Html.Types ( Attribute, on, onWithOptions )
@@ -164,3 +173,35 @@ onSubmit :: action -> Attribute action
 onSubmit action =
   onWithOptions defaultOptions { preventDefault = True }
     "submit" emptyDecoder $ \() -> action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
+onPointerUp :: (PointerEvent -> action) -> Attribute action
+onPointerUp action = on "pointerup" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerdown
+onPointerDown :: (PointerEvent -> action) -> Attribute action
+onPointerDown action = on "pointerdown" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerenter
+onPointerEnter :: (PointerEvent -> action) -> Attribute action
+onPointerEnter action = on "pointerenter" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerleave
+onPointerLeave :: (PointerEvent -> action) -> Attribute action
+onPointerLeave action = on "pointerleave" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerover
+onPointerOver :: (PointerEvent -> action) -> Attribute action
+onPointerOver action = on "pointerover" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerout
+onPointerOut :: (PointerEvent -> action) -> Attribute action
+onPointerOut action = on "pointerout" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointercancel
+onPointerCancel :: (PointerEvent -> action) -> Attribute action
+onPointerCancel action = on "pointercancel" pointerDecoder action
+
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
+onPointerMove :: (PointerEvent -> action) -> Attribute action
+onPointerMove action = on "pointermove" pointerDecoder action

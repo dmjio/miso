@@ -20,6 +20,7 @@ module Miso.Event.Decoder
   , keyInfoDecoder
   , checkedDecoder
   , valueDecoder
+  , pointerDecoder
   )
   where
 
@@ -92,3 +93,19 @@ checkedDecoder = Decoder {..}
     decodeAt = DecodeTarget ["target"]
     decoder = withObject "target" $ \o ->
        Checked <$> (o .: "checked")
+
+-- | Pointer decoder for use with events like "onpointerover"
+pointerDecoder :: Decoder PointerEvent
+pointerDecoder = Decoder {..}
+  where
+    pair o x y = liftA2 (,) (o .: x) (o .: y)
+    decodeAt = DecodeTarget mempty
+    decoder = withObject "pointerDecoder" $ \o ->
+      PointerEvent
+        <$> o .: "pointerType"
+        <*> o .: "isPrimary"
+        <*> pair o "x" "y"
+        <*> pair o "screenX" "screenY"
+        <*> pair o "pageX" "pageY"
+        <*> pair o "tiltX" "tiltY"
+        <*> o .: "pressure"

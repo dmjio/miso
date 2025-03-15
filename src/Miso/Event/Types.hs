@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -16,7 +17,8 @@ import qualified Data.Map.Strict as M
 import           GHC.Generics
 import           GHCJS.Marshal (ToJSVal)
 import           Miso.String
-import           Data.Aeson (FromJSON)
+import           Data.Aeson (FromJSON(..), withText, Value(String))
+import           Data.Aeson.Types (typeMismatch)
 
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
@@ -35,9 +37,42 @@ newtype KeyCode = KeyCode Int
 newtype Checked = Checked Bool
   deriving (Show, Eq, Ord, FromJSON)
 
+-- | Type used for Pointer events.
+-- <https://w3c.github.io/pointerevents>
+data PointerEvent
+  = PointerEvent
+  { pointerType :: PointerType
+  , isPrimary :: Bool
+  , coords :: (Int, Int)
+  -- ^ clientX (or x), clientY (or y)
+  , screen :: (Int,Int)
+  -- ^ screenX, screenY
+  , page :: (Int,Int)
+  -- ^ pageX, pageY
+  , tilt :: (Int,Int)
+  -- ^ tiltX, tiltY
+  , pressure :: Double
+  } deriving (Show, Eq)
+
+-- | Pointer type
+-- <https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pointerType>
+data PointerType
+  = MousePointerType
+  | PenPointerType
+  | TouchPointerType
+  deriving (Show, Eq)
+
+instance FromJSON PointerType where
+  parseJSON = withText "PointerType" $ \case
+    "mouse" -> pure MousePointerType
+    "touch" -> pure TouchPointerType
+    "pen"   -> pure PenPointerType
+    p -> typeMismatch "PointerEvent" (String p)
+
 -- | Options for handling event propagation.
-data Options = Options {
-    preventDefault :: Bool
+data Options
+  = Options
+  { preventDefault :: Bool
   , stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
 
@@ -98,3 +133,13 @@ dragEvents = M.fromList
   , ("drop", False)
   ]
 
+-- | Pointer events
+pointerEvents :: M.Map MisoString Bool
+pointerEvents = M.fromList
+  [ ("pointerup", False)
+  , ("pointerdown", False)
+  , ("pointerenter", True)
+  , ("pointerleave", False)
+  , ("pointerover", False)
+  , ("pointerout", False)
+  ]
