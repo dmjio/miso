@@ -38,15 +38,13 @@ app = defaultApp 0 updateModel viewModel SayHelloWorld
 
 -- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (AddOne event) m = (m + 1) <# do
-  consoleLog $ ms (show event)
-  pure NoOp
-updateModel (SubtractOne event) m = (m - 1) <# do
-  consoleLog $ ms (show event)
-  pure NoOp
+updateModel (AddOne event) m = m + 1 <#
+  NoOp <$ consoleLog (ms (show event))
+updateModel (SubtractOne event) m = m - 1 <#
+  NoOp <$ consoleLog (ms (show event))
 updateModel NoOp m = noEff m
 updateModel SayHelloWorld m =
-    m <# do liftIO (putStrLn "Hello World") >> pure NoOp
+  m <# liftIO (putStrLn "Hello World") >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

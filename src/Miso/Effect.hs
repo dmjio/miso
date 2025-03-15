@@ -69,10 +69,12 @@ noEff :: model -> Effect action model
 noEff m = Effect m []
 
 -- | Smart constructor for an 'Effect' with exactly one action.
+infixl 0 <#
 (<#) :: model -> JSM action -> Effect action model
 (<#) m a = effectSub m $ \sink -> a >>= sink
 
 -- | `Effect` smart constructor, flipped
+infixr 0 #>
 (#>) :: JSM action -> model -> Effect action model
 (#>) = flip (<#)
 

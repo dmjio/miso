@@ -18,10 +18,9 @@ import Miso hiding (defaultOptions)
 import Miso.String
 
 -- | Model
-data Model = Model
+newtype Model = Model
     { info :: Maybe APIInfo
-    }
-    deriving (Eq, Show)
+    } deriving (Eq, Show)
 
 -- | Action
 data Action
@@ -32,28 +31,18 @@ data Action
 
 -- | Main entry point
 main :: IO ()
-main = do
-    startApp
-        App
-            { model = Model Nothing
-            , initialAction = NoOp
-            , mountPoint = Nothing
-            , ..
-            }
-  where
-    update = updateModel
-    events = defaultEvents
-    subs = []
-    view = viewModel
-    logLevel = Off
+main = run (startApp app)
+
+app :: App Model Action
+app = defaultApp emptyModel updateModel viewModel NoOp
+
+emptyModel :: Model
+emptyModel = Model Nothing
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
-updateModel FetchGitHub m =
-    m <# do
-        SetGitHub <$> getGitHubAPIInfo
-updateModel (SetGitHub apiInfo) m =
-    noEff m{info = Just apiInfo}
+updateModel FetchGitHub m = m <# SetGitHub <$> getGitHubAPIInfo
+updateModel (SetGitHub apiInfo) m = noEff m {info = Just apiInfo }
 updateModel NoOp m = noEff m
 
 -- | View function, with routing
