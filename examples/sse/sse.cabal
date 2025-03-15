@@ -21,17 +21,19 @@ common client-only
   else
     buildable: False
 
+common common-modules
+  other-modules:
+     Common
+
 executable server
   import:
-    server-only
+    server-only, common-modules
   main-is:
     Main.hs
   ghc-options:
     -O2 -threaded -Wall -rtsopts
   hs-source-dirs:
     server, shared
-  other-modules:
-    Common
   build-depends:
     aeson,
     base < 5,
@@ -52,13 +54,11 @@ executable server
 
 executable client
   import:
-    client-only
+    client-only, common-modules
   main-is:
     Main.hs
   hs-source-dirs:
     client, shared
-  other-modules:
-    Common
   build-depends:
     aeson,
     base < 5,
