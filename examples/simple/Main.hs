@@ -2,12 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- \| Haskell module declaration
-
--- | Haskell language pragma
+-- | Haskell module declaration
 module Main where
 
--- \| Miso framework import
+-- | Miso framework import
 import Miso
 import Miso.String
 
@@ -18,8 +16,8 @@ type Model = Int
 
 -- | Sum type for application events
 data Action
-    = AddOne
-    | SubtractOne
+    = AddOne PointerEvent
+    | SubtractOne PointerEvent
     | NoOp
     | SayHelloWorld
     deriving (Show, Eq)
@@ -30,33 +28,32 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ miso $ \_ -> App{..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model = 0 -- initial model
-    update = updateModel -- update function
-    view = viewModel -- view function
-    events = defaultEvents -- default delegated events
-    subs = [] -- empty subscription list
-    mountPoint = Nothing -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off -- Used to copy DOM into VDOM, applies only to `miso` function
+main = run $ startApp app
+  { events = pointerEvents
+  }
 
--- | Updates model, optionally introduces side effects
+-- | Application definition (uses 'defaultApp' smart constructor)
+app :: App Model Action
+app = defaultApp 0 updateModel viewModel SayHelloWorld
+
+-- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
+updateModel (AddOne event) m = (m + 1) <# do
+  consoleLog $ ms (show event)
+  pure NoOp
+updateModel (SubtractOne event) m = (m - 1) <# do
+  consoleLog $ ms (show event)
+  pure NoOp
 updateModel NoOp m = noEff m
 updateModel SayHelloWorld m =
-    m <# do
-        liftIO (putStrLn "Hello World") >> pure NoOp
+    m <# do liftIO (putStrLn "Hello World") >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x =
     div_
         []
-        [ button_ [onClick AddOne] [text "+"]
+        [ button_ [onPointerDown AddOne] [text "+"]
         , text (ms x)
-        , button_ [onClick SubtractOne] [text "-"]
-        , rawHtml "<div><p>hey expandable!</div></p>"
+        , button_ [onPointerDown SubtractOne] [text "-"]
         ]

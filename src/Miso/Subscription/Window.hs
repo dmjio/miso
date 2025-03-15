@@ -55,3 +55,6 @@ windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
           when stopPropagation $ eventStopPropagation e
           when preventDefault $ eventPreventDefault e
           sink (toAction r)
+
+pointerMoveSub :: (PointerEvent -> action) -> Sub action
+pointerMoveSub = windowSub "pointermove" pointerDecoder
