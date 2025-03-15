@@ -31,7 +31,6 @@ module Miso.FFI
    , consoleLogJSVal
    , stringify
    , parse
-   , clearBody
    , objectToJSON
    , set
    , getBody
@@ -52,19 +51,13 @@ module Miso.FFI
    , setBodyComponent
    ) where
 
-import           Control.Concurrent
-import           Control.Monad
-import           Control.Monad.IO.Class
+import           Control.Concurrent (ThreadId, forkIO)
+import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
+import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
-import           GHCJS.Marshal
-import           GHCJS.Types
-import qualified JavaScript.Object.Internal as OI
-#ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle hiding (obj, val)
-#else
-import           Language.Javascript.JSaddle hiding (Success, obj, val)
-#endif
 import           Prelude hiding ((!!))
 
 import           Miso.String
@@ -97,7 +90,7 @@ syncCallback1 f = function handle
     handle _ _ (x:_) = f x
 
 -- | Set property on object
-set :: ToJSVal v => MisoString -> v -> OI.Object -> JSM ()
+set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
 set (unpack -> "class") v obj = do
   classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps obj
   if classSet
@@ -189,14 +182,8 @@ parse :: FromJSON json => JSVal -> JSM json
 parse jval = do
   val <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
   case fromJSON val of
-    Success x -> pure x
-    Error y -> error y
-
--- | Clear the document body. This is particularly useful to avoid
--- creating multiple copies of your app when running in GHCJSi.
-clearBody :: JSM ()
-clearBody =
-  (jsg "document" ! "body"  <# "innerHtml") [""]
+    A.Success x -> pure x
+    A.Error y -> error y
 
 -- | Convert a JavaScript object to JSON
 objectToJSON
@@ -234,8 +221,8 @@ getElementById e = getDoc # "getElementById" $ [e]
 
 -- | Diff two virtual DOMs
 diff'
-    :: OI.Object -- ^ current object
-    -> OI.Object -- ^ new object
+    :: Object -- ^ current object
+    -> Object -- ^ new object
     -> JSVal  -- ^ parent node
     -> JSVal -- ^ document
     -> JSM ()

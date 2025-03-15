@@ -7,13 +7,15 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines `Effect` and `Sub` types, which are used to define
+-- This module defines `Effect`, `Sub` and `Sink` types, which are used to define
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
 module Miso.Effect
-  ( Effect (..)
+  ( -- ** Types
+    Effect (..)
   , Sub
   , Sink
+    -- ** Combinators
   , mapSub
   , noEff
   , (<#)

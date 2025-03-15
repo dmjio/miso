@@ -9,23 +9,25 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Html.Element
-  ( -- * Construct an Element
+  ( -- *** Smart constructors
       nodeHtml
     , nodeHtmlKeyed
-    -- * Headers
+    -- *** Combinators
+    , doctype_
+    , html_
+    , head_
+    , meta_
     , h1_
     , h2_
     , h3_
     , h4_
     , h5_
     , h6_
-    -- * Grouping Content
     , div_
     , p_
     , hr_
     , pre_
     , blockquote_
-    -- * Text
     , code_
     , em_
     , span_
@@ -37,7 +39,6 @@ module Miso.Html.Element
     , sub_
     , sup_
     , br_
-    -- * Lists
     , ol_
     , ul_
     , li_
@@ -45,7 +46,6 @@ module Miso.Html.Element
     , dl_
     , dt_
     , dd_
-    -- * Embedded Content
     , img_
     , iframe_
     , canvas_
@@ -54,14 +54,12 @@ module Miso.Html.Element
     , link_
     , style_
     , style
-    -- * Inputs
     , select_
     , option_
     , textarea_
     , form
     , input_
     , button_
-    -- * Sections
     , section_
     , header_
     , footer_
@@ -71,10 +69,8 @@ module Miso.Html.Element
     , address_
     , main_
     , body_
-    -- * Figures
     , figure_
     , figcaption_
-    -- * Tables
     , table_
     , caption_
     , colgroup_
@@ -86,7 +82,6 @@ module Miso.Html.Element
     , trKeyed_
     , td_
     , th_
-    -- * Less common elements
     , label_
     , fieldset_
     , legend_
@@ -97,19 +92,22 @@ module Miso.Html.Element
     , progress_
     , meter_
     , center_
-    -- * Audio and Video
+    , mark_
+    , ruby_
+    , rt_
+    , rp_
+    , bdi_
+    , bdo_
+    , wbr_
     , audio_
     , video_
     , source_
     , track_
-    -- * Embedded objects
     , embed_
     , object_
     , param_
-    -- * Text edits
     , ins_
     , del_
-    -- * Semantic text
     , small_
     , cite_
     , dfn_
@@ -120,24 +118,10 @@ module Miso.Html.Element
     , kbd_
     , q_
     , s_
-    -- * Less common tags
-    , mark_
-    , ruby_
-    , rt_
-    , rp_
-    , bdi_
-    , bdo_
-    , wbr_
-    -- * Interactive elements
     , details_
     , summary_
     , menuitem_
     , menu_
-    -- * Top-level
-    , doctype_
-    , html_
-    , head_
-    , meta_
     ) where
 
 import           Miso.Html.Types

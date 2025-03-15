@@ -14,28 +14,24 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Property
- (   -- * Construction
-     textProp
+ (   textProp
    , stringProp
    , boolProp
    , intProp
    , integerProp
    , doubleProp
-    -- * Common attributes
    , class_
    , classList_
    , id_
    , title_
    , hidden_
    , lang_
-   -- * Inputs
    , type_
    , value_
    , defaultValue_
    , checked_
    , placeholder_
    , selected_
-   -- * Input Helpers
    , accept_
    , acceptCharset_
    , action_
@@ -59,15 +55,12 @@ module Miso.Html.Property
    , for_
    , ref_
    , form_
-   -- * Input Ranges
    , max_
    , min_
    , step_
-   -- * Input Text areas
    , cols_
    , rows_
    , wrap_
-   -- * Links and areas
    , href_
    , target_
    , download_
@@ -76,18 +69,15 @@ module Miso.Html.Property
    , media_
    , ping_
    , rel_
-   -- * Maps
    , ismap_
    , usemap_
    , shape_
    , coords_
-   -- * Embedded Content
    , src_
    , height_
    , width_
    , alt_
    , loading_
-   -- * Audio and Video
    , autoplay_
    , controls_
    , loop_
@@ -96,20 +86,16 @@ module Miso.Html.Property
    , default_
    , kind_
    , srclang_
-   -- * iframes
    , sandbox_
    , seamless_
    , srcdoc_
-   -- * Ordered lists
    , reversed_
    , start_
-   -- * Tables
    , align_
    , colspan_
    , rowspan_
    , headers_
    , scope_
-   -- * Headers
    , async_
    , charset_
    , content_
@@ -117,7 +103,6 @@ module Miso.Html.Property
    , httpEquiv_
    , language_
    , scoped_
-   -- * Data
    , data_
    , styleInline_
    ) where

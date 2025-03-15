@@ -11,14 +11,14 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.SSE
- ( -- * Subscription
+ ( -- *** Subscription
    sseSub
-   -- * Types
+   -- *** Types
  , SSE (..)
  ) where
 
 import           Data.Aeson
-import           Miso.Types (Sub)
+import           Miso.Effect (Sub)
 import           Miso.FFI
 import           Miso.String
 

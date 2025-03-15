@@ -4,7 +4,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 module Miso.Render
-  ( ToHtml (..)
+  ( -- *** Classes
+    ToHtml (..)
+    -- *** Combinator
   , HTML
   ) where
 
@@ -19,6 +21,10 @@ import           Servant.API (Accept (..), MimeRender (..))
 import           Miso.String hiding (intercalate)
 import           Miso.Types
 
+-- | HTML MimeType used for servant APIs
+--
+-- > type Home = "home" :> Get '[HTML] (Component "home" model action)
+--
 data HTML
 
 -- | @text/html;charset=utf-8@
@@ -27,18 +33,23 @@ instance Accept HTML where
     "text" M.// "html" M./: ("charset", "utf-8") NE.:|
       ["text" M.// "html"]
 
+-- | Class for rendering HTML 
 class ToHtml a where
   toHtml :: a -> L.ByteString
 
+-- | Render a @Component@ to a @L.ByteString@
 instance ToHtml (Component name model action) where
   toHtml = renderComponent
 
+-- | Render a @View@ to a @L.ByteString@
 instance ToHtml (View a) where
   toHtml = renderView
 
+-- | Render a @[View]@ to a @L.ByteString@
 instance ToHtml [View a] where
   toHtml = foldMap renderView
 
+-- | Render HTML from a servant API
 instance ToHtml a => MimeRender HTML a where
   mimeRender _ = toHtml
 

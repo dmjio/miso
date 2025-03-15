@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 -----------------------------------------------------------------------------
@@ -10,11 +11,12 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Event.Decoder
-  ( -- * Decoder
+  ( -- ** Types
     Decoder (..)
   , DecodeTarget (..)
+    -- ** Combinators
   , at
-  -- * Decoders
+    -- ** Decoders
   , emptyDecoder
   , keycodeDecoder
   , keyInfoDecoder
@@ -24,9 +26,13 @@ module Miso.Event.Decoder
   )
   where
 
-import Data.Aeson.Types
 import Control.Applicative
-import GHCJS.Marshal (ToJSVal, toJSVal)
+import Data.Aeson.Types
+#ifdef GHCJS_OLD
+import GHCJS.Marshal (ToJSVal(toJSVal))
+#else
+import Language.Javascript.JSaddle (ToJSVal(toJSVal))
+#endif
 
 import Miso.Event.Types
 import Miso.String

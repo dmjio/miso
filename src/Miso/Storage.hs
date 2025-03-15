@@ -15,30 +15,27 @@
 -- [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API).
 ----------------------------------------------------------------------------
 module Miso.Storage
-  ( -- * Retrieve storage
+  ( -- ** Local
     getLocalStorage
-  , getSessionStorage
-    -- * Set items in storage
   , setLocalStorage
-  , setSessionStorage
-    -- * Remove items from storage
   , removeLocalStorage
-  , removeSessionStorage
-    -- * Clear storage
   , clearLocalStorage
-  , clearSessionStorage
-    -- * Get number of items in storage
   , localStorageLength
+    -- ** Session
+  , getSessionStorage
+  , setSessionStorage
+  , removeSessionStorage
+  , clearSessionStorage
   , sessionStorageLength
   ) where
 
-import           Data.Aeson hiding (Object, String)
-import           GHCJS.Marshal
-import           GHCJS.Types
+import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
+import qualified Data.Aeson as A
+import           Language.Javascript.JSaddle hiding (obj, val)
 
-import           Miso.FFI
+import           Miso.FFI (parse, stringify)
 import qualified Miso.FFI.Storage as Storage
-import           Miso.String
+import           Miso.String (MisoString)
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
@@ -50,8 +47,8 @@ getStorageCommon f key = do
     Just v -> do
       r <- parse v
       pure $ case fromJSON r of
-        Success x -> Right x
-        Error y -> Left y
+        A.Success x -> Right x
+        A.Error y -> Left y
 
 -- | Retrieve a value stored under given key in session storage
 getSessionStorage :: FromJSON model => MisoString -> JSM (Either String model)

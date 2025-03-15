@@ -10,8 +10,8 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Mathml.Element
-  ( -- * Construct an Element
-      nodeMathml
+  ( -- ** Combinator
+    nodeMathml
   ) where
 
 import           Miso.Html.Types

@@ -7,7 +7,6 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE KindSignatures      #-}
-
 module Miso.Internal
   ( initialize
   , componentMap
@@ -20,7 +19,7 @@ module Miso.Internal
   )
 where
 
-import           Control.Concurrent
+import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
@@ -44,6 +43,7 @@ import           Miso.FFI
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
+import           Miso.Effect (Sink, Effect(Effect))
 
 -- | Helper function to abstract out initialize functionality between `startApp` and `miso`
 initialize
@@ -79,6 +79,7 @@ initialize App {..} getView = do
           newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
+          --dmj: GHCJS (new and old) RTS already calls this ... consider removing
           diff mountEl (Just oldVTree) (Just newVTree)
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
@@ -87,7 +88,6 @@ initialize App {..} getView = do
   tid <- forkJSM (loop model)
   registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
   eventSink initialAction
-
   delegator mountEl viewRef events
   pure viewRef
 
@@ -108,6 +108,7 @@ data ComponentState action
   , componentSink :: action -> JSM ()
   }
 
+-- | ComponentMap
 componentMap :: IORef (Map MisoString (ComponentState action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
@@ -207,6 +208,7 @@ unmount mountCallback app ComponentState {..} = do
     mapM_ killThread componentSubThreads
     modifyIORef' componentMap (M.delete componentName)
 
+-- | Internal function for construction of a Virtual DOM.
 runView
   :: Prerender
   -> View action
@@ -299,6 +301,7 @@ setAttrs vnode attrs snk =
       forM_ (M.toList m) $ \(k,v) -> do
         set k v (Object cssObj)
 
+-- | Used to support RawText, inlining of HTML.
 -- Filters tree to only branches and leaves w/ Text tags.
 -- converts to View a. Note: if HTML is malformed,
 -- (e.g. closing tags and opening tags are present) they will
@@ -323,6 +326,7 @@ parseView html = reverse (go (parseTree html) [])
     go (TagLeaf _ : next) views =
       go next views
 
+-- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap

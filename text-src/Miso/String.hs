@@ -13,18 +13,21 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.String
-  ( ToMisoString (..)
+  ( -- ** Classes
+    ToMisoString (..)
   , FromMisoString (..)
-  , fromMisoString
+    -- ** Types
   , MisoString
-  , module S
+    -- ** Functions
   , ms
+  , fromMisoString
+    -- ** Re-exports
+  , module S
   ) where
 
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy    as BL
-import           Data.Monoid             as S
 import           Data.JSString
 import           Data.JSString.Text
 import           Data.Text               as S hiding (
@@ -51,15 +54,16 @@ class ToMisoString str where
 
 -- | Class from safely parsing 'MisoString'
 class FromMisoString t where
-  -- -- | Parses a `MisoString`
+  -- Parses a `MisoString`
   fromMisoStringEither :: MisoString -> Either String t
 
 -- | Parses a `MisoString`, throws an error when decoding
 -- fails. Use `fromMisoStringEither` for as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
-fromMisoString s = case fromMisoStringEither s of
-                     Left err -> error err
-                     Right x  -> x
+fromMisoString s =
+  case fromMisoStringEither s of
+    Left err -> error err
+    Right x  -> x
 
 -- | Convenience function, shorthand for `toMisoString`
 ms :: ToMisoString str => str -> MisoString

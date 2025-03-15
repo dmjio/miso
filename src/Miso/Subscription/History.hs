@@ -13,25 +13,28 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.History
-  ( getCurrentURI
+  ( -- *** Subscription
+    uriSub
+    -- *** Functions
+  , getCurrentURI
   , pushURI
   , replaceURI
   , back
   , forward
   , go
-  , uriSub
+   -- *** Types 
   , URI (..)
   ) where
 
-import Control.Monad
-import Control.Monad.IO.Class
-import Miso.Concurrent
-import Miso.Types (Sub)
-import Miso.FFI
+import           Control.Monad
+import           Control.Monad.IO.Class
+import           Miso.Concurrent
+import           Miso.FFI
 import qualified Miso.FFI.History as FFI
-import Miso.String
-import Network.URI hiding (path)
-import System.IO.Unsafe
+import           Miso.String
+import           Miso.Effect (Sub)
+import           Network.URI hiding (path)
+import           System.IO.Unsafe
 
 -- | Retrieves current URI of page
 getCurrentURI :: JSM URI

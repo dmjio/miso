@@ -25,8 +25,11 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Svg
-   ( module Miso.Svg.Element
+   ( -- ** Element
+     module Miso.Svg.Element
+     -- ** Attribute
    , module Miso.Svg.Attribute
+     -- ** Event
    , module Miso.Svg.Event
    ) where
 

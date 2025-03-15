@@ -15,7 +15,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.WebSocket
-  ( -- * Types
+  ( -- *** Types
     WebSocket   (..)
   , URL         (..)
   , Protocols   (..)
@@ -23,7 +23,7 @@ module Miso.Subscription.WebSocket
   , CloseCode   (..)
   , WasClean    (..)
   , Reason      (..)
-    -- * Subscription
+    -- *** Subscription
   , websocketSub
   , send
   , close
@@ -31,23 +31,19 @@ module Miso.Subscription.WebSocket
   , getSocketState
   ) where
 
-import           Control.Concurrent
-import           Control.Monad
-import           Control.Monad.IO.Class
-import           Data.Aeson
-import           Data.IORef
-import           Data.Maybe
-import           GHCJS.Marshal
-import           GHCJS.Foreign
-import           GHCJS.Types ()
-import           Prelude hiding (map)
-import           System.IO.Unsafe
+import           Control.Concurrent (threadDelay)
+import           Control.Monad (when, void, unless)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Aeson (FromJSON, ToJSON)
+import           Data.IORef (IORef, newIORef, readIORef, writeIORef, atomicWriteIORef)
+import           Language.Javascript.JSaddle
+import           System.IO.Unsafe (unsafePerformIO)
 
-import           Miso.Types (Sub)
-import           Miso.FFI
+import           Miso.Effect (Sub)
+import           Miso.FFI (forkJSM, parse, stringify)
 import           Miso.FFI.WebSocket (Socket)
 import qualified Miso.FFI.WebSocket as WS
-import           Miso.String
+import           Miso.String (MisoString)
 import           Miso.WebSocket
 
 websocket :: IORef (Maybe Socket)

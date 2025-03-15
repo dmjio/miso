@@ -28,9 +28,13 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html
-   ( module Miso.Html.Element
+   ( -- ** Combinators
+     module Miso.Html.Element
+     -- ** Events
    , module Miso.Html.Event
+     -- ** Types
    , module Miso.Html.Types
+     -- ** Properties
    , module Miso.Html.Property
    ) where
 

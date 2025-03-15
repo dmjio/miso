@@ -23,11 +23,14 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Router
-  ( runRoute
-  , route
-  , HasRouter
+  ( -- ** Classes
+    HasRouter
+    -- ** Types
   , RouteT
   , RoutingError (..)
+    -- ** Routing
+  , runRoute
+  , route
   ) where
 
 import qualified Data.ByteString.Char8 as BS

@@ -19,30 +19,27 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Types
-  ( -- * App
+  ( -- ** Types
     App              (..)
-  , defaultApp
-  -- * View
+  , Transition
   , View             (..)
-  , ToView           (..)
-  -- * Key
   , Key              (..)
-  , toKey
-  -- * Attribute
   , Attribute        (..)
   , NS               (..)
   , LogLevel         (..)
-  -- * Components
   , Component        (..)
   , SomeComponent    (..)
   , ComponentOptions (..)
+  -- ** Classes
+  , ToView           (..)
+  -- ** Functions
+  , defaultApp
+  , toKey
   , component
   , embed
   , embedWith
   , getMountPoint
   , componentOptions
-    -- * The Transition Monad
-  , Transition
   , mapAction
   , fromTransition
   , toTransition
@@ -50,8 +47,6 @@ module Miso.Types
   , scheduleIO_
   , scheduleIOFor_
   , scheduleSub
-  -- * The Effect Monad
-  , module Miso.Effect
   ) where
 
 import           Control.Monad.Trans.Class (lift)
@@ -67,14 +62,12 @@ import           Data.Proxy
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
-import           GHCJS.Marshal (ToJSVal, toJSVal)
-import           JavaScript.Object.Internal (Object)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 
 import           Miso.Effect
 import           Miso.Event.Types
-import           Miso.FFI (JSM)
 import           Miso.String (MisoString, toMisoString)
 import qualified Miso.String as MS
 

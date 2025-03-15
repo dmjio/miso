@@ -25,13 +25,10 @@ module Miso.WebSocket
   , Reason      (..)
   ) where
 
-import GHC.Generics
-import Prelude                hiding (map)
-#ifdef GHCJS_BOTH
-import GHCJS.Marshal
-#endif
+import GHC.Generics (Generic)
+import Language.Javascript.JSaddle (ToJSVal, FromJSVal)
 
-import Miso.String
+import Miso.String (MisoString)
 
 -- | WebSocket connection messages
 data WebSocket action
@@ -39,7 +36,7 @@ data WebSocket action
   | WebSocketClose CloseCode WasClean Reason
   | WebSocketOpen
   | WebSocketError MisoString
-    deriving (Show, Eq)
+  deriving (Show, Eq)
 
 -- | URL of Websocket server
 newtype URL = URL MisoString
@@ -98,8 +95,5 @@ data CloseCode
    -- ^ OtherCode that is reserved and not in the range 0999
   deriving (Show, Eq, Generic)
 
-#ifdef GHCJS_BOTH
--- Defined here to avoid an orphan instance
 instance ToJSVal CloseCode
 instance FromJSVal CloseCode
-#endif

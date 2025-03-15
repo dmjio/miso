@@ -12,9 +12,9 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.Keyboard
-  ( -- * Types
+  ( -- *** Types
     Arrows (..)
-    -- * Subscriptions
+    -- *** Subscriptions
   , arrowsSub
   , directionSub
   , keyboardSub
@@ -25,11 +25,9 @@ import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.Set
 import qualified Data.Set as S
-import           GHCJS.Marshal
-import           JavaScript.Object
-import           JavaScript.Object.Internal
+import           Language.Javascript.JSaddle hiding (new)
 
-import           Miso.Types (Sub)
+import           Miso.Effect (Sub)
 import           Miso.FFI
 
 -- | type for arrow keys currently pressed

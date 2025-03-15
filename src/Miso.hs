@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE CPP                 #-}
@@ -20,42 +21,67 @@ module Miso
   ( -- * Miso
     miso
   , startApp
+    -- * Miso Components
   , startComponent
   , misoComponent
-    -- * Third-party integration helpers
+    -- * Sink
   , sink
   , sinkRaw
-    -- * Component communication
-  , notify
+    -- * Mail
   , mail
-    -- * Components
-  , Component
-  , module Export
+  , notify
+    -- * Core
+  , module Miso.Types
+    -- * Effect
+  , module Miso.Effect
+    -- * Event
+  , module Miso.Event
+    -- * Mathml
+  , module Miso.Mathml
+    -- * Html
+  , module Miso.Html
+  , module Miso.Render
+    -- * Router
+  , module Miso.Router
+    -- * Runner
+  , module Miso.Runner
+    -- * Subs
+  , module Miso.Subscription
+    -- * Storage
+  , module Miso.Storage
+    -- * Util
+  , module Miso.Util
+    -- * FFI
+  , set
+  , now
+  , consoleLogJSVal
   ) where
 
-import           Control.Monad
-import           Control.Monad.IO.Class
-import           Data.IORef
-import           Language.Javascript.JSaddle
+import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.IORef (newIORef)
+import           Language.Javascript.JSaddle (Object(Object), JSM)
 
 import           Miso.Diff (diff, mountElement)
-import           Miso.FFI
-import           Miso.Types (Component(Component))
-import           Miso.Internal
 
-import           Miso.Event        as Export
-import           Miso.Html         as Export
-import           Miso.Render       as Export
-import           Miso.Router       as Export
-import           Miso.Runner       as Export
-import           Miso.Storage      as Export
-import           Miso.Subscription as Export
-import           Miso.Types        as Export hiding (Component(Component))
-import           Miso.Util         as Export
-import           Miso.FFI          as Export
+import           Miso.Effect
+import           Miso.Event
+import           Miso.Html
+import           Miso.Render
+import           Miso.Router
+import           Miso.Runner
+import           Miso.Mathml
+import           Miso.Subscription
+import           Miso.Types
+import           Miso.Util
+import           Miso.Storage
+import           Miso.Internal
+import           Miso.FFI
 
 #ifndef GHCJS_BOTH
-import           Data.FileEmbed
+import           Data.FileEmbed (embedStringFile)
+import           Language.Javascript.JSaddle (eval)
+import           Miso.String (MisoString)
 #endif
 
 -- | Runs an isomorphic miso application.
@@ -118,9 +144,9 @@ startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> 
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
 #ifndef GHCJS_BOTH
-  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/diff.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: JSString)
-  _ <- eval ($(embedStringFile "jsbits/util.js") :: JSString)
+  _ <- eval ($(embedStringFile "jsbits/delegate.js") :: MisoString)
+  _ <- eval ($(embedStringFile "jsbits/diff.js") :: MisoString)
+  _ <- eval ($(embedStringFile "jsbits/isomorphic.js") :: MisoString)
+  _ <- eval ($(embedStringFile "jsbits/util.js") :: MisoString)
 #endif
   action

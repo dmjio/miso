@@ -13,7 +13,7 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Svg.Attribute
-  ( -- * Regular attributes
+  ( -- *** Attributes
     accentHeight_
   , accelerate_
   , accumulate_

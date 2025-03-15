@@ -9,16 +9,19 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Subscription.Window where
+module Miso.Subscription.Window
+  ( -- *** Subscription
+    windowSub
+  , windowCoordsSub
+  , windowPointerMoveSub
+  , windowSubWithOptions
+  ) where
 
 import Control.Monad
+import Language.Javascript.JSaddle
 
-import GHCJS.Marshal
-import JavaScript.Object
-import JavaScript.Object.Internal
-
-import Miso.Types (Sub)
 import Miso.Event
+import Miso.Effect
 import Miso.FFI
 import Miso.String
 
@@ -39,14 +42,13 @@ windowCoordsSub f = \sink -> do
 -- | @windowSub eventName decoder toAction@ is a subscription which parallels the
 -- attribute handler `on`, providing a subscription to listen to window level events.
 windowSub :: MisoString -> Decoder r -> (r -> action) -> Sub action
-windowSub  = windowSubWithOptions defaultOptions
+windowSub = windowSubWithOptions defaultOptions
 
 -- | @windowSubWithOptions options eventName decoder toAction@ is a subscription which parallels the
 -- attribute handler `on`, providing a subscription to listen to window level events.
 windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> Sub action
-windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
-  windowAddEventListener eventName $
-    \e -> do
+windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink ->
+  windowAddEventListener eventName $ \e -> do
       decodeAtVal <- toJSVal decodeAt
       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
       case parseEither decoder v of
@@ -56,5 +58,7 @@ windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink -> do
           when preventDefault $ eventPreventDefault e
           sink (toAction r)
 
-pointerMoveSub :: (PointerEvent -> action) -> Sub action
-pointerMoveSub = windowSub "pointermove" pointerDecoder
+-- | window.addEventListener ("pointermove", (event) => handle(event))
+-- A 'Sub' for handler PointerEvent on window
+windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
+windowPointerMoveSub = windowSub "pointermove" pointerDecoder
