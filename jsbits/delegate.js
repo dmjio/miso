@@ -88,12 +88,12 @@ window['propagateWhileAble'] = function propagateWhileAble (parentStack, event) 
 
 /* Walks down obj following the path described by `at`, then filters primitive
  values (string, numbers and booleans)*/
-window['objectToJSON'] = function objectToJSON (at, obj) {
+window['eventJSON'] = function eventJSON (at, obj) {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] == 'object') {
     var ret = [];
     for (var i = 0; i < at.length; i++)
-      ret.push(window['objectToJSON'](at[i], obj));
+      ret.push(window['eventJSON'](at[i], obj));
     return ret;
   }
 
@@ -104,7 +104,7 @@ window['objectToJSON'] = function objectToJSON (at, obj) {
   if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
     newObj = [];
     for (var i = 0; i < obj.length; i++)
-      newObj.push(window['objectToJSON']([], obj[i]));
+      newObj.push(window['eventJSON']([], obj[i]));
     return newObj;
   }
 

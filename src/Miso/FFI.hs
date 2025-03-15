@@ -28,15 +28,15 @@ module Miso.FFI
    , eventStopPropagation
    , now
    , consoleLog
-   , consoleLogJSVal
-   , stringify
-   , parse
-   , objectToJSON
+   , consoleLog'
+   , jsonStringify
+   , jsonParse
+   , eventJSON
    , set
    , getBody
-   , getDoc
+   , getDocument
    , getElementById
-   , diff'
+   , diff
    , integralToJSString
    , realFloatToJSString
    , jsStringToDouble
@@ -158,39 +158,42 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -- | Outputs a message to the web console
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
+--
+-- Console logging of JavaScript strings.
 consoleLog :: MisoString -> JSM ()
 consoleLog v = do
   _ <- jsg "console" # "log" $ [toJSString v]
   pure ()
 
--- | Console-logging
-consoleLogJSVal :: JSVal -> JSM ()
-consoleLogJSVal v = do
+-- | Console-logging of JSVal
+consoleLog' :: JSVal -> JSM ()
+consoleLog' v = do
   _ <- jsg "console" # "log" $ [v]
   pure ()
 
--- | Converts a JS object into a JSON string
-stringify :: ToJSON json => json -> JSM MisoString
-{-# INLINE stringify #-}
-stringify j = do
+-- | Encodes a Haskell object as a JSON string by way of a JavaScript object
+jsonStringify :: ToJSON json => json -> JSM MisoString
+{-# INLINE jsonStringify #-}
+jsonStringify j = do
   v <- toJSVal (toJSON j)
   fromJSValUnchecked =<< (jsg "JSON" # "stringify" $ [v])
 
 -- | Parses a MisoString
-parse :: FromJSON json => JSVal -> JSM json
-{-# INLINE parse #-}
-parse jval = do
+jsonParse :: FromJSON json => JSVal -> JSM json
+{-# INLINE jsonParse #-}
+jsonParse jval = do
   val <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
   case fromJSON val of
     A.Success x -> pure x
     A.Error y -> error y
 
 -- | Convert a JavaScript object to JSON
-objectToJSON
+-- JSONified representation of events
+eventJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
     -> JSM JSVal
-objectToJSON = jsg2 "objectToJSON"
+eventJSON = jsg2 "eventJSON"
 
 -- | Retrieves the component id
 getComponent :: MisoString -> JSM JSVal
@@ -210,23 +213,23 @@ getBody = jsg "document" ! "body"
 -- | Retrieves a reference to the document.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document>
-getDoc :: JSM JSVal
-getDoc = jsg "document"
+getDocument :: JSM JSVal
+getDocument = jsg "document"
 
 -- | Returns an Element object representing the element whose id property matches the specified string.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
 getElementById :: MisoString -> JSM JSVal
-getElementById e = getDoc # "getElementById" $ [e]
+getElementById e = getDocument # "getElementById" $ [e]
 
 -- | Diff two virtual DOMs
-diff'
+diff
     :: Object -- ^ current object
     -> Object -- ^ new object
     -> JSVal  -- ^ parent node
     -> JSVal -- ^ document
     -> JSM ()
-diff' a b c d = () <$ jsg4 "diff" a b c d
+diff a b c d = () <$ jsg4 "diff" a b c d
 
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -269,7 +272,7 @@ undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
-  doc <- getDoc
+  doc <- getDocument
   jsg4 "copyDOMIntoVTree" logLevel mountPoint vtree doc
 
 -- | Fails silently if the element is not found.

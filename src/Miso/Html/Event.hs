@@ -66,7 +66,7 @@ import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 
 import           Miso.Event
-import           Miso.FFI (syncCallback, set, objectToJSON, asyncCallback1)
+import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1)
 import           Miso.Html.Types ( Attribute (E) )
 import           Miso.String (MisoString, unpack)
 
@@ -104,7 +104,7 @@ onWithOptions options eventName Decoder{..} toAction =
    jsOptions <- toJSVal options
    decodeAtVal <- toJSVal decodeAt
    cb <- asyncCallback1 $ \e -> do
-       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
+       Just v <- fromJSVal =<< eventJSON decodeAtVal e
        case parseEither decoder v of
          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
          Right r -> sink (toAction r)

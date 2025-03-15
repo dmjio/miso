@@ -50,7 +50,7 @@ windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> S
 windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink ->
   windowAddEventListener eventName $ \e -> do
       decodeAtVal <- toJSVal decodeAt
-      Just v <- fromJSVal =<< objectToJSON decodeAtVal e
+      Just v <- fromJSVal =<< eventJSON decodeAtVal e
       case parseEither decoder v of
         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
         Right r -> do

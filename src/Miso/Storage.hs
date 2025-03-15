@@ -33,7 +33,7 @@ import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
 import qualified Data.Aeson as A
 import           Language.Javascript.JSaddle hiding (obj, val)
 
-import           Miso.FFI (parse, stringify)
+import           Miso.FFI (jsonParse, jsonStringify)
 import qualified Miso.FFI.Storage as Storage
 import           Miso.String (MisoString)
 
@@ -45,7 +45,7 @@ getStorageCommon f key = do
   case result of
     Nothing -> pure $ Left "Not Found"
     Just v -> do
-      r <- parse v
+      r <- jsonParse v
       pure $ case fromJSON r of
         A.Success x -> Right x
         A.Error y -> Left y
@@ -71,7 +71,7 @@ getLocalStorage = getStorageCommon $ \t -> do
 setLocalStorage :: ToJSON model => MisoString -> model -> JSM ()
 setLocalStorage key model = do
   s <- Storage.localStorage
-  Storage.setItem s key =<< stringify model
+  Storage.setItem s key =<< jsonStringify model
 
 -- | Set the value of a key in session storage.
 --
@@ -79,7 +79,7 @@ setLocalStorage key model = do
 setSessionStorage :: ToJSON model => MisoString -> model -> JSM ()
 setSessionStorage key model = do
   s <- Storage.sessionStorage
-  Storage.setItem s key =<< stringify model
+  Storage.setItem s key =<< jsonStringify model
 
 -- | Removes an item from local storage
 --
