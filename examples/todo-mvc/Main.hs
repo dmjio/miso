@@ -89,15 +89,12 @@ data Msg
     deriving (Show)
 
 main :: IO ()
-main = run $ startApp App{initialAction = NoOp, ..}
-  where
-    model = emptyModel
-    update = updateModel
-    view = viewModel
-    events = defaultEvents <> keyboardEvents
-    mountPoint = Nothing
-    subs = []
-    logLevel = Off
+main = run $ startApp app
+  { events = defaultEvents <> keyboardEvents
+  }
+
+app :: App Model Msg
+app = defaultApp emptyModel updateModel viewModel NoOp
 
 updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m

@@ -13,36 +13,39 @@
 
 module Main where
 
-import Data.Aeson
-import Data.Bool
+import           Data.Aeson
+import           Data.Bool
 import qualified Data.Map as M
-import GHC.Generics
+import           GHC.Generics
 
-import Miso
-import Miso.String (MisoString)
+import           Miso
+import           Miso.String (MisoString)
 import qualified Miso.String as S
 
-#if defined(wasm32_HOST_ARCH)
+#if WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startApp App{initialAction = Id, ..}
-  where
-    model = Model (Message "") mempty
-    events = defaultEvents <> keyboardEvents
-    subs = [websocketSub uri protocols HandleWebSocket]
-    update = updateModel
-    view = appView
-    uri = URL "wss://echo.websocket.org"
-    protocols = Protocols []
-    mountPoint = Nothing
-    logLevel = Off
+main = run $ startApp app
+  { events = defaultEvents <> keyboardEvents
+  , subs =
+    [ websocketSub url protocols HandleWebSocket
+    ]
+  } where
+      url = URL "wss://echo.websocket.org"
+      protocols = Protocols []
+
+app :: App Model Action
+app = defaultApp emptyModel updateModel appView Id
+
+emptyModel :: Model
+emptyModel = Model (Message "") mempty
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) model =
     noEff model{received = m}
-updateModel (SendMessage msg) model = model <# do send msg >> pure Id
+updateModel (SendMessage msg) model = model <# send msg >> pure Id
 updateModel (UpdateMessage m) model = noEff model{msg = Message m}
 updateModel _ model = noEff model
 

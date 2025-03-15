@@ -30,7 +30,7 @@ emptyModel :: Model
 emptyModel = Model (0, 0)
 
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandlePointer pointer) model = noEff  model { mouseCoords = coords pointer }
+updateModel (HandlePointer pointer) model = noEff model { mouseCoords = coords pointer }
 updateModel Id model = noEff model
 
 data Action

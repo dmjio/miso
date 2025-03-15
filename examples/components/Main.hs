@@ -105,11 +105,11 @@ viewModel1 x =
 updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
 updateModel1 MainNoOp m = noEff m
 updateModel1 Toggle m = noEff (not m)
-updateModel1 UnMountMain m = do
+updateModel1 UnMountMain m =
     m <# do
         consoleLog "Component 2 was unmounted!"
         pure MainNoOp
-updateModel1 MountMain m = do
+updateModel1 MountMain m =
     m <# do
         consoleLog "Component 2 was mounted!"
         pure MainNoOp
@@ -119,17 +119,17 @@ counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Model -> Effect Action Model
-updateModel2 AddOne m = do
+updateModel2 AddOne m =
     noEff (m + 1)
-updateModel2 SubtractOne m = do
+updateModel2 SubtractOne m =
     noEff (m - 1)
 updateModel2 NoOp m = noEff m
 updateModel2 SayHelloWorld m = noEff m
-updateModel2 UnMount m = do
+updateModel2 UnMount m =
     m <# do
         consoleLog "Component 3 was unmounted!"
         pure NoOp
-updateModel2 Mount m = do
+updateModel2 Mount m =
     m <# do
         consoleLog "Component 3 was mounted!"
         pure NoOp
@@ -161,7 +161,7 @@ updateModel3 AddOne (t, n) =
     (t, n + 1) <# do
         mail component2 AddOne
         pure NoOp
-updateModel3 SubtractOne (t, n) = do
+updateModel3 SubtractOne (t, n) =
     (t, n - 1) <# do
         mail component2 SubtractOne
         pure NoOp
@@ -205,13 +205,12 @@ updateModel4 AddOne m =
     (m + 1) <# do
         mail component2 AddOne
         pure NoOp
-updateModel4 SubtractOne m = do
+updateModel4 SubtractOne m =
     (m - 1) <# do
         mail component2 SubtractOne
         pure NoOp
 updateModel4 SayHelloWorld m =
-    m <# do
-        liftIO (putStrLn "Hello World from Component 4") >> pure NoOp
+    m <# liftIO (putStrLn "Hello World from Component 4") >> pure NoOp
 updateModel4 _ m = noEff m
 
 -- | Constructs a virtual DOM from a model

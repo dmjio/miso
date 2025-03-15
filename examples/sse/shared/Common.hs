@@ -92,6 +92,6 @@ handleSseMsg SSEError = ServerMsg "SSE error"
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (ServerMsg msg) m = pure (m{modelMsg = "Event received: " ++ msg})
-updateModel (HandleURI u) m = m{modelUri = u} <# pure NoOp
-updateModel (ChangeURI u) m = m <# (pushURI u >> pure NoOp)
+updateModel (HandleURI u) m = m { modelUri = u } <# pure NoOp
+updateModel (ChangeURI u) m = m <# NoOp <$ pushURI u
 updateModel NoOp m = noEff m

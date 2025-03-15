@@ -2,10 +2,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-
 module Main where
 
 import Data.Proxy
@@ -47,14 +47,9 @@ main =
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m =
-    m{uri = u} <# do
-        pure NoOp
-updateModel (ChangeURI u) m =
-    m <# do
-        pushURI u
-        pure NoOp
-updateModel _ m = noEff m
+updateModel (HandleURI u) m = m { uri = u } <# pure NoOp
+updateModel (ChangeURI u) m = m <# NoOp <$ pushURI u
+updateModel _ m             = noEff m
 
 -- | View function, with routing
 viewModel :: Model -> View Action
@@ -85,15 +80,13 @@ viewModel model = view
 
 -- | Type-level routes
 type API = About :<|> Home
-
 type Home = View Action
 type About = "about" :> View Action
 
 -- | Type-safe links used in `onClick` event handlers to route the application
-goAbout, goHome :: Action
-(goHome, goAbout) = (goto api home, goto api about)
-  where
-    goto a b = ChangeURI $ linkURI (safeLink a b)
-    home = Proxy :: Proxy Home
-    about = Proxy :: Proxy About
-    api = Proxy :: Proxy API
+aboutUri, homeUri :: URI
+aboutUri :<|> homeUri = allLinks' linkURI (Proxy @API)
+
+goHome, goAbout :: Action
+goHome = ChangeURI homeUri
+goAbout = ChangeURI aboutUri
