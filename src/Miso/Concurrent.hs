@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
@@ -11,30 +12,21 @@
 module Miso.Concurrent
   ( Waiter (..)
   , waiter
-  , emptyWaiter
   ) where
-
+-----------------------------------------------------------------------------
 import Control.Concurrent
-
+-----------------------------------------------------------------------------
 data Waiter
   = Waiter
   { wait :: IO ()
+    -- ^ Blocks on MVar
   , serve :: IO ()
+    -- ^ Unblocks threads waiting on MVar
   }
-
--- | Create a new 'Waiter'
+-----------------------------------------------------------------------------
+-- | Creates a new 'Waiter' 
 waiter :: IO Waiter
 waiter = do
-  mvar <- newMVar ()
-  pure Waiter
-    { wait = takeMVar mvar
-    , serve = do
-        _ <- tryPutMVar mvar ()
-        pure ()
-    }
-
-emptyWaiter :: IO Waiter
-emptyWaiter = do
   mvar <- newEmptyMVar
   pure Waiter
     { wait = takeMVar mvar
@@ -42,4 +34,4 @@ emptyWaiter = do
         _ <- tryPutMVar mvar ()
         pure ()
     }
-
+-----------------------------------------------------------------------------

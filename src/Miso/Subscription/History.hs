@@ -1,8 +1,6 @@
-{-# LANGUAGE DataKinds         #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeOperators     #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.History
@@ -25,7 +23,7 @@ module Miso.Subscription.History
    -- *** Types 
   , URI (..)
   ) where
-
+-----------------------------------------------------------------------------
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Miso.Concurrent
@@ -35,12 +33,12 @@ import           Miso.String
 import           Miso.Effect (Sub)
 import           Network.URI hiding (path)
 import           System.IO.Unsafe
-
+-----------------------------------------------------------------------------
 -- | Retrieves current URI of page
 getCurrentURI :: JSM URI
 {-# INLINE getCurrentURI #-}
 getCurrentURI = getURI
-
+-----------------------------------------------------------------------------
 -- | Retrieves current URI of page
 getURI :: JSM URI
 {-# INLINE getURI #-}
@@ -54,12 +52,12 @@ getURI = do
     dropPrefix u@URI{..}
       | '/' : xs <- uriPath = u { uriPath = xs }
       | otherwise = u
-
+-----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> JSM ()
 {-# INLINE pushURI #-}
 pushURI uri = pushStateNoModel uri { uriPath = toPath uri }
-
+-----------------------------------------------------------------------------
 -- | Prepend '/' if necessary
 toPath :: URI -> String
 toPath uri =
@@ -68,31 +66,31 @@ toPath uri =
     "/" -> "/"
     xs@('/' : _) -> xs
     xs -> '/' : xs
-
+-----------------------------------------------------------------------------
 -- | Replaces current URI on stack
 replaceURI :: URI -> JSM ()
 {-# INLINE replaceURI #-}
 replaceURI uri = replaceTo' uri { uriPath = toPath uri }
-
+-----------------------------------------------------------------------------
 -- | Navigates backwards
 back :: JSM ()
 {-# INLINE back #-}
 back = FFI.back
-
+-----------------------------------------------------------------------------
 -- | Navigates forwards
 forward :: JSM ()
 {-# INLINE forward #-}
 forward = FFI.forward
-
+-----------------------------------------------------------------------------
 -- | Jumps to a specific position in history
 go :: Int -> JSM ()
 {-# INLINE go #-}
 go n = FFI.go n
-
+-----------------------------------------------------------------------------
 chan :: Waiter
 {-# NOINLINE chan #-}
-chan = unsafePerformIO emptyWaiter
-
+chan = unsafePerformIO waiter
+-----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
@@ -101,15 +99,16 @@ uriSub = \f sink -> do
     sink . f =<< getURI
   windowAddEventListener "popstate" $ \_ ->
     sink . f =<< getURI
-
+-----------------------------------------------------------------------------
 pushStateNoModel :: URI -> JSM ()
 {-# INLINE pushStateNoModel #-}
 pushStateNoModel u = do
   FFI.pushState . pack . show $ u
   liftIO (serve chan)
-
+-----------------------------------------------------------------------------
 replaceTo' :: URI -> JSM ()
 {-# INLINE replaceTo' #-}
 replaceTo' u = do
   FFI.replaceState . pack . show $ u
   liftIO (serve chan)
+-----------------------------------------------------------------------------

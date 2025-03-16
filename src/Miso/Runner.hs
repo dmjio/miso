@@ -1,10 +1,19 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Runner
+-- Copyright   :  (C) 2016-2025 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <code@dmj.io>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Miso.Runner
   ( -- ** Live reload
     run
-  )
-where
-
+  ) where
+-----------------------------------------------------------------------------
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm as J
 #elif !GHCJS_BOTH
@@ -13,9 +22,8 @@ import           System.Environment
 import           Text.Read
 import qualified Language.Javascript.JSaddle.Warp as J
 #endif
-
 import           Language.Javascript.JSaddle
-
+-----------------------------------------------------------------------------
 -- | Entry point for a miso application
 -- When compiling with jsaddle on native platforms
 -- 'run' will start a web server for live reload
@@ -35,3 +43,4 @@ run action = do
     isGhci <- (== "<interactive>") <$> getProgName
     (if isGhci then J.debug else J.run) (fromMaybe 8008 port) action
 #endif
+-----------------------------------------------------------------------------

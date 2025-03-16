@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards   #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -13,12 +13,13 @@ module Miso.Subscription.Mouse
   ( -- *** Subscription
     mouseSub
   ) where
-
+-----------------------------------------------------------------------------
 import Miso.Event (pointerDecoder, PointerEvent)
 import Miso.Subscription.Window (windowSub)
 import Miso.Effect (Sub)
-
+-----------------------------------------------------------------------------
 -- | Captures mouse coordinates as they occur and writes them to
 -- an event sink
 mouseSub :: (PointerEvent -> action) -> Sub action
 mouseSub = windowSub "pointermove" pointerDecoder
+-----------------------------------------------------------------------------

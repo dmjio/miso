@@ -32,9 +32,12 @@ module Miso.Svg
      -- ** Event
    , module Miso.Svg.Event
    ) where
-
-import Miso.Svg.Attribute hiding ( filter_, path_, title_, mask_
-                               , glyphRef_, clipPath_, colorProfile_
-                               , cursor_, style_ )
+-----------------------------------------------------------------------------
+import Miso.Svg.Attribute
+  hiding ( filter_, path_, title_, mask_
+         , glyphRef_, clipPath_, colorProfile_
+         , cursor_, style_
+         )
 import Miso.Svg.Element
 import Miso.Svg.Event
+-----------------------------------------------------------------------------

@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -----------------------------------------------------------------------------
@@ -13,11 +14,12 @@ module Miso.Mathml.Element
   ( -- ** Combinator
     nodeMathml
   ) where
-
+-----------------------------------------------------------------------------
 import           Miso.Html.Types
 import           Miso.String (MisoString)
 import qualified Prelude            as P
-
+-----------------------------------------------------------------------------
 -- | Used to construct @Node@ in @View@
 nodeMathml :: MisoString -> [Attribute action] -> [View action] -> View action
 nodeMathml = P.flip (node MATHML) P.Nothing
+-----------------------------------------------------------------------------

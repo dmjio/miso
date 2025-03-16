@@ -1,12 +1,21 @@
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE BangPatterns        #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE CPP                 #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.Internal
+-- Copyright   :  (C) 2016-2025 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <code@dmj.io>
+-- Stability   :  experimental
+-- Portability :  non-portable
+-----------------------------------------------------------------------------
 module Miso.Internal
   ( initialize
   , componentMap
@@ -15,9 +24,8 @@ module Miso.Internal
   , notify
   , runView
   , Prerender(..)
-  )
-where
-
+  ) where
+-----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
@@ -43,7 +51,7 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 import           Miso.Effect (Sink, Effect(Effect), Transition, scheduleIO_)
-
+-----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
@@ -52,24 +60,16 @@ initialize
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
 initialize App {..} getView = do
-  -- init Waiter
   Waiter {..} <- liftIO waiter
-  -- init empty actions
   actions <- liftIO (newIORef S.empty)
   let
     eventSink = \a -> liftIO $ do
       atomicModifyIORef' actions $ \as -> (as S.|> a, ())
       serve
-
-  -- init Subs, save threads for destruction later
   subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
-
-  -- Retrieves reference view
   (mount, mountEl, viewRef) <- getView eventSink
-  -- Program loop, blocking on SkipChan
   let
     loop !oldModel = liftIO wait >> do
-        -- Apply actions to model
         as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
         newModel <- foldEffects update eventSink (toList as) oldModel
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
@@ -78,25 +78,24 @@ initialize App {..} getView = do
           newVTree <- runView DontPrerender (view newModel) eventSink
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
-          --dmj: GHCJS (new and old) RTS already calls this ... consider removing
           diff mountEl (Just oldVTree) (Just newVTree)
           liftIO (atomicWriteIORef viewRef newVTree)
         syncPoint
         loop newModel
-
   tid <- forkJSM (loop model)
   registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
-  eventSink initialAction
   delegator mountEl viewRef events
+  eventSink initialAction
   pure viewRef
-
+-----------------------------------------------------------------------------
 -- | Prerender avoids calling @diff@
 -- and instead calls @copyDOMIntoVTree@
 data Prerender
   = DontPrerender
   | Prerender
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
+-- | @Component@ state, data associated with the lifetime of a @Component@
 data ComponentState action
   = ComponentState
   { componentName :: MisoString
@@ -106,12 +105,15 @@ data ComponentState action
   , componentVTree :: IORef VTree
   , componentSink :: action -> JSM ()
   }
-
--- | ComponentMap
+-----------------------------------------------------------------------------
+-- | componentMap
+--
+-- This is a global @Component@ @Map@ that holds the state of all currently
+-- mounted @Component@s
 componentMap :: IORef (Map MisoString (ComponentState action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
-
+-----------------------------------------------------------------------------
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
@@ -124,7 +126,7 @@ notify (Component name _) action = scheduleIO_ (void io)
       componentStateMap <- liftIO (readIORef componentMap)
       forM (M.lookup name componentStateMap) $ \ComponentState {..} ->
         componentSink action
-
+-----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
   :: (action -> model -> Effect action model)
@@ -138,7 +140,7 @@ foldEffects update snk (e:es) old =
     Effect n effects -> do
       forM_ effects $ \effect -> forkJSM (effect snk)
       foldEffects update snk es n
-
+-----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for
 -- long-running @IO@ operations. Use at your own risk.
@@ -155,7 +157,7 @@ sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
-
+-----------------------------------------------------------------------------
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
 --
@@ -170,7 +172,7 @@ mail (Component name _) action = do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
     componentSink action
-
+-----------------------------------------------------------------------------
 -- | Internally used for runView and startApp
 -- Initial draw helper
 -- If prerendering bypass diff and continue copying
@@ -187,7 +189,7 @@ drawComponent prerender name App {..} snk = do
     diff el Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, el, ref)
-
+-----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
@@ -201,8 +203,15 @@ unmount mountCallback app ComponentState {..} = do
     killThread componentMainThread
     mapM_ killThread componentSubThreads
     modifyIORef' componentMap (M.delete componentName)
-
+-----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
+--
+-- Component mounting should be synchronous.
+-- Mounting causes a recursive diffing to occur
+-- (creating sub components as detected), setting up
+-- infrastructure for each sub-component. During this
+-- process we go between the Haskell heap and the JS heap.
+--
 runView
   :: Prerender
   -> View action
@@ -210,26 +219,18 @@ runView
   -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   let mount = name
-  -- Component mounting should be synchronous.
-  -- Mounting causes a recursive diff to occur,
-  -- creating sub components as detected, setting up
-  -- infrastructure for each sub-component. During this
-  -- process we go between the Haskell heap and the JS heap.
   mountCb <- do
     syncCallback1 $ \continuation -> do
       forM_ onMounted snk
       vtreeRef <- initialize app (drawComponent prerender mount app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
-
   unmountCb <- toJSVal =<< do
     syncCallback1 $ \_ -> do
       forM_ onUnmounted snk
-
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
         Just componentState -> unmount mountCb app componentState
-
   vcomp <- create
   cssObj <- create
   propsObj <- create
@@ -281,8 +282,14 @@ runView prerender (TextRaw str) snk =
       runView prerender parent snk
     kids -> do
       runView prerender (Node HTML "div" Nothing mempty kids) snk
-
-setAttrs :: Object -> [Attribute action] -> Sink action -> JSM ()
+-----------------------------------------------------------------------------
+-- | Helper function for populating "props" and "css" fields on a virtual
+-- DOM node
+setAttrs
+  :: Object
+  -> [Attribute action]
+  -> Sink action
+  -> JSM ()
 setAttrs vnode attrs snk =
   forM_ attrs $ \case
     P k v -> do
@@ -294,7 +301,7 @@ setAttrs vnode attrs snk =
       cssObj <- getProp "css" vnode
       forM_ (M.toList m) $ \(k,v) -> do
         set k v (Object cssObj)
-
+-----------------------------------------------------------------------------
 -- | Used to support RawText, inlining of HTML.
 -- Filters tree to only branches and leaves w/ Text tags.
 -- converts to View a. Note: if HTML is malformed,
@@ -319,9 +326,10 @@ parseView html = reverse (go (parseTree html) [])
         go next (newNode:views)
     go (TagLeaf _ : next) views =
       go next views
-
+-----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
+-----------------------------------------------------------------------------

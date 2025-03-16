@@ -1,6 +1,7 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
@@ -32,33 +33,32 @@ module Miso.Event.Types
   , mouseEvents
   , dragEvents
   , pointerEvents
-  )
-where
-
+  ) where
+-----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText, Value(String))
 import           Data.Aeson.Types (typeMismatch)
 import qualified Data.Map.Strict as M
 import           GHC.Generics (Generic)
 import           GHCJS.Marshal (ToJSVal)
 import           Miso.String (MisoString)
-
+-----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
   = KeyInfo
   { keyCode :: !KeyCode
   , shiftKey, metaKey, ctrlKey, altKey :: !Bool
   } deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | Type used for Keyboard events.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#Browser_compatibility>
 newtype KeyCode = KeyCode Int
   deriving (Show, Eq, Ord, FromJSON)
-
+-----------------------------------------------------------------------------
 -- | Type used for Checkbox events.
 newtype Checked = Checked Bool
   deriving (Show, Eq, Ord, FromJSON)
-
+-----------------------------------------------------------------------------
 -- | Type used for Pointer events.
 -- <https://w3c.github.io/pointerevents>
 data PointerEvent
@@ -75,7 +75,7 @@ data PointerEvent
   -- ^ tiltX, tiltY
   , pressure :: Double
   } deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | Pointer type
 -- <https://developer.mozilla.org/en-US/docs/Web/API/PointerEvent/pointerType>
 data PointerType
@@ -83,23 +83,23 @@ data PointerType
   | PenPointerType
   | TouchPointerType
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 instance FromJSON PointerType where
   parseJSON = withText "PointerType" $ \case
     "mouse" -> pure MousePointerType
     "touch" -> pure TouchPointerType
     "pen"   -> pure PenPointerType
     p -> typeMismatch "PointerEvent" (String p)
-
+-----------------------------------------------------------------------------
 -- | Options for handling event propagation.
 data Options
   = Options
   { preventDefault :: Bool
   , stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
-
+-----------------------------------------------------------------------------
 instance ToJSVal Options
-
+-----------------------------------------------------------------------------
 -- | Default value for 'Options'.
 --
 -- > defaultOptions = Options { preventDefault = False, stopPropagation = False }
@@ -109,11 +109,11 @@ defaultOptions
   { preventDefault = False
   , stopPropagation = False
   }
-
+-----------------------------------------------------------------------------
 -- | Related to using drop-related events
 newtype AllowDrop = AllowDrop Bool
   deriving (Show, Eq, FromJSON)
-
+-----------------------------------------------------------------------------
 -- | Default delegated events
 defaultEvents :: M.Map MisoString Bool
 defaultEvents = M.fromList
@@ -126,7 +126,7 @@ defaultEvents = M.fromList
   , ("select", False)
   , ("submit", False)
   ]
-
+-----------------------------------------------------------------------------
 -- | Keyboard events
 keyboardEvents :: M.Map MisoString Bool
 keyboardEvents = M.fromList
@@ -134,7 +134,7 @@ keyboardEvents = M.fromList
   , ("keypress", False)
   , ("keyup", False)
   ]
-
+-----------------------------------------------------------------------------
 -- | Mouse events
 mouseEvents :: M.Map MisoString Bool
 mouseEvents = M.fromList
@@ -145,7 +145,7 @@ mouseEvents = M.fromList
   , ("mouseover", False)
   , ("mouseout", False)
   ]
-
+-----------------------------------------------------------------------------
 -- | Drag events
 dragEvents :: M.Map MisoString Bool
 dragEvents = M.fromList
@@ -157,7 +157,7 @@ dragEvents = M.fromList
   , ("drag", False)
   , ("drop", False)
   ]
-
+-----------------------------------------------------------------------------
 -- | Pointer events
 pointerEvents :: M.Map MisoString Bool
 pointerEvents = M.fromList
@@ -168,3 +168,4 @@ pointerEvents = M.fromList
   , ("pointerover", False)
   , ("pointerout", False)
   ]
+-----------------------------------------------------------------------------

@@ -1,11 +1,21 @@
-{-# LANGUAGE TupleSections #-}
+-----------------------------------------------------------------------------
+{-# LANGUAGE TupleSections            #-}
 {-# LANGUAGE BangPatterns             #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE OverloadedStrings        #-}
 {-# LANGUAGE NamedFieldPuns           #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Main
+-- Copyright   :  (C) 2016-2025 David M. Johnson
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <code@dmj.io>
+-- Stability   :  experimental
+-- Portability :  non-portable
+----------------------------------------------------------------------------
 module Main where
-
+----------------------------------------------------------------------------
 import           Control.Exception hiding (assert)
 import           Control.Monad
 import           Control.Monad.IO.Class     (liftIO)
@@ -22,12 +32,12 @@ import           System.IO.Unsafe
 import           Test.QuickCheck hiding (total)
 import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
-
+----------------------------------------------------------------------------
 import           Miso hiding (run)
-
+----------------------------------------------------------------------------
 instance Arbitrary Value where
   arbitrary = sized sizedArbitraryValue
-
+----------------------------------------------------------------------------
 sizedArbitraryValue :: Int -> Gen Value
 sizedArbitraryValue n
   | n <= 0 = oneof [pure Null, bool, number, string]
@@ -39,7 +49,7 @@ sizedArbitraryValue n
     string = String <$> arbitrary
     array = Array <$> arbitrary
     object' = Object <$> arbitrary
-
+----------------------------------------------------------------------------
 compareValue :: Value -> Value -> Bool
 compareValue (Object x) (Object y) = and $ zipWith compareValue (H.elems x) (H.elems y)
 compareValue (Array x) (Array y)   = and $ zipWith compareValue (V.toList x) (V.toList y)
@@ -48,17 +58,18 @@ compareValue (Bool x) (Bool y)     = x == y
 compareValue Null Null             = True
 compareValue (Number x) (Number y) = closeEnough x y
 compareValue _ _ = False
-
+----------------------------------------------------------------------------
+closeEnough :: (Fractional a, Ord a) => a -> a -> Bool
 closeEnough x y
   = let d = max (abs x) (abs y)
         relDiff = if (d == 0.0) then d else abs (x - y) / d
     in relDiff <= 0.00001
-
+----------------------------------------------------------------------------
 main :: IO ()
 main = runTests $ do
   storageTests
   roundTripJSVal
-
+----------------------------------------------------------------------------
 storageTests :: TestM ()
 storageTests = do
   it "should write to and read from local storage" $ do
@@ -71,22 +82,22 @@ storageTests = do
     setSessionStorage "foo" obj
     Right r <- getLocalStorage "foo"
     r `shouldBe` obj
-
+----------------------------------------------------------------------------
 roundTripJSVal :: TestM ()
 roundTripJSVal =
   it "Should round trip JSVal" $ do
     propTest iso_prop
-
+----------------------------------------------------------------------------
 roundTrip
   :: Value
   -> IO Bool
 roundTrip x = do
   Just y <- fromJSVal =<< toJSVal x
   pure $ compareValue x y == True
-
+----------------------------------------------------------------------------
 iso_prop :: Value -> Property
 iso_prop = monadicIO . run . roundTrip
-
+----------------------------------------------------------------------------
 propTest :: Testable prop => prop -> IO (Bool, String)
 propTest prop = do
   r <- flip quickCheckWithResult prop stdArgs { chatty = False }
@@ -95,10 +106,10 @@ propTest prop = do
     GaveUp { output = o } -> (False, o)
     Failure { output = o } -> (False, o)
     NoExpectedFailure { output = o } -> (False, o)
-
+----------------------------------------------------------------------------
 foreign import javascript unsafe "window.global_test_results = $1;"
   writeToGlobalObject :: JSVal -> IO ()
-
+----------------------------------------------------------------------------
 runTests :: TestM () -> IO ()
 runTests t = do
   results <- toJSVal =<< toResult <$> execStateT t []
@@ -112,7 +123,7 @@ runTests t = do
           failed'   = length (filter (not . result) xs)
           total'    = length xs
           duration' = sum (map duration xs)
-
+----------------------------------------------------------------------------
 instance ToJSVal TestResult where
   toJSVal t = do
     o@(OI.Object j) <- OI.create
@@ -122,7 +133,7 @@ instance ToJSVal TestResult where
     set "duration" (duration' t) o
     set "tests" (tests t) o
     pure j
-
+----------------------------------------------------------------------------
 instance ToJSVal Test where
   toJSVal t = do
     o@(OI.Object j) <- OI.create
@@ -131,7 +142,7 @@ instance ToJSVal Test where
     set "message" (message t) o
     set "duration" (duration t) o
     pure j
-
+----------------------------------------------------------------------------
 it :: String -> IO (Bool, String) -> TestM ()
 it name test = do
   (result, msg, time) <- liftIO $ (do
@@ -140,7 +151,7 @@ it name test = do
       `catch` (\(e :: SomeException) ->
          pure (False, show e, 0))
   modify (Test name result msg time:)
-
+----------------------------------------------------------------------------
 data TestResult
   = TestResult
   { failed :: Int
@@ -149,7 +160,7 @@ data TestResult
   , duration' :: Double
   , tests :: [Test]
   } deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 data Test
   = Test
   { name :: String
@@ -157,18 +168,18 @@ data Test
   , message :: String
   , duration :: Double
   } deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 type TestM a = StateT [Test] IO a
-
+----------------------------------------------------------------------------
 shouldBe :: (Show a, Eq a, Applicative f) => a -> a -> f (Bool, String)
 shouldBe x y =
   pure $
     if x == y
       then (True, mempty)
       else (False, "Expecting: " ++ show y ++ " but got: " ++ show x)
-
+----------------------------------------------------------------------------
 infix 0 `shouldBe`
-
+----------------------------------------------------------------------------
 -- | Measure in seconds
 clock :: IO a -> IO (a, Double)
 clock action = do
@@ -176,3 +187,4 @@ clock action = do
   x <- action
   stop <- now
   pure (x, (stop - start) / 1000)
+----------------------------------------------------------------------------
