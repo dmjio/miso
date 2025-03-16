@@ -43,6 +43,7 @@ module Miso.Types
 
 import           Data.Aeson (Value)
 import           Data.JSString (JSString)
+import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.Proxy (Proxy(Proxy))
@@ -175,7 +176,7 @@ instance HasLink (View a) where
 
 -- | Convenience class for using View
 class ToView a where
-  type ToViewAction a :: *
+  type ToViewAction a :: Type
   toView :: a -> View (ToViewAction a)
 
 instance ToView (View action) where
