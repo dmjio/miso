@@ -74,7 +74,7 @@ sseComponent currentURI =
   where
     update = updateModel
     view m
-        | Right r <- runRoute (Proxy :: Proxy ClientRoutes) home modelUri m =
+        | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
         | otherwise = the404
     events = defaultEvents
