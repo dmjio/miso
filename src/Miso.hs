@@ -20,6 +20,8 @@ module Miso
   , misoComponent
     -- ** Sink
   , sink
+    -- ** Sampling
+  , sample
     -- ** Message Passing
   , mail
   , notify

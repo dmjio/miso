@@ -23,6 +23,7 @@ module Miso.Internal
   , mail
   , notify
   , runView
+  , sample
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
@@ -68,6 +69,9 @@ initialize App {..} getView = do
       serve
   subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
   (mount, mountEl, viewRef) <- getView eventSink
+  -- Program loop, blocking on SkipChan
+
+  modelRef <- liftIO (newIORef model)
   let
     loop !oldModel = liftIO wait >> do
         as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
@@ -79,11 +83,13 @@ initialize App {..} getView = do
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
-          liftIO (atomicWriteIORef viewRef newVTree)
+          liftIO $ do
+            atomicWriteIORef viewRef newVTree
+            atomicWriteIORef modelRef newModel
         syncPoint
         loop newModel
   tid <- forkJSM (loop model)
-  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
+  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef)
   delegator mountEl viewRef events
   eventSink initialAction
   pure viewRef
@@ -96,7 +102,7 @@ data Prerender
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | @Component@ state, data associated with the lifetime of a @Component@
-data ComponentState action
+data ComponentState model action
   = ComponentState
   { componentName :: MisoString
   , componentMainThread :: ThreadId
@@ -104,16 +110,32 @@ data ComponentState action
   , componentMount :: JSVal
   , componentVTree :: IORef VTree
   , componentSink :: action -> JSM ()
+  , componentModel :: IORef model
   }
 -----------------------------------------------------------------------------
 -- | componentMap
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-componentMap :: IORef (Map MisoString (ComponentState action))
+componentMap :: IORef (Map MisoString (ComponentState model action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
------------------------------------------------------------------------------
+
+-- | Read-only access to another @Component@ state
+-- This is only safe to use by a child that wishes to have read-only
+-- access to a parent's state. If the component is not mounted
+-- a 'Nothing' will be returned.
+sample
+  :: Component name model app
+  -> JSM (Maybe model)
+sample (Component name _) = do
+  componentStateMap <- liftIO (readIORef componentMap)
+  case M.lookup name componentStateMap of
+    Nothing ->
+      pure Nothing
+    Just ComponentState {..} ->
+      Just <$> liftIO (readIORef componentModel)
+
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
@@ -194,7 +216,7 @@ drawComponent prerender name App {..} snk = do
 unmount
   :: Function
   -> App model action
-  -> ComponentState action
+  -> ComponentState model action
   -> JSM ()
 unmount mountCallback app ComponentState {..} = do
   undelegator componentMount componentVTree (events app)
@@ -328,7 +350,7 @@ parseView html = reverse (go (parseTree html) [])
       go next views
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
-registerComponent :: MonadIO m => ComponentState action -> m ()
+registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
