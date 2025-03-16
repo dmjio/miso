@@ -11,20 +11,9 @@
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
 module Miso.Effect
-  ( -- ** Effect
+  ( -- ** Transition
     -- *** Types
-    Effect (..)
-  , Sub
-  , Sink
-    -- ** Combinators
-  , mapSub
-  , noEff
-  , (<#)
-  , (#>)
-  , batchEff
-    -- ** Transition
-    -- *** Types
-  , Transition
+    Transition
     -- *** Combinators
   , effectSub
   , mapAction
@@ -34,6 +23,17 @@ module Miso.Effect
   , scheduleIO_
   , scheduleIOFor_
   , scheduleSub
+    -- ** Effect
+    -- *** Types
+  , Effect (..)
+  , Sub
+  , Sink
+    -- *** Combinators
+  , mapSub
+  , noEff
+  , (<#)
+  , (#>)
+  , batchEff
   ) where
 
 import           Control.Monad.Trans.Class (lift)
