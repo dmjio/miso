@@ -54,6 +54,9 @@ module Miso
   , now
   , consoleLog
   , consoleLog'
+  , getElementById
+  , focus
+  , blur
   ) where
 
 import           Control.Monad (void)

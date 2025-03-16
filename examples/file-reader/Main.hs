@@ -10,7 +10,7 @@
 module Main where
 
 import Control.Concurrent.MVar
-import Miso hiding (asyncCallback)
+import Miso
 import Miso.String
 
 #ifdef GHCJS_NEW
