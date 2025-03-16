@@ -63,7 +63,6 @@ class ToMisoString str where
 
 -- | Class used to parse a 'MisoString'. Like a safe 'Read' for 'MisoString'
 class FromMisoString t where
-  -- -- | Reads a `MisoString`
   fromMisoStringEither :: MisoString -> Either String t
 
 -- | Reads a 'MisoString', throws an error when decoding

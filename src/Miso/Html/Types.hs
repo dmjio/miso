@@ -7,47 +7,29 @@
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Miso.Html.Types (
-    -- * Core types and interface
-      VTree  (..)
-    , View   (..)
-    , ToView (..)
-    -- * Smart `View` constructors
-    , node
-    , text
-    , textRaw
-    , rawHtml
-    -- * Core types and interface
-    , Attribute (..)
-    -- * Key patch internals
-    , Key    (..)
-    -- * Namespace
-    , NS(..)
-    -- * Setting properties on virtual DOM nodes
-    , prop
-    -- * Setting css
-    , style_
-    -- * Handling events
-    , on
-    , onWithOptions
-    -- * Life cycle events
-    , onCreated
-    , onDestroyed
-    , onBeforeDestroyed
-    ) where
+module Miso.Html.Types
+  ( -- *** Types
+    VTree     (..)
+  , View      (..)
+  , Attribute (..)
+  , Key       (..)
+  , NS        (..)
+  -- *** Classes
+  , ToView    (..)
+  -- *** Combinators
+  , node
+  , text
+  , textRaw
+  , rawHtml
+  , prop
+  , style_
+  ) where
 
-import           Control.Monad
-import           Data.Aeson (ToJSON, toJSON)
-import           Data.Aeson.Types (parseEither)
-import qualified Data.Map.Strict as M
-import           GHCJS.Marshal (fromJSVal, toJSVal)
-import           JavaScript.Object (create, getProp)
-import           JavaScript.Object.Internal (Object(Object))
-import           Prelude hiding (null)
+import           Data.Aeson (ToJSON(..))
+import           Data.Map.Strict (Map)
+import           Language.Javascript.JSaddle (Object)
 
-import           Miso.Event
-import           Miso.FFI
-import           Miso.String                hiding (reverse)
+import           Miso.String hiding (reverse)
 import           Miso.Types
 
 -- | Create a new @Miso.Html.Types.TextRaw@.
@@ -92,83 +74,6 @@ newtype VTree = VTree { getTree :: Object }
 prop :: ToJSON a => MisoString -> a -> Attribute action
 prop k v = P k (toJSON v)
 
--- | Convenience wrapper for @onWithOptions defaultOptions@.
---
--- > let clickHandler = on "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
---
-on :: MisoString
-   -> Decoder r
-   -> (r -> action)
-   -> Attribute action
-on = onWithOptions defaultOptions
-
--- | @onWithOptions opts eventName decoder toAction@ is an attribute
--- that will set the event handler of the associated DOM node to a function that
--- decodes its argument using @decoder@, converts it to an action
--- using @toAction@ and then feeds that action back to the @update@ function.
---
--- @opts@ can be used to disable further event propagation.
---
--- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
--- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
---
-onWithOptions
-  :: Options
-  -> MisoString
-  -> Decoder r
-  -> (r -> action)
-  -> Attribute action
-onWithOptions options eventName Decoder{..} toAction =
-  E $ \sink n -> do
-   eventObj <- getProp "events" n
-   eventHandlerObject@(Object eo) <- create
-   jsOptions <- toJSVal options
-   decodeAtVal <- toJSVal decodeAt
-   cb <- asyncCallback1 $ \e -> do
-       Just v <- fromJSVal =<< objectToJSON decodeAtVal e
-       case parseEither decoder v of
-         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> sink (toAction r)
-   set "runEvent" cb eventHandlerObject
-   set "options" jsOptions eventHandlerObject
-   set eventName eo (Object eventObj)
-
--- | @onCreated action@ is an event that gets called after the actual DOM
--- element is created.
---
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
-onCreated :: action -> Attribute action
-onCreated action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onCreated" cb n
-
--- | @onDestroyed action@ is an event that gets called after the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
---
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
-onDestroyed :: action -> Attribute action
-onDestroyed action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onDestroyed" cb n
-
--- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
---
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
-onBeforeDestroyed :: action -> Attribute action
-onBeforeDestroyed action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onBeforeDestroyed" cb n
-
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
 --
@@ -179,5 +84,5 @@ onBeforeDestroyed action =
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style_ :: M.Map MisoString MisoString -> Attribute action
+style_ :: Map MisoString MisoString -> Attribute action
 style_ = S

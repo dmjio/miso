@@ -13,15 +13,13 @@ module Miso.Delegate
   , undelegator
   ) where
 
-import           Control.Monad.IO.Class
-import           Data.IORef
+import           Control.Monad.IO.Class (liftIO)
+import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
-import           GHCJS.Marshal
-import           GHCJS.Types (JSVal)
-import qualified JavaScript.Object.Internal as OI
-import           Miso.FFI
-import           Miso.Html.Types
-import           Miso.String
+import           Language.Javascript.JSaddle (JSM, JSVal, Object(..), toJSVal)
+import           Miso.FFI (delegateEvent, undelegateEvent)
+import           Miso.Html.Types (VTree(..))
+import           Miso.String (MisoString)
 
 -- | Entry point for event delegation
 delegator
@@ -32,7 +30,7 @@ delegator
 delegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
   delegateEvent mountPointElement evts $ do
-    VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
+    VTree (Object val) <- liftIO (readIORef vtreeRef)
     pure val
 
 -- | Entry point for deinitalizing event delegation
@@ -44,5 +42,5 @@ undelegator
 undelegator mountPointElement vtreeRef es = do
   evts <- toJSVal (M.toList es)
   undelegateEvent mountPointElement evts $ do
-    VTree (OI.Object val) <- liftIO (readIORef vtreeRef)
+    VTree (Object val) <- liftIO (readIORef vtreeRef)
     pure val

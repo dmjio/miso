@@ -19,14 +19,17 @@
 --  ]
 -- @
 --
--- More information on how to use `miso` is available on GitHub
+-- More information on how to use miso is available on GitHub
 --
 -- <http://github.com/dmjio/miso>
 --
 ----------------------------------------------------------------------------
 module Miso.Svg
-   ( module Miso.Svg.Element
+   ( -- ** Element
+     module Miso.Svg.Element
+     -- ** Attribute
    , module Miso.Svg.Attribute
+     -- ** Event
    , module Miso.Svg.Event
    ) where
 

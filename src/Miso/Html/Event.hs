@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings         #-}
 -----------------------------------------------------------------------------
 -- |
@@ -10,12 +11,14 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Event
-  ( -- * Custom event handlers
+  ( -- *** Smart constructors
     on
   , onWithOptions
-  , Options (..)
-  , defaultOptions
-   -- * Mouse events
+  -- *** Lifecycle events
+  , onCreated
+  , onDestroyed
+  , onBeforeDestroyed
+   -- *** Mouse
   , onClick
   , onDoubleClick
   , onMouseDown
@@ -24,31 +27,31 @@ module Miso.Html.Event
   , onMouseLeave
   , onMouseOver
   , onMouseOut
-  -- * Keyboard events
+  -- *** Keyboard
   , onKeyDown
   , onKeyDownWithInfo
   , onKeyPress
   , onKeyUp
-  -- * Form events
+  -- *** Form
   , onInput
   , onChange
   , onChecked
   , onSubmit
-  -- * Focus events
+  -- *** Focus
   , onBlur
   , onFocus
-  -- * Drag events
+  -- *** Drag
   , onDrag
   , onDragLeave
   , onDragEnter
   , onDragEnd
   , onDragStart
   , onDragOver
-  -- * Drop events
+  -- *** Drop
   , onDrop
-  -- * Select events
+  -- *** Select
   , onSelect
-  -- * Pointer events
+  -- *** Pointer
   , onPointerDown
   , onPointerUp
   , onPointerEnter
@@ -59,11 +62,92 @@ module Miso.Html.Event
   , onPointerMove
   ) where
 
-import Miso.Html.Types ( Attribute, on, onWithOptions )
-import Miso.Event
-import Miso.String (MisoString)
+import           Data.Aeson.Types (parseEither)
+import           Language.Javascript.JSaddle
 
--- | `blur` event defined with custom options
+import           Miso.Event
+import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1)
+import           Miso.Html.Types ( Attribute (E) )
+import           Miso.String (MisoString, unpack)
+
+-- | Convenience wrapper for @onWithOptions defaultOptions@.
+--
+-- > let clickHandler = on "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+on :: MisoString
+   -> Decoder r
+   -> (r -> action)
+   -> Attribute action
+on = onWithOptions defaultOptions
+
+-- | @onWithOptions opts eventName decoder toAction@ is an attribute
+-- that will set the event handler of the associated DOM node to a function that
+-- decodes its argument using @decoder@, converts it to an action
+-- using @toAction@ and then feeds that action back to the @update@ function.
+--
+-- @opts@ can be used to disable further event propagation.
+--
+-- > let clickHandler = onWithOptions defaultOptions "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+onWithOptions
+  :: Options
+  -> MisoString
+  -> Decoder r
+  -> (r -> action)
+  -> Attribute action
+onWithOptions options eventName Decoder{..} toAction =
+  E $ \sink n -> do
+   eventObj <- getProp "events" n
+   eventHandlerObject@(Object eo) <- create
+   jsOptions <- toJSVal options
+   decodeAtVal <- toJSVal decodeAt
+   cb <- asyncCallback1 $ \e -> do
+       Just v <- fromJSVal =<< eventJSON decodeAtVal e
+       case parseEither decoder v of
+         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+         Right r -> sink (toAction r)
+   set "runEvent" cb eventHandlerObject
+   set "options" jsOptions eventHandlerObject
+   set eventName eo (Object eventObj)
+
+-- | @onCreated action@ is an event that gets called after the actual DOM
+-- element is created.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onCreated :: action -> Attribute action
+onCreated action =
+  E $ \sink n -> do
+    cb <- syncCallback (sink action)
+    set "onCreated" cb n
+
+-- | @onDestroyed action@ is an event that gets called after the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onDestroyed :: action -> Attribute action
+onDestroyed action =
+  E $ \sink n -> do
+    cb <- syncCallback (sink action)
+    set "onDestroyed" cb n
+
+-- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onBeforeDestroyed :: action -> Attribute action
+onBeforeDestroyed action =
+  E $ \sink n -> do
+    cb <- syncCallback (sink action)
+    set "onBeforeDestroyed" cb n
+
+-- | blur event defined with custom options
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/Events/blur>
 --
@@ -205,3 +289,4 @@ onPointerCancel action = on "pointercancel" pointerDecoder action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
 onPointerMove :: (PointerEvent -> action) -> Attribute action
 onPointerMove action = on "pointermove" pointerDecoder action
+

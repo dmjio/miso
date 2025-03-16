@@ -15,30 +15,27 @@
 -- [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API).
 ----------------------------------------------------------------------------
 module Miso.Storage
-  ( -- * Retrieve storage
+  ( -- ** Local
     getLocalStorage
-  , getSessionStorage
-    -- * Set items in storage
   , setLocalStorage
-  , setSessionStorage
-    -- * Remove items from storage
   , removeLocalStorage
-  , removeSessionStorage
-    -- * Clear storage
   , clearLocalStorage
-  , clearSessionStorage
-    -- * Get number of items in storage
   , localStorageLength
+    -- ** Session
+  , getSessionStorage
+  , setSessionStorage
+  , removeSessionStorage
+  , clearSessionStorage
   , sessionStorageLength
   ) where
 
-import           Data.Aeson hiding (Object, String)
-import           GHCJS.Marshal
-import           GHCJS.Types
+import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
+import qualified Data.Aeson as A
+import           Language.Javascript.JSaddle hiding (obj, val)
 
-import           Miso.FFI
+import           Miso.FFI (jsonParse, jsonStringify)
 import qualified Miso.FFI.Storage as Storage
-import           Miso.String
+import           Miso.String (MisoString)
 
 -- | Helper for retrieving either local or session storage
 getStorageCommon
@@ -48,10 +45,10 @@ getStorageCommon f key = do
   case result of
     Nothing -> pure $ Left "Not Found"
     Just v -> do
-      r <- parse v
+      r <- jsonParse v
       pure $ case fromJSON r of
-        Success x -> Right x
-        Error y -> Left y
+        A.Success x -> Right x
+        A.Error y -> Left y
 
 -- | Retrieve a value stored under given key in session storage
 getSessionStorage :: FromJSON model => MisoString -> JSM (Either String model)
@@ -74,7 +71,7 @@ getLocalStorage = getStorageCommon $ \t -> do
 setLocalStorage :: ToJSON model => MisoString -> model -> JSM ()
 setLocalStorage key model = do
   s <- Storage.localStorage
-  Storage.setItem s key =<< stringify model
+  Storage.setItem s key =<< jsonStringify model
 
 -- | Set the value of a key in session storage.
 --
@@ -82,7 +79,7 @@ setLocalStorage key model = do
 setSessionStorage :: ToJSON model => MisoString -> model -> JSM ()
 setSessionStorage key model = do
   s <- Storage.sessionStorage
-  Storage.setItem s key =<< stringify model
+  Storage.setItem s key =<< jsonStringify model
 
 -- | Removes an item from local storage
 --

@@ -10,10 +10,9 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Svg.Element
-  ( -- * HTML Embedding
+  ( -- *** SVG
     svg_
-  , foreignObject_
-    -- * Graphics Elements
+    -- *** Graphics
   , circle_
   , ellipse_
   , image_
@@ -23,18 +22,18 @@ module Miso.Svg.Element
   , polyline_
   , rect_
   , use_
-  -- * Animation Elements
+  -- *** Animation
   , animate_
   , animateColor_
   , animateMotion_
   , animateTransform_
   , mpath_
   , set_
-  -- * Descriptive Elements
+  -- *** Descriptive
   , desc_
   , metadata_
   , title_
-  -- * Containers
+  -- *** Containers
   , a_
   , defs_
   , g_
@@ -44,7 +43,7 @@ module Miso.Svg.Element
   , pattern_
   , switch_
   , symbol_
-  -- * Text
+  -- *** Text
   , altGlyph_
   , altGlyphDef_
   , altGlyphItem_
@@ -54,7 +53,7 @@ module Miso.Svg.Element
   , text_
   , tref_
   , tspan_
-  -- * Fonts
+  -- *** Fonts
   , font_
   , fontFace_
   , fontFaceFormat_
@@ -63,11 +62,11 @@ module Miso.Svg.Element
   , fontFaceUri_
   , hkern_
   , vkern_
-  -- * Gradients
+  -- *** Gradients
   , linearGradient_
   , radialGradient_
   , stop_
-  -- * Filters
+  -- *** Filters
   , feBlend_
   , feColorMatrix_
   , feComponentTransfer_
@@ -89,11 +88,12 @@ module Miso.Svg.Element
   , feSpecularLighting_
   , feTile_
   , feTurbulence_
-  -- * Light source elements
+  -- *** Light source
   , feDistantLight_
   , fePointLight_
   , feSpotLight_
-  -- * Miscellaneous
+  -- *** Misc.
+  , foreignObject_
   , clipPath_
   , colorProfile_
   , cursor_
@@ -107,7 +107,7 @@ import           Miso.Html.Types hiding (style_)
 import           Miso.String        (MisoString)
 import qualified Prelude            as P
 
--- | Used to construct a `VNode` with namespace "svg"
+-- | Used to construct a @VNode@ with namespace *"svg"*
 --
 -- > document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 --

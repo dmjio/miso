@@ -9,11 +9,14 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Subscription.Mouse (mouseSub) where
+module Miso.Subscription.Mouse
+  ( -- *** Subscription
+    mouseSub
+  ) where
 
-import Miso.Types (Sub)
-import Miso.Subscription.Window
-import Miso.Event
+import Miso.Event (pointerDecoder, PointerEvent)
+import Miso.Subscription.Window (windowSub)
+import Miso.Effect (Sub)
 
 -- | Captures mouse coordinates as they occur and writes them to
 -- an event sink

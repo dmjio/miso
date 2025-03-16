@@ -11,14 +11,36 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Event.Types where
+module Miso.Event.Types
+  ( -- ** Types
+    -- *** KeyboardEvent
+    KeyInfo (..)
+  , KeyCode (..)
+    -- *** CheckedEvent
+  , Checked (..)
+    -- *** PointerEvent
+  , PointerEvent(..)
+  , PointerType(..)
+    -- *** DropEvent
+  , AllowDrop(..)
+    -- *** Options
+  , Options(..)
+  , defaultOptions
+    -- *** Events
+  , defaultEvents
+  , keyboardEvents
+  , mouseEvents
+  , dragEvents
+  , pointerEvents
+  )
+where
 
-import qualified Data.Map.Strict as M
-import           GHC.Generics
-import           GHCJS.Marshal (ToJSVal)
-import           Miso.String
 import           Data.Aeson (FromJSON(..), withText, Value(String))
 import           Data.Aeson.Types (typeMismatch)
+import qualified Data.Map.Strict as M
+import           GHC.Generics (Generic)
+import           GHCJS.Marshal (ToJSVal)
+import           Miso.String (MisoString)
 
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
@@ -105,6 +127,7 @@ defaultEvents = M.fromList
   , ("submit", False)
   ]
 
+-- | Keyboard events
 keyboardEvents :: M.Map MisoString Bool
 keyboardEvents = M.fromList
   [ ("keydown", False)
@@ -112,6 +135,7 @@ keyboardEvents = M.fromList
   , ("keyup", False)
   ]
 
+-- | Mouse events
 mouseEvents :: M.Map MisoString Bool
 mouseEvents = M.fromList
   [ ("mouseup", False)
@@ -122,6 +146,7 @@ mouseEvents = M.fromList
   , ("mouseout", False)
   ]
 
+-- | Drag events
 dragEvents :: M.Map MisoString Bool
 dragEvents = M.fromList
   [ ("dragstart", False)

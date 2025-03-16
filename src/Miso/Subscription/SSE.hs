@@ -11,14 +11,14 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Subscription.SSE
- ( -- * Subscription
+ ( -- *** Subscription
    sseSub
-   -- * Types
+   -- *** Types
  , SSE (..)
  ) where
 
 import           Data.Aeson
-import           Miso.Types (Sub)
+import           Miso.Effect (Sub)
 import           Miso.FFI
 import           Miso.String
 
@@ -29,7 +29,7 @@ sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action
 sseSub url f = \sink -> do
   es <- SSE.new url
   SSE.addEventListener es "message" $ \val -> do
-    dat <- parse =<< SSE.data' val
+    dat <- jsonParse =<< SSE.data' val
     sink (f (SSEMessage dat))
   SSE.addEventListener es "error" $ \_ ->
     sink (f SSEError)

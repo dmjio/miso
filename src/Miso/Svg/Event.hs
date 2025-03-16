@@ -13,11 +13,11 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Svg.Event
-  ( -- * Animation event handlers
+  ( -- *** Animation
     onBegin
   , onEnd
   , onRepeat
-    -- * Document event attributes
+    -- *** Document
   , onAbort
   , onError
   , onResize
@@ -25,7 +25,7 @@ module Miso.Svg.Event
   , onLoad
   , onUnload
   , onZoom
-    -- * Graphical Event Attributes
+    -- *** Graphical
   , onActivate
   , onClick
   , onFocusIn
@@ -37,9 +37,9 @@ module Miso.Svg.Event
   , onMouseUp
   ) where
 
-import Miso.Event 
-import Miso.Html.Event (onClick)
-import Miso.Html.Types
+import Miso.Event (emptyDecoder)
+import Miso.Html.Event (on, onClick)
+import Miso.Html.Types (Attribute)
 
 -- | onBegin event
 onBegin :: action -> Attribute action

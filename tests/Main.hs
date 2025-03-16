@@ -102,7 +102,7 @@ foreign import javascript unsafe "window.global_test_results = $1;"
 runTests :: TestM () -> IO ()
 runTests t = do
   results <- toJSVal =<< toResult <$> execStateT t []
-  consoleLogJSVal results
+  consoleLog' results
   writeToGlobalObject results
     where
       toResult :: [Test] -> TestResult

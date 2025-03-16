@@ -7,24 +7,42 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines `Effect` and `Sub` types, which are used to define
+-- This module defines `Effect`, `Sub` and `Sink` types, which are used to define
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
 module Miso.Effect
-  ( Effect (..)
+  ( -- ** Effect
+    -- *** Types
+    Effect (..)
   , Sub
   , Sink
+    -- ** Combinators
   , mapSub
   , noEff
   , (<#)
   , (#>)
   , batchEff
+    -- ** Transition
+    -- *** Types
+  , Transition
+    -- *** Combinators
   , effectSub
+  , mapAction
+  , fromTransition
+  , toTransition
+  , scheduleIO
+  , scheduleIO_
+  , scheduleIOFor_
+  , scheduleSub
   ) where
 
-import Data.Bifunctor
+import           Control.Monad.Trans.Class (lift)
+import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
+import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
+import           Data.Bifunctor (second, Bifunctor(..))
+import           Data.Foldable (for_)
 
-import Miso.FFI (JSM)
+import           Miso.FFI (JSM)
 
 -- | An effect represents the results of an update action.
 --
@@ -93,3 +111,92 @@ batchEff model actions = Effect model $
 -- going via a @'Sub'scription@ which introduces a leaky-abstraction.
 effectSub :: model -> Sub action -> Effect action model
 effectSub model sub = Effect model [sub]
+
+-- | A monad for succinctly expressing model transitions in the @update@ function.
+--
+-- @Transition@ is a state monad so it abstracts over manually passing the model
+-- around. It's also a writer monad where the accumulator is a list of scheduled
+-- IO actions. Multiple actions can be scheduled using
+-- @Control.Monad.Writer.Class.tell@ from the @mtl@ library and a single action
+-- can be scheduled using 'scheduleIO'.
+--
+-- Tip: use the @Transition@ monad in combination with the stateful
+-- <http://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Operators.html lens>
+-- operators (all operators ending in "@=@"). The following example assumes
+-- the lenses @field1@, @counter@ and @field2@ are in scope and that the
+-- @LambdaCase@ language extension is enabled:
+--
+-- @
+-- myApp = App
+--   { update = 'fromTransition' . \\case
+--       MyAction1 -> do
+--         field1 .= value1
+--         counter += 1
+--       MyAction2 -> do
+--         field2 %= f
+--         scheduleIO $ do
+--           putStrLn \"Hello\"
+--           putStrLn \"World!\"
+--   , ...
+--   }
+-- @
+type Transition action model = StateT model (Writer [Sub action])
+
+-- | Turn a transition that schedules subscriptions that consume
+-- actions of type @a@ into a transition that schedules subscriptions
+-- that consume actions of type @b@ using the supplied function of
+-- type @a -> b@.
+mapAction :: (actionA -> actionB) -> Transition actionA model r -> Transition actionB model r
+mapAction = mapStateT . mapWriter . second . fmap . mapSub
+
+-- | Convert a @Transition@ computation to a function that can be given to @update@.
+fromTransition
+    :: Transition action model ()
+    -> (model -> Effect action model) -- ^ model @update@ function.
+fromTransition act = \m ->
+  case runWriter (execStateT act m) of
+    (n, actions) -> Effect n actions
+
+-- | Convert an @update@ function to a @Transition@ computation.
+toTransition
+    :: (model -> Effect action model) -- ^ model @update@ function
+    -> Transition action model ()
+toTransition f =
+  StateT $ \m ->
+    case f m of
+      Effect n actions -> do
+        tell actions
+        pure ((), n)
+
+-- | Schedule a single IO action for later execution.
+--
+-- Note that multiple IO action can be scheduled using
+-- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
+scheduleIO :: JSM action -> Transition action model ()
+scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
+
+-- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
+-- the @update@ function.
+--
+-- This is handy for scheduling IO computations where you don't care
+-- about their results or when they complete.
+scheduleIO_ :: JSM () -> Transition action model ()
+scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
+
+-- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
+--
+-- This is handy for scheduling IO computations that return a `Maybe` value
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
+scheduleIOFor_ io = scheduleSub $ \sink -> io >>= flip for_ sink
+
+-- | Like 'scheduleIO' but schedules a subscription which is an IO
+-- computation that has access to a 'Sink' which can be used to
+-- asynchronously dispatch actions to the @update@ function.
+--
+-- A use-case is scheduling an IO computation which creates a
+-- 3rd-party JS widget which has an associated callback. The callback
+-- can then call the sink to turn events into actions. To do this
+-- without accessing a sink requires going via a @'Sub'scription@
+-- which introduces a leaky-abstraction.
+scheduleSub :: Sub action -> Transition action model ()
+scheduleSub sub = lift $ tell [ sub ]

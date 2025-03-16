@@ -105,7 +105,7 @@ haskellMisoComponent currentURI =
     subs = [uriSub HandleURI]
     logLevel = DebugPrerender
     viewModel m =
-        case runRoute (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
+        case route (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
             Left _ -> the404 m
             Right v -> v
 

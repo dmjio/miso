@@ -8,31 +8,33 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Diff ( diff
-                 , mountElement
-                 ) where
+module Miso.Diff
+  ( diff
+  , mountElement
+  ) where
 
-import GHCJS.Foreign.Internal     hiding (Object)
-import GHCJS.Types
-import JavaScript.Object.Internal
-import Miso.Html.Types
-import Miso.FFI
-import Miso.String
+import           GHCJS.Foreign.Internal hiding (Object)
+import           GHCJS.Types
+import           JavaScript.Object.Internal
+import qualified Miso.FFI as FFI
+import           Miso.FFI (JSM)
+import           Miso.Html.Types
+import           Miso.String
 
 -- | diffing / patching a given element
 diff :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
 diff mountEl current new = do
-  doc <- getDoc
+  doc <- FFI.getDocument
   case (current, new) of
     (Nothing, Nothing) -> pure ()
     (Just (VTree current'), Just (VTree new')) ->
-      diff' current' new' mountEl doc
+      FFI.diff current' new' mountEl doc
     (Nothing, Just (VTree new')) -> do
-      diff' (Object jsNull) new' mountEl doc
+      FFI.diff (Object jsNull) new' mountEl doc
     (Just (VTree current'), Nothing) ->
-      diff' current' (Object jsNull) mountEl doc
+      FFI.diff current' (Object jsNull) mountEl doc
 
 -- | return the configured mountPoint element or the body
 mountElement :: MisoString -> JSM JSVal
-mountElement "body" = getBody
-mountElement e = getElementById e
+mountElement "body" = FFI.getBody
+mountElement e = FFI.getElementById e
