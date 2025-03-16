@@ -35,12 +35,13 @@ import           Miso.FFI
 --  38 up arrow    ( y =  1 )
 --  39 right arrow ( x =  1 )
 --  40 down arrow  ( y = -1 )
-data Arrows = Arrows {
-   arrowX :: !Int
+data Arrows
+ = Arrows
+ { arrowX :: !Int
  , arrowY :: !Int
  } deriving (Show, Eq)
 
--- | Helper function to convert keys currently pressed to `Arrow`, given a
+-- | Helper function to convert keys currently pressed to @Arrows@, given a
 -- mapping for keys representing up, down, left and right respectively.
 toArrows :: ([Int], [Int], [Int], [Int]) -> Set Int -> Arrows
 toArrows (up, down, left, right) set' =
@@ -59,11 +60,11 @@ toArrows (up, down, left, right) set' =
   where
     check = any (`S.member` set')
 
--- | Maps `Arrows` onto a Keyboard subscription
+-- | Maps @Arrows@ onto a Keyboard subscription
 arrowsSub :: (Arrows -> action) -> Sub action
 arrowsSub = directionSub ([38], [40], [37], [39])
 
--- | Maps `WASD` onto a Keyboard subscription for directions
+-- | Maps @Arrows@ onto a Keyboard subscription for directions
 wasdSub :: (Arrows -> action) -> Sub action
 wasdSub = directionSub ([87], [83], [65], [68])
 

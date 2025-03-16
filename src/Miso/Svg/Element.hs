@@ -107,7 +107,7 @@ import           Miso.Html.Types hiding (style_)
 import           Miso.String        (MisoString)
 import qualified Prelude            as P
 
--- | Used to construct a `VNode` with namespace "svg"
+-- | Used to construct a @VNode@ with namespace *"svg"*
 --
 -- > document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 --

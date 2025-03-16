@@ -11,7 +11,6 @@ module Miso.Internal
   ( initialize
   , componentMap
   , sink
-  , sinkRaw
   , mail
   , notify
   , runView
@@ -43,9 +42,9 @@ import           Miso.FFI hiding (diff)
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
-import           Miso.Effect (Sink, Effect(Effect))
+import           Miso.Effect (Sink, Effect(Effect), Transition, scheduleIO_)
 
--- | Helper function to abstract out initialize functionality between `startApp` and `miso`
+-- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
   => App model action
@@ -140,27 +139,22 @@ foldEffects update snk (e:es) old =
       forM_ effects $ \effect -> forkJSM (effect snk)
       foldEffects update snk es n
 
--- | Component sink exposed as a backdoor
--- Meant for usage in long running IO actions, or custom callbacks
--- Good for integrating with third-party components.
--- 'sink' is now extended to take an reference to an App
--- `sink` can now write to any component that is mounted.
--- dmj: As of miso 2.0 sink is parameterized by App
--- and uses the global component map for dispatch to the
--- appropriate sub component sink.
--- Warning:
--- If the component is not mounted it does not exist
--- in the global component map and it will be a no-op
--- this is a backdoor function so it comes with warnings
+-- | The sink function gives access to an @App@
+-- @Sink@. This is use for third-party integration, or for
+-- long-running @IO@ operations. Use at your own risk.
+--
+-- If the @Component@ or is not mounted, it does not exist
+-- in the global component map, and will therefore be a no-op.
+-- This is a backdoor function, caveat emptor.
+--
+-- It is recommended to use the @mail@ or @notify@ functions by default
+-- when message passing with @App@ and @Component@
+--
 sink :: MisoString -> App action model -> Sink action
 sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
-
--- | Link 'sink' but without `App` argument
-sinkRaw :: MisoString -> Sink action
-sinkRaw name = sink name undefined
 
 -- | Used for bidirectional communication between components.
 -- Specify the mounted Component's 'App' you'd like to target.
@@ -216,7 +210,7 @@ runView
   -> JSM VTree
 runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
   let mount = name
-  -- Component mounting should be sychronous.
+  -- Component mounting should be synchronous.
   -- Mounting causes a recursive diff to occur,
   -- creating sub components as detected, setting up
   -- infrastructure for each sub-component. During this

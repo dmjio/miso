@@ -15,27 +15,38 @@
 -- data IntAction = Add | Subtract
 --
 -- intView :: Int -> View IntAction
--- intView n = div_ [ class_ "main" ] [
---    btn_ [ onClick Add ] [ text_ "+" ]
+-- intView n
+--  = div_
+--  [ class_ "main"
+--  ]
+--  [ btn_
+--    [ onClick Add
+--    ]
+--    [ text_ "+"
+--    ]
 --  , text_ $ pack (show n)
---  , btn_ [ onClick Subtract ] [ text_ "-" ]
+--  , btn_
+--    [ onClick Subtract
+--    ]
+--    [ text_ "-"
+--    ]
 --  ]
 -- @
 --
--- More information on how to use `miso` is available on GitHub
+-- More information on how to use miso is available on GitHub
 --
 -- <http://github.com/dmjio/miso>
 --
 ----------------------------------------------------------------------------
 module Miso.Html
-   ( -- ** Combinators
+   ( -- ** Elements
      module Miso.Html.Element
+     -- ** Attributes
+   , module Miso.Html.Property
      -- ** Events
    , module Miso.Html.Event
-     -- ** Types
+     -- ** Virtual DOM
    , module Miso.Html.Types
-     -- ** Properties
-   , module Miso.Html.Property
    ) where
 
 import Miso.Html.Element

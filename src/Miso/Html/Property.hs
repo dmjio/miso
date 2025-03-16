@@ -14,12 +14,14 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Property
- (   textProp
+  ( -- *** Smart constructors
+     textProp
    , stringProp
    , boolProp
    , intProp
    , integerProp
    , doubleProp
+   -- *** Combinators
    , class_
    , classList_
    , id_

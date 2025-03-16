@@ -19,18 +19,16 @@
 ----------------------------------------------------------------------------
 module Miso
   ( -- * Miso
+    -- ** Combinators
     miso
   , startApp
-    -- * Miso Components
   , startComponent
   , misoComponent
-    -- * Sink
+    -- ** Sink
   , sink
-  , sinkRaw
-    -- * Mail
+    -- ** Message Passing
   , mail
   , notify
-    -- * Core
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -87,8 +85,8 @@ import           Miso.String (MisoString)
 
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
--- Note: Uses 'mountPoint' as the @Component@ name.
--- Always mounts to <body>. Copies page into the virtual dom.
+-- Note: Uses @mountPoint@ as the @Component@ name.
+-- Always mounts to *<body>*. Copies page into the virtual DOM.
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
@@ -102,8 +100,8 @@ miso f = withJS $ do
 
 -- | Runs a miso application (as a @Component@)
 -- Assumes the pre-rendered DOM is already present.
--- Note: Uses 'name' in @(Component name model action) as the @Component@ name.
--- Always mounts to <body>. Copies page into the virtual dom.
+-- Note: Uses @name@ in @Component name model action@ as the @Component@ name.
+-- Always mounts to *<body>*. Copies page into the virtual DOM.
 misoComponent
   :: Eq model
   => (URI -> Component name model action)
@@ -119,7 +117,7 @@ misoComponent f = withJS $ do
     pure (name, mount, ref)
 
 -- | Runs a miso application
--- Initializes application at `mountPoint` (defaults to <body> when @Nothing@)
+-- Initializes application at @mountPoint@ (defaults to @<body>@ when @Nothing@)
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
@@ -131,8 +129,8 @@ startApp app@App {..} = withJS $
     pure (mount, mountEl, ref)
 
 -- | Runs a miso application (as a @Component@)
--- Initializes application at `name` (defaults to <body>)
--- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)
+-- Initializes application at @name@ (defaults to @<body>@)
+-- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)@
 startComponent :: Eq model => Component name model action -> JSM ()
 startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do
   vtree <- runView DontPrerender (view model) snk

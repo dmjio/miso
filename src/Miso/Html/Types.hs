@@ -16,7 +16,7 @@ module Miso.Html.Types
   , NS        (..)
   -- *** Classes
   , ToView    (..)
-  -- *** Smart Constructors
+  -- *** Combinators
   , node
   , text
   , textRaw

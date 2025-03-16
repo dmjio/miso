@@ -127,6 +127,7 @@ defaultEvents = M.fromList
   , ("submit", False)
   ]
 
+-- | Keyboard events
 keyboardEvents :: M.Map MisoString Bool
 keyboardEvents = M.fromList
   [ ("keydown", False)
@@ -134,6 +135,7 @@ keyboardEvents = M.fromList
   , ("keyup", False)
   ]
 
+-- | Mouse events
 mouseEvents :: M.Map MisoString Bool
 mouseEvents = M.fromList
   [ ("mouseup", False)
@@ -144,6 +146,7 @@ mouseEvents = M.fromList
   , ("mouseout", False)
   ]
 
+-- | Drag events
 dragEvents :: M.Map MisoString Bool
 dragEvents = M.fromList
   [ ("dragstart", False)

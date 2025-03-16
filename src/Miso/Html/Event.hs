@@ -147,7 +147,7 @@ onBeforeDestroyed action =
     cb <- syncCallback (sink action)
     set "onBeforeDestroyed" cb n
 
--- | `blur` event defined with custom options
+-- | blur event defined with custom options
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/Events/blur>
 --

@@ -127,11 +127,11 @@ module Miso.Html.Element
 import           Miso.Html.Types
 import           Miso.String (MisoString)
 
--- | Used to construct `VNode`'s in `View`
+-- | Used to construct @Node@ in @View@
 nodeHtml :: MisoString -> [Attribute action] -> [View action] -> View action
 nodeHtml = flip (node HTML) Nothing
 
--- | Construct a node with a `Key`
+-- | Construct a node with a @Key@
 nodeHtmlKeyed :: MisoString -> Key -> [Attribute action] -> [View action] -> View action
 nodeHtmlKeyed name = node HTML name . pure
 
