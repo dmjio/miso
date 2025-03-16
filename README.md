@@ -272,16 +272,20 @@ data Action
 
 -- | Entry point for a miso application
 main :: IO ()
-main = startApp App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel          -- update function
-    view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only applies to `miso` function)
+main = run $ startApp app
+  { events = defaultEvents        -- default delegated events
+  , subs   = []                   -- empty subscription list
+  , mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
+  , logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only applies to `miso` function)
+  }
+
+-- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
+app :: App Model Action
+app = defaultApp emptyModel updateModel viewModel SayHelloWorld
+
+-- | Empty application state
+emptyModel :: Model
+emptyModel = 0
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
@@ -294,12 +298,12 @@ updateModel action m =
     NoOp
       -> noEff m
     SayHelloWorld
-      -> m <# do consoleLog "Hello World" >> pure NoOp
+      -> m <# consoleLog "Hello World" >> pure NoOp
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
-viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
+viewModel x = div_ []
+ [ button_ [ onClick AddOne ] [ text "+" ]
  , text (ms x)
  , button_ [ onClick SubtractOne ] [ text "-" ]
  ]
@@ -316,6 +320,7 @@ very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`
 -- | Haskell language pragma
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE LambdaCase        #-}
 
 -- | Haskell module declaration
 module Main where
@@ -346,37 +351,31 @@ data Action
 
 -- | Entry point for a miso application
 main :: IO ()
-main = startApp App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = Model 0              -- initial model
-    update = fromTransition . updateModel -- update function
-    view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only applies to `miso` function)
+main = run (startApp app)
+
+-- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
+app :: App Model Action
+app = defaultApp emptyModel (fromTransition . updateModel) viewModel SayHelloWorld
+
+-- | Empty application state
+emptyModel :: Model
+emptyModel = Model 0
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Action Model ()
-updateModel action =
-  case action of
-    AddOne
-      -> counter += 1
-    SubtractOne
-      -> counter -= 1
-    NoOp
-      -> pure ()
-    SayHelloWorld
-      -> scheduleIO_ (consoleLog "Hello World")
+updateModel = \case
+  NoOp          -> pure ()
+  AddOne        -> counter += 1
+  SubtractOne   -> counter -= 1
+  SayHelloWorld -> scheduleIO_ (consoleLog "Hello World")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
-viewModel x = div_ [] [
-   button_ [ onClick AddOne ] [ text "+" ]
- , text . ms $ x^.counter
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
+viewModel x = div_ []
+  [ button_ [ onClick AddOne ] [ text "+" ]
+  , text . ms $ x^.counter
+  , button_ [ onClick SubtractOne ] [ text "-" ]
+  ]
 ```
 
 ## Live reload with JSaddle
