@@ -12,11 +12,12 @@ module Miso.Util
   , conditionalViews
   , (=:)
   ) where
-
+-----------------------------------------------------------------------------
 import           Data.Foldable
 import qualified Data.Map.Strict as M
+-----------------------------------------------------------------------------
 import           Miso.Html (View)
-
+-----------------------------------------------------------------------------
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
 -- below.
@@ -29,7 +30,7 @@ import           Miso.Html (View)
 -- @
 withFoldable :: Foldable t => t a -> (a -> b) -> [b]
 withFoldable ta f = map f (toList ta)
-
+-----------------------------------------------------------------------------
 -- | Hides the @View@s the condition is False. Shows them when the condition
 -- is True.
 conditionalViews :: Bool -> [View action] -> [View action]
@@ -37,7 +38,7 @@ conditionalViews condition views =
     if condition
     then views
     else []
-
+-----------------------------------------------------------------------------
 -- | Smart constructor for Attributes. This function is helpful when constructing numerous Attributes
 -- Example shown below.
 -- 
@@ -46,3 +47,4 @@ conditionalViews condition views =
 -- @
 (=:) :: k -> a -> M.Map k a 
 a =: b = M.singleton a b
+-----------------------------------------------------------------------------

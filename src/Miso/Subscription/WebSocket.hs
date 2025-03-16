@@ -1,9 +1,5 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
@@ -30,7 +26,7 @@ module Miso.Subscription.WebSocket
   , connect
   , getSocketState
   ) where
-
+-----------------------------------------------------------------------------
 import           Control.Concurrent (threadDelay)
 import           Control.Monad (when, void, unless)
 import           Control.Monad.IO.Class (liftIO)
@@ -38,25 +34,25 @@ import           Data.Aeson (FromJSON, ToJSON)
 import           Data.IORef (IORef, newIORef, readIORef, writeIORef, atomicWriteIORef)
 import           Language.Javascript.JSaddle
 import           System.IO.Unsafe (unsafePerformIO)
-
+-----------------------------------------------------------------------------
 import           Miso.Effect (Sub)
 import           Miso.FFI (forkJSM, jsonParse, jsonStringify)
 import           Miso.FFI.WebSocket (Socket)
 import qualified Miso.FFI.WebSocket as WS
 import           Miso.String (MisoString)
 import           Miso.WebSocket
-
+-----------------------------------------------------------------------------
 websocket :: IORef (Maybe Socket)
 {-# NOINLINE websocket #-}
 websocket = unsafePerformIO (newIORef Nothing)
-
+-----------------------------------------------------------------------------
 closedCode :: IORef (Maybe CloseCode)
 {-# NOINLINE closedCode #-}
 closedCode = unsafePerformIO (newIORef Nothing)
-
+-----------------------------------------------------------------------------
 secs :: Int -> Int
 secs = (*1000000)
-
+-----------------------------------------------------------------------------
 -- | WebSocket subscription
 websocketSub
   :: FromJSON m
@@ -105,21 +101,21 @@ websocketSub (URL u) (Protocols ps) f sink = do
           unless (code == Just CLOSE_NORMAL) $
             websocketSub (URL u) (Protocols ps) f sink
         else handleReconnect
-
+-----------------------------------------------------------------------------
 -- | Sends message to a websocket server
 send :: ToJSON a => a -> JSM ()
 {-# INLINE send #-}
 send x = do
   Just socket <- liftIO (readIORef websocket)
   sendJson' socket x
-
+-----------------------------------------------------------------------------
 -- | Sends message to a websocket server
 close :: JSM ()
 {-# INLINE close #-}
 close =
   mapM_ WS.close =<<
     liftIO (readIORef websocket)
-
+-----------------------------------------------------------------------------
 -- | Connects to a websocket server
 connect :: URL -> Protocols -> JSM ()
 {-# INLINE connect #-}
@@ -129,21 +125,21 @@ connect (URL url') (Protocols ps) = do
   when (s == 3) $ do
     socket <- createWebSocket url' ps
     liftIO (atomicWriteIORef websocket (Just socket))
-
+-----------------------------------------------------------------------------
 -- | Retrieves current status of `WebSocket`
 getSocketState :: JSM SocketState
 getSocketState = do
   Just ws <- liftIO (readIORef websocket)
   toEnum <$> WS.socketState ws
-
+-----------------------------------------------------------------------------
 sendJson' :: ToJSON json => Socket -> json -> JSM ()
 sendJson' socket m = WS.send socket =<< jsonStringify m
-
+-----------------------------------------------------------------------------
 createWebSocket :: MisoString -> [MisoString] -> JSM Socket
 {-# INLINE createWebSocket #-}
 createWebSocket url' protocols =
   WS.create url' =<< toJSVal protocols
-
+-----------------------------------------------------------------------------
 codeToCloseCode :: Int -> CloseCode
 codeToCloseCode = go
   where
@@ -162,3 +158,4 @@ codeToCloseCode = go
     go 1013 = Try_Again_Later
     go 1015 = TLS_Handshake
     go n    = OtherCode n
+-----------------------------------------------------------------------------

@@ -1,13 +1,7 @@
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE TemplateHaskell     #-}
+-----------------------------------------------------------------------------
+{-# LANGUAGE CPP             #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -58,14 +52,18 @@ module Miso
   , focus
   , blur
   ) where
-
+-----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
-
+#ifndef GHCJS_BOTH
+import           Data.FileEmbed (embedStringFile)
+import           Language.Javascript.JSaddle (eval)
+import           Miso.String (MisoString)
+#endif
+-----------------------------------------------------------------------------
 import           Miso.Diff (diff, mountElement)
-
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Html
@@ -79,13 +77,7 @@ import           Miso.Util
 import           Miso.Storage
 import           Miso.Internal
 import           Miso.FFI hiding (diff)
-
-#ifndef GHCJS_BOTH
-import           Data.FileEmbed (embedStringFile)
-import           Language.Javascript.JSaddle (eval)
-import           Miso.String (MisoString)
-#endif
-
+-----------------------------------------------------------------------------
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @mountPoint@ as the @Component@ name.
@@ -100,7 +92,7 @@ miso f = withJS $ do
     copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
     ref <- liftIO $ newIORef $ VTree (Object iv)
     pure (mount, mountEl, ref)
-
+-----------------------------------------------------------------------------
 -- | Runs a miso application (as a @Component@)
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @name@ in @Component name model action@ as the @Component@ name.
@@ -118,7 +110,7 @@ misoComponent f = withJS $ do
     copyDOMIntoVTree (logLevel == DebugPrerender) mount jval
     ref <- liftIO (newIORef vtree)
     pure (name, mount, ref)
-
+-----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to @<body>@ when @Nothing@)
 startApp :: Eq model => App model action -> JSM ()
@@ -130,7 +122,7 @@ startApp app@App {..} = withJS $
     diff mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
     pure (mount, mountEl, ref)
-
+-----------------------------------------------------------------------------
 -- | Runs a miso application (as a @Component@)
 -- Initializes application at @name@ (defaults to @<body>@)
 -- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)@
@@ -142,7 +134,7 @@ startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> 
   diff mount Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, mount, ref)
-
+-----------------------------------------------------------------------------
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
 #ifndef GHCJS_BOTH
@@ -152,3 +144,4 @@ withJS action = void $ do
   _ <- eval ($(embedStringFile "jsbits/util.js") :: MisoString)
 #endif
   action
+-----------------------------------------------------------------------------

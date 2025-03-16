@@ -48,8 +48,9 @@ module Miso.Html
      -- ** Virtual DOM
    , module Miso.Html.Types
    ) where
-
+-----------------------------------------------------------------------------
 import Miso.Html.Element
 import Miso.Html.Event
 import Miso.Html.Types
 import Miso.Html.Property
+-----------------------------------------------------------------------------

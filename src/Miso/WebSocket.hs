@@ -1,10 +1,5 @@
-{-# LANGUAGE CPP                        #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.WebSocket
@@ -24,12 +19,12 @@ module Miso.WebSocket
   , WasClean    (..)
   , Reason      (..)
   ) where
-
+-----------------------------------------------------------------------------
 import GHC.Generics (Generic)
 import Language.Javascript.JSaddle (ToJSVal, FromJSVal)
-
+-----------------------------------------------------------------------------
 import Miso.String (MisoString)
-
+-----------------------------------------------------------------------------
 -- | WebSocket connection messages
 data WebSocket action
   = WebSocketMessage action
@@ -37,21 +32,21 @@ data WebSocket action
   | WebSocketOpen
   | WebSocketError MisoString
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | URL of Websocket server
 newtype URL = URL MisoString
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | Protocols for Websocket connection
 newtype Protocols = Protocols [MisoString]
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | Wether or not the connection closed was done so cleanly
 newtype WasClean = WasClean Bool deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | Reason for closed connection
 newtype Reason = Reason MisoString deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 -- | `SocketState` corresponding to current WebSocket connection
 data SocketState
   = CONNECTING -- ^ 0
@@ -59,7 +54,7 @@ data SocketState
   | CLOSING    -- ^ 2
   | CLOSED     -- ^ 3
   deriving (Show, Eq, Ord, Enum)
-
+-----------------------------------------------------------------------------
 -- | Code corresponding to a closed connection
 -- https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
 data CloseCode
@@ -94,6 +89,8 @@ data CloseCode
   | OtherCode Int
    -- ^ OtherCode that is reserved and not in the range 0999
   deriving (Show, Eq, Generic)
-
+-----------------------------------------------------------------------------
 instance ToJSVal CloseCode
+-----------------------------------------------------------------------------
 instance FromJSVal CloseCode
+-----------------------------------------------------------------------------

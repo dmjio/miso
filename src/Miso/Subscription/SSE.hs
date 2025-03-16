@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards   #-}
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
@@ -16,14 +16,14 @@ module Miso.Subscription.SSE
    -- *** Types
  , SSE (..)
  ) where
-
+-----------------------------------------------------------------------------
 import           Data.Aeson
 import           Miso.Effect (Sub)
 import           Miso.FFI
 import           Miso.String
-
+-----------------------------------------------------------------------------
 import qualified Miso.FFI.SSE as SSE
-
+-----------------------------------------------------------------------------
 -- | Server-sent events Subscription
 sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action
 sseSub url f = \sink -> do
@@ -35,14 +35,11 @@ sseSub url f = \sink -> do
     sink (f SSEError)
   SSE.addEventListener es "close" $ \_ ->
     sink (f SSEClose)
-
+-----------------------------------------------------------------------------
 -- | Server-sent events data
 data SSE message
   = SSEMessage message
   | SSEClose
   | SSEError
   deriving (Show, Eq)
-
--- | Test URL
--- http://sapid.sourceforge.net/ssetest/webkit.events.php
--- var source = new EventSource("demo_sse.php");
+-----------------------------------------------------------------------------

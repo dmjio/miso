@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -12,7 +13,7 @@ module Miso.Diff
   ( diff
   , mountElement
   ) where
-
+-----------------------------------------------------------------------------
 import           GHCJS.Foreign.Internal hiding (Object)
 import           GHCJS.Types
 import           JavaScript.Object.Internal
@@ -20,7 +21,7 @@ import qualified Miso.FFI as FFI
 import           Miso.FFI (JSM)
 import           Miso.Html.Types
 import           Miso.String
-
+-----------------------------------------------------------------------------
 -- | diffing / patching a given element
 diff :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
 diff mountEl current new = do
@@ -33,8 +34,9 @@ diff mountEl current new = do
       FFI.diff (Object jsNull) new' mountEl doc
     (Just (VTree current'), Nothing) ->
       FFI.diff current' (Object jsNull) mountEl doc
-
+-----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body
 mountElement :: MisoString -> JSM JSVal
 mountElement "body" = FFI.getBody
 mountElement e = FFI.getElementById e
+-----------------------------------------------------------------------------

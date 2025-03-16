@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -12,7 +13,7 @@ module Miso.Delegate
   ( delegator
   , undelegator
   ) where
-
+-----------------------------------------------------------------------------
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
@@ -20,7 +21,7 @@ import           Language.Javascript.JSaddle (JSM, JSVal, Object(..), toJSVal)
 import           Miso.FFI (delegateEvent, undelegateEvent)
 import           Miso.Html.Types (VTree(..))
 import           Miso.String (MisoString)
-
+-----------------------------------------------------------------------------
 -- | Entry point for event delegation
 delegator
   :: JSVal
@@ -32,7 +33,7 @@ delegator mountPointElement vtreeRef es = do
   delegateEvent mountPointElement evts $ do
     VTree (Object val) <- liftIO (readIORef vtreeRef)
     pure val
-
+-----------------------------------------------------------------------------
 -- | Entry point for deinitalizing event delegation
 undelegator
   :: JSVal
@@ -44,3 +45,4 @@ undelegator mountPointElement vtreeRef es = do
   undelegateEvent mountPointElement evts $ do
     VTree (Object val) <- liftIO (readIORef vtreeRef)
     pure val
+-----------------------------------------------------------------------------
