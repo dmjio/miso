@@ -166,28 +166,28 @@ runRouteLoc loc layout page = routeLoc loc (mkRouter layout (Proxy :: Proxy a) p
         capture:paths ->
           case parseUrlPieceMaybe capture of
             Nothing -> Left Fail
-            Just x -> routeLoc loc { locPath = paths } (f x)
+            Just x -> routeLoc l { locPath = paths } (f x)
       RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-        Nothing -> routeLoc loc (f Nothing)
+        Nothing -> routeLoc l (f Nothing)
         Just Nothing -> Left Fail
         Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
           Nothing -> Left Fail
-          Just x -> routeLoc loc (f (Just x))
-      RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x)) $ do
+          Just x -> routeLoc l (f (Just x))
+      RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc l (f x)) $ do
         ps <- sequence $ snd <$> Prelude.filter
           (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
         sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
       RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-        Nothing -> routeLoc loc (f False)
-        Just Nothing -> routeLoc loc (f True)
+        Nothing -> routeLoc l (f False)
+        Just Nothing -> routeLoc l (f True)
         Just (Just _) -> Left Fail
-      RPath sym a -> case locPath loc of
+      RPath sym a -> case locPath l of
         [] -> Left Fail
         p:paths -> if p == T.pack (symbolVal sym)
           then routeLoc (loc { locPath = paths }) a
           else Left Fail
       RPage a ->
-        case locPath loc of
+        case locPath l of
           [] -> Right a
           [""] -> Right a
           _ -> Left Fail
