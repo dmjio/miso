@@ -90,24 +90,20 @@ clientHandlers =
 haskellMisoComponent ::
     URI ->
     HaskellMisoComponent
-haskellMisoComponent currentURI =
-    component $
-        App
-            { model = Model currentURI False
-            , view = viewModel
-            , ..
-            }
+haskellMisoComponent uri
+  = component (app uri)
+  { subs = [uriSub HandleURI]
+  , logLevel = DebugPrerender
+  }
+  
+app :: URI -> App Model Action
+app currentUri = defaultApp emptyModel updateModel viewModel NoOp
   where
-    initialAction = NoOp
-    mountPoint = Nothing
-    update = updateModel
-    events = defaultEvents
-    subs = [uriSub HandleURI]
-    logLevel = DebugPrerender
+    emptyModel = Model currentUri False
     viewModel m =
         case route (Proxy :: Proxy ClientRoutes) clientHandlers uri m of
-            Left _ -> the404 m
-            Right v -> v
+          Left _ -> the404 m
+          Right v -> v
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel (HandleURI u) m =

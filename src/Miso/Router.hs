@@ -153,44 +153,58 @@ instance HasRouter Raw where
 -- handling of string failing to parse as 'URI'.
 runRouteLoc :: forall layout a. HasRouter layout
             => Location -> Proxy layout -> RouteT layout a ->  Either RoutingError a
-runRouteLoc loc layout page = routeLoc loc (mkRouter layout (Proxy :: Proxy a) page)
-  where
-    routeLoc :: Location -> Router a -> Either RoutingError a
-    routeLoc l r = case r of
-      RChoice a b -> do
-        case routeLoc l a of
-          Left Fail -> routeLoc l b
-          Right x -> Right x
-      RCapture f -> case locPath l of
-        [] -> Left Fail
-        capture:paths ->
-          case parseUrlPieceMaybe capture of
-            Nothing -> Left Fail
-            Just x -> routeLoc l { locPath = paths } (f x)
-      RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-        Nothing -> routeLoc l (f Nothing)
-        Just Nothing -> Left Fail
-        Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
-          Nothing -> Left Fail
-          Just x -> routeLoc l (f (Just x))
-      RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc l (f x)) $ do
-        ps <- sequence $ snd <$> Prelude.filter
-          (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
-        sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
-      RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-        Nothing -> routeLoc l (f False)
-        Just Nothing -> routeLoc l (f True)
-        Just (Just _) -> Left Fail
-      RPath sym a -> case locPath l of
-        [] -> Left Fail
-        p:paths -> if p == T.pack (symbolVal sym)
-          then routeLoc (loc { locPath = paths }) a
-          else Left Fail
-      RPage a ->
-        case locPath l of
-          [] -> Right a
-          [""] -> Right a
-          _ -> Left Fail
+runRouteLoc loc layout page =
+  let routing = mkRouter layout (Proxy :: Proxy a) page
+  in routeLoc loc routing
+
+-- | Use a computed 'Router' to mkRouter a 'Location'.
+routeLoc :: Location -> Router a -> Either RoutingError a
+routeLoc loc r = case r of
+  RChoice a b -> do
+    case routeLoc loc a of
+      Left Fail -> routeLoc loc b
+      Right x -> Right x
+  RCapture f -> case locPath loc of
+    [] -> Left Fail
+    capture:paths ->
+      case parseUrlPieceMaybe capture of
+        Nothing -> Left Fail
+        Just x -> routeLoc loc { locPath = paths } (f x)
+  RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
+    Nothing -> routeLoc loc (f Nothing)
+    Just Nothing -> Left Fail
+    Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
+      Nothing -> Left Fail
+      Just x -> routeLoc loc (f (Just x))
+  RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x)) $ do
+    ps <- sequence $ snd <$> Prelude.filter
+      (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
+    sequence $ (parseQueryParamMaybe . decodeUtf8) <$> ps
+  RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
+    Nothing -> routeLoc loc (f False)
+    Just Nothing -> routeLoc loc (f True)
+    Just (Just _) -> Left Fail
+  RPath sym a -> case locPath loc of
+    [] -> Left Fail
+    p:paths -> if p == T.pack (symbolVal sym)
+      then routeLoc (loc { locPath = paths }) a
+      else Left Fail
+  RPage a ->
+    case locPath loc of
+      [] -> Right a
+      [""] -> Right a
+      _ -> Left Fail
+
+-- | Use a handler to mkRouter a location, represented as a 'String'.
+-- All handlers must, in the end, return @m a@.
+-- 'routeLoc' will choose a mkRouter and return its result.
+runRoute
+  :: HasRouter layout
+  => Proxy layout
+  -> RouteT layout a
+  -> URI
+  -> Either RoutingError a
+runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
 
 -- | Executes router
 -- This is most likely the function you want to use. See haskell-miso.org/shared/Common.hs for usage.
@@ -201,9 +215,7 @@ route
   -> (m -> URI)
   -> m
   -> Either RoutingError a
-route layout pages getURI model = ($ model) <$> run layout pages (getURI model)
-  where
-    run layout_ handler u = runRouteLoc (uriToLocation u) layout_ handler
+route layout pages getURI model = ($ model) <$> runRoute layout pages (getURI model)
 
 -- | Convert a 'URI' to a 'Location'.
 uriToLocation :: URI -> Location
