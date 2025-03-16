@@ -54,7 +54,8 @@ module Miso
     -- * FFI
   , set
   , now
-  , consoleLogJSVal
+  , consoleLog
+  , consoleLog'
   ) where
 
 import           Control.Monad (void)
@@ -76,7 +77,7 @@ import           Miso.Types
 import           Miso.Util
 import           Miso.Storage
 import           Miso.Internal
-import           Miso.FFI
+import           Miso.FFI hiding (diff)
 
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)

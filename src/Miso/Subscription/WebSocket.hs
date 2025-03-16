@@ -40,7 +40,7 @@ import           Language.Javascript.JSaddle
 import           System.IO.Unsafe (unsafePerformIO)
 
 import           Miso.Effect (Sub)
-import           Miso.FFI (forkJSM, parse, stringify)
+import           Miso.FFI (forkJSM, jsonParse, jsonStringify)
 import           Miso.FFI.WebSocket (Socket)
 import qualified Miso.FFI.WebSocket as WS
 import           Miso.String (MisoString)
@@ -72,7 +72,7 @@ websocketSub (URL u) (Protocols ps) f sink = do
     liftIO (writeIORef closedCode Nothing)
     sink (f WebSocketOpen)
   WS.addEventListener socket "message" $ \v -> do
-    d <- parse =<< WS.data' v
+    d <- jsonParse =<< WS.data' v
     sink $ f (WebSocketMessage d)
   WS.addEventListener socket "close" $ \e -> do
     code <- codeToCloseCode <$> WS.code e
@@ -137,7 +137,7 @@ getSocketState = do
   toEnum <$> WS.socketState ws
 
 sendJson' :: ToJSON json => Socket -> json -> JSM ()
-sendJson' socket m = WS.send socket =<< stringify m
+sendJson' socket m = WS.send socket =<< jsonStringify m
 
 createWebSocket :: MisoString -> [MisoString] -> JSM Socket
 {-# INLINE createWebSocket #-}
