@@ -26,6 +26,7 @@ data Action
     | ToggleAction
     | UnMount
     | Mount
+    | Sample
     deriving (Show, Eq)
 
 data MainAction
@@ -48,7 +49,7 @@ secs = (* 1000000)
 loggerSub :: MisoString -> Sub action
 loggerSub msg = \_ ->
     forever $ do
-        liftIO $ threadDelay (secs 1)
+        liftIO $ threadDelay (secs 10)
         consoleLog msg
 
 app :: App MainModel MainAction
@@ -165,7 +166,6 @@ updateModel3 SubtractOne (t, n) =
     (t, n - 1) <# do
         mail component2 SubtractOne
         pure NoOp
-updateModel3 NoOp m = noEff m
 updateModel3 SayHelloWorld m = noEff m
 updateModel3 ToggleAction (t, n) = noEff (not t, n)
 updateModel3 UnMount m =
@@ -176,6 +176,8 @@ updateModel3 Mount m =
     m <# do
         consoleLog "Component 4 was mounted!"
         pure NoOp
+updateModel3 NoOp m = noEff m
+updateModel3 Sample m = noEff m
 
 -- | Constructs a virtual DOM from a model
 viewModel3 :: (Bool, Model) -> View Action
@@ -207,8 +209,18 @@ updateModel4 AddOne m =
         pure NoOp
 updateModel4 SubtractOne m =
     (m - 1) <# do
+        Just mainModel <- sample mainComponent
+        consoleLog $ "Sampling main model from compnoent 4: " <> ms (show mainModel)
         mail component2 SubtractOne
         pure NoOp
+updateModel4 Sample m =
+    m <# do
+      result <- sample component2
+      forM_ result $ \componentTwoModel -> do
+        consoleLog $
+          "Sampling parent component 2 from child component 4: " <>
+            ms (show componentTwoModel)
+      pure NoOp
 updateModel4 SayHelloWorld m =
     m <# liftIO (putStrLn "Hello World from Component 4") >> pure NoOp
 updateModel4 _ m = noEff m
@@ -222,4 +234,5 @@ viewModel4 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
+        , button_ [onClick Sample] [text "Sample Component 2 state"]
         ]
