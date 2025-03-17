@@ -18,7 +18,7 @@ foreign export javascript "hs_start" main :: IO ()
 
 main :: IO ()
 main = run $ startApp app
-  { events = pointerEvents
+  { events = M.insert "pointermove" False pointerEvents
   , subs = [ mouseSub HandlePointer ]
   }
 

@@ -158,7 +158,7 @@ fromTransition
 fromTransition act = \m ->
   case runWriter (execStateT act m) of
     (n, actions) -> Effect n actions
-
+-----------------------------------------------------------------------------
 -- | Convert an @update@ function to a @Transition@ computation.
 toTransition
     :: (model -> Effect action model) -- ^ model @update@ function

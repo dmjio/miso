@@ -1,38 +1,46 @@
 window = typeof window === 'undefined' ? {} : window;
 
 /* event delegation algorithm */
-window['delegate'] = function (mount, events, getVTree) {
+window['delegate'] = function (mount, events, getVTree, debug) {
   for (var event in events)
     mount.addEventListener
       ( events[event][0]
-      , function (e) { window['listener'](e, mount, getVTree); }
+      , function (e) { window['listener'](e, mount, getVTree, debug); }
       , events[event][1]
       );
 };
 
-window['listener'] = function(e, mount, getVTree) {
+/* the event listener shared by both delegator and undelegator */
+window['listener'] = function(e, mount, getVTree, debug) {
     getVTree(function (obj) {
-	if (e.target) {
-	    window['delegateEvent'](e, obj, window['buildTargetToElement'](mount, e.target), []);
-	}
+    	if (e.target) {
+    	    window['delegateEvent'](e, obj, window['buildTargetToElement'](mount, e.target), [], debug);
+    	}
    });
 }
 
-/* event delegation algorithm */
-window['undelegate'] = function (mount, events, getVTree) {
+/* event undelegation */
+window['undelegate'] = function (mount, events, getVTree, debug) {
   for (var event in events)
     mount.removeEventListener
       ( events[event][0]
-      , function (e) { window['listener'](e, mount, getVTree); }
+      , function (e) { window['listener'](e, mount, getVTree, debug); }
       , events[event][1]
       );
 };
 
-/* Accumulate parent stack as well for propagation */
-window['delegateEvent'] = function (event, obj, stack, parentStack) {
+/* Finds event in virtual dom via pointer equality
+   Accumulate parent stack as well for propagation up the vtree
+ */
+window['delegateEvent'] = function (event, obj, stack, parentStack, debug) {
 
   /* base case, not found */
-  if (!stack.length) return;
+  if (!stack.length) {
+     if (debug) {
+       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
+     }
+     return;
+  }
 
   /* stack not length 1, recurse */
   else if (stack.length > 1) {
@@ -40,7 +48,7 @@ window['delegateEvent'] = function (event, obj, stack, parentStack) {
     for (var o = 0; o < obj.children.length; o++) {
       if (obj['type'] === 'vcomp') continue;
       if (obj.children[o]['domRef'] === stack[1]) {
-        delegateEvent( event, obj.children[o], stack.slice(1), parentStack );
+        window['delegateEvent'](event, obj.children[o], stack.slice(1), parentStack, debug);
         break;
       }
     }
@@ -50,7 +58,7 @@ window['delegateEvent'] = function (event, obj, stack, parentStack) {
   else {
     var eventObj = obj['events'][event.type];
     if (eventObj) {
-      var options = eventObj.options;
+      var options = eventObj['options'];
       if (options['preventDefault'])
         event.preventDefault();
       eventObj['runEvent'](event);
@@ -63,6 +71,7 @@ window['delegateEvent'] = function (event, obj, stack, parentStack) {
   }
 };
 
+/* Create a stack of ancestors used to index into the virtual DOM */
 window['buildTargetToElement'] = function buildTargetToElement (element, target) {
   var stack = [];
   while (element !== target) {
@@ -72,6 +81,7 @@ window['buildTargetToElement'] = function buildTargetToElement (element, target)
   return stack;
 };
 
+/* Propagate the event up the chain, invoking other event handlers as encountered */
 window['propagateWhileAble'] = function propagateWhileAble (parentStack, event) {
   for (var i = 0; i < parentStack.length; i++) {
     if (parentStack[i]['events'][event.type]) {
@@ -87,7 +97,9 @@ window['propagateWhileAble'] = function propagateWhileAble (parentStack, event) 
 };
 
 /* Walks down obj following the path described by `at`, then filters primitive
- values (string, numbers and booleans)*/
+   values (string, numbers and booleans). Sort of like JSON.stringify(), but
+   on an Event that is stripped of impure references.
+*/
 window['eventJSON'] = function eventJSON (at, obj) {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] == 'object') {

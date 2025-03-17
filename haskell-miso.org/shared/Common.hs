@@ -93,7 +93,7 @@ haskellMisoComponent ::
 haskellMisoComponent uri
   = component (app uri)
   { subs = [uriSub HandleURI]
-  , logLevel = DebugPrerender
+  , logLevel = DebugAll
   }
   
 app :: URI -> App Model Action

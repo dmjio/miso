@@ -29,7 +29,7 @@ module Miso.Internal
 -----------------------------------------------------------------------------
 import           Control.Exception (throwIO, SomeException, fromException)
 import           Control.Concurrent (ThreadId, killThread)
-import           Control.Monad (forM, forM_, (<=<), when, void)
+import           Control.Monad (forM, forM_, when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
@@ -53,6 +53,7 @@ import           Miso.FFI hiding (diff)
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
+import           Miso.Event (Events)
 import           Miso.Effect (Sink, Effect(Effect), Transition, scheduleIO_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
@@ -79,7 +80,7 @@ initialize App {..} getView = do
         oldName <- liftIO $ oldModel `seq` makeStableName oldModel
         newName <- liftIO $ newModel `seq` makeStableName newModel
         when (oldName /= newName && oldModel /= newModel) $ do
-          newVTree <- runView DontPrerender (view newModel) eventSink
+          newVTree <- runView DontPrerender (view newModel) eventSink events
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
@@ -90,7 +91,7 @@ initialize App {..} getView = do
         loop newModel
   tid <- forkJSM (loop model)
   registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef)
-  delegator mountEl viewRef events
+  delegator mountEl viewRef events (logLevel `elem` [DebugEvents, DebugAll])
   eventSink initialAction
   pure viewRef
 -----------------------------------------------------------------------------
@@ -104,13 +105,13 @@ data Prerender
 -- | @Component@ state, data associated with the lifetime of a @Component@
 data ComponentState model action
   = ComponentState
-  { componentName :: MisoString
+  { componentName       :: MisoString
   , componentMainThread :: ThreadId
   , componentSubThreads :: [ThreadId]
-  , componentMount :: JSVal
-  , componentVTree :: IORef VTree
-  , componentSink :: action -> JSM ()
-  , componentModel :: IORef model
+  , componentMount      :: JSVal
+  , componentVTree      :: IORef VTree
+  , componentSink       :: action -> JSM ()
+  , componentModel      :: IORef model
   }
 -----------------------------------------------------------------------------
 -- | componentMap
@@ -217,7 +218,7 @@ drawComponent
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
-  vtree <- runView prerender (view model) snk
+  vtree <- runView prerender (view model) snk events
   el <- getComponent name
   when (prerender == DontPrerender) $
     diff el Nothing (Just vtree)
@@ -230,8 +231,8 @@ unmount
   -> App model action
   -> ComponentState model action
   -> JSM ()
-unmount mountCallback app ComponentState {..} = do
-  undelegator componentMount componentVTree (events app)
+unmount mountCallback App{..} ComponentState {..} = do
+  undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO $ do
     killThread componentMainThread
@@ -245,13 +246,13 @@ unmount mountCallback app ComponentState {..} = do
 -- (creating sub components as detected), setting up
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
---
 runView
   :: Prerender
   -> View action
   -> Sink action
+  -> Events
   -> JSM VTree
-runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk = do
+runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk _ = do
   let mount = name
   mountCb <- do
     syncCallback1 $ \continuation -> do
@@ -260,11 +261,12 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCb <- toJSVal =<< do
-    syncCallback1 $ \_ -> do
+    syncCallback $ do
       forM_ onUnmounted snk
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
-        Just componentState -> unmount mountCb app componentState
+        Just componentState ->
+          unmount mountCb app componentState
   vcomp <- create
   cssObj <- create
   propsObj <- create
@@ -276,13 +278,13 @@ runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions 
   set "ns" HTML vcomp
   set "tag" ("div" :: JSString) vcomp
   set "key" componentKey vcomp
-  setAttrs vcomp attributes snk
+  setAttrs vcomp attributes snk (events app)
   flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
   set "data-component-id" mount vcomp
   flip (set "mount") vcomp =<< toJSVal mountCb
   set "unmount" unmountCb vcomp
   pure (VTree vcomp)
-runView prerender (Node ns tag key attrs kids) snk = do
+runView prerender (Node ns tag key attrs kids) snk events = do
   vnode <- create
   cssObj <- toJSVal =<< create
   propsObj <- toJSVal =<< create
@@ -294,28 +296,30 @@ runView prerender (Node ns tag key attrs kids) snk = do
   set "ns" ns vnode
   set "tag" tag vnode
   set "key" key vnode
-  setAttrs vnode attrs snk
+  setAttrs vnode attrs snk events
   flip (set "children") vnode
     =<< ghcjsPure . jsval
     =<< setKids
   pure $ VTree vnode
     where
       setKids = do
-        kidsViews <- traverse (toJSVal . getTree <=< flip (runView prerender) snk) kids
+        kidsViews <- forM kids $ \kid -> do
+          VTree (Object vtree) <- runView prerender kid snk events
+          pure vtree
         ghcjsPure (JSArray.fromList kidsViews)
-runView _ (Text t) _ = do
+runView _ (Text t) _ _ = do
   vtree <- create
   set "type" ("vtext" :: JSString) vtree
   set "text" t vtree
   pure $ VTree vtree
-runView prerender (TextRaw str) snk =
+runView prerender (TextRaw str) snk events =
   case parseView str of
     [] ->
-      runView prerender (Text (" " :: MisoString)) snk
+      runView prerender (Text (" " :: MisoString)) snk events
     [parent] ->
-      runView prerender parent snk
+      runView prerender parent snk events
     kids -> do
-      runView prerender (Node HTML "div" Nothing mempty kids) snk
+      runView prerender (Node HTML "div" Nothing mempty kids) snk events
 -----------------------------------------------------------------------------
 -- | Helper function for populating "props" and "css" fields on a virtual
 -- DOM node
@@ -323,17 +327,18 @@ setAttrs
   :: Object
   -> [Attribute action]
   -> Sink action
+  -> Events
   -> JSM ()
-setAttrs vnode attrs snk =
+setAttrs vnode attrs snk events =
   forM_ attrs $ \case
-    P k v -> do
+    Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode
       set k value (Object o)
-    E attr -> attr snk vnode
-    S m -> do
+    Event attr -> attr snk vnode events
+    Style styles -> do
       cssObj <- getProp "css" vnode
-      forM_ (M.toList m) $ \(k,v) -> do
+      forM_ (M.toList styles) $ \(k,v) -> do
         set k v (Object cssObj)
 -----------------------------------------------------------------------------
 -- | Used to support RawText, inlining of HTML.
@@ -351,7 +356,7 @@ parseView html = reverse (go (parseTree html) [])
       go (TagBranch name attrs [] : next) views
     go (TagBranch name attrs kids : next) views =
       let
-        attrs' = [ P key $ A.String (fromMisoString value)
+        attrs' = [ Property key $ A.String (fromMisoString value)
                  | (key, value) <- attrs
                  ]
         newNode =

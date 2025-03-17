@@ -63,12 +63,13 @@ module Miso.Html.Event
   , onPointerMove
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Map.Strict as M
 import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event
-import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1)
-import           Miso.Html.Types ( Attribute (E) )
+import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1, consoleError)
+import           Miso.Html.Types ( Attribute (Event) )
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
@@ -99,19 +100,28 @@ onWithOptions
   -> (r -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  E $ \sink n -> do
-   eventObj <- getProp "events" n
-   eventHandlerObject@(Object eo) <- create
-   jsOptions <- toJSVal options
-   decodeAtVal <- toJSVal decodeAt
-   cb <- asyncCallback1 $ \e -> do
-       Just v <- fromJSVal =<< eventJSON decodeAtVal e
-       case parseEither decoder v of
-         Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-         Right r -> sink (toAction r)
-   set "runEvent" cb eventHandlerObject
-   set "options" jsOptions eventHandlerObject
-   set eventName eo (Object eventObj)
+  Event $ \sink n events ->
+    case M.lookup eventName events of
+      Nothing ->
+        consoleError $ mconcat
+          [ "Event \""
+          , eventName
+          , "\" is not being listened on. To use this event, "
+          , "add to the 'events' Map in 'App'"
+          ]
+      Just _ -> do
+        eventObj <- getProp "events" n
+        eventHandlerObject@(Object eo) <- create
+        jsOptions <- toJSVal options
+        decodeAtVal <- toJSVal decodeAt
+        cb <- asyncCallback1 $ \e -> do
+            Just v <- fromJSVal =<< eventJSON decodeAtVal e
+            case parseEither decoder v of
+              Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+              Right r -> sink (toAction r)
+        set "runEvent" cb eventHandlerObject
+        set "options" jsOptions eventHandlerObject
+        set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
@@ -120,9 +130,9 @@ onWithOptions options eventName Decoder{..} toAction =
 -- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onCreated" cb n
+  Event $ \sink object _ -> do
+    callback <- syncCallback (sink action)
+    set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -132,9 +142,9 @@ onCreated action =
 -- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onDestroyed" cb n
+  Event $ \sink object _ -> do
+    callback <- syncCallback (sink action)
+    set "onDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -144,9 +154,9 @@ onDestroyed action =
 -- otherwise the event may not be reliably called!
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  E $ \sink n -> do
-    cb <- syncCallback (sink action)
-    set "onBeforeDestroyed" cb n
+  Event $ \sink object _ -> do
+    callback <- syncCallback (sink action)
+    set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --

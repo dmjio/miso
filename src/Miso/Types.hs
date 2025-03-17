@@ -105,6 +105,15 @@ defaultApp m u v a = App
 data LogLevel
   = Off
   | DebugPrerender
+  -- ^ Will warn if the structure or properties of the
+  -- DOM vs. Virtual DOM differ during prerendering.
+  | DebugEvents
+  -- ^ Will warn if an event cannot be routed to the Haskell event
+  -- handler that raised it. Also will warn if an event handler is
+  -- being used, yet it's not being listened for by the event
+  -- delegator mount point.
+  | DebugAll
+  -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
@@ -254,9 +263,9 @@ instance ToKey Word where toKey = Key . toMisoString
 -- like the @onclick@ attribute. The second argument represents the
 -- vnode the attribute is attached to.
 data Attribute action
-  = P MisoString Value
-  | E (Sink action -> Object -> JSM ())
-  | S (M.Map MisoString MisoString)
+  = Property MisoString Value
+  | Event (Sink action -> Object -> Events -> JSM ())
+  | Style (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
