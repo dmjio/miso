@@ -65,35 +65,35 @@ initialize
   -> JSM (IORef VTree)
 initialize App {..} getView = do
   Waiter {..} <- liftIO waiter
-  actions <- liftIO (newIORef S.empty)
+  componentActions <- liftIO (newIORef S.empty)
   let
-    eventSink = \a -> liftIO $ do
-      atomicModifyIORef' actions $ \as -> (as S.|> a, ())
+    componentSink = \action -> liftIO $ do
+      atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
-  subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
-  (mount, mountEl, viewRef) <- getView eventSink
-  modelRef <- liftIO (newIORef model)
+  componentSubThreads <- forM subs $ \sub -> forkJSM (sub componentSink)
+  (componentName, componentMount, componentVTree) <- getView componentSink
+  componentModel <- liftIO (newIORef model)
   let
-    loop !oldModel = liftIO wait >> do
-        as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
-        newModel <- foldEffects update eventSink (toList as) oldModel
-        oldName <- liftIO $ oldModel `seq` makeStableName oldModel
-        newName <- liftIO $ newModel `seq` makeStableName newModel
-        when (oldName /= newName && oldModel /= newModel) $ do
-          newVTree <- runView DontPrerender (view newModel) eventSink events
-          oldVTree <- liftIO (readIORef viewRef)
-          void waitForAnimationFrame
-          diff mountEl (Just oldVTree) (Just newVTree)
-          liftIO $ do
-            atomicWriteIORef viewRef newVTree
-            atomicWriteIORef modelRef newModel
-        syncPoint
-        loop newModel
-  tid <- forkJSM (loop model)
-  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef)
-  delegator mountEl viewRef events (logLevel `elem` [DebugEvents, DebugAll])
-  eventSink initialAction
-  pure viewRef
+    eventLoop !oldModel = liftIO wait >> do
+      as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
+      newModel <- foldEffects update componentSink (toList as) oldModel
+      oldName <- liftIO $ oldModel `seq` makeStableName oldModel
+      newName <- liftIO $ newModel `seq` makeStableName newModel
+      when (oldName /= newName && oldModel /= newModel) $ do
+        newVTree <- runView DontPrerender (view newModel) componentSink events
+        oldVTree <- liftIO (readIORef componentVTree)
+        void waitForAnimationFrame
+        diff componentMount (Just oldVTree) (Just newVTree)
+        liftIO $ do
+          atomicWriteIORef componentVTree newVTree
+          atomicWriteIORef componentModel newModel
+      syncPoint
+      eventLoop newModel
+  componentMainThread <- forkJSM (eventLoop model)
+  registerComponent ComponentState {..}
+  delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  componentSink initialAction
+  pure componentVTree
 -----------------------------------------------------------------------------
 -- | Prerender avoids calling @diff@
 -- and instead calls @copyDOMIntoVTree@
@@ -170,7 +170,7 @@ foldEffects update snk (e:es) old =
     exception :: SomeException -> JSM ()
     exception ex
       | Just (NotMountedException name) <- fromException ex =
-          consoleError ("NotMountedException: Could not sample model state from the Component " <> name)
+          consoleError ("NotMountedException: Could not sample model state from the Component \"" <> name <> "\"")
       | Just (AlreadyMountedException name) <- fromException ex =
           consoleError ("AlreadytMountedException: Component " <> name <> " is already")
       | otherwise = 
