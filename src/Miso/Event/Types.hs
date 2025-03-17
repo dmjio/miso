@@ -14,8 +14,9 @@
 ----------------------------------------------------------------------------
 module Miso.Event.Types
   ( -- ** Types
+    Events
     -- *** KeyboardEvent
-    KeyInfo (..)
+  , KeyInfo (..)
   , KeyCode (..)
     -- *** CheckedEvent
   , Checked (..)
@@ -113,6 +114,9 @@ defaultOptions
 -- | Related to using drop-related events
 newtype AllowDrop = AllowDrop Bool
   deriving (Show, Eq, FromJSON)
+-----------------------------------------------------------------------------
+-- | Convenience type for Events
+type Events = M.Map MisoString Bool
 -----------------------------------------------------------------------------
 -- | Default delegated events
 defaultEvents :: M.Map MisoString Bool

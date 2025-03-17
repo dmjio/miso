@@ -77,7 +77,7 @@ newtype VTree = VTree { getTree :: Object }
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
 -- to @v@.
 prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = P k (toJSON v)
+prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
 -- | @style_ attrs@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
@@ -90,5 +90,5 @@ prop k v = P k (toJSON v)
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: Map MisoString MisoString -> Attribute action
-style_ = S
+style_ = Style
 -----------------------------------------------------------------------------

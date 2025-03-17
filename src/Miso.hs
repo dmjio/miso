@@ -93,10 +93,10 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
-    VTree (Object iv) <- runView Prerender (view model) snk
+    VTree (Object iv) <- runView Prerender (view model) snk events
     let mount = getMountPoint mountPoint
     mountEl <- getBody
-    copyDOMIntoVTree (logLevel == DebugPrerender) mountEl iv
+    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mountEl iv
     ref <- liftIO $ newIORef $ VTree (Object iv)
     pure (mount, mountEl, ref)
 -----------------------------------------------------------------------------
@@ -111,10 +111,10 @@ misoComponent
 misoComponent f = withJS $ do
   Component name app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
-    vtree@(VTree (Object jval)) <- runView Prerender (view model) snk
+    vtree@(VTree (Object jval)) <- runView Prerender (view model) snk events
     mount <- getBody
     setBodyComponent name
-    copyDOMIntoVTree (logLevel == DebugPrerender) mount jval
+    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mount jval
     ref <- liftIO (newIORef vtree)
     pure (name, mount, ref)
 -----------------------------------------------------------------------------
@@ -123,7 +123,7 @@ misoComponent f = withJS $ do
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
-    vtree <- runView DontPrerender (view model) snk
+    vtree <- runView DontPrerender (view model) snk events
     let mount = getMountPoint mountPoint
     mountEl <- mountElement mount
     diff mountEl Nothing (Just vtree)
@@ -135,13 +135,15 @@ startApp app@App {..} = withJS $
 -- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)@
 startComponent :: Eq model => Component name model action -> JSM ()
 startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do
-  vtree <- runView DontPrerender (view model) snk
+  vtree <- runView DontPrerender (view model) snk events
   mount <- getBody
   setBodyComponent name
   diff mount Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, mount, ref)
 -----------------------------------------------------------------------------
+-- | Used when compiling with jsaddle to make miso's JavaScript present in
+-- the execution context.
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
 #ifndef GHCJS_BOTH

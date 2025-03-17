@@ -27,22 +27,24 @@ delegator
   :: JSVal
   -> IORef VTree
   -> M.Map MisoString Bool
+  -> Bool
   -> JSM ()
-delegator mountPointElement vtreeRef es = do
+delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (M.toList es)
-  delegateEvent mountPointElement evts $ do
-    VTree (Object val) <- liftIO (readIORef vtreeRef)
-    pure val
+  delegateEvent mountPointElement evts debug $ do
+    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
+    pure vtree
 -----------------------------------------------------------------------------
 -- | Entry point for deinitalizing event delegation
 undelegator
   :: JSVal
   -> IORef VTree
   -> M.Map MisoString Bool
+  -> Bool
   -> JSM ()
-undelegator mountPointElement vtreeRef es = do
-  evts <- toJSVal (M.toList es)
-  undelegateEvent mountPointElement evts $ do
-    VTree (Object val) <- liftIO (readIORef vtreeRef)
-    pure val
+undelegator mountPointElement vtreeRef es debug = do
+  events <- toJSVal (M.toList es)
+  undelegateEvent mountPointElement events debug $ do
+    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
+    pure vtree
 -----------------------------------------------------------------------------

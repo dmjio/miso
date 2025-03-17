@@ -280,29 +280,31 @@ jsStringToDouble :: MisoString -> Double
 jsStringToDouble = read . unpack
 -----------------------------------------------------------------------------
 -- | Initialize event delegation from a mount point.
-delegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
-delegateEvent mountPoint events getVTree =
-  delegate mountPoint events =<< function handler
+delegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
+delegateEvent mountPoint events debug getVTree =
+  delegate mountPoint events debug =<< function handler
     where
       handler _ _ [] = error "delegate: no args - impossible state"
       handler _ _ (continuation : _) =
         void (call continuation global =<< getVTree)
 -----------------------------------------------------------------------------
 -- | Deinitialize event delegation from a mount point.
-undelegateEvent :: JSVal -> JSVal -> JSM JSVal -> JSM ()
-undelegateEvent mountPoint events getVTree =
-  undelegate mountPoint events =<< function handler
+undelegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
+undelegateEvent mountPoint events debug getVTree =
+  undelegate mountPoint events debug =<< function handler
     where
       handler _ _ [] = error "undelegate: no args - impossible state"
       handler _ _ (continuation : _) =
         void (call continuation global =<< getVTree)
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
-delegate :: JSVal -> JSVal -> Function -> JSM ()
-delegate mountPoint events cb = () <$ jsg3 "delegate" mountPoint events cb
+delegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
+delegate mountPoint events debug callback =
+  void (jsg4 "delegate" mountPoint events callback debug)
 -----------------------------------------------------------------------------
-undelegate :: JSVal -> JSVal -> Function -> JSM ()
-undelegate mountPoint events cb = () <$ jsg3 "undelegate" mountPoint events cb
+undelegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
+undelegate mountPoint events debug callback
+  = void (jsg4 "undelegate" mountPoint events callback debug)
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript

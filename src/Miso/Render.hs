@@ -112,15 +112,15 @@ renderBuilder (Embed (SomeComponent (Component mount App {..})) options) =
   ]
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
-renderAttrs (P key value) =
+renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
   , toHtmlFromJSON value
   , stringUtf8 "\""
   ]
-renderAttrs (E _) = mempty
-renderAttrs (S styles) =
+renderAttrs (Event _) = mempty
+renderAttrs (Style style) =
   mconcat
   [ "style"
   , stringUtf8 "=\""
@@ -131,7 +131,7 @@ renderAttrs (S styles) =
       , fromMisoString v
       , charUtf8 ';'
       ]
-    | (k,v) <- M.toList styles
+    | (k,v) <- M.toList style
     ]
   , stringUtf8 "\""
   ]
