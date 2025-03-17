@@ -210,17 +210,10 @@ drawComponent
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
   vtree <- runView prerender (view model) snk events
-  mountElement <- getComponent name `catch` exception
+  mountElement <- FFI.getComponent name
   when (prerender == DontPrerender) $ diff mountElement Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
   pure (name, mountElement, ref)
------------------------------------------------------------------------------
--- | Check for existing component
-getComponent :: MisoString -> JSM JSVal
-getComponent name =
-  M.lookup name <$> liftIO (readIORef componentMap) >>= \case
-    Just _ -> liftIO $ throwIO (AlreadyMountedException name)
-    Nothing -> FFI.getComponent name
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
@@ -252,17 +245,17 @@ runView
 runView prerender (Embed (SomeComponent (Component mount app)) (ComponentOptions {..})) snk _ = do
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
-      forM_ onMounted snk
       vtreeRef <- initialize app (drawComponent prerender mount app) 
+      forM_ onMounted snk
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback $ do
-      forM_ onUnmounted snk
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
-        Just componentState ->
+        Just componentState -> do
           unmount mountCallback app componentState
+          forM_ onUnmounted snk
   vcomp <- createNode "vcomp" HTML componentKey "div"
   setAttrs vcomp attributes snk (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
