@@ -46,7 +46,7 @@ window['delegateEvent'] = function (event, obj, stack, parentStack, debug) {
     for (var o = 0; o < obj.children.length; o++) {
       if (obj['type'] === 'vcomp') continue;
       if (obj.children[o]['domRef'] === stack[1]) {
-        window['delegateEvent']( event, obj.children[o], stack.slice(1), parentStack, debug);
+        window['delegateEvent'](event, obj.children[o], stack.slice(1), parentStack, debug);
         break;
       }
     }
