@@ -23,6 +23,7 @@ module Miso.String
   , module S
   ) where
 ----------------------------------------------------------------------------
+import           Control.Exception (SomeException)
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy    as BL
@@ -69,6 +70,9 @@ ms = toMisoString
 ----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
+----------------------------------------------------------------------------
+instance ToMisoString SomeException where
+  toMisoString = toMisoString . show
 ----------------------------------------------------------------------------
 instance ToMisoString String where
   toMisoString = T.pack

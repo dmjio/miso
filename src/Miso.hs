@@ -30,15 +30,17 @@ module Miso
   , module Miso.Effect
     -- * Event
   , module Miso.Event
-    -- * Mathml
-  , module Miso.Mathml
     -- * Html
   , module Miso.Html
   , module Miso.Render
+    -- * Mathml
+  , module Miso.Mathml
     -- * Router
   , module Miso.Router
     -- * Runner
   , module Miso.Runner
+    -- * Exception
+  , module Miso.Exception
     -- * Subs
   , module Miso.Subscription
     -- * Storage
@@ -49,6 +51,8 @@ module Miso
   , set
   , now
   , consoleLog
+  , consoleError
+  , consoleWarn
   , consoleLog'
   , getElementById
   , focus
@@ -68,6 +72,7 @@ import           Miso.String (MisoString)
 import           Miso.Diff (diff, mountElement)
 import           Miso.Effect
 import           Miso.Event
+import           Miso.Exception
 import           Miso.Html
 import           Miso.Render
 import           Miso.Router
@@ -83,7 +88,7 @@ import           Miso.FFI hiding (diff)
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @mountPoint@ as the @Component@ name.
--- Always mounts to *<body>*. Copies page into the virtual DOM.
+-- Always mounts to /<body>/. Copies page into the virtual DOM.
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
@@ -98,7 +103,7 @@ miso f = withJS $ do
 -- | Runs a miso application (as a @Component@)
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @name@ in @Component name model action@ as the @Component@ name.
--- Always mounts to *<body>*. Copies page into the virtual DOM.
+-- Always mounts to /<body>/. Copies page into the virtual DOM.
 misoComponent
   :: Eq model
   => (URI -> Component name model action)
@@ -114,7 +119,7 @@ misoComponent f = withJS $ do
     pure (name, mount, ref)
 -----------------------------------------------------------------------------
 -- | Runs a miso application
--- Initializes application at @mountPoint@ (defaults to @<body>@ when @Nothing@)
+-- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
@@ -126,7 +131,7 @@ startApp app@App {..} = withJS $
     pure (mount, mountEl, ref)
 -----------------------------------------------------------------------------
 -- | Runs a miso application (as a @Component@)
--- Initializes application at @name@ (defaults to @<body>@)
+-- Initializes application at @name@ (defaults to /<body>/)
 -- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)@
 startComponent :: Eq model => Component name model action -> JSM ()
 startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do

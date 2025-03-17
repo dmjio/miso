@@ -27,6 +27,7 @@ module Miso.Internal
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
+import           Control.Exception (throwIO, SomeException, fromException)
 import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
@@ -43,10 +44,11 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
-
+-----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
+import           Miso.Exception (MisoException(..))
 import           Miso.FFI hiding (diff)
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
@@ -69,8 +71,6 @@ initialize App {..} getView = do
       serve
   subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
   (mount, mountEl, viewRef) <- getView eventSink
-  -- Program loop, blocking on SkipChan
-
   modelRef <- liftIO (newIORef model)
   let
     loop !oldModel = liftIO wait >> do
@@ -120,22 +120,24 @@ data ComponentState model action
 componentMap :: IORef (Map MisoString (ComponentState model action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
-
--- | Read-only access to another @Component@ state
--- This is only safe to use by a child that wishes to have read-only
--- access to a parent's state. If the component is not mounted
--- a 'Nothing' will be returned.
+-----------------------------------------------------------------------------
+-- | Read-only access to another @Component@'s @model@.
+-- This function is safe to use when a child @Component@ wishes access
+-- a parent @Components@ @model@ state. Under this circumstance the parent
+-- will always be mounted and available.
+--
+-- Otherwise, if a sibling or parent @Component@'s @model@ state is attempted
+-- to be accessed. Then we throw a @NotMountedException@, in the case the
+-- @Component@ being accessed is not available.
 sample
   :: Component name model app
-  -> JSM (Maybe model)
+  -> JSM model
 sample (Component name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
-  case M.lookup name componentStateMap of
-    Nothing ->
-      pure Nothing
-    Just ComponentState {..} ->
-      Just <$> liftIO (readIORef componentModel)
-
+  liftIO $ case M.lookup name componentStateMap of
+    Nothing -> throwIO (NotMountedException name)
+    Just ComponentState {..} -> readIORef componentModel
+-----------------------------------------------------------------------------
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
@@ -160,8 +162,18 @@ foldEffects _ _ [] m = pure m
 foldEffects update snk (e:es) old =
   case update e old of
     Effect n effects -> do
-      forM_ effects $ \effect -> forkJSM (effect snk)
+      forM_ effects $ \effect ->
+        forkJSM (effect snk `catch` exception)
       foldEffects update snk es n
+  where
+    exception :: SomeException -> JSM ()
+    exception ex
+      | Just (NotMountedException name) <- fromException ex =
+          consoleError ("NotMountedException: Could not sample model state from the Component " <> name)
+      | Just (AlreadyMountedException name) <- fromException ex =
+          consoleError ("AlreadytMountedException: Component " <> name <> " is already")
+      | otherwise = 
+          consoleError ("UnknownException: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for

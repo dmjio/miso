@@ -34,6 +34,7 @@ data MainAction
     | Toggle
     | MountMain
     | UnMountMain
+    | SampleChild
 
 type MainModel = Bool
 
@@ -91,6 +92,7 @@ viewModel1 x =
         , "This is an example of component communication using the 'mail' / 'notify' functions"
         , br_ []
         , button_ [onClick Toggle] [text "Toggle Component 2"]
+        , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
                 embedWith
@@ -114,6 +116,13 @@ updateModel1 MountMain m =
     m <# do
         consoleLog "Component 2 was mounted!"
         pure MainNoOp
+updateModel1 SampleChild m =
+    m <# do
+      componentTwoModel <- sample component2
+      consoleLog $
+        "Sampling child component 2 from parent component main (unsafe)" <>
+          ms (show componentTwoModel)
+      pure MainNoOp
 
 counterApp2 :: App Model Action
 counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
@@ -209,15 +218,12 @@ updateModel4 AddOne m =
         pure NoOp
 updateModel4 SubtractOne m =
     (m - 1) <# do
-        Just mainModel <- sample mainComponent
-        consoleLog $ "Sampling main model from compnoent 4: " <> ms (show mainModel)
         mail component2 SubtractOne
         pure NoOp
 updateModel4 Sample m =
     m <# do
-      result <- sample component2
-      forM_ result $ \componentTwoModel -> do
-        consoleLog $
+      componentTwoModel <- sample component2
+      consoleLog $
           "Sampling parent component 2 from child component 4: " <>
             ms (show componentTwoModel)
       pure NoOp
