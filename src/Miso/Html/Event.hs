@@ -104,9 +104,9 @@ onWithOptions options eventName Decoder{..} toAction =
     case M.lookup eventName events of
       Nothing ->
         consoleError $ mconcat
-          [ "Event "
+          [ "Event \""
           , eventName
-          , " is not being listened on. To use this event, "
+          , "\" is not being listened on. To use this event, "
           , "add to the 'events' Map in 'App'"
           ]
       Just _ -> do

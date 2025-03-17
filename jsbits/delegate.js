@@ -37,7 +37,7 @@ window['delegateEvent'] = function (event, obj, stack, parentStack, debug) {
   /* base case, not found */
   if (!stack.length) {
      if (debug) {
-       console.warn('Event ' + event.name + ' did not find an event handler to dispatch on', obj, event);
+       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
      }
      return;
   }
