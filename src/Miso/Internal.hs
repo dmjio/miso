@@ -163,7 +163,7 @@ foldEffects update snk (e:es) old =
   case update e old of
     Effect n effects -> do
       forM_ effects $ \effect ->
-        forkJSM (effect snk `catch` exception)
+        effect snk `catch` exception
       foldEffects update snk es n
   where
     exception :: SomeException -> JSM ()
