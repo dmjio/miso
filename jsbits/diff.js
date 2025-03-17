@@ -207,8 +207,8 @@ window['mountComponent'] = function (obj, doc) {
 
     // dmj: bail out if duplicate mounting detected
     if (nodeList.length > 0) {
-        console.error ('Duplicate component mounting detected');
-        console.error ('Component ' + componentId + ' is already mounted');
+        console.error
+          ('AlreadyMountedException: Component "' + componentId + "' is already mounted");
         return;
     }
     // dmj, the component placeholder div[id=name] is already on the dom and vdom

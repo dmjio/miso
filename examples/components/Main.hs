@@ -55,7 +55,7 @@ loggerSub msg = \_ ->
 
 app :: App MainModel MainAction
 app =
-    (defaultApp True updateModel1 viewModel1 MainNoOp)
+    (defaultApp False updateModel1 viewModel1 MainNoOp)
         { subs = [loggerSub "main-app"]
         }
 
