@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Exception
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -10,12 +12,16 @@
 module Miso.Exception
   ( -- ** Types
     MisoException (..)
+    -- ** Functions
+  , exception
   ) where
 ----------------------------------------------------------------------------
-import Control.Exception
-import Data.Typeable
+import           Control.Exception
+import           Data.Typeable
+import           Language.Javascript.JSaddle
 ----------------------------------------------------------------------------
-import Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
+import qualified Miso.FFI as FFI
 ----------------------------------------------------------------------------
 -- | The @MisoException@ type is used to catch @Component@-related mounting errors.
 --
@@ -45,4 +51,22 @@ data MisoException
   deriving (Show, Eq, Typeable)
 ----------------------------------------------------------------------------
 instance Exception MisoException
+----------------------------------------------------------------------------
+-- | Exception handler
+--
+-- Used to catch @Component@ mounting exceptions
+--
+-- > action `catch` exception
+exception :: SomeException -> JSM JSVal
+exception ex
+  | Just (NotMountedException name) <- fromException ex = do
+      FFI.consoleError
+        ("NotMountedException: Could not sample model state from the Component \"" <> name <> "\"")
+      pure jsNull
+  | Just (AlreadyMountedException name) <- fromException ex = do
+      FFI.consoleError ("AlreadyMountedException: Component \"" <> name <> "\" is already")
+      pure jsNull
+  | otherwise = do
+      FFI.consoleError ("UnknownException: " <> ms ex)
+      pure jsNull
 ----------------------------------------------------------------------------

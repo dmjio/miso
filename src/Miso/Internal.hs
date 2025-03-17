@@ -27,7 +27,7 @@ module Miso.Internal
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
-import           Control.Exception (throwIO, SomeException, fromException)
+import           Control.Exception (throwIO)
 import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, when, void)
 import           Control.Monad.IO.Class
@@ -48,8 +48,8 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
-import           Miso.Exception (MisoException(..))
-import           Miso.FFI hiding (diff)
+import           Miso.Exception (MisoException(..), exception)
+import qualified Miso.FFI as FFI
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
@@ -70,7 +70,7 @@ initialize App {..} getView = do
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
-  componentSubThreads <- forM subs $ \sub -> forkJSM (sub componentSink)
+  componentSubThreads <- forM subs $ \sub -> FFI.forkJSM (sub componentSink)
   (componentName, componentMount, componentVTree) <- getView componentSink
   componentModel <- liftIO (newIORef model)
   let
@@ -89,7 +89,7 @@ initialize App {..} getView = do
           atomicWriteIORef componentModel newModel
       syncPoint
       eventLoop newModel
-  componentMainThread <- forkJSM (eventLoop model)
+  componentMainThread <- FFI.forkJSM (eventLoop model)
   registerComponent ComponentState {..}
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   componentSink initialAction
@@ -164,17 +164,8 @@ foldEffects update snk (e:es) old =
   case update e old of
     Effect n effects -> do
       forM_ effects $ \effect ->
-        effect snk `catch` exception
+        effect snk `catch` (void . exception)
       foldEffects update snk es n
-  where
-    exception :: SomeException -> JSM ()
-    exception ex
-      | Just (NotMountedException name) <- fromException ex =
-          consoleError ("NotMountedException: Could not sample model state from the Component \"" <> name <> "\"")
-      | Just (AlreadyMountedException name) <- fromException ex =
-          consoleError ("AlreadytMountedException: Component " <> name <> " is already")
-      | otherwise = 
-          consoleError ("UnknownException: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for
@@ -219,11 +210,17 @@ drawComponent
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
   vtree <- runView prerender (view model) snk events
-  el <- getComponent name
-  when (prerender == DontPrerender) $
-    diff el Nothing (Just vtree)
+  mountElement <- getComponent name `catch` exception
+  when (prerender == DontPrerender) $ diff mountElement Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
-  pure (name, el, ref)
+  pure (name, mountElement, ref)
+-----------------------------------------------------------------------------
+-- | Check for existing component
+getComponent :: MisoString -> JSM JSVal
+getComponent name =
+  M.lookup name <$> liftIO (readIORef componentMap) >>= \case
+    Just _ -> liftIO $ throwIO (AlreadyMountedException name)
+    Nothing -> FFI.getComponent name
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
@@ -252,52 +249,31 @@ runView
   -> Sink action
   -> Events
   -> JSM VTree
-runView prerender (Embed (SomeComponent (Component name app)) (ComponentOptions {..})) snk _ = do
-  let mount = name
-  mountCb <- do
-    syncCallback1 $ \continuation -> do
+runView prerender (Embed (SomeComponent (Component mount app)) (ComponentOptions {..})) snk _ = do
+  mountCallback <- do
+    FFI.syncCallback1 $ \continuation -> do
       forM_ onMounted snk
-      vtreeRef <- initialize app (drawComponent prerender mount app)
+      vtreeRef <- initialize app (drawComponent prerender mount app) 
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
-  unmountCb <- toJSVal =<< do
-    syncCallback $ do
+  unmountCallback <- toJSVal =<< do
+    FFI.syncCallback $ do
       forM_ onUnmounted snk
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
         Just componentState ->
-          unmount mountCb app componentState
-  vcomp <- create
-  cssObj <- create
-  propsObj <- create
-  eventsObj <- create
-  set "css" cssObj vcomp
-  set "props" propsObj vcomp
-  set "events" eventsObj vcomp
-  set "type" ("vcomp" :: JSString) vcomp
-  set "ns" HTML vcomp
-  set "tag" ("div" :: JSString) vcomp
-  set "key" componentKey vcomp
+          unmount mountCallback app componentState
+  vcomp <- createNode "vcomp" HTML componentKey "div"
   setAttrs vcomp attributes snk (events app)
-  flip (set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  set "data-component-id" mount vcomp
-  flip (set "mount") vcomp =<< toJSVal mountCb
-  set "unmount" unmountCb vcomp
+  flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
+  FFI.set "data-component-id" mount vcomp
+  flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
+  FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
 runView prerender (Node ns tag key attrs kids) snk events = do
-  vnode <- create
-  cssObj <- toJSVal =<< create
-  propsObj <- toJSVal =<< create
-  eventObj <- toJSVal =<< create
-  set "css" cssObj vnode
-  set "props" propsObj vnode
-  set "events" eventObj vnode
-  set "type" ("vnode" :: JSString) vnode
-  set "ns" ns vnode
-  set "tag" tag vnode
-  set "key" key vnode
+  vnode <- createNode "vnode" ns key tag
   setAttrs vnode attrs snk events
-  flip (set "children") vnode
+  flip (FFI.set "children") vnode
     =<< ghcjsPure . jsval
     =<< setKids
   pure $ VTree vnode
@@ -309,8 +285,8 @@ runView prerender (Node ns tag key attrs kids) snk events = do
         ghcjsPure (JSArray.fromList kidsViews)
 runView _ (Text t) _ _ = do
   vtree <- create
-  set "type" ("vtext" :: JSString) vtree
-  set "text" t vtree
+  FFI.set "type" ("vtext" :: JSString) vtree
+  FFI.set "text" t vtree
   pure $ VTree vtree
 runView prerender (TextRaw str) snk events =
   case parseView str of
@@ -320,6 +296,24 @@ runView prerender (TextRaw str) snk events =
       runView prerender parent snk events
     kids -> do
       runView prerender (Node HTML "div" Nothing mempty kids) snk events
+-----------------------------------------------------------------------------
+-- | @createNode@
+-- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
+-- Doesn't handle children
+createNode :: MisoString -> NS -> Maybe Key -> MisoString -> JSM Object
+createNode typ ns key tag = do
+  vnode <- create
+  cssObj <- create
+  propsObj <- create
+  eventsObj <- create
+  FFI.set "css" cssObj vnode
+  FFI.set "type" typ vnode
+  FFI.set "props" propsObj vnode
+  FFI.set "events" eventsObj vnode
+  FFI.set "ns" ns vnode
+  FFI.set "tag" tag vnode
+  FFI.set "key" key vnode
+  pure vnode
 -----------------------------------------------------------------------------
 -- | Helper function for populating "props" and "css" fields on a virtual
 -- DOM node
@@ -334,12 +328,12 @@ setAttrs vnode attrs snk events =
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode
-      set k value (Object o)
+      FFI.set k value (Object o)
     Event attr -> attr snk vnode events
     Style styles -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do
-        set k v (Object cssObj)
+        FFI.set k v (Object cssObj)
 -----------------------------------------------------------------------------
 -- | Used to support RawText, inlining of HTML.
 -- Filters tree to only branches and leaves w/ Text tags.

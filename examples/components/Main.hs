@@ -55,7 +55,7 @@ loggerSub msg = \_ ->
 
 app :: App MainModel MainAction
 app =
-    (defaultApp True updateModel1 viewModel1 MainNoOp)
+    (defaultApp False updateModel1 viewModel1 MainNoOp)
         { subs = [loggerSub "main-app"]
         }
 
@@ -73,7 +73,7 @@ component3 =
             { subs = [loggerSub "component-3 sub"]
             }
 
-component4 :: Component "component-4" Model Action
+component4 :: Component "component-3" Model Action
 component4 =
     component
         counterApp4

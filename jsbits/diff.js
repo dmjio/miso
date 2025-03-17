@@ -202,18 +202,7 @@ window['createElement'] = function (obj, doc, cb) {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 window['mountComponent'] = function (obj, doc) {
-    var componentId = obj['data-component-id'],
-        nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
-
-    // dmj: bail out if duplicate mounting detected
-    if (nodeList.length > 0) {
-        console.error ('Duplicate component mounting detected');
-        console.error ('Component ' + componentId + ' is already mounted');
-        return;
-    }
-    // dmj, the component placeholder div[id=name] is already on the dom and vdom
-    // Now we gen the component and append it to the vdom and real dom
-    obj['domRef'].setAttribute('data-component-id', componentId);
+    obj['domRef'].setAttribute('data-component-id', obj['data-component-id']);
     // ^ we have to set this before 'mount()' is called, since `diff` requires it.
     obj['mount'](function(component) {
       // mount() gives us the VTree from the Haskell side, so we just attach it here
