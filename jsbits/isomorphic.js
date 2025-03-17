@@ -79,8 +79,6 @@ window['integrityCheck'] = function (result, vtree) {
         if (vtree['text'] !== vtree['domRef'].textContent) {
             console.warn ('VText node content differs', vtree);
             result = false;
-        } else {
-            console.info('VText nodes are identical', '"' + vtree['text'] + '"');
         }
     }
 
@@ -91,12 +89,7 @@ window['integrityCheck'] = function (result, vtree) {
         if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
             console.warn ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
             result = false;
-        } else if (vtree['type'] === 'vnode') {
-            console.info('VNode tags are identical', vtree['tag']);
-        } else {
-            console.info('VComp tags are identical', vtree['tag']);
         }
-
         // Child lengths must be identical
         if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
             console.warn ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
@@ -118,38 +111,28 @@ window['integrityCheck'] = function (result, vtree) {
                 if (getHref (vtree['props']) !== getHref (vtree['domRef'])) {
                     console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                     result = false;
-                } else {
-                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 }
             }
             else if (key === 'height' || key === 'width') {
                 if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
                     console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                     result = false;
-                } else {
-                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 }
             }
             else if (key === 'class' || key === 'className') {
                 if (vtree['props'][key] !== vtree['domRef'].className) {
                     console.warn ('Property class differs', vtree['props'][key], vtree['domRef'].className)
                     result = false;
-                } else {
-                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 }
             } else if (!vtree['domRef'][key]) {
                 if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
                     console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'].getAttribute(key));
                     result = false;
-                } else {
-                    console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
                 } 
             }
             else if (vtree['props'][key] !== vtree['domRef'][key]) {
                 console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                 result = false;
-            } else {
-                console.log('Properties are identical', '{ ' + key + ' : ' + vtree['props'][key] + ' }');
             }
         }
 
@@ -161,15 +144,11 @@ window['integrityCheck'] = function (result, vtree) {
                 if (window['parseColor'](vtree['domRef'].style[key]).toString() !== window['parseColor'](vtree['css'][key]).toString()) {
                     console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
                     result = false;                    
-                } else {
-                    console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
                 }
             }
             else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
                 console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
                 result = false;
-            } else {
-                console.log('Styles are identical', key + ' : ' + vtree['css'][key] + ';');
             }
         }
 
