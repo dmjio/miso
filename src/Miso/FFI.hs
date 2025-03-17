@@ -25,7 +25,9 @@ module Miso.FFI
    , eventPreventDefault
    , eventStopPropagation
    , now
+   , consoleWarn
    , consoleLog
+   , consoleError
    , consoleLog'
    , jsonStringify
    , jsonParse
@@ -172,6 +174,26 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 consoleLog :: MisoString -> JSM ()
 consoleLog v = do
   _ <- jsg "console" # "log" $ [toJSString v]
+  pure ()
+-----------------------------------------------------------------------------
+-- | Outputs a warning message to the web console
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/warn>
+--
+-- Console logging of JavaScript strings.
+consoleWarn :: MisoString -> JSM ()
+consoleWarn v = do
+  _ <- jsg "console" # "warn" $ [toJSString v]
+  pure ()
+-----------------------------------------------------------------------------
+-- | Outputs an error message to the web console
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/error>
+--
+-- Console logging of JavaScript strings.
+consoleError :: MisoString -> JSM ()
+consoleError v = do
+  _ <- jsg "console" # "error" $ [toJSString v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Console-logging of JSVal

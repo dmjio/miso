@@ -140,6 +140,7 @@ library
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
+    Miso.Exception
     Miso.FFI
     Miso.FFI.History
     Miso.FFI.SSE

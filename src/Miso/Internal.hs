@@ -23,9 +23,11 @@ module Miso.Internal
   , mail
   , notify
   , runView
+  , sample
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
+import           Control.Exception (throwIO, SomeException, fromException)
 import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, (<=<), when, void)
 import           Control.Monad.IO.Class
@@ -42,10 +44,11 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
-
+-----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
+import           Miso.Exception (MisoException(..))
 import           Miso.FFI hiding (diff)
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
@@ -68,6 +71,7 @@ initialize App {..} getView = do
       serve
   subThreads <- forM subs $ \sub -> forkJSM (sub eventSink)
   (mount, mountEl, viewRef) <- getView eventSink
+  modelRef <- liftIO (newIORef model)
   let
     loop !oldModel = liftIO wait >> do
         as <- liftIO $ atomicModifyIORef' actions $ \as -> (S.empty, as)
@@ -79,11 +83,13 @@ initialize App {..} getView = do
           oldVTree <- liftIO (readIORef viewRef)
           void waitForAnimationFrame
           diff mountEl (Just oldVTree) (Just newVTree)
-          liftIO (atomicWriteIORef viewRef newVTree)
+          liftIO $ do
+            atomicWriteIORef viewRef newVTree
+            atomicWriteIORef modelRef newModel
         syncPoint
         loop newModel
   tid <- forkJSM (loop model)
-  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink)
+  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef)
   delegator mountEl viewRef events
   eventSink initialAction
   pure viewRef
@@ -96,7 +102,7 @@ data Prerender
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | @Component@ state, data associated with the lifetime of a @Component@
-data ComponentState action
+data ComponentState model action
   = ComponentState
   { componentName :: MisoString
   , componentMainThread :: ThreadId
@@ -104,15 +110,33 @@ data ComponentState action
   , componentMount :: JSVal
   , componentVTree :: IORef VTree
   , componentSink :: action -> JSM ()
+  , componentModel :: IORef model
   }
 -----------------------------------------------------------------------------
 -- | componentMap
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-componentMap :: IORef (Map MisoString (ComponentState action))
+componentMap :: IORef (Map MisoString (ComponentState model action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
+-- | Read-only access to another @Component@'s @model@.
+-- This function is safe to use when a child @Component@ wishes access
+-- a parent @Components@ @model@ state. Under this circumstance the parent
+-- will always be mounted and available.
+--
+-- Otherwise, if a sibling or parent @Component@'s @model@ state is attempted
+-- to be accessed. Then we throw a @NotMountedException@, in the case the
+-- @Component@ being accessed is not available.
+sample
+  :: Component name model app
+  -> JSM model
+sample (Component name _) = do
+  componentStateMap <- liftIO (readIORef componentMap)
+  liftIO $ case M.lookup name componentStateMap of
+    Nothing -> throwIO (NotMountedException name)
+    Just ComponentState {..} -> readIORef componentModel
 -----------------------------------------------------------------------------
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
@@ -138,8 +162,18 @@ foldEffects _ _ [] m = pure m
 foldEffects update snk (e:es) old =
   case update e old of
     Effect n effects -> do
-      forM_ effects $ \effect -> forkJSM (effect snk)
+      forM_ effects $ \effect ->
+        effect snk `catch` exception
       foldEffects update snk es n
+  where
+    exception :: SomeException -> JSM ()
+    exception ex
+      | Just (NotMountedException name) <- fromException ex =
+          consoleError ("NotMountedException: Could not sample model state from the Component " <> name)
+      | Just (AlreadyMountedException name) <- fromException ex =
+          consoleError ("AlreadytMountedException: Component " <> name <> " is already")
+      | otherwise = 
+          consoleError ("UnknownException: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for
@@ -194,7 +228,7 @@ drawComponent prerender name App {..} snk = do
 unmount
   :: Function
   -> App model action
-  -> ComponentState action
+  -> ComponentState model action
   -> JSM ()
 unmount mountCallback app ComponentState {..} = do
   undelegator componentMount componentVTree (events app)
@@ -328,7 +362,7 @@ parseView html = reverse (go (parseTree html) [])
       go next views
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
-registerComponent :: MonadIO m => ComponentState action -> m ()
+registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
