@@ -24,7 +24,6 @@ in
   examples = make-src-filter ../../../examples;
   haskell-miso-src = make-src-filter ../../../haskell-miso.org;
   sample-app = make-src-filter ../../../sample-app;
-  sample-app-jsaddle = make-src-filter ../../../sample-app-jsaddle;
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-from-html";

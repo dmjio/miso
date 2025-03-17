@@ -156,7 +156,7 @@ library
     Miso.Mathml.Element
     Miso.Render
     Miso.Router
-    Miso.Runner
+    Miso.Run
     Miso.Storage
     Miso.Subscription
     Miso.Subscription.History

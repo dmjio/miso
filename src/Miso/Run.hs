@@ -1,15 +1,16 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Runner
+-- Module      :  Miso.Run
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Runner
+module Miso.Run
   ( -- ** Live reload
     run
   ) where
@@ -39,8 +40,9 @@ run = J.run
 run = id
 #else
 run action = do
-    port <- (readMaybe =<<) <$> lookupEnv "PORT"
+    port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
     isGhci <- (== "<interactive>") <$> getProgName
-    (if isGhci then J.debug else J.run) (fromMaybe 8008 port) action
+    putStrLn $ "Running on port " <> show port <> "..."
+    (if isGhci then J.debug else J.run) port action
 #endif
 -----------------------------------------------------------------------------

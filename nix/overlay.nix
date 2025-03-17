@@ -31,12 +31,6 @@ options: self: super: {
   sample-app-tagged =
     import ../sample-app {};
 
-  sample-app-jsaddle-tagged-release =
-    (import ../sample-app-jsaddle {}).release;
-
-  sample-app-jsaddle-tagged-dev =
-    (import ../sample-app-jsaddle {}).dev;
-
   inherit (import ../haskell-miso.org {})
     haskell-miso-client
     haskell-miso-server

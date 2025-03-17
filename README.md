@@ -83,14 +83,10 @@ To get started quickly building applications, we recommend using the [`nix`](htt
 To build the sample-app with `nix`, execute the commands below:
 
 ```bash
-# optional use of cache
-nix-env -iA cachix -f https://cachix.org/api/v1/install
-# optional use of cache
-cachix use miso-haskell
 git clone https://github.com/dmjio/miso
 cd miso/sample-app
-nix-build
-open ./result/bin/app.jsexe/index.html
+cabal build
+# now open http://localhost:8008 in your browser and you should see the +/- app
 ```
 
 The above commands will add miso's binary cache to your nix installation (support for both Linux and OSX).
@@ -248,20 +244,19 @@ For details of the internals and general overview of how `miso` works, see the [
 
 ## Sample application
 ```haskell
--- | Haskell language pragma
+----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-
--- | Haskell module declaration
+{-# LANGUAGE CPP #-}
+----------------------------------------------------------------------------
 module Main where
-
+----------------------------------------------------------------------------
 -- | Miso framework import
 import Miso
 import Miso.String
-
+----------------------------------------------------------------------------
 -- | Type synonym for an application model
 type Model = Int
-
+----------------------------------------------------------------------------
 -- | Sum type for application events
 data Action
   = AddOne
@@ -269,44 +264,33 @@ data Action
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startApp app
-  { events = defaultEvents        -- default delegated events
-  , subs   = []                   -- empty subscription list
-  , mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-  , logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only applies to `miso` function)
-  }
-
--- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
+main = run (startApp app)
+----------------------------------------------------------------------------
 app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel SayHelloWorld
-
--- | Empty application state
+----------------------------------------------------------------------------
+-- | Empty model
 emptyModel :: Model
 emptyModel = 0
-
+----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel action m =
-  case action of
-    AddOne
-      -> noEff (m + 1)
-    SubtractOne
-      -> noEff (m - 1)
-    NoOp
-      -> noEff m
-    SayHelloWorld
-      -> m <# consoleLog "Hello World" >> pure NoOp
-
+updateModel NoOp m          = noEff m
+updateModel AddOne m        = noEff (m + 1)
+updateModel SubtractOne m   = noEff (m - 1)
+updateModel SayHelloWorld m = m <# NoOp <$ consoleLog "Hello World"
+----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ []
- [ button_ [ onClick AddOne ] [ text "+" ]
- , text (ms x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
+  [ button_ [ onClick AddOne ] [ text "+" ]
+  , text (ms x)
+  , button_ [ onClick SubtractOne ] [ text "-" ]
+  ]
+----------------------------------------------------------------------------
 ```
 
 ## Transition application
@@ -317,50 +301,47 @@ very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`
 
 
 ```haskell
--- | Haskell language pragma
+----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
-
--- | Haskell module declaration
+----------------------------------------------------------------------------
 module Main where
-
--- | Miso framework import
+----------------------------------------------------------------------------
 import Miso
 import Miso.String
-
--- | Lens import
+----------------------------------------------------------------------------
 import Control.Lens
-
--- | Type synonym for an application model
+----------------------------------------------------------------------------
+-- | Application model state
 data Model
   = Model
   { _counter :: Int
   } deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 counter :: Lens' Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
-
--- | Sum type for application events
+----------------------------------------------------------------------------
+-- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
 main = run (startApp app)
-
+----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
 app :: App Model Action
 app = defaultApp emptyModel (fromTransition . updateModel) viewModel SayHelloWorld
-
+----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
 emptyModel = Model 0
-
+----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Action Model ()
 updateModel = \case
@@ -368,7 +349,7 @@ updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
   SayHelloWorld -> scheduleIO_ (consoleLog "Hello World")
-
+----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ []
@@ -376,11 +357,12 @@ viewModel x = div_ []
   , text . ms $ x^.counter
   , button_ [ onClick SubtractOne ] [ text "-" ]
   ]
+----------------------------------------------------------------------------
 ```
 
 ## Live reload with JSaddle
 
-It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow live reloading of your application in reponse to changes in application code. See the [README](https://github.com/dmjio/miso/blob/master/sample-app-jsaddle/README.md) in the `sample-app-jsaddle` folder for more information.
+It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow live reloading of your application in reponse to changes in application code. To accomplish this, run the `sample-app/` with `ghcid -c 'cabal repl app' -T=Main.main`. Then open your browser to http:localhost:8080. Whenever you edit the code, you should see the browser page refresh with an updated page.
 
 ## Docker
 

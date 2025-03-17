@@ -19,12 +19,12 @@ in with pkgs.haskell.lib;
 
   #js
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app;
+  inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app-js;
   
   #native
   miso-ghc = pkgs.haskell.packages.ghc865.miso;
   miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
-  inherit (pkgs.haskell.packages.ghc865) sample-app-jsaddle;
+  inherit (pkgs.haskell.packages.ghc865) sample-app;
 
   # miso wasm examples
   # nix-build -A wasmExamples && ./result/bin/build.sh && nix-build -A svgWasm && http-server ./result/svg.wasmexe
@@ -45,12 +45,6 @@ in with pkgs.haskell.lib;
     sse-runner
     sse-client
     sse-server;
-
-  # tagged releases
-  inherit (pkgs)
-    sample-app-tagged
-    sample-app-jsaddle-tagged-release
-    sample-app-jsaddle-tagged-dev;
 
   #website
   inherit (pkgs)
