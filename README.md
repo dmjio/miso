@@ -83,14 +83,10 @@ To get started quickly building applications, we recommend using the [`nix`](htt
 To build the sample-app with `nix`, execute the commands below:
 
 ```bash
-# optional use of cache
-nix-env -iA cachix -f https://cachix.org/api/v1/install
-# optional use of cache
-cachix use miso-haskell
 git clone https://github.com/dmjio/miso
 cd miso/sample-app
-nix-build
-open ./result/bin/app.jsexe/index.html
+cabal build
+# now open http://localhost:8008 in your browser and you should see the +/- app
 ```
 
 The above commands will add miso's binary cache to your nix installation (support for both Linux and OSX).
@@ -268,11 +264,6 @@ data Action
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
------------------------------------------------------------------------------
--- | Required when using the WASM backnend
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
@@ -371,7 +362,7 @@ viewModel x = div_ []
 
 ## Live reload with JSaddle
 
-It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow live reloading of your application in reponse to changes in application code. See the [README](https://github.com/dmjio/miso/blob/master/sample-app-jsaddle/README.md) in the `sample-app-jsaddle` folder for more information.
+It is possible to build `miso` applications with `ghcid`, `jsaddle` that allow live reloading of your application in reponse to changes in application code. To accomplish this, run the `sample-app/` with `ghcid -c 'cabal repl app' -T=Main.main`. Then open your browser to http:localhost:8080. Whenever you edit the code, you should see the browser page refresh with an updated page.
 
 ## Docker
 
