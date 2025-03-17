@@ -8,7 +8,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Exception
-  ( -- * Exceptions
+  ( -- ** Types
     MisoException (..)
   ) where
 ----------------------------------------------------------------------------
@@ -24,7 +24,7 @@ import Miso.String (MisoString)
 -- * Not Mounted Exception
 --
 -- This occurs if a user tries to call @sample myComponent@ when @myComponent@ is currently
--- not mounted onto the DOM.
+-- not mounted on the DOM.
 --
 -- * Already Mounted Exception
 --
@@ -34,12 +34,14 @@ import Miso.String (MisoString)
 -- this exception will be raised.
 --
 -- Other exceptions can arise, but its up to the user to handle them in
--- the `update` function. All unhandled exceptions are caught in the event loop
+-- the @update@ function. All unhandled exceptions are caught in the event loop
 -- and logged to the console with /console.error()/
 --
 data MisoException
   = NotMountedException MisoString
+  -- ^ Thrown when a @Component@ is sampled, yet not mounted.
   | AlreadyMountedException MisoString
+  -- ^ Thrown when a @Component@ is attempted to be mounted twice.
   deriving (Show, Eq, Typeable)
 ----------------------------------------------------------------------------
 instance Exception MisoException
