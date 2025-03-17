@@ -19,7 +19,7 @@ window['listener'] = function(e, mount, getVTree, debug) {
    });
 }
 
-/* event delegation algorithm */
+/* event undelegation */
 window['undelegate'] = function (mount, events, getVTree, debug) {
   for (var event in events)
     mount.removeEventListener
@@ -29,7 +29,9 @@ window['undelegate'] = function (mount, events, getVTree, debug) {
       );
 };
 
-/* Accumulate parent stack as well for propagation */
+/* Finds event in virtual dom via pointer equality
+   Accumulate parent stack as well for propagation up the vtree
+ */
 window['delegateEvent'] = function (event, obj, stack, parentStack, debug) {
 
   /* base case, not found */
