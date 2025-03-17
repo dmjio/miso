@@ -37,8 +37,8 @@ module Miso
   , module Miso.Mathml
     -- * Router
   , module Miso.Router
-    -- * Runner
-  , module Miso.Runner
+    -- * Run
+  , module Miso.Run
     -- * Exception
   , module Miso.Exception
     -- * Subs
@@ -76,7 +76,7 @@ import           Miso.Exception
 import           Miso.Html
 import           Miso.Render
 import           Miso.Router
-import           Miso.Runner
+import           Miso.Run
 import           Miso.Mathml
 import           Miso.Subscription
 import           Miso.Types

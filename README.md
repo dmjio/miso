@@ -248,20 +248,19 @@ For details of the internals and general overview of how `miso` works, see the [
 
 ## Sample application
 ```haskell
--- | Haskell language pragma
+----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-
--- | Haskell module declaration
+{-# LANGUAGE CPP #-}
+----------------------------------------------------------------------------
 module Main where
-
+----------------------------------------------------------------------------
 -- | Miso framework import
 import Miso
 import Miso.String
-
+----------------------------------------------------------------------------
 -- | Type synonym for an application model
 type Model = Int
-
+----------------------------------------------------------------------------
 -- | Sum type for application events
 data Action
   = AddOne
@@ -269,44 +268,38 @@ data Action
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
+-- | Required when using the WASM backnend
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startApp app
-  { events = defaultEvents        -- default delegated events
-  , subs   = []                   -- empty subscription list
-  , mountPoint = Nothing          -- mount point for application (Nothing defaults to 'body')
-  , logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only applies to `miso` function)
-  }
-
--- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
+main = run (startApp app)
+----------------------------------------------------------------------------
 app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel SayHelloWorld
-
--- | Empty application state
+----------------------------------------------------------------------------
+-- | Empty model
 emptyModel :: Model
 emptyModel = 0
-
+----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel action m =
-  case action of
-    AddOne
-      -> noEff (m + 1)
-    SubtractOne
-      -> noEff (m - 1)
-    NoOp
-      -> noEff m
-    SayHelloWorld
-      -> m <# consoleLog "Hello World" >> pure NoOp
-
+updateModel NoOp m          = noEff m
+updateModel AddOne m        = noEff (m + 1)
+updateModel SubtractOne m   = noEff (m - 1)
+updateModel SayHelloWorld m = m <# NoOp <$ consoleLog "Hello World"
+----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ []
- [ button_ [ onClick AddOne ] [ text "+" ]
- , text (ms x)
- , button_ [ onClick SubtractOne ] [ text "-" ]
- ]
+  [ button_ [ onClick AddOne ] [ text "+" ]
+  , text (ms x)
+  , button_ [ onClick SubtractOne ] [ text "-" ]
+  ]
+----------------------------------------------------------------------------
 ```
 
 ## Transition application
@@ -317,50 +310,47 @@ very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`
 
 
 ```haskell
--- | Haskell language pragma
+----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
-
--- | Haskell module declaration
+----------------------------------------------------------------------------
 module Main where
-
--- | Miso framework import
+----------------------------------------------------------------------------
 import Miso
 import Miso.String
-
--- | Lens import
+----------------------------------------------------------------------------
 import Control.Lens
-
--- | Type synonym for an application model
+----------------------------------------------------------------------------
+-- | Application model state
 data Model
   = Model
   { _counter :: Int
   } deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 counter :: Lens' Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
-
--- | Sum type for application events
+----------------------------------------------------------------------------
+-- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
   | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
-
+----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
 main = run (startApp app)
-
+----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
 app :: App Model Action
 app = defaultApp emptyModel (fromTransition . updateModel) viewModel SayHelloWorld
-
+----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
 emptyModel = Model 0
-
+----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Action Model ()
 updateModel = \case
@@ -368,7 +358,7 @@ updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
   SayHelloWorld -> scheduleIO_ (consoleLog "Hello World")
-
+----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ []
@@ -376,6 +366,7 @@ viewModel x = div_ []
   , text . ms $ x^.counter
   , button_ [ onClick SubtractOne ] [ text "-" ]
   ]
+----------------------------------------------------------------------------
 ```
 
 ## Live reload with JSaddle

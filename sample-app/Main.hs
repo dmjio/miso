@@ -1,6 +1,5 @@
 ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE CPP #-}
 ----------------------------------------------------------------------------
 module Main where
@@ -21,30 +20,27 @@ data Action
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Required when using the WASM backnend
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = startApp App {..}
-  where
-    initialAction = SayHelloWorld -- initial action to be executed on application load
-    model  = 0                    -- initial model
-    update = updateModel          -- update function
-    view   = viewModel            -- view function
-    events = defaultEvents        -- default delegated events
-    subs   = []                   -- empty subscription list
-    mountPoint = Nothing          -- mount point for application (Nothing defaults to /<body>/)
-    logLevel = Off                -- used during prerendering to see if the VDOM and DOM are in sync (only used with @miso@ function)
+main = run (startApp app)
+----------------------------------------------------------------------------
+app :: App Model Action
+app = defaultApp emptyModel updateModel viewModel SayHelloWorld
+----------------------------------------------------------------------------
+-- | Empty model
+emptyModel :: Model
+emptyModel = 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model
-updateModel AddOne m = noEff (m + 1)
-updateModel SubtractOne m = noEff (m - 1)
-updateModel NoOp m = noEff m
-updateModel SayHelloWorld m = m <# do
-  putStrLn "Hello World" >> pure NoOp
+updateModel NoOp m          = noEff m
+updateModel AddOne m        = noEff (m + 1)
+updateModel SubtractOne m   = noEff (m - 1)
+updateModel SayHelloWorld m = m <# NoOp <$ consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
