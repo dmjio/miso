@@ -73,7 +73,7 @@ component3 =
             { subs = [loggerSub "component-3 sub"]
             }
 
-component4 :: Component "component-3" Model Action
+component4 :: Component "component-4" Model Action
 component4 =
     component
         counterApp4
