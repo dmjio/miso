@@ -90,7 +90,7 @@ initialize App {..} getView = do
         syncPoint
         loop newModel
   tid <- forkJSM (loop model)
-  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef events)
+  registerComponent (ComponentState mount tid subThreads mountEl viewRef eventSink modelRef)
   delegator mountEl viewRef events (logLevel `elem` [DebugEvents, DebugAll])
   eventSink initialAction
   pure viewRef
@@ -112,7 +112,6 @@ data ComponentState model action
   , componentVTree      :: IORef VTree
   , componentSink       :: action -> JSM ()
   , componentModel      :: IORef model
-  , componentEvents     :: Events
   }
 -----------------------------------------------------------------------------
 -- | componentMap
