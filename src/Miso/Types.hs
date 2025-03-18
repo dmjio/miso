@@ -20,13 +20,12 @@
 module Miso.Types
   ( -- ** Types
     App              (..)
+  , SomeApp          (..)
   , View             (..)
   , Key              (..)
   , Attribute        (..)
   , NS               (..)
   , LogLevel         (..)
-  , Component        (..)
-  , SomeComponent    (..)
   , ComponentOptions (..)
   -- ** Classes
   , ToView           (..)
@@ -34,32 +33,30 @@ module Miso.Types
   -- ** Functions
   , defaultApp
   , component
-  , embed
-  , embedWith
-  , getMountPoint
+  , componentWith
   , componentOptions
+  -- ** Utils
+  , getMountPoint
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
-import qualified Data.Map.Strict as M
-import           Data.Maybe (fromMaybe)
 import           Data.Proxy (Proxy(Proxy))
+import qualified Data.Map.Strict as M
+import           GHC.TypeLits (symbolVal, KnownSymbol, Symbol)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString)
-import qualified Miso.String as MS
+import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App model action = App
+data App (name :: Symbol) model action = App
   { model :: model
   -- ^ initial model
   , update :: action -> model -> Effect action model
@@ -79,9 +76,13 @@ data App model action = App
   , logLevel :: LogLevel
   }
 -----------------------------------------------------------------------------
--- | Convenience for extracting mount point
-getMountPoint :: Maybe MisoString -> MisoString
-getMountPoint = fromMaybe "body"
+-- | Get mount point
+getMountPoint
+  :: forall name model action
+   . KnownSymbol name
+  => App name model action
+  -> MisoString
+getMountPoint _ = ms $ symbolVal (Proxy :: Proxy name)
 -----------------------------------------------------------------------------
 -- | Smart constructor for @App@ with sane defaults.
 defaultApp
@@ -89,7 +90,7 @@ defaultApp
   -> (action -> model -> Effect action model)
   -> (model -> View action)
   -> action
-  -> App model action
+  -> App name model action
 defaultApp m u v a = App
   { initialAction = a
   , model = m
@@ -121,7 +122,7 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | Embed SomeComponent (ComponentOptions action)
+  | Component SomeApp (ComponentOptions action)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Options for Components, used with @embedWith@
@@ -144,38 +145,26 @@ componentOptions
   , componentKey = Nothing
   }
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @Component@ in @App@
-data SomeComponent
-   = forall name model action . Eq model
-   => SomeComponent (Component name model action)
------------------------------------------------------------------------------
--- | Used with @component@ to parameterize @App@ by @name@
-data Component (name :: Symbol) model action
-  = Component
-  { componentName :: MisoString
-  , componentApp :: App model action
-  }
+-- | Existential wrapper used to allow the nesting of @App@ in @View@
+data SomeApp
+   = forall model name action . (KnownSymbol name, Eq model)
+   => SomeApp (App name model action)
 -----------------------------------------------------------------------------
 -- | Smart constructor for parameterizing @App@ by @name@
 -- Needed when calling @embed@ and @embedWith@
 component
-  :: forall name model action
-  . KnownSymbol name
-  => App model action
-  -> Component name model action
-component = Component (MS.ms (symbolVal (Proxy @name)))
------------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed :: Eq model => Component name model a -> View action
-embed comp = Embed (SomeComponent comp) componentOptions
+  :: (KnownSymbol name, Eq model)
+  => App name model action
+  -> View a
+component app = Component (SomeApp app) componentOptions
 -----------------------------------------------------------------------------
 -- | Like @embed@ but with @ComponentOptions@ for mounting / unmounting, @Attribute@, etc.
-embedWith
-  :: Eq model
-  => Component name model a
-  -> ComponentOptions action
-  -> View action
-embedWith comp opts = Embed (SomeComponent comp) opts
+componentWith
+  :: (KnownSymbol name, Eq model)
+  => App name model action
+  -> ComponentOptions a
+  -> View a
+componentWith app opts = Component (SomeApp app) opts
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -191,12 +180,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component name model action) where
-  type ToViewAction (Component name model action) = action
-  toView (Component _ app) = toView app
------------------------------------------------------------------------------
-instance ToView (App model action) where
-  type ToViewAction (App model action) = action
+instance ToView (App name model action) where
+  type ToViewAction (App name model action) = action
   toView App {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

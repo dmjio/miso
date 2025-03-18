@@ -16,7 +16,7 @@ import Control.Monad.IO.Class (liftIO)
 import Common (
     Page (..),
     ServerRoutes,
-    haskellMisoComponent,
+    app,
     uri404,
     uriCommunity,
     uriDocs,
@@ -46,12 +46,12 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = do
     IO.hPutStrLn IO.stderr "Running on port 3002..."
-    run 3002 $ logStdout (compress app)
+    run 3002 $ logStdout (compress server)
   where
     compress = gzip def{gzipFiles = GzipCompress}
 
-app :: Application
-app = serve (Proxy @API) website
+server :: Application
+server = serve (Proxy @API) website
   where
     website =
         serveDirectoryWith (defaultWebAppSettings "static")
@@ -109,7 +109,7 @@ handle404 _ respond =
     respond $
         responseLBS status404 [("Content-Type", "text/html")] $
             toHtml $
-                Page (haskellMisoComponent uri404)
+                Page (app uri404)
 
 instance ToHtml Page where
     toHtml (Page x) =
@@ -209,4 +209,4 @@ serverHandlers =
         :<|> mkPage uri404
   where
     mkPage :: URI -> Handler Page
-    mkPage uri = pure $ Page (haskellMisoComponent uri)
+    mkPage uri = pure $ Page (app uri)

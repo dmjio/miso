@@ -37,6 +37,7 @@ import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, ato
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
+import GHC.TypeLits (KnownSymbol)
 import qualified JavaScript.Array as JSArray
 import           Language.Javascript.JSaddle
 import           Prelude hiding (null)
@@ -52,14 +53,14 @@ import           Miso.Exception (MisoException(..), exception)
 import qualified Miso.FFI as FFI
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
-import           Miso.Types hiding (componentName)
+import           Miso.Types
 import           Miso.Event (Events)
 import           Miso.Effect (Sink, Effect(Effect), Transition, scheduleIO_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
-  :: Eq model
-  => App model action
+  :: (KnownSymbol name, Eq model)
+  => App name model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -131,9 +132,9 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component name model app
+  :: MisoString
   -> JSM model
-sample (Component name _) = do
+sample name = do
   componentStateMap <- liftIO (readIORef componentMap)
   liftIO $ case M.lookup name componentStateMap of
     Nothing -> throwIO (NotMountedException name)
@@ -142,10 +143,10 @@ sample (Component name _) = do
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component name m a
+  :: MisoString
   -> a
   -> Transition action model ()
-notify (Component name _) action = scheduleIO_ (void io)
+notify name action = scheduleIO_ (void io)
   where
     io = do
       componentStateMap <- liftIO (readIORef componentMap)
@@ -178,7 +179,7 @@ foldEffects update snk (e:es) old =
 -- It is recommended to use the @mail@ or @notify@ functions by default
 -- when message passing with @App@ and @Component@
 --
-sink :: MisoString -> App action model -> Sink action
+sink :: MisoString -> App name action model -> Sink action
 sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
@@ -191,10 +192,10 @@ sink name _ = \a ->
 -- >   m <# mail calendarComponent (NewCalendarEntry entry)
 --
 mail
-  :: Component name m a
-  -> a
+  :: MisoString
+  -> action
   -> JSM ()
-mail (Component name _) action = do
+mail name action = do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
     componentSink action
@@ -205,7 +206,7 @@ mail (Component name _) action = do
 drawComponent
   :: Prerender
   -> MisoString
-  -> App model action
+  -> App name model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
@@ -218,7 +219,7 @@ drawComponent prerender name App {..} snk = do
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> App model action
+  -> App name model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback App{..} ComponentState {..} = do
@@ -242,7 +243,8 @@ runView
   -> Sink action
   -> Events
   -> JSM VTree
-runView prerender (Embed (SomeComponent (Component mount app)) (ComponentOptions {..})) snk _ = do
+runView prerender (Component (SomeApp app) ComponentOptions {..}) snk _ = do
+  let mount = getMountPoint app
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent prerender mount app) 
