@@ -60,7 +60,7 @@ type ClientRoutes = Routes (View Action)
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = Component "client" Model Action
+type HaskellMisoComponent = App Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -91,7 +91,7 @@ haskellMisoComponent ::
     URI ->
     HaskellMisoComponent
 haskellMisoComponent uri
-  = component (app uri)
+  = (app uri)
   { subs = [uriSub HandleURI]
   , logLevel = DebugAll
   }

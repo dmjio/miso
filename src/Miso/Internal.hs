@@ -131,7 +131,7 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component name model app
+  :: Component model app
   -> JSM model
 sample (Component name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
@@ -142,7 +142,7 @@ sample (Component name _) = do
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component name m a
+  :: Component m a
   -> a
   -> Transition action model ()
 notify (Component name _) action = scheduleIO_ (void io)
@@ -191,7 +191,7 @@ sink name _ = \a ->
 -- >   m <# mail calendarComponent (NewCalendarEntry entry)
 --
 mail
-  :: Component name m a
+  :: Component m a
   -> a
   -> JSM ()
 mail (Component name _) action = do

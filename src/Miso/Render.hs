@@ -32,7 +32,7 @@ import           Miso.Types
 ----------------------------------------------------------------------------
 -- | HTML MimeType used for servant APIs
 --
--- > type Home = "home" :> Get '[HTML] (Component "home" model action)
+-- > type Home = "home" :> Get '[HTML] (Component model action)
 --
 data HTML
 ----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Component@ to a @L.ByteString@
-instance ToHtml (Component name model action) where
+instance ToHtml (Component model action) where
   toHtml = renderComponent
 ----------------------------------------------------------------------------
 -- | Render a @View@ to a @L.ByteString@
@@ -65,7 +65,7 @@ instance ToHtml a => MimeRender HTML a where
 renderView :: View a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
-renderComponent :: Component name model action -> L.ByteString
+renderComponent :: Component model action -> L.ByteString
 renderComponent (Component _ App{..}) = renderView (view model)
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder

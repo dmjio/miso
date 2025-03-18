@@ -39,10 +39,7 @@ data MainAction
 type MainModel = Bool
 
 main :: IO ()
-main = run (startComponent mainComponent)
-
-mainComponent :: Component "main" MainModel MainAction
-mainComponent = component app{logLevel = DebugPrerender}
+main = run $ startApp app { logLevel = DebugPrerender }
 
 secs :: Int -> Int
 secs = (* 1000000)
@@ -59,23 +56,23 @@ app =
         { subs = [loggerSub "main-app"]
         }
 
-component2 :: Component "component-2" Model Action
+component2 :: Component Model Action
 component2 =
-    component
+    component "component-2"
         counterApp2
             { subs = [loggerSub "component-2 sub"]
             }
 
-component3 :: Component "component-3" (Bool, Model) Action
+component3 :: Component (Bool, Model) Action
 component3 =
-    component
+    component "component-3"
         counterApp3
             { subs = [loggerSub "component-3 sub"]
             }
 
-component4 :: Component "component-4" Model Action
+component4 :: Component Model Action
 component4 =
-    component
+    component "component-4"
         counterApp4
             { subs = [loggerSub "component-4 sub"]
             }

@@ -5,7 +5,7 @@ module Main where
 
 import Common (sseComponent)
 
-import Miso (misoComponent, run)
+import Miso (miso, run)
 
 main :: IO ()
-main = run (misoComponent sseComponent)
+main = run (miso sseComponent)

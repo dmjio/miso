@@ -63,9 +63,8 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sseComponent :: URI -> Component "sse" Model Action
+sseComponent :: URI -> App Model Action
 sseComponent currentURI =
-    component
         App
             { initialAction = NoOp
             , model = Model currentURI "No event received"

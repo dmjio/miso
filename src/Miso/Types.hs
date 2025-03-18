@@ -45,10 +45,8 @@ import           Data.JSString (JSString)
 import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
-import           Data.Proxy (Proxy(Proxy))
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
@@ -56,7 +54,6 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
-import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Application entry point
 data App model action = App
@@ -75,7 +72,8 @@ data App model action = App
   , initialAction :: action
   -- ^ Initial action that is run after the application has loaded
   , mountPoint :: Maybe MisoString
-  -- ^ Id of the root element for DOM diff. If 'Nothing' is provided, the entire document body is used as a mount point.
+  -- ^ Id of the root element for DOM diff.
+  -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   }
 -----------------------------------------------------------------------------
@@ -146,11 +144,11 @@ componentOptions
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @App@
 data SomeComponent
-   = forall name model action . Eq model
-   => SomeComponent (Component name model action)
+   = forall model action . Eq model
+   => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used with @component@ to parameterize @App@ by @name@
-data Component (name :: Symbol) model action
+data Component model action
   = Component
   { componentName :: MisoString
   , componentApp :: App model action
@@ -159,20 +157,20 @@ data Component (name :: Symbol) model action
 -- | Smart constructor for parameterizing @App@ by @name@
 -- Needed when calling @embed@ and @embedWith@
 component
-  :: forall name model action
-  . KnownSymbol name
-  => App model action
-  -> Component name model action
-component = Component (MS.ms (symbolVal (Proxy @name)))
+  :: forall model action
+  . MisoString  
+  -> App model action
+  -> Component model action
+component = Component
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed :: Eq model => Component name model a -> View action
+embed :: Eq model => Component model a -> View action
 embed comp = Embed (SomeComponent comp) componentOptions
 -----------------------------------------------------------------------------
 -- | Like @embed@ but with @ComponentOptions@ for mounting / unmounting, @Attribute@, etc.
 embedWith
   :: Eq model
-  => Component name model a
+  => Component model a
   -> ComponentOptions action
   -> View action
 embedWith comp opts = Embed (SomeComponent comp) opts
@@ -191,8 +189,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component name model action) where
-  type ToViewAction (Component name model action) = action
+instance ToView (Component model action) where
+  type ToViewAction (Component model action) = action
   toView (Component _ app) = toView app
 -----------------------------------------------------------------------------
 instance ToView (App model action) where

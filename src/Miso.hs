@@ -16,8 +16,6 @@ module Miso
     -- ** Combinators
     miso
   , startApp
-  , startComponent
-  , misoComponent
     -- ** Sink
   , sink
     -- ** Sampling
@@ -93,30 +91,13 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
-    VTree (Object iv) <- runView Prerender (view model) snk events
+    VTree (Object vtree) <- runView Prerender (view model) snk events
     let mount = getMountPoint mountPoint
-    mountEl <- getBody
-    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mountEl iv
-    ref <- liftIO $ newIORef $ VTree (Object iv)
-    pure (mount, mountEl, ref)
------------------------------------------------------------------------------
--- | Runs a miso application (as a @Component@)
--- Assumes the pre-rendered DOM is already present.
--- Note: Uses @name@ in @Component name model action@ as the @Component@ name.
--- Always mounts to /<body>/. Copies page into the virtual DOM.
-misoComponent
-  :: Eq model
-  => (URI -> Component name model action)
-  -> JSM ()
-misoComponent f = withJS $ do
-  Component name app@App {..} <- f <$> getCurrentURI
-  initialize app $ \snk -> do
-    vtree@(VTree (Object jval)) <- runView Prerender (view model) snk events
-    mount <- getBody
-    setBodyComponent name
-    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mount jval
-    ref <- liftIO (newIORef vtree)
-    pure (name, mount, ref)
+    setBodyComponent mount
+    body <- getBody
+    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) body vtree
+    viewRef <- liftIO $ newIORef $ VTree (Object vtree)
+    pure (mount, body, viewRef)
 -----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
@@ -125,22 +106,11 @@ startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     vtree <- runView DontPrerender (view model) snk events
     let mount = getMountPoint mountPoint
+    setBodyComponent mount
     mountEl <- mountElement mount
     diff mountEl Nothing (Just vtree)
     ref <- liftIO (newIORef vtree)
     pure (mount, mountEl, ref)
------------------------------------------------------------------------------
--- | Runs a miso application (as a @Component@)
--- Initializes application at @name@ (defaults to /<body>/)
--- Ignores @mountPoint@ on the enclosing @App@, uses @name@ from @(Component name model action)@
-startComponent :: Eq model => Component name model action -> JSM ()
-startComponent (Component name app@App{..}) = withJS $ initialize app $ \snk -> do
-  vtree <- runView DontPrerender (view model) snk events
-  mount <- getBody
-  setBodyComponent name
-  diff mount Nothing (Just vtree)
-  ref <- liftIO (newIORef vtree)
-  pure (name, mount, ref)
 -----------------------------------------------------------------------------
 -- | Used when compiling with jsaddle to make miso's JavaScript present in
 -- the execution context.
