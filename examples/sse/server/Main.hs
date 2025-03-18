@@ -64,7 +64,7 @@ sendEvents chan =
         threadDelay (10 ^ (6 :: Int))
 
 -- | Page for setting HTML doctype and header
-newtype Page = Page (Component "sse" Model Action)
+newtype Page = Page (Component Model Action)
 
 instance ToHtml Page where
     toHtml (Page x) =

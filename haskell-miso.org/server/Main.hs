@@ -11,8 +11,6 @@
 
 module Main where
 
-import Control.Monad.IO.Class (liftIO)
-
 import Common (
     Page (..),
     ServerRoutes,
