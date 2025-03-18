@@ -38,7 +38,7 @@ app chan = serve (Proxy @Website) website
     website =
         serveDirectoryFileServer "static"
             :<|> Tagged (eventSourceAppChan chan)
-            :<|> pure (Page (sseComponent goHome))
+            :<|> pure (Page (sse goHome))
             :<|> Tagged handle404
 
 port :: Int
@@ -64,7 +64,7 @@ sendEvents chan =
         threadDelay (10 ^ (6 :: Int))
 
 -- | Page for setting HTML doctype and header
-newtype Page = Page (Component Model Action)
+newtype Page = Page (App Model Action)
 
 instance ToHtml Page where
     toHtml (Page x) =
