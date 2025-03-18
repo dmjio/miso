@@ -85,7 +85,6 @@ window['callBeforeDestroyedRecursive'] = function (obj) {
     }
 };
 // ** </> recursive calls to hooks
-
 window['callCreated'] = function (obj, doc) {
   if (obj['onCreated']) obj['onCreated']();
   if (obj['type'] === 'vcomp') window['mountComponent'](obj, doc);

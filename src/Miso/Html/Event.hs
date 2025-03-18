@@ -16,6 +16,8 @@ module Miso.Html.Event
     on
   , onWithOptions
   -- *** Lifecycle events
+  , onMounted
+  , onUnmounted
   , onCreated
   , onDestroyed
   , onBeforeDestroyed
@@ -123,6 +125,14 @@ onWithOptions options eventName Decoder{..} toAction =
         set "options" jsOptions eventHandlerObject
         set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
+-- | @onMounted action@ is an event that gets called after the actual DOM
+-- element is created.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onMounted :: action -> Attribute action
+onMounted = onCreated
+-----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
 --
@@ -145,6 +155,15 @@ onDestroyed action =
   Event $ \sink object _ -> do
     callback <- syncCallback (sink action)
     set "onDestroyed" callback object
+-----------------------------------------------------------------------------
+-- | @onUnmounted action@ is an event that gets called before the DOM element
+-- is removed from the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+--
+-- Important note: Any node that uses this event MUST have a unique @Key@,
+-- otherwise the event may not be reliably called!
+onUnmounted :: action -> Attribute action
+onUnmounted = onBeforeDestroyed
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
