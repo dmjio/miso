@@ -44,6 +44,12 @@ jobs:
      - name: (JS) Haskell-miso.org client
        run: nix-build -A haskell-miso-client
 
+     - name: (x86) sse.haskell-miso.org server
+       run: nix-build -A sse-server
+
+     - name: (JS) sse.haskell-miso.org client
+       run: nix-build -A sse-client
+
      - name: (JS) Miso examples
        run: nix-build -A miso-examples
 

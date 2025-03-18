@@ -3,8 +3,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Common (
-    -- * Component
-    sseComponent,
+    -- * App
+    sse,
 
     -- * Types
     Model,
@@ -63,8 +63,8 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sseComponent :: URI -> App Model Action
-sseComponent currentURI =
+sse :: URI -> App Model Action
+sse currentURI =
         App
             { initialAction = NoOp
             , model = Model currentURI "No event received"

@@ -3,9 +3,9 @@
 
 module Main where
 
-import Common (sseComponent)
+import Common (sse)
 
 import Miso (miso, run)
 
 main :: IO ()
-main = run (miso sseComponent)
+main = run (miso sse)
