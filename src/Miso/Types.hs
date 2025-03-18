@@ -27,7 +27,6 @@ module Miso.Types
   , LogLevel         (..)
   , Component        (..)
   , SomeComponent    (..)
-  , ComponentOptions (..)
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -35,9 +34,8 @@ module Miso.Types
   , defaultApp
   , component
   , embed
-  , embedWith
+  , embedKeyed
   , getMountPoint
-  , componentOptions
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value)
@@ -119,38 +117,19 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | Embed SomeComponent (ComponentOptions action)
+  | Embed [Attribute action] SomeComponent
   deriving Functor
------------------------------------------------------------------------------
--- | Options for Components, used with @embedWith@
--- Components are implemented as 'div'.
-data ComponentOptions action
-  = ComponentOptions
-  { onMounted :: Maybe action
-  , onUnmounted :: Maybe action
-  , attributes :: [ Attribute action ]
-  , componentKey :: Maybe Key
-  } deriving Functor
------------------------------------------------------------------------------
--- | Smart constructor for @ComponentOptions@
-componentOptions :: ComponentOptions action
-componentOptions
-  = ComponentOptions
-  { onMounted = Nothing
-  , onUnmounted = Nothing
-  , attributes = []
-  , componentKey = Nothing
-  }
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @App@
 data SomeComponent
    = forall model action . Eq model
-   => SomeComponent (Component model action)
+  => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used with @component@ to parameterize @App@ by @name@
 data Component model action
   = Component
-  { componentName :: MisoString
+  { componentKey :: Maybe Key
+  , componentName :: MisoString
   , componentApp :: App model action
   }
 -----------------------------------------------------------------------------
@@ -158,22 +137,18 @@ data Component model action
 -- Needed when calling @embed@ and @embedWith@
 component
   :: forall model action
-  . MisoString  
+   . MisoString  
   -> App model action
   -> Component model action
-component = Component
+component = Component Nothing
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed :: Eq model => Component model a -> View action
-embed comp = Embed (SomeComponent comp) componentOptions
+embed :: Eq model => Component model a -> [Attribute action] -> View action
+embed comp attrs = Embed attrs (SomeComponent comp)
 -----------------------------------------------------------------------------
--- | Like @embed@ but with @ComponentOptions@ for mounting / unmounting, @Attribute@, etc.
-embedWith
-  :: Eq model
-  => Component model a
-  -> ComponentOptions action
-  -> View action
-embedWith comp opts = Embed (SomeComponent comp) opts
+-- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
+embedKeyed :: Eq model => Component model a -> Key -> [Attribute action] -> View action
+embedKeyed comp key attrs = Embed attrs $ SomeComponent comp { componentKey = Just key }
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -191,7 +166,7 @@ instance ToView (View action) where
 -----------------------------------------------------------------------------
 instance ToView (Component model action) where
   type ToViewAction (Component model action) = action
-  toView (Component _ app) = toView app
+  toView (Component _ _ app) = toView app
 -----------------------------------------------------------------------------
 instance ToView (App model action) where
   type ToViewAction (App model action) = action

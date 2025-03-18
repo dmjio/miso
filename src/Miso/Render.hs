@@ -66,7 +66,7 @@ renderView :: View a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 renderComponent :: Component model action -> L.ByteString
-renderComponent (Component _ App{..}) = renderView (view model)
+renderComponent (Component _ _ App {..}) = renderView (view model)
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -100,12 +100,12 @@ renderBuilder (Node _ tag _ attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (Embed (SomeComponent (Component mount App {..})) options) =
+renderBuilder (Embed attributes (SomeComponent (Component _ mount App {..}))) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
   , fromMisoString mount
   , "\" "
-  , intercalate " " (renderAttrs <$> attributes options)
+  , intercalate " " (renderAttrs <$> attributes)
   , ">"
   , renderBuilder (view model)
   , "</div>"

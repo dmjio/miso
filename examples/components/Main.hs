@@ -92,12 +92,10 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                embedWith
-                    component2
-                    componentOptions
-                        { onMounted = Just MountMain
-                        , onUnmounted = Just UnMountMain
-                        }
+                embed component2
+                  [ onCreated MountMain
+                  , onBeforeDestroyed UnMountMain
+                  ] 
             else div_ [id_ "other test"] ["Main application content"]
         ]
 
@@ -151,12 +149,10 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , embedWith
-            component3
-            componentOptions
-                { onMounted = Just Mount
-                , onUnmounted = Just UnMount
-                }
+        , embed component3
+          [ onCreated Mount
+          , onBeforeDestroyed UnMount
+          ] 
         ]
 
 counterApp3 :: App (Bool, Model) Action
@@ -195,12 +191,10 @@ viewModel3 (toggle, x) =
         , button_ [onClick SubtractOne] [text "-"]
         , button_ [onClick ToggleAction] [text "Toggle Component 4"]
         ]
-            ++ [ embedWith
-                component4
-                componentOptions
-                    { onMounted = Just Mount
-                    , onUnmounted = Just UnMount
-                    }
+            ++ [ embed component4
+                   [ onMounted Mount
+                   , onUnmounted UnMount
+                   ]
                | toggle
                ]
 

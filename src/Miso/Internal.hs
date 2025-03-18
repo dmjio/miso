@@ -133,7 +133,7 @@ componentMap = unsafePerformIO (newIORef mempty)
 sample
   :: Component model app
   -> JSM model
-sample (Component name _) = do
+sample (Component _ name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
   liftIO $ case M.lookup name componentStateMap of
     Nothing -> throwIO (NotMountedException name)
@@ -145,7 +145,7 @@ notify
   :: Component m a
   -> a
   -> Transition action model ()
-notify (Component name _) action = scheduleIO_ (void io)
+notify (Component _ name _) action = scheduleIO_ (void io)
   where
     io = do
       componentStateMap <- liftIO (readIORef componentMap)
@@ -194,7 +194,7 @@ mail
   :: Component m a
   -> a
   -> JSM ()
-mail (Component name _) action = do
+mail (Component _ name _) action = do
   dispatch <- liftIO (readIORef componentMap)
   forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
     componentSink action
@@ -224,9 +224,9 @@ unmount
 unmount mountCallback App{..} ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
+  liftIO (mapM_ killThread componentSubThreads)
   liftIO $ do
     killThread componentMainThread
-    mapM_ killThread componentSubThreads
     modifyIORef' componentMap (M.delete componentName)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
@@ -242,11 +242,10 @@ runView
   -> Sink action
   -> Events
   -> JSM VTree
-runView prerender (Embed (SomeComponent (Component mount app)) (ComponentOptions {..})) snk _ = do
+runView prerender (Embed attributes (SomeComponent (Component key mount app))) snk _ = do
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent prerender mount app) 
-      forM_ onMounted snk
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
@@ -255,8 +254,7 @@ runView prerender (Embed (SomeComponent (Component mount app)) (ComponentOptions
         Nothing -> pure ()
         Just componentState -> do
           unmount mountCallback app componentState
-          forM_ onUnmounted snk
-  vcomp <- createNode "vcomp" HTML componentKey "div"
+  vcomp <- createNode "vcomp" HTML key "div"
   setAttrs vcomp attributes snk (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   FFI.set "data-component-id" mount vcomp
