@@ -65,6 +65,7 @@ newtype Checked = Checked Bool
 data PointerEvent
   = PointerEvent
   { pointerType :: PointerType
+  , pointerId :: Int
   , isPrimary :: Bool
   , coords :: (Int, Int)
   -- ^ clientX (or x), clientY (or y)

@@ -118,6 +118,7 @@ pointerDecoder = Decoder {..}
     decoder = withObject "pointerDecoder" $ \o ->
       PointerEvent
         <$> o .: "pointerType"
+        <*> o .: "pointerId"
         <*> o .: "isPrimary"
         <*> pair o "x" "y"
         <*> pair o "screenX" "screenY"
