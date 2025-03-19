@@ -33,17 +33,11 @@ data Action
 
 -- | Main entry point
 main :: IO ()
-main =
-    run $ do
-        currentURI <- getCurrentURI
-        startApp App{model = Model currentURI, initialAction = NoOp, ..}
-  where
-    update = updateModel
-    events = defaultEvents
-    subs = [uriSub HandleURI]
-    view = viewModel
-    mountPoint = Nothing
-    logLevel = Off
+main = run $
+  miso $ \uri ->
+    (defaultApp (Model uri) updateModel viewModel)
+       { subs = [uriSub HandleURI]
+       }
 
 -- | Update your model
 updateModel :: Action -> Model -> Effect Action Model

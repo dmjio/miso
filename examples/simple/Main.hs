@@ -34,7 +34,7 @@ main = run $ startApp app
 
 -- | Application definition (uses 'defaultApp' smart constructor)
 app :: App Model Action
-app = defaultApp 0 updateModel viewModel SayHelloWorld
+app = defaultApp 0 updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model

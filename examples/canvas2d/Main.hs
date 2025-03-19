@@ -26,7 +26,7 @@ main = run $ do
     setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
     startApp
         App
-            { initialAction = GetTime
+            { initialAction = Just GetTime
             , update = updateModel (sun, moon, earth)
             , ..
             }

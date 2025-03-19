@@ -67,8 +67,8 @@ data App model action = App
   , events :: M.Map MisoString Bool
   -- ^ List of delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
-  , initialAction :: action
-  -- ^ Initial action that is run after the application has loaded
+  , initialAction :: Maybe action
+  -- ^ Initial action that is run after the application has loaded, optional since *1.9*
   , mountPoint :: Maybe MisoString
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
@@ -84,17 +84,16 @@ defaultApp
   :: model
   -> (action -> model -> Effect action model)
   -> (model -> View action)
-  -> action
   -> App model action
-defaultApp m u v a = App
-  { initialAction = a
-  , model = m
+defaultApp m u v = App
+  { model = m
   , view = v
   , update = u
   , subs = []
   , events = defaultEvents
   , mountPoint = Nothing
   , logLevel = Off
+  , initialAction = Nothing
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)

@@ -92,7 +92,7 @@ initialize App {..} getView = do
   componentMainThread <- FFI.forkJSM (eventLoop model)
   registerComponent ComponentState {..}
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
-  componentSink initialAction
+  forM_ initialAction componentSink
   pure componentVTree
 -----------------------------------------------------------------------------
 -- | Prerender avoids calling @diff@

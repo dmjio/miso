@@ -39,7 +39,10 @@ data MainAction
 type MainModel = Bool
 
 main :: IO ()
-main = run $ startApp app { logLevel = DebugPrerender }
+main = run $ startApp app
+  { logLevel = DebugPrerender
+  , subs = [loggerSub "main-app"]
+  }
 
 secs :: Int -> Int
 secs = (* 1000000)
@@ -51,10 +54,7 @@ loggerSub msg = \_ ->
         consoleLog msg
 
 app :: App MainModel MainAction
-app =
-    (defaultApp False updateModel1 viewModel1 MainNoOp)
-        { subs = [loggerSub "main-app"]
-        }
+app = defaultApp False updateModel1 viewModel1
 
 component2 :: Component Model Action
 component2 =
@@ -120,7 +120,7 @@ updateModel1 SampleChild m =
       pure MainNoOp
 
 counterApp2 :: App Model Action
-counterApp2 = defaultApp 0 updateModel2 viewModel2 SayHelloWorld
+counterApp2 = defaultApp 0 updateModel2 viewModel2
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Model -> Effect Action Model
@@ -156,7 +156,7 @@ viewModel2 x =
         ]
 
 counterApp3 :: App (Bool, Model) Action
-counterApp3 = defaultApp (True, 0) updateModel3 viewModel3 SayHelloWorld
+counterApp3 = defaultApp (True, 0) updateModel3 viewModel3
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
@@ -199,7 +199,7 @@ viewModel3 (toggle, x) =
                ]
 
 counterApp4 :: App Model Action
-counterApp4 = defaultApp 0 updateModel4 viewModel4 SayHelloWorld
+counterApp4 = defaultApp 0 updateModel4 viewModel4
 
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Model -> Effect Action Model

@@ -29,7 +29,7 @@ main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
 app :: App Model Action
-app = defaultApp emptyModel updateModel viewModel SayHelloWorld
+app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty model
 emptyModel :: Model
@@ -40,7 +40,7 @@ updateModel :: Action -> Model -> Effect Action Model
 updateModel NoOp m          = noEff m
 updateModel AddOne m        = noEff (m + 1)
 updateModel SubtractOne m   = noEff (m - 1)
-updateModel SayHelloWorld m = m <# NoOp <$ consoleLog "Hello World"
+updateModel SayHelloWorld m = m <# NoOp <$ alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

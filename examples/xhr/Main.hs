@@ -34,7 +34,7 @@ main :: IO ()
 main = run (startApp app)
 
 app :: App Model Action
-app = defaultApp emptyModel updateModel viewModel NoOp
+app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model Nothing

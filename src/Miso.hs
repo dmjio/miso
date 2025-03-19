@@ -55,6 +55,7 @@ module Miso
   , getElementById
   , focus
   , blur
+  , alert
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
@@ -92,12 +93,12 @@ miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
     VTree (Object vtree) <- runView Prerender (view model) snk events
-    let mount = getMountPoint mountPoint
-    setBodyComponent mount
-    body <- getBody
-    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) body vtree
+    let name = getMountPoint mountPoint
+    setBodyComponent name
+    mount <- getBody
+    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (mount, body, viewRef)
+    pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
@@ -105,12 +106,12 @@ startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     vtree <- runView DontPrerender (view model) snk events
-    let mount = getMountPoint mountPoint
-    setBodyComponent mount
-    mountEl <- mountElement mount
-    diff mountEl Nothing (Just vtree)
-    ref <- liftIO (newIORef vtree)
-    pure (mount, mountEl, ref)
+    let name = getMountPoint mountPoint
+    setBodyComponent name
+    mount <- mountElement name
+    diff mount Nothing (Just vtree)
+    viewRef <- liftIO (newIORef vtree)
+    pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Used when compiling with jsaddle to make miso's JavaScript present in
 -- the execution context.

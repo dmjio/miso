@@ -37,7 +37,7 @@ main = run $ startApp app
       protocols = Protocols []
 
 app :: App Model Action
-app = defaultApp emptyModel updateModel appView Id
+app = defaultApp emptyModel updateModel appView
 
 emptyModel :: Model
 emptyModel = Model (Message "") mempty
