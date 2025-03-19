@@ -101,14 +101,10 @@ window['integrityCheck'] = function (result, vtree) {
         for (var i = 0; i < keyLength; i++) {
             key = Object.keys(vtree['props'])[i];
             if (key === 'href') {
-                var getHref = function (obj) {
-                    if (key in obj && URL['canParse'](obj[key])) {
-                        return URL['parse'](obj[key])['pathname'];
-                    } else {
-                        return obj[key];
-                    }
-                }
-                if (getHref (vtree['props']) !== getHref (vtree['domRef'])) {
+                var absolute = window.location.origin + '/' + vtree['props'][key],
+                    url = vtree['domRef'][key],
+                    relative = vtree['props'][key];
+                if (absolute !== url && relative !== url && (relative + '/') !== url && (absolute + '/') !== url) {
                     console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
                     result = false;
                 }
