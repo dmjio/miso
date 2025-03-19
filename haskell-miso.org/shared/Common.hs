@@ -539,8 +539,6 @@ hero content uri' navMenuOpen' =
                             [ a_
                                 [ href_ $ ms (uriPath uriExamples)
                                 , onPreventClick (ChangeURI uriExamples)
-                                , textProp "current-uri-path" $ ms (uriPath uri')
-                                , textProp "examples-uri-path" $ ms (uriPath uriExamples)
                                 , classList_ [("is-active", uriPath uri' == uriPath uriExamples)]
                                 ]
                                 [text "Examples"]
