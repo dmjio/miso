@@ -169,6 +169,7 @@ pointerEvents = M.fromList
   [ ("pointerup", False)
   , ("pointerdown", False)
   , ("pointerenter", True)
+  , ("pointercancel", False)
   , ("pointerleave", False)
   , ("pointerover", False)
   , ("pointerout", False)
