@@ -236,7 +236,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- vnode the attribute is attached to.
 data Attribute action
   = Property MisoString Value
-  | Event (Sink action -> Object -> Events -> JSM ())
+  | Event (Sink action -> Object -> LogLevel -> Events -> JSM ())
   | Style (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------

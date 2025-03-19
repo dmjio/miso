@@ -92,7 +92,7 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
-    VTree (Object vtree) <- runView Prerender (view model) snk events
+    VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     setBodyComponent name
     mount <- getBody
@@ -105,7 +105,7 @@ miso f = withJS $ do
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
-    vtree <- runView DontPrerender (view model) snk events
+    vtree <- runView DontPrerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     setBodyComponent name
     mount <- mountElement name

@@ -65,13 +65,14 @@ module Miso.Html.Event
   , onPointerMove
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (when)
 import qualified Data.Map.Strict as M
 import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1, consoleError)
-import           Miso.Html.Types ( Attribute (Event) )
+import           Miso.Types ( Attribute (Event), LogLevel(..) )
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
@@ -102,15 +103,16 @@ onWithOptions
   -> (r -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  Event $ \sink n events ->
+  Event $ \sink n logLevel events ->
     case M.lookup eventName events of
       Nothing ->
-        consoleError $ mconcat
-          [ "Event \""
-          , eventName
-          , "\" is not being listened on. To use this event, "
-          , "add to the 'events' Map in 'App'"
-          ]
+        when (logLevel `elem` [ DebugAll, DebugEvents ]) $
+          consoleError $ mconcat
+            [ "Event \""
+            , eventName
+            , "\" is not being listened on. To use this event, "
+            , "add to the 'events' Map in 'App'"
+            ]
       Just _ -> do
         eventObj <- getProp "events" n
         eventHandlerObject@(Object eo) <- create
@@ -140,7 +142,7 @@ onMounted = onCreated
 -- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
-  Event $ \sink object _ -> do
+  Event $ \sink object _ _ -> do
     callback <- syncCallback (sink action)
     set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -152,7 +154,7 @@ onCreated action =
 -- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  Event $ \sink object _ -> do
+  Event $ \sink object _ _ -> do
     callback <- syncCallback (sink action)
     set "onDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -173,7 +175,7 @@ onUnmounted = onBeforeDestroyed
 -- otherwise the event may not be reliably called!
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  Event $ \sink object _ -> do
+  Event $ \sink object _ _ -> do
     callback <- syncCallback (sink action)
     set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------

@@ -80,7 +80,7 @@ initialize App {..} getView = do
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
-        newVTree <- runView DontPrerender (view newModel) componentSink events
+        newVTree <- runView DontPrerender (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         diff componentMount (Just oldVTree) (Just newVTree)
@@ -209,7 +209,7 @@ drawComponent
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
-  vtree <- runView prerender (view model) snk events
+  vtree <- runView prerender (view model) snk logLevel events
   mountElement <- FFI.getComponent name
   when (prerender == DontPrerender) $ diff mountElement Nothing (Just vtree)
   ref <- liftIO (newIORef vtree)
@@ -240,9 +240,10 @@ runView
   :: Prerender
   -> View action
   -> Sink action
+  -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (Embed attributes (SomeComponent (Component key mount app))) snk _ = do
+runView prerender (Embed attributes (SomeComponent (Component key mount app))) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent prerender mount app) 
@@ -255,15 +256,15 @@ runView prerender (Embed attributes (SomeComponent (Component key mount app))) s
         Just componentState -> do
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML key "div"
-  setAttrs vcomp attributes snk (events app)
+  setAttrs vcomp attributes snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   FFI.set "data-component-id" mount vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
-runView prerender (Node ns tag key attrs kids) snk events = do
+runView prerender (Node ns tag key attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns key tag
-  setAttrs vnode attrs snk events
+  setAttrs vnode attrs snk logLevel events
   flip (FFI.set "children") vnode
     =<< ghcjsPure . jsval
     =<< setKids
@@ -271,22 +272,22 @@ runView prerender (Node ns tag key attrs kids) snk events = do
     where
       setKids = do
         kidsViews <- forM kids $ \kid -> do
-          VTree (Object vtree) <- runView prerender kid snk events
+          VTree (Object vtree) <- runView prerender kid snk logLevel events
           pure vtree
         ghcjsPure (JSArray.fromList kidsViews)
-runView _ (Text t) _ _ = do
+runView _ (Text t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
-runView prerender (TextRaw str) snk events =
+runView prerender (TextRaw str) snk logLevel events =
   case parseView str of
     [] ->
-      runView prerender (Text (" " :: MisoString)) snk events
+      runView prerender (Text (" " :: MisoString)) snk logLevel events
     [parent] ->
-      runView prerender parent snk events
+      runView prerender parent snk logLevel events
     kids -> do
-      runView prerender (Node HTML "div" Nothing mempty kids) snk events
+      runView prerender (Node HTML "div" Nothing mempty kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
@@ -312,15 +313,16 @@ setAttrs
   :: Object
   -> [Attribute action]
   -> Sink action
+  -> LogLevel
   -> Events
   -> JSM ()
-setAttrs vnode attrs snk events =
+setAttrs vnode attrs snk logLevel events =
   forM_ attrs $ \case
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode
       FFI.set k value (Object o)
-    Event attr -> attr snk vnode events
+    Event attr -> attr snk vnode logLevel events
     Style styles -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do

@@ -61,7 +61,7 @@ toArrows (up, down, left, right) set' = Arrows
 arrowsSub :: (Arrows -> action) -> Sub action
 arrowsSub = directionSub ([38], [40], [37], [39])
 -----------------------------------------------------------------------------
--- | Maps @Arrows@ onto a Keyboard subscription for directions
+-- | Maps @Arrows@ onto a Keyboard subscription for directions (W+A+S+D keys)
 wasdSub :: (Arrows -> action) -> Sub action
 wasdSub = directionSub ([87], [83], [65], [68])
 -----------------------------------------------------------------------------
