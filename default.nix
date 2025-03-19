@@ -64,4 +64,7 @@ in with pkgs.haskell.lib;
 
   # utils
   inherit (pkgs.haskell.packages.ghc865) miso-from-html;
+
+  # misc. examples
+  inherit (pkgs) more-examples;
 }
