@@ -6,9 +6,11 @@ let
   inherit (pkgs.haskell.packages) ghcjs86 ghc865;
   client = ghcjs86.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
   server = ghc865.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
+  dev = ghc865.callCabal2nixWithOptions "haskell-miso" (src.haskell-miso-src) "-fdev" {};
 in
 { haskell-miso-client = client;
   haskell-miso-server = server;
+  haskell-miso-dev = dev;
   haskell-miso-runner = 
     runCommand "haskell-miso.org" { inherit client server; } ''
       mkdir -p $out/{bin,static}

@@ -37,7 +37,7 @@ import qualified System.IO as IO
 import Miso hiding (run)
 import Miso.String
 
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
