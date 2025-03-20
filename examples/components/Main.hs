@@ -14,7 +14,7 @@ import Miso.String
 
 type Model = Int
 
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
