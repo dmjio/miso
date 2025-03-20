@@ -14,14 +14,14 @@
 
 module Main where
 
-import Control.Monad.IO.Class
-import Data.Aeson hiding (Object)
-import Data.Bool
+import           Control.Monad.IO.Class
+import           Data.Aeson hiding (Object)
+import           Data.Bool
 import qualified Data.Map as M
-import GHC.Generics
+import           GHC.Generics
 
-import Miso
-import Miso.String (MisoString)
+import           Miso
+import           Miso.String (MisoString)
 import qualified Miso.String as S
 
 default (MisoString)
@@ -86,17 +86,20 @@ data Msg
     | Check Int Bool
     | CheckAll Bool
     | ChangeVisibility MisoString
+    | FocusOnInput
     deriving (Show)
 
 main :: IO ()
 main = run $ startApp app
   { events = defaultEvents <> keyboardEvents
+  , initialAction = Just FocusOnInput
   }
 
 app :: App Model Msg
 app = defaultApp emptyModel updateModel viewModel
 
 updateModel :: Msg -> Model -> Effect Msg Model
+updateModel FocusOnInput m = m <# NoOp <$ focus "input-box"
 updateModel NoOp m = noEff m
 updateModel (CurrentTime n) m =
     m <# do liftIO (print n) >> pure NoOp
@@ -298,6 +301,7 @@ viewInput _ task =
         [ h1_ [] [text "todos"]
         , input_
             [ class_ "new-todo"
+            , id_ "input-box"
             , placeholder_ "What needs to be done?"
             , autofocus_ True
             , value_ task
@@ -319,7 +323,7 @@ infoFooter =
         , p_
             []
             [ text "Written by "
-            , a_ [href_ "https://github.com/dmjio"] [text "David Johnson"]
+            , a_ [href_ "https://github.com/dmjio"] [text "@dmjio"]
             ]
         , p_
             []
