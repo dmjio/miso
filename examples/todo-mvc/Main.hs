@@ -94,7 +94,7 @@ main = run $ startApp app
   }
 
 app :: App Model Msg
-app = defaultApp emptyModel updateModel viewModel NoOp
+app = defaultApp emptyModel updateModel viewModel
 
 updateModel :: Msg -> Model -> Effect Msg Model
 updateModel NoOp m = noEff m

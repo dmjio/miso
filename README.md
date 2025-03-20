@@ -270,7 +270,7 @@ main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
 app :: App Model Action
-app = defaultApp emptyModel updateModel viewModel SayHelloWorld
+app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty model
 emptyModel :: Model
@@ -281,7 +281,7 @@ updateModel :: Action -> Model -> Effect Action Model
 updateModel NoOp m          = noEff m
 updateModel AddOne m        = noEff (m + 1)
 updateModel SubtractOne m   = noEff (m - 1)
-updateModel SayHelloWorld m = m <# NoOp <$ consoleLog "Hello World"
+updateModel SayHelloWorld m = m <# NoOp <$ alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
@@ -289,6 +289,7 @@ viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
   , text (ms x)
   , button_ [ onClick SubtractOne ] [ text "-" ]
+  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------
 ```
@@ -334,9 +335,9 @@ data Action
 main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
--- | `defaultApp` takes as arguments the initial model, update function, view function and initial action.
+-- | `defaultApp` takes as arguments the initial model, update function, view function
 app :: App Model Action
-app = defaultApp emptyModel (fromTransition . updateModel) viewModel SayHelloWorld
+app = defaultApp emptyModel (fromTransition . updateModel) viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
@@ -356,6 +357,7 @@ viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
   , text . ms $ x^.counter
   , button_ [ onClick SubtractOne ] [ text "-" ]
+  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------
 ```

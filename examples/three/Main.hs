@@ -62,19 +62,9 @@ main = run $ do
     stats <- newStats
     ref <- newIORef $ Context (pure ()) (pure ()) stats
     m <- now
-    startApp
-        App
-            { model = m
-            , initialAction = Init
-            , update = updateModel ref
-            , mountPoint = Nothing
-            , logLevel = Off
-            , ..
-            }
-  where
-    events = defaultEvents
-    view = viewModel
-    subs = []
+    startApp (defaultApp m (updateModel ref) viewModel)
+      { initialAction = Just Init
+      }
 
 viewModel :: Double -> View action
 viewModel _ =

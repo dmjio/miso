@@ -65,6 +65,7 @@ newtype Checked = Checked Bool
 data PointerEvent
   = PointerEvent
   { pointerType :: PointerType
+  , pointerId :: Int
   , isPrimary :: Bool
   , coords :: (Int, Int)
   -- ^ clientX (or x), clientY (or y)
@@ -168,6 +169,7 @@ pointerEvents = M.fromList
   [ ("pointerup", False)
   , ("pointerdown", False)
   , ("pointerenter", True)
+  , ("pointercancel", False)
   , ("pointerleave", False)
   , ("pointerover", False)
   , ("pointerout", False)

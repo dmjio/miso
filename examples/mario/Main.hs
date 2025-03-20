@@ -30,22 +30,12 @@ main :: IO ()
 main = run $ do
     time <- now
     let m = mario{time = time}
-    startApp
-        App
-            { model = m
-            , initialAction = NoOp
-            , ..
-            }
-  where
-    update = updateMario
-    view = display
-    events = defaultEvents
-    subs =
-        [ arrowsSub GetArrows
-        , windowCoordsSub WindowCoords
-        ]
-    mountPoint = Nothing
-    logLevel = Off
+    startApp (defaultApp m updateMario display)
+      { subs =
+          [ arrowsSub GetArrows
+          , windowCoordsSub WindowCoords
+          ]
+      }
 
 data Model = Model
     { x :: !Double

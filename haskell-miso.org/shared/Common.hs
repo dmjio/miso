@@ -97,7 +97,7 @@ haskellMisoComponent uri
   }
   
 app :: URI -> App Model Action
-app currentUri = defaultApp emptyModel updateModel viewModel NoOp
+app currentUri = defaultApp emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
     viewModel m =

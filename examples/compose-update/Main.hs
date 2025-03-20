@@ -100,15 +100,11 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startApp App{initialAction = NoOp, ..}
+main = run $ startApp (defaultApp model update view)
   where
     model = (0, 0)
     update = updateModel
     view = viewModel
-    events = defaultEvents
-    subs = []
-    mountPoint = Nothing
-    logLevel = Off
 
 viewModel :: Model -> View Action
 viewModel (x, y) =

@@ -1,13 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-
--- \| Haskell module declaration
-
--- | Haskell language pragma
 module Main where
 
--- \| Miso framework import
 import Miso
 
 #if defined(wasm32_HOST_ARCH)
@@ -16,22 +11,15 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startApp App{..}
-  where
-    initialAction = NoOp -- initial action to be executed on application load
-    model = Main.Empty -- initial model
-    update = updateModel -- update function
-    view = viewModel -- view function
-    events = defaultEvents -- default delegated events
-    subs = [] -- empty subscription list
-    mountPoint = Nothing -- mount point for application (Nothing defaults to 'body')
-    logLevel = Off
+main = run $ startApp (defaultApp Main.Empty updateModel viewModel)
 
-data Model = Empty deriving (Eq)
+data Model
+  = Empty
+  deriving (Eq)
 
 data Action
-    = NoOp
-    deriving (Show, Eq)
+  = NoOp
+  deriving (Show, Eq)
 
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Model -> Effect Action Model

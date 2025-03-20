@@ -53,6 +53,9 @@ jobs:
      - name: (JS) Miso examples
        run: nix-build -A miso-examples
 
+     - name: (JS) Miso third-party examples (2048, flatris, etc.)
+       run: nix-build -A more-examples -j1
+
      - name: (x86) Miso examples
        run: nix-build -A miso-examples-ghc
 

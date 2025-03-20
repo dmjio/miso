@@ -40,7 +40,7 @@ main = run $ do
     startApp
         App
             { model = Model ""
-            , initialAction = NoOp
+            , initialAction = Nothing
             , ..
             }
   where

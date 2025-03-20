@@ -26,8 +26,11 @@ in with pkgs.haskell.lib;
   miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
   inherit (pkgs.haskell.packages.ghc865) sample-app;
 
-  # miso wasm examples
-  # nix-build -A wasmExamples && ./result/bin/build.sh && nix-build -A svgWasm && http-server ./result/svg.wasmexe
+  # Miso wasm examples
+  # nix-build -A wasmExamples
+  #   && ./result/bin/build.sh
+  #   && nix-build -A svgWasm
+  #   && http-server ./result/svg.wasmexe
   inherit (pkgs)
     wasmExamples
     svgWasm
@@ -64,4 +67,7 @@ in with pkgs.haskell.lib;
 
   # utils
   inherit (pkgs.haskell.packages.ghc865) miso-from-html;
+
+  # misc. examples
+  inherit (pkgs) more-examples;
 }

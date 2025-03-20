@@ -5,11 +5,9 @@
 module Common (
     -- * App
     sse,
-
     -- * Types
     Model,
     Action,
-
     -- * Exported links
     goHome,
     the404,
@@ -64,25 +62,18 @@ goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
 sse :: URI -> App Model Action
-sse currentURI =
-        App
-            { initialAction = NoOp
-            , model = Model currentURI "No event received"
-            , ..
-            }
+sse currentURI
+  = app { subs =
+          [ sseSub "/sse" handleSseMsg
+          , uriSub HandleURI
+          ]
+        }
   where
-    update = updateModel
+    app = defaultApp (Model currentURI "No event received") updateModel view
     view m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
         | otherwise = the404
-    events = defaultEvents
-    subs =
-        [ sseSub "/sse" handleSseMsg
-        , uriSub HandleURI
-        ]
-    mountPoint = Nothing
-    logLevel = Off
 
 handleSseMsg :: SSE String -> Action
 handleSseMsg (SSEMessage msg) = ServerMsg msg
