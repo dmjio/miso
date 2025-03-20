@@ -47,6 +47,7 @@ module Miso.FFI
    , blur
    , scrollIntoView
    , alert
+   , reload
    , getComponent
    , setBodyComponent
    ) where
@@ -364,6 +365,10 @@ scrollIntoView elId = do
 -- | Calls the @alert()@ function.
 alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
+-----------------------------------------------------------------------------
+-- | Calls the @location.reload()@ function.
+reload :: JSM ()
+reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Sets the body with data-component-id
 setBodyComponent :: MisoString -> JSM ()

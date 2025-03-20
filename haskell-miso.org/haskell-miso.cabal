@@ -13,20 +13,34 @@ category:            Web
 build-type:          Simple
 extra-source-files:  ChangeLog.md
 
+flag dev
+  manual:
+    True
+  default:
+    False
+  description:
+    Run haskell-miso.org client w/ jsaddle and rapid
+
 common server-only
-  if impl(ghcjs) || arch(javascript)
+  if impl(ghcjs) || arch(javascript) || flag(dev)
     buildable: False
 
 common client-only
-  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+  if impl(ghcjs) || arch(javascript) || arch(wasm32) || flag(dev)
     buildable: True
   else
     buildable: False
+
+  if flag(dev)
+    build-depends:
+      rapid
 
 common common-options
   if arch(wasm32)
     ghc-options:
       -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+    cpp-options:
+      -DWASM
   ghc-options:
     -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively
 
@@ -70,6 +84,8 @@ executable client
     -dedupe -DGHCJS_GC_INTERVAL=5000
   hs-source-dirs:
     client, shared
+  other-modules:
+    DevelMain
   build-depends:
     aeson,
     base < 5,

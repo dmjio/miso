@@ -41,6 +41,7 @@ options: self: super: {
     import ../sample-app {};
 
   inherit (import ../haskell-miso.org {})
+    haskell-miso-dev
     haskell-miso-client
     haskell-miso-server
     haskell-miso-runner;
