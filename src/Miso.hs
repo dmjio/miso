@@ -56,6 +56,7 @@ module Miso
   , focus
   , blur
   , alert
+  , reload
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
