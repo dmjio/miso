@@ -6,7 +6,6 @@ with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
-  inherit (pkgs.haskell.packages.ghc865) hpack;
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
@@ -24,8 +23,6 @@ self: super:
       '';
   the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
-  mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
-  doctest = null;
   miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {
     doHaddock = options.haddock;
     postInstall = ''
@@ -36,7 +33,7 @@ self: super:
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
       ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
          --jscomp_off=checkVars \
-         --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
+         --externs=$out/bin/todo-mvc.jsexe/all.externs.js \
          $out/bin/todo-mvc.jsexe/all.js > temp.js
       mv temp.js $out/bin/todo-mvc.jsexe/all.js
       cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
@@ -49,7 +46,7 @@ self: super:
     postInstall = pkgs.lib.optionalString options.tests ''
       ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
          --jscomp_off=checkVars \
-         --externs=$out/bin/tests.jsexe/all.js.externs \
+         --externs=$out/bin/tests.jsexe/all.externs.js \
            $out/bin/tests.jsexe/all.js > temp.js
            mv temp.js $out/bin/tests.jsexe/all.js
          '';

@@ -10,21 +10,21 @@ in with pkgs.haskell.lib;
 
   # hacakge release
   release =
-    with pkgs.haskell.packages.ghc865;
+    with pkgs.haskell.packages.ghc9122;
     sdistTarball (buildStrictly miso);
 
   release-examples =
-    with pkgs.haskell.packages.ghcjs;
+    with pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122;
     sdistTarball (buildStrictly miso-examples);
 
   #js
-  miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app-js;
+  miso-ghcjs = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
+  inherit (pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122) miso-examples sample-app-js;
   
   #native
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
-  miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
-  inherit (pkgs.haskell.packages.ghc865) sample-app;
+  miso-ghc = pkgs.haskell.packages.ghc9122.miso;
+  miso-examples-ghc = pkgs.haskell.packages.ghc9122.miso-examples;
+  inherit (pkgs.haskell.packages.ghc9122) sample-app;
 
   # Miso wasm examples
   # nix-build -A wasmExamples
@@ -66,7 +66,7 @@ in with pkgs.haskell.lib;
   inherit (pkgs) ghciwatch;
 
   # utils
-  inherit (pkgs.haskell.packages.ghc865) miso-from-html;
+  inherit (pkgs.haskell.packages.ghc9122) miso-from-html;
 
   # misc. examples
   inherit (pkgs) more-examples;

@@ -3,9 +3,10 @@ with (import ../default.nix {});
 let
   src = import ../nix/haskell/packages/source.nix pkgs;
   inherit (pkgs) runCommand closurecompiler;
-  inherit (pkgs.haskell.packages) ghcjs86 ghc865;
-  client = ghcjs86.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
-  server = ghc865.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
+  ghc = pkgs.haskell.packages.ghc9122;
+  ghcjs = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122;
+  client = ghcjs.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
+  server = ghc.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
 in
 { haskell-miso-client = client;
   haskell-miso-server = server;
@@ -15,7 +16,7 @@ in
       cp ${server}/bin/* $out/bin
       ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
         --jscomp_off=checkVars \
-        --externs=${client}/bin/client.jsexe/all.js.externs \
+        --externs=${client}/bin/client.jsexe/all.externs.js \
         ${client}/bin/client.jsexe/all.js > temp.js
       mv temp.js $out/static/all.js
     '';
