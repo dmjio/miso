@@ -62,27 +62,23 @@ type Sink action = action -> JSM ()
 -----------------------------------------------------------------------------
 -- | Turn a subscription that consumes actions of type @a@ into a subscription
 -- that consumes actions of type @b@ using the supplied function of type @a -> b@.
-mapSub :: (actionA -> actionB) -> Sub actionA -> Sub actionB
-mapSub f sub = \sinkB -> let sinkA = sinkB . f
-                         in sub sinkA
+mapSub :: (a -> b) -> Sub a -> Sub b
+mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
 instance Functor (Effect action) where
-  fmap f (Effect m acts) = Effect (f m) acts
+  fmap f (Effect model actions) = Effect (f model) actions
 -----------------------------------------------------------------------------
 instance Applicative (Effect action) where
   pure m = Effect m []
-  Effect fModel fActs <*> Effect xModel xActs =
-    Effect (fModel xModel) (fActs ++ xActs)
+  Effect f ys <*> Effect x zs = Effect (f x) (ys ++ zs)
 -----------------------------------------------------------------------------
 instance Monad (Effect action) where
   return = pure
-  Effect m acts >>= f =
-    case f m of
-      Effect m' acts' -> Effect m' (acts ++ acts')
+  Effect m xs >>= f | Effect n ys <- f m = Effect n (xs ++ ys)
 -----------------------------------------------------------------------------
 instance Bifunctor Effect where
-  bimap f g (Effect m acts) =
-    Effect (g m) (map (\act -> \sink -> act (sink . f)) acts)
+  bimap f g (Effect m actions) =
+    Effect (g m) [ \sink -> action (sink . f) | action <- actions ]
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with no actions.
 noEff :: model -> Effect action model
@@ -100,8 +96,8 @@ infixr 0 #>
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
 batchEff :: model -> [JSM action] -> Effect action model
-batchEff model actions = Effect model $
-  map (\a sink -> sink =<< a) actions
+batchEff model actions =
+  Effect model [ \sink -> action >>= sink | action <- actions ]
 -----------------------------------------------------------------------------
 -- | Like '<#' but schedules a subscription which is an IO computation which has
 -- access to a 'Sink' which can be used to asynchronously dispatch actions to
@@ -148,7 +144,7 @@ type Transition action model = StateT model (Writer [Sub action])
 -- actions of type @a@ into a transition that schedules subscriptions
 -- that consume actions of type @b@ using the supplied function of
 -- type @a -> b@.
-mapAction :: (actionA -> actionB) -> Transition actionA model r -> Transition actionB model r
+mapAction :: (a -> b) -> Transition a m r -> Transition b m r
 mapAction = mapStateT . mapWriter . second . fmap . mapSub
 -----------------------------------------------------------------------------
 -- | Convert a @Transition@ computation to a function that can be given to @update@.
@@ -166,16 +162,15 @@ toTransition
 toTransition f =
   StateT $ \m ->
     case f m of
-      Effect n actions -> do
-        tell actions
-        pure ((), n)
+      Effect n actions ->
+        ((), n) <$ tell actions
 -----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 scheduleIO :: JSM action -> Transition action model ()
-scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
+scheduleIO action = scheduleSub (\sink -> action >>= sink)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
 -- the @update@ function.
@@ -183,13 +178,13 @@ scheduleIO ioAction = scheduleSub $ \sink -> ioAction >>= sink
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
 scheduleIO_ :: JSM () -> Transition action model ()
-scheduleIO_ ioAction = scheduleSub $ \_sink -> ioAction
+scheduleIO_ action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
-scheduleIOFor_ io = scheduleSub $ \sink -> io >>= flip for_ sink
+scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
 -- computation that has access to a 'Sink' which can be used to
