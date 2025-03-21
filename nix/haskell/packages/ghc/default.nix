@@ -12,4 +12,9 @@ self: super:
 
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+  crypton = dontCheck super.crypton;
+  cryptonite = dontCheck super.cryptonite;
+  monad-logger = doJailbreak super.monad-logger;
+  string-interpolate = doJailbreak super.string-interpolate;
+  servant-server = doJailbreak super.servant-server;
 }

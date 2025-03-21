@@ -51,8 +51,6 @@ executable components
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     components
   build-depends:
@@ -72,8 +70,6 @@ executable simple
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     simple
   build-depends:
@@ -93,8 +89,6 @@ executable todo-mvc
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     todo-mvc
   build-depends:
@@ -114,8 +108,6 @@ executable threejs
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     three
   build-depends:
@@ -134,8 +126,6 @@ executable file-reader
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     file-reader
   build-depends:
@@ -155,8 +145,6 @@ executable xhr
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     xhr
   build-depends:
@@ -176,8 +164,6 @@ executable canvas2d
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     canvas2d
   build-depends:
@@ -196,8 +182,6 @@ executable router
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     router
   build-depends:
@@ -218,8 +202,6 @@ executable websocket
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     websocket
   build-depends:
@@ -239,8 +221,6 @@ executable mario
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     mario
   build-depends:
@@ -258,8 +238,6 @@ executable mathml
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     mathml
   build-depends:
@@ -275,8 +253,6 @@ executable svg
     Main.hs
   ghcjs-options:
     -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     svg
   build-depends:
