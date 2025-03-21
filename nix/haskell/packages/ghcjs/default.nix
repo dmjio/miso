@@ -25,30 +25,32 @@ self: super:
   snake = self.callCabal2nix "miso-snake" source.snake {};
   miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
-    postInstall = drv.postInstall or "" + ''
+    postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
       mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/todo-mvc.jsexe/all.externs.js \
-         $out/bin/todo-mvc.jsexe/all.js > temp.js
-      mv temp.js $out/bin/todo-mvc.jsexe/all.js
       cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
       cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
       cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
+      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+      #    --jscomp_off=checkVars \
+      #    --externs=$out/bin/todo-mvc.jsexe/all.externs.js \
+      #    $out/bin/todo-mvc.jsexe/all.js > temp.js
+      # mv temp.js $out/bin/todo-mvc.jsexe/all.js
+
   });
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs (drv: {
+  # miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs (drv: {
+  miso = (self.callCabal2nixWithOptions "miso" source.miso "" {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
-    postInstall = drv.postInstall or "" + pkgs.lib.optionalString options.tests ''
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/tests.jsexe/all.externs.js \
-           $out/bin/tests.jsexe/all.js > temp.js
-           mv temp.js $out/bin/tests.jsexe/all.js
-         '';
+    postInstall = "";
+      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+      #    --jscomp_off=checkVars \
+      #    --externs=$out/bin/tests.jsexe/all.externs.js \
+      #      $out/bin/tests.jsexe/all.js > temp.js
+      #      mv temp.js $out/bin/tests.jsexe/all.js
+      #    '';
   });
 }
