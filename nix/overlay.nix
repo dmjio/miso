@@ -20,6 +20,8 @@ options: self: super: {
       # $machine->succeed("curl localhost:3003");
   };
 
+  nixops = super.nixops_unstable_minimal.withPlugins (ps: [ ]);
+
   ghciwatch =
     (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
       .outputs.packages."${super.system}".ghciwatch;
