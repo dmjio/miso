@@ -23,9 +23,9 @@ self: super:
       '';
   the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
-  miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {
+  miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
-    postInstall = ''
+    postInstall = drv.postInstall or "" + ''
       mkdir -p $out/bin/mario.jsexe/imgs
       mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
@@ -41,9 +41,9 @@ self: super:
       cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
   });
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideDerivation (drv: {
+  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
-    postInstall = pkgs.lib.optionalString options.tests ''
+    postInstall = drv.postInstall or "" + pkgs.lib.optionalString options.tests ''
       ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
          --jscomp_off=checkVars \
          --externs=$out/bin/tests.jsexe/all.externs.js \
