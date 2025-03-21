@@ -72,4 +72,16 @@ in
     rev = "d99f1965654568c0ced7bcd54c0d5083e08fce9c";
     sha256 = "1fz4wac1if0lc54gvga640dybwlchi1ybzxw8yjz5836674mdkid";
   };
+  splitmix = fetchFromGitHub {
+    owner = "JoshMeredith";
+    repo = "splitmix";
+    rev = "7ffb3158f577c48ab5de774abea47767921ef3e9";
+    sha256 = "sha256-a5eNqmbNFtoEBZSp+k2qRC6tc6fe4BTH/CuYuD0AcTU=";
+  };
+  # splitmix = fetchFromGitHub {
+  #   owner = "amesgen";
+  #   repo = "splitmix";
+  #   rev = "5f5b766d97dc735ac228215d240a3bb90bc2ff75";
+  #   sha256 = "sha256-OCrEnjmESxtFHoeb4TCrQN//Oyx/7dKwiRr6P1/AqSk=";
+  # };
 }
