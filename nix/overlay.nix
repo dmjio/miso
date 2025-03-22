@@ -77,6 +77,8 @@ options: self: super: {
     nix --version
     # https://github.com/NixOS/nixops/issues/1557
     nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
+      nixops ssh -d haskell-miso awsBox nix-collect-garbage -d
+    nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
       nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
   more-examples = with super.haskell.lib; {
