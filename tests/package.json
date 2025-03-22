@@ -2,6 +2,9 @@
   "name": "miso",
   "version": "1.0.0",
   "description": "miso tests",
+  "scripts": {
+    "test": "nix-build"
+  },
   "main": "miso.spec.js",
   "repository": {
     "type": "git",
