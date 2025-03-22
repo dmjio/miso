@@ -1,4 +1,4 @@
-window = typeof window === 'undefined' ? {} : window;
+/* various utilities */
 window['callFocus'] = function (id) {
   setTimeout(function(){
     var ele = document.getElementById(id);

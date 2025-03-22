@@ -1,5 +1,3 @@
-window = typeof window === 'undefined' ? {} : window;
-
 /* event delegation algorithm */
 window['delegate'] = function (mount, events, getVTree, debug) {
   for (var event in events)

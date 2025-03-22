@@ -1,4 +1,4 @@
-window = typeof window === 'undefined' ? {} : window;
+/* prerendering / hydration / isomorphic support */ 
 window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
