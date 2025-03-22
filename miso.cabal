@@ -71,10 +71,7 @@ common client
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     js-sources:
-      jsbits/diff.js
-      jsbits/delegate.js
-      jsbits/isomorphic.js
-      jsbits/util.js
+      jsbits/miso.js
 
 flag tests
   manual:

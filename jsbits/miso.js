@@ -48,7 +48,7 @@ window['diffNodes'] = function (c, n, parent, doc) {
       if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
       n['domRef'] = c['domRef'];
       return;
-  }  
+  }
   // check children
   if (c['tag'] === n['tag'] && n['key'] === c['key'] && n['data-component-id'] === c['data-component-id']) {
       n['domRef'] = c['domRef'];
@@ -408,4 +408,392 @@ window['swap']= function (os,l,r) {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;
+};
+
+/* event delegation algorithm */
+window['delegate'] = function (mount, events, getVTree, debug) {
+  for (var event in events)
+    mount.addEventListener
+      ( events[event][0]
+      , function (e) { window['listener'](e, mount, getVTree, debug); }
+      , events[event][1]
+      );
+};
+
+/* the event listener shared by both delegator and undelegator */
+window['listener'] = function(e, mount, getVTree, debug) {
+    getVTree(function (obj) {
+        if (e.target) {
+            window['delegateEvent'](e, obj, window['buildTargetToElement'](mount, e.target), [], debug);
+        }
+   });
+}
+
+/* event undelegation */
+window['undelegate'] = function (mount, events, getVTree, debug) {
+  for (var event in events)
+    mount.removeEventListener
+      ( events[event][0]
+      , function (e) { window['listener'](e, mount, getVTree, debug); }
+      , events[event][1]
+      );
+};
+
+/* Finds event in virtual dom via pointer equality
+   Accumulate parent stack as well for propagation up the vtree
+ */
+window['delegateEvent'] = function (event, obj, stack, parentStack, debug) {
+
+  /* base case, not found */
+  if (!stack.length) {
+     if (debug) {
+       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
+     }
+     return;
+  }
+
+  /* stack not length 1, recurse */
+  else if (stack.length > 1) {
+    parentStack.unshift(obj);
+    for (var o = 0; o < obj.children.length; o++) {
+      if (obj['type'] === 'vcomp') continue;
+      if (obj.children[o]['domRef'] === stack[1]) {
+        window['delegateEvent'](event, obj.children[o], stack.slice(1), parentStack, debug);
+        break;
+      }
+    }
+  }
+
+  /* stack.length == 1 */
+  else {
+    var eventObj = obj['events'][event.type];
+    if (eventObj) {
+      var options = eventObj['options'];
+      if (options['preventDefault'])
+        event.preventDefault();
+      eventObj['runEvent'](event);
+      if (!options['stopPropagation'])
+        window['propagateWhileAble'] (parentStack, event);
+    } else {
+      /* still propagate to parent handlers even if event not defined */
+      window['propagateWhileAble'] (parentStack, event);
+    }
+  }
+};
+
+/* Create a stack of ancestors used to index into the virtual DOM */
+window['buildTargetToElement'] = function buildTargetToElement (element, target) {
+  var stack = [];
+  while (element !== target) {
+    stack.unshift (target);
+    target = target.parentNode;
+  }
+  return stack;
+};
+
+/* Propagate the event up the chain, invoking other event handlers as encountered */
+window['propagateWhileAble'] = function propagateWhileAble (parentStack, event) {
+  for (var i = 0; i < parentStack.length; i++) {
+    if (parentStack[i]['events'][event.type]) {
+      var eventObj = parentStack[i]['events'][event.type], options = eventObj['options'];
+      if (options['preventDefault']) event.preventDefault();
+      eventObj['runEvent'](event);
+      if (options['stopPropagation']) {
+        event.stopPropagation();
+        break;
+      }
+    }
+  }
+};
+
+/* Walks down obj following the path described by `at`, then filters primitive
+   values (string, numbers and booleans). Sort of like JSON.stringify(), but
+   on an Event that is stripped of impure references.
+*/
+window['eventJSON'] = function eventJSON (at, obj) {
+  /* If at is of type [[MisoString]] */
+  if (typeof at[0] == 'object') {
+    var ret = [];
+    for (var i = 0; i < at.length; i++)
+      ret.push(window['eventJSON'](at[i], obj));
+    return ret;
+  }
+
+  for (var i in at) obj = obj[at[i]];
+
+  /* If obj is a list-like object */
+  var newObj;
+  if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
+    newObj = [];
+    for (var i = 0; i < obj.length; i++)
+      newObj.push(window['eventJSON']([], obj[i]));
+    return newObj;
+  }
+
+  /* If obj is a non-list-like object */
+  newObj = {};
+  for (var i in getAllPropertyNames(obj)){
+    /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
+    /* https://stackoverflow.com/a/25569117/453261 */
+    /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
+    if ((obj['localName'] === 'input') && (i === 'selectionDirection' || i === 'selectionStart' || i === 'selectionEnd'))
+      continue;
+    if (typeof obj[i] == 'string' || typeof obj[i] == 'number' || typeof obj[i] == 'boolean')
+      newObj[i] = obj[i];
+  }
+  return newObj;
+};
+
+/* get static and dynamic properties */
+function getAllPropertyNames(obj) {
+  var props = {}, i = 0;
+  do {
+    var names = Object.getOwnPropertyNames(obj);
+    for (i = 0; i < names.length; i++) {
+      props [names[i]] = null;
+    }
+  } while (obj = Object.getPrototypeOf(obj));
+  return props;
+};
+
+/* prerendering / hydration / isomorphic support */
+window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
+  var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
+  for (var ix = 1; ix < vs.length; ix++) {
+    if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
+      adjusted[ax]['text'] += vs[ix]['text'];
+      continue;
+    }
+    adjusted[++ax] = vs[ix];
+  }
+  return adjusted;
+}
+
+window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint,vtree,doc) {
+  var mountChildIdx = 0, node;
+  // If script tags are rendered first in body, skip them.
+  if (!mountPoint) {
+    if (doc.body.childNodes.length > 0) {
+      node = doc.body.firstChild;
+    } else {
+      node = doc.body.appendChild (doc.createElement('div'));
+    }
+  } else if (mountPoint.childNodes.length === 0) {
+    node = mountPoint.appendChild (doc.createElement('div'));
+  } else {
+    while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
+      mountChildIdx++;
+    }
+    if (!mountPoint.childNodes[mountChildIdx]) {
+      node = doc.body.appendChild (doc.createElement('div'));
+    } else {
+      node = mountPoint.childNodes[mountChildIdx];
+    }
+  }
+
+  if (!window['walk'](logLevel,vtree, node, doc)) {
+    if (logLevel) {
+      console.warn('Could not copy DOM into virtual DOM, falling back to diff');
+    }
+    // Remove all children before rebuilding DOM
+    while (node.firstChild) node.removeChild(node.lastChild);
+    vtree['domRef'] = node;
+    window['populate'](null, vtree, doc);
+    return false;
+  } else {
+    if (logLevel) {
+      var result = window['integrityCheck'](true, vtree);
+      if (!result) {
+          console.warn ('Integrity check completed with errors');
+      } else {
+          console.info ('Successfully prerendered page');
+      }
+    }
+  }
+  return true;
+}
+
+window['diagnoseError'] = function diagnoseError(logLevel, vtree, node) {
+  if (logLevel) console.warn('VTree differed from node', vtree, node);
+}
+
+// https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
+window['parseColor'] = function(input) {
+    if (input.substr(0,1)=="#") {
+    var collen=(input.length-1)/3;
+    var fact=[17,1,0.062272][collen-1];
+    return [
+        Math.round(parseInt(input.substr(1,collen),16)*fact),
+        Math.round(parseInt(input.substr(1+collen,collen),16)*fact),
+        Math.round(parseInt(input.substr(1+2*collen,collen),16)*fact)
+    ];
+    }
+    else return input.split("(")[1].split(")")[0].split(",").map(x=>+x);
+}
+
+// dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
+window['integrityCheck'] = function (result, vtree) {
+    // text nodes must be the same
+    if (vtree['type'] == 'vtext') {
+        if (vtree['domRef'].nodeType !== Node.TEXT_NODE) {
+            console.warn ('VText domRef not a TEXT_NODE', vtree);
+            result = false;
+        }
+        else if (vtree['text'] !== vtree['domRef'].textContent) {
+            console.warn ('VText node content differs', vtree);
+            result = false;
+        }
+    }
+
+    // if vnode / vcomp, must be the same
+    else {
+
+        // tags must be identical
+        if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
+            console.warn ('Integrity check failed, tags differ', vtree['tag'].toUpperCase(), vtree['domRef'].tagName);
+            result = false;
+        }
+        // Child lengths must be identical
+        if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
+            console.warn ('Integrity check failed, children lengths differ', vtree, vtree.children, vtree['domRef'].childNodes);
+            result = false;
+        }
+
+        // properties must be identical
+        var keyLength = Object.keys(vtree['props']).length; key = null;
+        for (var i = 0; i < keyLength; i++) {
+            key = Object.keys(vtree['props'])[i];
+            if (key === 'href') {
+                var absolute = window.location.origin + '/' + vtree['props'][key],
+                    url = vtree['domRef'][key],
+                    relative = vtree['props'][key];
+                if (absolute !== url && relative !== url && (relative + '/') !== url && (absolute + '/') !== url) {
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                    result = false;
+                }
+            }
+            else if (key === 'height' || key === 'width') {
+                if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                    result = false;
+                }
+            }
+            else if (key === 'class' || key === 'className') {
+                if (vtree['props'][key] !== vtree['domRef'].className) {
+                    console.warn ('Property class differs', vtree['props'][key], vtree['domRef'].className)
+                    result = false;
+                }
+            } else if (!vtree['domRef'][key]) {
+                if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
+                    console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'].getAttribute(key));
+                    result = false;
+                }
+            }
+            else if (vtree['props'][key] !== vtree['domRef'][key]) {
+                console.warn ('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+                result = false;
+            }
+        }
+
+        // styles must be identical
+        keyLength = Object.keys(vtree['css']).length;
+        for (var i = 0; i < keyLength; i++) {
+            key = Object.keys(vtree['css'])[i];
+            if (key === 'color') {
+                if (window['parseColor'](vtree['domRef'].style[key]).toString() !== window['parseColor'](vtree['css'][key]).toString()) {
+                    console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                    result = false;
+                }
+            }
+            else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
+                console.warn ('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+                result = false;
+            }
+        }
+
+        // recursive call for `vnode` / `vcomp`
+        for (var i = 0; i < vtree.children.length; i++) {
+            result &= window['integrityCheck'](result, vtree.children[i]);
+        }
+    }
+    return result;
+}
+
+
+window['walk'] = function walk(logLevel, vtree, node, doc) {
+  // This is slightly more complicated than one might expect since
+  // browsers will collapse consecutive text nodes into a single text node.
+  // There can thus be fewer DOM nodes than VDOM nodes.
+  // We handle this in collapseSiblingTextNodes
+  var vdomChild, domChild;
+  vtree['domRef'] = node;
+
+  // Fire onCreated events as though the elements had just been created.
+  window['callCreated'](vtree);
+
+  vtree.children = window['collapseSiblingTextNodes'](vtree.children);
+
+  for (var i = 0; i < vtree.children.length; i++) {
+    vdomChild = vtree['children'][i];
+    domChild = node.childNodes[i];
+    if (!domChild) {
+      window['diagnoseError'](logLevel,vdomChild, domChild);
+      return false;
+    }
+    if (vdomChild.type === 'vtext') {
+      if (domChild.nodeType !== Node.TEXT_NODE) {
+        window['diagnoseError'](logLevel, vdomChild, domChild);
+        return false;
+      }
+
+      if (vdomChild['text'] === domChild.textContent) {
+        vdomChild['domRef'] = domChild;
+      } else {
+        window['diagnoseError'](logLevel, vdomChild, domChild);
+        return false;
+      }
+    } else if (vdomChild['type'] === 'vcomp') {
+        vdomChild['mount'](function(component) {
+           vdomChild.children.push(component);
+           window['walk'](logLevel, vdomChild, domChild, doc);
+        });
+    } else {
+      if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
+      vdomChild['domRef'] = domChild;
+      window['walk'](logLevel, vdomChild, domChild, doc);
+    }
+  }
+  return true;
+}
+
+/* various utilities */
+window['callFocus'] = function (id) {
+  setTimeout(function(){
+    var ele = document.getElementById(id);
+    if (ele && ele.focus) ele.focus()
+  }, 50);
+}
+
+window['callBlur'] = function (id) {
+  setTimeout(function(){
+    var ele = document.getElementById(id);
+    if (ele && ele.blur) ele.blur()
+  }, 50);
+}
+
+window['setBodyComponent'] = function (componentId) {
+   document.body.setAttribute('data-component-id', componentId);
+}
+
+/* exports */
+var module = module || {};
+module.exports = {
+  callFocus : window['callFocus'],
+  callBlur : window['callBlur'],
+  diff : window['diff'],
+  copyDOMIntoVTree : window['copyDOMIntoVTree'],
+  integrityCheck : window['integrityCheck'],
+  delegate : window['delegate'],
+  undelegate : window['undelegate'],
+  eventJSON : window['eventJSON']
 };
