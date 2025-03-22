@@ -93,8 +93,8 @@ viewModel1 x =
         , if x
             then
                 embed component2
-                  [ onCreated MountMain
-                  , onBeforeDestroyed UnMountMain
+                  [ onMounted MountMain
+                  , onUnmounted UnMountMain
                   ] 
             else div_ [id_ "other test"] ["Main application content"]
         ]
@@ -115,7 +115,7 @@ updateModel1 SampleChild m =
     m <# do
       componentTwoModel <- sample component2
       consoleLog $
-        "Sampling child component 2 from parent component main (unsafe)" <>
+        "Sampling child component 2 from parent component main (unsafe): " <>
           ms (show componentTwoModel)
       pure MainNoOp
 
@@ -150,8 +150,8 @@ viewModel2 x =
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
         , embed component3
-          [ onCreated Mount
-          , onBeforeDestroyed UnMount
+          [ onMounted Mount
+          , onUnmounted UnMount
           ] 
         ]
 
