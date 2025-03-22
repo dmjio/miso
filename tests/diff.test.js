@@ -1136,3 +1136,347 @@ test('Should mount on an empty body', () => {
   var succeeded = window['copyDOMIntoVTree'](true, null, currentNode, document);
   expect(succeeded).toEqual(false);
 });
+
+test('Should pass integrity check', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+});
+
+test('Should fail integrity check on bad tag', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.tag = 'lol';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on bad tag in copyDOMIntoVTree w/ logging enabled', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'lol',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'fool?' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](true, body, vtree, document);
+  expect(result).toEqual(false);
+});
+
+test('Should fail integrity check on differing vtext', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.children[0].text = 'oops';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on differing child lengths', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.children = [];
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(false);
+});
+
+test('Should fail integrity check on differing styles', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.css['background-color'] = 'green';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on differing styles, for color', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  child.style['color'] = '#cccccc';
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : {},
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red', 'color': '#cccccc' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.css['color'] = '#dddddd';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on differing props', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  child.className = 'something';
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'class' : 'something' },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.props['class'] = 'something-else';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on differing height / width', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  child.className = 'something';
+  child.height = "100";
+  child.width = "100";
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'class' : 'something', 'height' : '100', 'width' : '100' },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.props['height'] = '200';
+  vtree.props['width'] = '200';
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on random property (title)', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child['title'] = "bar";
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'title' : "bar" },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.props['title'] = "woz";
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+
+test('Should fail integrity check on href', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  child.href = "google.com";
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'href' : "google.com" },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.props['href'] = "notgoogle.com";
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+test('Should fail integrity check on vtext domRef', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  child.style['background-color'] = 'red';
+  child.href = "google.com";
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'href' : "google.com" },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : { 'background-color': 'red' }
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(1);
+  vtree.children[0].domRef = document.createElement('div');
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});
+
+
+test('Should fail integrity check on unknown property test', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var child = document.createElement('div');
+  var misoTxt = document.createTextNode("foo");
+  body.appendChild(child);
+  child.appendChild(misoTxt);
+  var vtree = {
+      'type' : 'vnode',
+      'domRef' : null,
+      'tag' : 'div',
+      'props' : { 'foobah' : "lol" },
+      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+      'key' : null,
+      'ns' : 'HTML',
+      'css' : {}
+  };
+  var result = window['copyDOMIntoVTree'](false, body, vtree, document);
+  expect(result).toEqual(true);
+  var check = window['integrityCheck'](true, vtree);
+  expect(check).toBe(0);
+});

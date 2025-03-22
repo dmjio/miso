@@ -11,7 +11,7 @@ window['collapseSiblingTextNodes'] = function collapseSiblingTextNodes(vs) {
   return adjusted;
 }
 
-window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtree, doc) {
+window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint,vtree,doc) {
   var mountChildIdx = 0, node;
   // If script tags are rendered first in body, skip them.
   if (!mountPoint) {
@@ -42,7 +42,7 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
     vtree['domRef'] = node;
     window['populate'](null, vtree, doc);
     return false;
-  }
+  } else {
     if (logLevel) {
       var result = window['integrityCheck'](true, vtree);
       if (!result) {
@@ -50,6 +50,7 @@ window['copyDOMIntoVTree'] = function copyDOMIntoVTree(logLevel,mountPoint, vtre
       } else {
           console.info ('Successfully prerendered page');
       }
+    }
   }
   return true;
 }
@@ -76,7 +77,11 @@ window['parseColor'] = function(input) {
 window['integrityCheck'] = function (result, vtree) {
     // text nodes must be the same
     if (vtree['type'] == 'vtext') {
-        if (vtree['text'] !== vtree['domRef'].textContent) {
+        if (vtree['domRef'].nodeType !== Node.TEXT_NODE) {
+            console.warn ('VText domRef not a TEXT_NODE', vtree);
+            result = false;
+        }
+        else if (vtree['text'] !== vtree['domRef'].textContent) {
             console.warn ('VText node content differs', vtree);
             result = false;
         }
