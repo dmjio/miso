@@ -660,7 +660,7 @@ window['integrityCheck'] = function (result, vtree) {
         }
 
         // properties must be identical
-        var keyLength = Object.keys(vtree['props']).length; key = null;
+        var keyLength = Object.keys(vtree['props']).length, key = null;
         for (var i = 0; i < keyLength; i++) {
             key = Object.keys(vtree['props'])[i];
             if (key === 'href') {
