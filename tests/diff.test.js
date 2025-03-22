@@ -4,82 +4,82 @@ const jsdom = require('jsdom');
 
 function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
   return {
-    'type': 'vcomp',
-    'tag': 'div',
-    'children': [],
-    'props': props,
+    type: 'vcomp',
+    tag: 'div',
+    children: [],
+    props: props,
     'data-component-id': 'vcomp-id',
-    'css': css,
-    'ns': 'HTML',
-    'domRef': ref,
-    'onCreated': oc,
-    'onDestroyed': od,
-    'onBeforeDestroyed': bd,
-    'key': key,
-    'mount': mount,
-    'unmount': unmount
+    css: css,
+    ns: 'HTML',
+    domRef: ref,
+    onCreated: oc,
+    onDestroyed: od,
+    onBeforeDestroyed: bd,
+    key: key,
+    mount: mount,
+    unmount: unmount
   };
 }
 
 function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) {
   return {
-    'type': 'vnode',
-    'tag': tag,
-    'children': children,
-    'props': props,
-    'css': css,
-    'ns': ns,
-    'domRef': ref,
-    'onCreated': oc,
-    'onDestroyed': od,
-    'onBeforeDestroyed': bd,
-    'key': key
+    type: 'vnode',
+    tag: tag,
+    children: children,
+    props: props,
+    css: css,
+    ns: ns,
+    domRef: ref,
+    onCreated: oc,
+    onDestroyed: od,
+    onBeforeDestroyed: bd,
+    key: key
   };
 }
 
 function vnodeKeyed(tag, key) {
   return {
-    'type': 'vnode',
-    'tag': tag,
-    'children': [vtext(key)],
-    'props': {},
-    'css': {},
-    'ns': 'HTML',
-    'domRef': null,
-    'onCreated': null,
-    'onDestroyed': null,
-    'onBeforeDestroyed': null,
-    'key': key
+    type: 'vnode',
+    tag: tag,
+    children: [vtext(key)],
+    props: {},
+    css: {},
+    ns: 'HTML',
+    domRef: null,
+    onCreated: null,
+    onDestroyed: null,
+    onBeforeDestroyed: null,
+    key: key
   };
 }
 
 function vnodeKids(tag, kids) {
   return {
-    'type': 'vnode',
-    'tag': tag,
-    'children': kids,
-    'props': {},
-    'css': {},
-    'ns': 'HTML',
-    'domRef': null,
-    'onCreated': null,
-    'onDestroyed': null,
-    'onBeforeDestroyed': null,
+    type: 'vnode',
+    tag: tag,
+    children: kids,
+    props: {},
+    css: {},
+    ns: 'HTML',
+    domRef: null,
+    onCreated: null,
+    onDestroyed: null,
+    onBeforeDestroyed: null,
   };
 }
 
 function vtext(txt) {
   return {
-    'type': 'vtext',
-    'text': txt
+    type: 'vtext',
+    text: txt
   };
 }
 
 function vtextKeyed(txt, key) {
   return {
-    'type': 'vtext',
-    'text': txt,
-    'key': key
+    type: 'vtext',
+    text: txt,
+    key: key
   };
 }
 
@@ -98,8 +98,8 @@ test('Should create a new text node', () => {
   const doc = new jsdom.JSDOM().window.document;
   const body = doc.body;
   var newNode = {
-    'type': 'vtext',
-    'text': 'foo'
+    type: 'vtext',
+    text: 'foo'
   };
   window['diff'](null, newNode, body, doc);
   expect(newNode.domRef.wholeText).toBe('foo');
@@ -109,14 +109,14 @@ test('Should window diff two identical text nodes', () => {
   const doc = new jsdom.JSDOM().window.document;
   const body = doc.body;
   var currentNode = {
-    'type': 'vtext',
-    'text': 'foo'
+    type: 'vtext',
+    text: 'foo'
   };
   window['diff'](null, currentNode, body, doc);
   expect(currentNode.domRef.wholeText).toBe('foo');
   var newNode = {
-    'type': 'vtext',
-    'text': 'foo'
+    type: 'vtext',
+    text: 'foo'
   };
   window['diff'](currentNode, newNode, body, doc);
   expect('foo').toBe(newNode.domRef.wholeText);
@@ -126,14 +126,14 @@ test('Should window diff two window different text nodes', () => {
   const doc = new jsdom.JSDOM().window.document;
   const body = doc.body;
   var currentNode = {
-    'type': 'vtext',
-    'text': 'foo'
+    type: 'vtext',
+    text: 'foo'
   };
   window['diff'](null, currentNode, body, doc);
   expect(currentNode.domRef.wholeText).toBe('foo');
   var newNode = {
-    'type': 'vtext',
-    'text': 'bar'
+    type: 'vtext',
+    text: 'bar'
   };
   window['diff'](currentNode, newNode, body, doc);
   expect(newNode.domRef.wholeText).toBe('bar')
@@ -309,7 +309,7 @@ test('Should Diff attrs of two Components', () => {
       vcomp( (x) => mountCount++
              , null
              , { 'data-component-id' : "vcomp-foo"}
-             , {"background-color":"red"}
+             , { 'background-color' :"red"}
            );
 
   window['diff'](null, compNode1, body, document);
@@ -325,7 +325,7 @@ test('Should Diff attrs of two Components', () => {
       vcomp( (x) => mountCount++
              , null
              , { 'data-component-id' : "vcomp-foo"}
-             , {"background-color":"green"}
+             , { 'background-color' : "green"}
            );
 
   window['diff'](compNode1, compNode2, body, document);
@@ -1145,14 +1145,14 @@ test('Should pass integrity check', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : {},
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1168,14 +1168,14 @@ test('Should fail integrity check on bad tag', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : {},
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1194,14 +1194,14 @@ test('Should fail integrity check on bad tag in copyDOMIntoVTree w/ logging enab
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'lol',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'fool?' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+     type : 'vnode',
+     domRef : null,
+     tag : 'lol',
+     props : {},
+     children : [ { type : 'vtext', text : 'fool?' } ],
+     key : null,
+     ns : 'HTML',
+     css : {}
   };
   var result = window['copyDOMIntoVTree'](true, body, vtree, document);
   expect(result).toEqual(false);
@@ -1215,14 +1215,14 @@ test('Should fail integrity check on differing vtext', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : {},
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1241,14 +1241,14 @@ test('Should fail integrity check on differing child lengths', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+     type : 'vnode',
+     domRef : null,
+     tag : 'div',
+     props : {},
+     children : [ { type : 'vtext', text : 'foo' } ],
+     key : null,
+     ns : 'HTML',
+     css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1268,14 +1268,14 @@ test('Should fail integrity check on differing styles', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red' }
+     type : 'vnode',
+     domRef : null,
+     tag : 'div',
+     props : {},
+     children : [ { type : 'vtext', text : 'foo' } ],
+     key : null,
+     ns : 'HTML',
+     css : { 'background-color': 'red' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1296,14 +1296,14 @@ test('Should fail integrity check on differing styles, for color', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : {},
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red', 'color': '#cccccc' }
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : {},
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : { 'background-color': 'red', color: '#cccccc' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1324,14 +1324,14 @@ test('Should fail integrity check on differing props', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'class' : 'something' },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red' }
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { 'class' : 'something' },
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : { 'background-color': 'red' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1354,14 +1354,14 @@ test('Should fail integrity check on differing height / width', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'class' : 'something', 'height' : '100', 'width' : '100' },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red' }
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { class : 'something', height : '100', width : '100' },
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : { 'background-color': 'red' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1382,14 +1382,14 @@ test('Should fail integrity check on random property (title)', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'title' : "bar" },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { title : "bar" },
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1411,14 +1411,14 @@ test('Should fail integrity check on href', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'href' : "google.com" },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red' }
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { href : "google.com" },
+    children : [ { type : 'vtext', text : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : { 'background-color': 'red' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1439,14 +1439,14 @@ test('Should fail integrity check on vtext domRef', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'href' : "google.com" },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : { 'background-color': 'red' }
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { 'href' : "google.com" },
+    children : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : { 'background-color': 'red' }
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
@@ -1466,14 +1466,14 @@ test('Should fail integrity check on unknown property test', () => {
   body.appendChild(child);
   child.appendChild(misoTxt);
   var vtree = {
-      'type' : 'vnode',
-      'domRef' : null,
-      'tag' : 'div',
-      'props' : { 'foobah' : "lol" },
-      'children' : [ { 'type' : 'vtext', 'text' : 'foo' } ],
-      'key' : null,
-      'ns' : 'HTML',
-      'css' : {}
+    type : 'vnode',
+    domRef : null,
+    tag : 'div',
+    props : { 'foobah' : "lol" },
+    children : [ { 'type' : 'vtext', 'text' : 'foo' } ],
+    key : null,
+    ns : 'HTML',
+    css : {}
   };
   var result = window['copyDOMIntoVTree'](false, body, vtree, document);
   expect(result).toEqual(true);
