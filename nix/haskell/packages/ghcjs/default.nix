@@ -6,11 +6,11 @@ with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
-  inherit (pkgs.haskell.packages.ghc865) hpack;
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   flatris = self.callCabal2nix "flatris" source.flatris {};
+  # splitmix = self.callCabal2nix "splitmix" source.splitmix {};
   miso-plane =
     let
       miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
@@ -24,9 +24,7 @@ self: super:
       '';
   the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
-  mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
-  doctest = null;
-  miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {
+  miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
@@ -34,24 +32,26 @@ self: super:
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
-         $out/bin/todo-mvc.jsexe/all.js > temp.js
-      mv temp.js $out/bin/todo-mvc.jsexe/all.js
       cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
       cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
       cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
+      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+      #    --jscomp_off=checkVars \
+      #    --externs=$out/bin/todo-mvc.jsexe/all.externs.js \
+      #    $out/bin/todo-mvc.jsexe/all.js > temp.js
+      # mv temp.js $out/bin/todo-mvc.jsexe/all.js
+
   });
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideDerivation (drv: {
+  # miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs (drv: {
+  miso = (self.callCabal2nixWithOptions "miso" source.miso "" {}).overrideAttrs (drv: {
     doHaddock = options.haddock;
-    postInstall = pkgs.lib.optionalString options.tests ''
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/tests.jsexe/all.js.externs \
-           $out/bin/tests.jsexe/all.js > temp.js
-           mv temp.js $out/bin/tests.jsexe/all.js
-         '';
+    postInstall = "";
+      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+      #    --jscomp_off=checkVars \
+      #    --externs=$out/bin/tests.jsexe/all.externs.js \
+      #      $out/bin/tests.jsexe/all.js > temp.js
+      #      mv temp.js $out/bin/tests.jsexe/all.js
+      #    '';
   });
 }

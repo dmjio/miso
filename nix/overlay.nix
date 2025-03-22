@@ -4,7 +4,7 @@ options: self: super: {
     "https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz";
 
   haskell-miso-org-test = self.nixosTest {
-    virtualisation.memorySize = 1024 * 10;
+    # virtualisation.memorySize = 1024 * 10;
     nodes.machine = { config, pkgs, ... }: {
       imports = [ ../haskell-miso.org/nix/machine.nix
                 #  ../examples/sse/nix/machine.nix
@@ -19,6 +19,8 @@ options: self: super: {
       # $machine->waitForUnit("sse-haskell-miso.service");
       # $machine->succeed("curl localhost:3003");
   };
+
+  nixops = super.nixops_unstable_minimal.withPlugins (ps: [ ]);
 
   ghciwatch =
     (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
@@ -38,24 +40,14 @@ options: self: super: {
 
   haskell = super.haskell // {
     packages = super.haskell.packages // {
-      ghc865 = super.haskell.packages.ghc865.override {
-        overrides = import ./haskell/packages/ghc self;
-      };
-      ghc864 = super.haskell.packages.ghc864.override {
-        overrides = selfGhc864: superGhc864: with super.haskell.lib; {
-          happy = dontCheck (selfGhc864.callHackage "happy" "1.19.9" {});
-          mkDerivation = args: superGhc864.mkDerivation (args // {
-            enableLibraryProfiling = false;
-            doCheck = false;
-            doHaddock = false;
-          });
-        };
-      };
-      ghcjs86 = super.haskell.packages.ghcjs86.override {
-        overrides = import ./haskell/packages/ghcjs options self;
+      ghc9122 = super.haskell.packages.ghc9122.override {
+        overrides = if super.stdenv.targetPlatform.isGhcjs
+          then import ./haskell/packages/ghcjs options self
+          else import ./haskell/packages/ghc self;
       };
     };
   };
+
   deploy = rev: super.writeScript "deploy" ''
     export PATH=$PATH:${self.nixops}/bin
     export PATH=$PATH:${self.jq}/bin
@@ -80,6 +72,7 @@ options: self: super: {
       nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
   more-examples = with super.haskell.lib; {
-    inherit (self.haskell.packages.ghcjs) flatris the2048 snake miso-plane;
+    inherit (self.pkgsCross.ghcjs.haskell.packages.ghc9122)
+      flatris the2048 snake miso-plane;
   };
 }

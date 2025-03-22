@@ -99,24 +99,20 @@ executable tests
     Haskell2010
   main-is:
     Main.hs
-  ghcjs-options:
-    -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
   hs-source-dirs:
     tests
   build-depends:
     aeson,
     base < 5,
     bytestring,
-    ghcjs-base,
+    containers,
     QuickCheck,
     quickcheck-instances,
     miso,
     http-types,
     network-uri,
     http-api-data,
-    containers,
+    jsaddle,
     scientific,
     servant,
     text,
