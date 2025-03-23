@@ -1,7 +1,7 @@
 /* module export pattern */
 var module = module || {};
 
-module.exports = (function () {
+module['exports'] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
   var diff = function (currentObj, newObj, parent, doc) {
     if (!currentObj && !newObj) return;
@@ -77,7 +77,7 @@ module.exports = (function () {
 
   var callBeforeDestroyed = function (obj) {
     if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
-    if (obj['type'] === 'vcomp') obj['unmount'](obj.domRef);
+    if (obj['type'] === 'vcomp') obj['unmount'](obj['domRef']);
   };
 
   var callBeforeDestroyedRecursive = function (obj) {
