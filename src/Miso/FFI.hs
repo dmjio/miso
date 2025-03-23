@@ -224,7 +224,9 @@ eventJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
     -> JSM JSVal
-eventJSON = jsg2 "eventJSON"
+eventJSON x y = do
+  moduleExports <- jsg "module" ! "exports"
+  moduleExports # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
 -- | Retrieves the component id
 getComponent :: MisoString -> JSM JSVal
