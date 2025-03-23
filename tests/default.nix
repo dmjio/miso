@@ -23,13 +23,10 @@ in
     src = ./.;
     buildCommand = ''
       mkdir -p $out
-      cp ${miso-ghcjs.src}/jsbits/diff.js $out
-      chmod +w $out/diff.js
-      cp ${miso-ghcjs.src}/jsbits/isomorphic.js $out
-      cp ${src}/package.json $out
-      cp ${src}/diff.test.js $out
+      cp -v ${miso-ghcjs.src}/jsbits/miso.js $out
+      cp -v ${src}/package.json $out
+      cp -v ${src}/miso.spec.js $out
       cp -r ${deps}/libexec/miso/node_modules $out
-      echo 'module.exports = diff;' >> $out/diff.js
       cd $out
       ${deps}/libexec/miso/node_modules/jest/./bin/jest.js --collectCoverage=true
       cp -rv $out/coverage/lcov-report $out

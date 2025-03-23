@@ -15,7 +15,7 @@ Under the hood miso’s concurrency model centers around an atomically updated `
 
 ## Diffing and patching (simultaneously)
 
-During [diffing](https://github.com/dmjio/miso/blob/master/jsbits/diff.js#L3) we mutually recurse over the parent and child nodes of both the old and new virtual DOM structures. During this process we diff the old tree against the new tree (while simultaneously updating the DOM to reflect the new structure) [^4]. We apply various new optimizations not seen in other frameworks (like react) on the child lists (see [syncChildren](https://github.com/dmjio/miso/blob/master/jsbits/diff.js#L187)). During diffing we also invoke node creation / destruction life cycle hooks.
+During [diffing](https://github.com/dmjio/miso/blob/master/jsbits/miso.js#L3) we mutually recurse over the parent and child nodes of both the old and new virtual DOM structures. During this process we diff the old tree against the new tree (while simultaneously updating the DOM to reflect the new structure) [^4]. We apply various new optimizations not seen in other frameworks (like react) on the child lists (see [syncChildren](https://github.com/dmjio/miso/blob/master/jsbits/miso.js#L187)). During diffing we also invoke node creation / destruction life cycle hooks.
 
 ## Events
 
