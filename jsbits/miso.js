@@ -6,7 +6,7 @@ module.exports = (function () {
   var diff = function (currentObj, newObj, parent, doc) {
     if (!currentObj && !newObj) return;
     else if (!currentObj && newObj) create(newObj, parent, doc);
-    else if (currentObj && !newObj) destroy(currentObj, parent);
+    else if (!newObj) destroy(currentObj, parent);
     else {
         if (currentObj['type'] === newObj['type'])
           diffNodes(currentObj, newObj, parent, doc);
