@@ -57,7 +57,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
-import           Language.Javascript.JSaddle hiding (obj, val)
+import           Language.Javascript.JSaddle
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
@@ -86,25 +86,25 @@ asyncCallback1 f = asyncFunction handle
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 syncCallback1 f = function handle
   where
-    handle _ _ []    = error "ssyncCallback1: no args, impossible"
+    handle _ _ []    = error "syncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
-set (unpack -> "class") v obj = do
-  classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps obj
+set (unpack -> "class") v o = do
+  classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps o
   if classSet
     then do
-      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") obj
+      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") o
       vStr <- fromJSValUnchecked =<< toJSVal v
       v' <- toJSVal (classStr <> JSS.pack " " <> vStr)
-      setProp (JSS.pack "class") v' obj
+      setProp (JSS.pack "class") v' o
     else do
       v' <- toJSVal v
-      setProp (JSS.pack "class") v' obj
-set k v obj = do
+      setProp (JSS.pack "class") v' o
+set k v o = do
   v' <- toJSVal v
-  setProp (fromMisoString k) v' obj
+  setProp (fromMisoString k) v' o
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
 addEventListener
@@ -213,8 +213,8 @@ jsonStringify j = do
 jsonParse :: FromJSON json => JSVal -> JSM json
 {-# INLINE jsonParse #-}
 jsonParse jval = do
-  val <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
-  case fromJSON val of
+  v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
+  case fromJSON v of
     A.Success x -> pure x
     A.Error y -> error y
 -----------------------------------------------------------------------------
@@ -265,7 +265,9 @@ diff
   -> JSVal
   -- ^ document
   -> JSM ()
-diff a b c d = () <$ jsg4 "diff" a b c d
+diff (Object a) (Object b) c d = do
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "diff" $ [a,b,c,d]
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -299,31 +301,43 @@ undelegateEvent mountPoint events debug getVTree =
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
 delegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
-delegate mountPoint events debug callback =
-  void (jsg4 "delegate" mountPoint events callback debug)
+delegate mountPoint events debug callback = do
+  d <- toJSVal debug
+  cb <- toJSVal callback
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "delegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 undelegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
-undelegate mountPoint events debug callback
-  = void (jsg4 "undelegate" mountPoint events callback debug)
+undelegate mountPoint events debug callback = do
+  d <- toJSVal debug
+  cb <- toJSVal callback
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "undelegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
   doc <- getDocument
-  jsg4 "copyDOMIntoVTree" logLevel mountPoint vtree doc
+  ll <- toJSVal logLevel
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree, doc]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> JSM ()
-focus a = () <$ jsg1 "callFocus" a
+focus x = do
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "callFocus" $ [x]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
-blur a = () <$ jsg1 "callBlur" a
+blur x = do
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "callBlur" $ [x]
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
@@ -338,5 +352,7 @@ alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Sets the body with data-component-id
 setBodyComponent :: MisoString -> JSM ()
-setBodyComponent x = void $ jsg "window" # "setBodyComponent" $ [x]
+setBodyComponent x = do
+  moduleExports <- jsg "module" ! "exports"
+  void $ moduleExports # "setBodyComponent" $ [x]
 -----------------------------------------------------------------------------
