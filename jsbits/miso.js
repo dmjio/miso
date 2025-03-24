@@ -783,8 +783,8 @@ module['exports'] = (function () {
     }, 50);
   }
 
-  var setBodyComponent = function (componentId) {
-     document.body.setAttribute('data-component-id', componentId);
+  var setBodyComponent = function (componentId, doc) {
+     doc.body.setAttribute('data-component-id', componentId);
   }
 
   return {

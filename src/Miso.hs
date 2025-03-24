@@ -94,7 +94,7 @@ miso f = withJS $ do
   initialize app $ \snk -> do
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    setBodyComponent name
+    setBodyComponent name =<< getDocument
     mount <- getBody
     copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
@@ -107,7 +107,7 @@ startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     vtree <- runView DontPrerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    setBodyComponent name
+    setBodyComponent name =<< getDocument
     mount <- mountElement name
     diff mount Nothing (Just vtree)
     viewRef <- liftIO (newIORef vtree)

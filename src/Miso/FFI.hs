@@ -353,8 +353,9 @@ alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Sets the body with data-component-id
-setBodyComponent :: MisoString -> JSM ()
-setBodyComponent x = do
+setBodyComponent :: MisoString -> JSVal -> JSM ()
+setBodyComponent name document = do
+  component <- toJSVal name
   moduleExports <- jsg "window" ! "module" ! "exports"
-  void $ moduleExports # "setBodyComponent" $ [x]
+  void $ moduleExports # "setBodyComponent" $ [component, document]
 -----------------------------------------------------------------------------

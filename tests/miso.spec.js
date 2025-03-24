@@ -1482,3 +1482,10 @@ test('Should fail integrity check on unknown property test', () => {
   var check = miso.integrityCheck(true, vtree);
   expect(check).toBe(0);
 });
+
+test('Should set body[data-component-id] via setBodyComponent()', () => {
+  var document = new jsdom.JSDOM().window.document;
+  miso.setBodyComponent('component-one', document);
+  expect(document.body.getAttribute('data-component-id')).toEqual('component-one');
+});
+
