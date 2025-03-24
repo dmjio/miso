@@ -1,5 +1,6 @@
 /* module export pattern */
-var module = module || {};
+module = {};
+
 module['exports'] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
   var diff = function (currentObj, newObj, parent, doc) {
@@ -800,6 +801,3 @@ module['exports'] = (function () {
   };
 
 })();
-
-/* keep closure compiler from renaming things */
-window['module'] = module;

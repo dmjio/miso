@@ -225,7 +225,7 @@ eventJSON
     -> JSVal -- ^ object with impure references to the DOM
     -> JSM JSVal
 eventJSON x y = do
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   moduleExports # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
 -- | Retrieves the component id
@@ -268,7 +268,7 @@ diff
   -- ^ document
   -> JSM ()
 diff (Object a) (Object b) c d = do
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "diff" $ [a,b,c,d]
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
@@ -306,14 +306,14 @@ delegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
 delegate mountPoint events debug callback = do
   d <- toJSVal debug
   cb <- toJSVal callback
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "delegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 undelegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
 undelegate mountPoint events debug callback = do
   d <- toJSVal debug
   cb <- toJSVal callback
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "undelegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom
@@ -322,7 +322,7 @@ copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
   doc <- getDocument
   ll <- toJSVal logLevel
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree, doc]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
@@ -330,7 +330,7 @@ copyDOMIntoVTree logLevel mountPoint vtree = void $ do
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> JSM ()
 focus x = do
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "callFocus" $ [x]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
@@ -338,7 +338,7 @@ focus x = do
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
 blur x = do
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "callBlur" $ [x]
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
@@ -356,6 +356,6 @@ alert a = () <$ jsg1 "alert" a
 setBodyComponent :: MisoString -> JSVal -> JSM ()
 setBodyComponent name document = do
   component <- toJSVal name
-  moduleExports <- jsg "window" ! "module" ! "exports"
+  moduleExports <- jsg "module" ! "exports"
   void $ moduleExports # "setBodyComponent" $ [component, document]
 -----------------------------------------------------------------------------
