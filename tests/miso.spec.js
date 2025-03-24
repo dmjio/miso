@@ -1489,3 +1489,17 @@ test('Should set body[data-component-id] via setBodyComponent()', () => {
   expect(document.body.getAttribute('data-component-id')).toEqual('component-one');
 });
 
+test('Should call callFocus() and callBlur()', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var child = document.createElement('input');
+  child['id'] = 'foo';
+  document.body.appendChild(child);
+  miso.callFocus('blah', document, 0); /* missing case */
+  miso.callFocus('foo', document, 0); /* found case */
+  miso.callFocus('foo', document, 1); /* found case */
+  expect(document.activeElement).toEqual(child);
+  miso.callBlur('blah', document, 0); /* missing case */
+  miso.callBlur('foo', document, 0); /* found case */
+  miso.callBlur('foo', document, 1); /* found case */
+  expect(document.activeElement).toEqual(document.body);
+});

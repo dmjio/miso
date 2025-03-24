@@ -771,18 +771,20 @@ module['exports'] = (function () {
   }
 
   /* various utilities */
-  var callFocus = function (id) {
-    setTimeout(function(){
-      var ele = document.getElementById(id);
-      if (ele && ele.focus) ele.focus()
-    }, 50);
+  var callFocus = function (id, doc, delay) {
+    var setFocus = function () {
+      var e = doc.getElementById(id);
+      if (e && e.focus) e.focus();
+    }
+    delay > 0 ? setTimeout (setFocus, delay) : setFocus ();
   }
 
-  var callBlur = function (id) {
-    setTimeout(function(){
-      var ele = document.getElementById(id);
-      if (ele && ele.blur) ele.blur()
-    }, 50);
+  var callBlur = function (id, doc, delay) {
+    var setBlur = function () {
+      var e = doc.getElementById(id);
+      if (e && e.blur) e.blur();
+    }
+    delay > 0 ? setTimeout (setBlur, delay) : setBlur ();
   }
 
   var setBodyComponent = function (componentId, doc) {
