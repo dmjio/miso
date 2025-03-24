@@ -22,7 +22,7 @@ data Action
     | SayHelloWorld
     deriving (Show, Eq)
 
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
