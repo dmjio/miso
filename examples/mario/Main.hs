@@ -22,7 +22,7 @@ data Action
 spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0", "-111px 0", "-148px 0", "-185px 0", "-222px 0", "-259px 0", "-296px 0"]
 
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
@@ -35,6 +35,7 @@ main = run $ do
           [ arrowsSub GetArrows
           , windowCoordsSub WindowCoords
           ]
+      , initialAction = Just NoOp
       }
 
 data Model = Model
@@ -86,7 +87,7 @@ updateMario (WindowCoords coords) m = noEff newModel
     newModel = m{window = coords}
 
 step :: Model -> Effect Action Model
-step m@Model{..} = k <# do Time <$> now
+step m@Model{..} = k <# Time <$> now
   where
     k =
         m
