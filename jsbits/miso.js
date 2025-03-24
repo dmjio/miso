@@ -1,6 +1,6 @@
-/* module export pattern */
 module = {};
 
+/* module export pattern */
 module['exports'] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
   var diff = function (currentObj, newObj, parent, doc) {
