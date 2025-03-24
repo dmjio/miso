@@ -732,7 +732,7 @@ module['exports'] = (function () {
     vtree['domRef'] = node;
 
     // Fire onCreated events as though the elements had just been created.
-    callCreated(vtree);
+    callCreated(vtree, doc);
 
     vtree.children = collapseSiblingTextNodes(vtree.children);
 
