@@ -24,7 +24,6 @@ in
     buildCommand = ''
       mkdir -p $out
       cp -v ${miso-ghcjs.src}/jsbits/miso.js $out
-      ${pkgs.gnused}/bin/sed -i '1d' $out/miso.js
       cp -v ${src}/package.json $out
       cp -v ${src}/miso.spec.js $out
       cp -r ${deps}/libexec/miso/node_modules $out

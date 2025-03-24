@@ -1,4 +1,5 @@
-module = {};
+/* account for node.js running tests, or a browser / wasm environment */
+module = typeof module === 'undefined' ? {} : module;
 
 /* module export pattern */
 module['exports'] = (function () {
