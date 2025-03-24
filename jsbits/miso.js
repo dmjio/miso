@@ -1,6 +1,5 @@
 /* module export pattern */
 var module = module || {};
-
 module['exports'] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
   var diff = function (currentObj, newObj, parent, doc) {
@@ -788,17 +787,19 @@ module['exports'] = (function () {
      document.body.setAttribute('data-component-id', componentId);
   }
 
-  /* dmj: quote keys so closurecompiler doesn't rename them? */
   return {
-    callFocus : callFocus,
-    callBlur : callBlur,
-    diff : diff,
-    copyDOMIntoVTree : copyDOMIntoVTree,
-    integrityCheck : integrityCheck,
-    delegate : delegate,
-    undelegate : undelegate,
-    eventJSON : eventJSON,
-    setBodyComponent : setBodyComponent
+    'callFocus' : callFocus,
+    'callBlur' : callBlur,
+    'diff' : diff,
+    'copyDOMIntoVTree' : copyDOMIntoVTree,
+    'integrityCheck' : integrityCheck,
+    'delegate' : delegate,
+    'undelegate' : undelegate,
+    'eventJSON' : eventJSON,
+    'setBodyComponent' : setBodyComponent
   };
 
 })();
+
+/* keep closure compiler from renaming things */
+window['module'] = module;
