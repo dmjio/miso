@@ -202,7 +202,7 @@ module['exports'] = (function () {
 
   // mounts vcomp by calling into Haskell side.
   // unmount is handled with pre-destroy recursive hooks
-  mountComponent = function (obj, doc) {
+  var mountComponent = function (obj, doc) {
       var componentId = obj['data-component-id'],
           nodeList = doc.querySelectorAll ("[data-component-id='" + componentId + "']");
 
