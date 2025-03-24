@@ -1540,7 +1540,9 @@ test('Should delegate and undelegate button click', () => {
       'events' : events
   };
 
+  /* initial page draw */
   miso.diff(null, vtree, document.body, document);
+
   /* ensure structures match */
   expect(vtree.domRef).toEqual(document.body.childNodes[0]);
   expect(vtree.children[0].domRef).toEqual(document.body.childNodes[0].childNodes[0]);
@@ -1550,9 +1552,9 @@ test('Should delegate and undelegate button click', () => {
   var getVTree = function (cb) { cb(vtree); };
   miso.delegate (body, events, getVTree, true);
 
-  /* create click event */
+  /* initiate click event */
   var e = document.createEvent("HTMLEvents")
-  e.initEvent("click", true, true);
+  e.initEvent("click", false, true);
   vtreeChild.domRef.dispatchEvent(e);
 
   /* check results */
