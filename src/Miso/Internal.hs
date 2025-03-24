@@ -28,7 +28,7 @@ module Miso.Internal
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (throwIO)
-import           Control.Concurrent (ThreadId, killThread)
+import           Control.Concurrent (ThreadId, killThread, threadDelay)
 import           Control.Monad (forM, forM_, when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
@@ -254,6 +254,8 @@ runView prerender (Embed attributes (SomeComponent (Component key mount app))) s
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
         Just componentState -> do
+          liftIO (threadDelay (millis 1))
+          -- dmj ^ introduce 1ms delay to account for recursive component unmounting
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML key "div"
   setAttrs vcomp attributes snk (logLevel app) (events app)
@@ -358,4 +360,8 @@ registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
+-----------------------------------------------------------------------------
+-- | Millisecond helper, converts microseconds to milliseconds
+millis :: Int -> Int
+millis = (*1000)
 -----------------------------------------------------------------------------
