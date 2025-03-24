@@ -1509,17 +1509,10 @@ test('Should delegate and undelegate button click', () => {
   var body = document.body;
   var count = 0;
   var result = null;
-  var vtreeChild = {
-      'type' : 'vnode',
-      'tag' : 'button',
-      'ns' : 'HTML',
-      'props' : {},
-      'children' : [],
-      'css' : {},
-      'events' : {
+  var events = {
           'click' :  {
-              'runEvent' : function (event) {
-                 result = miso.eventJSON ([[]], event);
+              'runEvent' : function (e) {
+                 result = miso.eventJSON ([[]], e);
                  count++;
               },
               'options' : {
@@ -1527,7 +1520,15 @@ test('Should delegate and undelegate button click', () => {
                   'stopPropagation' : false
               }
           }
-      }
+  };
+  var vtreeChild = {
+      'type' : 'vnode',
+      'tag' : 'button',
+      'ns' : 'HTML',
+      'props' : {},
+      'children' : [],
+      'css' : {},
+      'events' : events
   };
   var vtree = {
       'type' : 'vnode',
@@ -1535,7 +1536,8 @@ test('Should delegate and undelegate button click', () => {
       'ns' : 'HTML',
       'props' : {},
       'children' : [vtreeChild],
-      'css' : {}
+      'css' : {},
+      'events' : events
   };
 
   miso.diff(null, vtree, document.body, document);
@@ -1549,13 +1551,13 @@ test('Should delegate and undelegate button click', () => {
   miso.delegate (body, events, getVTree, true);
 
   /* create click event */
-  var event = document.createEvent("HTMLEvents")
-  event.initEvent("click", false, true);
-  vtreeChild.domRef.dispatchEvent(event);
+  var e = document.createEvent("HTMLEvents")
+  e.initEvent("click", true, true);
+  vtreeChild.domRef.dispatchEvent(e);
 
   /* check results */
   setTimeout (function () {
-    expect(count).toEqual(1)
+    expect(count).toEqual(2)
     expect(result).toNotEqual(null);
   }, 10);
 
