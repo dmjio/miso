@@ -1545,7 +1545,7 @@ test('Should delegate and undelegate button click', () => {
 
   /* ensure structures match */
   expect(vtree.domRef).toEqual(document.body.childNodes[0]);
-  expect(vtree.children[0].domRef).toEqual(document.body.childNodes[0].childNodes[0]);
+  expect(vtreeChild.domRef).toEqual(document.body.childNodes[0].childNodes[0]);
 
   /* setup event delegation */
   var events = { "click" : [ "click", true ] } ;
@@ -1553,9 +1553,7 @@ test('Should delegate and undelegate button click', () => {
   miso.delegate (body, events, getVTree, true);
 
   /* initiate click event */
-  var e = document.createEvent("HTMLEvents")
-  e.initEvent("click", false, true);
-  vtreeChild.domRef.dispatchEvent(e);
+  vtreeChild.domRef.click();
 
   /* check results */
   setTimeout (function () {
