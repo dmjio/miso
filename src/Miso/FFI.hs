@@ -331,7 +331,10 @@ copyDOMIntoVTree logLevel mountPoint vtree = void $ do
 focus :: MisoString -> JSM ()
 focus x = do
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "callFocus" $ [x]
+  doc <- getDocument
+  el <- toJSVal x
+  delay <- toJSVal (50 :: Int)
+  void $ moduleExports # "callFocus" $ [el,doc,delay]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -339,7 +342,10 @@ focus x = do
 blur :: MisoString -> JSM ()
 blur x = do
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "callBlur" $ [x]
+  doc <- getDocument
+  el <- toJSVal x
+  delay <- toJSVal (50 :: Int)
+  void $ moduleExports # "callBlur" $ [el,doc,delay]
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
@@ -353,9 +359,10 @@ alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Sets the body with data-component-id
-setBodyComponent :: MisoString -> JSVal -> JSM ()
-setBodyComponent name document = do
+setBodyComponent :: MisoString -> JSM ()
+setBodyComponent name = do
+  doc <- getDocument
   component <- toJSVal name
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "setBodyComponent" $ [component, document]
+  void $ moduleExports # "setBodyComponent" $ [component, doc]
 -----------------------------------------------------------------------------
