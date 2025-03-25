@@ -1564,3 +1564,30 @@ test('Should delegate and undelegate button click', () => {
   /* unmount delegation */
   miso.undelegate (document.body, events, getVTree, true);
 });
+
+test('Should unmount recursively in order', () => {
+  var document = new jsdom.JSDOM().window.document;
+    var unmounts = [];
+    var mkVComp = function (name, children) {
+        return {
+            type : 'vcomp',
+            tag : 'div',
+            props : {},
+            children : children,
+            'data-component-id' : name,
+            css : {},
+            ns : 'HTML',
+            mount : function () {
+
+            },
+            unmount : function () {
+              unmounts.push(name);
+            }
+        }
+    };
+
+  var vtree =  mkVComp ('one', [ mkVComp ('two', [ mkVComp ('three', []) ]) ]);
+  miso.diff (null, vtree, document.body, document);
+  miso.diff (vtree, null, document.body, document);
+  expect(unmounts).toEqual(["one","two","three"]);
+});
