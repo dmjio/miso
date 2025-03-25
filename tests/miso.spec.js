@@ -1503,3 +1503,64 @@ test('Should call callFocus() and callBlur()', () => {
   miso.callBlur('foo', document, 1); /* found case */
   expect(document.activeElement).toEqual(document.body);
 });
+
+test('Should delegate and undelegate button click', () => {
+  var document = new jsdom.JSDOM().window.document;
+  var body = document.body;
+  var count = 0;
+  var result = null;
+  var events = {
+          'click' :  {
+              'runEvent' : function (e) {
+                 result = miso.eventJSON ([[]], e);
+                 count++;
+              },
+              'options' : {
+                  'preventDefault' : true,
+                  'stopPropagation' : false
+              }
+          }
+  };
+  var vtreeChild = {
+      'type' : 'vnode',
+      'tag' : 'button',
+      'ns' : 'HTML',
+      'props' : {},
+      'children' : [],
+      'css' : {},
+      'events' : events
+  };
+  var vtree = {
+      'type' : 'vnode',
+      'tag' : 'div',
+      'ns' : 'HTML',
+      'props' : {},
+      'children' : [vtreeChild],
+      'css' : {},
+      'events' : events
+  };
+
+  /* initial page draw */
+  miso.diff(null, vtree, document.body, document);
+
+  /* ensure structures match */
+  expect(vtree.domRef).toEqual(document.body.childNodes[0]);
+  expect(vtreeChild.domRef).toEqual(document.body.childNodes[0].childNodes[0]);
+
+  /* setup event delegation */
+  var events = { "click" : [ "click", true ] } ;
+  var getVTree = function (cb) { cb(vtree); };
+  miso.delegate (body, events, getVTree, true);
+
+  /* initiate click event */
+  vtreeChild.domRef.click();
+
+  /* check results */
+  setTimeout (function () {
+    expect(count).toEqual(2)
+    expect(result).toNotEqual(null);
+  }, 10);
+
+  /* unmount delegation */
+  miso.undelegate (document.body, events, getVTree, true);
+});
