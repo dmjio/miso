@@ -144,12 +144,12 @@ sample (Component _ name _) = do
 notify
   :: Component effect m a
   -> a
-  -> Effect action model ()
-notify (Component _ name _) action = scheduleIO_ (void io)
+  -> JSM ()
+notify (Component _ name _) action = io
   where
     io = do
       componentStateMap <- liftIO (readIORef componentMap)
-      forM (M.lookup name componentStateMap) $ \ComponentState {..} ->
+      forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
         componentSink action
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
