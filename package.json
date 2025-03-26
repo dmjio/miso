@@ -8,7 +8,7 @@
     "pretty": "prettier --write *.js"
   },
   "type": "module",
-  "main": "miso.js",
+  "main": "js/miso.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dmjio/miso.git"
@@ -33,9 +33,8 @@
     "prettier": "3.5.3"
   },
   "files": [
-    "miso.js",
-    "miso.spec.js",
-    "LICENSE",
+    "js/miso.js",
+    "js/miso.spec.js",
     "package.json",
     "yarn.lock",
     "README.md"

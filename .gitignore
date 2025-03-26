@@ -1,10 +1,9 @@
 .stack-work/
 dist-newstyle/
 cabal.project.local
-jsbits/coverage/
 .ghc.environment.*
 result*
-/node_modules/
+node_modules/
 dist
 *~
 .DS_Store
@@ -13,3 +12,4 @@ dist
 *.jsexe
 TAGS
 .direnv
+coverage/
