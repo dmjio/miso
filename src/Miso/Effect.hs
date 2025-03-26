@@ -20,7 +20,6 @@ module Miso.Effect
   , Sink
     -- *** Combinators
   , effectSub
-  , io
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
@@ -30,6 +29,8 @@ module Miso.Effect
   , (<#)
   , (#>)
   , batchEff
+  , io
+  , issue
   -- * Internal
   , runEffect
   ) where
@@ -150,13 +151,6 @@ scheduleIO action = scheduleSub (\sink -> action >>= sink)
 scheduleIO_ :: JSM () -> Effect action model ()
 scheduleIO_ action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
--- | A shorter synonym for @scheduleIO_@
---
--- This is handy for scheduling IO computations where you don't care
--- about their results or when they complete.
-io :: JSM () -> Effect action model ()
-io action = scheduleSub (\_ -> action)
------------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
@@ -175,3 +169,28 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 scheduleSub :: Sub action -> Effect action model ()
 scheduleSub sub = Effect $ lift $ tell [ sub ]
 ----------------------------------------------------------------------------- 
+-- | A synonym for @tell@, specialized to @Effect@
+--
+-- > update :: Action -> Effect Action Model ()
+-- > update = \case
+-- >   Click -> issue HelloWorld
+--
+-- @since 1.9.0.0
+--
+-- Used to issue new @action@
+issue :: action -> Effect action model ()
+issue action = tell [ \sink -> sink action ]
+-----------------------------------------------------------------------------
+-- | A shorter synonym for @scheduleIO_@
+--
+-- > update :: Action -> Effect Action Model ()
+-- > update = \case
+-- >   HelloWorld -> io (consoleLog "Hello World")
+--
+-- @since 1.9.0.0
+--
+-- This is handy for scheduling IO computations where you don't care
+-- about their results or when they complete.
+io :: JSM () -> Effect action model ()
+io = scheduleIO_
+-----------------------------------------------------------------------------
