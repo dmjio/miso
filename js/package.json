@@ -4,8 +4,10 @@
   "description": "miso: A tasty Haskell front-end web framework",
   "scripts": {
     "test": "jest --silent",
-    "coverage": "jest --collect-coverage=true --coverage-directory=coverage --silent"
+    "coverage": "jest --collect-coverage=true --coverage-directory=coverage --silent",
+    "lint": "eslint --fix"
   },
+  "type": "module",
   "main": "miso.js",
   "repository": {
     "type": "git",
@@ -13,9 +15,9 @@
     "directory": "js"
   },
   "keywords": [
-      "miso",
-      "virtual-dom",
-      "haskell"
+    "miso",
+    "virtual-dom",
+    "haskell"
   ],
   "author": "dmijo",
   "license": "BSD-3-Clause",
@@ -28,14 +30,15 @@
   "homepage": "https://github.com/dmjio/miso#readme",
   "devDependencies": {
     "jsdom": "26.0.0",
-    "jest": "29.7.0"
+    "jest": "29.7.0",
+    "eslint": "9.23.0"
   },
-  "files" : [
-      "miso.js",
-      "miso.spec.js",
-      "LICENSE",
-      "package.json",
-      "yarn.lock",
-      "README.md"
-   ]
+  "files": [
+    "miso.js",
+    "miso.spec.js",
+    "LICENSE",
+    "package.json",
+    "yarn.lock",
+    "README.md"
+  ]
 }
