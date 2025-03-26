@@ -29,8 +29,8 @@ jobs:
      - name: Nix channel update
        run: nix-channel --update
 
-     - name: Dependency install
-       run: nix-build -A pkgs.yarn default.nix && nix-env -i ./result
+     - name: Miso.js tests
+       run: cd jsbits && nix-shell -p yarn --run 'yarn install && yarn run coverage'
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
@@ -73,9 +73,6 @@ jobs:
 
      - name: (x86) NixOS test runner for haskell-miso.org
        run: nix-build -A haskell-miso-org-test
-
-     - name: Diffing tests
-       run: cd tests && yarn && yarn test
 
   deploy:
     runs-on: ubuntu-latest

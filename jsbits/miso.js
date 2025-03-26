@@ -574,7 +574,7 @@ module['exports'] = (function () {
     return adjusted;
   }
 
-  var copyDOMIntoVTree = function(logLevel,mountPoint,vtree,doc) {
+  var copyDOMIntoVTree = function(logLevel,mountPoint,vtree,doc,window) {
     var mountChildIdx = 0, node;
     // If script tags are rendered first in body, skip them.
     if (!mountPoint) {
@@ -586,7 +586,7 @@ module['exports'] = (function () {
     } else if (mountPoint.childNodes.length === 0) {
       node = mountPoint.appendChild (doc.createElement('div'));
     } else {
-      while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === Node.TEXT_NODE || mountPoint.childNodes[mountChildIdx].localName === 'script')){
+      while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === 3 || mountPoint.childNodes[mountChildIdx].localName === 'script')){
         mountChildIdx++;
       }
       if (!mountPoint.childNodes[mountChildIdx]) {
@@ -607,7 +607,7 @@ module['exports'] = (function () {
       return false;
     } else {
       if (logLevel) {
-        var result = integrityCheck(true, vtree);
+          var result = integrityCheck(true, vtree, window);
         if (!result) {
             console.warn ('Integrity check completed with errors');
         } else {
@@ -637,10 +637,10 @@ module['exports'] = (function () {
   }
 
   // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-  var integrityCheck = function (result, vtree) {
+  var integrityCheck = function (result, vtree, window) {
       // text nodes must be the same
       if (vtree['type'] == 'vtext') {
-          if (vtree['domRef'].nodeType !== Node.TEXT_NODE) {
+          if (vtree['domRef'].nodeType !== 3) {
               console.warn ('VText domRef not a TEXT_NODE', vtree);
               result = false;
           }
@@ -718,7 +718,7 @@ module['exports'] = (function () {
 
           // recursive call for `vnode` / `vcomp`
           for (var i = 0; i < vtree.children.length; i++) {
-              result &= integrityCheck(result, vtree.children[i]);
+              result &= integrityCheck(result, vtree.children[i], window);
           }
       }
       return result;
@@ -745,7 +745,7 @@ module['exports'] = (function () {
         return false;
       }
       if (vdomChild.type === 'vtext') {
-        if (domChild.nodeType !== Node.TEXT_NODE) {
+        if (domChild.nodeType !== 3) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
@@ -762,7 +762,7 @@ module['exports'] = (function () {
              walk(logLevel, vdomChild, domChild, doc);
           });
       } else {
-        if (domChild.nodeType !== Node.ELEMENT_NODE) return false;
+        if (domChild.nodeType !== 1) return false;
         vdomChild['domRef'] = domChild;
         walk(logLevel, vdomChild, domChild, doc);
       }
