@@ -115,40 +115,38 @@ updateModel (UpdateField str) = modify update
   where
     update m = m { field = str }
 updateModel (EditingEntry id' isEditing) = do
-    model@Model{..} <- get
-    put model { entries = newEntries }
-    io (focus $ S.pack $ "todo-" ++ show id')
-  where
-    newEntries = filterMap entries (\t -> eid t == id') $
-        \t -> t{editing = isEditing, focussed = isEditing}
-updateModel (UpdateEntry id' task) = do
-    model@Model{..} <- get
-    noEff model{entries = newEntries}
-  where
-    newEntries =
-        filterMap entries ((== id') . eid) $ \t ->
-            t{description = task}
-updateModel (Delete id') = do
-  model@Model{..} <- get
-  noEff model{entries = filter (\t -> eid t /= id') entries}
+  modify $ \m ->
+    m { entries =
+          filterMap (entries m) (\t -> eid t == id') $ \t ->
+            t { editing = isEditing
+              , focussed = isEditing
+              }
+      }
+updateModel (UpdateEntry id' task) =
+  modify $ \m -> m
+    { entries = filterMap (entries m) ((== id') . eid) $ \t ->
+        t { description = task }
+    }
+updateModel (Delete id') =
+  modify $ \m -> m
+   { entries = filter (\t -> eid t /= id') (entries m)
+   }
 updateModel DeleteComplete = do
-  model@Model{..} <- get
-  noEff model{entries = filter (not . completed) entries}
+  modify $ \m -> m
+    { entries = filter (not . completed) (entries m)
+    }
 updateModel (Check id' isCompleted) = do
-  model@Model{..} <- get
-  model { entries = newEntries }
-  io (consoleLog "clicked check")
-    where
-      newEntries =
-        filterMap entries (\t -> eid t == id') $ \t ->
-            t{completed = isCompleted}
-updateModel (CheckAll isCompleted) = do
-  model@Model{..} <- get
-  put model { entries = newEntries }
-  where
-    newEntries =
-        filterMap entries (const True) $
-            \t -> t{completed = isCompleted}
+  modify $ \m -> m
+    { entries =
+        filterMap (entries m) (\t -> eid t == id') $ \t ->
+          t { completed = isCompleted }
+    }
+updateModel (CheckAll isCompleted) =
+  modify $ \m -> m
+    { entries =
+        filterMap (entries m) (const True) $ \t ->
+          t { completed = isCompleted }
+    }
 updateModel (ChangeVisibility v) =
     modify $ \m -> m { visibility = v }
 
