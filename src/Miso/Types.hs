@@ -32,6 +32,7 @@ module Miso.Types
   , ToKey            (..)
   -- ** Functions
   , defaultApp
+  , defaultTransitionApp
   , component
   , embed
   , embedKeyed
@@ -49,15 +50,15 @@ import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
-import           Miso.Effect (Effect, Sub, Sink)
+import           Miso.Effect (Effect, Sub, Sink, Transition, fromTransition)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App model action = App
+data App effect model action = App
   { model :: model
   -- ^ initial model
-  , update :: action -> model -> Effect action model
+  , update :: action -> model -> effect action model
   -- ^ Function to update model, optionally providing effects.
   --   See the @Transition@ monad for succinctly expressing model transitions.
   , view :: model -> View action
@@ -73,6 +74,10 @@ data App model action = App
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
+  -- ^ Logging function for debugging prerendering and event delegation
+  -- by default disabled
+  , translate :: effect action model -> (model -> Effect action model)
+  -- ^ Advnaced feature to allow users to use their own effect monad
   }
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
@@ -84,7 +89,7 @@ defaultApp
   :: model
   -> (action -> model -> Effect action model)
   -> (model -> View action)
-  -> App model action
+  -> App Effect model action
 defaultApp m u v = App
   { model = m
   , view = v
@@ -94,6 +99,25 @@ defaultApp m u v = App
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
+  , translate = const
+  }
+-----------------------------------------------------------------------------
+-- | Smart constructor for @App@ with sane defaults.
+defaultTransitionApp
+  :: model
+  -> (action -> model -> Transition action model)
+  -> (model -> View action)
+  -> App Transition model action -- dmj: whoops .. can't make it work w/o type-level lambdas
+defaultTransitionApp m u v = App
+  { model = m
+  , view = v
+  , update = u
+  , subs = []
+  , events = defaultEvents
+  , mountPoint = Nothing
+  , logLevel = Off
+  , initialAction = Nothing
+  , translate = fromTransition
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
@@ -121,32 +145,32 @@ data View action
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @App@
 data SomeComponent
-   = forall model action . Eq model
-  => SomeComponent (Component model action)
+   = forall effect model action . Eq model
+  => SomeComponent (Component effect model action)
 -----------------------------------------------------------------------------
 -- | Used with @component@ to parameterize @App@ by @name@
-data Component model action
+data Component effect model action
   = Component
   { componentKey :: Maybe Key
   , componentName :: MisoString
-  , componentApp :: App model action
+  , componentApp :: App effect model action
   }
 -----------------------------------------------------------------------------
 -- | Smart constructor for parameterizing @App@ by @name@
 -- Needed when calling @embed@ and @embedWith@
 component
-  :: forall model action
+  :: forall effect model action
    . MisoString  
-  -> App model action
-  -> Component model action
+  -> App effect model action
+  -> Component effect model action
 component = Component Nothing
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed :: Eq model => Component model a -> [Attribute action] -> View action
+embed :: Eq model => Component effect model a -> [Attribute action] -> View action
 embed comp attrs = Embed attrs (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
-embedKeyed :: Eq model => Component model a -> Key -> [Attribute action] -> View action
+embedKeyed :: Eq model => Component effect model a -> Key -> [Attribute action] -> View action
 embedKeyed comp key attrs = Embed attrs $ SomeComponent comp { componentKey = Just key }
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
@@ -163,12 +187,12 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component model action) where
-  type ToViewAction (Component model action) = action
+instance ToView (Component effect model action) where
+  type ToViewAction (Component effect model action) = action
   toView (Component _ _ app) = toView app
 -----------------------------------------------------------------------------
-instance ToView (App model action) where
-  type ToViewAction (App model action) = action
+instance ToView (App effect model action) where
+  type ToViewAction (App effect model action) = action
   toView App {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

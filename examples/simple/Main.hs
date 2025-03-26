@@ -8,6 +8,7 @@ module Main where
 -- | Miso framework import
 import Miso
 import Miso.String
+import Control.Lens
 
 import Control.Monad.IO.Class
 
@@ -33,18 +34,21 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Model Action
-app = defaultApp 0 updateModel viewModel
+app :: App Transition Model Action
+app = defaultTransitionApp 0 updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (AddOne event) m = m + 1 <#
-  NoOp <$ consoleLog (ms (show event))
-updateModel (SubtractOne event) m = m - 1 <#
-  NoOp <$ consoleLog (ms (show event))
-updateModel NoOp m = noEff m
+updateModel :: Action -> Model -> Transition Action Model
+updateModel (AddOne event) _ = do
+  id += 1
+  scheduleIO_ $ consoleLog (ms (show event))
+updateModel (SubtractOne event) m = do
+  id -= 1
+  scheduleIO_ $ consoleLog (ms (show event))
+updateModel NoOp m = undefined
+  
 updateModel SayHelloWorld m =
-  m <# liftIO (putStrLn "Hello World") >> pure NoOp
+  scheduleIO_ (consoleLog "Hello World")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

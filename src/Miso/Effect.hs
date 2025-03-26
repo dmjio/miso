@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -36,13 +38,15 @@ module Miso.Effect
   , batchEff
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
-import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
-import           Data.Bifunctor (second, Bifunctor(..))
-import           Data.Foldable (for_)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
+import Control.Monad.State (MonadState)
+import Control.Monad.Trans.Writer.Strict (Writer, tell, runWriter)
+import Control.Monad.Writer (MonadWriter)
+import Data.Bifunctor (Bifunctor(..))
+import Data.Foldable (for_)
 -----------------------------------------------------------------------------
-import           Miso.FFI (JSM)
+import Miso.FFI (JSM)
 -----------------------------------------------------------------------------
 -- | An effect represents the results of an update action.
 --
@@ -138,29 +142,33 @@ effectSub model sub = Effect model [sub]
 --   , ...
 --   }
 -- @
-type Transition action model = StateT model (Writer [Sub action])
+type Transition action model = TransitionCore action model ()
+
+newtype TransitionCore action model a = TransitionCore (StateT model (Writer [Sub action]) a)
+  deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
 -----------------------------------------------------------------------------
 -- | Turn a transition that schedules subscriptions that consume
 -- actions of type @a@ into a transition that schedules subscriptions
 -- that consume actions of type @b@ using the supplied function of
 -- type @a -> b@.
-mapAction :: (a -> b) -> Transition a m r -> Transition b m r
-mapAction = mapStateT . mapWriter . second . fmap . mapSub
+mapAction :: (a -> b) -> Transition a m -> Transition b m
+mapAction _ (TransitionCore _)) = undefined
+--  = Transition (mapStateT . mapWriter . second . fmap . mapSub $ x)
 -----------------------------------------------------------------------------
 -- | Convert a @Transition@ computation to a function that can be given to @update@.
 fromTransition
-    :: Transition action model ()
+    :: Transition action model
     -> (model -> Effect action model) -- ^ model @update@ function.
-fromTransition act = \m ->
+fromTransition (Transition (TransitionCore act)) = \m ->
   case runWriter (execStateT act m) of
     (n, actions) -> Effect n actions
 -----------------------------------------------------------------------------
 -- | Convert an @update@ function to a @Transition@ computation.
 toTransition
     :: (model -> Effect action model) -- ^ model @update@ function
-    -> Transition action model ()
+    -> Transition action model
 toTransition f =
-  StateT $ \m ->
+  Transition . TransitionCore . StateT $ \m ->
     case f m of
       Effect n actions ->
         ((), n) <$ tell actions
@@ -169,7 +177,7 @@ toTransition f =
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: JSM action -> Transition action model ()
+scheduleIO :: JSM action -> Transition action model
 scheduleIO action = scheduleSub (\sink -> action >>= sink)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
@@ -177,13 +185,13 @@ scheduleIO action = scheduleSub (\sink -> action >>= sink)
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: JSM () -> Transition action model ()
+scheduleIO_ :: JSM () -> Transition action model
 scheduleIO_ action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model
 scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
@@ -195,6 +203,6 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -- can then call the sink to turn events into actions. To do this
 -- without accessing a sink requires going via a @'Sub'scription@
 -- which introduces a leaky-abstraction.
-scheduleSub :: Sub action -> Transition action model ()
-scheduleSub sub = lift $ tell [ sub ]
+scheduleSub :: Sub action -> Transition action model
+scheduleSub sub = Transition $ TransitionCore $ lift $ tell [ sub ]
 ----------------------------------------------------------------------------- 
