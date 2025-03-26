@@ -30,7 +30,7 @@ jobs:
        run: nix-channel --update
 
      - name: Miso.js tests
-       run: cd jsbits && nix-shell -p yarn --run 'yarn install && yarn run coverage'
+       run: cd js && nix-shell -p yarn --run 'yarn install && yarn run coverage'
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs

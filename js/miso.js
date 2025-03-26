@@ -792,15 +792,21 @@ module['exports'] = (function () {
   }
 
   return {
+    /* utils */
     'callFocus' : callFocus,
     'callBlur' : callBlur,
-    'diff' : diff,
-    'copyDOMIntoVTree' : copyDOMIntoVTree,
+    /* testing */
     'integrityCheck' : integrityCheck,
+    /* event handling */
+    'eventJSON' : eventJSON,
     'delegate' : delegate,
     'undelegate' : undelegate,
-    'eventJSON' : eventJSON,
-    'setBodyComponent' : setBodyComponent
+    /* component util */
+    'setBodyComponent' : setBodyComponent,
+    /* core functions */
+    'diff' : diff,
+    /* isomorphic */
+    'copyDOMIntoVTree' : copyDOMIntoVTree
   };
 
 })();

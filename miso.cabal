@@ -71,7 +71,7 @@ common client
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     js-sources:
-      jsbits/miso.js
+      js/miso.js
 
 flag tests
   manual:

@@ -28,7 +28,7 @@ options: self: super: {
   # js nix packaging is more trouble than its worth right now
   coverage = self.stdenv.mkDerivation {
     name = "coverage";
-    src = ../jsbits/coverage;
+    src = ../js/coverage;
     buildCommand = ''
       mkdir -p $out
       cp -rv $src/lcov-report $out
