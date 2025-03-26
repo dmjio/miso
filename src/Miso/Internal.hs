@@ -54,12 +54,12 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 import           Miso.Event (Events)
-import           Miso.Effect (Sink, Effect(Effect), Transition, scheduleIO_)
+import           Miso.Effect (Sink, Effect, scheduleIO_, runEffect)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
-  => App model action
+  => App effect model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -76,7 +76,7 @@ initialize App {..} getView = do
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update componentSink (toList as) oldModel
+      newModel <- foldEffects translate update componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -131,7 +131,7 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component model app
+  :: Component effect model app
   -> JSM model
 sample (Component _ name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
@@ -142,9 +142,9 @@ sample (Component _ name _) = do
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component m a
+  :: Component effect m a
   -> a
-  -> Transition action model ()
+  -> Effect action model ()
 notify (Component _ name _) action = scheduleIO_ (void io)
   where
     io = do
@@ -154,18 +154,19 @@ notify (Component _ name _) action = scheduleIO_ (void io)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
-  :: (action -> model -> Effect action model)
+  :: (effect action model () -> Effect action model ())
+  -> (action -> effect action model ())
   -> Sink action
   -> [action]
   -> model
   -> JSM model
-foldEffects _ _ [] m = pure m
-foldEffects update snk (e:es) old =
-  case update e old of
-    Effect n effects -> do
-      forM_ effects $ \effect ->
-        effect snk `catch` (void . exception)
-      foldEffects update snk es n
+foldEffects _ _ _ [] m = pure m
+foldEffects f update snk (e:es) o =
+  case runEffect o (f (update e)) of
+    (n, subs) -> do
+      forM_ subs $ \sub ->
+        sub snk `catch` (void . exception)
+      foldEffects f update snk es n
 -----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for
@@ -178,7 +179,7 @@ foldEffects update snk (e:es) old =
 -- It is recommended to use the @mail@ or @notify@ functions by default
 -- when message passing with @App@ and @Component@
 --
-sink :: MisoString -> App action model -> Sink action
+sink :: MisoString -> App effect action model -> Sink action
 sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
@@ -191,7 +192,7 @@ sink name _ = \a ->
 -- >   m <# mail calendarComponent (NewCalendarEntry entry)
 --
 mail
-  :: Component m a
+  :: Component effect m a
   -> a
   -> JSM ()
 mail (Component _ name _) action = do
@@ -205,7 +206,7 @@ mail (Component _ name _) action = do
 drawComponent
   :: Prerender
   -> MisoString
-  -> App model action
+  -> App effect model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
@@ -218,7 +219,7 @@ drawComponent prerender name App {..} snk = do
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> App model action
+  -> App effect model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback App{..} ComponentState {..} = do
