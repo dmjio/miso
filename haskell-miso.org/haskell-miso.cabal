@@ -75,6 +75,7 @@ executable client
     base < 5,
     containers,
     miso,
+    mtl,
     servant,
   default-language:
     Haskell2010
