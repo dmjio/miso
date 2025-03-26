@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
+import Control.Monad.State (modify)
 import Data.Proxy
 import Miso
 import Servant.API
@@ -26,10 +27,9 @@ data Model = Model
 
 -- | Action
 data Action
-    = HandleURI URI
-    | ChangeURI URI
-    | NoOp
-    deriving (Show, Eq)
+  = HandleURI URI
+  | ChangeURI URI
+  deriving (Show, Eq)
 
 -- | Main entry point
 main :: IO ()
@@ -40,10 +40,9 @@ main = run $
        }
 
 -- | Update your model
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m = m { uri = u } <# pure NoOp
-updateModel (ChangeURI u) m = m <# NoOp <$ pushURI u
-updateModel _ m             = noEff m
+updateModel :: Action -> Effect Action Model ()
+updateModel (HandleURI u) = modify $ \m -> m { uri = u }
+updateModel (ChangeURI u) = scheduleIO_ (pushURI u)
 
 -- | View function, with routing
 viewModel :: Model -> View Action

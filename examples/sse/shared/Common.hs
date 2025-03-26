@@ -13,6 +13,7 @@ module Common (
     the404,
 ) where
 
+import Control.Monad.State (modify)
 import Data.Proxy
 import Servant.API
 import Servant.Links
@@ -21,17 +22,15 @@ import Miso
 import Miso.String
 
 data Model = Model
-    { modelUri :: URI
-    , modelMsg :: String
-    }
-    deriving (Show, Eq)
+  { modelUri :: URI
+  , modelMsg :: String
+  } deriving (Show, Eq)
 
 data Action
-    = ServerMsg String
-    | NoOp
-    | ChangeURI URI
-    | HandleURI URI
-    deriving (Show, Eq)
+  = ServerMsg String
+  | ChangeURI URI
+  | HandleURI URI
+  deriving (Show, Eq)
 
 home :: Model -> View Action
 home (Model _ msg) =
@@ -61,7 +60,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> App Model Action
+sse :: URI -> App Effect Model Action
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
@@ -80,8 +79,11 @@ handleSseMsg (SSEMessage msg) = ServerMsg msg
 handleSseMsg SSEClose = ServerMsg "SSE connection closed"
 handleSseMsg SSEError = ServerMsg "SSE error"
 
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (ServerMsg msg) m = pure (m{modelMsg = "Event received: " ++ msg})
-updateModel (HandleURI u) m = m { modelUri = u } <# pure NoOp
-updateModel (ChangeURI u) m = m <# NoOp <$ pushURI u
-updateModel NoOp m = noEff m
+updateModel :: Action -> Effect Action Model ()
+updateModel (ServerMsg msg) = modify update
+  where
+    update m = m { modelMsg = "Event received: " ++ msg }
+updateModel (HandleURI u) = modify update
+  where
+    update m = m { modelUri = u }
+updateModel (ChangeURI u) = io (pushURI u)

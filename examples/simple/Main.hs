@@ -15,11 +15,10 @@ type Model = Int
 
 -- | Sum type for application events
 data Action
-    = AddOne PointerEvent
-    | SubtractOne PointerEvent
-    | SayHelloWorld
-    | NoOp
-    deriving (Show, Eq)
+  = AddOne PointerEvent
+  | SubtractOne PointerEvent
+  | SayHelloWorld
+  deriving (Show, Eq)
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -37,19 +36,14 @@ app = defaultApp 0 updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Effect Action Model ()
-updateModel NoOp = noEff
 updateModel (AddOne event) = do
-  m <- get
-  m + 1 <# do
-    consoleLog (ms (show event))
-    pure NoOp
+  modify (+1)
+  io $ consoleLog (ms (show event))
 updateModel (SubtractOne event) = do
-  m <- get
-  m - 1 <# do
-    consoleLog (ms (show event))
-    pure NoOp
-updateModel SayHelloWorld = do
-  scheduleIO_ (consoleLog "Hello World!")
+  modify (subtract 1)
+  io $ consoleLog (ms (show event))
+updateModel SayHelloWorld =
+  io (consoleLog "Hello World!")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

@@ -54,7 +54,7 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 import           Miso.Event (Events)
-import           Miso.Effect (Sink, Effect, scheduleIO_, runEffect)
+import           Miso.Effect (Sink, Effect, runEffect)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize

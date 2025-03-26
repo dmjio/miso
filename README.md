@@ -270,7 +270,6 @@ counter = lens _counter $ \record field -> record { _counter = field }
 data Action
   = AddOne
   | SubtractOne
-  | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
@@ -289,10 +288,9 @@ emptyModel = Model 0
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Effect Action Model ()
 updateModel = \case
-  NoOp          -> pure ()
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> scheduleIO_ (consoleLog "Hello World")
+  SayHelloWorld -> io (consoleLog "Hello World")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
@@ -325,7 +323,6 @@ This will build all examples and documentation into a folder named `result`
 ➜  miso git:(master) ✗ tree -d ./result/bin
 ./result/bin
 |-- canvas2d.jsexe
-|-- compose-update.jsexe
 |-- file-reader.jsexe
 |-- mario.jsexe
 |   `-- imgs

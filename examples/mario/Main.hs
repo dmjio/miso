@@ -6,6 +6,7 @@
 
 module Main where
 
+import Control.Monad.State (modify, get)
 import Data.Bool
 import Data.Function
 import qualified Data.Map as M
@@ -14,10 +15,10 @@ import Miso
 import Miso.String
 
 data Action
-    = GetArrows !Arrows
-    | Time !Double
-    | WindowCoords !(Int, Int)
-    | NoOp
+  = GetArrows !Arrows
+  | Time !Double
+  | WindowCoords !(Int, Int)
+  | Start
 
 spriteFrames :: [MisoString]
 spriteFrames = ["0 0", "-74px 0", "-111px 0", "-148px 0", "-185px 0", "-222px 0", "-259px 0", "-296px 0"]
@@ -35,7 +36,7 @@ main = run $ do
           [ arrowsSub GetArrows
           , windowCoordsSub WindowCoords
           ]
-      , initialAction = Just NoOp
+      , initialAction = Just Start
       }
 
 data Model = Model
@@ -70,23 +71,22 @@ mario =
         , window = (0, 0)
         }
 
-updateMario :: Action -> Model -> Effect Action Model
-updateMario NoOp m = step m
-updateMario (GetArrows arrs) m = noEff newModel
+updateMario :: Action -> Effect Action Model ()
+updateMario Start = get >>= step
+updateMario (GetArrows arrs) = modify newModel
   where
-    newModel = m{arrows = arrs}
-updateMario (Time newTime) m = step newModel
+    newModel m = m { arrows = arrs }
+updateMario (Time newTime) = modify newModel
   where
-    newModel =
-        m
-            { delta = (newTime - time m) / 20
-            , time = newTime
-            }
-updateMario (WindowCoords coords) m = noEff newModel
+    newModel m = m
+      { delta = (newTime - time m) / 20
+      , time = newTime
+      }
+updateMario (WindowCoords coords) = modify newModel
   where
-    newModel = m{window = coords}
+    newModel m = m { window = coords }
 
-step :: Model -> Effect Action Model
+step :: Model -> Effect Action Model ()
 step m@Model{..} = k <# Time <$> now
   where
     k =

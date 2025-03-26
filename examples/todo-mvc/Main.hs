@@ -15,6 +15,7 @@
 module Main where
 
 import           Control.Monad.IO.Class
+import           Control.Monad.State
 import           Data.Aeson hiding (Object)
 import           Data.Bool
 import qualified Data.Map as M
@@ -75,8 +76,7 @@ newEntry desc eid =
         }
 
 data Msg
-    = NoOp
-    | CurrentTime Int
+    = CurrentTime Int
     | UpdateField MisoString
     | EditingEntry Int Bool
     | UpdateEntry Int MisoString
@@ -95,57 +95,60 @@ main = run $ startApp app
   , initialAction = Just FocusOnInput
   }
 
-app :: App Model Msg
+app :: App Effect Model Msg
 app = defaultApp emptyModel updateModel viewModel
 
-updateModel :: Msg -> Model -> Effect Msg Model
-updateModel FocusOnInput m = m <# NoOp <$ focus "input-box"
-updateModel NoOp m = noEff m
-updateModel (CurrentTime n) m =
-    m <# do liftIO (print n) >> pure NoOp
-updateModel Add model@Model{..} =
+updateModel :: Msg -> Effect Msg Model ()
+updateModel FocusOnInput = io (focus "input-box")
+updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
+updateModel Add = do
+    model@Model{..} <- get
     noEff
         model
             { uid = uid + 1
             , field = mempty
             , entries = entries <> [newEntry field uid | not $ S.null field]
             }
-updateModel (UpdateField str) model = noEff model{field = str}
-updateModel (EditingEntry id' isEditing) model@Model{..} =
-    model{entries = newEntries} <# do
-        focus $ S.pack $ "todo-" ++ show id'
-        pure NoOp
+updateModel (UpdateField str) = modify update
+  where
+    update m = m { field = str }
+updateModel (EditingEntry id' isEditing) = do
+    model@Model{..} <- get
+    put model { entries = newEntries }
+    io (focus $ S.pack $ "todo-" ++ show id')
   where
     newEntries = filterMap entries (\t -> eid t == id') $
         \t -> t{editing = isEditing, focussed = isEditing}
-updateModel (UpdateEntry id' task) model@Model{..} =
+updateModel (UpdateEntry id' task) = do
+    model@Model{..} <- get
     noEff model{entries = newEntries}
   where
     newEntries =
         filterMap entries ((== id') . eid) $ \t ->
             t{description = task}
-updateModel (Delete id') model@Model{..} =
-    noEff model{entries = filter (\t -> eid t /= id') entries}
-updateModel DeleteComplete model@Model{..} =
-    noEff model{entries = filter (not . completed) entries}
-updateModel (Check id' isCompleted) model@Model{..} =
-    model{entries = newEntries} <# eff
-  where
-    eff =
-        liftIO (putStrLn "clicked check")
-            >> pure NoOp
-
-    newEntries =
+updateModel (Delete id') = do
+  model@Model{..} <- get
+  noEff model{entries = filter (\t -> eid t /= id') entries}
+updateModel DeleteComplete = do
+  model@Model{..} <- get
+  noEff model{entries = filter (not . completed) entries}
+updateModel (Check id' isCompleted) = do
+  model@Model{..} <- get
+  model { entries = newEntries }
+  io (consoleLog "clicked check")
+    where
+      newEntries =
         filterMap entries (\t -> eid t == id') $ \t ->
             t{completed = isCompleted}
-updateModel (CheckAll isCompleted) model@Model{..} =
-    noEff model{entries = newEntries}
+updateModel (CheckAll isCompleted) = do
+  model@Model{..} <- get
+  put model { entries = newEntries }
   where
     newEntries =
         filterMap entries (const True) $
             \t -> t{completed = isCompleted}
-updateModel (ChangeVisibility v) model =
-    noEff model{visibility = v}
+updateModel (ChangeVisibility v) =
+    modify $ \m -> m { visibility = v }
 
 filterMap :: [a] -> (a -> Bool) -> (a -> a) -> [a]
 filterMap xs predicate f = go' xs

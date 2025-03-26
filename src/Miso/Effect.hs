@@ -20,6 +20,7 @@ module Miso.Effect
   , Sink
     -- *** Combinators
   , effectSub
+  , io
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
@@ -148,6 +149,13 @@ scheduleIO action = scheduleSub (\sink -> action >>= sink)
 -- about their results or when they complete.
 scheduleIO_ :: JSM () -> Effect action model ()
 scheduleIO_ action = scheduleSub (\_ -> action)
+-----------------------------------------------------------------------------
+-- | A shorter synonym for @scheduleIO_@
+--
+-- This is handy for scheduling IO computations where you don't care
+-- about their results or when they complete.
+io :: JSM () -> Effect action model ()
+io action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --

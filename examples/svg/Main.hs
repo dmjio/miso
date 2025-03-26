@@ -6,6 +6,7 @@
 
 module Main where
 
+import           Control.Monad.State
 import qualified Data.Map as M
 
 import           Miso
@@ -23,19 +24,19 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Model Action
+app :: App Effect Model Action
 app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model (0, 0)
 
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandlePointer pointer) model = noEff model { mouseCoords = coords pointer }
-updateModel Id model = noEff model
+updateModel :: Action -> Effect Action Model ()
+updateModel (HandlePointer pointer) = modify update
+  where
+    update m = m { mouseCoords = coords pointer }
 
 data Action
   = HandlePointer PointerEvent
-  | Id
 
 newtype Model
   = Model

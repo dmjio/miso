@@ -9,6 +9,7 @@
 
 module Main where
 
+import Control.Monad.State
 import Control.Concurrent.MVar
 import Miso
 import Miso.String
@@ -22,38 +23,25 @@ import GHCJS.Foreign.Callback
 #endif
 
 -- | Model
-data Model = Model
-    { info :: MisoString
-    }
-    deriving (Eq, Show)
+newtype Model
+  = Model
+  { info :: MisoString
+  } deriving (Eq, Show)
 
 -- | Action
 data Action
     = ReadFile
-    | NoOp
     | SetContent MisoString
     deriving (Show, Eq)
 
 -- | Main entry point
 main :: IO ()
-main = run $ do
-    startApp
-        App
-            { model = Model ""
-            , initialAction = Nothing
-            , ..
-            }
-  where
-    mountPoint = Nothing
-    update = updateModel
-    events = defaultEvents
-    subs = []
-    view = viewModel
-    logLevel = Off
+main = run $ startApp (defaultApp (Model "") updateModel viewModel)
 
 -- | Update your model
-updateModel :: Action -> Model -> Effect Action Model
-updateModel ReadFile m =
+updateModel :: Action -> Effect Action Model ()
+updateModel ReadFile = do
+    m <- get
     m <# do
         fileReaderInput <- getElementById "fileReader"
         file <- getFile fileReaderInput
@@ -65,8 +53,7 @@ updateModel ReadFile m =
                 putMVar mvar r
         readText reader file
         SetContent <$> readMVar mvar
-updateModel (SetContent c) m = noEff m{info = c}
-updateModel NoOp m = noEff m
+updateModel (SetContent c) = modify $ \m -> m { info = c }
 
 -- | View function, with routing
 viewModel :: Model -> View Action

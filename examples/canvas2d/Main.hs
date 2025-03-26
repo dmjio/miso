@@ -14,8 +14,7 @@ import Miso.String
 type Model = (Double, Double)
 
 data Action
-    = NoOp
-    | GetTime
+    = GetTime
     | SetTime Model
 
 main :: IO ()
@@ -24,13 +23,9 @@ main = run $ do
     setSrc sun "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_sun.png"
     setSrc moon "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_moon.png"
     setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
-    startApp
-        App
-            { initialAction = Just GetTime
-            , update = updateModel (sun, moon, earth)
-            , ..
-            }
+    startApp app { initialAction = Just GetTime }
   where
+    app = defaultApp model (updateModel (sun, moon, earth)) view
     view _ =
         canvas_
             [ id_ "canvas"
@@ -47,10 +42,9 @@ main = run $ do
 updateModel ::
     (Image, Image, Image) ->
     Action ->
-    Model ->
     Effect Action Model
-updateModel _ NoOp m = noEff m
-updateModel _ GetTime m =
+updateModel _ GetTime = do
+    m <- get
     m <# do
         date <- newDate
         (s, m') <- (,) <$> getSecs date <*> getMillis date

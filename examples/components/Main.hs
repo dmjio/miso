@@ -8,6 +8,7 @@ module Main where
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (modify)
 
 import Miso
 import Miso.String
@@ -21,7 +22,6 @@ foreign export javascript "hs_start" main :: IO ()
 data Action
     = AddOne
     | SubtractOne
-    | NoOp
     | SayHelloWorld
     | ToggleAction
     | UnMount
@@ -30,8 +30,7 @@ data Action
     deriving (Show, Eq)
 
 data MainAction
-    = MainNoOp
-    | Toggle
+    = Toggle
     | MountMain
     | UnMountMain
     | SampleChild
@@ -53,24 +52,24 @@ loggerSub msg = \_ ->
         liftIO $ threadDelay (secs 10)
         consoleLog msg
 
-app :: App MainModel MainAction
+app :: App Effect MainModel MainAction
 app = defaultApp False updateModel1 viewModel1
 
-component2 :: Component Model Action
+component2 :: Component Effect Model Action
 component2 =
     component "component-2"
         counterApp2
             { subs = [loggerSub "component-2 sub"]
             }
 
-component3 :: Component (Bool, Model) Action
+component3 :: Component Effect (Bool, Model) Action
 component3 =
     component "component-3"
         counterApp3
             { subs = [loggerSub "component-3 sub"]
             }
 
-component4 :: Component Model Action
+component4 :: Component Effect Model Action
 component4 =
     component "component-4"
         counterApp4
@@ -82,13 +81,13 @@ viewModel1 :: MainModel -> View MainAction
 viewModel1 x =
     div_
         []
-        [ "Component 1 - Three sub components nested recursively below me"
+        [ "Component Effect 1 - Three sub components nested recursively below me"
         , br_ []
-        , "The +/- for Components 3 and 4 will affect the state of Component 2"
+        , "The +/- for Components 3 and 4 will affect the state of Component Effect 2"
         , br_ []
-        , "This is an example of component communication using the 'mail' / 'notify' functions"
+        , "This is an example of component communication using the 'notify' / 'notify' functions"
         , br_ []
-        , button_ [onClick Toggle] [text "Toggle Component 2"]
+        , button_ [onClick Toggle] [text "Toggle Component Effect 2"]
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
@@ -100,52 +99,40 @@ viewModel1 x =
         ]
 
 -- | Updates model, optionally introduces side effects
-updateModel1 :: MainAction -> MainModel -> Effect MainAction MainModel
-updateModel1 MainNoOp m = noEff m
-updateModel1 Toggle m = noEff (not m)
-updateModel1 UnMountMain m =
-    m <# do
-        consoleLog "Component 2 was unmounted!"
-        pure MainNoOp
-updateModel1 MountMain m =
-    m <# do
-        consoleLog "Component 2 was mounted!"
-        pure MainNoOp
-updateModel1 SampleChild m =
-    m <# do
-      componentTwoModel <- sample component2
-      consoleLog $
+updateModel1 :: MainAction -> Effect MainAction MainModel ()
+updateModel1 Toggle = modify not
+updateModel1 UnMountMain =
+  io (consoleLog "Component 2 was unmounted!")
+updateModel1 MountMain =
+  io (consoleLog "Component 2 was mounted!")
+updateModel1 SampleChild = do
+  io $ do
+    componentTwoModel <- sample component2
+    consoleLog $
         "Sampling child component 2 from parent component main (unsafe): " <>
           ms (show componentTwoModel)
-      pure MainNoOp
 
-counterApp2 :: App Model Action
+counterApp2 :: App Effect Model Action
 counterApp2 = defaultApp 0 updateModel2 viewModel2
 
 -- | Updates model, optionally introduces side effects
-updateModel2 :: Action -> Model -> Effect Action Model
-updateModel2 AddOne m =
-    noEff (m + 1)
-updateModel2 SubtractOne m =
-    noEff (m - 1)
-updateModel2 NoOp m = noEff m
-updateModel2 SayHelloWorld m = noEff m
-updateModel2 UnMount m =
-    m <# do
-        consoleLog "Component 3 was unmounted!"
-        pure NoOp
-updateModel2 Mount m =
-    m <# do
-        consoleLog "Component 3 was mounted!"
-        pure NoOp
-updateModel2 _ m = noEff m
+updateModel2 :: Action -> Effect Action Model ()
+updateModel2 AddOne = modify (+1)
+updateModel2 SubtractOne = modify (subtract 1)
+updateModel2 UnMount =
+  io (consoleLog "Component Effect 3 was unmounted!")
+updateModel2 Mount =
+  io (consoleLog "Component Effect 3 was mounted!")
+updateModel2 SayHelloWorld = do
+  io (consoleLog "Hello World from Component 2")
+updateModel2 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
 viewModel2 :: Model -> View Action
 viewModel2 x =
     div_
         []
-        [ "This is the view for Component 2"
+        [ "This is the view for Component Effect 2"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
@@ -155,41 +142,36 @@ viewModel2 x =
           ] 
         ]
 
-counterApp3 :: App (Bool, Model) Action
+counterApp3 :: App Effect (Bool, Model) Action
 counterApp3 = defaultApp (True, 0) updateModel3 viewModel3
 
 -- | Updates model, optionally introduces side effects
-updateModel3 :: Action -> (Bool, Model) -> Effect Action (Bool, Model)
-updateModel3 AddOne (t, n) =
-    (t, n + 1) <# do
-        mail component2 AddOne
-        pure NoOp
-updateModel3 SubtractOne (t, n) =
-    (t, n - 1) <# do
-        mail component2 SubtractOne
-        pure NoOp
-updateModel3 SayHelloWorld m = noEff m
-updateModel3 ToggleAction (t, n) = noEff (not t, n)
-updateModel3 UnMount m =
-    m <# do
-        consoleLog "Component 4 was unmounted!"
-        pure NoOp
-updateModel3 Mount m =
-    m <# do
-        consoleLog "Component 4 was mounted!"
-        pure NoOp
-updateModel3 NoOp m = noEff m
-updateModel3 Sample m = noEff m
+updateModel3 :: Action -> Effect Action (Bool, Model) ()
+updateModel3 AddOne = do
+  modify (fmap (+1))
+  io (notify component2 AddOne)
+updateModel3 SubtractOne = do
+  modify (fmap (subtract 1))
+  io (notify component2 SubtractOne)
+updateModel3 ToggleAction =
+  modify $ \(x,y) -> (not x, y)
+updateModel3 UnMount =
+  io (consoleLog "Component Effect 4 was unmounted!")
+updateModel3 Mount =
+  io (consoleLog "Component Effect 4 was mounted!")
+updateModel3 SayHelloWorld = do
+  io (consoleLog "Hello World from Component 3")
+updateModel3 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
 viewModel3 :: (Bool, Model) -> View Action
 viewModel3 (toggle, x) =
     div_ [] $
-        [ "This is the view for Component 3"
+        [ "This is the view for Component Effect 3"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , button_ [onClick ToggleAction] [text "Toggle Component 4"]
+        , button_ [onClick ToggleAction] [text "Toggle Component Effect 4"]
         ]
             ++ [ embed component4
                    [ onMounted Mount
@@ -198,36 +180,33 @@ viewModel3 (toggle, x) =
                | toggle
                ]
 
-counterApp4 :: App Model Action
+counterApp4 :: App Effect Model Action
 counterApp4 = defaultApp 0 updateModel4 viewModel4
 
 -- | Updates model, optionally introduces side effects
-updateModel4 :: Action -> Model -> Effect Action Model
-updateModel4 AddOne m =
-    (m + 1) <# do
-        mail component2 AddOne
-        pure NoOp
-updateModel4 SubtractOne m =
-    (m - 1) <# do
-        mail component2 SubtractOne
-        pure NoOp
-updateModel4 Sample m =
-    m <# do
-      componentTwoModel <- sample component2
-      consoleLog $
-          "Sampling parent component 2 from child component 4: " <>
-            ms (show componentTwoModel)
-      pure NoOp
-updateModel4 SayHelloWorld m =
-    m <# liftIO (putStrLn "Hello World from Component 4") >> pure NoOp
-updateModel4 _ m = noEff m
+updateModel4 :: Action -> Effect Action Model ()
+updateModel4 AddOne = do
+  modify (+1)
+  io (notify component2 AddOne)
+updateModel4 SubtractOne = do
+  modify (subtract 1)
+  io (notify component2 SubtractOne)
+updateModel4 Sample =
+  io $ do
+    componentTwoModel <- sample component2
+    consoleLog $
+      "Sampling parent component 2 from child component 4: " <>
+         ms (show componentTwoModel)
+updateModel4 SayHelloWorld = do
+  io (consoleLog "Hello World from Component 4")
+updateModel4 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
 viewModel4 :: Model -> View Action
 viewModel4 x =
     div_
         []
-        [ "This is the view for Component 4"
+        [ "This is the view for Component Effect 4"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
