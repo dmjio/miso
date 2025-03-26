@@ -48,9 +48,9 @@ module Miso
   , set
   , now
   , consoleLog
+  , consoleLog'
   , consoleError
   , consoleWarn
-  , consoleLog'
   , getElementById
   , focus
   , blur

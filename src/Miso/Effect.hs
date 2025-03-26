@@ -36,6 +36,8 @@ module Miso.Effect
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (forM_)
+import           Control.Monad.Fail (MonadFail, fail)
+import qualified Control.Monad.Fail as Fail
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
 import           Control.Monad.State (MonadState, put)
@@ -43,7 +45,8 @@ import           Control.Monad.Trans.Writer.Strict (Writer, runWriter)
 import           Control.Monad.Writer (tell, MonadWriter)
 import           Data.Foldable (for_)
 -----------------------------------------------------------------------------
-import           Miso.FFI (JSM)
+import           Miso.FFI (JSM, consoleError)
+import           Miso.String (ms)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
 --
@@ -128,6 +131,12 @@ effectSub model sub = do
 -- @
 newtype Effect action model a = Effect (StateT model (Writer [Sub action]) a)
   deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
+-----------------------------------------------------------------------------
+-- | @MonadFail@ instance for @Effect@
+instance MonadFail (Effect action model) where
+  fail s = do
+    io $ consoleError (ms s)
+    Fail.fail s
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an 'Effect'
 runEffect
