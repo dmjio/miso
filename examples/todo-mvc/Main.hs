@@ -76,7 +76,8 @@ newEntry desc eid =
         }
 
 data Msg
-    = CurrentTime Int
+    = NoOp
+    | CurrentTime Int
     | UpdateField MisoString
     | EditingEntry Int Bool
     | UpdateEntry Int MisoString
@@ -99,6 +100,7 @@ app :: App Effect Model Msg
 app = defaultApp emptyModel updateModel viewModel
 
 updateModel :: Msg -> Effect Msg Model ()
+updateModel NoOp = pure ()
 updateModel FocusOnInput = io (focus "input-box")
 updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
 updateModel Add = do
