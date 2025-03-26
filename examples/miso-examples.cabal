@@ -102,6 +102,7 @@ executable todo-mvc
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable threejs
