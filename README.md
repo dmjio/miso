@@ -406,7 +406,7 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 ## Coverage
 
-The core algorithmic component of miso [diff](https://github.com/dmjio/miso/blob/master/jsbits/miso.js). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [jsdom](https://github.com/jsdom/jsdom) and [jest](https://github.com/facebook/jest).
+The core algorithmic component of miso [diff](https://github.com/dmjio/miso/blob/master/js/miso.js). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [jsdom](https://github.com/jsdom/jsdom) and [jest](https://github.com/facebook/jest).
 
 To run the tests and build the coverage report:
 

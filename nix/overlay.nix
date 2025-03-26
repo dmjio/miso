@@ -24,7 +24,16 @@ options: self: super: {
     (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
       .outputs.packages."${super.system}".ghciwatch;
 
-  coverage = import ../tests {};
+  # dmj: ensure you call nix-shell -p yarn --run 'yarn install' first
+  # js nix packaging is more trouble than its worth right now
+  coverage = self.stdenv.mkDerivation {
+    name = "coverage";
+    src = ../js/coverage;
+    buildCommand = ''
+      mkdir -p $out
+      cp -rv $src/lcov-report $out
+    '';
+  };
 
   ssePkgs = import ../examples/sse {};
 

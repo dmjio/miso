@@ -118,7 +118,7 @@ startApp app@App {..} = withJS $
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
 #ifndef GHCJS_BOTH
-  _ <- eval ($(embedStringFile "jsbits/miso.js") :: MisoString)
+  _ <- eval ($(embedStringFile "js/miso.js") :: MisoString)
 #endif
   action
 -----------------------------------------------------------------------------

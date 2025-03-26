@@ -55,7 +55,7 @@ in with pkgs.haskell.lib;
     haskell-miso-server
     haskell-miso-runner;
 
-  #code covergae
+  #code coverage
   inherit (pkgs) coverage;
 
   #ci

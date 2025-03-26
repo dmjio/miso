@@ -249,6 +249,12 @@ getBody = jsg "document" ! "body"
 getDocument :: JSM JSVal
 getDocument = jsg "document"
 -----------------------------------------------------------------------------
+-- | Retrieves a reference to the window.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Window>
+getWindow :: JSM JSVal
+getWindow = jsg "window"
+-----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
 --
@@ -320,10 +326,11 @@ undelegate mountPoint events debug callback = do
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
+  window <- getWindow
   doc <- getDocument
   ll <- toJSVal logLevel
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree, doc]
+  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree, doc, window]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
