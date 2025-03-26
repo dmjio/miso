@@ -1,6 +1,6 @@
 cabal-version:       2.2
 name:                miso
-version:             1.8.7.0
+version:             1.9.0.0
 category:            Web, Miso, Data Structures
 license:             BSD-3-Clause
 license-file:        LICENSE
