@@ -185,9 +185,15 @@ test("Should mount and unmount a component", () => {
     miso.diff(null, node, body, document);
     cb(node);
   };
-  var newNode = vcomp(mountFunc, (x) => unmountCount++, { "id": "vcomp-foo" }, {
-    "background-color": "red",
-  }, []);
+  var newNode = vcomp(
+    mountFunc,
+    (x) => unmountCount++,
+    { id: "vcomp-foo" },
+    {
+      "background-color": "red",
+    },
+    [],
+  );
   miso.diff(null, newNode, body, document);
   expect(mountCount).toBe(1);
   expect(newNode.children.length).toBe(1);
@@ -224,7 +230,7 @@ test("Should create an SVG DOM node, with href attribute", () => {
     "ellipse",
     [],
     {
-      "href": "https://google.com",
+      href: "https://google.com",
     },
     {},
     "svg",
@@ -243,7 +249,7 @@ test("Should create an SVG DOM node, with href attribute, and change it", () => 
     "ellipse",
     [],
     {
-      "href": "https://google.com",
+      href: "https://google.com",
     },
     {},
     "svg",
@@ -256,7 +262,7 @@ test("Should create an SVG DOM node, with href attribute, and change it", () => 
     "ellipse",
     [],
     {
-      "href": "https://yahoo.com",
+      href: "https://yahoo.com",
     },
     {},
     "svg",
@@ -275,7 +281,7 @@ test("Should create an SVG DOM node, with regular attribute", () => {
     "ellipse",
     [],
     {
-      "rx": "100",
+      rx: "100",
     },
     {},
     "svg",
@@ -292,7 +298,7 @@ test("Should create an SVG DOM node, with regular attribute, and change it", () 
     "ellipse",
     [],
     {
-      "rx": "100",
+      rx: "100",
     },
     {},
     "svg",
@@ -303,7 +309,7 @@ test("Should create an SVG DOM node, with regular attribute, and change it", () 
     "ellipse",
     [],
     {
-      "rx": "200",
+      rx: "200",
     },
     {},
     "svg",
@@ -362,9 +368,14 @@ test("Should Miso.Diff attrs of two Components", () => {
 
   // populate DOM
   var mountCount = 0;
-  var compNode1 = vcomp((x) => mountCount++, null, {
-    "data-component-id": "vcomp-foo",
-  }, { "background-color": "red" });
+  var compNode1 = vcomp(
+    (x) => mountCount++,
+    null,
+    {
+      "data-component-id": "vcomp-foo",
+    },
+    { "background-color": "red" },
+  );
 
   miso.diff(null, compNode1, body, document);
   expect(mountCount).toBe(1);
@@ -375,9 +386,14 @@ test("Should Miso.Diff attrs of two Components", () => {
 
   // Replace node
   var mountCount = 0;
-  var compNode2 = vcomp((x) => mountCount++, null, {
-    "data-component-id": "vcomp-foo",
-  }, { "background-color": "green" });
+  var compNode2 = vcomp(
+    (x) => mountCount++,
+    null,
+    {
+      "data-component-id": "vcomp-foo",
+    },
+    { "background-color": "green" },
+  );
 
   miso.diff(compNode1, compNode2, body, document);
   expect(body.childNodes[0].style["background-color"]).toBe("green");
@@ -450,8 +466,12 @@ test("Should replace Component with TextNode", () => {
   var body = document.body;
 
   // populate DOM
-  var mountCount = 0, unmountCount = 0;
-  var component = vcomp((x) => mountCount++, (x) => unmountCount++);
+  var mountCount = 0,
+    unmountCount = 0;
+  var component = vcomp(
+    (x) => mountCount++,
+    (x) => unmountCount++,
+  );
   miso.diff(null, component, body, document);
 
   // Test component was populated
@@ -473,8 +493,12 @@ test("Should replace Component with Node", () => {
   var body = document.body;
 
   // populate DOM
-  var mountCount = 0, unmountCount = 0;
-  var component = vcomp((x) => mountCount++, (x) => unmountCount++);
+  var mountCount = 0,
+    unmountCount = 0;
+  var component = vcomp(
+    (x) => mountCount++,
+    (x) => unmountCount++,
+  );
   miso.diff(null, component, body, document);
 
   // Test component was populated
@@ -535,7 +559,7 @@ test("Should create a new property on a DOM node", () => {
 
   // populate DOM
   var currentNode = vnode("div", [], {
-    "id": "a",
+    id: "a",
   });
   miso.diff(null, currentNode, body, document);
   expect(currentNode.domRef["id"]).toBe("a");
@@ -547,12 +571,12 @@ test("Should skip if window miso.diffing identical properties", () => {
 
   // populate DOM
   var currentNode = vnode("div", [], {
-    "id": "a",
+    id: "a",
   });
   miso.diff(null, currentNode, body, document);
 
   var newNode = vnode("div", [], {
-    "id": "a",
+    id: "a",
   });
   miso.diff(currentNode, newNode, body, document);
   expect(currentNode.domRef).toBe(newNode.domRef);
@@ -563,9 +587,14 @@ test("Should create a custom attribute on a DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var currentNode = vnode("div", [], {
-    "lol": "lol",
-  }, {});
+  var currentNode = vnode(
+    "div",
+    [],
+    {
+      lol: "lol",
+    },
+    {},
+  );
   miso.diff(null, currentNode, body, document);
   expect(currentNode.domRef.getAttribute("lol")).toBe("lol");
 });
@@ -575,15 +604,25 @@ test("Should change a custom attribute on a DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var currentNode = vnode("div", [], {
-    "lol": "lol",
-  }, {});
+  var currentNode = vnode(
+    "div",
+    [],
+    {
+      lol: "lol",
+    },
+    {},
+  );
   miso.diff(null, currentNode, body, document);
   expect(currentNode.domRef.getAttribute("lol")).toBe("lol");
 
-  var newNode = vnode("div", [], {
-    "lol": "lolz",
-  }, {});
+  var newNode = vnode(
+    "div",
+    [],
+    {
+      lol: "lolz",
+    },
+    {},
+  );
   miso.diff(currentNode, newNode, body, document);
   expect(currentNode.domRef.getAttribute("lol")).toBe("lolz");
 });
@@ -594,7 +633,7 @@ test("Should remove a custom attribute from a DOM node", () => {
 
   // populate DOM
   var currentNode = vnode("div", [], {
-    "lol": "lol",
+    lol: "lol",
   });
   miso.diff(null, currentNode, body, document);
   expect(currentNode.domRef.getAttribute("lol")).toBe("lol");
@@ -611,7 +650,7 @@ test("Should remove a property from DOM node", () => {
 
   // populate DOM
   var currentNode = vnode("div", [], {
-    "id": "someid",
+    id: "someid",
   });
   miso.diff(null, currentNode, body, document);
 
@@ -627,13 +666,13 @@ test("Should change a property from DOM node", () => {
 
   // populate DOM
   var currentNode = vnode("div", [], {
-    "id": "someid",
+    id: "someid",
   });
   miso.diff(null, currentNode, body, document);
 
   // test property change
   var newNode = vnode("div", [], {
-    "id": "foo",
+    id: "foo",
   });
   miso.diff(currentNode, newNode, body, document);
   expect(newNode.domRef["id"]).toBe("foo");
@@ -644,9 +683,14 @@ test("Should create css on a DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var newNode = vnode("div", [], {}, {
-    "color": "red",
-  });
+  var newNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "red",
+    },
+  );
   miso.diff(null, newNode, body, document);
   expect(newNode.domRef.style["color"]).toBe("red");
 });
@@ -656,9 +700,14 @@ test("Should remove css from DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var currentNode = vnode("div", [], {}, {
-    "color": "red",
-  });
+  var currentNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "red",
+    },
+  );
   miso.diff(null, currentNode, body, document);
 
   // test css change
@@ -672,15 +721,25 @@ test("Should change css on a DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var currentNode = vnode("div", [], {}, {
-    "color": "red",
-  });
+  var currentNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "red",
+    },
+  );
   miso.diff(null, currentNode, body, document);
 
   // test css change
-  var newNode = vnode("div", [], {}, {
-    "color": "blue",
-  });
+  var newNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "blue",
+    },
+  );
   miso.diff(currentNode, newNode, body, document);
   expect(newNode.domRef.style["color"]).toBe("blue");
 });
@@ -690,15 +749,25 @@ test("Should no-op change to css on a DOM node", () => {
   var body = document.body;
 
   // populate DOM
-  var currentNode = vnode("div", [], {}, {
-    "color": "red",
-  });
+  var currentNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "red",
+    },
+  );
   miso.diff(null, currentNode, body, document);
 
   // test css no-op change
-  var newNode = vnode("div", [], {}, {
-    "color": "red",
-  });
+  var newNode = vnode(
+    "div",
+    [],
+    {},
+    {
+      color: "red",
+    },
+  );
   miso.diff(currentNode, newNode, body, document);
   expect(newNode.domRef.style["color"]).toBe("red");
 });
@@ -708,7 +777,8 @@ test("Should call onCreated and onDestroyed", () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0, destroy = 0;
+  var create = 0,
+    destroy = 0;
   var currentNode = vnode(
     "div",
     [],
@@ -738,7 +808,8 @@ test("Should call onCreated and onBeforeDestroyed", () => {
   var body = document.body;
 
   // populate DOM
-  var create = 0, destroy = 0;
+  var create = 0,
+    destroy = 0;
   var currentNode = vnode(
     "div",
     [],
@@ -767,23 +838,26 @@ test("Should call onDestroyed recursively", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
   // populate DOM
-  var destroy = 0, childDestroy = 0;
+  var destroy = 0,
+    childDestroy = 0;
   var currentNode = vnode(
     "div",
-    [vnode(
-      "div",
-      [],
-      {},
-      {},
-      "html",
-      null,
-      null,
-      function () {
-        childDestroy++;
-      },
-      null,
-      "a",
-    )],
+    [
+      vnode(
+        "div",
+        [],
+        {},
+        {},
+        "html",
+        null,
+        null,
+        function () {
+          childDestroy++;
+        },
+        null,
+        "a",
+      ),
+    ],
     {},
     {},
     "html",
@@ -809,9 +883,22 @@ test("Should call onBeforeDestroyed recursively", () => {
   childDestroy = 0;
   var currentNode = vnode(
     "div",
-    [vnode("div", [], {}, {}, "html", null, null, null, function () {
-      childDestroy++;
-    }, "a")],
+    [
+      vnode(
+        "div",
+        [],
+        {},
+        {},
+        "html",
+        null,
+        null,
+        null,
+        function () {
+          childDestroy++;
+        },
+        "a",
+      ),
+    ],
     {},
     {},
     "html",
@@ -1780,7 +1867,7 @@ test("Should fail integrity check on miso.differing props", () => {
     type: "vnode",
     domRef: null,
     tag: "div",
-    props: { "class": "something" },
+    props: { class: "something" },
     children: [{ type: "vtext", text: "foo" }],
     key: null,
     ns: "HTML",
@@ -1898,8 +1985,8 @@ test("Should fail integrity check on vtext domRef", () => {
     type: "vnode",
     domRef: null,
     tag: "div",
-    props: { "href": "google.com" },
-    children: [{ "type": "vtext", "text": "foo" }],
+    props: { href: "google.com" },
+    children: [{ type: "vtext", text: "foo" }],
     key: null,
     ns: "HTML",
     css: { "background-color": "red" },
@@ -1925,8 +2012,8 @@ test("Should fail integrity check on unknown property test", () => {
     type: "vnode",
     domRef: null,
     tag: "div",
-    props: { "foobah": "lol" },
-    children: [{ "type": "vtext", "text": "foo" }],
+    props: { foobah: "lol" },
+    children: [{ type: "vtext", text: "foo" }],
     key: null,
     ns: "HTML",
     css: {},
@@ -1969,34 +2056,34 @@ test("Should delegate and undelegate button click", () => {
   var count = 0;
   var result = null;
   var events = {
-    "click": {
-      "runEvent": function (e) {
+    click: {
+      runEvent: function (e) {
         result = miso.eventJSON([[]], e);
         count++;
       },
-      "options": {
-        "preventDefault": true,
-        "stopPropagation": false,
+      options: {
+        preventDefault: true,
+        stopPropagation: false,
       },
     },
   };
   var vtreeChild = {
-    "type": "vnode",
-    "tag": "button",
-    "ns": "HTML",
-    "props": {},
-    "children": [],
-    "css": {},
-    "events": events,
+    type: "vnode",
+    tag: "button",
+    ns: "HTML",
+    props: {},
+    children: [],
+    css: {},
+    events: events,
   };
   var vtree = {
-    "type": "vnode",
-    "tag": "div",
-    "ns": "HTML",
-    "props": {},
-    "children": [vtreeChild],
-    "css": {},
-    "events": events,
+    type: "vnode",
+    tag: "div",
+    ns: "HTML",
+    props: {},
+    children: [vtreeChild],
+    css: {},
+    events: events,
   };
 
   /* initial page draw */
@@ -2007,7 +2094,7 @@ test("Should delegate and undelegate button click", () => {
   expect(vtreeChild.domRef).toEqual(document.body.childNodes[0].childNodes[0]);
 
   /* setup event delegation */
-  var events = { "click": ["click", true] };
+  var events = { click: ["click", true] };
   var getVTree = function (cb) {
     cb(vtree);
   };
@@ -2037,8 +2124,7 @@ test("Should unmount recursively in order", () => {
       "data-component-id": name,
       css: {},
       ns: "HTML",
-      mount: function () {
-      },
+      mount: function () {},
       unmount: function () {
         unmounts.push(name);
       },

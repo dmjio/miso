@@ -57,7 +57,8 @@ module["exports"] = (function () {
     }
     // check children
     if (
-      c["tag"] === n["tag"] && n["key"] === c["key"] &&
+      c["tag"] === n["tag"] &&
+      n["key"] === c["key"] &&
       n["data-component-id"] === c["data-component-id"]
     ) {
       n["domRef"] = c["domRef"];
@@ -184,8 +185,12 @@ module["exports"] = (function () {
   };
 
   var hasKeys = function (ns, cs) {
-    return ns.length > 0 && cs.length > 0 && ns[0]["key"] != null &&
-      cs[0]["key"] != null;
+    return (
+      ns.length > 0 &&
+      cs.length > 0 &&
+      ns[0]["key"] != null &&
+      cs[0]["key"] != null
+    );
   };
 
   var diffChildren = function (cs, ns, parent, doc) {
@@ -234,7 +239,8 @@ module["exports"] = (function () {
     // dmj: bail out if duplicate mounting detected
     if (nodeList.length > 0) {
       console.error(
-        'AlreadyMountedException: Component "' + componentId +
+        'AlreadyMountedException: Component "' +
+          componentId +
           "' is already mounted",
       );
       return;
@@ -304,8 +310,7 @@ module["exports"] = (function () {
       } /* No more new nodes, delete all remaining nodes in old list
          -> [ a b c ] <- old children
          -> [ ] <- new children
-         */
-      else if (newFirstIndex > newLastIndex) {
+         */ else if (newFirstIndex > newLastIndex) {
         tmp = oldLastIndex;
         while (oldLastIndex >= oldFirstIndex) {
           parent.removeChild(os[oldLastIndex--]["domRef"]);
@@ -316,8 +321,7 @@ module["exports"] = (function () {
          -> oldFirstIndex -> [ a b c ] <- oldLastIndex
          -> newFirstIndex -> [ a b c ] <- newLastIndex
          check if nFirst and oFirst align, if so, check nLast and oLast
-         */
-      else if (oFirst["key"] === nFirst["key"]) {
+         */ else if (oFirst["key"] === nFirst["key"]) {
         diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
       } else if (oLast["key"] === nLast["key"]) {
         diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
@@ -325,9 +329,9 @@ module["exports"] = (function () {
          both could have been swapped.
          -> [ a b c ] <- old children
          -> [ c b a ] <- new children
-         */
-      else if (
-        oFirst["key"] === nLast["key"] && nFirst["key"] === oLast["key"]
+         */ else if (
+        oFirst["key"] === nLast["key"] &&
+        nFirst["key"] === oLast["key"]
       ) {
         swapDomRefs(node, oLast["domRef"], oFirst["domRef"], parent);
         swap(os, oldFirstIndex, oldLastIndex);
@@ -343,8 +347,7 @@ module["exports"] = (function () {
              -> [ a b d ] <- old children
              -> [ a b d ] <- new children
              and now we happy path
-             */
-      else if (oFirst["key"] === nLast["key"]) {
+             */ else if (oFirst["key"] === nLast["key"]) {
         /* insertAfter */
         parent.insertBefore(oFirst["domRef"], oLast["domRef"].nextSibling);
         /* swap positions in old vdom */
@@ -358,8 +361,7 @@ module["exports"] = (function () {
          -> [ d b a ] <- old children
          -> [ d b a ] <- new children
          and now we happy path
-         */
-      else if (oLast["key"] === nFirst["key"]) {
+         */ else if (oLast["key"] === nFirst["key"]) {
         /* insertAfter */
         parent.insertBefore(oLast["domRef"], oFirst["domRef"]);
         /* swap positions in old vdom */
@@ -370,8 +372,7 @@ module["exports"] = (function () {
          This can happen when the list is sorted, for example.
          -> [ a e c ] <- old children
          -> [ b e d ] <- new children
-         */
-      else {
+         */ else {
         /* final case, perform linear search to check if new key exists in old map, decide what to do from there */
         found = false;
         tmp = oldFirstIndex;
@@ -415,8 +416,7 @@ module["exports"] = (function () {
              -> [ b a e d c ] <- old children
              -> [ b e a j   ] <- new children
                 ^
-                */
-        else {
+                */ else {
           createElement(nFirst, doc, function (ref) {
             parent.insertBefore(ref, oFirst["domRef"]);
           });
@@ -443,9 +443,13 @@ module["exports"] = (function () {
   /* event delegation algorithm */
   var delegate = function (mount, events, getVTree, debug) {
     for (var event in events) {
-      mount.addEventListener(events[event][0], function (e) {
-        listener(e, mount, getVTree, debug);
-      }, events[event][1]);
+      mount.addEventListener(
+        events[event][0],
+        function (e) {
+          listener(e, mount, getVTree, debug);
+        },
+        events[event][1],
+      );
     }
   };
 
@@ -461,9 +465,13 @@ module["exports"] = (function () {
   /* event undelegation */
   var undelegate = function (mount, events, getVTree, debug) {
     for (var event in events) {
-      mount.removeEventListener(events[event][0], function (e) {
-        listener(e, mount, getVTree, debug);
-      }, events[event][1]);
+      mount.removeEventListener(
+        events[event][0],
+        function (e) {
+          listener(e, mount, getVTree, debug);
+        },
+        events[event][1],
+      );
     }
   };
 
@@ -475,15 +483,15 @@ module["exports"] = (function () {
     if (!stack.length) {
       if (debug) {
         console.warn(
-          'Event "' + event.type +
+          'Event "' +
+            event.type +
             '" did not find an event handler to dispatch on',
           obj,
           event,
         );
       }
       return;
-    } /* stack not length 1, recurse */
-    else if (stack.length > 1) {
+    } /* stack not length 1, recurse */ else if (stack.length > 1) {
       parentStack.unshift(obj);
       for (var o = 0; o < obj.children.length; o++) {
         if (obj["type"] === "vcomp") continue;
@@ -498,8 +506,7 @@ module["exports"] = (function () {
           break;
         }
       }
-    } /* stack.length == 1 */
-    else {
+    } /* stack.length == 1 */ else {
       var eventObj = obj["events"][event.type];
       if (eventObj) {
         var options = eventObj["options"];
@@ -562,7 +569,8 @@ module["exports"] = (function () {
     /* If obj is a list-like object */
     var newObj;
     if (
-      obj instanceof Array || ("length" in obj && obj["localName"] !== "select")
+      obj instanceof Array ||
+      ("length" in obj && obj["localName"] !== "select")
     ) {
       newObj = [];
       for (var i = 0; i < obj.length; i++) {
@@ -578,14 +586,16 @@ module["exports"] = (function () {
       /* https://stackoverflow.com/a/25569117/453261 */
       /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
       if (
-        (obj["localName"] === "input") &&
-        (i === "selectionDirection" || i === "selectionStart" ||
+        obj["localName"] === "input" &&
+        (i === "selectionDirection" ||
+          i === "selectionStart" ||
           i === "selectionEnd")
       ) {
         continue;
       }
       if (
-        typeof obj[i] == "string" || typeof obj[i] == "number" ||
+        typeof obj[i] == "string" ||
+        typeof obj[i] == "number" ||
         typeof obj[i] == "boolean"
       ) {
         newObj[i] = obj[i];
@@ -596,19 +606,21 @@ module["exports"] = (function () {
 
   /* get static and dynamic properties */
   var getAllPropertyNames = function (obj) {
-    var props = {}, i = 0;
+    var props = {},
+      i = 0;
     do {
       var names = Object.getOwnPropertyNames(obj);
       for (i = 0; i < names.length; i++) {
         props[names[i]] = null;
       }
-    } while (obj = Object.getPrototypeOf(obj));
+    } while ((obj = Object.getPrototypeOf(obj)));
     return props;
   };
 
   /* prerendering / hydration / isomorphic support */
   var collapseSiblingTextNodes = function (vs) {
-    var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
+    var ax = 0,
+      adjusted = vs.length > 0 ? [vs[0]] : [];
     for (var ix = 1; ix < vs.length; ix++) {
       if (adjusted[ax]["type"] === "vtext" && vs[ix]["type"] === "vtext") {
         adjusted[ax]["text"] += vs[ix]["text"];
@@ -620,7 +632,8 @@ module["exports"] = (function () {
   };
 
   var copyDOMIntoVTree = function (logLevel, mountPoint, vtree, doc, window) {
-    var mountChildIdx = 0, node;
+    var mountChildIdx = 0,
+      node;
     // If script tags are rendered first in body, skip them.
     if (!mountPoint) {
       if (doc.body.childNodes.length > 0) {
@@ -683,7 +696,12 @@ module["exports"] = (function () {
         Math.round(parseInt(input.substr(1 + collen, collen), 16) * fact),
         Math.round(parseInt(input.substr(1 + 2 * collen, collen), 16) * fact),
       ];
-    } else return input.split("(")[1].split(")")[0].split(",").map((x) => +x);
+    } else
+      return input
+        .split("(")[1]
+        .split(")")[0]
+        .split(",")
+        .map((x) => +x);
   };
 
   // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
@@ -723,7 +741,8 @@ module["exports"] = (function () {
       }
 
       // properties must be identical
-      var keyLength = Object.keys(vtree["props"]).length, key = null;
+      var keyLength = Object.keys(vtree["props"]).length,
+        key = null;
       for (var i = 0; i < keyLength; i++) {
         key = Object.keys(vtree["props"])[i];
         if (key === "href") {
@@ -731,8 +750,10 @@ module["exports"] = (function () {
             url = vtree["domRef"][key],
             relative = vtree["props"][key];
           if (
-            absolute !== url && relative !== url && (relative + "/") !== url &&
-            (absolute + "/") !== url
+            absolute !== url &&
+            relative !== url &&
+            relative + "/" !== url &&
+            absolute + "/" !== url
           ) {
             console.warn(
               "Property " + key + " differs",
@@ -787,7 +808,7 @@ module["exports"] = (function () {
         if (key === "color") {
           if (
             parseColor(vtree["domRef"].style[key]).toString() !==
-              parseColor(vtree["css"][key]).toString()
+            parseColor(vtree["css"][key]).toString()
           ) {
             console.warn(
               "Style " + key + " differs",
@@ -881,21 +902,22 @@ module["exports"] = (function () {
     doc.body.setAttribute("data-component-id", componentId);
   };
 
+  /* dmj, keep quoted field names so closure-compiler doesn't rename */
   return {
     /* utils */
-    "callFocus": callFocus,
-    "callBlur": callBlur,
+    'callFocus': callFocus,
+    'callBlur': callBlur,
     /* testing */
-    "integrityCheck": integrityCheck,
+    'integrityCheck': integrityCheck,
     /* event handling */
-    "eventJSON": eventJSON,
-    "delegate": delegate,
-    "undelegate": undelegate,
+    'eventJSON': eventJSON,
+    'delegate': delegate,
+    'undelegate': undelegate,
     /* component util */
-    "setBodyComponent": setBodyComponent,
+    'setBodyComponent': setBodyComponent,
     /* core functions */
-    "diff": diff,
+    'diff': diff,
     /* isomorphic */
-    "copyDOMIntoVTree": copyDOMIntoVTree,
+    'copyDOMIntoVTree': copyDOMIntoVTree,
   };
 })();
