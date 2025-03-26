@@ -58,8 +58,8 @@ mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with no actions.
-noEff :: Effect action model ()
-noEff = pure ()
+noEff :: model -> Effect action model ()
+noEff = put
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
