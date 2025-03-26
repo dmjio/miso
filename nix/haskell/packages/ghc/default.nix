@@ -17,4 +17,5 @@ self: super:
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;
   servant-server = doJailbreak super.servant-server;
+  js2nix = self.callPackage source.js2nix {};
 }
