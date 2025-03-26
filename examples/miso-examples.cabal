@@ -60,6 +60,7 @@ executable components
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable simple
@@ -80,6 +81,7 @@ executable simple
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable todo-mvc
@@ -120,7 +122,8 @@ executable threejs
     base < 5,
     containers,
     jsaddle,
-    miso
+    miso,
+    mtl
 
 executable file-reader
   import:
@@ -140,7 +143,8 @@ executable file-reader
     base < 5,
     containers,
     ghcjs-base,
-    miso
+    miso,
+    mtl
 
 executable xhr
   import:
@@ -199,6 +203,7 @@ executable router
     base < 5,
     containers,
     miso,
+    mtl,
     servant,
     transformers
 
@@ -238,7 +243,8 @@ executable mario
   build-depends:
     base < 5,
     containers,
-    miso
+    miso,
+    mtl
 
 executable mathml
   import:
