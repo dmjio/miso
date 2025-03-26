@@ -68,7 +68,7 @@ data PointerEvent
   , pointerId :: Int
   , isPrimary :: Bool
   , coords :: (Int, Int)
-  -- ^ clientX (or x), clientY (or y)
+  -- ^ clientX, clientY
   , screen :: (Int,Int)
   -- ^ screenX, screenY
   , page :: (Int,Int)
