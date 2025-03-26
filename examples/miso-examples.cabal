@@ -123,8 +123,7 @@ executable threejs
     base < 5,
     containers,
     jsaddle,
-    miso,
-    mtl
+    miso
 
 executable file-reader
   import:

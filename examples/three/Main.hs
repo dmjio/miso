@@ -4,7 +4,6 @@
 
 module Main where
 
-import Control.Monad.State
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef
@@ -89,21 +88,18 @@ updateModel ::
     Action ->
     Effect Action Double ()
 updateModel ref Init = do
-    m <- get
-    m <# do
-        liftIO (initContext ref)
-        pure GetTime
+  io (initContext ref)
+  issue GetTime
 updateModel ref GetTime = do
-    m <- get
-    m <# do
-        Context{..} <- liftIO (readIORef ref)
-        withStats stats $ do
-            rotateCube
-            renderScene
-        SetTime <$> now
+  io $ do
+    Context{..} <- liftIO (readIORef ref)
+    withStats stats $ do
+      rotateCube
+      renderScene
+  issue =<< SetTime <$> liftIO now
 updateModel _ (SetTime m) = do
-    m <- get
-    m <# pure GetTime
+  noEff m
+  issue GetTime
 
 #ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new Stats(); })"
