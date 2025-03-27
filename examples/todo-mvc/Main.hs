@@ -14,7 +14,6 @@
 
 module Main where
 
-import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Data.Aeson hiding (Object)
 import           Data.Bool
