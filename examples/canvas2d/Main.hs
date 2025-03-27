@@ -44,7 +44,7 @@ updateModel _ GetTime = do
     date <- newDate
     (s, m') <- (,) <$> getSecs date <*> getMillis date
     pure $ SetTime (s, m')
-updateModel (sun, moon, earth) (SetTime m@(secs, millis)) _ =
+updateModel (sun, moon, earth) (SetTime m@(secs, millis)) =
     m <# do
         ctx <- getCtx
         setGlobalCompositeOperation ctx
