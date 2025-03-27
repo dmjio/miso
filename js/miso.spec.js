@@ -2136,3 +2136,7 @@ test("Should unmount recursively in order", () => {
   miso.diff(vtree, null, document.body, document);
   expect(unmounts).toEqual(["one", "two", "three"]);
 });
+
+test("Should be latest version", () => {
+  expect(miso.version).toEqual("1.9.0.0");
+});

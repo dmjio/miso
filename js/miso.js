@@ -919,5 +919,7 @@ module["exports"] = (function () {
     'diff': diff,
     /* isomorphic */
     'copyDOMIntoVTree': copyDOMIntoVTree,
+    /* version */
+    'version': "1.9.0.0",
   };
 })();
