@@ -36,12 +36,11 @@ module Miso.Event.Types
   , pointerEvents
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (FromJSON(..), withText, Value(String))
-import           Data.Aeson.Types (typeMismatch)
+import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
 import           GHC.Generics (Generic)
 import           GHCJS.Marshal (ToJSVal)
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
@@ -67,13 +66,13 @@ data PointerEvent
   { pointerType :: PointerType
   , pointerId :: Int
   , isPrimary :: Bool
-  , coords :: (Int, Int)
-  -- ^ clientX (or x), clientY (or y)
-  , screen :: (Int,Int)
+  , client :: (Double, Double)
+  -- ^ clientX, clientY
+  , screen :: (Double, Double)
   -- ^ screenX, screenY
-  , page :: (Int,Int)
+  , page :: (Double,Double)
   -- ^ pageX, pageY
-  , tilt :: (Int,Int)
+  , tilt :: (Double,Double)
   -- ^ tiltX, tiltY
   , pressure :: Double
   } deriving (Show, Eq)
@@ -84,6 +83,7 @@ data PointerType
   = MousePointerType
   | PenPointerType
   | TouchPointerType
+  | UnknownPointerType MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance FromJSON PointerType where
@@ -91,7 +91,7 @@ instance FromJSON PointerType where
     "mouse" -> pure MousePointerType
     "touch" -> pure TouchPointerType
     "pen"   -> pure PenPointerType
-    p -> typeMismatch "PointerEvent" (String p)
+    x       -> pure (UnknownPointerType (ms x))
 -----------------------------------------------------------------------------
 -- | Options for handling event propagation.
 data Options
