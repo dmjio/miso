@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -7,14 +8,15 @@
 
 module Common where
 
-import Data.Bool
+import           Control.Monad.State
+import           Data.Bool
 import qualified Data.Map.Strict as M
-import Data.Proxy
-import Servant.API
-import Servant.Links
+import           Data.Proxy
+import           Servant.API
+import           Servant.Links
 
-import Miso
-import Miso.String
+import           Miso
+import           Miso.String
 
 {- | We can pretty much share everything
 
@@ -34,7 +36,6 @@ data Action
     = ChangeURI URI
     | HandleURI URI
     | ToggleNavMenu
-    | NoOp
     deriving (Show, Eq)
 
 -- | Routes (server / client agnostic)
@@ -60,7 +61,7 @@ type ClientRoutes = Routes (View Action)
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = App Model Action
+type HaskellMisoComponent = App Effect Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -96,7 +97,7 @@ haskellMisoComponent uri
   , logLevel = DebugAll
   }
   
-app :: URI -> App Model Action
+app :: URI -> App Effect Model Action
 app currentUri = defaultApp emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
@@ -105,15 +106,16 @@ app currentUri = defaultApp emptyModel updateModel viewModel
           Left _ -> the404 m
           Right v -> v
 
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleURI u) m =
-    m{uri = u} <# pure NoOp
-updateModel (ChangeURI u) m =
-    m{navMenuOpen = False} <# do
-        NoOp <$ pushURI u
-updateModel ToggleNavMenu m@Model{..} =
-    m{navMenuOpen = not navMenuOpen} <# pure NoOp
-updateModel NoOp m = noEff m
+updateModel :: Action -> Effect Action Model ()
+updateModel = \case
+  HandleURI u ->
+    modify $ \m -> m { uri = u }
+  ChangeURI u -> do
+    modify $ \m -> m { navMenuOpen = False }
+    io (pushURI u)
+  ToggleNavMenu -> do
+    m@Model{..} <- get
+    put m { navMenuOpen = not navMenuOpen }
 
 -- | Views
 community :: Model -> View Action

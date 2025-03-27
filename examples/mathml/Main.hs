@@ -13,20 +13,14 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = run $ startApp (defaultApp Main.Empty updateModel viewModel)
 
-data Model
-  = Empty
+data Model = Empty
   deriving (Eq)
 
-data Action
-  = NoOp
-  deriving (Show, Eq)
-
--- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel NoOp = noEff
+updateModel :: Applicative f => p -> f ()
+updateModel _ = pure ()
 
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Action
+viewModel :: Model -> View ()
 viewModel _ =
     nodeMathml
         "math"

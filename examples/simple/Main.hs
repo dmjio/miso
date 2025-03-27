@@ -8,19 +8,17 @@ module Main where
 -- | Miso framework import
 import Miso
 import Miso.String
-
-import Control.Monad.IO.Class
+import Control.Monad.State
 
 -- | Type synonym for an application model
 type Model = Int
 
 -- | Sum type for application events
 data Action
-    = AddOne PointerEvent
-    | SubtractOne PointerEvent
-    | NoOp
-    | SayHelloWorld
-    deriving (Show, Eq)
+  = AddOne PointerEvent
+  | SubtractOne PointerEvent
+  | SayHelloWorld
+  deriving (Show, Eq)
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -33,18 +31,19 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Model Action
+app :: App Effect Model Action
 app = defaultApp 0 updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (AddOne event) m = m + 1 <#
-  NoOp <$ consoleLog (ms (show event))
-updateModel (SubtractOne event) m = m - 1 <#
-  NoOp <$ consoleLog (ms (show event))
-updateModel NoOp m = noEff m
-updateModel SayHelloWorld m =
-  m <# liftIO (putStrLn "Hello World") >> pure NoOp
+updateModel :: Action -> Effect Action Model ()
+updateModel (AddOne event) = do
+  modify (+1)
+  io $ consoleLog (ms (show event))
+updateModel (SubtractOne event) = do
+  modify (subtract 1)
+  io $ consoleLog (ms (show event))
+updateModel SayHelloWorld =
+  io (consoleLog "Hello World!")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

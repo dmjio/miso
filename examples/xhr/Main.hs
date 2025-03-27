@@ -8,14 +8,15 @@
 
 module Main where
 
-import Data.Aeson
+import           Control.Monad.State
+import           Data.Aeson
 import qualified Data.Map as M
-import Data.Maybe
-import GHC.Generics
-import JavaScript.Web.XMLHttpRequest
+import           Data.Maybe
+import           GHC.Generics
+import           JavaScript.Web.XMLHttpRequest
 
-import Miso hiding (defaultOptions)
-import Miso.String
+import           Miso hiding (defaultOptions)
+import           Miso.String
 
 -- | Model
 newtype Model = Model
@@ -26,24 +27,24 @@ newtype Model = Model
 data Action
     = FetchGitHub
     | SetGitHub APIInfo
-    | NoOp
     deriving (Show, Eq)
 
 -- | Main entry point
 main :: IO ()
 main = run (startApp app)
 
-app :: App Model Action
+app :: App Effect Model Action
 app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model Nothing
 
 -- | Update your model
-updateModel :: Action -> Model -> Effect Action Model
-updateModel FetchGitHub m = m <# SetGitHub <$> getGitHubAPIInfo
-updateModel (SetGitHub apiInfo) m = noEff m {info = Just apiInfo }
-updateModel NoOp m = noEff m
+updateModel :: Action -> Effect Action Model ()
+updateModel FetchGitHub = do
+  scheduleIO (SetGitHub <$> getGitHubAPIInfo)
+updateModel (SetGitHub apiInfo) =
+  modify $ \m -> m { info = Just apiInfo }
 
 -- | View function, with routing
 viewModel :: Model -> View Action

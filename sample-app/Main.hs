@@ -1,52 +1,58 @@
 ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE LambdaCase        #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
--- | Miso framework import
 import Miso
 import Miso.String
 ----------------------------------------------------------------------------
--- | Type synonym for an application model
-type Model = Int
+import Control.Lens
 ----------------------------------------------------------------------------
--- | Sum type for application events
+-- | Application model state
+data Model
+  = Model
+  { _counter :: Int
+  } deriving (Show, Eq)
+----------------------------------------------------------------------------
+counter :: Lens' Model Int
+counter = lens _counter $ \record field -> record { _counter = field }
+----------------------------------------------------------------------------
+-- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
-  | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
------------------------------------------------------------------------------
--- | Required when using the WASM backnend
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
-app :: App Model Action
+-- | `defaultApp` takes as arguments the initial model, update function, view function
+app :: App Effect Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
--- | Empty model
+-- | Empty application state
 emptyModel :: Model
-emptyModel = 0
+emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel NoOp m          = noEff m
-updateModel AddOne m        = noEff (m + 1)
-updateModel SubtractOne m   = noEff (m - 1)
-updateModel SayHelloWorld m = m <# NoOp <$ alert "Hello World"
+updateModel :: Action -> Effect Action Model ()
+updateModel = \case
+  AddOne        -> counter += 1
+  SubtractOne   -> counter -= 1
+  SayHelloWorld -> io $ do
+    alert "Hello World"
+    consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
 viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
-  , text (ms x)
+  , text . ms $ x^.counter
   , button_ [ onClick SubtractOne ] [ text "-" ]
+  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------

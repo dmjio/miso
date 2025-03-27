@@ -4,18 +4,17 @@
 
 module Main where
 
-import Control.Monad
+import Control.Monad.State
 import GHCJS.Types
 import JavaScript.Web.Canvas
 
-import Miso
+import Miso hiding (translate)
 import Miso.String
 
 type Model = (Double, Double)
 
 data Action
-    = NoOp
-    | GetTime
+    = GetTime
     | SetTime Model
 
 main :: IO ()
@@ -24,38 +23,29 @@ main = run $ do
     setSrc sun "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_sun.png"
     setSrc moon "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_moon.png"
     setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
-    startApp
-        App
-            { initialAction = Just GetTime
-            , update = updateModel (sun, moon, earth)
-            , ..
-            }
+    startApp (app sun moon earth) { initialAction = Just GetTime }
   where
+    app sun moon earth =
+      defaultApp (0.0, 0.0) (updateModel (sun, moon, earth)) view
     view _ =
-        canvas_
-            [ id_ "canvas"
-            , width_ "300"
-            , height_ "300"
-            ]
-            []
-    model = (0.0, 0.0)
-    subs = []
-    events = defaultEvents
-    mountPoint = Nothing
-    logLevel = Off
+      canvas_
+        [ id_ "canvas"
+        , width_ "300"
+        , height_ "300"
+        ]
+        []
 
-updateModel ::
-    (Image, Image, Image) ->
-    Action ->
-    Model ->
-    Effect Action Model
-updateModel _ NoOp m = noEff m
-updateModel _ GetTime m =
-    m <# do
-        date <- newDate
-        (s, m') <- (,) <$> getSecs date <*> getMillis date
-        pure $ SetTime (s, m')
-updateModel (sun, moon, earth) (SetTime m@(secs, millis)) _ =
+updateModel
+  :: (Image, Image, Image)
+  -> Action
+  -> Effect Action Model ()
+updateModel _ GetTime = do
+  m <- get
+  m <# do
+    date <- newDate
+    (s, m') <- (,) <$> getSecs date <*> getMillis date
+    pure $ SetTime (s, m')
+updateModel (sun, moon, earth) (SetTime m@(secs, millis)) =
     m <# do
         ctx <- getCtx
         setGlobalCompositeOperation ctx

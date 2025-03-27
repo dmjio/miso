@@ -185,6 +185,7 @@ library
     http-media    < 0.9,
     http-types    < 0.13,
     jsaddle       < 0.10,
+    mtl           < 2.4,
     network-uri   < 2.7,
     servant       < 0.21,
     tagsoup       < 0.15,

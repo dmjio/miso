@@ -47,7 +47,7 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Component@ to a @L.ByteString@
-instance ToHtml (Component model action) where
+instance ToHtml (Component effect model action) where
   toHtml = renderComponent
 ----------------------------------------------------------------------------
 -- | Render a @View@ to a @L.ByteString@
@@ -65,7 +65,7 @@ instance ToHtml a => MimeRender HTML a where
 renderView :: View a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
-renderComponent :: Component model action -> L.ByteString
+renderComponent :: Component effect model action -> L.ByteString
 renderComponent (Component _ _ App {..}) = renderView (view model)
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder

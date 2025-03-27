@@ -13,6 +13,7 @@
 
 module Main where
 
+import           Control.Monad.State
 import           Data.Aeson
 import           Data.Bool
 import qualified Data.Map as M
@@ -36,36 +37,37 @@ main = run $ startApp app
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-app :: App Model Action
+app :: App Effect Model Action
 app = defaultApp emptyModel updateModel appView
 
 emptyModel :: Model
 emptyModel = Model (Message "") mempty
 
-updateModel :: Action -> Model -> Effect Action Model
-updateModel (HandleWebSocket (WebSocketMessage (Message m))) model =
-    noEff model{received = m}
-updateModel (SendMessage msg) model = model <# send msg >> pure Id
-updateModel (UpdateMessage m) model = noEff model{msg = Message m}
-updateModel _ model = noEff model
+updateModel :: Action -> Effect Action Model ()
+updateModel (HandleWebSocket (WebSocketMessage (Message m))) =
+  modify $ \model -> model { received = m }
+updateModel (SendMessage msg) =
+  io (send msg)
+updateModel (UpdateMessage m) = do
+  modify $ \model -> model { msg = Message m }
+updateModel _ = pure ()
 
 instance ToJSON Message
 instance FromJSON Message
 
 newtype Message = Message MisoString
-    deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic)
 
 data Action
-    = HandleWebSocket (WebSocket Message)
-    | SendMessage Message
-    | UpdateMessage MisoString
-    | Id
+  = HandleWebSocket (WebSocket Message)
+  | SendMessage Message
+  | UpdateMessage MisoString
+  | Id
 
 data Model = Model
-    { msg :: Message
-    , received :: MisoString
-    }
-    deriving (Show, Eq)
+  { msg :: Message
+  , received :: MisoString
+  } deriving (Show, Eq)
 
 appView :: Model -> View Action
 appView Model{..} =

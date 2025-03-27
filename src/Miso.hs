@@ -21,7 +21,6 @@ module Miso
     -- ** Sampling
   , sample
     -- ** Message Passing
-  , mail
   , notify
   , module Miso.Types
     -- * Effect
@@ -49,9 +48,9 @@ module Miso
   , set
   , now
   , consoleLog
+  , consoleLog'
   , consoleError
   , consoleWarn
-  , consoleLog'
   , getElementById
   , focus
   , blur
@@ -88,7 +87,7 @@ import           Miso.FFI hiding (diff)
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @mountPoint@ as the @Component@ name.
 -- Always mounts to /<body>/. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> App model action) -> JSM ()
+miso :: Eq model => (URI -> App effect model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
@@ -102,7 +101,7 @@ miso f = withJS $ do
 -----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
-startApp :: Eq model => App model action -> JSM ()
+startApp :: Eq model => App effect model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     vtree <- runView DontPrerender (view model) snk logLevel events

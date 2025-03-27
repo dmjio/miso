@@ -65,6 +65,7 @@ executable client
     containers,
     network-uri,
     miso,
+    mtl,
     servant
   default-language:
     Haskell2010

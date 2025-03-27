@@ -10,23 +10,23 @@
 <p align="center">
 
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
-	<img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
+    <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
   </a>
 
   <a href="https://haskell.org">
-	<img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
+    <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
   </a>
   <a href="https://miso-haskell.cachix.org">
-	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
+    <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://github.com/dmjio/miso/actions">
     <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
-	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
+    <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
-	<img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
+    <img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
   </a>
 </p>
 
@@ -243,63 +243,6 @@ For details of the internals and general overview of how `miso` works, see the [
   - [Link](http://hackage.haskell.org/package/miso)
 
 ## Sample application
-```haskell
-----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
-----------------------------------------------------------------------------
-module Main where
-----------------------------------------------------------------------------
--- | Miso framework import
-import Miso
-import Miso.String
-----------------------------------------------------------------------------
--- | Type synonym for an application model
-type Model = Int
-----------------------------------------------------------------------------
--- | Sum type for application events
-data Action
-  = AddOne
-  | SubtractOne
-  | NoOp
-  | SayHelloWorld
-  deriving (Show, Eq)
-----------------------------------------------------------------------------
--- | Entry point for a miso application
-main :: IO ()
-main = run (startApp app)
-----------------------------------------------------------------------------
-app :: App Model Action
-app = defaultApp emptyModel updateModel viewModel
-----------------------------------------------------------------------------
--- | Empty model
-emptyModel :: Model
-emptyModel = 0
-----------------------------------------------------------------------------
--- | Updates model, optionally introduces side effects
-updateModel :: Action -> Model -> Effect Action Model
-updateModel NoOp m          = noEff m
-updateModel AddOne m        = noEff (m + 1)
-updateModel SubtractOne m   = noEff (m - 1)
-updateModel SayHelloWorld m = m <# NoOp <$ alert "Hello World"
-----------------------------------------------------------------------------
--- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Action
-viewModel x = div_ []
-  [ button_ [ onClick AddOne ] [ text "+" ]
-  , text (ms x)
-  , button_ [ onClick SubtractOne ] [ text "-" ]
-  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
-  ]
-----------------------------------------------------------------------------
-```
-
-## Transition application
-
-An alternative, more powerful interface for constructing `miso` applications is using the `Transition` interface.
-`Transition` is based on the `StateT` monad transformer, and can be used to construct components. It also works
-very nicely with lenses based on `MonadState` (i.e. `(.=)`, `(%=)`,`(+=)`,`(-=)`).
-
 
 ```haskell
 ----------------------------------------------------------------------------
@@ -327,7 +270,6 @@ counter = lens _counter $ \record field -> record { _counter = field }
 data Action
   = AddOne
   | SubtractOne
-  | NoOp
   | SayHelloWorld
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
@@ -336,20 +278,21 @@ main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
-app :: App Model Action
-app = defaultApp emptyModel (fromTransition . updateModel) viewModel
+app :: App Effect Model Action
+app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
 emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Transition Action Model ()
+updateModel :: Action -> Effect Action Model ()
 updateModel = \case
-  NoOp          -> pure ()
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> scheduleIO_ (consoleLog "Hello World")
+  SayHelloWorld -> io $ do
+    consoleLog "Hello World"
+    alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
@@ -382,7 +325,6 @@ This will build all examples and documentation into a folder named `result`
 ➜  miso git:(master) ✗ tree -d ./result/bin
 ./result/bin
 |-- canvas2d.jsexe
-|-- compose-update.jsexe
 |-- file-reader.jsexe
 |-- mario.jsexe
 |   `-- imgs

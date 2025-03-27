@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -11,45 +13,40 @@
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
 ----------------------------------------------------------------------------
 module Miso.Effect
-  ( -- ** Transition
+  ( -- ** Effect
     -- *** Types
-    Transition
+    Effect
+  , Sub
+  , Sink
     -- *** Combinators
   , effectSub
-  , mapAction
-  , fromTransition
-  , toTransition
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
   , scheduleSub
-    -- ** Effect
-    -- *** Types
-  , Effect (..)
-  , Sub
-  , Sink
-    -- *** Combinators
   , mapSub
   , noEff
   , (<#)
   , (#>)
   , batchEff
+  , io
+  , issue
+  -- * Internal
+  , runEffect
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (forM_)
+import           Control.Monad.Fail (MonadFail, fail)
+import qualified Control.Monad.Fail as Fail
 import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT, mapStateT)
-import           Control.Monad.Trans.Writer.Strict (Writer, tell, mapWriter, runWriter)
-import           Data.Bifunctor (second, Bifunctor(..))
+import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
+import           Control.Monad.State (MonadState, put)
+import           Control.Monad.Trans.Writer.Strict (Writer, runWriter)
+import           Control.Monad.Writer (tell, MonadWriter)
 import           Data.Foldable (for_)
 -----------------------------------------------------------------------------
-import           Miso.FFI (JSM)
------------------------------------------------------------------------------
--- | An effect represents the results of an update action.
---
--- It consists of the updated model and a list of subscriptions. Each 'Sub' is
--- run in a new thread so there is no risk of accidentally blocking the
--- application.
-data Effect action model = Effect model [Sub action]
+import           Miso.FFI (JSM, consoleError)
+import           Miso.String (ms)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
 --
@@ -65,39 +62,25 @@ type Sink action = action -> JSM ()
 mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
-instance Functor (Effect action) where
-  fmap f (Effect model actions) = Effect (f model) actions
------------------------------------------------------------------------------
-instance Applicative (Effect action) where
-  pure m = Effect m []
-  Effect f ys <*> Effect x zs = Effect (f x) (ys ++ zs)
------------------------------------------------------------------------------
-instance Monad (Effect action) where
-  return = pure
-  Effect m xs >>= f | Effect n ys <- f m = Effect n (xs ++ ys)
------------------------------------------------------------------------------
-instance Bifunctor Effect where
-  bimap f g (Effect m actions) =
-    Effect (g m) [ \sink -> action (sink . f) | action <- actions ]
------------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with no actions.
-noEff :: model -> Effect action model
-noEff m = Effect m []
+noEff :: model -> Effect action model ()
+noEff = put
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
-(<#) :: model -> JSM action -> Effect action model
-(<#) m a = effectSub m $ \sink -> a >>= sink
+(<#) :: model -> JSM action -> Effect action model ()
+(<#) m action = put m >> tell [ \sink -> sink =<< action ]
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
-(#>) :: JSM action -> model -> Effect action model
+(#>) :: JSM action -> model -> Effect action model ()
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
-batchEff :: model -> [JSM action] -> Effect action model
-batchEff model actions =
-  Effect model [ \sink -> action >>= sink | action <- actions ]
+batchEff :: model -> [JSM action] -> Effect action model ()
+batchEff model actions = put model >> do
+  forM_ actions $ \action ->
+    tell [ \sink -> sink =<< action ]
 -----------------------------------------------------------------------------
 -- | Like '<#' but schedules a subscription which is an IO computation which has
 -- access to a 'Sink' which can be used to asynchronously dispatch actions to
@@ -107,18 +90,26 @@ batchEff model actions =
 -- widget which has an associated callback. The callback can then call the sink
 -- to turn events into actions. To do this without accessing a sink requires
 -- going via a @'Sub'scription@ which introduces a leaky-abstraction.
-effectSub :: model -> Sub action -> Effect action model
-effectSub model sub = Effect model [sub]
+effectSub :: model -> Sub action -> Effect action model ()
+effectSub model sub = do
+  put model
+  tell [sub]
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
--- @Transition@ is a state monad so it abstracts over manually passing the model
+-- @Effect@ is a state monad so it abstracts over manually passing the model
 -- around. It's also a writer monad where the accumulator is a list of scheduled
 -- IO actions. Multiple actions can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library and a single action
 -- can be scheduled using 'scheduleIO'.
 --
--- Tip: use the @Transition@ monad in combination with the stateful
+-- An @Effect@ represents the results of an update action.
+--
+-- It consists of the updated model and a list of subscriptions. Each 'Sub' is
+-- run in a new thread so there is no risk of accidentally blocking the
+-- application.
+--
+-- Tip: use the @Effect@ monad in combination with the stateful
 -- <http://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Operators.html lens>
 -- operators (all operators ending in "@=@"). The following example assumes
 -- the lenses @field1@, @counter@ and @field2@ are in scope and that the
@@ -126,7 +117,7 @@ effectSub model sub = Effect model [sub]
 --
 -- @
 -- myApp = App
---   { update = 'fromTransition' . \\case
+--   { update = \\case
 --       MyAction1 -> do
 --         field1 .= value1
 --         counter += 1
@@ -138,38 +129,27 @@ effectSub model sub = Effect model [sub]
 --   , ...
 --   }
 -- @
-type Transition action model = StateT model (Writer [Sub action])
+newtype Effect action model a = Effect (StateT model (Writer [Sub action]) a)
+  deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
 -----------------------------------------------------------------------------
--- | Turn a transition that schedules subscriptions that consume
--- actions of type @a@ into a transition that schedules subscriptions
--- that consume actions of type @b@ using the supplied function of
--- type @a -> b@.
-mapAction :: (a -> b) -> Transition a m r -> Transition b m r
-mapAction = mapStateT . mapWriter . second . fmap . mapSub
+-- | @MonadFail@ instance for @Effect@
+instance MonadFail (Effect action model) where
+  fail s = do
+    io $ consoleError (ms s)
+    Fail.fail s
 -----------------------------------------------------------------------------
--- | Convert a @Transition@ computation to a function that can be given to @update@.
-fromTransition
-    :: Transition action model ()
-    -> (model -> Effect action model) -- ^ model @update@ function.
-fromTransition act = \m ->
-  case runWriter (execStateT act m) of
-    (n, actions) -> Effect n actions
------------------------------------------------------------------------------
--- | Convert an @update@ function to a @Transition@ computation.
-toTransition
-    :: (model -> Effect action model) -- ^ model @update@ function
-    -> Transition action model ()
-toTransition f =
-  StateT $ \m ->
-    case f m of
-      Effect n actions ->
-        ((), n) <$ tell actions
+-- | Internal function used to unwrap an 'Effect'
+runEffect
+    :: model
+    -> Effect action model a
+    -> (model, [Sub action])
+runEffect m (Effect action) = runWriter (execStateT action m)
 -----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: JSM action -> Transition action model ()
+scheduleIO :: JSM action -> Effect action model ()
 scheduleIO action = scheduleSub (\sink -> action >>= sink)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
@@ -177,13 +157,13 @@ scheduleIO action = scheduleSub (\sink -> action >>= sink)
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: JSM () -> Transition action model ()
+scheduleIO_ :: JSM () -> Effect action model ()
 scheduleIO_ action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Transition action model ()
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect action model ()
 scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
@@ -195,6 +175,31 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -- can then call the sink to turn events into actions. To do this
 -- without accessing a sink requires going via a @'Sub'scription@
 -- which introduces a leaky-abstraction.
-scheduleSub :: Sub action -> Transition action model ()
-scheduleSub sub = lift $ tell [ sub ]
+scheduleSub :: Sub action -> Effect action model ()
+scheduleSub sub = Effect $ lift $ tell [ sub ]
 ----------------------------------------------------------------------------- 
+-- | A synonym for @tell@, specialized to @Effect@
+--
+-- > update :: Action -> Effect Action Model ()
+-- > update = \case
+-- >   Click -> issue HelloWorld
+--
+-- @since 1.9.0.0
+--
+-- Used to issue new @action@
+issue :: action -> Effect action model ()
+issue action = tell [ \sink -> sink action ]
+-----------------------------------------------------------------------------
+-- | A shorter synonym for @scheduleIO_@
+--
+-- > update :: Action -> Effect Action Model ()
+-- > update = \case
+-- >   HelloWorld -> io (consoleLog "Hello World")
+--
+-- @since 1.9.0.0
+--
+-- This is handy for scheduling IO computations where you don't care
+-- about their results or when they complete.
+io :: JSM () -> Effect action model ()
+io = scheduleIO_
+-----------------------------------------------------------------------------

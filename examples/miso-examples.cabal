@@ -42,26 +42,6 @@ common js-only
   if arch(wasm32) || !(impl(ghcjs) || arch(javascript))
      buildable: False
 
-executable compose-update
-  import:
-    common-options
-  default-language:
-    Haskell2010
-  main-is:
-    Main.hs
-  ghcjs-options:
-    -dedupe
-  cpp-options:
-    -DGHCJS_BROWSER
-  hs-source-dirs:
-    compose-update
-  build-depends:
-    aeson,
-    base < 5,
-    containers,
-    miso,
-    transformers
-
 executable components
   import:
     common-options
@@ -80,6 +60,7 @@ executable components
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable simple
@@ -100,6 +81,7 @@ executable simple
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable todo-mvc
@@ -120,6 +102,7 @@ executable todo-mvc
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable threejs
@@ -160,7 +143,8 @@ executable file-reader
     base < 5,
     containers,
     ghcjs-base,
-    miso
+    miso,
+    mtl
 
 executable xhr
   import:
@@ -180,7 +164,8 @@ executable xhr
     base < 5,
     containers,
     ghcjs-base,
-    miso
+    miso,
+    mtl
 
 executable canvas2d
   import:
@@ -199,7 +184,8 @@ executable canvas2d
     aeson,
     base < 5,
     ghcjs-base,
-    miso
+    miso,
+    mtl
 
 executable router
   import:
@@ -219,6 +205,7 @@ executable router
     base < 5,
     containers,
     miso,
+    mtl,
     servant,
     transformers
 
@@ -240,6 +227,7 @@ executable websocket
     base < 5,
     containers,
     miso,
+    mtl,
     transformers
 
 executable mario
@@ -258,7 +246,8 @@ executable mario
   build-depends:
     base < 5,
     containers,
-    miso
+    miso,
+    mtl
 
 executable mathml
   import:
@@ -294,4 +283,5 @@ executable svg
     base < 5,
     containers,
     aeson,
-    miso
+    miso,
+    mtl

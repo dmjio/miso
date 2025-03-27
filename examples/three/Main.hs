@@ -14,9 +14,9 @@ import Language.Javascript.JSaddle hiding ((<#))
 import Miso
 
 data Action
-    = GetTime
-    | Init
-    | SetTime !Double
+  = GetTime
+  | Init
+  | SetTime !Double
 
 withStats :: JSVal -> IO () -> IO ()
 withStats stats m = do
@@ -86,21 +86,20 @@ viewModel _ =
 updateModel ::
     IORef Context ->
     Action ->
-    Double ->
-    Effect Action Double
-updateModel ref Init m =
-    m <# do
-        liftIO (initContext ref)
-        pure GetTime
-updateModel ref GetTime m =
-    m <# do
-        Context{..} <- liftIO (readIORef ref)
-        withStats stats $ do
-            rotateCube
-            renderScene
-        SetTime <$> now
-updateModel _ (SetTime m) _ =
-    m <# pure GetTime
+    Effect Action Double ()
+updateModel ref Init = do
+  io (initContext ref)
+  issue GetTime
+updateModel ref GetTime = do
+  io $ do
+    Context{..} <- liftIO (readIORef ref)
+    withStats stats $ do
+      rotateCube
+      renderScene
+  scheduleIO (SetTime <$> now)
+updateModel _ (SetTime m) = do
+  noEff m
+  issue GetTime
 
 #ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new Stats(); })"
