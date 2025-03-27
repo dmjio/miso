@@ -83,11 +83,11 @@ viewModel1 x =
         []
         [ "Component Effect 1 - Three sub components nested recursively below me"
         , br_ []
-        , "The +/- for Components 3 and 4 will affect the state of Component Effect 2"
+        , "The +/- for Components 3 and 4 will affect the state of Component 2"
         , br_ []
         , "This is an example of component communication using the 'notify' / 'notify' functions"
         , br_ []
-        , button_ [onClick Toggle] [text "Toggle Component Effect 2"]
+        , button_ [onClick Toggle] [text "Toggle Component 2"]
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
@@ -120,9 +120,9 @@ updateModel2 :: Action -> Effect Action Model ()
 updateModel2 AddOne = modify (+1)
 updateModel2 SubtractOne = modify (subtract 1)
 updateModel2 UnMount =
-  io (consoleLog "Component Effect 3 was unmounted!")
+  io (consoleLog "Component 3 was unmounted!")
 updateModel2 Mount =
-  io (consoleLog "Component Effect 3 was mounted!")
+  io (consoleLog "Component 3 was mounted!")
 updateModel2 SayHelloWorld = do
   io (consoleLog "Hello World from Component 2")
 updateModel2 _ = pure ()
@@ -132,7 +132,7 @@ viewModel2 :: Model -> View Action
 viewModel2 x =
     div_
         []
-        [ "This is the view for Component Effect 2"
+        [ "This is the view for Component 2"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
@@ -156,9 +156,9 @@ updateModel3 SubtractOne = do
 updateModel3 ToggleAction =
   modify $ \(x,y) -> (not x, y)
 updateModel3 UnMount =
-  io (consoleLog "Component Effect 4 was unmounted!")
+  io (consoleLog "Component 4 was unmounted!")
 updateModel3 Mount =
-  io (consoleLog "Component Effect 4 was mounted!")
+  io (consoleLog "Component 4 was mounted!")
 updateModel3 SayHelloWorld = do
   io (consoleLog "Hello World from Component 3")
 updateModel3 _ = pure ()
@@ -167,11 +167,11 @@ updateModel3 _ = pure ()
 viewModel3 :: (Bool, Model) -> View Action
 viewModel3 (toggle, x) =
     div_ [] $
-        [ "This is the view for Component Effect 3"
+        [ "This is the view for Component 3"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , button_ [onClick ToggleAction] [text "Toggle Component Effect 4"]
+        , button_ [onClick ToggleAction] [text "Toggle Component 4"]
         ]
             ++ [ embed component4
                    [ onMounted Mount

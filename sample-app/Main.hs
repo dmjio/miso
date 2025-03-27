@@ -43,7 +43,9 @@ updateModel :: Action -> Effect Action Model ()
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> io (consoleLog "Hello World")
+  SayHelloWorld -> io $ do
+    alert "Hello World"
+    consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

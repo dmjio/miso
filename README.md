@@ -10,23 +10,23 @@
 <p align="center">
 
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
-	<img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
+    <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
   </a>
 
   <a href="https://haskell.org">
-	<img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
+    <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
   </a>
   <a href="https://miso-haskell.cachix.org">
-	<img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
+    <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://github.com/dmjio/miso/actions">
     <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
-	<img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
+    <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
   <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
-	<img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
+    <img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
   </a>
 </p>
 
@@ -290,7 +290,9 @@ updateModel :: Action -> Effect Action Model ()
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> io (consoleLog "Hello World")
+  SayHelloWorld -> io $ do
+    consoleLog "Hello World"
+    alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action
