@@ -59,7 +59,7 @@ import           Miso.Effect (Sink, Effect, runEffect)
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
-  => App effect model action
+  => App effect model action a
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -131,7 +131,7 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component effect model app
+  :: Component effect model action a
   -> JSM model
 sample (Component _ name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
@@ -142,8 +142,8 @@ sample (Component _ name _) = do
 -- | Like @mail@ but lifted to work with the @Transition@ interface.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component effect m a
-  -> a
+  :: Component effect model action a
+  -> action
   -> JSM ()
 notify (Component _ name _) action = io
   where
@@ -154,8 +154,8 @@ notify (Component _ name _) action = io
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
-  :: (effect action model () -> Effect action model ())
-  -> (action -> effect action model ())
+  :: (effect model action a -> Effect model action a)
+  -> (action -> effect model action a)
   -> Sink action
   -> [action]
   -> model
@@ -179,7 +179,10 @@ foldEffects f update snk (e:es) o =
 -- It is recommended to use the @mail@ or @notify@ functions by default
 -- when message passing with @App@ and @Component@
 --
-sink :: MisoString -> App effect action model -> Sink action
+sink
+  :: MisoString
+  -> App effect model action a
+  -> Sink action
 sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
@@ -192,8 +195,8 @@ sink name _ = \a ->
 -- >   m <# mail calendarComponent (NewCalendarEntry entry)
 --
 mail
-  :: Component effect m a
-  -> a
+  :: Component effect model action a
+  -> action
   -> JSM ()
 mail (Component _ name _) action = do
   dispatch <- liftIO (readIORef componentMap)
@@ -206,7 +209,7 @@ mail (Component _ name _) action = do
 drawComponent
   :: Prerender
   -> MisoString
-  -> App effect model action
+  -> App effect model action a
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
@@ -219,7 +222,7 @@ drawComponent prerender name App {..} snk = do
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> App effect model action
+  -> App effect model action a
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback App{..} ComponentState {..} = do

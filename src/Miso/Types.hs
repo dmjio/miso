@@ -54,10 +54,10 @@ import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App effect model action = App
+data App effect model action a = App
   { model :: model
   -- ^ initial model
-  , update :: action -> effect action model ()
+  , update :: action -> effect model action a
   -- ^ Function to update model, optionally providing effects.
   --   See the @Transition@ monad for succinctly expressing model transitions.
   , view :: model -> View action
@@ -74,7 +74,7 @@ data App effect model action = App
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
-  , translate :: effect action model () -> Effect action model ()
+  , translate :: effect model action a -> Effect model action a
   -- ^ natural transformation to allow others to use their own
   -- custom Monad stack.
   }
@@ -86,9 +86,9 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for @App@ with sane defaults.
 defaultApp
   :: model
-  -> (action -> Effect action model ())
+  -> (action -> Effect model action a)
   -> (model -> View action)
-  -> App Effect model action
+  -> App Effect model action a
 defaultApp m u v = App
   { model = m
   , update = u
@@ -126,33 +126,43 @@ data View action
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @App@
 data SomeComponent
-   = forall effect model action . Eq model
-  => SomeComponent (Component effect model action)
+   = forall effect model action a . Eq model
+  => SomeComponent (Component effect model action a)
 -----------------------------------------------------------------------------
 -- | Used with @component@ to parameterize @App@ by @name@
-data Component effect model action
+data Component effect model action a
   = Component
   { componentKey :: Maybe Key
   , componentName :: MisoString
-  , componentApp :: App effect model action
+  , componentApp :: App effect model action a
   }
 -----------------------------------------------------------------------------
 -- | Smart constructor for parameterizing @App@ by @name@
 -- Needed when calling @embed@ and @embedWith@
 component
-  :: forall effect model action
-   . MisoString  
-  -> App effect model action
-  -> Component effect model action
+  :: MisoString  
+  -> App effect model action a
+  -> Component effect model action a
 component = Component Nothing
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed :: Eq model => Component effect model a -> [Attribute action] -> View action
+embed
+  :: Eq model
+  => Component effect model action a
+  -> [Attribute b]
+  -> View b
 embed comp attrs = Embed attrs (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
-embedKeyed :: Eq model => Component effect model a -> Key -> [Attribute action] -> View action
-embedKeyed comp key attrs = Embed attrs $ SomeComponent comp { componentKey = Just key }
+embedKeyed
+  :: Eq model
+  => Component effect model action a
+  -> Key
+  -> [Attribute b]
+  -> View b
+embedKeyed comp key attrs
+  = Embed attrs
+  $ SomeComponent comp { componentKey = Just key }
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -168,12 +178,12 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component effect model action) where
-  type ToViewAction (Component effect model action) = action
+instance ToView (Component effect model action a) where
+  type ToViewAction (Component effect model action a) = action
   toView (Component _ _ app) = toView app
 -----------------------------------------------------------------------------
-instance ToView (App effect model action) where
-  type ToViewAction (App effect model action) = action
+instance ToView (App effect model action a) where
+  type ToViewAction (App effect model action a) = action
   toView App {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

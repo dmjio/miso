@@ -39,26 +39,26 @@ in
   flatris = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs-flatris";
-    rev = "0b0e9ca";
-    sha256 = "sha256-lCVbACOAAz77k1tI4DXRAMDJLJiWaPb7o7uio1YGAIk=";
+    rev = "088a95d";
+    sha256 = "sha256-5R/LTgH+jVHQWT1Mk9erC7wJPj2R1z7snrNQeun7eCs=";
   };
   miso-plane = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-plane";
-    rev = "55e8445";
-    sha256 = "sha256-6QU+SvE5Rpr/YJpp4+A0iwu3CwMYtZ0OdEdMJHHeo5U=";
+    rev = "225ce5b7ddd57e716b96f8029dbef16d7dda15fd";
+    sha256 = "sha256-DuDDM0ePZCIASX8TB0YxIivXMhV7x7uaPb/HbJJILUs=";
   };
   the2048 = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs2048";
-    rev = "f5729cb";
-    sha256 = "sha256-EJWAIFMhplF97jhY0wQ0ms0ZHrgnYWszPp8GE23RkC0=";
+    rev = "8a6c951e75bea7502287b809e66bfe8f1db77a7c";
+    sha256 = "sha256-O3AqxsyrwvUMb7Nnz3KDUgRYJtgJouunnONqR3SIgNQ=";
   };
   snake = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-snake";
-    rev = "e83f9be";
-    sha256 = "sha256-QvekR9JjHtHJW+52No2q8cZ9niXkakgFHmdOX3fd/n8=";
+    rev = "5740e0f";
+    sha256 = "sha256-qStRWDP0jFccPhVUWoP7o1P8+MvJq7cJSDUuBmUfsyg=";
   };
   todomvc-common = fetchFromGitHub {
     owner = "tastejs";

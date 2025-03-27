@@ -31,11 +31,11 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Effect Model Action
+app :: App Effect Model Action ()
 app = defaultApp 0 updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
-updateModel :: Action -> Effect Action Model ()
+updateModel :: Action -> Effect Model Action ()
 updateModel (AddOne event) = do
   modify (+1)
   io $ consoleLog (ms (show event))

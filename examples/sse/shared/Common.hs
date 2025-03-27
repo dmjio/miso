@@ -60,7 +60,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> App Effect Model Action
+sse :: URI -> App Effect Model Action ()
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
@@ -79,7 +79,7 @@ handleSseMsg (SSEMessage msg) = ServerMsg msg
 handleSseMsg SSEClose = ServerMsg "SSE connection closed"
 handleSseMsg SSEError = ServerMsg "SSE error"
 
-updateModel :: Action -> Effect Action Model ()
+updateModel :: Action -> Effect Model Action ()
 updateModel (ServerMsg msg) = modify update
   where
     update m = m { modelMsg = "Event received: " ++ msg }
