@@ -180,7 +180,7 @@ scheduleSub sub = Effect $ lift $ tell [ sub ]
 ----------------------------------------------------------------------------- 
 -- | A synonym for @tell@, specialized to @Effect@
 --
--- > update :: Action -> Effect Action Model ()
+-- > update :: Action -> Effect Model Action ()
 -- > update = \case
 -- >   Click -> issue HelloWorld
 --
@@ -192,7 +192,7 @@ issue action = tell [ \sink -> sink action ]
 -----------------------------------------------------------------------------
 -- | A shorter synonym for @scheduleIO_@
 --
--- > update :: Action -> Effect Action Model ()
+-- > update :: Action -> Effect Model Action ()
 -- > update = \case
 -- >   HelloWorld -> io (consoleLog "Hello World")
 --

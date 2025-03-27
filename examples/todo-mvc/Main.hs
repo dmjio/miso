@@ -95,10 +95,10 @@ main = run $ startApp app
   , initialAction = Just FocusOnInput
   }
 
-app :: App Effect Model Msg
+app :: App Effect Model Msg ()
 app = defaultApp emptyModel updateModel viewModel
 
-updateModel :: Msg -> Effect Msg Model ()
+updateModel :: Msg -> Effect Model Msg ()
 updateModel NoOp = pure ()
 updateModel FocusOnInput = io (focus "input-box")
 updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)

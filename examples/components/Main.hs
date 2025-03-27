@@ -52,24 +52,24 @@ loggerSub msg = \_ ->
         liftIO $ threadDelay (secs 10)
         consoleLog msg
 
-app :: App Effect MainModel MainAction
+app :: App Effect MainModel MainAction ()
 app = defaultApp False updateModel1 viewModel1
 
-component2 :: Component Effect Model Action
+component2 :: Component Effect Model Action ()
 component2 =
     component "component-2"
         counterApp2
             { subs = [loggerSub "component-2 sub"]
             }
 
-component3 :: Component Effect (Bool, Model) Action
+component3 :: Component Effect (Bool, Model) Action ()
 component3 =
     component "component-3"
         counterApp3
             { subs = [loggerSub "component-3 sub"]
             }
 
-component4 :: Component Effect Model Action
+component4 :: Component Effect Model Action ()
 component4 =
     component "component-4"
         counterApp4
@@ -99,7 +99,7 @@ viewModel1 x =
         ]
 
 -- | Updates model, optionally introduces side effects
-updateModel1 :: MainAction -> Effect MainAction MainModel ()
+updateModel1 :: MainAction -> Effect MainModel MainAction ()
 updateModel1 Toggle = modify not
 updateModel1 UnMountMain =
   io (consoleLog "Component 2 was unmounted!")
@@ -112,11 +112,11 @@ updateModel1 SampleChild = do
         "Sampling child component 2 from parent component main (unsafe): " <>
           ms (show componentTwoModel)
 
-counterApp2 :: App Effect Model Action
+counterApp2 :: App Effect Model Action ()
 counterApp2 = defaultApp 0 updateModel2 viewModel2
 
 -- | Updates model, optionally introduces side effects
-updateModel2 :: Action -> Effect Action Model ()
+updateModel2 :: Action -> Effect Model Action ()
 updateModel2 AddOne = modify (+1)
 updateModel2 SubtractOne = modify (subtract 1)
 updateModel2 UnMount =
@@ -142,11 +142,11 @@ viewModel2 x =
           ] 
         ]
 
-counterApp3 :: App Effect (Bool, Model) Action
+counterApp3 :: App Effect (Bool, Model) Action ()
 counterApp3 = defaultApp (True, 0) updateModel3 viewModel3
 
 -- | Updates model, optionally introduces side effects
-updateModel3 :: Action -> Effect Action (Bool, Model) ()
+updateModel3 :: Action -> Effect (Bool, Model) Action ()
 updateModel3 AddOne = do
   modify (fmap (+1))
   io (notify component2 AddOne)
@@ -180,11 +180,11 @@ viewModel3 (toggle, x) =
                | toggle
                ]
 
-counterApp4 :: App Effect Model Action
+counterApp4 :: App Effect Model Action ()
 counterApp4 = defaultApp 0 updateModel4 viewModel4
 
 -- | Updates model, optionally introduces side effects
-updateModel4 :: Action -> Effect Action Model ()
+updateModel4 :: Action -> Effect Model Action ()
 updateModel4 AddOne = do
   modify (+1)
   io (notify component2 AddOne)

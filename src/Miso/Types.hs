@@ -149,8 +149,8 @@ component = Component Nothing
 embed
   :: Eq model
   => Component effect model action a
-  -> [Attribute action]
-  -> View action
+  -> [Attribute b]
+  -> View b
 embed comp attrs = Embed attrs (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
@@ -158,8 +158,8 @@ embedKeyed
   :: Eq model
   => Component effect model action a
   -> Key
-  -> [Attribute action]
-  -> View action
+  -> [Attribute b]
+  -> View b
 embedKeyed comp key attrs
   = Embed attrs
   $ SomeComponent comp { componentKey = Just key }

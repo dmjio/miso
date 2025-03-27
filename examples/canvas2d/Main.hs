@@ -4,6 +4,7 @@
 
 module Main where
 
+import Control.Monad
 import Control.Monad.State
 import GHCJS.Types
 import JavaScript.Web.Canvas
@@ -38,7 +39,7 @@ main = run $ do
 updateModel
   :: (Image, Image, Image)
   -> Action
-  -> Effect Action Model ()
+  -> Effect Model Action ()
 updateModel _ GetTime = do
   m <- get
   m <# do

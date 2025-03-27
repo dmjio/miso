@@ -37,13 +37,13 @@ main = run $ startApp app
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-app :: App Effect Model Action
+app :: App Effect Model Action ()
 app = defaultApp emptyModel updateModel appView
 
 emptyModel :: Model
 emptyModel = Model (Message "") mempty
 
-updateModel :: Action -> Effect Action Model ()
+updateModel :: Action -> Effect Model Action ()
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) =
   modify $ \model -> model { received = m }
 updateModel (SendMessage msg) =

@@ -143,7 +143,7 @@ sample (Component _ name _) = do
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
   :: Component effect model action a
-  -> a
+  -> action
   -> JSM ()
 notify (Component _ name _) action = io
   where

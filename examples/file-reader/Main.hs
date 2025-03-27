@@ -39,7 +39,7 @@ main :: IO ()
 main = run $ startApp (defaultApp (Model "") updateModel viewModel)
 
 -- | Update your model
-updateModel :: Action -> Effect Action Model ()
+updateModel :: Action -> Effect Model Action ()
 updateModel ReadFile = do
     m <- get
     m <# do

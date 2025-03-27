@@ -33,14 +33,14 @@ data Action
 main :: IO ()
 main = run (startApp app)
 
-app :: App Effect Model Action
+app :: App Effect Model Action ()
 app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model Nothing
 
 -- | Update your model
-updateModel :: Action -> Effect Action Model ()
+updateModel :: Action -> Effect Model Action ()
 updateModel FetchGitHub = do
   scheduleIO (SetGitHub <$> getGitHubAPIInfo)
 updateModel (SetGitHub apiInfo) =
