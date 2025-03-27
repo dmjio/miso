@@ -33,14 +33,14 @@ emptyModel = Model (0, 0)
 updateModel :: Action -> Effect Model Action ()
 updateModel (HandlePointer pointer) = modify update
   where
-    update m = m { mouseCoords = coords pointer }
+    update m = m { mouseCoords = client pointer }
 
 data Action
   = HandlePointer PointerEvent
 
 newtype Model
   = Model
-  { mouseCoords :: (Int, Int)
+  { mouseCoords :: (Double, Double)
   } deriving (Show, Eq)
 
 viewModel :: Model -> View Action

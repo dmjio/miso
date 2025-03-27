@@ -120,7 +120,7 @@ pointerDecoder = Decoder {..}
         <$> o .: "pointerType"
         <*> o .: "pointerId"
         <*> o .: "isPrimary"
-        <*> pair o "x" "y"
+        <*> pair o "clientX" "clientY"
         <*> pair o "screenX" "screenY"
         <*> pair o "pageX" "pageY"
         <*> pair o "tiltX" "tiltY"
