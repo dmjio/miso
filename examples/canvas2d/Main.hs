@@ -37,7 +37,7 @@ main = run $ do
 updateModel
   :: (Image, Image, Image)
   -> Action
-  -> Effect Action Model
+  -> Effect Action Model ()
 updateModel _ GetTime = do
   m <- get
   m <# do
