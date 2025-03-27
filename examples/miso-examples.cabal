@@ -183,7 +183,8 @@ executable canvas2d
     aeson,
     base < 5,
     ghcjs-base,
-    miso
+    miso,
+    mtl
 
 executable router
   import:
