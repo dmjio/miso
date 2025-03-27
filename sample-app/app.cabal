@@ -17,6 +17,6 @@ executable app
     cpp-options:
       -DWASM
   build-depends:
-    base, miso
+    base, miso, lens
   default-language:
     Haskell2010
