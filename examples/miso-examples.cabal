@@ -281,4 +281,5 @@ executable svg
     base < 5,
     containers,
     aeson,
-    miso
+    miso,
+    mtl
