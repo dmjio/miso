@@ -192,6 +192,17 @@ button_ :: [Attribute action] -> [View action] -> View action
 button_ = nodeHtml "button"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/form
+--
+-- For usage in a real-world application with the `onSubmit` event.
+--
+-- >
+-- > view :: Model -> View action
+-- > view model = form [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
+-- >
+--
+-- Note: @onSubmit@ will use @preventDefault = True@. This will keep
+-- the form from submitting to the server.
+--
 form :: [Attribute action] -> [View action] -> View action
 form = nodeHtml "form"
 -----------------------------------------------------------------------------
