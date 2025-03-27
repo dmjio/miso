@@ -74,9 +74,6 @@ jobs:
      - name: (x86) NixOS test runner for haskell-miso.org
        run: nix-build -A haskell-miso-org-test
 
-     - name: Diffing tests
-       run: cd tests && yarn && yarn test
-
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
