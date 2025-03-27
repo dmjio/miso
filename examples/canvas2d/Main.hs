@@ -8,7 +8,7 @@ import Control.Monad
 import GHCJS.Types
 import JavaScript.Web.Canvas
 
-import Miso
+import Miso hiding (translate)
 import Miso.String
 
 type Model = (Double, Double)
@@ -25,30 +25,25 @@ main = run $ do
     setSrc earth "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/canvas_earth.png"
     startApp app { initialAction = Just GetTime }
   where
-    app = defaultApp model (updateModel (sun, moon, earth)) view
+    app = defaultApp (0.0, 0.0) (updateModel (sun, moon, earth)) view
     view _ =
-        canvas_
-            [ id_ "canvas"
-            , width_ "300"
-            , height_ "300"
-            ]
-            []
-    model = (0.0, 0.0)
-    subs = []
-    events = defaultEvents
-    mountPoint = Nothing
-    logLevel = Off
+      canvas_
+        [ id_ "canvas"
+        , width_ "300"
+        , height_ "300"
+        ]
+        []
 
-updateModel ::
-    (Image, Image, Image) ->
-    Action ->
-    Effect Action Model
+updateModel
+  :: (Image, Image, Image)
+  -> Action
+  -> Effect Action Model
 updateModel _ GetTime = do
-    m <- get
-    m <# do
-        date <- newDate
-        (s, m') <- (,) <$> getSecs date <*> getMillis date
-        pure $ SetTime (s, m')
+  m <- get
+  m <# do
+    date <- newDate
+    (s, m') <- (,) <$> getSecs date <*> getMillis date
+    pure $ SetTime (s, m')
 updateModel (sun, moon, earth) (SetTime m@(secs, millis)) _ =
     m <# do
         ctx <- getCtx
