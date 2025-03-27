@@ -5,7 +5,6 @@
 module Main where
 
 import Control.Monad.State
-import Control.Monad
 import GHCJS.Types
 import JavaScript.Web.Canvas
 

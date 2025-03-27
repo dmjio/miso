@@ -8,7 +8,7 @@
 
 module Main where
 
-import           Control.Monad.Trans.State (get)
+import           Control.Monad.State
 import           Data.Aeson
 import qualified Data.Map as M
 import           Data.Maybe
@@ -40,13 +40,11 @@ emptyModel :: Model
 emptyModel = Model Nothing
 
 -- | Update your model
-updateModel :: Action -> Effect Action Model
-updateModel FetchGitHub m = do
-  m <- get
-  m <# SetGitHub <$> getGitHubAPIInfo
-updateModel (SetGitHub apiInfo) = do
-  m <- get
-  noEff m {info = Just apiInfo }
+updateModel :: Action -> Effect Action Model ()
+updateModel FetchGitHub = do
+  scheduleIO (SetGitHub <$> getGitHubAPIInfo)
+updateModel (SetGitHub apiInfo) =
+  modify $ \m -> m { info = Just apiInfo }
 
 -- | View function, with routing
 viewModel :: Model -> View Action
