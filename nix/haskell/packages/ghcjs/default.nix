@@ -6,21 +6,22 @@ with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
+  /* miso */
+  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs
+    (drv: { doHaddock = true; });
+
+  /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
-  jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   flatris = self.callCabal2nix "flatris" source.flatris {};
-  miso-plane =
-    let
-      miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
-    in
-      pkgs.runCommand "miso-plane" {} ''
-         mkdir $out
-         cp -rv ${source.miso-plane}/public/images $out
-         cp ${miso-plane}/bin/client.jsexe/* $out
-         rm $out/index.html
-         cp -v ${source.miso-plane}/public/index.html $out
-      '';
+  miso-plane-core = self.callCabal2nix "miso-plane" source.miso-plane {};
+  miso-plane = pkgs.runCommand "miso-plane" {} ''
+    mkdir -p $out
+    cp -rv ${source.miso-plane}/public/images $out
+    cp -v ${self.miso-plane-core}/bin/client.jsexe/* $out
+    chmod +w $out/index.html
+    cp -v ${source.miso-plane}/public/index.html $out
+  '';
   the2048-core = self.callCabal2nix "hs2048" source.the2048 {};
   the2048 = pkgs.runCommand "hs2048" {} ''
     mkdir -p $out/bin
@@ -46,8 +47,4 @@ self: super:
     cp -fv ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe/base.css
     cp -fv ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe/index.css
   '';
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {})
-    .overrideAttrs (drv: {
-        doHaddock = true;
-    });
 }
