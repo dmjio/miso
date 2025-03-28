@@ -42,7 +42,7 @@ module Miso.FFI
    , jsStringToDouble
    , delegateEvent
    , undelegateEvent
-   , copyDOMIntoVTree
+   , hydrate
    , focus
    , blur
    , scrollIntoView
@@ -317,11 +317,14 @@ undelegate mountPoint events debug callback = do
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
-copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
-copyDOMIntoVTree logLevel mountPoint vtree = void $ do
+--
+-- <https://en.wikipedia.org/wiki/Hydration_(web_development)>
+-- 
+hydrate :: Bool -> JSVal -> JSVal -> JSM ()
+hydrate logLevel mountPoint vtree = void $ do
   ll <- toJSVal logLevel
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree]
+  void $ moduleExports # "hydrate" $ [ll, mountPoint, vtree]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --

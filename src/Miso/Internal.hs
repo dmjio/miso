@@ -96,7 +96,7 @@ initialize App {..} getView = do
   pure componentVTree
 -----------------------------------------------------------------------------
 -- | Prerender avoids calling @diff@
--- and instead calls @copyDOMIntoVTree@
+-- and instead calls @hydrate@
 data Prerender
   = DontPrerender
   | Prerender
