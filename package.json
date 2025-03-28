@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest --silent",
     "coverage": "jest --collect-coverage=true --coverage-directory=coverage --silent",
-    "pretty": "prettier --write *.js"
+    "pretty": "prettier --write *.js",
+    "lint": "eslint --fix js/*.js"
   },
   "type": "module",
   "main": "js/miso.js",
@@ -28,8 +29,12 @@
   },
   "homepage": "https://haskell-miso.org",
   "devDependencies": {
-    "jsdom": "26.0.0",
+    "@eslint/js": "^9.23.0",
+    "eslint": "^9.23.0",
+    "eslint-plugin-jest": "^28.11.0",
+    "globals": "^16.0.0",
     "jest": "29.7.0",
+    "jsdom": "26.0.0",
     "prettier": "3.5.3"
   },
   "files": [

@@ -32,6 +32,9 @@ jobs:
      - name: Miso.js tests
        run: nix-shell -p yarn --run 'yarn install && yarn run test'
 
+     - name: Miso.js linting
+       run: nix-shell -p yarn --run 'yarn run lint'
+
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
 
