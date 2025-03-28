@@ -51,8 +51,8 @@ in
   the2048 = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs2048";
-    rev = "400ed27";
-    sha256 = "sha256-M1PpZvzDGz8okaHP3Chg9wY5t/LxaxV5CgtOv4q/lj4=";
+    rev = "ea963a4";
+    sha256 = "sha256-72eDj8gkSVIyM1r+wDODEHjsLzYC7Lk3tO1MiSrADPU=";
   };
   snake = fetchFromGitHub {
     owner = "dmjio";
