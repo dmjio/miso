@@ -20,6 +20,7 @@ export default defineConfig([
   {
     rules: {
       "no-global-assign": ["error", { exceptions: ["module"] }],
+      "arrow-body-style": ["error", "always"],
     },
   },
 ]);
