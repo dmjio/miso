@@ -91,7 +91,7 @@ test("Should be null when miso.diffing two null virtual DOMs", () => {
   var document = window.document;
   const body = document.body;
   var c = null;
-  n = null;
+  var n = null;
   miso.diff(c, n, body, document);
   expect(body.childNodes.length).toBe(0);
 });
@@ -155,7 +155,7 @@ test("Should detect duplicate component mounting", () => {
   var body = document.body;
   var mountCount = 0;
   var newComp1 = vcomp(
-    (x) => mountCount++,
+    () => mountCount++,
     null,
     { "data-component-id": "vcomp-foo" },
     { "background-color": "red" },
@@ -163,7 +163,7 @@ test("Should detect duplicate component mounting", () => {
   );
   miso.diff(null, newComp1, body, document);
   var newComp2 = vcomp(
-    (x) => mountCount++,
+    () => mountCount++,
     null,
     { "data-component-id": "vcomp-foo" },
     { "background-color": "red" },
@@ -187,7 +187,7 @@ test("Should mount and unmount a component", () => {
   };
   var newNode = vcomp(
     mountFunc,
-    (x) => unmountCount++,
+    () => unmountCount++,
     { id: "vcomp-foo" },
     {
       "background-color": "red",
@@ -330,7 +330,7 @@ test("Should replace a Node with a new Node of a window miso.different tag", () 
   expect(body.children.length).toBe(1);
 
   // Replace node
-  newNode = vnode("a", []);
+  var newNode = vnode("a", []);
   miso.diff(node, newNode, body, document);
 
   // Test node is removed from DOM
@@ -369,7 +369,7 @@ test("Should Miso.Diff attrs of two Components", () => {
   // populate DOM
   var mountCount = 0;
   var compNode1 = vcomp(
-    (x) => mountCount++,
+    () => mountCount++,
     null,
     {
       "data-component-id": "vcomp-foo",
@@ -385,9 +385,9 @@ test("Should Miso.Diff attrs of two Components", () => {
   expect(body.childNodes[0].style["background-color"]).toBe("red");
 
   // Replace node
-  var mountCount = 0;
+  mountCount = 0;
   var compNode2 = vcomp(
-    (x) => mountCount++,
+    () => mountCount++,
     null,
     {
       "data-component-id": "vcomp-foo",
@@ -412,7 +412,7 @@ test("Should replace Node with Component", () => {
 
   // Replace node
   var mountCount = 0;
-  compNode = vcomp((x) => mountCount++);
+  var compNode = vcomp(() => mountCount++);
   miso.diff(node, compNode, body, document);
 
   // Node is removed from DOM, Component is on the DOM
@@ -434,7 +434,7 @@ test("Should replace Text with Component", () => {
 
   // Replace node
   var mountCount = 0;
-  compNode = vcomp((x) => mountCount++);
+  var compNode = vcomp(() => mountCount++);
   miso.diff(node, compNode, body, document);
 
   // Node is removed from DOM, Component is on the DOM
@@ -454,7 +454,7 @@ test("Should replace Node with TextNode", () => {
   expect(body.childNodes.length).toBe(1);
 
   // Replace node
-  textNode = vtext("fooo");
+  var textNode = vtext("fooo");
   miso.diff(node, textNode, body, document);
 
   // Test node is removed from DOM
@@ -469,8 +469,8 @@ test("Should replace Component with TextNode", () => {
   var mountCount = 0,
     unmountCount = 0;
   var component = vcomp(
-    (x) => mountCount++,
-    (x) => unmountCount++,
+    () => mountCount++,
+    () => unmountCount++,
   );
   miso.diff(null, component, body, document);
 
@@ -480,7 +480,7 @@ test("Should replace Component with TextNode", () => {
   expect(unmountCount).toBe(0);
 
   // Replace component
-  textNode = vtext("fooo");
+  var textNode = vtext("fooo");
   miso.diff(component, textNode, body, document);
 
   // Test node is removed from DOM
@@ -496,8 +496,8 @@ test("Should replace Component with Node", () => {
   var mountCount = 0,
     unmountCount = 0;
   var component = vcomp(
-    (x) => mountCount++,
-    (x) => unmountCount++,
+    () => mountCount++,
+    () => unmountCount++,
   );
   miso.diff(null, component, body, document);
 
@@ -507,7 +507,7 @@ test("Should replace Component with Node", () => {
   expect(unmountCount).toBe(0);
 
   // Replace component
-  node = vnode("div", []);
+  var node = vnode("div", []);
   miso.diff(component, node, body, document);
 
   // Test node is removed from DOM
@@ -527,7 +527,7 @@ test("Should replace TextNode with Node", () => {
   expect(body.childNodes.length).toBe(1);
 
   // Replace node
-  node = vnode("div", []);
+  var node = vnode("div", []);
   miso.diff(textNode, node, body, document);
 
   // Test node is removed from DOM
@@ -838,8 +838,7 @@ test("Should call onDestroyed recursively", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
   // populate DOM
-  var destroy = 0,
-    childDestroy = 0;
+  var destroy = 0, childDestroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -880,7 +879,7 @@ test("Should call onBeforeDestroyed recursively", () => {
   var body = document.body;
   // populate DOM
   var destroy = 0;
-  childDestroy = 0;
+  var childDestroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -973,7 +972,6 @@ test("Should recreate a DOM node when tags are the same but keys are window miso
 test("Should execute left-hand side happy path key-window miso.diffing case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [vnodeKeyed("div", "a"), vnodeKeyed("div", "b"), vnodeKeyed("div", "c")],
@@ -1010,7 +1008,6 @@ test("Should execute left-hand side happy path key-window miso.diffing case", ()
 test("Should miso.diff keys properly when keys are prepended", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [vnodeKeyed("div", "1")],
@@ -1047,7 +1044,6 @@ test("Should miso.diff keys properly when keys are prepended", () => {
 test("Should execute right-hand side happy path key-window miso.diffing case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [vnodeKeyed("div", "a"), vnodeKeyed("div", "c")],
@@ -1177,7 +1173,7 @@ test("Should execute swapped case on 1k nodes", () => {
   );
 
   var newKids = [];
-  for (var i = 1; i < 1001; i++) {
+  for (i = 1; i < 1001; i++) {
     if (i == 3) {
       newKids.push(vnodeKeyed("div", 999));
     } else if (i == 999) {
@@ -1205,7 +1201,7 @@ test("Should execute swapped case on 1k nodes", () => {
   expect(currentNode.children).toEqual(newNode.children);
   expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
   expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
-  for (var i = 0; i < 1000; i++) {
+  for (i = 0; i < 1000; i++) {
     expect(newNode.children[i].key).toBe(currentNode.children[i].key);
     expect(newNode.children[i].children[0].text).toBe(
       currentNode.children[i].children[0].text,
@@ -1219,7 +1215,6 @@ test("Should execute swapped case on 1k nodes", () => {
 test("Should execute top-left and bottom-right match case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -1268,7 +1263,6 @@ test("Should execute top-left and bottom-right match case", () => {
 test("Should handle duplicate keys case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -1317,7 +1311,6 @@ test("Should handle duplicate keys case", () => {
 test("Should execute top-right and bottom-left match case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -1364,7 +1357,6 @@ test("Should execute top-right and bottom-left match case", () => {
 test("Nothing matches case", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [vnodeKeyed("div", "e"), vnodeKeyed("div", "k"), vnodeKeyed("div", "l")],
@@ -1401,7 +1393,6 @@ test("Nothing matches case", () => {
 test("Should handle nothing matches case where new key is found in old map", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [
@@ -1448,7 +1439,6 @@ test("Should handle nothing matches case where new key is found in old map", () 
 test("Should append new nodes in keys patch", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnode(
     "div",
     [vnodeKeyed("div", "a")],
@@ -1483,7 +1473,6 @@ test("Should append new nodes in keys patch", () => {
 test("Should window miso.diff keyed text nodes", () => {
   var document = new jsdom.JSDOM().window.document;
   var body = document.body;
-  var destroy = 0;
   var currentNode = vnodeKids("div", [
     vtextKeyed("foo", 1),
     vtextKeyed("bar", 2),
@@ -1647,7 +1636,7 @@ test("Should copy DOM into VTree at body w/ script / text siblings", () => {
   expect(succeeded).toEqual(false);
 });
 
-// dmj: jsdom catches this, not possible run
+// dmj: jsdom catches this, not possible to run
 // ● Should fail to mount on a text node
 //   HierarchyRequestError: Node can't be inserted in a #text parent.
 //
@@ -1663,7 +1652,6 @@ test("Should copy DOM into VTree at body w/ script / text siblings", () => {
 
 test("Should mount on an empty body", () => {
   var document = new jsdom.JSDOM().window.document;
-  var body = document.body;
   var currentNode = vnodeKids("div", [vnodeKids("div", [vtext("foo")])]);
   var succeeded = miso.copyDOMIntoVTree(true, null, currentNode, document);
   expect(succeeded).toEqual(false);
@@ -1716,7 +1704,7 @@ test("Should fail integrity check on bad tag", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.tag = "lol";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1765,7 +1753,7 @@ test("Should fail integrity check on miso.differing vtext", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.children[0].text = "oops";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1792,7 +1780,7 @@ test("Should fail integrity check on miso.differing child lengths", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.children = [];
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(false);
 });
 
@@ -1820,7 +1808,7 @@ test("Should fail integrity check on miso.differing styles", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.css["background-color"] = "green";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1849,7 +1837,7 @@ test("Should fail integrity check on miso.differing styles, for color", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.css["color"] = "#dddddd";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1878,7 +1866,7 @@ test("Should fail integrity check on miso.differing props", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.props["class"] = "something-else";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1910,7 +1898,7 @@ test("Should fail integrity check on differing height / width", () => {
   expect(check).toBe(1);
   vtree.props["height"] = "200";
   vtree.props["width"] = "200";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1938,7 +1926,7 @@ test("Should fail integrity check on random property (title)", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.props["title"] = "woz";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1967,7 +1955,7 @@ test("Should fail integrity check on href", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.props["href"] = "notgoogle.com";
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -1996,7 +1984,7 @@ test("Should fail integrity check on vtext domRef", () => {
   var check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(1);
   vtree.children[0].domRef = document.createElement("div");
-  var check = miso.integrityCheck(true, vtree, window);
+  check = miso.integrityCheck(true, vtree, window);
   expect(check).toBe(0);
 });
 
@@ -2094,7 +2082,7 @@ test("Should delegate and undelegate button click", () => {
   expect(vtreeChild.domRef).toEqual(document.body.childNodes[0].childNodes[0]);
 
   /* setup event delegation */
-  var events = { click: ["click", true] };
+  events = { click: ["click", true] };
   var getVTree = function (cb) {
     cb(vtree);
   };

@@ -53,6 +53,7 @@ with pkgs.haskell.lib;
 
   #website
   inherit (pkgs)
+    haskell-miso-dev
     haskell-miso-client
     haskell-miso-server
     haskell-miso-runner;

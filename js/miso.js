@@ -564,7 +564,7 @@ module["exports"] = (function () {
       return ret;
     }
 
-    for (var i in at) obj = obj[at[i]];
+    for (i in at) obj = obj[at[i]];
 
     /* If obj is a list-like object */
     var newObj;
@@ -573,7 +573,7 @@ module["exports"] = (function () {
       ("length" in obj && obj["localName"] !== "select")
     ) {
       newObj = [];
-      for (var i = 0; i < obj.length; i++) {
+      for (i = 0; i < obj.length; i++) {
         newObj.push(eventJSON([], obj[i]));
       }
       return newObj;
@@ -581,7 +581,7 @@ module["exports"] = (function () {
 
     /* If obj is a non-list-like object */
     newObj = {};
-    for (var i in getAllPropertyNames(obj)) {
+    for (i in getAllPropertyNames(obj)) {
       /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
       /* https://stackoverflow.com/a/25569117/453261 */
       /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
@@ -803,7 +803,7 @@ module["exports"] = (function () {
 
       // styles must be identical
       keyLength = Object.keys(vtree["css"]).length;
-      for (var i = 0; i < keyLength; i++) {
+      for (i = 0; i < keyLength; i++) {
         key = Object.keys(vtree["css"])[i];
         if (key === "color") {
           if (
@@ -828,7 +828,7 @@ module["exports"] = (function () {
       }
 
       // recursive call for `vnode` / `vcomp`
-      for (var i = 0; i < vtree.children.length; i++) {
+      for (i = 0; i < vtree.children.length; i++) {
         result &= integrityCheck(result, vtree.children[i], window);
       }
     }

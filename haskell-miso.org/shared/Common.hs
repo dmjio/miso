@@ -8,6 +8,9 @@
 
 module Common where
 
+import           Control.Concurrent
+import           Control.Monad
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State
 import           Data.Bool
 import qualified Data.Map.Strict as M
@@ -88,12 +91,15 @@ clientHandlers =
         :<|> home
         :<|> the404
 
+secs :: Int -> Int
+secs = (*1000000)
+
 haskellMisoComponent ::
     URI ->
     HaskellMisoComponent
 haskellMisoComponent uri
   = (app uri)
-  { subs = [uriSub HandleURI]
+  { subs = [ uriSub HandleURI ]
   , logLevel = DebugAll
   }
   
