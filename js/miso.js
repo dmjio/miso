@@ -1,15 +1,15 @@
 /* account for node.js running tests, or a browser / wasm environment */
-module = typeof module === "undefined" ? {} : module;
+module = typeof module === 'undefined' ? {} : module;
 
 /* module export pattern */
-module["exports"] = (function () {
+module['exports'] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
   var diff = function (currentObj, newObj, parent) {
     if (!currentObj && !newObj) return;
     else if (!currentObj && newObj) create(newObj, parent);
     else if (!newObj) destroy(currentObj, parent);
     else {
-      if (currentObj["type"] === newObj["type"]) {
+      if (currentObj['type'] === newObj['type']) {
         diffNodes(currentObj, newObj, parent);
       } else {
         replace(currentObj, newObj, parent);
@@ -24,12 +24,12 @@ module["exports"] = (function () {
     // ^ this will unmount sub components before we replace the child
     // and will recursively call hooks on nodes
     // step2 : create new things, replace old things with new things
-    if (n["type"] === "vtext") {
-      n["domRef"] = document.createTextNode(n["text"]);
-      parent.replaceChild(n["domRef"], c["domRef"]);
+    if (n['type'] === 'vtext') {
+      n['domRef'] = document.createTextNode(n['text']);
+      parent.replaceChild(n['domRef'], c['domRef']);
     } else {
       createElement(n, function (ref) {
-        parent.replaceChild(ref, c["domRef"]);
+        parent.replaceChild(ref, c['domRef']);
       });
     }
     // step 3: call destroyed hooks, call created hooks
@@ -42,7 +42,7 @@ module["exports"] = (function () {
     callBeforeDestroyedRecursive(obj);
 
     // step 2: destroy
-    parent.removeChild(obj["domRef"]);
+    parent.removeChild(obj['domRef']);
 
     // step 3: invoke post-hooks for vnode and vcomp
     callDestroyedRecursive(obj);
@@ -50,18 +50,18 @@ module["exports"] = (function () {
 
   var diffNodes = function (c, n, parent) {
     // bail out on easy vtext case
-    if (c["type"] === "vtext") {
-      if (c["text"] !== n["text"]) c["domRef"].textContent = n["text"];
-      n["domRef"] = c["domRef"];
+    if (c['type'] === 'vtext') {
+      if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
+      n['domRef'] = c['domRef'];
       return;
     }
     // check children
     if (
-      c["tag"] === n["tag"] &&
-      n["key"] === c["key"] &&
-      n["data-component-id"] === c["data-component-id"]
+      c['tag'] === n['tag'] &&
+      n['key'] === c['key'] &&
+      n['data-component-id'] === c['data-component-id']
     ) {
-      n["domRef"] = c["domRef"];
+      n['domRef'] = c['domRef'];
       // dmj: we will diff properties on 'vcomp' as well
       populate(c, n);
     } else {
@@ -79,12 +79,12 @@ module["exports"] = (function () {
   };
 
   var callDestroyed = function (obj) {
-    if (obj["onDestroyed"]) obj["onDestroyed"]();
+    if (obj['onDestroyed']) obj['onDestroyed']();
   };
 
   var callBeforeDestroyed = function (obj) {
-    if (obj["onBeforeDestroyed"]) obj["onBeforeDestroyed"]();
-    if (obj["type"] === "vcomp") obj["unmount"](obj["domRef"]);
+    if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
+    if (obj['type'] === 'vcomp') obj['unmount'](obj['domRef']);
   };
 
   var callBeforeDestroyedRecursive = function (obj) {
@@ -95,8 +95,8 @@ module["exports"] = (function () {
   };
   // ** </> recursive calls to hooks
   var callCreated = function (obj) {
-    if (obj["onCreated"]) obj["onCreated"]();
-    if (obj["type"] === "vcomp") mountComponent(obj);
+    if (obj['onCreated']) obj['onCreated']();
+    if (obj['type'] === 'vcomp') mountComponent(obj);
   };
 
   var populate = function (c, n) {
@@ -107,10 +107,10 @@ module["exports"] = (function () {
         children: [],
       };
     }
-    diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
-    diffCss(c["css"], n["css"], n["domRef"]);
-    if (n["type"] === "vcomp") return; // dmj: don't diff vcomp children
-    diffChildren(c["children"], n["children"], n["domRef"]);
+    diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
+    diffCss(c['css'], n['css'], n['domRef']);
+    if (n['type'] === 'vcomp') return; // dmj: don't diff vcomp children
+    diffChildren(c['children'], n['children'], n['domRef']);
   };
 
   var diffProps = function (cProps, nProps, node, isSvg) {
@@ -124,22 +124,22 @@ module["exports"] = (function () {
         if (isSvg || !(c in node)) {
           node.removeAttribute(c, cProps[c]);
         } else {
-          node[c] = "";
+          node[c] = '';
         }
       } else {
         /* Already on DOM from previous diff, continue */
-        if (newProp === cProps[c] && c !== "checked" && c !== "value") continue;
+        if (newProp === cProps[c] && c !== 'checked' && c !== 'value') continue;
         if (isSvg) {
-          if (c === "href") {
+          if (c === 'href') {
             node.setAttributeNS(
-              "http://www.w3.org/1999/xlink",
-              "href",
+              'http://www.w3.org/1999/xlink',
+              'href',
               newProp,
             );
           } else {
             node.setAttribute(c, newProp);
           }
-        } else if (c in node && !(c === "list" || c === "form")) {
+        } else if (c in node && !(c === 'list' || c === 'form')) {
           node[c] = newProp;
         } else {
           node.setAttribute(c, newProp);
@@ -152,12 +152,12 @@ module["exports"] = (function () {
       newProp = nProps[n];
       /* Only add new properties, skip (continue) if they already exist in current property map */
       if (isSvg) {
-        if (n === "href") {
-          node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+        if (n === 'href') {
+          node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
         } else {
           node.setAttribute(n, newProp);
         }
-      } else if (n in node && !(n === "list" || n === "form")) {
+      } else if (n in node && !(n === 'list' || n === 'form')) {
         node[n] = nProps[n];
       } else {
         node.setAttribute(n, newProp);
@@ -188,8 +188,8 @@ module["exports"] = (function () {
     return (
       ns.length > 0 &&
       cs.length > 0 &&
-      ns[0]["key"] != null &&
-      cs[0]["key"] != null
+      ns[0]['key'] != null &&
+      cs[0]['key'] != null
     );
   };
 
@@ -205,25 +205,25 @@ module["exports"] = (function () {
   };
 
   var populateDomRef = function (obj) {
-    if (obj["ns"] === "svg") {
-      obj["domRef"] = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        obj["tag"],
+    if (obj['ns'] === 'svg') {
+      obj['domRef'] = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        obj['tag'],
       );
-    } else if (obj["ns"] === "mathml") {
-      obj["domRef"] = document.createElementNS(
-        "http://www.w3.org/1998/Math/MathML",
-        obj["tag"],
+    } else if (obj['ns'] === 'mathml') {
+      obj['domRef'] = document.createElementNS(
+        'http://www.w3.org/1998/Math/MathML',
+        obj['tag'],
       );
     } else {
-      obj["domRef"] = document.createElement(obj["tag"]);
+      obj['domRef'] = document.createElement(obj['tag']);
     }
   };
 
   // dmj: refactor this, the callback function feels meh
   var createElement = function (obj, cb) {
     populateDomRef(obj);
-    cb(obj["domRef"]);
+    cb(obj['domRef']);
     populate(null, obj);
     callCreated(obj);
   };
@@ -231,7 +231,7 @@ module["exports"] = (function () {
   // mounts vcomp by calling into Haskell side.
   // unmount is handled with pre-destroy recursive hooks
   var mountComponent = function (obj) {
-    var componentId = obj["data-component-id"],
+    var componentId = obj['data-component-id'],
       nodeList = document.querySelectorAll(
         "[data-component-id='" + componentId + "']",
       );
@@ -247,21 +247,21 @@ module["exports"] = (function () {
     }
     // dmj, the component placeholder div[id=name] is already on the dom and vdom
     // Now we gen the component and append it to the vdom and real dom
-    obj["domRef"].setAttribute("data-component-id", componentId);
+    obj['domRef'].setAttribute('data-component-id', componentId);
     // ^ we have to set this before 'mount()' is called, since `diff` requires it.
-    obj["mount"](function (component) {
+    obj['mount'](function (component) {
       // mount() gives us the VTree from the Haskell side, so we just attach it here
       // to tie the knot (attach to both vdom and real dom).
       obj.children.push(component);
-      obj["domRef"].appendChild(component["domRef"]);
+      obj['domRef'].appendChild(component['domRef']);
     });
   };
 
   // creates nodes on virtual and dom (vtext, vcomp, vnode)
   var create = function (obj, parent) {
-    if (obj.type === "vtext") {
-      obj["domRef"] = document.createTextNode(obj["text"]);
-      parent.appendChild(obj["domRef"]);
+    if (obj.type === 'vtext') {
+      obj['domRef'] = document.createTextNode(obj['text']);
+      parent.appendChild(obj['domRef']);
     } else {
       createElement(obj, function (ref) {
         parent.appendChild(ref);
@@ -304,7 +304,7 @@ module["exports"] = (function () {
         diff(null, nFirst, parent);
         /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
            Otherwise, it will insert node['domRef'] before oLast['domRef']. */
-        parent.insertBefore(nFirst["domRef"], oFirst ? oFirst["domRef"] : null);
+        parent.insertBefore(nFirst['domRef'], oFirst ? oFirst['domRef'] : null);
         os.splice(newFirstIndex, 0, nFirst);
         newFirstIndex++;
       } /* No more new nodes, delete all remaining nodes in old list
@@ -313,7 +313,7 @@ module["exports"] = (function () {
          */ else if (newFirstIndex > newLastIndex) {
         tmp = oldLastIndex;
         while (oldLastIndex >= oldFirstIndex) {
-          parent.removeChild(os[oldLastIndex--]["domRef"]);
+          parent.removeChild(os[oldLastIndex--]['domRef']);
         }
         os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
         break;
@@ -321,19 +321,19 @@ module["exports"] = (function () {
          -> oldFirstIndex -> [ a b c ] <- oldLastIndex
          -> newFirstIndex -> [ a b c ] <- newLastIndex
          check if nFirst and oFirst align, if so, check nLast and oLast
-         */ else if (oFirst["key"] === nFirst["key"]) {
+         */ else if (oFirst['key'] === nFirst['key']) {
         diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
-      } else if (oLast["key"] === nLast["key"]) {
+      } else if (oLast['key'] === nLast['key']) {
         diff(os[oldLastIndex--], ns[newLastIndex--], parent);
       } /* flip-flop case, nodes have been swapped, in some way or another
          both could have been swapped.
          -> [ a b c ] <- old children
          -> [ c b a ] <- new children
          */ else if (
-        oFirst["key"] === nLast["key"] &&
-        nFirst["key"] === oLast["key"]
+        oFirst['key'] === nLast['key'] &&
+        nFirst['key'] === oLast['key']
       ) {
-        swapDomRefs(node, oLast["domRef"], oFirst["domRef"], parent);
+        swapDomRefs(node, oLast['domRef'], oFirst['domRef'], parent);
         swap(os, oldFirstIndex, oldLastIndex);
         diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
         diff(os[oldLastIndex--], ns[newLastIndex--], parent);
@@ -347,9 +347,9 @@ module["exports"] = (function () {
              -> [ a b d ] <- old children
              -> [ a b d ] <- new children
              and now we happy path
-             */ else if (oFirst["key"] === nLast["key"]) {
+             */ else if (oFirst['key'] === nLast['key']) {
         /* insertAfter */
-        parent.insertBefore(oFirst["domRef"], oLast["domRef"].nextSibling);
+        parent.insertBefore(oFirst['domRef'], oLast['domRef'].nextSibling);
         /* swap positions in old vdom */
         os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
         diff(os[oldLastIndex--], ns[newLastIndex--], parent);
@@ -361,9 +361,9 @@ module["exports"] = (function () {
          -> [ d b a ] <- old children
          -> [ d b a ] <- new children
          and now we happy path
-         */ else if (oLast["key"] === nFirst["key"]) {
+         */ else if (oLast['key'] === nFirst['key']) {
         /* insertAfter */
-        parent.insertBefore(oLast["domRef"], oFirst["domRef"]);
+        parent.insertBefore(oLast['domRef'], oFirst['domRef']);
         /* swap positions in old vdom */
         os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
         diff(os[oldFirstIndex++], nFirst, parent);
@@ -377,7 +377,7 @@ module["exports"] = (function () {
         found = false;
         tmp = oldFirstIndex;
         while (tmp <= oldLastIndex) {
-          if (os[tmp]["key"] === nFirst["key"]) {
+          if (os[tmp]['key'] === nFirst['key']) {
             found = true;
             node = os[tmp];
             break;
@@ -402,7 +402,7 @@ module["exports"] = (function () {
           /* optionally perform `diff` here */
           diff(os[oldFirstIndex++], nFirst, parent);
           /* Swap DOM references */
-          parent.insertBefore(node["domRef"], os[oldFirstIndex]["domRef"]);
+          parent.insertBefore(node['domRef'], os[oldFirstIndex]['domRef']);
           /* increment counters */
           newFirstIndex++;
         } /* If new key was *not* found in the old map this means it must now be created, example below
@@ -418,7 +418,7 @@ module["exports"] = (function () {
                 ^
                 */ else {
           createElement(nFirst, function (ref) {
-            parent.insertBefore(ref, oFirst["domRef"]);
+            parent.insertBefore(ref, oFirst['domRef']);
           });
           os.splice(oldFirstIndex++, 0, nFirst);
           newFirstIndex++;
@@ -494,8 +494,8 @@ module["exports"] = (function () {
     } /* stack not length 1, recurse */ else if (stack.length > 1) {
       parentStack.unshift(obj);
       for (var o = 0; o < obj.children.length; o++) {
-        if (obj["type"] === "vcomp") continue;
-        if (obj.children[o]["domRef"] === stack[1]) {
+        if (obj['type'] === 'vcomp') continue;
+        if (obj.children[o]['domRef'] === stack[1]) {
           delegateEvent(
             event,
             obj.children[o],
@@ -507,14 +507,14 @@ module["exports"] = (function () {
         }
       }
     } /* stack.length == 1 */ else {
-      var eventObj = obj["events"][event.type];
+      var eventObj = obj['events'][event.type];
       if (eventObj) {
-        var options = eventObj["options"];
-        if (options["preventDefault"]) {
+        var options = eventObj['options'];
+        if (options['preventDefault']) {
           event.preventDefault();
         }
-        eventObj["runEvent"](event);
-        if (!options["stopPropagation"]) {
+        eventObj['runEvent'](event);
+        if (!options['stopPropagation']) {
           propagateWhileAble(parentStack, event);
         }
       } else {
@@ -537,12 +537,12 @@ module["exports"] = (function () {
   /* Propagate the event up the chain, invoking other event handlers as encountered */
   var propagateWhileAble = function (parentStack, event) {
     for (var i = 0; i < parentStack.length; i++) {
-      if (parentStack[i]["events"][event.type]) {
-        var eventObj = parentStack[i]["events"][event.type],
-          options = eventObj["options"];
-        if (options["preventDefault"]) event.preventDefault();
-        eventObj["runEvent"](event);
-        if (options["stopPropagation"]) {
+      if (parentStack[i]['events'][event.type]) {
+        var eventObj = parentStack[i]['events'][event.type],
+          options = eventObj['options'];
+        if (options['preventDefault']) event.preventDefault();
+        eventObj['runEvent'](event);
+        if (options['stopPropagation']) {
           event.stopPropagation();
           break;
         }
@@ -556,7 +556,7 @@ module["exports"] = (function () {
   */
   var eventJSON = function (at, obj) {
     /* If at is of type [[MisoString]] */
-    if (typeof at[0] == "object") {
+    if (typeof at[0] == 'object') {
       var ret = [];
       for (var i = 0; i < at.length; i++) {
         ret.push(eventJSON(at[i], obj));
@@ -570,7 +570,7 @@ module["exports"] = (function () {
     var newObj;
     if (
       obj instanceof Array ||
-      ("length" in obj && obj["localName"] !== "select")
+      ('length' in obj && obj['localName'] !== 'select')
     ) {
       newObj = [];
       for (i = 0; i < obj.length; i++) {
@@ -586,17 +586,17 @@ module["exports"] = (function () {
       /* https://stackoverflow.com/a/25569117/453261 */
       /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
       if (
-        obj["localName"] === "input" &&
-        (i === "selectionDirection" ||
-          i === "selectionStart" ||
-          i === "selectionEnd")
+        obj['localName'] === 'input' &&
+        (i === 'selectionDirection' ||
+          i === 'selectionStart' ||
+          i === 'selectionEnd')
       ) {
         continue;
       }
       if (
-        typeof obj[i] == "string" ||
-        typeof obj[i] == "number" ||
-        typeof obj[i] == "boolean"
+        typeof obj[i] == 'string' ||
+        typeof obj[i] == 'number' ||
+        typeof obj[i] == 'boolean'
       ) {
         newObj[i] = obj[i];
       }
@@ -622,8 +622,8 @@ module["exports"] = (function () {
     var ax = 0,
       adjusted = vs.length > 0 ? [vs[0]] : [];
     for (var ix = 1; ix < vs.length; ix++) {
-      if (adjusted[ax]["type"] === "vtext" && vs[ix]["type"] === "vtext") {
-        adjusted[ax]["text"] += vs[ix]["text"];
+      if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
+        adjusted[ax]['text'] += vs[ix]['text'];
         continue;
       }
       adjusted[++ax] = vs[ix];
@@ -639,20 +639,20 @@ module["exports"] = (function () {
       if (document.body.childNodes.length > 0) {
         node = document.body.firstChild;
       } else {
-        node = document.body.appendChild(document.createElement("div"));
+        node = document.body.appendChild(document.createElement('div'));
       }
     } else if (mountPoint.childNodes.length === 0) {
-      node = mountPoint.appendChild(document.createElement("div"));
+      node = mountPoint.appendChild(document.createElement('div'));
     } else {
       while (
         mountPoint.childNodes[mountChildIdx] &&
         (mountPoint.childNodes[mountChildIdx].nodeType === 3 ||
-          mountPoint.childNodes[mountChildIdx].localName === "script")
+          mountPoint.childNodes[mountChildIdx].localName === 'script')
       ) {
         mountChildIdx++;
       }
       if (!mountPoint.childNodes[mountChildIdx]) {
-        node = document.body.appendChild(document.createElement("div"));
+        node = document.body.appendChild(document.createElement('div'));
       } else {
         node = mountPoint.childNodes[mountChildIdx];
       }
@@ -661,21 +661,21 @@ module["exports"] = (function () {
     if (!walk(logLevel, vtree, node)) {
       if (logLevel) {
         console.warn(
-          "Could not copy DOM into virtual DOM, falling back to diff",
+          'Could not copy DOM into virtual DOM, falling back to diff',
         );
       }
       // Remove all children before rebuilding DOM
       while (node.firstChild) node.removeChild(node.lastChild);
-      vtree["domRef"] = node;
+      vtree['domRef'] = node;
       populate(null, vtree);
       return false;
     } else {
       if (logLevel) {
         var result = integrityCheck(true, vtree);
         if (!result) {
-          console.warn("Integrity check completed with errors");
+          console.warn('Integrity check completed with errors');
         } else {
-          console.info("Successfully prerendered page");
+          console.info('Successfully prerendered page');
         }
       }
     }
@@ -683,12 +683,12 @@ module["exports"] = (function () {
   };
 
   var diagnoseError = function (logLevel, vtree, node) {
-    if (logLevel) console.warn("VTree differed from node", vtree, node);
+    if (logLevel) console.warn('VTree differed from node', vtree, node);
   };
 
   // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
   var parseColor = function (input) {
-    if (input.substr(0, 1) == "#") {
+    if (input.substr(0, 1) == '#') {
       var collen = (input.length - 1) / 3;
       var fact = [17, 1, 0.062272][collen - 1];
       return [
@@ -698,9 +698,9 @@ module["exports"] = (function () {
       ];
     } else
       return input
-        .split("(")[1]
-        .split(")")[0]
-        .split(",")
+        .split('(')[1]
+        .split(')')[0]
+        .split(',')
         .map((x) => {
           return +x;
         });
@@ -709,121 +709,121 @@ module["exports"] = (function () {
   // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
   var integrityCheck = function (result, vtree) {
     // text nodes must be the same
-    if (vtree["type"] == "vtext") {
-      if (vtree["domRef"].nodeType !== 3) {
-        console.warn("VText domRef not a TEXT_NODE", vtree);
+    if (vtree['type'] == 'vtext') {
+      if (vtree['domRef'].nodeType !== 3) {
+        console.warn('VText domRef not a TEXT_NODE', vtree);
         result = false;
-      } else if (vtree["text"] !== vtree["domRef"].textContent) {
-        console.warn("VText node content differs", vtree);
+      } else if (vtree['text'] !== vtree['domRef'].textContent) {
+        console.warn('VText node content differs', vtree);
         result = false;
       }
     } // if vnode / vcomp, must be the same
     else {
       // tags must be identical
-      if (vtree["tag"].toUpperCase() !== vtree["domRef"].tagName) {
+      if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
         console.warn(
-          "Integrity check failed, tags differ",
-          vtree["tag"].toUpperCase(),
-          vtree["domRef"].tagName,
+          'Integrity check failed, tags differ',
+          vtree['tag'].toUpperCase(),
+          vtree['domRef'].tagName,
         );
         result = false;
       }
       // Child lengths must be identical
       if (
-        "children" in vtree &&
-        vtree["children"].length !== vtree["domRef"].childNodes.length
+        'children' in vtree &&
+        vtree['children'].length !== vtree['domRef'].childNodes.length
       ) {
         console.warn(
-          "Integrity check failed, children lengths differ",
+          'Integrity check failed, children lengths differ',
           vtree,
           vtree.children,
-          vtree["domRef"].childNodes,
+          vtree['domRef'].childNodes,
         );
         result = false;
       }
 
       // properties must be identical
-      var keyLength = Object.keys(vtree["props"]).length,
+      var keyLength = Object.keys(vtree['props']).length,
         key = null;
       for (var i = 0; i < keyLength; i++) {
-        key = Object.keys(vtree["props"])[i];
-        if (key === "href") {
-          var absolute = window.location.origin + "/" + vtree["props"][key],
-            url = vtree["domRef"][key],
-            relative = vtree["props"][key];
+        key = Object.keys(vtree['props'])[i];
+        if (key === 'href') {
+          var absolute = window.location.origin + '/' + vtree['props'][key],
+            url = vtree['domRef'][key],
+            relative = vtree['props'][key];
           if (
             absolute !== url &&
             relative !== url &&
-            relative + "/" !== url &&
-            absolute + "/" !== url
+            relative + '/' !== url &&
+            absolute + '/' !== url
           ) {
             console.warn(
-              "Property " + key + " differs",
-              vtree["props"][key],
-              vtree["domRef"][key],
+              'Property ' + key + ' differs',
+              vtree['props'][key],
+              vtree['domRef'][key],
             );
             result = false;
           }
-        } else if (key === "height" || key === "width") {
+        } else if (key === 'height' || key === 'width') {
           if (
-            parseFloat(vtree["props"][key]) !== parseFloat(vtree["domRef"][key])
+            parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])
           ) {
             console.warn(
-              "Property " + key + " differs",
-              vtree["props"][key],
-              vtree["domRef"][key],
+              'Property ' + key + ' differs',
+              vtree['props'][key],
+              vtree['domRef'][key],
             );
             result = false;
           }
-        } else if (key === "class" || key === "className") {
-          if (vtree["props"][key] !== vtree["domRef"].className) {
+        } else if (key === 'class' || key === 'className') {
+          if (vtree['props'][key] !== vtree['domRef'].className) {
             console.warn(
-              "Property class differs",
-              vtree["props"][key],
-              vtree["domRef"].className,
+              'Property class differs',
+              vtree['props'][key],
+              vtree['domRef'].className,
             );
             result = false;
           }
-        } else if (!vtree["domRef"][key]) {
-          if (vtree["props"][key] !== vtree["domRef"].getAttribute(key)) {
+        } else if (!vtree['domRef'][key]) {
+          if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
             console.warn(
-              "Property " + key + " differs",
-              vtree["props"][key],
-              vtree["domRef"].getAttribute(key),
+              'Property ' + key + ' differs',
+              vtree['props'][key],
+              vtree['domRef'].getAttribute(key),
             );
             result = false;
           }
-        } else if (vtree["props"][key] !== vtree["domRef"][key]) {
+        } else if (vtree['props'][key] !== vtree['domRef'][key]) {
           console.warn(
-            "Property " + key + " differs",
-            vtree["props"][key],
-            vtree["domRef"][key],
+            'Property ' + key + ' differs',
+            vtree['props'][key],
+            vtree['domRef'][key],
           );
           result = false;
         }
       }
 
       // styles must be identical
-      keyLength = Object.keys(vtree["css"]).length;
+      keyLength = Object.keys(vtree['css']).length;
       for (i = 0; i < keyLength; i++) {
-        key = Object.keys(vtree["css"])[i];
-        if (key === "color") {
+        key = Object.keys(vtree['css'])[i];
+        if (key === 'color') {
           if (
-            parseColor(vtree["domRef"].style[key]).toString() !==
-            parseColor(vtree["css"][key]).toString()
+            parseColor(vtree['domRef'].style[key]).toString() !==
+            parseColor(vtree['css'][key]).toString()
           ) {
             console.warn(
-              "Style " + key + " differs",
-              vtree["css"][key],
-              vtree["domRef"].style[key],
+              'Style ' + key + ' differs',
+              vtree['css'][key],
+              vtree['domRef'].style[key],
             );
             result = false;
           }
-        } else if (vtree["css"][key] !== vtree["domRef"].style[key]) {
+        } else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
           console.warn(
-            "Style " + key + " differs",
-            vtree["css"][key],
-            vtree["domRef"].style[key],
+            'Style ' + key + ' differs',
+            vtree['css'][key],
+            vtree['domRef'].style[key],
           );
           result = false;
         }
@@ -843,7 +843,7 @@ module["exports"] = (function () {
     // There can thus be fewer DOM nodes than VDOM nodes.
     // We handle this in collapseSiblingTextNodes
     var vdomChild, domChild;
-    vtree["domRef"] = node;
+    vtree['domRef'] = node;
 
     // Fire onCreated events as though the elements had just been created.
     callCreated(vtree);
@@ -851,32 +851,32 @@ module["exports"] = (function () {
     vtree.children = collapseSiblingTextNodes(vtree.children);
 
     for (var i = 0; i < vtree.children.length; i++) {
-      vdomChild = vtree["children"][i];
+      vdomChild = vtree['children'][i];
       domChild = node.childNodes[i];
       if (!domChild) {
         diagnoseError(logLevel, vdomChild, domChild);
         return false;
       }
-      if (vdomChild.type === "vtext") {
+      if (vdomChild.type === 'vtext') {
         if (domChild.nodeType !== 3) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
 
-        if (vdomChild["text"] === domChild.textContent) {
-          vdomChild["domRef"] = domChild;
+        if (vdomChild['text'] === domChild.textContent) {
+          vdomChild['domRef'] = domChild;
         } else {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-      } else if (vdomChild["type"] === "vcomp") {
-        vdomChild["mount"](function (component) {
+      } else if (vdomChild['type'] === 'vcomp') {
+        vdomChild['mount'](function (component) {
           vdomChild.children.push(component);
           walk(logLevel, vdomChild, domChild);
         });
       } else {
         if (domChild.nodeType !== 1) return false;
-        vdomChild["domRef"] = domChild;
+        vdomChild['domRef'] = domChild;
         walk(logLevel, vdomChild, domChild);
       }
     }
@@ -901,7 +901,7 @@ module["exports"] = (function () {
   };
 
   var setBodyComponent = function (componentId) {
-    document.body.setAttribute("data-component-id", componentId);
+    document.body.setAttribute('data-component-id', componentId);
   };
 
   /* dmj, keep quoted field names so closure-compiler doesn't rename */
@@ -922,6 +922,6 @@ module["exports"] = (function () {
     /* isomorphic */
     'hydrate': hydrate,
     /* version */
-    'version': "1.9.0.0",
+    'version': '1.9.0.0',
   };
 })();
