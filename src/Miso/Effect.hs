@@ -36,7 +36,6 @@ module Miso.Effect
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (forM_)
-import           Control.Monad.Fail (MonadFail, fail)
 import qualified Control.Monad.Fail as Fail
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
