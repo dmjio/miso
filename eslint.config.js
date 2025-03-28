@@ -8,7 +8,7 @@ export default defineConfig([
   { files: ["**/*.{js,mjs,cjs}"], languageOptions: { globals: {...globals.browser, ...globals.node} } },
   { files: ["**/*.{js,mjs,cjs}"], plugins: { js }, extends: ["js/recommended"] },
   { rules: {
-	  "no-global-assign": "warn",
+      "no-global-assign": ["error", {"exceptions": ["module"]}]
 	},
   },
 ]);
