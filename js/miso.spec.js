@@ -156,7 +156,9 @@ describe("miso.js tests", () => {
     var body = document.body;
     var mountCount = 0;
     var newComp1 = vcomp(
-      () => {return mountCount++},
+      () => {
+        return mountCount++;
+      },
       null,
       { "data-component-id": "vcomp-foo" },
       { "background-color": "red" },
@@ -164,7 +166,9 @@ describe("miso.js tests", () => {
     );
     miso.diff(null, newComp1, body);
     var newComp2 = vcomp(
-      () => {return mountCount++},
+      () => {
+        return mountCount++;
+      },
       null,
       { "data-component-id": "vcomp-foo" },
       { "background-color": "red" },
@@ -187,7 +191,9 @@ describe("miso.js tests", () => {
     };
     var newNode = vcomp(
       mountFunc,
-      () => {return unmountCount++},
+      () => {
+        return unmountCount++;
+      },
       { id: "vcomp-foo" },
       {
         "background-color": "red",
@@ -359,7 +365,9 @@ describe("miso.js tests", () => {
     // populate DOM
     var mountCount = 0;
     var compNode1 = vcomp(
-      () => {return mountCount++},
+      () => {
+        return mountCount++;
+      },
       null,
       {
         "data-component-id": "vcomp-foo",
@@ -377,7 +385,9 @@ describe("miso.js tests", () => {
     // Replace node
     mountCount = 0;
     var compNode2 = vcomp(
-      () => {return mountCount++},
+      () => {
+        return mountCount++;
+      },
       null,
       {
         "data-component-id": "vcomp-foo",
@@ -401,7 +411,9 @@ describe("miso.js tests", () => {
 
     // Replace node
     var mountCount = 0;
-    var compNode = vcomp(() => {return mountCount++});
+    var compNode = vcomp(() => {
+      return mountCount++;
+    });
     miso.diff(node, compNode, body);
 
     // Node is removed from DOM, Component is on the DOM
@@ -424,7 +436,9 @@ describe("miso.js tests", () => {
 
     // Replace node
     var mountCount = 0;
-    var compNode = vcomp(() => {return mountCount++});
+    var compNode = vcomp(() => {
+      return mountCount++;
+    });
     miso.diff(node, compNode, body);
 
     // Node is removed from DOM, Component is on the DOM
@@ -459,8 +473,12 @@ describe("miso.js tests", () => {
     var mountCount = 0,
       unmountCount = 0;
     var component = vcomp(
-      () => {return mountCount++},
-      () => {return unmountCount++},
+      () => {
+        return mountCount++;
+      },
+      () => {
+        return unmountCount++;
+      },
     );
     miso.diff(null, component, body);
 
@@ -485,8 +503,12 @@ describe("miso.js tests", () => {
     var mountCount = 0,
       unmountCount = 0;
     var component = vcomp(
-      () => {return mountCount++},
-      () => {return unmountCount++},
+      () => {
+        return mountCount++;
+      },
+      () => {
+        return unmountCount++;
+      },
     );
     miso.diff(null, component, body);
 

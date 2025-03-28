@@ -701,7 +701,9 @@ module["exports"] = (function () {
         .split("(")[1]
         .split(")")[0]
         .split(",")
-        .map((x) => {return +x});
+        .map((x) => {
+          return +x;
+        });
   };
 
   // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
