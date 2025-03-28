@@ -1,2 +1,2 @@
 with (import ../../default.nix {});
-haskell-miso-client.env
+haskell-miso-dev.env

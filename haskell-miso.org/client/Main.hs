@@ -6,8 +6,9 @@ module Main where
 
 import Common (haskellMisoComponent)
 import Miso (miso, run)
+import Miso.String
 
-#if defined(wasm32_HOST_ARCH)
+#ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
