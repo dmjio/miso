@@ -1479,7 +1479,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foo");
     nestedDiv.appendChild(txt);
     var currentNode = vnodeKids("div", [vnodeKids("div", [vtext("foo")])]);
-    miso.copyDOMIntoVTree(true, body, currentNode);
+    miso.hydrate(true, body, currentNode);
     expect(currentNode.children[0].children[0].text).toEqual("foo");
   });
 
@@ -1490,7 +1490,7 @@ describe("miso.js tests", () => {
     var nestedDiv = document.createElement("div");
     div.appendChild(nestedDiv);
     var currentNode = vnodeKids("div", [vtext("foo")]);
-    var res = miso.copyDOMIntoVTree(true, body, currentNode);
+    var res = miso.hydrate(true, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1501,7 +1501,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foo");
     div.appendChild(txt);
     var currentNode = vnodeKids("div", [vnode("div", [])]);
-    var res = miso.copyDOMIntoVTree(true, body, currentNode);
+    var res = miso.hydrate(true, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1512,7 +1512,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foo");
     div.appendChild(txt);
     var currentNode = vnodeKids("div", [vtext("bar")]);
-    var res = miso.copyDOMIntoVTree(true, body, currentNode);
+    var res = miso.hydrate(true, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1523,7 +1523,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foobar");
     div.appendChild(txt);
     var currentNode = vnodeKids("div", [vtext("foo")]);
-    var res = miso.copyDOMIntoVTree(true, body, currentNode);
+    var res = miso.hydrate(true, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1538,7 +1538,7 @@ describe("miso.js tests", () => {
       vtext("bar"),
       vtext("baz"),
     ]);
-    miso.copyDOMIntoVTree(true, body, currentNode);
+    miso.hydrate(true, body, currentNode);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual("foobarbaz");
   });
@@ -1558,7 +1558,7 @@ describe("miso.js tests", () => {
       vtext("bar"),
       vtext("baz"),
     ]);
-    miso.copyDOMIntoVTree(true, null, currentNode);
+    miso.hydrate(true, null, currentNode);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual("foobarbaz");
     expect(div.childNodes[2].textContent).toEqual("foobarbaz");
@@ -1581,7 +1581,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foo");
     nestedDiv2.appendChild(txt);
     var currentNode = vnodeKids("div", [vnodeKids("div", [vtext("foo")])]);
-    var succeeded = miso.copyDOMIntoVTree(true, misoDiv, currentNode);
+    var succeeded = miso.hydrate(true, misoDiv, currentNode);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
   });
@@ -1603,7 +1603,7 @@ describe("miso.js tests", () => {
     var txt = document.createTextNode("foo");
     nestedDiv2.appendChild(txt);
     var currentNode = vnodeKids("div", [vnodeKids("div", [vtext("foo")])]);
-    var succeeded = miso.copyDOMIntoVTree(true, body, currentNode);
+    var succeeded = miso.hydrate(true, body, currentNode);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(false);
   });
@@ -1618,13 +1618,13 @@ describe("miso.js tests", () => {
   //   var misoTxt = document.createTextNode("foo");
   //   body.appendChild(misoTxt);
   //   var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
-  //   var succeeded = miso.copyDOMIntoVTree(true, misoTxt, currentNode);
+  //   var succeeded = miso.hydrate(true, misoTxt, currentNode);
   //   expect(succeeded).toEqual(false);
   // });
 
   test("Should mount on an empty body", () => {
     var currentNode = vnodeKids("div", [vnodeKids("div", [vtext("foo")])]);
-    var succeeded = miso.copyDOMIntoVTree(true, null, currentNode);
+    var succeeded = miso.hydrate(true, null, currentNode);
     expect(succeeded).toEqual(false);
   });
 
@@ -1645,7 +1645,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1668,7 +1668,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1677,7 +1677,7 @@ describe("miso.js tests", () => {
     expect(check).toBe(0);
   });
 
-  test("Should fail integrity check on bad tag in copyDOMIntoVTree w/ logging enabled", () => {
+  test("Should fail integrity check on bad tag in hydrate w/ logging enabled", () => {
     var document = window.document;
     var body = document.body;
     var child = document.createElement("div");
@@ -1694,7 +1694,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(true, body, vtree);
+    var result = miso.hydrate(true, body, vtree);
     expect(result).toEqual(false);
   });
 
@@ -1715,7 +1715,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1741,7 +1741,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1768,7 +1768,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1796,7 +1796,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red", color: "#cccccc" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1824,7 +1824,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1854,7 +1854,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1882,7 +1882,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1910,7 +1910,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1938,7 +1938,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: { "background-color": "red" },
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(1);
@@ -1964,7 +1964,7 @@ describe("miso.js tests", () => {
       ns: "HTML",
       css: {},
     };
-    var result = miso.copyDOMIntoVTree(false, body, vtree);
+    var result = miso.hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = miso.integrityCheck(true, vtree);
     expect(check).toBe(0);

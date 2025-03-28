@@ -631,7 +631,7 @@ module["exports"] = (function () {
     return adjusted;
   };
 
-  var copyDOMIntoVTree = function (logLevel, mountPoint, vtree) {
+  var hydrate = function (logLevel, mountPoint, vtree) {
     var mountChildIdx = 0,
       node;
     // If script tags are rendered first in body, skip them.
@@ -920,7 +920,7 @@ module["exports"] = (function () {
     /* core functions */
     'diff': diff,
     /* isomorphic */
-    'copyDOMIntoVTree': copyDOMIntoVTree,
+    'hydrate': hydrate,
     /* version */
     'version': "1.9.0.0",
   };

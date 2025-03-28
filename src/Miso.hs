@@ -96,7 +96,7 @@ miso f = withJS $ do
     let name = getMountPoint mountPoint
     setBodyComponent name
     mount <- getBody
-    copyDOMIntoVTree (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
+    hydrate (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
