@@ -1,10 +1,12 @@
 with (builtins.fromJSON (builtins.readFile ./nix/nixpkgs.json));
-{ haddock ? true, tests ? false, overlays ? [] }:
+{ overlays ? []
+}:
 let
   pkgs = import ./nix {
-    inherit haddock tests overlays;
+    inherit overlays;
   };
-in with pkgs.haskell.lib;
+in
+with pkgs.haskell.lib;
 {
   inherit pkgs;
 

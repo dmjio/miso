@@ -1,4 +1,4 @@
-options: self: super: {
+self: super: {
 
   nixosPkgsSrc =
     "https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz";
@@ -51,7 +51,7 @@ options: self: super: {
     packages = super.haskell.packages // {
       ghc9122 = super.haskell.packages.ghc9122.override {
         overrides = if super.stdenv.targetPlatform.isGhcjs
-          then import ./haskell/packages/ghcjs options self
+          then import ./haskell/packages/ghcjs self
           else import ./haskell/packages/ghc self;
       };
     };

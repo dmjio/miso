@@ -8,7 +8,7 @@ let
   config.allowUnfree = true;
   config.allowBroken = false;
   overlays = [ (import ./wasm)
-               (import ./overlay.nix options)
+               (import ./overlay.nix)
              ] ++ options.overlays;
 in
   import nixpkgs

@@ -1,4 +1,4 @@
-options: pkgs:
+pkgs:
 let
   source = import ../source.nix pkgs;
 in
@@ -23,34 +23,23 @@ self: super:
       '';
   the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
-  miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideAttrs (drv: {
-    doHaddock = options.haddock;
-    postInstall = ''
-      mkdir -p $out/bin/mario.jsexe/imgs
-      mkdir -p $out/bin/threejs.jsexe
-      cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
-      cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
-      cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
-      cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
-      cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
-      cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
-      '';
-      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-      #    --jscomp_off=checkVars \
-      #    --externs=$out/bin/todo-mvc.jsexe/all.externs.js \
-      #    $out/bin/todo-mvc.jsexe/all.js > temp.js
-      # mv temp.js $out/bin/todo-mvc.jsexe/all.js
-
-  });
-  # miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs (drv: {
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "" {}).overrideAttrs (drv: {
-    doHaddock = options.haddock;
-    postInstall = "";
-      # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-      #    --jscomp_off=checkVars \
-      #    --externs=$out/bin/tests.jsexe/all.externs.js \
-      #      $out/bin/tests.jsexe/all.js > temp.js
-      #      mv temp.js $out/bin/tests.jsexe/all.js
-      #    '';
-  });
+  miso-examples-core = self.callCabal2nix "miso-examples" source.examples {};
+  miso-examples = pkgs.runCommand "miso-examples" {} ''
+    mkdir -p $out/bin/mario.jsexe/imgs
+    cp -fr ${self.miso-examples-core}/bin/*.jsexe $out/*
+    cp -frv ${source.examples}/mario/imgs $out/bin/mario.jsexe/
+    chmod +w $out/bin/xhr.jsexe/index.html
+    cp -fv ${source.examples}/xhr/index.html $out/bin/xhr.jsexe/index.html
+    chmod +w $out/bin/threejs.jsexe/index.html
+    cp -fv ${source.examples}/three/index.html $out/bin/threejs.jsexe/index.html
+    chmod +w $out/bin/todo-mvc.jsexe/index.html
+    cp -fv ${source.examples}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/index.html
+    chmod +w $out/bin/todo-mvc.jsexe
+    cp -fv ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe/base.css
+    cp -fv ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe/index.css
+  '';
+  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {})
+    .overrideAttrs (drv: {
+        doHaddock = true;
+    });
 }
