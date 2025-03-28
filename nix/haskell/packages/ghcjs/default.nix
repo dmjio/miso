@@ -10,7 +10,6 @@ self: super:
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   flatris = self.callCabal2nix "flatris" source.flatris {};
-  # splitmix = self.callCabal2nix "splitmix" source.splitmix {};
   miso-plane =
     let
       miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
