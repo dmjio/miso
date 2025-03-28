@@ -4,31 +4,31 @@ module = typeof module === "undefined" ? {} : module;
 /* module export pattern */
 module["exports"] = (function () {
   /* virtual-dom diffing algorithm, applies patches as detected */
-  var diff = function (currentObj, newObj, parent, doc) {
+  var diff = function (currentObj, newObj, parent) {
     if (!currentObj && !newObj) return;
-    else if (!currentObj && newObj) create(newObj, parent, doc);
+    else if (!currentObj && newObj) create(newObj, parent);
     else if (!newObj) destroy(currentObj, parent);
     else {
       if (currentObj["type"] === newObj["type"]) {
-        diffNodes(currentObj, newObj, parent, doc);
+        diffNodes(currentObj, newObj, parent);
       } else {
-        replace(currentObj, newObj, parent, doc);
+        replace(currentObj, newObj, parent);
       }
     }
   };
 
   // replace everything function
-  var replace = function (c, n, parent, doc) {
+  var replace = function (c, n, parent) {
     // step1 : prepare to delete, unmount things
     callBeforeDestroyedRecursive(c);
     // ^ this will unmount sub components before we replace the child
     // and will recursively call hooks on nodes
     // step2 : create new things, replace old things with new things
     if (n["type"] === "vtext") {
-      n["domRef"] = doc.createTextNode(n["text"]);
+      n["domRef"] = document.createTextNode(n["text"]);
       parent.replaceChild(n["domRef"], c["domRef"]);
     } else {
-      createElement(n, doc, function (ref) {
+      createElement(n, function (ref) {
         parent.replaceChild(ref, c["domRef"]);
       });
     }
@@ -48,7 +48,7 @@ module["exports"] = (function () {
     callDestroyedRecursive(obj);
   };
 
-  var diffNodes = function (c, n, parent, doc) {
+  var diffNodes = function (c, n, parent) {
     // bail out on easy vtext case
     if (c["type"] === "vtext") {
       if (c["text"] !== n["text"]) c["domRef"].textContent = n["text"];
@@ -63,10 +63,10 @@ module["exports"] = (function () {
     ) {
       n["domRef"] = c["domRef"];
       // dmj: we will diff properties on 'vcomp' as well
-      populate(c, n, doc);
+      populate(c, n);
     } else {
       // dmj: we replace when things just don't line up during the diff
-      replace(c, n, parent, doc);
+      replace(c, n, parent);
     }
   };
 
@@ -94,12 +94,12 @@ module["exports"] = (function () {
     }
   };
   // ** </> recursive calls to hooks
-  var callCreated = function (obj, doc) {
+  var callCreated = function (obj) {
     if (obj["onCreated"]) obj["onCreated"]();
-    if (obj["type"] === "vcomp") mountComponent(obj, doc);
+    if (obj["type"] === "vcomp") mountComponent(obj);
   };
 
-  var populate = function (c, n, doc) {
+  var populate = function (c, n) {
     if (!c) {
       c = {
         props: null,
@@ -110,7 +110,7 @@ module["exports"] = (function () {
     diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
     diffCss(c["css"], n["css"], n["domRef"]);
     if (n["type"] === "vcomp") return; // dmj: don't diff vcomp children
-    diffChildren(c["children"], n["children"], n["domRef"], doc);
+    diffChildren(c["children"], n["children"], n["domRef"]);
   };
 
   var diffProps = function (cProps, nProps, node, isSvg) {
@@ -193,46 +193,46 @@ module["exports"] = (function () {
     );
   };
 
-  var diffChildren = function (cs, ns, parent, doc) {
+  var diffChildren = function (cs, ns, parent) {
     var longest = ns.length > cs.length ? ns.length : cs.length;
     if (hasKeys(ns, cs)) {
-      syncChildren(cs, ns, parent, doc);
+      syncChildren(cs, ns, parent);
     } else {
       for (var i = 0; i < longest; i++) {
-        diff(cs[i], ns[i], parent, doc);
+        diff(cs[i], ns[i], parent);
       }
     }
   };
 
-  var populateDomRef = function (obj, doc) {
+  var populateDomRef = function (obj) {
     if (obj["ns"] === "svg") {
-      obj["domRef"] = doc.createElementNS(
+      obj["domRef"] = document.createElementNS(
         "http://www.w3.org/2000/svg",
         obj["tag"],
       );
     } else if (obj["ns"] === "mathml") {
-      obj["domRef"] = doc.createElementNS(
+      obj["domRef"] = document.createElementNS(
         "http://www.w3.org/1998/Math/MathML",
         obj["tag"],
       );
     } else {
-      obj["domRef"] = doc.createElement(obj["tag"]);
+      obj["domRef"] = document.createElement(obj["tag"]);
     }
   };
 
   // dmj: refactor this, the callback function feels meh
-  var createElement = function (obj, doc, cb) {
-    populateDomRef(obj, doc);
+  var createElement = function (obj, cb) {
+    populateDomRef(obj);
     cb(obj["domRef"]);
-    populate(null, obj, doc);
-    callCreated(obj, doc);
+    populate(null, obj);
+    callCreated(obj);
   };
 
   // mounts vcomp by calling into Haskell side.
   // unmount is handled with pre-destroy recursive hooks
-  var mountComponent = function (obj, doc) {
+  var mountComponent = function (obj) {
     var componentId = obj["data-component-id"],
-      nodeList = doc.querySelectorAll(
+      nodeList = document.querySelectorAll(
         "[data-component-id='" + componentId + "']",
       );
 
@@ -258,19 +258,19 @@ module["exports"] = (function () {
   };
 
   // creates nodes on virtual and dom (vtext, vcomp, vnode)
-  var create = function (obj, parent, doc) {
+  var create = function (obj, parent) {
     if (obj.type === "vtext") {
-      obj["domRef"] = doc.createTextNode(obj["text"]);
+      obj["domRef"] = document.createTextNode(obj["text"]);
       parent.appendChild(obj["domRef"]);
     } else {
-      createElement(obj, doc, function (ref) {
+      createElement(obj, function (ref) {
         parent.appendChild(ref);
       });
     }
   };
 
   /* Child reconciliation algorithm, inspired by kivi and Bobril */
-  var syncChildren = function (os, ns, parent, doc) {
+  var syncChildren = function (os, ns, parent) {
     var oldFirstIndex = 0,
       newFirstIndex = 0,
       oldLastIndex = os.length - 1,
@@ -301,7 +301,7 @@ module["exports"] = (function () {
          -> [ a b c ] <- new children
          */
       if (oldFirstIndex > oldLastIndex) {
-        diff(null, nFirst, parent, doc);
+        diff(null, nFirst, parent);
         /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
            Otherwise, it will insert node['domRef'] before oLast['domRef']. */
         parent.insertBefore(nFirst["domRef"], oFirst ? oFirst["domRef"] : null);
@@ -322,9 +322,9 @@ module["exports"] = (function () {
          -> newFirstIndex -> [ a b c ] <- newLastIndex
          check if nFirst and oFirst align, if so, check nLast and oLast
          */ else if (oFirst["key"] === nFirst["key"]) {
-        diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
+        diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
       } else if (oLast["key"] === nLast["key"]) {
-        diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+        diff(os[oldLastIndex--], ns[newLastIndex--], parent);
       } /* flip-flop case, nodes have been swapped, in some way or another
          both could have been swapped.
          -> [ a b c ] <- old children
@@ -335,8 +335,8 @@ module["exports"] = (function () {
       ) {
         swapDomRefs(node, oLast["domRef"], oFirst["domRef"], parent);
         swap(os, oldFirstIndex, oldLastIndex);
-        diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, doc);
-        diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+        diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
+        diff(os[oldLastIndex--], ns[newLastIndex--], parent);
       } /* Or just one could be swapped (d's align here)
              This is top left and bottom right match case.
              We move d to end of list, mutate old vdom to reflect the change
@@ -352,7 +352,7 @@ module["exports"] = (function () {
         parent.insertBefore(oFirst["domRef"], oLast["domRef"].nextSibling);
         /* swap positions in old vdom */
         os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
-        diff(os[oldLastIndex--], ns[newLastIndex--], parent, doc);
+        diff(os[oldLastIndex--], ns[newLastIndex--], parent);
       } /* This is top right and bottom lefts match case.
          We move d to end of list, mutate old vdom to reflect the change
          -> [ b a d ] <- old children
@@ -366,7 +366,7 @@ module["exports"] = (function () {
         parent.insertBefore(oLast["domRef"], oFirst["domRef"]);
         /* swap positions in old vdom */
         os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-        diff(os[oldFirstIndex++], nFirst, parent, doc);
+        diff(os[oldFirstIndex++], nFirst, parent);
         newFirstIndex++;
       } /* The 'you're screwed' case, nothing aligns, pull the ripcord, do something more fancy
          This can happen when the list is sorted, for example.
@@ -400,7 +400,7 @@ module["exports"] = (function () {
           /* Move item to correct position */
           os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
           /* optionally perform `diff` here */
-          diff(os[oldFirstIndex++], nFirst, parent, doc);
+          diff(os[oldFirstIndex++], nFirst, parent);
           /* Swap DOM references */
           parent.insertBefore(node["domRef"], os[oldFirstIndex]["domRef"]);
           /* increment counters */
@@ -417,7 +417,7 @@ module["exports"] = (function () {
              -> [ b e a j   ] <- new children
                 ^
                 */ else {
-          createElement(nFirst, doc, function (ref) {
+          createElement(nFirst, function (ref) {
             parent.insertBefore(ref, oFirst["domRef"]);
           });
           os.splice(oldFirstIndex++, 0, nFirst);
@@ -631,18 +631,18 @@ module["exports"] = (function () {
     return adjusted;
   };
 
-  var copyDOMIntoVTree = function (logLevel, mountPoint, vtree, doc, window) {
+  var copyDOMIntoVTree = function (logLevel, mountPoint, vtree) {
     var mountChildIdx = 0,
       node;
     // If script tags are rendered first in body, skip them.
     if (!mountPoint) {
-      if (doc.body.childNodes.length > 0) {
-        node = doc.body.firstChild;
+      if (document.body.childNodes.length > 0) {
+        node = document.body.firstChild;
       } else {
-        node = doc.body.appendChild(doc.createElement("div"));
+        node = document.body.appendChild(document.createElement("div"));
       }
     } else if (mountPoint.childNodes.length === 0) {
-      node = mountPoint.appendChild(doc.createElement("div"));
+      node = mountPoint.appendChild(document.createElement("div"));
     } else {
       while (
         mountPoint.childNodes[mountChildIdx] &&
@@ -652,13 +652,13 @@ module["exports"] = (function () {
         mountChildIdx++;
       }
       if (!mountPoint.childNodes[mountChildIdx]) {
-        node = doc.body.appendChild(doc.createElement("div"));
+        node = document.body.appendChild(document.createElement("div"));
       } else {
         node = mountPoint.childNodes[mountChildIdx];
       }
     }
 
-    if (!walk(logLevel, vtree, node, doc)) {
+    if (!walk(logLevel, vtree, node)) {
       if (logLevel) {
         console.warn(
           "Could not copy DOM into virtual DOM, falling back to diff",
@@ -667,11 +667,11 @@ module["exports"] = (function () {
       // Remove all children before rebuilding DOM
       while (node.firstChild) node.removeChild(node.lastChild);
       vtree["domRef"] = node;
-      populate(null, vtree, doc);
+      populate(null, vtree);
       return false;
     } else {
       if (logLevel) {
-        var result = integrityCheck(true, vtree, window);
+        var result = integrityCheck(true, vtree);
         if (!result) {
           console.warn("Integrity check completed with errors");
         } else {
@@ -701,11 +701,13 @@ module["exports"] = (function () {
         .split("(")[1]
         .split(")")[0]
         .split(",")
-        .map((x) => {return +x});
+        .map((x) => {
+          return +x;
+        });
   };
 
   // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-  var integrityCheck = function (result, vtree, window) {
+  var integrityCheck = function (result, vtree) {
     // text nodes must be the same
     if (vtree["type"] == "vtext") {
       if (vtree["domRef"].nodeType !== 3) {
@@ -829,13 +831,13 @@ module["exports"] = (function () {
 
       // recursive call for `vnode` / `vcomp`
       for (i = 0; i < vtree.children.length; i++) {
-        result &= integrityCheck(result, vtree.children[i], window);
+        result &= integrityCheck(result, vtree.children[i]);
       }
     }
     return result;
   };
 
-  var walk = function (logLevel, vtree, node, doc) {
+  var walk = function (logLevel, vtree, node) {
     // This is slightly more complicated than one might expect since
     // browsers will collapse consecutive text nodes into a single text node.
     // There can thus be fewer DOM nodes than VDOM nodes.
@@ -844,7 +846,7 @@ module["exports"] = (function () {
     vtree["domRef"] = node;
 
     // Fire onCreated events as though the elements had just been created.
-    callCreated(vtree, doc);
+    callCreated(vtree);
 
     vtree.children = collapseSiblingTextNodes(vtree.children);
 
@@ -870,36 +872,36 @@ module["exports"] = (function () {
       } else if (vdomChild["type"] === "vcomp") {
         vdomChild["mount"](function (component) {
           vdomChild.children.push(component);
-          walk(logLevel, vdomChild, domChild, doc);
+          walk(logLevel, vdomChild, domChild);
         });
       } else {
         if (domChild.nodeType !== 1) return false;
         vdomChild["domRef"] = domChild;
-        walk(logLevel, vdomChild, domChild, doc);
+        walk(logLevel, vdomChild, domChild);
       }
     }
     return true;
   };
 
   /* various utilities */
-  var callFocus = function (id, doc, delay) {
+  var callFocus = function (id, delay) {
     var setFocus = function () {
-      var e = doc.getElementById(id);
+      var e = document.getElementById(id);
       if (e && e.focus) e.focus();
     };
     delay > 0 ? setTimeout(setFocus, delay) : setFocus();
   };
 
-  var callBlur = function (id, doc, delay) {
+  var callBlur = function (id, delay) {
     var setBlur = function () {
-      var e = doc.getElementById(id);
+      var e = document.getElementById(id);
       if (e && e.blur) e.blur();
     };
     delay > 0 ? setTimeout(setBlur, delay) : setBlur();
   };
 
-  var setBodyComponent = function (componentId, doc) {
-    doc.body.setAttribute("data-component-id", componentId);
+  var setBodyComponent = function (componentId) {
+    document.body.setAttribute("data-component-id", componentId);
   };
 
   /* dmj, keep quoted field names so closure-compiler doesn't rename */

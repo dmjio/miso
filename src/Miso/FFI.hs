@@ -250,12 +250,6 @@ getBody = jsg "document" ! "body"
 getDocument :: JSM JSVal
 getDocument = jsg "document"
 -----------------------------------------------------------------------------
--- | Retrieves a reference to the window.
---
--- See <https://developer.mozilla.org/en-US/docs/Web/API/Window>
-getWindow :: JSM JSVal
-getWindow = jsg "window"
------------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
 --
@@ -271,12 +265,10 @@ diff
   -- ^ new object
   -> JSVal
   -- ^ parent node
-  -> JSVal
-  -- ^ document
   -> JSM ()
-diff (Object a) (Object b) c d = do
+diff (Object a) (Object b) c = do
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "diff" $ [a,b,c,d]
+  void $ moduleExports # "diff" $ [a,b,c]
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -327,11 +319,9 @@ undelegate mountPoint events debug callback = do
 -- entry point into isomorphic javascript
 copyDOMIntoVTree :: Bool -> JSVal -> JSVal -> JSM ()
 copyDOMIntoVTree logLevel mountPoint vtree = void $ do
-  window <- getWindow
-  doc <- getDocument
   ll <- toJSVal logLevel
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree, doc, window]
+  void $ moduleExports # "copyDOMIntoVTree" $ [ll, mountPoint, vtree]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -339,10 +329,9 @@ copyDOMIntoVTree logLevel mountPoint vtree = void $ do
 focus :: MisoString -> JSM ()
 focus x = do
   moduleExports <- jsg "module" ! "exports"
-  doc <- getDocument
   el <- toJSVal x
   delay <- toJSVal (50 :: Int)
-  void $ moduleExports # "callFocus" $ [el,doc,delay]
+  void $ moduleExports # "callFocus" $ [el,delay]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -350,10 +339,9 @@ focus x = do
 blur :: MisoString -> JSM ()
 blur x = do
   moduleExports <- jsg "module" ! "exports"
-  doc <- getDocument
   el <- toJSVal x
   delay <- toJSVal (50 :: Int)
-  void $ moduleExports # "callBlur" $ [el,doc,delay]
+  void $ moduleExports # "callBlur" $ [el,delay]
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
@@ -373,8 +361,7 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -- | Sets the body with data-component-id
 setBodyComponent :: MisoString -> JSM ()
 setBodyComponent name = do
-  doc <- getDocument
   component <- toJSVal name
   moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "setBodyComponent" $ [component, doc]
+  void $ moduleExports # "setBodyComponent" $ [component]
 -----------------------------------------------------------------------------
