@@ -5,7 +5,7 @@
   "scripts": {
     "test": "jest --silent",
     "coverage": "jest --collect-coverage=true --coverage-directory=coverage --silent",
-    "pretty": "prettier --write *.js",
+    "pretty": "prettier --write js/*.js",
     "lint": "eslint --fix js/*.js"
   },
   "type": "module",
@@ -43,5 +43,8 @@
     "package.json",
     "yarn.lock",
     "README.md"
-  ]
+  ],
+  "dependencies": {
+    "jest-environment-jsdom": "^29.7.0"
+  }
 }
