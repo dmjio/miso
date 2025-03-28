@@ -60,7 +60,7 @@ in with pkgs.haskell.lib;
 
   #ci
   deploy = pkgs.deploy rev;
-  inherit (pkgs) haskell-miso-org-test;
+  inherit (pkgs) haskell-miso-org-test nixops;
 
   # ghciwatch
   inherit (pkgs) ghciwatch;
