@@ -27,6 +27,10 @@
   "jest": {
     "verbose": true
   },
+  "prettier": {
+    "singleQuote": true,
+    "quoteProps": "preserve"
+  },
   "homepage": "https://haskell-miso.org",
   "devDependencies": {
     "@eslint/js": "^9.23.0",
