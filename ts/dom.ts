@@ -82,12 +82,12 @@ var callBeforeDestroyedRecursive = function (obj: any) {
   }
 };
 // ** </> recursive calls to hooks
-export function callCreated (obj: any) {
+export function callCreated(obj: any) {
   if (obj['onCreated']) obj['onCreated']();
   if (obj['type'] === 'vcomp') mountComponent(obj);
-};
+}
 
-export function populate (c: any, n: any) {
+export function populate(c: any, n: any) {
   if (!c) {
     c = {
       props: null,
@@ -99,7 +99,7 @@ export function populate (c: any, n: any) {
   diffCss(c['css'], n['css'], n['domRef']);
   if (n['type'] === 'vcomp') return; // dmj: don't diff vcomp children
   diffChildren(c['children'], n['children'], n['domRef']);
-};
+}
 var diffProps = function (cProps: any, nProps: any, node: any, isSvg: boolean) {
   var newProp;
   /* Is current prop in new prop list? */

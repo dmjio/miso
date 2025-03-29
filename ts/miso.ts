@@ -4,15 +4,15 @@ import { hydrate, integrityCheck } from './iso';
 import { version, callFocus, callBlur, setBodyComponent } from './util';
 
 /* top level re-export */
-export
-{ diff
-, hydrate
-, version
-, delegate
-, callBlur
-, callFocus
-, eventJSON
-, undelegate
-, integrityCheck
-, setBodyComponent
-}
+export {
+  diff,
+  hydrate,
+  version,
+  delegate,
+  callBlur,
+  callFocus,
+  eventJSON,
+  undelegate,
+  integrityCheck,
+  setBodyComponent,
+};

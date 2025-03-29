@@ -1,14 +1,14 @@
-import
-{ diff
-, hydrate
-, version
-, delegate
-, callBlur
-, callFocus
-, eventJSON
-, undelegate
-, integrityCheck
-, setBodyComponent
+import {
+  diff,
+  hydrate,
+  version,
+  delegate,
+  callBlur,
+  callFocus,
+  eventJSON,
+  undelegate,
+  integrityCheck,
+  setBodyComponent,
 } from './miso';
 
 /* export globally */
