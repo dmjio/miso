@@ -9,7 +9,7 @@
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",
     "watch": "tsc ts/miso.ts --watch",
     "pretty": "prettier --write ts/*.ts",
-    "build": "bun build --outfile=js/miso.js ./ts/index.ts --production --target=browser"
+    "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser"
   },
   "type": "module",
   "module": "ts/miso.ts",
