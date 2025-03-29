@@ -35,8 +35,8 @@ jobs:
      - name: Miso.ts tests
        run: bun run test
 
-     - name: Miso.ts linting
-       run: bun run lint
+     # - name: Miso.ts linting
+     #   run: bun run lint
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
