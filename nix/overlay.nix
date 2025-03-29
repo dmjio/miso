@@ -66,6 +66,14 @@ options: self: super: {
       };
     };
   };
+
+  nixops = super.nixops.overrideAttrs (drv: {
+    src = builtins.fetchTarball {
+      url = "https://nixos.org/releases/nixops/nixops-1.7/nixops-1.7.tar.bz2";
+      sha256 = "sha256:1iax9hz16ry1pm9yw2wab0np7140d7pv4rnk1bw63kq4gnxnr93c";
+    };
+  });
+
   deploy = rev: super.writeScript "deploy" ''
     export PATH=$PATH:${self.nixops}/bin
     export PATH=$PATH:${self.jq}/bin
