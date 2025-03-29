@@ -1361,7 +1361,7 @@ describe('js tests', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
-  test('Nothing matches case', () => {
+  test('Should match nothing', () => {
     var body = document.body;
     var currentNode = vnode(
       'div',
@@ -1609,7 +1609,6 @@ describe('js tests', () => {
   });
 
   // test('Should copy DOM into VTree at body w/ script / text siblings', () => {
-  //
   //   var body = document.body;
   //   var unrelatedDiv = document.createElement('div');
   //   body.appendChild(document.createElement('script'));

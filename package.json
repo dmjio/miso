@@ -3,6 +3,7 @@
   "version": "1.9.0",
   "description": "miso: A tasty Haskell front-end web framework",
   "scripts": {
+    "clean": "rm -v js/miso.js",
     "lint": "eslint --fix ts/*.ts",
     "test": "bun test js/miso.spec.js && bun run lcov",
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",

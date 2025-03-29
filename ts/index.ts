@@ -12,14 +12,14 @@ import {
 } from './miso';
 
 /* export globally */
-miso = {};
-miso['diff'] = diff;
-miso['hydrate'] = hydrate;
-miso['version'] = version;
-miso['delegate'] = delegate;
-miso['callBlur'] = callBlur;
-miso['callFocus'] = callFocus;
-miso['eventJSON'] = eventJSON;
-miso['undelegate'] = undelegate;
-miso['integrityCheck'] = integrityCheck;
-miso['setBodyComponent'] = setBodyComponent;
+globalThis['miso'] = {};
+globalThis['miso']['diff'] = diff;
+globalThis['miso']['hydrate'] = hydrate;
+globalThis['miso']['version'] = version;
+globalThis['miso']['delegate'] = delegate;
+globalThis['miso']['callBlur'] = callBlur;
+globalThis['miso']['callFocus'] = callFocus;
+globalThis['miso']['eventJSON'] = eventJSON;
+globalThis['miso']['undelegate'] = undelegate;
+globalThis['miso']['integrityCheck'] = integrityCheck;
+globalThis['miso']['setBodyComponent'] = setBodyComponent;

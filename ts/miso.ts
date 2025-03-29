@@ -1,7 +1,7 @@
-import { diff } from './dom';
-import { delegate, undelegate, eventJSON } from './event';
-import { hydrate, integrityCheck } from './iso';
-import { version, callFocus, callBlur, setBodyComponent } from './util';
+import { diff } from './miso/dom';
+import { delegate, undelegate, eventJSON } from './miso/event';
+import { hydrate, integrityCheck } from './miso/iso';
+import { version, callFocus, callBlur, setBodyComponent } from './miso/util';
 
 /* top level re-export */
 export {
