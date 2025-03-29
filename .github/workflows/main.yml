@@ -104,8 +104,8 @@ jobs:
        run: bun run build
      - name: Build
        run: nix-build -A miso-ghcjs
-     - name: Miso.js coverage
-       run: nix-shell -p yarn --run 'yarn install && yarn run coverage'
+     - name: Miso.ts test coverage
+       run: bun run test
      - name: Deploy
        run: nix-build -A deploy -j1 && ./result
        env:
