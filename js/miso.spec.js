@@ -12,8 +12,23 @@ import {
   eventJSON,
 } from '../ts/miso';
 
-import { test, expect, describe, afterEach } from 'bun:test';
+import {
+  test,
+  expect,
+  describe,
+  afterEach,
+  beforeAll,
+} from 'bun:test';
 
+/* silence */
+beforeAll (() => {
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+});
+
+/* reset DOM */
 afterEach(() => {
   document.body.innerHTML = '';
 });
