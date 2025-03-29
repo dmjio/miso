@@ -31,7 +31,7 @@ options: self: super: {
     src = ../coverage;
     buildCommand = ''
       mkdir -p $out
-      cp -rv $src/lcov-report $out
+      cp -rv $src $out
     '';
   };
 
