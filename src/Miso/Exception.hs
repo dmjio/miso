@@ -17,7 +17,6 @@ module Miso.Exception
   ) where
 ----------------------------------------------------------------------------
 import           Control.Exception
-import           Data.Typeable
 import           Language.Javascript.JSaddle
 ----------------------------------------------------------------------------
 import           Miso.String (MisoString, ms)
@@ -48,7 +47,7 @@ data MisoException
   -- ^ Thrown when a @Component@ is sampled, yet not mounted.
   | AlreadyMountedException MisoString
   -- ^ Thrown when a @Component@ is attempted to be mounted twice.
-  deriving (Show, Eq, Typeable)
+  deriving (Show, Eq)
 ----------------------------------------------------------------------------
 instance Exception MisoException
 ----------------------------------------------------------------------------
