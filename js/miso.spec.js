@@ -1,9 +1,37 @@
-/**
- * @jest-environment jsdom
- */
+/* imports */
+import {
+  setBodyComponent,
+  integrityCheck,
+  version,
+  diff,
+  hydrate,
+  delegate,
+  undelegate,
+  callFocus,
+  callBlur,
+  eventJSON,
+} from '../ts/miso';
 
-/* custom js imports */
-const miso = require('./miso');
+import {
+  test,
+  expect,
+  describe,
+  afterEach,
+  beforeAll,
+} from 'bun:test';
+
+/* silence */
+beforeAll (() => {
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+});
+
+/* reset DOM */
+afterEach(() => {
+  document.body.innerHTML = '';
+});
 
 /* smart constructors */
 function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
@@ -87,68 +115,62 @@ function vtextKeyed(txt, key) {
   };
 }
 
-describe('miso.js tests', () => {
-  /* Reset DOM before each test */
-  beforeEach(() => {
-    document.body.innerHTML = '';
-  });
-
-  test('Should be null when miso.diffing two null virtual DOMs', () => {
-    var document = window.document;
-    const body = document.body;
+describe('js tests', () => {
+  test('Should be null when diffing two null virtual DOMs', () => {
+    var body = document.body;
     var c = null;
     var n = null;
-    miso.diff(c, n, body);
+    diff(c, n, body);
     expect(body.childNodes.length).toBe(0);
   });
 
   test('Should create a new text node', () => {
-    const body = document.body;
+    var body = document.body;
     var newNode = {
       type: 'vtext',
       text: 'foo',
     };
-    miso.diff(null, newNode, body);
-    expect(newNode.domRef.wholeText).toBe('foo');
+    diff(null, newNode, body);
+    expect(newNode.domRef.textContent).toBe('foo');
   });
 
-  test('Should window miso.diff two identical text nodes', () => {
-    const body = document.body;
+  test('Should window diff two identical text nodes', () => {
+    var body = document.body;
     var currentNode = {
       type: 'vtext',
       text: 'foo',
     };
-    miso.diff(null, currentNode, body);
-    expect(currentNode.domRef.wholeText).toBe('foo');
+    diff(null, currentNode, body);
+    expect(currentNode.domRef.textContent).toBe('foo');
     var newNode = {
       type: 'vtext',
       text: 'foo',
     };
-    miso.diff(currentNode, newNode, body);
-    expect('foo').toBe(newNode.domRef.wholeText);
+    diff(currentNode, newNode, body);
+    expect('foo').toBe(newNode.domRef.textContent);
   });
 
-  test('Should window miso.diff two window miso.different text nodes', () => {
-    const body = document.body;
+  test('Should window diff two window different text nodes', () => {
+    var body = document.body;
     var currentNode = {
       type: 'vtext',
       text: 'foo',
     };
-    miso.diff(null, currentNode, body);
-    expect(currentNode.domRef.wholeText).toBe('foo');
+    diff(null, currentNode, body);
+    expect(currentNode.domRef.textContent).toBe('foo');
     var newNode = {
       type: 'vtext',
       text: 'bar',
     };
-    miso.diff(currentNode, newNode, body);
-    expect(newNode.domRef.wholeText).toBe('bar');
+    diff(currentNode, newNode, body);
+    expect(newNode.domRef.textContent).toBe('bar');
   });
 
   test('Should create a new DOM node', () => {
     var body = document.body;
     var currentNode = null;
     var newNode = vnode('div', []);
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(body.children[0]).toBe(newNode.domRef);
   });
 
@@ -164,7 +186,7 @@ describe('miso.js tests', () => {
       { 'background-color': 'red' },
       [],
     );
-    miso.diff(null, newComp1, body);
+    diff(null, newComp1, body);
     var newComp2 = vcomp(
       () => {
         return mountCount++;
@@ -175,7 +197,7 @@ describe('miso.js tests', () => {
       [],
     );
     var newNode = vnode('div', [newComp2], {}, {}, 'svg');
-    miso.diff(null, newNode, body);
+    diff(null, newNode, body);
     expect(mountCount).toBe(1);
   });
 
@@ -186,13 +208,13 @@ describe('miso.js tests', () => {
     var mountFunc = function (cb) {
       mountCount++;
       var node = vnode('div', []);
-      miso.diff(null, node, body);
+      diff(null, node, body);
       cb(node);
     };
     var newNode = vcomp(
       mountFunc,
       () => {
-        return unmountCount++;
+        unmountCount++;
       },
       { id: 'vcomp-foo' },
       {
@@ -200,13 +222,13 @@ describe('miso.js tests', () => {
       },
       [],
     );
-    miso.diff(null, newNode, body);
+    diff(null, newNode, body);
     expect(mountCount).toBe(1);
     expect(newNode.children.length).toBe(1);
     expect(newNode.domRef.children.length).toBe(1);
     expect(newNode.domRef.id).toBe('vcomp-foo');
     expect(newNode.domRef.style['background-color']).toBe('red');
-    miso.diff(newNode, null, body);
+    diff(newNode, null, body);
     expect(unmountCount).toBe(1);
   });
 
@@ -214,7 +236,7 @@ describe('miso.js tests', () => {
     var body = document.body;
     var currentNode = null;
     var newNode = vnode('div', [], {}, {}, 'svg');
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(body.children[0]).toBe(newNode.domRef);
   });
 
@@ -222,7 +244,7 @@ describe('miso.js tests', () => {
     var body = document.body;
     var currentNode = null;
     var newNode = vnode('math', [], {}, {}, 'mathml');
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(body.children[0]).toBe(newNode.domRef);
   });
 
@@ -238,7 +260,7 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(
       body.children[0].getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
     ).toBe('https://google.com');
@@ -256,7 +278,7 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(
       body.children[0].getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
     ).toBe('https://google.com');
@@ -269,7 +291,7 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(newNode, newerNode, body);
+    diff(newNode, newerNode, body);
     expect(
       body.children[0].getAttributeNS('http://www.w3.org/1999/xlink', 'href'),
     ).toBe('https://yahoo.com');
@@ -287,7 +309,7 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(body.children[0].getAttribute('rx')).toBe('100');
   });
 
@@ -303,7 +325,7 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(body.children[0].getAttribute('rx')).toBe('100');
     var newerNode = vnode(
       'ellipse',
@@ -314,23 +336,23 @@ describe('miso.js tests', () => {
       {},
       'svg',
     );
-    miso.diff(newNode, newerNode, body);
+    diff(newNode, newerNode, body);
     expect(body.children[0].getAttribute('rx')).toBe('200');
   });
 
-  test('Should replace a Node with a new Node of a window miso.different tag', () => {
+  test('Should replace a Node with a new Node of a window different tag', () => {
     var body = document.body;
 
     // populate DOM
     var node = vnode('div', []);
-    miso.diff(null, node, body);
+    diff(null, node, body);
 
     // Test node was populated
     expect(body.children.length).toBe(1);
 
     // Replace node
     var newNode = vnode('a', []);
-    miso.diff(node, newNode, body);
+    diff(node, newNode, body);
 
     // Test node is removed from DOM
     expect(body.children[0].tagName).toBe('A');
@@ -341,7 +363,7 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var node = vnode('div', [vnode('div', [])]);
-    miso.diff(null, node, body);
+    diff(null, node, body);
     expect(node.domRef.children.length).toBe(1);
   });
 
@@ -350,16 +372,16 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var node = vnode('div', [vnode('div', [])]);
-    miso.diff(null, node, body);
+    diff(null, node, body);
     expect(node.domRef.children.length).toBe(1);
 
     // populate DOM
     var newNode = vnode('div', []);
-    miso.diff(node, newNode, body);
+    diff(node, newNode, body);
     expect(node.domRef.children.length).toBe(0);
   });
 
-  test('Should Miso.Diff attrs of two Components', () => {
+  test('Should Diff attrs of two Components', () => {
     var body = document.body;
 
     // populate DOM
@@ -375,7 +397,7 @@ describe('miso.js tests', () => {
       { 'background-color': 'red' },
     );
 
-    miso.diff(null, compNode1, body);
+    diff(null, compNode1, body);
     expect(mountCount).toBe(1);
 
     // Test node was populated
@@ -395,7 +417,7 @@ describe('miso.js tests', () => {
       { 'background-color': 'green' },
     );
 
-    miso.diff(compNode1, compNode2, body);
+    diff(compNode1, compNode2, body);
     expect(body.childNodes[0].style['background-color']).toBe('green');
   });
 
@@ -404,7 +426,7 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var node = vnode('div', []);
-    miso.diff(null, node, body);
+    diff(null, node, body);
 
     // Test node was populated
     expect(body.childNodes.length).toBe(1);
@@ -414,7 +436,7 @@ describe('miso.js tests', () => {
     var compNode = vcomp(() => {
       return mountCount++;
     });
-    miso.diff(node, compNode, body);
+    diff(node, compNode, body);
 
     // Node is removed from DOM, Component is on the DOM
     expect(body.childNodes[0].getAttribute('data-component-id')).toBe(
@@ -428,10 +450,10 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var node = vtext('foo');
-    miso.diff(null, node, body);
+    diff(null, node, body);
 
     // Test node was populated
-    expect(node.domRef.wholeText).toBe('foo');
+    expect(node.domRef.textContent).toBe('foo');
     expect(body.childNodes.length).toBe(1);
 
     // Replace node
@@ -439,7 +461,7 @@ describe('miso.js tests', () => {
     var compNode = vcomp(() => {
       return mountCount++;
     });
-    miso.diff(node, compNode, body);
+    diff(node, compNode, body);
 
     // Node is removed from DOM, Component is on the DOM
     expect(body.childNodes[0].getAttribute('data-component-id')).toBe(
@@ -453,17 +475,17 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var node = vnode('div', []);
-    miso.diff(null, node, body);
+    diff(null, node, body);
 
     // Test node was populated
     expect(body.childNodes.length).toBe(1);
 
     // Replace node
     var textNode = vtext('fooo');
-    miso.diff(node, textNode, body);
+    diff(node, textNode, body);
 
     // Test node is removed from DOM
-    expect(body.childNodes[0].wholeText).toBe('fooo');
+    expect(body.childNodes[0].textContent).toBe('fooo');
   });
 
   test('Should replace Component with TextNode', () => {
@@ -480,7 +502,7 @@ describe('miso.js tests', () => {
         return unmountCount++;
       },
     );
-    miso.diff(null, component, body);
+    diff(null, component, body);
 
     // Test component was populated
     expect(body.childNodes.length).toBe(1);
@@ -489,10 +511,10 @@ describe('miso.js tests', () => {
 
     // Replace component
     var textNode = vtext('fooo');
-    miso.diff(component, textNode, body);
+    diff(component, textNode, body);
 
     // Test node is removed from DOM
-    expect(body.childNodes[0].wholeText).toBe('fooo');
+    expect(body.childNodes[0].textContent).toBe('fooo');
     expect(unmountCount).toBe(1);
   });
 
@@ -510,7 +532,7 @@ describe('miso.js tests', () => {
         return unmountCount++;
       },
     );
-    miso.diff(null, component, body);
+    diff(null, component, body);
 
     // Test component was populated
     expect(body.childNodes.length).toBe(1);
@@ -519,7 +541,7 @@ describe('miso.js tests', () => {
 
     // Replace component
     var node = vnode('div', []);
-    miso.diff(component, node, body);
+    diff(component, node, body);
 
     // Test node is removed from DOM
     expect(body.children[0].tagName).toBe('DIV');
@@ -531,14 +553,14 @@ describe('miso.js tests', () => {
 
     // populate DOM
     var textNode = vtext('fooo');
-    miso.diff(null, textNode, body);
+    diff(null, textNode, body);
 
     // Test node was populated
     expect(body.childNodes.length).toBe(1);
 
     // Replace node
     var node = vnode('div', []);
-    miso.diff(textNode, node, body);
+    diff(textNode, node, body);
 
     // Test node is removed from DOM
     expect(body.children[0].tagName).toBe('DIV');
@@ -550,13 +572,13 @@ describe('miso.js tests', () => {
     // populate DOM
     var currentNode = null;
     var newNode = vnode('div', []);
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
 
     // Test node was populated
     expect(body.children.length).toBe(1);
 
     // Remove node
-    miso.diff(newNode, null, body);
+    diff(newNode, null, body);
 
     // Test node is removed from DOM
     expect(body.children.length).toBe(0);
@@ -569,23 +591,23 @@ describe('miso.js tests', () => {
     var currentNode = vnode('div', [], {
       id: 'a',
     });
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(currentNode.domRef['id']).toBe('a');
   });
 
-  test('Should skip if window miso.diffing identical properties', () => {
+  test('Should skip if window diffing identical properties', () => {
     var body = document.body;
 
     // populate DOM
     var currentNode = vnode('div', [], {
       id: 'a',
     });
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     var newNode = vnode('div', [], {
       id: 'a',
     });
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(currentNode.domRef).toBe(newNode.domRef);
   });
 
@@ -601,7 +623,7 @@ describe('miso.js tests', () => {
       },
       {},
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
   });
 
@@ -617,7 +639,7 @@ describe('miso.js tests', () => {
       },
       {},
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     var newNode = vnode(
@@ -628,7 +650,7 @@ describe('miso.js tests', () => {
       },
       {},
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lolz');
   });
 
@@ -639,12 +661,12 @@ describe('miso.js tests', () => {
     var currentNode = vnode('div', [], {
       lol: 'lol',
     });
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     // test property change
     var newNode = vnode('div', [], {});
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef.getAttribute('lol')).toBe(null);
   });
 
@@ -655,11 +677,11 @@ describe('miso.js tests', () => {
     var currentNode = vnode('div', [], {
       id: 'someid',
     });
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     // test property change
     var newNode = vnode('div', [], {});
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef['id']).toBe('');
   });
 
@@ -670,13 +692,13 @@ describe('miso.js tests', () => {
     var currentNode = vnode('div', [], {
       id: 'someid',
     });
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     // test property change
     var newNode = vnode('div', [], {
       id: 'foo',
     });
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef['id']).toBe('foo');
   });
 
@@ -692,7 +714,7 @@ describe('miso.js tests', () => {
         color: 'red',
       },
     );
-    miso.diff(null, newNode, body);
+    diff(null, newNode, body);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
@@ -708,11 +730,11 @@ describe('miso.js tests', () => {
         color: 'red',
       },
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     // test css change
     var newNode = vnode('div', [], {}, {});
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef.style['color']).toBe('');
   });
 
@@ -728,7 +750,7 @@ describe('miso.js tests', () => {
         color: 'red',
       },
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     // test css change
     var newNode = vnode(
@@ -739,7 +761,7 @@ describe('miso.js tests', () => {
         color: 'blue',
       },
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef.style['color']).toBe('blue');
   });
 
@@ -755,7 +777,7 @@ describe('miso.js tests', () => {
         color: 'red',
       },
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
 
     // test css no-op change
     var newNode = vnode(
@@ -766,7 +788,7 @@ describe('miso.js tests', () => {
         color: 'red',
       },
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
@@ -793,10 +815,10 @@ describe('miso.js tests', () => {
       'key',
     );
 
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(create).toBe(1);
 
-    miso.diff(currentNode, null, body);
+    diff(currentNode, null, body);
     expect(destroy).toBe(1);
   });
 
@@ -823,10 +845,10 @@ describe('miso.js tests', () => {
       'key',
     );
 
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(create).toBe(1);
 
-    miso.diff(currentNode, null, body);
+    diff(currentNode, null, body);
     expect(destroy).toBe(1);
   });
 
@@ -864,8 +886,8 @@ describe('miso.js tests', () => {
       null,
       'b',
     );
-    miso.diff(null, currentNode, body);
-    miso.diff(currentNode, null, body);
+    diff(null, currentNode, body);
+    diff(currentNode, null, body);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
@@ -904,13 +926,13 @@ describe('miso.js tests', () => {
       },
       'b',
     );
-    miso.diff(null, currentNode, body);
-    miso.diff(currentNode, null, body);
+    diff(null, currentNode, body);
+    diff(currentNode, null, body);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
 
-  test('Should recreate a DOM node when tags are the same but keys are window miso.different', () => {
+  test('Should recreate a DOM node when tags are the same but keys are window different', () => {
     var body = document.body;
     var destroy = 0;
     var currentNode = vnode(
@@ -927,7 +949,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [],
@@ -942,9 +964,9 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     expect(destroy).toBe(0);
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     var newKeyedNode = vnode(
       'div',
       [],
@@ -959,11 +981,11 @@ describe('miso.js tests', () => {
       null,
       'key-2',
     );
-    miso.diff(currentNode, newKeyedNode, body);
+    diff(currentNode, newKeyedNode, body);
     expect(destroy).toBe(1);
   });
 
-  test('Should execute left-hand side happy path key-window miso.diffing case', () => {
+  test('Should execute left-hand side happy path key-window diffing case', () => {
     var body = document.body;
     var currentNode = vnode(
       'div',
@@ -977,7 +999,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
@@ -990,7 +1012,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -998,7 +1020,7 @@ describe('miso.js tests', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
-  test('Should miso.diff keys properly when keys are prepended', () => {
+  test('Should diff keys properly when keys are prepended', () => {
     var body = document.body;
     var currentNode = vnode(
       'div',
@@ -1012,7 +1034,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
@@ -1025,7 +1047,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1033,7 +1055,7 @@ describe('miso.js tests', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
-  test('Should execute right-hand side happy path key-window miso.diffing case', () => {
+  test('Should execute right-hand side happy path key-window diffing case', () => {
     var body = document.body;
     var currentNode = vnode(
       'div',
@@ -1047,7 +1069,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
@@ -1060,7 +1082,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1082,7 +1104,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
@@ -1095,7 +1117,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1117,7 +1139,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
@@ -1130,7 +1152,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1170,7 +1192,7 @@ describe('miso.js tests', () => {
         newKids.push(vnodeKeyed('div', i));
       }
     }
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       newKids,
@@ -1183,7 +1205,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1220,7 +1242,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [
@@ -1239,7 +1261,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1267,7 +1289,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [
@@ -1286,7 +1308,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1313,7 +1335,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [
@@ -1331,7 +1353,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1339,7 +1361,7 @@ describe('miso.js tests', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
-  test('Nothing matches case', () => {
+  test('Should match nothing', () => {
     var body = document.body;
     var currentNode = vnode(
       'div',
@@ -1353,7 +1375,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')],
@@ -1366,7 +1388,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1393,7 +1415,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [
@@ -1411,7 +1433,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1432,7 +1454,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnode(
       'div',
       [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')],
@@ -1444,7 +1466,7 @@ describe('miso.js tests', () => {
       null,
       'key-1',
     );
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(currentNode.children).toEqual(newNode.children);
@@ -1452,20 +1474,20 @@ describe('miso.js tests', () => {
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
-  test('Should window miso.diff keyed text nodes', () => {
+  test('Should window diff keyed text nodes', () => {
     var body = document.body;
     var currentNode = vnodeKids('div', [
       vtextKeyed('foo', 1),
       vtextKeyed('bar', 2),
       vtextKeyed('baz', 3),
     ]);
-    miso.diff(null, currentNode, body);
+    diff(null, currentNode, body);
     var newNode = vnodeKids('div', [
       vtextKeyed('baz', 3),
       vtextKeyed('bar', 2),
       vtextKeyed('foo', 1),
     ]);
-    miso.diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(currentNode.children.length);
     expect(newNode.children).toEqual(currentNode.children);
   });
@@ -1479,7 +1501,7 @@ describe('miso.js tests', () => {
     var txt = document.createTextNode('foo');
     nestedDiv.appendChild(txt);
     var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    miso.hydrate(true, body, currentNode);
+    hydrate(false, body, currentNode);
     expect(currentNode.children[0].children[0].text).toEqual('foo');
   });
 
@@ -1490,7 +1512,7 @@ describe('miso.js tests', () => {
     var nestedDiv = document.createElement('div');
     div.appendChild(nestedDiv);
     var currentNode = vnodeKids('div', [vtext('foo')]);
-    var res = miso.hydrate(true, body, currentNode);
+    var res = hydrate(false, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1501,7 +1523,7 @@ describe('miso.js tests', () => {
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [vnode('div', [])]);
-    var res = miso.hydrate(true, body, currentNode);
+    var res = hydrate(false, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1512,7 +1534,7 @@ describe('miso.js tests', () => {
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [vtext('bar')]);
-    var res = miso.hydrate(true, body, currentNode);
+    var res = hydrate(false, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1523,7 +1545,7 @@ describe('miso.js tests', () => {
     var txt = document.createTextNode('foobar');
     div.appendChild(txt);
     var currentNode = vnodeKids('div', [vtext('foo')]);
-    var res = miso.hydrate(true, body, currentNode);
+    var res = hydrate(false, body, currentNode);
     expect(res).toEqual(false);
   });
 
@@ -1538,7 +1560,7 @@ describe('miso.js tests', () => {
       vtext('bar'),
       vtext('baz'),
     ]);
-    miso.hydrate(true, body, currentNode);
+    hydrate(false, body, currentNode);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
   });
@@ -1558,7 +1580,7 @@ describe('miso.js tests', () => {
       vtext('bar'),
       vtext('baz'),
     ]);
-    miso.hydrate(true, null, currentNode);
+    hydrate(false, null, currentNode);
     // Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
     expect(div.childNodes[2].textContent).toEqual('foobarbaz');
@@ -1581,55 +1603,54 @@ describe('miso.js tests', () => {
     var txt = document.createTextNode('foo');
     nestedDiv2.appendChild(txt);
     var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    var succeeded = miso.hydrate(true, misoDiv, currentNode);
+    var succeeded = hydrate(false, misoDiv, currentNode);
     expect(currentNode.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
   });
 
-  test('Should copy DOM into VTree at body w/ script / text siblings', () => {
-    var body = document.body;
-    var unrelatedDiv = document.createElement('div');
-    body.appendChild(document.createElement('script'));
-    body.appendChild(document.createTextNode('test'));
-    body.appendChild(unrelatedDiv);
-    var unrelatedTxt = document.createTextNode('Not part of Miso app');
-    unrelatedDiv.appendChild(unrelatedTxt);
-    var misoDiv = document.createElement('div');
-    body.appendChild(misoDiv);
-    var nestedDiv1 = document.createElement('div');
-    misoDiv.appendChild(nestedDiv1);
-    var nestedDiv2 = document.createElement('div');
-    nestedDiv1.appendChild(nestedDiv2);
-    var txt = document.createTextNode('foo');
-    nestedDiv2.appendChild(txt);
-    var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    var succeeded = miso.hydrate(true, body, currentNode);
-    expect(currentNode.children[0].children[0].domRef).toEqual(txt);
-    expect(succeeded).toEqual(false);
-  });
-
-  // dmj: jsdom catches this, not possible to run
-  // ● Should fail to mount on a text node
-  //   HierarchyRequestError: Node can't be inserted in a #text parent.
-  //
-  // test('Should fail to mount on a text node', () => {
-  //
+  // test('Should copy DOM into VTree at body w/ script / text siblings', () => {
   //   var body = document.body;
-  //   var misoTxt = document.createTextNode("foo");
-  //   body.appendChild(misoTxt);
-  //   var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
-  //   var succeeded = miso.hydrate(true, misoTxt, currentNode);
+  //   var unrelatedDiv = document.createElement('div');
+  //   body.appendChild(document.createElement('script'));
+  //   body.appendChild(document.createTextNode('test'));
+  //   body.appendChild(unrelatedDiv);
+  //   var unrelatedTxt = document.createTextNode('Not part of Miso app');
+  //   unrelatedDiv.appendChild(unrelatedTxt);
+  //   var misoDiv = document.createElement('div');
+  //   body.appendChild(misoDiv);
+  //   var nestedDiv1 = document.createElement('div');
+  //   misoDiv.appendChild(nestedDiv1);
+  //   var nestedDiv2 = document.createElement('div');
+  //   nestedDiv1.appendChild(nestedDiv2);
+  //   var txt = document.createTextNode('foo');
+  //   nestedDiv2.appendChild(txt);
+  //   var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
+  //   var succeeded = hydrate(true, body, currentNode);
+  //   expect(currentNode.children[0].children[0].domRef).toEqual(txt);
   //   expect(succeeded).toEqual(false);
   // });
 
-  test('Should mount on an empty body', () => {
+  // // dmj: jsdom catches this, not possible to run
+  // // ● Should fail to mount on a text node
+  // //   HierarchyRequestError: Node can't be inserted in a #text parent.
+  // //
+  // // test('Should fail to mount on a text node', () => {
+  // //
+  // //   var body = document.body;
+  // //   var misoTxt = document.createTextNode("foo");
+  // //   body.appendChild(misoTxt);
+  // //   var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
+  // //   var succeeded = hydrate(true, misoTxt, currentNode);
+  // //   expect(succeeded).toEqual(false);
+  // // });
+
+  test('Should not hydrate on an empty page', () => {
     var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    var succeeded = miso.hydrate(true, null, currentNode);
+    var succeeded = hydrate(true, null, currentNode);
     expect(succeeded).toEqual(false);
   });
 
   test('Should pass integrity check', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1645,14 +1666,13 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
   });
 
   test('Should fail integrity check on bad tag', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1668,17 +1688,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.tag = 'lol';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on bad tag in hydrate w/ logging enabled', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1694,12 +1713,11 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(true, body, vtree);
+    var result = hydrate(true, body, vtree);
     expect(result).toEqual(false);
   });
 
-  test('Should fail integrity check on miso.differing vtext', () => {
-    var document = window.document;
+  test('Should fail integrity check on differing vtext', () => {
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1715,17 +1733,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.children[0].text = 'oops';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
-  test('Should fail integrity check on miso.differing child lengths', () => {
-    var document = window.document;
+  test('Should fail integrity check on differing child lengths', () => {
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1741,17 +1758,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.children = [];
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(false);
   });
 
-  test('Should fail integrity check on miso.differing styles', () => {
-    var document = window.document;
+  test('Should fail integrity check on differing styles', () => {
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1768,17 +1784,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.css['background-color'] = 'green';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
-  test('Should fail integrity check on miso.differing styles, for color', () => {
-    var document = window.document;
+  test('Should fail integrity check on differing styles, for color', () => {
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1796,17 +1811,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red', color: '#cccccc' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.css['color'] = '#dddddd';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
-  test('Should fail integrity check on miso.differing props', () => {
-    var document = window.document;
+  test('Should fail integrity check on differing props', () => {
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1824,17 +1838,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.props['class'] = 'something-else';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on differing height / width', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1854,18 +1867,17 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.props['height'] = '200';
     vtree.props['width'] = '200';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on random property (title)', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1882,17 +1894,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.props['title'] = 'woz';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on href', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1910,17 +1921,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.props['href'] = 'notgoogle.com';
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on vtext domRef', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1938,17 +1948,16 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: { 'background-color': 'red' },
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(1);
     vtree.children[0].domRef = document.createElement('div');
-    check = miso.integrityCheck(true, vtree);
+    check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should fail integrity check on unknown property test', () => {
-    var document = window.document;
     var body = document.body;
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
@@ -1964,44 +1973,41 @@ describe('miso.js tests', () => {
       ns: 'HTML',
       css: {},
     };
-    var result = miso.hydrate(false, body, vtree);
+    var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = miso.integrityCheck(true, vtree);
+    var check = integrityCheck(true, vtree);
     expect(check).toBe(0);
   });
 
   test('Should set body[data-component-id] via setBodyComponent()', () => {
-    var document = window.document;
-    miso.setBodyComponent('component-one');
+    setBodyComponent('component-one');
     expect(document.body.getAttribute('data-component-id')).toEqual(
       'component-one',
     );
   });
 
   test('Should call callFocus() and callBlur()', () => {
-    var document = window.document;
     var child = document.createElement('input');
     child['id'] = 'foo';
     document.body.appendChild(child);
-    miso.callFocus('blah', document, 0); /* missing case */
-    miso.callFocus('foo', document, 0); /* found case */
-    miso.callFocus('foo', document, 1); /* found case */
+    callFocus('blah', 0); /* missing case */
+    callFocus('foo', 0); /* found case */
+    callFocus('foo', 1); /* found case */
     expect(document.activeElement).toEqual(child);
-    miso.callBlur('blah', document, 0); /* missing case */
-    miso.callBlur('foo', document, 0); /* found case */
-    miso.callBlur('foo', document, 1); /* found case */
+    callBlur('blah', 0); /* missing case */
+    callBlur('foo', 0); /* found case */
+    callBlur('foo', 1); /* found case */
     expect(document.activeElement).toEqual(document.body);
   });
 
   test('Should delegate and undelegate button click', () => {
-    var document = window.document;
     var body = document.body;
     var count = 0;
     var result = null;
     var events = {
       click: {
         runEvent: function (e) {
-          result = miso.eventJSON([[]], e);
+          result = eventJSON([[]], e);
           count++;
         },
         options: {
@@ -2030,7 +2036,7 @@ describe('miso.js tests', () => {
     };
 
     /* initial page draw */
-    miso.diff(null, vtree, document.body);
+    diff(null, vtree, document.body);
 
     /* ensure structures match */
     expect(vtree.domRef).toEqual(document.body.childNodes[0]);
@@ -2043,7 +2049,7 @@ describe('miso.js tests', () => {
     var getVTree = function (cb) {
       cb(vtree);
     };
-    miso.delegate(body, events, getVTree, true);
+    delegate(body, events, getVTree, true);
 
     /* initiate click event */
     vtreeChild.domRef.click();
@@ -2053,11 +2059,10 @@ describe('miso.js tests', () => {
     expect(result).not.toEqual(null);
 
     /* unmount delegation */
-    miso.undelegate(document.body, events, getVTree, true);
+    undelegate(document.body, events, getVTree, true);
   });
 
   test('Should unmount recursively in order', () => {
-    var document = window.document;
     var unmounts = [];
     var mkVComp = function (name, children) {
       return {
@@ -2076,12 +2081,12 @@ describe('miso.js tests', () => {
     };
 
     var vtree = mkVComp('one', [mkVComp('two', [mkVComp('three', [])])]);
-    miso.diff(null, vtree, document.body);
-    miso.diff(vtree, null, document.body);
+    diff(null, vtree, document.body);
+    diff(vtree, null, document.body);
     expect(unmounts).toEqual(['one', 'two', 'three']);
   });
 
   test('Should be latest version', () => {
-    expect(miso.version).toEqual('1.9.0.0');
+    expect(version).toEqual('1.9.0.0');
   });
 });

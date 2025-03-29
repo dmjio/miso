@@ -226,8 +226,8 @@ eventJSON
     -> JSVal -- ^ object with impure references to the DOM
     -> JSM JSVal
 eventJSON x y = do
-  moduleExports <- jsg "module" ! "exports"
-  moduleExports # "eventJSON" $ [x,y]
+  moduleMiso <- jsg "miso"
+  moduleMiso # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
 -- | Retrieves the component id
 getComponent :: MisoString -> JSM JSVal
@@ -267,8 +267,8 @@ diff
   -- ^ parent node
   -> JSM ()
 diff (Object a) (Object b) c = do
-  moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "diff" $ [a,b,c]
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "diff" $ [a,b,c]
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -305,15 +305,15 @@ delegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
 delegate mountPoint events debug callback = do
   d <- toJSVal debug
   cb <- toJSVal callback
-  moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "delegate" $ [mountPoint,events,cb,d]
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "delegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 undelegate :: JSVal -> JSVal -> Bool -> Function -> JSM ()
 undelegate mountPoint events debug callback = do
   d <- toJSVal debug
   cb <- toJSVal callback
-  moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "undelegate" $ [mountPoint,events,cb,d]
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "undelegate" $ [mountPoint,events,cb,d]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom
 -- entry point into isomorphic javascript
@@ -323,28 +323,28 @@ undelegate mountPoint events debug callback = do
 hydrate :: Bool -> JSVal -> JSVal -> JSM ()
 hydrate logLevel mountPoint vtree = void $ do
   ll <- toJSVal logLevel
-  moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "hydrate" $ [ll, mountPoint, vtree]
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> JSM ()
 focus x = do
-  moduleExports <- jsg "module" ! "exports"
+  moduleMiso <- jsg "miso"
   el <- toJSVal x
   delay <- toJSVal (50 :: Int)
-  void $ moduleExports # "callFocus" $ [el,delay]
+  void $ moduleMiso # "callFocus" $ [el,delay]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
 blur x = do
-  moduleExports <- jsg "module" ! "exports"
+  moduleMiso <- jsg "miso"
   el <- toJSVal x
   delay <- toJSVal (50 :: Int)
-  void $ moduleExports # "callBlur" $ [el,delay]
+  void $ moduleMiso # "callBlur" $ [el,delay]
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
@@ -365,6 +365,6 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 setBodyComponent :: MisoString -> JSM ()
 setBodyComponent name = do
   component <- toJSVal name
-  moduleExports <- jsg "module" ! "exports"
-  void $ moduleExports # "setBodyComponent" $ [component]
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "setBodyComponent" $ [component]
 -----------------------------------------------------------------------------
