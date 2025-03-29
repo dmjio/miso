@@ -98,6 +98,10 @@ jobs:
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
      - name: Nix channel update
        run: nix-channel --update
+     - name: Bun install
+       run: nix-env -iA bun -f '<nixpkgs>' && bun install
+     - name: Bun build
+       run: bun run build
      - name: Build
        run: nix-build -A miso-ghcjs
      - name: Miso.js coverage
