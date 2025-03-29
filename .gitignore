@@ -26,3 +26,6 @@ tags
 package-lock.json
 node_modules/
 coverage/
+
+# typescript
+js/miso.js
