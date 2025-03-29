@@ -1,15 +1,28 @@
+# haskell
 .stack-work/
 dist-newstyle/
 cabal.project.local
 .ghc.environment.*
-result*
-node_modules/
 dist
-*~
-.DS_Store
 *.o
 *.hi
 *.jsexe
+
+# nix
+result*
+
+# emacs
+*~
+
+# darwin
+.DS_Store
+
+# misc
 TAGS
+tags
 .direnv
+
+# js
+package-lock.json
+node_modules/
 coverage/

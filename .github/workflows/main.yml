@@ -29,11 +29,14 @@ jobs:
      - name: Nix channel update
        run: nix-channel --update
 
-     - name: Miso.js tests
-       run: nix-shell -p yarn --run 'yarn install && yarn run test'
+     - name: Bun install
+       run: nix-env -iA bun -f '<nixpkgs>' && bun install
 
-     - name: Miso.js linting
-       run: nix-shell -p yarn --run 'yarn run lint'
+     - name: Miso.ts tests
+       run: bun run test
+
+     - name: Miso.ts linting
+       run: bun run lint
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
