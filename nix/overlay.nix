@@ -30,8 +30,8 @@ options: self: super: {
     name = "coverage";
     src = ../coverage;
     buildCommand = ''
-      mkdir -p $out
-      cp -rv $src $out
+      mkdir -p $out/report
+      cp -rv $src $out/report
     '';
   };
 
