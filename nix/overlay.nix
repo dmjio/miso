@@ -6,18 +6,14 @@ options: self: super: {
   haskell-miso-org-test = self.nixosTest {
     virtualisation.memorySize = 1024 * 10;
     nodes.machine = { config, pkgs, ... }: {
-      imports = [ ../haskell-miso.org/nix/machine.nix
-                #  ../examples/sse/nix/machine.nix
-                ];
+      imports = [ ../haskell-miso.org/nix/machine.nix ];
     };
-    testScript = {nodes, ...}: with nodes;
+    testScript = {nodes, ...}:
       ''
       startAll;
       $machine->waitForUnit("haskell-miso.service");
       $machine->succeed("curl localhost:3002");
       '';
-      # $machine->waitForUnit("sse-haskell-miso.service");
-      # $machine->succeed("curl localhost:3003");
   };
 
   ghciwatch =
