@@ -35,7 +35,7 @@ data Event
 -----------------------------------------------------------------------------
 -- | Instance used to initialize event delegation
 instance ToJSVal Event where
-  toJSVal Event {..}  = do
+  toJSVal Event {..} = do
     o <- create
     flip (FFI.set "name") o =<< toJSVal name
     flip (FFI.set "capture") o =<< toJSVal capture
@@ -49,7 +49,7 @@ delegator
   -> Bool
   -> JSM ()
 delegator mountPointElement vtreeRef es debug = do
-  evts <- toJSVal $ uncurry Event <$> M.toList es
+  evts <- toJSVal (uncurry Event <$> M.toList es)
   delegateEvent mountPointElement evts debug $ do
     VTree (Object vtree) <- liftIO (readIORef vtreeRef)
     pure vtree
