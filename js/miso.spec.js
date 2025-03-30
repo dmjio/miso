@@ -2045,7 +2045,7 @@ describe('js tests', () => {
     );
 
     /* setup event delegation */
-    events = { click: ['click', true] };
+    events = [ { name : 'click', capture: true } ];
     var getVTree = function (cb) {
       cb(vtree);
     };

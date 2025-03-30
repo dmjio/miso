@@ -7,11 +7,11 @@ export function delegate(
 ) {
   for (var event in events) {
     mount.addEventListener(
-      events[event][0],
+      events[event]['name'],
       function (e: any) {
         listener(e, mount, getVTree, debug);
       },
-      events[event][1],
+      events[event]['capture'],
     );
   }
 }
@@ -32,11 +32,11 @@ export function undelegate(
 ) {
   for (var event in events) {
     mount.removeEventListener(
-      events[event][0],
+      events[event]['name'],
       function (e: any) {
         listener(e, mount, getVTree, debug);
       },
-      events[event][1],
+      events[event]['capture'],
     );
   }
 }
