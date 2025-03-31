@@ -1,16 +1,9 @@
 /* imports */
-import {
-  setBodyComponent,
-  integrityCheck,
-  version,
-  diff,
-  hydrate,
-  delegate,
-  undelegate,
-  callFocus,
-  callBlur,
-  eventJSON,
-} from '../ts/miso';
+import { diff } from './miso/dom';
+import { delegate, undelegate, eventJSON } from './miso/event';
+import { hydrate, integrityCheck } from './miso/iso';
+import { version, callFocus, callBlur, setBodyComponent } from './miso/util';
+import { VTree } from './miso/types';
 
 import {
   test,
@@ -34,7 +27,7 @@ afterEach(() => {
 });
 
 /* smart constructors */
-function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
+function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) : VTree {
   return {
     type: 'vcomp',
     tag: 'div',
@@ -53,7 +46,7 @@ function vcomp(mount, unmount, props, css, children, ref, oc, od, bd, key) {
   };
 }
 
-function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) {
+function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) : VTree {
   return {
     type: 'vnode',
     tag: tag,
@@ -69,7 +62,7 @@ function vnode(tag, children, props, css, ns, ref, oc, od, bd, key) {
   };
 }
 
-function vnodeKeyed(tag, key) {
+function vnodeKeyed(tag, key) : VTree {
   return {
     type: 'vnode',
     tag: tag,
@@ -85,7 +78,7 @@ function vnodeKeyed(tag, key) {
   };
 }
 
-function vnodeKids(tag, kids) {
+function vnodeKids(tag, kids) : VTree {
   return {
     type: 'vnode',
     tag: tag,
@@ -100,14 +93,14 @@ function vnodeKids(tag, kids) {
   };
 }
 
-function vtext(txt) {
+function vtext(txt) : VTree {
   return {
     type: 'vtext',
     text: txt,
   };
 }
 
-function vtextKeyed(txt, key) {
+function vtextKeyed(txt, key) : VTree {
   return {
     type: 'vtext',
     text: txt,
@@ -1630,19 +1623,14 @@ describe('js tests', () => {
   //   expect(succeeded).toEqual(false);
   // });
 
-  // // dmj: jsdom catches this, not possible to run
-  // // ● Should fail to mount on a text node
-  // //   HierarchyRequestError: Node can't be inserted in a #text parent.
-  // //
-  // // test('Should fail to mount on a text node', () => {
-  // //
-  // //   var body = document.body;
-  // //   var misoTxt = document.createTextNode("foo");
-  // //   body.appendChild(misoTxt);
-  // //   var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
-  // //   var succeeded = hydrate(true, misoTxt, currentNode);
-  // //   expect(succeeded).toEqual(false);
-  // // });
+  test('Should fail to mount on a text node', () => {
+    var body = document.body;
+    var misoTxt = document.createTextNode("foo");
+    body.appendChild(misoTxt);
+    var currentNode = vnodeKids('div', [ vnodeKids('div', [ vtext("foo") ]) ]);
+    var succeeded = hydrate(true, misoTxt, currentNode);
+    expect(succeeded).toEqual(false);
+  });
 
   test('Should not hydrate on an empty page', () => {
     var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
@@ -1669,7 +1657,7 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
   });
 
   test('Should fail integrity check on bad tag', () => {
@@ -1691,10 +1679,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.tag = 'lol';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on bad tag in hydrate w/ logging enabled', () => {
@@ -1736,10 +1724,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.children[0].text = 'oops';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on differing child lengths', () => {
@@ -1761,7 +1749,7 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.children = [];
     check = integrityCheck(true, vtree);
     expect(check).toBe(false);
@@ -1787,10 +1775,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.css['background-color'] = 'green';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on differing styles, for color', () => {
@@ -1814,10 +1802,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.css['color'] = '#dddddd';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on differing props', () => {
@@ -1841,10 +1829,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.props['class'] = 'something-else';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on differing height / width', () => {
@@ -1870,11 +1858,11 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.props['height'] = '200';
     vtree.props['width'] = '200';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on random property (title)', () => {
@@ -1897,10 +1885,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.props['title'] = 'woz';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on href', () => {
@@ -1924,10 +1912,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.props['href'] = 'notgoogle.com';
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on vtext domRef', () => {
@@ -1951,10 +1939,10 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(1);
+    expect(check).toBe(true);
     vtree.children[0].domRef = document.createElement('div');
     check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should fail integrity check on unknown property test', () => {
@@ -1976,7 +1964,7 @@ describe('js tests', () => {
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
     var check = integrityCheck(true, vtree);
-    expect(check).toBe(0);
+    expect(check).toBe(false);
   });
 
   test('Should set body[data-component-id] via setBodyComponent()', () => {
@@ -2080,7 +2068,7 @@ describe('js tests', () => {
       };
     };
 
-    var vtree = mkVComp('one', [mkVComp('two', [mkVComp('three', [])])]);
+    var vtree : VTree = mkVComp('one', [mkVComp('two', [mkVComp('three', [])])]);
     diff(null, vtree, document.body);
     diff(vtree, null, document.body);
     expect(unmounts).toEqual(['one', 'two', 'three']);

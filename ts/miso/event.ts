@@ -1,55 +1,71 @@
+import { VTree, EventCapture, EventObject, Options } from './types';
+
 /* event delegation algorithm */
 export function delegate(
-  mount: any,
-  events: any,
-  getVTree: any,
+  mount: HTMLElement,
+  events: Array<EventCapture>,
+  getVTree: ((vtree: VTree) => void),
   debug: boolean,
 ) {
-  for (var event in events) {
+  for (const event of events) {
     mount.addEventListener(
-      events[event]['name'],
-      function (e: any) {
+      event['name'],
+      function (e: Event) {
         listener(e, mount, getVTree, debug);
       },
-      events[event]['capture'],
+      event['capture'],
+    );
+  }
+}
+/* event undelegation */
+export function undelegate (
+  mount: HTMLElement,
+  events: Array<EventCapture>,
+  getVTree: ((vtree: VTree) => void),
+  debug: boolean,
+) {
+  for (const event of events) {
+    mount.removeEventListener(
+      event['name'],
+      function (e: Event) {
+        listener(e, mount, getVTree, debug);
+      },
+      event['capture'],
     );
   }
 }
 /* the event listener shared by both delegator and undelegator */
-var listener = function (e: any, mount: any, getVTree: any, debug: boolean) {
-  getVTree(function (obj: any) {
+function listener (
+  e: Event
+, mount: HTMLElement
+, getVTree: (VTree) => void
+, debug: boolean
+) {
+  getVTree(function (obj: VTree) {
     if (e.target) {
       delegateEvent(e, obj, buildTargetToElement(mount, e.target), [], debug);
     }
   });
 };
-/* event undelegation */
-export function undelegate(
-  mount: any,
-  events: any,
-  getVTree: any,
-  debug: boolean,
-) {
-  for (var event in events) {
-    mount.removeEventListener(
-      events[event]['name'],
-      function (e: any) {
-        listener(e, mount, getVTree, debug);
-      },
-      events[event]['capture'],
-    );
+/* Create a stack of ancestors used to index into the virtual DOM */
+function buildTargetToElement (element: HTMLElement, target: any) {
+  var stack = [];
+  while (element !== target) {
+    stack.unshift(target);
+    target = target.parentNode;
   }
-}
+  return stack;
+};
 /* Finds event in virtual dom via pointer equality
        Accumulate parent stack as well for propagation up the vtree
      */
-var delegateEvent = function (
-  event: any,
-  obj: any,
-  stack: any,
-  parentStack: any,
-  debug: boolean,
-) {
+function delegateEvent
+  ( event: Event
+  , obj: VTree
+  , stack: Array<HTMLElement>
+  , parentStack: Array<VTree>
+  , debug: boolean,
+  ) {
   /* base case, not found */
   if (!stack.length) {
     if (debug) {
@@ -64,12 +80,12 @@ var delegateEvent = function (
     return;
   } /* stack not length 1, recurse */ else if (stack.length > 1) {
     parentStack.unshift(obj);
-    for (var o = 0; o < obj.children.length; o++) {
-      if (obj['type'] === 'vcomp') continue;
-      if (obj.children[o]['domRef'] === stack[1]) {
+    for (const child of obj['children']) {
+      if (child['type'] === 'vcomp') continue;
+        if (child['domRef'] === stack[1]) {
         delegateEvent(
           event,
-          obj.children[o],
+          child,
           stack.slice(1),
           parentStack,
           debug,
@@ -78,9 +94,9 @@ var delegateEvent = function (
       }
     }
   } /* stack.length == 1 */ else {
-    var eventObj = obj['events'][event.type];
+    var eventObj : EventObject = obj['events'][event.type];
     if (eventObj) {
-      var options = eventObj['options'];
+      var options : Options = eventObj['options'];
       if (options['preventDefault']) {
         event.preventDefault();
       }
@@ -94,20 +110,11 @@ var delegateEvent = function (
     }
   }
 };
-/* Create a stack of ancestors used to index into the virtual DOM */
-var buildTargetToElement = function (element: any, target: any) {
-  var stack = [];
-  while (element !== target) {
-    stack.unshift(target);
-    target = target.parentNode;
-  }
-  return stack;
-};
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-var propagateWhileAble = function (parentStack: [any], event: any) {
-  for (var i: number = 0; i < parentStack.length; i++) {
-    if (parentStack[i]['events'][event.type]) {
-      var eventObj = parentStack[i]['events'][event.type],
+function propagateWhileAble (parentStack: Array<VTree>, event: Event) {
+  for (const vtree of parentStack) {
+    if (vtree['events'][event.type]) {
+      var eventObj = vtree['events'][event.type],
         options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);
@@ -122,22 +129,19 @@ var propagateWhileAble = function (parentStack: [any], event: any) {
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
     */
-export function eventJSON(at: any, obj: any): any {
+export function eventJSON(at: any, obj: VTree): any {
   /* If at is of type [[MisoString]] */
-  if (typeof at[0] == 'object') {
+  if (typeof at[0] === 'object') {
     var ret = [];
-    for (var i: any = 0; i < at.length; i++) {
+    for (var i : any = 0; i < at.length; i++) {
       ret.push(eventJSON(at[i], obj));
     }
     return ret;
   }
   for (i in at) obj = obj[at[i]];
   /* If obj is a list-like object */
-  var newObj: any;
-  if (
-    obj instanceof Array ||
-    ('length' in obj && obj['localName'] !== 'select')
-  ) {
+  var newObj;
+  if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
     newObj = [];
     for (i = 0; i < obj.length; i++) {
       newObj.push(eventJSON([], obj[i]));
@@ -169,9 +173,8 @@ export function eventJSON(at: any, obj: any): any {
   return newObj;
 }
 /* get static and dynamic properties */
-var getAllPropertyNames = function (obj: any) {
-  var props: any = {},
-    i: number = 0;
+var getAllPropertyNames = function (obj: VTree) {
+  var props: Object = {}, i: number = 0;
   do {
     var names = Object.getOwnPropertyNames(obj);
     for (i = 0; i < names.length; i++) {
