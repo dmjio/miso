@@ -15,7 +15,7 @@ type VTree = {
    onCreated : () => void,
    onBeforeDestroyed : () => void,
    mount: (VTree) => void,
-   unmount: (any) => void
+   unmount: (Element) => void
 };
 
 type EventObject = {

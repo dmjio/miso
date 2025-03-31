@@ -2,7 +2,7 @@ import { callCreated, populate } from './dom';
 import { VTree } from './types';
 
 /* prerendering / hydration / isomorphic support */
-var collapseSiblingTextNodes = function (vs: Array<VTree>) {
+function collapseSiblingTextNodes (vs: Array<VTree>) : Array<VTree> {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
     if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
@@ -14,7 +14,7 @@ var collapseSiblingTextNodes = function (vs: Array<VTree>) {
   return adjusted;
 };
 
-export function hydrate(logLevel: boolean, mountPoint: any, vtree: VTree) {
+export function hydrate(logLevel: boolean, mountPoint: Element, vtree: VTree) : boolean {
   var mountChildIdx = 0,
     node;
   // If script tags are rendered first in body, skip them.
@@ -30,7 +30,7 @@ export function hydrate(logLevel: boolean, mountPoint: any, vtree: VTree) {
     while (
       mountPoint.childNodes[mountChildIdx] &&
       (mountPoint.childNodes[mountChildIdx].nodeType === 3 ||
-        mountPoint.childNodes[mountChildIdx].localName === 'script')
+          (mountPoint.childNodes[mountChildIdx] as Element).localName === 'script')
     ) {
       mountChildIdx++;
     }
@@ -51,8 +51,7 @@ export function hydrate(logLevel: boolean, mountPoint: any, vtree: VTree) {
     return false;
   } else {
     if (logLevel) {
-      var result = integrityCheck(true, vtree);
-      if (!result) {
+      if (!integrityCheck(vtree)) {
         console.warn('Integrity check completed with errors');
       } else {
         console.info('Successfully prerendered page');
@@ -61,11 +60,11 @@ export function hydrate(logLevel: boolean, mountPoint: any, vtree: VTree) {
   }
   return true;
 }
-function diagnoseError (logLevel: boolean, vtree: VTree, node: Element) {
+function diagnoseError (logLevel: boolean, vtree: VTree, node: Element) : void {
   if (logLevel) console.warn('VTree differed from node', vtree, node);
 };
 // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
-function parseColor (input: string) {
+function parseColor (input: string) : number[] {
   if (input.substr(0, 1) == '#') {
     var collen = (input.length - 1) / 3;
     var fact = [17, 1, 0.062272][collen - 1];
@@ -83,8 +82,12 @@ function parseColor (input: string) {
         return +x;
       });
 };
+export function integrityCheck (vtree: VTree) : boolean {
+    return check(true, vtree);
+}
+
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-export function integrityCheck(result: any, vtree: VTree) {
+function check(result: boolean, vtree: VTree) : boolean {
   // text nodes must be the same
   if (vtree['type'] == 'vtext') {
     if (vtree['domRef'].nodeType !== 3) {
@@ -205,26 +208,26 @@ export function integrityCheck(result: any, vtree: VTree) {
     }
     // recursive call for `vnode` / `vcomp`
     for (i = 0; i < vtree['children'].length; i++) {
-      const check = integrityCheck(result, vtree['children'][i]);
-      result = result && check;
+      const value = check(result, vtree['children'][i]);
+      result = result && value;
     }
   }
   return result;
 }
 
-function walk (logLevel: boolean, vtree: VTree, node: Element) {
+function walk (logLevel: boolean, vtree: VTree, node: Element) : boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
-  var vdomChild: VTree, domChild: any;
+  var vdomChild: VTree, domChild: Element;
   vtree['domRef'] = node;
   // Fire onCreated events as though the elements had just been created.
   callCreated(vtree);
   vtree.children = collapseSiblingTextNodes(vtree.children);
   for (var i = 0; i < vtree.children.length; i++) {
     vdomChild = vtree['children'][i];
-    domChild = node.childNodes[i];
+    domChild = node.childNodes[i] as Element;
     if (!domChild) {
       diagnoseError(logLevel, vdomChild, domChild);
       return false;

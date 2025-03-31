@@ -1,7 +1,7 @@
 import { VTree } from './types';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
-export function diff(currentObj: VTree, newObj: VTree, parent: Element) {
+export function diff(currentObj: VTree, newObj: VTree, parent: Element) : void {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) create(newObj, parent);
   else if (!newObj) destroy(currentObj, parent);
@@ -14,7 +14,7 @@ export function diff(currentObj: VTree, newObj: VTree, parent: Element) {
   }
 }
 // replace everything function
-function replace (c: VTree, n: VTree, parent: Element) {
+function replace (c: VTree, n: VTree, parent: Element) : void {
   // step1 : prepare to delete, unmount things
   callBeforeDestroyedRecursive(c);
   // ^ this will unmount sub components before we replace the child
@@ -33,7 +33,7 @@ function replace (c: VTree, n: VTree, parent: Element) {
 };
 
 // destroy vtext, vnode, vcomp
-function destroy (obj: VTree, parent: Element) {
+function destroy (obj: VTree, parent: Element) : void {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
   callBeforeDestroyedRecursive(obj);
   // step 2: destroy
@@ -42,7 +42,7 @@ function destroy (obj: VTree, parent: Element) {
   callDestroyedRecursive(obj);
 };
 
-function diffNodes (c: VTree, n: VTree, parent: Element) {
+function diffNodes (c: VTree, n: VTree, parent: Element) : void {
   // bail out on easy vtext case
   if (c['type'] === 'vtext') {
     if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
@@ -64,23 +64,23 @@ function diffNodes (c: VTree, n: VTree, parent: Element) {
   }
 };
 // ** recursive calls to hooks
-function callDestroyedRecursive (obj: VTree) {
+function callDestroyedRecursive (obj: VTree) : void {
   callDestroyed(obj);
   for (var i in obj['children']) {
     callDestroyedRecursive(obj['children'][i]);
   }
 };
 
-function callDestroyed (obj: VTree) {
+function callDestroyed (obj: VTree) : void {
   if (obj['onDestroyed']) obj['onDestroyed']();
 };
 
-function callBeforeDestroyed (obj: any) {
+function callBeforeDestroyed (obj: VTree) : void {
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
   if (obj['type'] === 'vcomp') obj['unmount'](obj['domRef']);
 };
 
-function callBeforeDestroyedRecursive (obj: VTree) {
+function callBeforeDestroyedRecursive (obj: VTree) : void {
   callBeforeDestroyed(obj);
   for (var i in obj['children']) {
     callBeforeDestroyedRecursive(obj['children'][i]);
@@ -88,12 +88,12 @@ function callBeforeDestroyedRecursive (obj: VTree) {
 };
 
 // ** </> recursive calls to hooks
-export function callCreated(obj: VTree) {
+export function callCreated(obj: VTree) : void {
   if (obj['onCreated']) obj['onCreated']();
   if (obj['type'] === 'vcomp') mountComponent(obj);
 }
 
-export function populate(c: VTree, n: VTree) {
+export function populate(c: VTree, n: VTree) : void {
   if (!c) {
     c = {
       props: null,
@@ -125,7 +125,7 @@ function diffProps
  , nProps: Map<string,string>
  , node: Element
  , isSvg: boolean
- ) {
+ ) : void {
   var newProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
@@ -173,7 +173,11 @@ function diffProps
   }
 };
 
-function diffCss (cCss: Map<string,string>, nCss: Map<string,string>, node: HTMLElement) {
+function diffCss
+  ( cCss: Map<string,string>
+  , nCss: Map<string,string>
+  , node: HTMLElement
+  ) : void {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {
@@ -192,7 +196,7 @@ function diffCss (cCss: Map<string,string>, nCss: Map<string,string>, node: HTML
   }
 };
 
-function hasKeys (ns: Array<VTree>, cs: Array<VTree>) {
+function hasKeys (ns: Array<VTree>, cs: Array<VTree>) : boolean {
   return (
     ns.length > 0 &&
     cs.length > 0 &&
@@ -201,7 +205,7 @@ function hasKeys (ns: Array<VTree>, cs: Array<VTree>) {
   );
 };
 
-function diffChildren (cs: Array<VTree>, ns: Array<VTree>, parent: HTMLElement) {
+function diffChildren (cs: Array<VTree>, ns: Array<VTree>, parent: HTMLElement) : void {
   var longest: number = ns.length > cs.length ? ns.length : cs.length;
   if (hasKeys(ns, cs)) {
     syncChildren(cs, ns, parent);
@@ -212,7 +216,7 @@ function diffChildren (cs: Array<VTree>, ns: Array<VTree>, parent: HTMLElement) 
   }
 };
 
-function populateDomRef (obj: VTree) {
+function populateDomRef (obj: VTree) : void {
   if (obj['ns'] === 'svg') {
     obj['domRef'] = document.createElementNS(
       'http://www.w3.org/2000/svg',
@@ -228,7 +232,7 @@ function populateDomRef (obj: VTree) {
   }
 };
 // dmj: refactor this, the callback function feels meh
-function createElement (obj: VTree, cb: ((Element) => void)) {
+function createElement (obj: VTree, cb: ((Element) => void)) : void {
   populateDomRef(obj);
   cb(obj['domRef']);
   populate(null, obj);
@@ -236,7 +240,7 @@ function createElement (obj: VTree, cb: ((Element) => void)) {
 };
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
-function mountComponent (obj: VTree) {
+function mountComponent (obj: VTree) : void {
   var componentId = obj['data-component-id'],
     nodeList = document.querySelectorAll(
       "[data-component-id='" + componentId + "']",
@@ -262,7 +266,7 @@ function mountComponent (obj: VTree) {
   });
 };
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
-function create (obj: VTree, parent: Element) {
+function create (obj: VTree, parent: Element) : void {
   if (obj.type === 'vtext') {
     obj['domRef'] = document.createTextNode(obj['text']);
     parent.appendChild(obj['domRef']);
@@ -273,7 +277,7 @@ function create (obj: VTree, parent: Element) {
   }
 };
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren (os: Array<VTree>, ns: Array<VTree>, parent: Element) {
+function syncChildren (os: Array<VTree>, ns: Array<VTree>, parent: Element) : void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,
@@ -284,7 +288,7 @@ function syncChildren (os: Array<VTree>, ns: Array<VTree>, parent: Element) {
     oLast: VTree,
     oFirst: VTree,
     found: boolean,
-    node: any;
+    node: VTree;
   for (;;) {
     /* check base case, first > last for both new and old
               [ ] -- old children empty (fully-swapped)
@@ -333,7 +337,7 @@ function syncChildren (os: Array<VTree>, ns: Array<VTree>, parent: Element) {
                -> [ c b a ] <- new children
       */
    else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
-     swapDOMRefs(node, oLast['domRef'], oFirst['domRef'], parent);
+     swapDOMRefs(oLast['domRef'], oFirst['domRef'], parent);
      swap<VTree>(os, oldFirstIndex, oldLastIndex);
      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
@@ -430,13 +434,13 @@ function syncChildren (os: Array<VTree>, ns: Array<VTree>, parent: Element) {
   }
 };
 
-function swapDOMRefs (tmp: ChildNode, a: Element, b: Element, p: Element) {
-  tmp = a.nextSibling;
+function swapDOMRefs (a: Element, b: Element, p: Element) : void {
+  const tmp = a.nextSibling;
   p.insertBefore(a, b);
   p.insertBefore(b, tmp);
 };
 
-function swap<T> (os: Array<T>, l: number, r: number) {
+function swap<T> (os: Array<T>, l: number, r: number) : void {
   var k = os[l];
   os[l] = os[r];
   os[r] = k;

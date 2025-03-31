@@ -1,12 +1,12 @@
 import { VTree, EventCapture, EventObject, Options } from './types';
 
 /* event delegation algorithm */
-export function delegate(
+export function delegate (
   mount: HTMLElement,
   events: Array<EventCapture>,
   getVTree: ((vtree: VTree) => void),
   debug: boolean,
-) {
+) : void {
   for (const event of events) {
     mount.addEventListener(
       event['name'],
@@ -23,7 +23,7 @@ export function undelegate (
   events: Array<EventCapture>,
   getVTree: ((vtree: VTree) => void),
   debug: boolean,
-) {
+) : void {
   for (const event of events) {
     mount.removeEventListener(
       event['name'],
@@ -40,15 +40,15 @@ function listener (
 , mount: HTMLElement
 , getVTree: (VTree) => void
 , debug: boolean
-) {
+) : void {
   getVTree(function (obj: VTree) {
     if (e.target) {
-      delegateEvent(e, obj, buildTargetToElement(mount, e.target), [], debug);
+      delegateEvent(e, obj, buildTargetToElement(mount, e.target as ParentNode), [], debug);
     }
   });
 };
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement (element: HTMLElement, target: any) {
+function buildTargetToElement (element: HTMLElement, target: ParentNode) : Array<HTMLElement> {
   var stack = [];
   while (element !== target) {
     stack.unshift(target);
@@ -65,7 +65,7 @@ function delegateEvent
   , stack: Array<HTMLElement>
   , parentStack: Array<VTree>
   , debug: boolean,
-  ) {
+  ) : void {
   /* base case, not found */
   if (!stack.length) {
     if (debug) {
@@ -111,7 +111,7 @@ function delegateEvent
   }
 };
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-function propagateWhileAble (parentStack: Array<VTree>, event: Event) {
+function propagateWhileAble (parentStack: Array<VTree>, event: Event) : void {
   for (const vtree of parentStack) {
     if (vtree['events'][event.type]) {
       var eventObj = vtree['events'][event.type],
@@ -129,51 +129,50 @@ function propagateWhileAble (parentStack: Array<VTree>, event: Event) {
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
     */
-export function eventJSON(at: any, obj: VTree): any {
+export function eventJSON(at: string | string[], obj: VTree): string[] {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] === 'object') {
     var ret = [];
-    for (var i : any = 0; i < at.length; i++) {
+    for (var i : number = 0; i < at.length; i++) {
       ret.push(eventJSON(at[i], obj));
     }
     return ret;
   }
-  for (i in at) obj = obj[at[i]];
+  for (const a of at) obj = obj[a];
   /* If obj is a list-like object */
   var newObj;
   if (obj instanceof Array || ('length' in obj && obj['localName'] !== 'select')) {
     newObj = [];
-    for (i = 0; i < obj.length; i++) {
-      newObj.push(eventJSON([], obj[i]));
+    for (var j = 0; j < obj['children'].length; j++) {
+      newObj.push(eventJSON([], obj[j]));
     }
     return newObj;
   }
   /* If obj is a non-list-like object */
   newObj = {};
-  for (i in getAllPropertyNames(obj)) {
+  for (var key in getAllPropertyNames(obj)) {
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
     /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (
-      obj['localName'] === 'input' &&
-      (i === 'selectionDirection' ||
-        i === 'selectionStart' ||
-        i === 'selectionEnd')
+    if (obj['localName'] === 'input' &&
+       (key === 'selectionDirection' ||
+        key === 'selectionStart' ||
+        key === 'selectionEnd')
     ) {
       continue;
     }
     if (
-      typeof obj[i] == 'string' ||
-      typeof obj[i] == 'number' ||
-      typeof obj[i] == 'boolean'
+      typeof obj[key] == 'string' ||
+      typeof obj[key] == 'number' ||
+      typeof obj[key] == 'boolean'
     ) {
-      newObj[i] = obj[i];
+      newObj[key] = obj[key];
     }
   }
   return newObj;
 }
 /* get static and dynamic properties */
-var getAllPropertyNames = function (obj: VTree) {
+function getAllPropertyNames (obj: VTree) : Object {
   var props: Object = {}, i: number = 0;
   do {
     var names = Object.getOwnPropertyNames(obj);

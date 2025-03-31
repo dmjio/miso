@@ -1656,8 +1656,7 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
   });
 
   test('Should fail integrity check on bad tag', () => {
@@ -1678,11 +1677,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.tag = 'lol';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on bad tag in hydrate w/ logging enabled', () => {
@@ -1723,11 +1720,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.children[0].text = 'oops';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on differing child lengths', () => {
@@ -1748,11 +1743,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.children = [];
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles', () => {
@@ -1774,11 +1767,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.css['background-color'] = 'green';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles, for color', () => {
@@ -1801,11 +1792,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.css['color'] = '#dddddd';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on differing props', () => {
@@ -1828,11 +1817,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.props['class'] = 'something-else';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on differing height / width', () => {
@@ -1857,12 +1844,10 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.props['height'] = '200';
     vtree.props['width'] = '200';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on random property (title)', () => {
@@ -1884,11 +1869,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.props['title'] = 'woz';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on href', () => {
@@ -1911,11 +1894,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.props['href'] = 'notgoogle.com';
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on vtext domRef', () => {
@@ -1938,11 +1919,9 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(true);
+    expect(integrityCheck(vtree)).toBe(true);
     vtree.children[0].domRef = document.createElement('div');
-    check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should fail integrity check on unknown property test', () => {
@@ -1963,8 +1942,7 @@ describe('js tests', () => {
     };
     var result = hydrate(false, body, vtree);
     expect(result).toEqual(true);
-    var check = integrityCheck(true, vtree);
-    expect(check).toBe(false);
+    expect(integrityCheck(vtree)).toBe(false);
   });
 
   test('Should set body[data-component-id] via setBodyComponent()', () => {
