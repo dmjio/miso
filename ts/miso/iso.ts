@@ -1,9 +1,9 @@
 import { callCreated, populate } from './dom';
+import { VTree } from './types';
 
 /* prerendering / hydration / isomorphic support */
-var collapseSiblingTextNodes = function (vs: any) {
-  var ax = 0,
-    adjusted = vs.length > 0 ? [vs[0]] : [];
+var collapseSiblingTextNodes = function (vs: Array<VTree>) {
+  var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
     if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
       adjusted[ax]['text'] += vs[ix]['text'];
@@ -14,7 +14,7 @@ var collapseSiblingTextNodes = function (vs: any) {
   return adjusted;
 };
 
-export function hydrate(logLevel: boolean, mountPoint: any, vtree: any) {
+export function hydrate(logLevel: boolean, mountPoint: any, vtree: VTree) {
   var mountChildIdx = 0,
     node;
   // If script tags are rendered first in body, skip them.
@@ -61,11 +61,11 @@ export function hydrate(logLevel: boolean, mountPoint: any, vtree: any) {
   }
   return true;
 }
-var diagnoseError = function (logLevel: boolean, vtree: any, node: any) {
+function diagnoseError (logLevel: boolean, vtree: VTree, node: Element) {
   if (logLevel) console.warn('VTree differed from node', vtree, node);
 };
 // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
-var parseColor = function (input: any) {
+function parseColor (input: string) {
   if (input.substr(0, 1) == '#') {
     var collen = (input.length - 1) / 3;
     var fact = [17, 1, 0.062272][collen - 1];
@@ -79,12 +79,12 @@ var parseColor = function (input: any) {
       .split('(')[1]
       .split(')')[0]
       .split(',')
-      .map((x: number) => {
+      .map((x: string) => {
         return +x;
       });
 };
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-export function integrityCheck(result: any, vtree: any) {
+export function integrityCheck(result: any, vtree: VTree) {
   // text nodes must be the same
   if (vtree['type'] == 'vtext') {
     if (vtree['domRef'].nodeType !== 3) {
@@ -204,18 +204,20 @@ export function integrityCheck(result: any, vtree: any) {
       }
     }
     // recursive call for `vnode` / `vcomp`
-    for (i = 0; i < vtree.children.length; i++) {
-      result &= integrityCheck(result, vtree.children[i]);
+    for (i = 0; i < vtree['children'].length; i++) {
+      const check = integrityCheck(result, vtree['children'][i]);
+      result = result && check;
     }
   }
   return result;
 }
-var walk = function (logLevel: boolean, vtree: any, node: any) {
+
+function walk (logLevel: boolean, vtree: VTree, node: Element) {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
-  var vdomChild: any, domChild: any;
+  var vdomChild: VTree, domChild: any;
   vtree['domRef'] = node;
   // Fire onCreated events as though the elements had just been created.
   callCreated(vtree);
@@ -239,8 +241,8 @@ var walk = function (logLevel: boolean, vtree: any, node: any) {
         return false;
       }
     } else if (vdomChild['type'] === 'vcomp') {
-      vdomChild['mount'](function (component: any) {
-        vdomChild.children.push(component);
+      vdomChild['mount']((component: VTree) => {
+        vdomChild['children'].push(component);
         walk(logLevel, vdomChild, domChild);
       });
     } else {
