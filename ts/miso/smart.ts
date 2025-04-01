@@ -41,16 +41,16 @@ export function vnodeKids(tag, kids): VTree {
 /* "smart" helper for constructing an empty virtual DOM */
 export function mkVTree(): VTree {
   return {
-    props: {},
-    css: {},
+    props: null,
+    css: null,
     children: [],
-    ns: 'HTML',
+    ns: 'html',
     type: 'vnode',
     domRef: null,
     tag: 'div',
     key: null,
     text: '',
-    events: {},
+    events: null,
     'data-component-id': null,
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},

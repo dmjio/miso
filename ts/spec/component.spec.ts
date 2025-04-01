@@ -1,6 +1,7 @@
 /* imports */
 import { diff } from '../miso/dom';
-import { vtree, vtext } from '../miso/smart';
+import { mkVTree, vtree, vtext } from '../miso/smart';
+import { VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -65,7 +66,7 @@ describe ('Event tests', () => {
       type: 'vcomp',
       mount: (cb) => {
         mountCount++;
-        var node = vtree();
+        var node = mkVTree();
         diff(null, node, document.body);
         cb(node);
       },
@@ -102,7 +103,7 @@ describe ('Event tests', () => {
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
-    expect(document.body.childNodes[0].style['background-color']).toBe('red');
+    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('red');
 
     // Replace node
     mountCount = 0;
@@ -115,12 +116,12 @@ describe ('Event tests', () => {
       css: { 'background-color': 'green' },
     });
     diff(compNode1, compNode2, document.body);
-    expect(document.body.childNodes[0].style['background-color']).toBe('green');
+    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = vtree();
+    var node = mkVTree();
     diff(null, node, document.body);
 
     // Test node was populated
@@ -138,7 +139,7 @@ describe ('Event tests', () => {
     diff(node, compNode, document.body);
 
     // Node is removed from DOM, Component is on the DOM
-    expect(document.body.childNodes[0].getAttribute('data-component-id')).toBe(
+    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
       'vcomp-id',
     );
     expect(mountCount).toBe(1);
@@ -165,7 +166,7 @@ describe ('Event tests', () => {
     diff(node, compNode, document.body);
 
     // Node is removed from DOM, Component is on the DOM
-    expect(document.body.childNodes[0].getAttribute('data-component-id')).toBe(
+    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
       'vcomp-id',
     );
     expect(mountCount).toBe(1);
@@ -217,7 +218,7 @@ describe ('Event tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff(component, vtree(), document.body);
+    diff(component, mkVTree(), document.body);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');

@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { vtree, vtext, vnodeKeyed } from '../miso/smart';
+import { mkVTree, vtree, vtext, vnodeKeyed } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -46,7 +46,7 @@ describe('DOM tests', () => {
   });
 
   test('Should create a new DOM node', () => {
-    var newNode = vtree();
+    var newNode = mkVTree();
     diff(null, newNode, document.body);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
@@ -165,7 +165,7 @@ describe('DOM tests', () => {
 
   test('Should create children', () => {
     // populate DOM
-    var tree = vtree({ children: [vtree()] });
+    var tree = vtree({ children: [mkVTree()] });
     diff(null, tree, document.body);
     expect(tree.domRef.children.length).toBe(1);
     expect(tree.children.length).toBe(1);
@@ -173,7 +173,7 @@ describe('DOM tests', () => {
 
   test('Should remove a child', () => {
     // populate DOM
-    var tree1 = vtree({ children: [vtree()] });
+    var tree1 = vtree({ children: [mkVTree()] });
     diff(null, tree1, document.body);
     expect(tree1.domRef.children.length).toBe(1);
 
@@ -184,7 +184,7 @@ describe('DOM tests', () => {
   });
 
   test('Should replace Node with TextNode', () => {
-    var node = vtree();
+    var node = mkVTree();
     diff(null, node, document.body);
     expect(document.body.childNodes.length).toBe(1);
     var textNode = vtree({ type: 'vtext', 'text': 'fooo' });
@@ -201,7 +201,7 @@ describe('DOM tests', () => {
     expect(document.body.childNodes.length).toBe(1);
 
     // Replace node
-    var node = vtree();
+    var node = mkVTree();
     diff(textNode, node, document.body);
 
     // Test node is removed from DOM
@@ -210,7 +210,7 @@ describe('DOM tests', () => {
 
   test('Should remove a DOM node', () => {
     // populate DOM
-    var newNode = vtree();
+    var newNode = mkVTree();
     diff(null, newNode, document.body);
 
     // Test node was populated
@@ -288,7 +288,7 @@ describe('DOM tests', () => {
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     // test property change
-    var newNode = vtree();
+    var newNode = mkVTree();
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef.getAttribute('lol')).toBe(null);
   });
@@ -300,7 +300,7 @@ describe('DOM tests', () => {
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
-    var newNode = vtree();
+    var newNode = mkVTree();
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef['id']).toBe('');
   });
@@ -338,7 +338,7 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
 
     // test css change
-    var newNode = vtree();
+    var newNode = mkVTree();
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef.style['color']).toBe('');
   });
