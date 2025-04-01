@@ -73,18 +73,24 @@ mario =
 
 updateMario :: Action -> Effect Model Action ()
 updateMario Start = get >>= step
-updateMario (GetArrows arrs) = modify newModel
-  where
-    newModel m = m { arrows = arrs }
-updateMario (Time newTime) = modify newModel
-  where
-    newModel m = m
-      { delta = (newTime - time m) / 20
-      , time = newTime
-      }
-updateMario (WindowCoords coords) = modify newModel
-  where
-    newModel m = m { window = coords }
+updateMario (GetArrows arrs) = do
+  modify newModel
+  step =<< get
+    where
+      newModel m = m { arrows = arrs }
+updateMario (Time newTime) = do
+  modify newModel
+  step =<< get
+    where
+      newModel m = m
+        { delta = (newTime - time m) / 20
+        , time = newTime
+        }
+updateMario (WindowCoords coords) = do
+  modify newModel
+  step =<< get
+    where
+      newModel m = m { window = coords }
 
 step :: Model -> Effect Model Action ()
 step m@Model{..} = k <# Time <$> now
