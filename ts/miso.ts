@@ -2,7 +2,8 @@ import { diff } from './miso/dom';
 import { delegate, undelegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/iso';
 import { version, callFocus, callBlur, setBodyComponent } from './miso/util';
-import { VTree, EventCapture, EventObject, Options } from './miso/types';
+import { VTree, Props, CSS, Events, EventCapture, EventObject, Options } from './miso/types';
+import { vtree, vtext } from './miso/smart';
 
 /* top level re-export */
 export {
@@ -21,5 +22,11 @@ export {
   VTree,
   EventCapture,
   EventObject,
-  Options
+  Options,
+  CSS,
+  Props,
+  Events,
+  /* Smart constructors */
+  vtree,
+  vtext,
 };

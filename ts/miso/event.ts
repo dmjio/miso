@@ -1,12 +1,12 @@
 import { VTree, EventCapture, EventObject, Options } from './types';
 
 /* event delegation algorithm */
-export function delegate (
+export function delegate(
   mount: HTMLElement,
   events: Array<EventCapture>,
-  getVTree: ((vtree: VTree) => void),
+  getVTree: (vtree: VTree) => void,
   debug: boolean,
-) : void {
+): void {
   for (const event of events) {
     mount.addEventListener(
       event['name'],
@@ -18,12 +18,12 @@ export function delegate (
   }
 }
 /* event undelegation */
-export function undelegate (
+export function undelegate(
   mount: HTMLElement,
   events: Array<EventCapture>,
-  getVTree: ((vtree: VTree) => void),
+  getVTree: (vtree: VTree) => void,
   debug: boolean,
-) : void {
+): void {
   for (const event of events) {
     mount.removeEventListener(
       event['name'],
@@ -35,44 +35,37 @@ export function undelegate (
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener (
-  e: Event
-, mount: HTMLElement
-, getVTree: (VTree) => void
-, debug: boolean
-) : void {
+function listener(e: Event, mount: HTMLElement, getVTree: (VTree) => void, debug: boolean): void {
   getVTree(function (obj: VTree) {
     if (e.target) {
       delegateEvent(e, obj, buildTargetToElement(mount, e.target as ParentNode), [], debug);
     }
   });
-};
+}
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement (element: HTMLElement, target: ParentNode) : Array<HTMLElement> {
+function buildTargetToElement(element: HTMLElement, target: ParentNode): Array<HTMLElement> {
   var stack = [];
   while (element !== target) {
     stack.unshift(target);
     target = target.parentNode;
   }
   return stack;
-};
+}
 /* Finds event in virtual dom via pointer equality
        Accumulate parent stack as well for propagation up the vtree
      */
-function delegateEvent
-  ( event: Event
-  , obj: VTree
-  , stack: Array<HTMLElement>
-  , parentStack: Array<VTree>
-  , debug: boolean,
-  ) : void {
+function delegateEvent(
+  event: Event,
+  obj: VTree,
+  stack: Array<HTMLElement>,
+  parentStack: Array<VTree>,
+  debug: boolean,
+): void {
   /* base case, not found */
   if (!stack.length) {
     if (debug) {
       console.warn(
-        'Event "' +
-          event.type +
-          '" did not find an event handler to dispatch on',
+        'Event "' + event.type + '" did not find an event handler to dispatch on',
         obj,
         event,
       );
@@ -82,21 +75,15 @@ function delegateEvent
     parentStack.unshift(obj);
     for (const child of obj['children']) {
       if (child['type'] === 'vcomp') continue;
-        if (child['domRef'] === stack[1]) {
-        delegateEvent(
-          event,
-          child,
-          stack.slice(1),
-          parentStack,
-          debug,
-        );
+      if (child['domRef'] === stack[1]) {
+        delegateEvent(event, child, stack.slice(1), parentStack, debug);
         break;
       }
     }
   } /* stack.length == 1 */ else {
-    var eventObj : EventObject = obj['events'][event.type];
+    var eventObj: EventObject = obj['events'][event.type];
     if (eventObj) {
-      var options : Options = eventObj['options'];
+      var options: Options = eventObj['options'];
       if (options['preventDefault']) {
         event.preventDefault();
       }
@@ -109,9 +96,9 @@ function delegateEvent
       propagateWhileAble(parentStack, event);
     }
   }
-};
+}
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-function propagateWhileAble (parentStack: Array<VTree>, event: Event) : void {
+function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
   for (const vtree of parentStack) {
     if (vtree['events'][event.type]) {
       var eventObj = vtree['events'][event.type],
@@ -124,7 +111,7 @@ function propagateWhileAble (parentStack: Array<VTree>, event: Event) : void {
       }
     }
   }
-};
+}
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
@@ -133,7 +120,7 @@ export function eventJSON(at: string | string[], obj: VTree): string[] {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] === 'object') {
     var ret = [];
-    for (var i : number = 0; i < at.length; i++) {
+    for (var i: number = 0; i < at.length; i++) {
       ret.push(eventJSON(at[i], obj));
     }
     return ret;
@@ -154,10 +141,9 @@ export function eventJSON(at: string | string[], obj: VTree): string[] {
     /* bug in safari, throws TypeError if the following fields are referenced on a checkbox */
     /* https://stackoverflow.com/a/25569117/453261 */
     /* https://html.spec.whatwg.org/multipage/input.html#do-not-apply */
-    if (obj['localName'] === 'input' &&
-       (key === 'selectionDirection' ||
-        key === 'selectionStart' ||
-        key === 'selectionEnd')
+    if (
+      obj['localName'] === 'input' &&
+      (key === 'selectionDirection' || key === 'selectionStart' || key === 'selectionEnd')
     ) {
       continue;
     }
@@ -172,8 +158,9 @@ export function eventJSON(at: string | string[], obj: VTree): string[] {
   return newObj;
 }
 /* get static and dynamic properties */
-function getAllPropertyNames (obj: VTree) : Object {
-  var props: Object = {}, i: number = 0;
+function getAllPropertyNames(obj: VTree): Object {
+  var props: Object = {},
+    i: number = 0;
   do {
     var names = Object.getOwnPropertyNames(obj);
     for (i = 0; i < names.length; i++) {
@@ -181,4 +168,4 @@ function getAllPropertyNames (obj: VTree) : Object {
     }
   } while ((obj = Object.getPrototypeOf(obj)));
   return props;
-};
+}
