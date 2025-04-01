@@ -179,7 +179,10 @@ function check(result: boolean, vtree: VTree): boolean {
       }
     }
     // recursive call for `vnode` / `vcomp`
-    for (const child of vtree['children']) result &&= check(result, child);
+      for (const child of vtree['children']) {
+        const value = check(result, child);
+        result = result && value;
+      }
   }
   return result;
 }
