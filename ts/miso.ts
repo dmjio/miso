@@ -25,5 +25,5 @@ export {
   Options,
   CSS,
   Props,
-  Events
+  Events,
 };

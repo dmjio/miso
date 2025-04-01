@@ -102,12 +102,7 @@ export function populate(c: VTree, n: VTree): void {
   diffChildren(c['children'], n['children'], n['domRef']);
 }
 
-function diffProps(
-    cProps: Props,
-    nProps: Props,
-  node: Element,
-  isSvg: boolean,
-): void {
+function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean): void {
   var newProp;
   /* Is current prop in new prop list? */
   for (var c in cProps) {
