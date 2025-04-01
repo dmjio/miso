@@ -26,4 +26,7 @@ export {
   CSS,
   Props,
   Events,
+  /* Smart constructors */
+  vtree,
+  vtext,
 };
