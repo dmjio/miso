@@ -1,4 +1,4 @@
-import { VTree } from './types';
+import { VTree, Props, CSS } from './types';
 import { mkVTree } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
@@ -103,8 +103,8 @@ export function populate(c: VTree, n: VTree): void {
 }
 
 function diffProps(
-  cProps: Map<string, string>,
-  nProps: Map<string, string>,
+    cProps: Props,
+    nProps: Props,
   node: Element,
   isSvg: boolean,
 ): void {
@@ -155,7 +155,7 @@ function diffProps(
   }
 }
 
-function diffCss(cCss: Map<string, string>, nCss: Map<string, string>, node: HTMLElement): void {
+function diffCss(cCss: CSS, nCss: CSS, node: HTMLElement): void {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {

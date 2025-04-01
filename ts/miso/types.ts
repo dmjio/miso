@@ -1,4 +1,8 @@
 /* core type for virtual DOM */
+type Props = Record<string, string>;
+type CSS = Record<string, string>;
+type Events = Record<string, EventObject>;
+
 type VTree = {
   type: 'vtext' | 'vnode' | 'vcomp';
   ns: 'html' | 'svg' | 'mathml';
@@ -6,9 +10,9 @@ type VTree = {
   text: string;
   tag: string;
   key: string;
-  props: Map<string, string>;
-  css: Map<string, string>;
-  events: Map<string, EventObject>;
+  props: Props;
+  css: CSS;
+  events: Events;
   'data-component-id': string;
   children: Array<VTree>;
   onDestroyed: () => void;
@@ -33,4 +37,4 @@ type EventCapture = {
   capture: boolean;
 };
 
-export { VTree, EventCapture, EventObject, Options };
+export { VTree, EventCapture, EventObject, Options, Props, CSS, Events };

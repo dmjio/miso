@@ -41,8 +41,8 @@ export function vnodeKids(tag, kids): VTree {
 /* "smart" helper for constructing an empty virtual DOM */
 export function mkVTree(): VTree {
   return {
-    props: new Map(),
-    css: new Map(),
+    props: {},
+    css: {},
     children: [],
     ns: 'html',
     type: 'vnode',
