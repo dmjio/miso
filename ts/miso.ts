@@ -21,5 +21,5 @@ export {
   VTree,
   EventCapture,
   EventObject,
-  Options
+  Options,
 };

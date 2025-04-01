@@ -3,12 +3,12 @@
   "version": "1.9.0",
   "description": "miso: A tasty Haskell front-end web framework",
   "scripts": {
-    "clean": "rm -v js/miso.js || rm -v ts/*.js || rm -v ts/miso/*.js",
+    "clean": "rm -v js/miso.js || rm -v ts/*.js || rm -v ts/miso/*.js || rm -v ts/spec/*.js",
     "lint": "eslint --fix ts/*.ts",
-    "test": "bun test ts/miso.spec.ts && bun run lcov",
+    "test": "bun test && bun run lcov",
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",
-    "watch": "tsc ts/miso.ts --watch",
-    "watch-test": "tsc ts/miso.spec.ts --watch",
+    "watch": "tsc ts/miso.spec.ts --watch",
+    "watch-test": "tsc ts/spec/*spec.ts --watch",
     "pretty": "prettier --write ts/miso/*.ts ts/*.ts",
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
     "prod": "bun run build --production"
@@ -31,6 +31,7 @@
   },
   "prettier": {
     "singleQuote": true,
+    "printWidth": 100,
     "quoteProps": "preserve"
   },
   "homepage": "https://haskell-miso.org",
