@@ -21,22 +21,6 @@ function union<T extends object>(obj: T, updates: Partial<T>): T {
 }
 
 /* smart constructors */
-export function vnode(tag, children, props, css, ns, ref, oc, od, bd, key): VTree {
-  return vtree({
-    type: 'vnode',
-    tag: tag,
-    children: children,
-    props: props,
-    css: css,
-    ns: ns,
-    domRef: ref,
-    onCreated: oc,
-    onDestroyed: od,
-    onBeforeDestroyed: bd,
-    key: key,
-  });
-}
-
 export function vnodeKeyed(tag, key): VTree {
   return vtree({
     type: 'vnode',

@@ -28,6 +28,4 @@ node_modules/
 coverage/
 
 # typescript
-/js/miso.js
-/ts/*.js
-/ts/miso/*.js
+*.js

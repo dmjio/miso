@@ -1,6 +1,6 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/iso';
-import { vtree, vtext, vnodeKids } from '../miso/smart';
+import { mkVTree, vtree, vtext, vnodeKids } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -48,7 +48,7 @@ describe ("Hydration tests", () => {
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
     var currentNode = vtree({
-      children: [vtree()],
+      children: [mkVTree()],
     });
     expect(hydrate(false, document.body, currentNode)).toEqual(false);
   });
@@ -93,7 +93,7 @@ describe ("Hydration tests", () => {
         vtext('foo'),
         vtext('bar'),
         vtext('baz'),
-        vtree(),
+        mkVTree(),
         vtext('foo'),
         vtext('bar'),
         vtext('baz'),

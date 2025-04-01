@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { vtree, vtext, vnode, vnodeKeyed } from '../miso/smart';
+import { vtree, vtext, vnodeKeyed } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -469,14 +469,12 @@ describe('DOM tests', () => {
           onDestroyed : () => {
               destroy++;
           },
-          key : 'key-1'
       });
     diff(null, currentNode, document.body);
       var newNode = vtree({
           onDestroyed : () => {
               destroy++;
           },
-          key : 'key-1'
       });
     diff(null, currentNode, document.body);
     expect(destroy).toBe(0);
@@ -523,31 +521,13 @@ describe('DOM tests', () => {
 
   test('Should diff keys properly when keys are prepended', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', '1')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var currentNode = vtree({
+      children : [vnodeKeyed('div', '1')],
+    });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var newNode = vtree({
+        children : [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
+    });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -561,31 +541,13 @@ describe('DOM tests', () => {
 
   test('Should execute right-hand side happy path key-window diffing case', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var currentNode = vtree({
+        children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')],
+    });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var newNode = vtree({
+          children : [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -599,31 +561,13 @@ describe('DOM tests', () => {
 
   test('Should swap nodes', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var currentNode = vtree({
+        children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')],
+    });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var newNode = vtree({
+        children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
+    });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -637,31 +581,13 @@ describe('DOM tests', () => {
 
   test('Should execute flip-flop case', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var currentNode = vtree({
+        children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
+    });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var newNode = vtree({
+        children : [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
+    });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -682,18 +608,9 @@ describe('DOM tests', () => {
     var kids = [];
     for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i));
 
-    var currentNode = vnode(
-      'div',
-      kids,
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var currentNode = vtree({
+          children : kids
+      });
 
     var newKids = [];
     for (i = 1; i < 1001; i++) {
@@ -706,18 +623,9 @@ describe('DOM tests', () => {
       }
     }
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      newKids,
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var newNode = vtree({
+          children : newKids,
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -740,43 +648,25 @@ describe('DOM tests', () => {
 
   test('Should execute top-left and bottom-right match case', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [
+      var currentNode = vtree({
+          children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'k'),
         vnodeKeyed('div', 'r'),
         vnodeKeyed('div', 'b'),
       ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [
+    var newNode = vtree({
+        children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'r'),
         vnodeKeyed('div', 'k'),
         vnodeKeyed('div', 'd'),
-      ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+        ],
+    });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -790,43 +680,25 @@ describe('DOM tests', () => {
 
   test('Should handle duplicate keys case', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [
+      var currentNode = vtree({
+          children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'b'),
-      ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+          ],
+      });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [
+      var newNode = vtree({
+          children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'a'),
       ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -840,41 +712,23 @@ describe('DOM tests', () => {
 
   test('Should execute top-right and bottom-left match case', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [
+      var currentNode = vtree({
+          children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'g'),
         vnodeKeyed('div', 'b'),
       ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [
+      var newNode = vtree({
+          children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'g'),
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
       ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -888,31 +742,13 @@ describe('DOM tests', () => {
 
   test('Should match nothing', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var currentNode = vtree({
+          children : [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')],
+      });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var newNode = vtree({
+          children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')]
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -926,41 +762,26 @@ describe('DOM tests', () => {
 
   test('Should handle nothing matches case where new key is found in old map', () => {
     var body = document.body;
-    var currentNode = vnode(
-      'div',
-      [
+      var currentNode = vtree({
+          children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'k'),
         vnodeKeyed('div', 'l'),
         vnodeKeyed('div', 'c'),
         vnodeKeyed('div', 'g'),
-      ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      ]
+      });
     diff(null, currentNode, body);
-    var newNode = vnode(
-      'div',
+      var newNode = vtree({
+          children:
       [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'c'),
         vnodeKeyed('div', 'l'),
         vnodeKeyed('div', 'r'),
         vnodeKeyed('div', 'k'),
-      ],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      ]
+      });
     diff(currentNode, newNode, body);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
@@ -973,29 +794,13 @@ describe('DOM tests', () => {
   });
 
   test('Should append new nodes in keys patch', () => {
-    var currentNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'a')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      'key-1',
-    );
+      var currentNode = vtree({
+          children : [vnodeKeyed('div', 'a')]
+      });
     diff(null, currentNode, document.body);
-    var newNode = vnode(
-      'div',
-      [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')],
-      {},
-      {},
-      'html',
-      null,
-      null,
-      null,
-      'key-1',
-    );
+    var newNode = vtree({
+        children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')]
+    });
     diff(currentNode, newNode, document.body);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);

@@ -1,5 +1,6 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate, eventJSON } from '../miso/event';
+import { EventObject, EventCapture } from '../miso/types';
 import { vtree } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
@@ -25,7 +26,7 @@ describe ('Event tests', () => {
     var events = {
       click: {
         runEvent: (e) => {
-          result = eventJSON([[]], e);
+          result = eventJSON('', e);
           count++;
         },
         options: {
@@ -57,8 +58,8 @@ describe ('Event tests', () => {
     var getVTree = function (cb) {
       cb(vtreeParent);
     };
-    events = [{ name: 'click', capture: true }];
-    delegate(body, events, getVTree, true);
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true);
 
     /* initiate click event */
     vtreeChild.domRef.click();
@@ -68,7 +69,7 @@ describe ('Event tests', () => {
     expect(result).not.toEqual(null);
 
     /* unmount delegation */
-    undelegate(document.body, events, getVTree, true);
+    undelegate(document.body, delegatedEvents, getVTree, true);
   });
 
 });
