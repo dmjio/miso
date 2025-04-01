@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 /* tests */
-describe ('Event tests', () => {
+describe ('Component tests', () => {
   test('Should unmount recursively in order', () => {
     var unmounts = [];
     var mkVComp = (name, children) => {

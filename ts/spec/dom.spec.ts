@@ -52,9 +52,8 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node', () => {
-    var currentNode = null;
     var newNode = vtree({ ns: 'svg' });
-    diff(currentNode, newNode, document.body);
+    diff(null, newNode, document.body);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 

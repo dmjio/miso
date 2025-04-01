@@ -3,8 +3,7 @@ import { VTree } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
-  var ax = 0,
-    adjusted = vs.length > 0 ? [vs[0]] : [];
+  var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
     if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
       adjusted[ax]['text'] += vs[ix]['text'];
@@ -16,8 +15,7 @@ function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
 }
 
 export function hydrate(logLevel: boolean, mountPoint: Element | Text, vtree: VTree): boolean {
-  var mountChildIdx = 0,
-    node;
+  var mountChildIdx = 0, node : ChildNode;
   // If script tags are rendered first in body, skip them.
   if (!mountPoint) {
     if (document.body.childNodes.length > 0) {
@@ -120,10 +118,7 @@ function check(result: boolean, vtree: VTree): boolean {
       result = false;
     }
     // properties must be identical
-    var keyLength = Object.keys(vtree['props']).length,
-      key = null;
-    for (var i = 0; i < keyLength; i++) {
-      key = Object.keys(vtree['props'])[i];
+    for (const key in vtree['props']) {
       if (key === 'href') {
         var absolute = window.location.origin + '/' + vtree['props'][key],
           url = vtree['domRef'][key],
@@ -162,9 +157,7 @@ function check(result: boolean, vtree: VTree): boolean {
       }
     }
     // styles must be identical
-    keyLength = Object.keys(vtree['css']).length;
-    for (i = 0; i < keyLength; i++) {
-      key = Object.keys(vtree['css'])[i];
+    for (const key in vtree['css']) {
       if (key === 'color') {
         if (
           parseColor(vtree['domRef'].style[key]).toString() !==
@@ -179,15 +172,15 @@ function check(result: boolean, vtree: VTree): boolean {
       }
     }
     // recursive call for `vnode` / `vcomp`
-      for (const child of vtree['children']) {
-        const value = check(result, child);
-        result = result && value;
-      }
+    for (const child of vtree['children']) {
+       const value = check(result, child);
+       result = result && value;
+    }
   }
   return result;
 }
 
-function walk(logLevel: boolean, vtree: VTree, node: Element): boolean {
+function walk(logLevel: boolean, vtree: VTree, node: ChildNode): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.

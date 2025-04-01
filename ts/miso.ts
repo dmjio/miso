@@ -1,6 +1,6 @@
 import { diff } from './miso/dom';
 import { delegate, undelegate, eventJSON } from './miso/event';
-import { hydrate, integrityCheck } from './miso/iso';
+import { hydrate, integrityCheck } from './miso/hydrate';
 import { version, callFocus, callBlur, setBodyComponent } from './miso/util';
 import { VTree, Props, CSS, Events, EventCapture, EventObject, Options } from './miso/types';
 import { vtree, vtext } from './miso/smart';

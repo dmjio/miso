@@ -67,8 +67,8 @@ function diffNodes(c: VTree, n: VTree, parent: Element): void {
 // ** recursive calls to hooks
 function callDestroyedRecursive(obj: VTree): void {
   callDestroyed(obj);
-  for (var i in obj['children']) {
-    callDestroyedRecursive(obj['children'][i]);
+  for (const child of obj['children']) {
+    callDestroyedRecursive(child);
   }
 }
 
@@ -83,8 +83,8 @@ function callBeforeDestroyed(obj: VTree): void {
 
 function callBeforeDestroyedRecursive(obj: VTree): void {
   callBeforeDestroyed(obj);
-  for (var i in obj['children']) {
-    callBeforeDestroyedRecursive(obj['children'][i]);
+  for (const child of obj['children']) {
+    callBeforeDestroyedRecursive(child);
   }
 }
 
@@ -194,7 +194,7 @@ function populateDomRef(obj: VTree): void {
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement(obj: VTree, cb: (Element) => void): void {
+function createElement(obj: VTree, cb: (e: Element) => void): void {
   populateDomRef(obj);
   cb(obj['domRef']);
   populate(null, obj);
@@ -223,12 +223,12 @@ function mountComponent(obj: VTree): void {
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
 function create(obj: VTree, parent: Element): void {
-  if (obj.type === 'vtext') {
+  if (obj['type'] === 'vtext') {
     obj['domRef'] = document.createTextNode(obj['text']);
     parent.appendChild(obj['domRef']);
   } else {
-    createElement(obj, function (ref: Element) {
-      parent.appendChild(ref);
+    createElement(obj, (e: Element) => {
+      parent.appendChild(e);
     });
   }
 }
@@ -265,33 +265,40 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
     if (oldFirstIndex > oldLastIndex) {
       diff(null, nFirst, parent);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-                   Otherwise, it will insert node['domRef'] before oLast['domRef']. */
+         Otherwise, it will insert node['domRef'] before oLast['domRef']. 
+      */
       parent.insertBefore(nFirst['domRef'], oFirst ? oFirst['domRef'] : null);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } /* No more new nodes, delete all remaining nodes in old list
          -> [ a b c ] <- old children
-         -> [ ] <- new children */ else if (newFirstIndex > newLastIndex) {
+         -> [ ] <- new children 
+      */ 
+    else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
         parent.removeChild(os[oldLastIndex--]['domRef']);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
-    } else if (oFirst['key'] === nFirst['key']) {
+    } 
+    
+    else if (oFirst['key'] === nFirst['key']) {
       /* happy path, everything aligns, we continue
          -> oldFirstIndex -> [ a b c ] <- oldLastIndex
          -> newFirstIndex -> [ a b c ] <- newLastIndex
          check if nFirst and oFirst align, if so, check nLast and oLast
       */
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
-    } else if (oLast['key'] === nLast['key']) {
+    } 
+    else if (oLast['key'] === nLast['key']) {
       diff(os[oldLastIndex--], ns[newLastIndex--], parent);
     } /* flip-flop case, nodes have been swapped, in some way or another
                both could have been swapped.
                -> [ a b c ] <- old children
                -> [ c b a ] <- new children
-      */ else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
+      */ 
+     else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
       swapDOMRefs(oLast['domRef'], oFirst['domRef'], parent);
       swap<VTree>(os, oldFirstIndex, oldLastIndex);
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
@@ -305,7 +312,8 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         becomes
         -> [ a b d ] <- old children
         -> [ a b d ] <- new children
-        and now we happy path */ else if (oFirst['key'] === nLast['key']) {
+        and now we happy path */ 
+    else if (oFirst['key'] === nLast['key']) {
       /* insertAfter */
       parent.insertBefore(oFirst['domRef'], oLast['domRef'].nextSibling);
       /* swap positions in old vdom */
@@ -318,7 +326,8 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
          becomes
          -> [ d b a ] <- old children
          -> [ d b a ] <- new children
-         and now we happy path */ else if (oLast['key'] === nFirst['key']) {
+         and now we happy path */ 
+    else if (oLast['key'] === nFirst['key']) {
       /* insertAfter */
       parent.insertBefore(oLast['domRef'], oFirst['domRef']);
       /* swap positions in old vdom */
@@ -329,7 +338,8 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         do something more fancy. This can happen when the list is sorted, for example.
         -> [ a e c ] <- old children
         -> [ b e d ] <- new children
-     */ else {
+     */ 
+    else {
       /* final case, perform linear search to check
           if new key exists in old map, decide what to do from there
        */
@@ -374,8 +384,8 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         -> [ b e a j   ] <- new children
              ^
         */ else {
-        createElement(nFirst, function (ref: Element) {
-          parent.insertBefore(ref, oFirst['domRef']);
+        createElement(nFirst, (e: Element) => {
+          parent.insertBefore(e, oFirst['domRef']);
         });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
@@ -392,7 +402,7 @@ function swapDOMRefs(a: Element, b: Element, p: Element): void {
 }
 
 function swap<T>(os: Array<T>, l: number, r: number): void {
-  var k = os[l];
+  const k = os[l];
   os[l] = os[r];
   os[r] = k;
 }

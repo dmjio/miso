@@ -18,13 +18,13 @@ type VTree = {
   onDestroyed: () => void;
   onCreated: () => void;
   onBeforeDestroyed: () => void;
-  mount: (VTree) => void;
-  unmount: (Element) => void;
+  mount: (f: (component: VTree) => void) => void;
+  unmount: (e: Element) => void;
 };
 
 type EventObject = {
   options: Options;
-  runEvent: (Event) => void;
+  runEvent: (e: Event) => void;
 };
 
 type Options = {

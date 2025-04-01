@@ -1,5 +1,5 @@
 /* imports */
-import { hydrate, integrityCheck } from '../miso/iso';
+import { hydrate, integrityCheck } from '../miso/hydrate';
 import { mkVTree, vtree, vtext, vnodeKids } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
