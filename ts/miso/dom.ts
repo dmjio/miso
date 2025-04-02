@@ -67,8 +67,8 @@ function diffNodes(c: VTree, n: VTree, parent: Element): void {
 // ** recursive calls to hooks
 function callDestroyedRecursive(obj: VTree): void {
   callDestroyed(obj);
-  for (const child of obj['children']) {
-    callDestroyedRecursive(child);
+  for (const i in obj['children']) {
+    callDestroyedRecursive(obj['children'][i]);
   }
 }
 
@@ -83,8 +83,8 @@ function callBeforeDestroyed(obj: VTree): void {
 
 function callBeforeDestroyedRecursive(obj: VTree): void {
   callBeforeDestroyed(obj);
-  for (const child of obj['children']) {
-    callBeforeDestroyedRecursive(child);
+  for (const i in obj['children']) {
+    callBeforeDestroyedRecursive(obj['children'][i]);
   }
 }
 
