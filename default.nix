@@ -19,6 +19,7 @@ in with pkgs.haskell.lib;
 
   #js
   miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
+  miso-ghcjs-prod = pkgs.haskell.packages.ghcjs86.miso-prod;
   inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app-js;
   
   #native

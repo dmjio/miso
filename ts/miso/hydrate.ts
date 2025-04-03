@@ -57,11 +57,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     // Remove all children before rebuilding DOM
     while (node.firstChild) node.removeChild(node.lastChild);
-    if (vtree['type'] === 'vtext') {
-      vtree['domRef'] = node as Text;
-    } else {
-      vtree['domRef'] = node as DOMRef;
-    }
+    (vtree['domRef'] as Node) = node;
 
     populate(null, vtree);
     return false;

@@ -38,6 +38,9 @@ common cpp
   else
     cpp-options:
       -DNATIVE
+  if flag(production)
+    cpp-options:
+      -DPRODUCTION
 
 common js-only-tests
   if !(impl(ghcjs) || arch(javascript)) || !flag(tests)
@@ -70,8 +73,21 @@ common client
       ghcjs-base -any
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
-    js-sources:
-      js/miso.js
+    if flag(production)
+      js-sources:
+        js/miso.prod.js
+    else
+      js-sources:
+        js/miso.js
+
+flag production
+  manual:
+    True
+  default:
+    False
+  description:
+    Uses miso's production quality JS (miso.prod.js).
+    This is built from calling "bun build --production"
 
 flag tests
   manual:

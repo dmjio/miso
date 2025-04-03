@@ -44,6 +44,7 @@ self: super:
       cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
   });
+  miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
   miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideDerivation (drv: {
     doHaddock = options.haddock;
     postInstall = pkgs.lib.optionalString options.tests ''
