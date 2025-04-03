@@ -12,6 +12,7 @@
     "test-runner": "bun test --watch",
     "pretty": "prettier --write ts/miso/*.ts ts/*.ts",
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
+    "build-prod": "bun build --outfile=js/miso.prod.js ./ts/index.ts --target=browser --production",
     "prod": "bun run build --production"
   },
   "type": "module",

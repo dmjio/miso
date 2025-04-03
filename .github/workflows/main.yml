@@ -38,11 +38,14 @@ jobs:
      # - name: Miso.ts linting
      #   run: bun run lint
 
-     - name: Bun build
-       run: bun run build
+     - name: Bun build prod
+       run: bun run build && bun run build-prod
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
+
+     - name: (JS) Miso GHCJS Production
+       run: nix-build -A miso-ghcjs-prod
 
      - name: (x86) Miso GHC
        run: nix-build -A miso-ghc
