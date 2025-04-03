@@ -1,4 +1,4 @@
-import { VTree, Props, CSS } from './types';
+import { DOMRef, VComp, VTree, Props, CSS } from './types';
 import { mkVTree } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
@@ -95,11 +95,14 @@ export function callCreated(obj: VTree): void {
 }
 
 export function populate(c: VTree, n: VTree): void {
-  if (!c) c = mkVTree();
-  diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
-  diffCss(c['css'], n['css'], n['domRef']);
-  if (n['type'] === 'vcomp') return; // dmj: don't diff vcomp children
-  diffChildren(c['children'], n['children'], n['domRef']);
+  if (n['type'] !== 'vtext') {
+    if (!c) c = mkVTree();
+    diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
+    diffCss(c['css'], n['css'], n['domRef']);
+    if (n['type'] === 'vnode') {
+      diffChildren(c['children'], n['children'], n['domRef']);
+    }
+  }
 }
 
 function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean): void {
@@ -150,7 +153,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean):
   }
 }
 
-function diffCss(cCss: CSS, nCss: CSS, node: HTMLElement): void {
+function diffCss(cCss: CSS, nCss: CSS, node: DOMRef): void {
   var result;
   /* is current attribute in new attribute list? */
   for (var c in cCss) {
@@ -173,7 +176,7 @@ function hasKeys(ns: Array<VTree>, cs: Array<VTree>): boolean {
   return ns.length > 0 && cs.length > 0 && ns[0]['key'] != null && cs[0]['key'] != null;
 }
 
-function diffChildren(cs: Array<VTree>, ns: Array<VTree>, parent: HTMLElement): void {
+function diffChildren(cs: Array<VTree>, ns: Array<VTree>, parent: Element): void {
   var longest: number = ns.length > cs.length ? ns.length : cs.length;
   if (hasKeys(ns, cs)) {
     syncChildren(cs, ns, parent);
@@ -194,7 +197,7 @@ function populateDomRef(obj: VTree): void {
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement(obj: VTree, cb: (e: Element) => void): void {
+function createElement(obj: VTree, cb: (e: Node) => void): void {
   populateDomRef(obj);
   cb(obj['domRef']);
   populate(null, obj);
@@ -212,9 +215,9 @@ function mountComponent(obj: VTree): void {
   }
   // dmj, the component placeholder div[id=name] is already on the dom and vdom
   // Now we gen the component and append it to the vdom and real dom
-  obj['domRef'].setAttribute('data-component-id', componentId);
+  (obj['domRef'] as Element).setAttribute('data-component-id', componentId);
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
-  obj['mount']((component: VTree) => {
+  obj['mount']((component: VComp) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
@@ -395,7 +398,7 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
   }
 }
 
-function swapDOMRefs(a: Element, b: Element, p: Element): void {
+function swapDOMRefs(a: Node, b: Node, p: Node): void {
   const tmp = a.nextSibling;
   p.insertBefore(a, b);
   p.insertBefore(b, tmp);

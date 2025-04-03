@@ -1,5 +1,5 @@
 /* smart constructors for VTree */
-import { VTree } from './types';
+import { VTree, VNode, VComp } from './types';
 
 /* vtext factory */
 export function vtext(input: string) {
@@ -11,8 +11,12 @@ export function vtextKeyed(input: string, k: string) {
 }
 
 /* vtree factory */
-export function vtree(props: any): VTree {
+export function vtree(props: any): VNode {
   return !props ? mkVTree() : union(mkVTree(), props);
+}
+
+export function vcomp(props: any): VComp {
+  return !props ? mkVComp() : union(mkVComp(), props);
 }
 
 /* set union */
@@ -39,7 +43,7 @@ export function vnodeKids(tag:string, kids:Array<VTree>): VTree {
 }
 
 /* "smart" helper for constructing an empty virtual DOM */
-export function mkVTree(): VTree {
+export function mkVTree(): VNode {
   return {
     props: {},
     css: {},
@@ -49,9 +53,25 @@ export function mkVTree(): VTree {
     domRef: null,
     tag: 'div',
     key: null,
-    text: '',
     events: {},
-    'data-component-id': null,
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+  };
+}
+
+export function mkVComp(): VComp {
+  return {
+    props: {},
+    css: {},
+    children: [],
+    ns: 'html',
+    type: 'vcomp',
+    domRef: null,
+    tag: 'div',
+    key: null,
+    events: {},
+    'data-component-id': '',
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
     mount: () => {},
