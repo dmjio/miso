@@ -8,7 +8,8 @@
     "test": "bun test && bun run lcov",
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",
     "watch": "tsc ts/miso.ts --watch",
-    "watch-test": "bun test --watch",
+    "watch-test": "tsc ts/spec/*.ts --watch",
+    "test-runner": "bun test --watch",
     "pretty": "prettier --write ts/miso/*.ts ts/*.ts",
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
     "prod": "bun run build --production"
