@@ -3,7 +3,7 @@ import { delegate, undelegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 import { version, callFocus, callBlur, setBodyComponent } from './miso/util';
 import { VTree, VNode, VText, VComp, Props, CSS, Events, NS, DOMRef, EventCapture, EventObject, Options } from './miso/types';
-import { vtree, vtext } from './miso/smart';
+import { vcomp, vtree, vtext } from './miso/smart';
 
 /* top level re-export */
 export {
@@ -30,7 +30,9 @@ export {
   Props,
   Events,
   NS,
+  DOMRef,
   /* Smart constructors */
   vtree,
   vtext,
+  vcomp,
 };

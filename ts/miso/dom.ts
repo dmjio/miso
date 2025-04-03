@@ -108,7 +108,7 @@ export function populate(c: VTree, n: VTree): void {
 function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean): void {
   var newProp;
   /* Is current prop in new prop list? */
-  for (var c in cProps) {
+  for (const c in cProps) {
     newProp = nProps[c];
     /* If current property no longer exists, remove it */
     if (newProp === undefined) {
@@ -135,7 +135,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean):
     }
   }
   /* add remaining */
-  for (var n in nProps) {
+  for (const n in nProps) {
     if (cProps && cProps[n]) continue;
     newProp = nProps[n];
     /* Only add new properties, skip (continue) if they already exist in current property map */
@@ -154,9 +154,9 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean):
 }
 
 function diffCss(cCss: CSS, nCss: CSS, node: DOMRef): void {
-  var result;
+  var result: string;
   /* is current attribute in new attribute list? */
-  for (var c in cCss) {
+  for (const c in cCss) {
     result = nCss[c];
     if (!result) {
       /* current key is not in node */
@@ -166,7 +166,7 @@ function diffCss(cCss: CSS, nCss: CSS, node: DOMRef): void {
     }
   }
   /* add remaining */
-  for (var n in nCss) {
+  for (const n in nCss) {
     if (cCss && cCss[n]) continue;
     node.style[n] = nCss[n];
   }
@@ -177,7 +177,7 @@ function hasKeys(ns: Array<VTree>, cs: Array<VTree>): boolean {
 }
 
 function diffChildren(cs: Array<VTree>, ns: Array<VTree>, parent: Element): void {
-  var longest: number = ns.length > cs.length ? ns.length : cs.length;
+  const longest: number = ns.length > cs.length ? ns.length : cs.length;
   if (hasKeys(ns, cs)) {
     syncChildren(cs, ns, parent);
   } else {
@@ -206,7 +206,7 @@ function createElement(obj: VTree, cb: (e: Node) => void): void {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent(obj: VTree): void {
-  var componentId = obj['data-component-id'],
+  const componentId = obj['data-component-id'],
     nodeList = document.querySelectorAll("[data-component-id='" + componentId + "']");
   // dmj: bail out if duplicate mounting detected
   if (nodeList.length > 0) {

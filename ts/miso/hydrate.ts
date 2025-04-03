@@ -16,7 +16,7 @@ function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
 
 /* function to determine if <script> tags are present in `body` top-level
    if so we work around them */
-function preamble(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree): Node {
+function preamble(mountPoint: DOMRef | Text): Node {
   var mountChildIdx = 0,
     node: ChildNode;
   if (!mountPoint) {
@@ -46,7 +46,7 @@ function preamble(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree): N
 
 export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree): boolean {
   // If script tags are rendered first in body, skip them.
-  var node: Node = preamble(logLevel, mountPoint, vtree);
+  const node: Node = preamble(mountPoint);
 
   // begin walking the DOM, report the result
   if (!walk(logLevel, vtree, node)) {
@@ -82,8 +82,8 @@ function diagnoseError(logLevel: boolean, vtree: VTree, node: Node): void {
 // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
 function parseColor(input: string): number[] {
   if (input.substr(0, 1) == '#') {
-    var collen = (input.length - 1) / 3;
-    var fact = [17, 1, 0.062272][collen - 1];
+    const collen = (input.length - 1) / 3;
+    const fact = [17, 1, 0.062272][collen - 1];
     return [
       Math.round(parseInt(input.substr(1, collen), 16) * fact),
       Math.round(parseInt(input.substr(1 + collen, collen), 16) * fact),
@@ -137,7 +137,7 @@ function check(result: boolean, vtree: VTree): boolean {
     // properties must be identical
     for (const key in vtree['props']) {
       if (key === 'href') {
-        var absolute = window.location.origin + '/' + vtree['props'][key],
+        const absolute = window.location.origin + '/' + vtree['props'][key],
           url = vtree['domRef'][key],
           relative = vtree['props'][key];
         if (
@@ -213,8 +213,8 @@ function walk(logLevel: boolean, vtree: VTree, node: Node): boolean {
       callCreated(vtree);
 
       for (var i = 0; i < vtree['children'].length; i++) {
-        var vdomChild = vtree['children'][i];
-        var domChild = node.childNodes[i];
+        const vdomChild = vtree['children'][i];
+        const domChild = node.childNodes[i];
         if (!domChild) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;

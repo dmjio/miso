@@ -1,6 +1,6 @@
 /* imports */
 import { diff } from '../miso/dom';
-import { mkVTree, mkVComp, vtree, vcomp, vtext } from '../miso/smart';
+import { mkVComp, vtree, vcomp, vtext } from '../miso/smart';
 import { VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
