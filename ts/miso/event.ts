@@ -81,9 +81,9 @@ function delegateEvent(
       }
     }
   } /* stack.length == 1 */ else {
-    var eventObj: EventObject = obj['events'][event.type];
+    const eventObj: EventObject = obj['events'][event.type];
     if (eventObj) {
-      var options: Options = eventObj['options'];
+      const options: Options = eventObj['options'];
       if (options['preventDefault']) {
         event.preventDefault();
       }
@@ -101,7 +101,7 @@ function delegateEvent(
 function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
   for (const vtree of parentStack) {
     if (vtree['events'][event.type]) {
-      var eventObj = vtree['events'][event.type],
+      const eventObj = vtree['events'][event.type],
         options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
       eventObj['runEvent'](event);

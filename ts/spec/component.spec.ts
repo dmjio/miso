@@ -1,6 +1,6 @@
 /* imports */
 import { diff } from '../miso/dom';
-import { mkVTree, vtree, vtext } from '../miso/smart';
+import { mkVComp, vtree, vcomp, vtext } from '../miso/smart';
 import { VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
@@ -21,9 +21,8 @@ afterEach(() => {
 describe ('Component tests', () => {
   test('Should unmount recursively in order', () => {
     var unmounts = [];
-    var mkVComp = (name, children) => {
-        return vtree ({
-          type: 'vcomp',
+    var build = (name, children) => {
+        return vcomp ({
           children: children,
           'data-component-id': name,
           unmount: () => {
@@ -32,7 +31,7 @@ describe ('Component tests', () => {
       });
     };
 
-    var tree: VTree = mkVComp('one', [mkVComp('two', [mkVComp('three', [])])]);
+    var tree: VTree = build('one', [build('two', [build('three', [])])]);
     diff(null, tree, document.body);
     diff(tree, null, document.body);
     expect(unmounts).toEqual(['one', 'two', 'three']);
@@ -66,7 +65,7 @@ describe ('Component tests', () => {
       type: 'vcomp',
       mount: (cb) => {
         mountCount++;
-        var node = mkVTree();
+        var node = mkVComp();
         diff(null, node, document.body);
         cb(node);
       },
@@ -121,7 +120,7 @@ describe ('Component tests', () => {
 
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = mkVTree();
+    var node = mkVComp();
     diff(null, node, document.body);
 
     // Test node was populated
@@ -218,7 +217,7 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff(component, mkVTree(), document.body);
+    diff(component, mkVComp(), document.body);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
