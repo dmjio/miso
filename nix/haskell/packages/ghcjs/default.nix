@@ -34,25 +34,19 @@ self: super:
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
       cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
-         $out/bin/todo-mvc.jsexe/all.js > temp.js
+      ${pkgs.bun}/bin/bun build --production $out/bin/todo-mvc.jsexe/all.js > temp.js
       mv temp.js $out/bin/todo-mvc.jsexe/all.js
       cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
       cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
       cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
-      '';
+    '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
   miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideDerivation (drv: {
     doHaddock = options.haddock;
     postInstall = pkgs.lib.optionalString options.tests ''
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/tests.jsexe/all.js.externs \
-           $out/bin/tests.jsexe/all.js > temp.js
-           mv temp.js $out/bin/tests.jsexe/all.js
-         '';
+      ${pkgs.bun}/bin/bun build --production $out/bin/tests.jsexe/all.js > temp.js
+      mv temp.js $out/bin/tests.jsexe/all.js
+    '';
   });
 }

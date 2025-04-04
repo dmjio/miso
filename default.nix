@@ -18,14 +18,14 @@ in with pkgs.haskell.lib;
     sdistTarball (buildStrictly miso-examples);
 
   #js
-  miso-ghcjs = pkgs.haskell.packages.ghcjs86.miso;
-  miso-ghcjs-prod = pkgs.haskell.packages.ghcjs86.miso-prod;
-  inherit (pkgs.haskell.packages.ghcjs86) miso-examples sample-app-js;
+  miso-ghcjs = pkgs.haskell.packages.ghcjs810.miso;
+  miso-ghcjs-prod = pkgs.haskell.packages.ghcjs810.miso-prod;
+  inherit (pkgs.haskell.packages.ghcjs810) miso-examples sample-app-js;
   
   #native
-  miso-ghc = pkgs.haskell.packages.ghc865.miso;
-  miso-examples-ghc = pkgs.haskell.packages.ghc865.miso-examples;
-  inherit (pkgs.haskell.packages.ghc865) sample-app;
+  miso-ghc = pkgs.haskell.packages.ghc9121.miso;
+  miso-examples-ghc = pkgs.haskell.packages.ghc9121.miso-examples;
+  inherit (pkgs.haskell.packages.ghc9121) sample-app;
 
   # Miso wasm examples
   # nix-build -A wasmExamples
