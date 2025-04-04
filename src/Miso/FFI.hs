@@ -118,8 +118,11 @@ addEventListener
   -- the event will be passed to it as a parameter.
   -> JSM ()
 addEventListener self name cb = do
-  _ <- self # "addEventListener" $ (name, asyncFunction (\_ _ [a] -> cb a))
+  _ <- self # "addEventListener" $ (name, asyncFunction handle)
   pure ()
+    where
+      handle _ _ []    = error "addEventListener: no args, impossible"
+      handle _ _ (x:_) = cb x
 -----------------------------------------------------------------------------
 -- | Registers an event listener on window
 windowAddEventListener
