@@ -51,6 +51,9 @@ options: self: super: {
       };
     };
   };
+
+  nixops = import ./trunk/nixops { inherit (super) callPackage fetchurl; };
+
   deploy = rev: super.writeScript "deploy" ''
     export PATH=$PATH:${self.nixops}/bin
     export PATH=$PATH:${self.jq}/bin
