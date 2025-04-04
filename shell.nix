@@ -6,6 +6,6 @@ if pkg == "ghcjs"
 then miso-ghcjs.env
 else miso-ghc.env.overrideAttrs (d: {  
   shellHook = ''
-    alias runner="${pkgs.haskell.packages.ghc9121.ghcid}/bin/ghcid -c 'cabal repl'"
+    alias runner="${pkgs.haskell.packages.ghc9101.ghcid}/bin/ghcid -c 'cabal repl'"
   '';
 })

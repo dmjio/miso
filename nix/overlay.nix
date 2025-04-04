@@ -48,7 +48,7 @@ options: self: super: {
 
   haskell = super.haskell // {
     packages = super.haskell.packages // {
-      ghc9121 = super.haskell.packages.ghc9121.override {
+      ghc9101 = super.haskell.packages.ghc9101.override {
         overrides = import ./haskell/packages/ghc self;
       };
       ghcjs810 = super.haskell.packages.ghcjs810.override {
