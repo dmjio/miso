@@ -17,10 +17,12 @@ let
       };
       nix.gc.automatic = true;
       boot.loader.grub.device = pkgs.lib.mkForce "/dev/nvme0n1";
-      networking.firewall = {
-        allowedTCPPorts = [ 80 22 443 ];
-        enable = true;
-        allowPing = true;
+      networking = {
+        firewall = {
+          allowedTCPPorts = [ 80 22 443 ];
+          enable = true;
+          allowPing = true;
+        };
       };
       services.openssh.enable = true;
       deployment = {
@@ -59,6 +61,12 @@ in
 
   inherit awsBox;
 
-  network.enableRollback = false;
-  network.description = "Miso network";
+  network = {
+    storage.legacy = {
+      databasefile = "~/.nixops/deployments.nixops";
+    };
+    enableRollback = false;
+    description = "Miso network";
+  };
+
 }
