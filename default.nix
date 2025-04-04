@@ -72,4 +72,7 @@ in with pkgs.haskell.lib;
 
   # misc. examples
   inherit (pkgs) more-examples;
+
+  # typescript / minifier / bundler
+  inherit (pkgs) bun;
 }

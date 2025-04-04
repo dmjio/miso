@@ -16,6 +16,10 @@ options: self: super: {
       '';
   };
 
+  bun = super.bun.overrideDerivation (drv: {
+    version = "v1.2.8";
+  });
+
   ghciwatch =
     (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
       .outputs.packages."${super.system}".ghciwatch;
