@@ -63,6 +63,8 @@ options: self: super: {
     };
   };
 
+  bun = (import <nixpkgs> {}).bun;
+
   nixops = super.nixops.overrideAttrs (drv: {
     src = builtins.fetchTarball {
       url = "https://nixos.org/releases/nixops/nixops-1.7/nixops-1.7.tar.bz2";
