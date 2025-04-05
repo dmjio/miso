@@ -57,6 +57,10 @@ executable client
     client-only, common-modules
   main-is:
     Main.hs
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
   hs-source-dirs:
     client, shared
   build-depends:

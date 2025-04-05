@@ -81,7 +81,9 @@ executable client
   main-is:
     Main.hs
   ghcjs-options:
-    -dedupe -DGHCJS_GC_INTERVAL=5000
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
   hs-source-dirs:
     client, shared
   other-modules:
