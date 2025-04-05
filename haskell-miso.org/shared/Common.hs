@@ -8,9 +8,6 @@
 
 module Common where
 
-import           Control.Concurrent
-import           Control.Monad
-import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.State
 import           Data.Bool
 import qualified Data.Map.Strict as M
