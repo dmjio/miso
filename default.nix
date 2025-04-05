@@ -23,9 +23,9 @@ in with pkgs.haskell.lib;
   inherit (pkgs.haskell.packages.ghcjs810) miso-examples sample-app-js;
   
   #native
-  miso-ghc = pkgs.haskell.packages.ghc9101.miso;
-  miso-examples-ghc = pkgs.haskell.packages.ghc9101.miso-examples;
-  inherit (pkgs.haskell.packages.ghc9101) sample-app;
+  miso-ghc = pkgs.haskell.packages.ghc982.miso;
+  miso-examples-ghc = pkgs.haskell.packages.ghc982.miso-examples;
+  inherit (pkgs.haskell.packages.ghc982) sample-app;
 
   # Miso wasm examples
   # nix-build -A wasmExamples
