@@ -39,7 +39,7 @@ jobs:
      #   run: bun run lint
 
      - name: Bun build prod
-       run: bun run build && bun run build-prod
+       run: bun run build && bun run prod
 
      - name: (JS) Miso GHCJS
        run: nix-build -A miso-ghcjs
