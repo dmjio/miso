@@ -186,6 +186,7 @@ library
     Miso.WebSocket
   exposed-modules:
     Miso
+    Miso.Lens
     Miso.Svg
     Miso.String
   ghc-options:

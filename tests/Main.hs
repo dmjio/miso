@@ -33,7 +33,7 @@ import           Test.QuickCheck hiding (total)
 import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
 ----------------------------------------------------------------------------
-import           Miso hiding (run)
+import           Miso hiding (run, (.=))
 ----------------------------------------------------------------------------
 instance Arbitrary Value where
   arbitrary = sized sizedArbitraryValue
@@ -127,20 +127,20 @@ runTests t = do
 instance ToJSVal TestResult where
   toJSVal t = do
     o@(OI.Object j) <- OI.create
-    set "passed" (passed t) o
-    set "failed" (failed t) o
-    set "total" (total t) o
-    set "duration" (duration' t) o
-    set "tests" (tests t) o
+    flip (OI.setProp "passed") o =<< toJSVal (passed t)
+    flip (OI.setProp "failed") o =<< toJSVal (failed t)
+    flip (OI.setProp "total") o =<< toJSVal (total t)
+    flip (OI.setProp "duration") o =<< toJSVal (duration' t)
+    flip (OI.setProp "tests") o =<< toJSVal (tests t)
     pure j
 ----------------------------------------------------------------------------
 instance ToJSVal Test where
   toJSVal t = do
     o@(OI.Object j) <- OI.create
-    set "name" (name t) o
-    set "result" (result t) o
-    set "message" (message t) o
-    set "duration" (duration t) o
+    flip (OI.setProp "name") o =<< toJSVal (name t)
+    flip (OI.setProp "result") o =<< toJSVal (result t)
+    flip (OI.setProp "message") o =<< toJSVal (message t)
+    flip (OI.setProp "duration") o =<< toJSVal (duration t)
     pure j
 ----------------------------------------------------------------------------
 it :: String -> IO (Bool, String) -> TestM ()

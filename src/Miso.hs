@@ -72,17 +72,17 @@ import           Miso.Diff (diff, mountElement)
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Exception
+import           Miso.FFI hiding (diff)
 import           Miso.Html
+import           Miso.Internal
+import           Miso.Mathml
 import           Miso.Render
 import           Miso.Router
 import           Miso.Run
-import           Miso.Mathml
+import           Miso.Storage
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
-import           Miso.Storage
-import           Miso.Internal
-import           Miso.FFI hiding (diff)
 -----------------------------------------------------------------------------
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.

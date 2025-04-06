@@ -8,10 +8,17 @@ module Main where
 -- | Miso framework import
 import Miso
 import Miso.String
-import Control.Monad.State
+import Miso.Lens
 
 -- | Type synonym for an application model
-type Model = Int
+newtype Model = Model { _value :: Int }
+  deriving (Show, Eq)
+
+instance ToMisoString Model where
+  toMisoString (Model v) = toMisoString v
+
+value :: Lens Model Int
+value = lens _value $ \m v -> m { _value = v }
 
 -- | Sum type for application events
 data Action
@@ -32,15 +39,15 @@ main = run $ startApp app
 
 -- | Application definition (uses 'defaultApp' smart constructor)
 app :: App Effect Model Action ()
-app = defaultApp 0 updateModel viewModel
+app = defaultApp (Model 0) updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Effect Model Action ()
 updateModel (AddOne event) = do
-  modify (+1)
+  value += 1
   io $ consoleLog (ms (show event))
 updateModel (SubtractOne event) = do
-  modify (subtract 1)
+  value -= 1
   io $ consoleLog (ms (show event))
 updateModel SayHelloWorld =
   io (consoleLog "Hello World!")
