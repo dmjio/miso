@@ -183,11 +183,11 @@ set = (.~)
 -- > \x -> record & field %~ f x
 --
 infixr 4 %~
-(%~) :: Lens record a -> (a -> a) -> record -> record
+(%~) :: Lens record field -> (field -> field) -> record -> record
 (%~) _lens f record = _set _lens record $ f (record ^. _lens)
 ----------------------------------------------------------------------------
 -- | Synonym for (%~)
-over :: Lens record a -> (a -> a) -> record -> record
+over :: Lens record field -> (field -> field) -> record -> record
 over = (%~)
 ----------------------------------------------------------------------------
 -- | Read a field from a record using a @Lens@
@@ -335,7 +335,7 @@ modifying = (%=)
 -- >   io $ consoleLog (ms result)
 --
 infix 4 <%=
-(<%=) :: MonadState record m => Lens record b -> (b -> b) -> m b
+(<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
 l <%= f = do
   l %= f
   use l
@@ -358,7 +358,7 @@ l <%= f = do
 -- >   io $ consoleLog (ms result) -- x
 --
 infix 4 <.=
-(<.=) :: MonadState record m => Lens record b -> b -> m b
+(<.=) :: MonadState record m => Lens record field -> field -> m field
 l <.= b = do
   l .= b
   return b
@@ -381,7 +381,7 @@ l <.= b = do
 -- >   io $ consoleLog (ms result) -- Just 1
 --
 infix 4 <?=
-(<?=) :: MonadState record m => Lens record (Maybe b) -> b -> m b
+(<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
 l <?= b = do
   l .= Just b
   return b
@@ -407,7 +407,7 @@ l <?= b = do
 -- >   io $ consoleLog $ ms (show previousValue) -- prints value at x
 --
 infix 4 <<.=
-(<<.=) :: MonadState record m => Lens record b -> b -> m b
+(<<.=) :: MonadState record m => Lens record field -> field -> m field
 l <<.= b = do
   old <- use l
   l .= b
@@ -433,7 +433,7 @@ l <<.= b = do
 -- >   io $ consoleLog (ms (show result)) -- prints previous value of 2
 --
 infix 4 <<%=
-(<<%=) :: MonadState record m => Lens record b -> (b -> b) -> m b
+(<<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
 l <<%= f = do
   old <- use l
   l %= f
