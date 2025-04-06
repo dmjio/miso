@@ -223,7 +223,7 @@ infixr 4 +~
 -- > expand :: Circle -> Circle
 -- > expand circle = circle & radius *~ 10
 -- >
-infixl 8 *~
+infixr 4 *~
 (*~) :: Num field => Lens record field -> field -> record -> record
 (*~) _lens x record = record & _lens %~ (*x)
 ----------------------------------------------------------------------------
@@ -237,7 +237,7 @@ infixl 8 *~
 -- > expand :: Circle -> Circle
 -- > expand circle = circle & radius *~ 10
 -- >
-infixl 8 //~
+infixr 4 //~
 (//~) :: Fractional field => Lens record field -> field -> record -> record
 (//~) _lens x record = record & _lens %~ (/x)
 ----------------------------------------------------------------------------
@@ -302,7 +302,7 @@ l <~ mb = do
 -- > update AddOne = do
 -- >   value %= (+1)
 -- >
-infixl 4 %=
+infix 4 %=
 (%=) :: MonadState record m => Lens record field -> (field -> field) -> m ()
 (%=) _lens f = modify (\r -> r & _lens %~ f)
 ----------------------------------------------------------------------------
@@ -328,7 +328,7 @@ modifying = (%=)
 -- >   result <- value <%= (+1)
 -- >   io $ consoleLog (ms result)
 -- >
-infixl 8 <%=
+infix 4 <%=
 (<%=) :: MonadState record m => Lens record b -> (b -> b) -> m b
 l <%= f = do
   l %= f
@@ -448,7 +448,7 @@ l <<%= f = do
 -- > update' :: Action -> Effect Model Action ()
 -- > update' (SetValue v) = value .= v
 -- >
-infixl 8 .=
+infix 4 .=
 (.=) :: MonadState record m => Lens record field -> field -> m ()
 (.=) _lens f = modify (\r -> r & _lens .~ f)
 ----------------------------------------------------------------------------
@@ -545,6 +545,7 @@ infix 4 *=
 -- > update :: Action -> Effect Model Action ()
 -- > update (DivideBy x) = value //= x
 -- >
+infix 4 //=
 (//=) :: (MonadState record m, Fractional field)  => Lens record field -> field -> m ()
 (//=) _lens f = modify (\r -> r & _lens %~ (/ f))
 ----------------------------------------------------------------------------
@@ -562,7 +563,7 @@ infix 4 *=
 -- > update :: Action -> Effect Model Action ()
 -- > update (SubtractBy x) = value -= x
 -- >
-infixl 8 -=
+infix 4 -=
 (-=) :: (MonadState record m, Num field) => Lens record field -> field -> m ()
 (-=) _lens f = modify (\r -> r & _lens -~ f)
 ---------------------------------------------------------------------------------
