@@ -8,6 +8,8 @@ module Main where
 -- | Miso framework import
 import Miso
 import Miso.String
+import Miso.Lens
+
 import Control.Monad.State
 
 -- | Type synonym for an application model

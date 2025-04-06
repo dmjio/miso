@@ -165,7 +165,6 @@ library
     Miso.Html.Property
     Miso.Html.Types
     Miso.Internal
-    Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Render
@@ -187,6 +186,7 @@ library
     Miso.WebSocket
   exposed-modules:
     Miso
+    Miso.Lens
     Miso.Svg
     Miso.String
   ghc-options:

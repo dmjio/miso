@@ -32,8 +32,6 @@ module Miso
   , module Miso.Render
     -- * Mathml
   , module Miso.Mathml
-    -- * Lens
-  , module Miso.Lens
     -- * Router
   , module Miso.Router
     -- * Run
@@ -47,6 +45,7 @@ module Miso
     -- * Util
   , module Miso.Util
     -- * FFI
+  , set
   , now
   , consoleLog
   , consoleLog'
@@ -76,7 +75,6 @@ import           Miso.Exception
 import           Miso.FFI hiding (diff)
 import           Miso.Html
 import           Miso.Internal
-import           Miso.Lens
 import           Miso.Mathml
 import           Miso.Render
 import           Miso.Router
