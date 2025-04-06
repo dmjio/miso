@@ -10,6 +10,7 @@
 module Miso.Lens
   ( -- ** Types
     Lens (..)
+  , Lens'
     -- ** Smart constructor
   , lens
     -- ** Utils
@@ -144,6 +145,11 @@ data Lens record field
   , _set :: record -> field -> record
     -- ^ Sets a field on a record
   }
+----------------------------------------------------------------------------
+-- | Type synonym re-export for @lens@ / @microlens@ compatability.
+-- Note: use this if you plan on migrating to lens or microlens eventually.
+-- Just use @Lens@ otherwise (as examples show).
+type Lens' record field = Lens record field
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
