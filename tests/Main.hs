@@ -16,42 +16,26 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
+import           Data.Foldable (toList)
 import           Control.Exception hiding (assert)
 import           Control.Monad
-import           Control.Monad.IO.Class     (liftIO)
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.State
-import           Data.Aeson                 hiding (Result(..))
-import qualified Data.HashMap.Strict        as H
+import           Data.Aeson hiding (Result(..))
 import           Data.Scientific
-import qualified Data.Vector                as V
+import qualified Data.Vector as V
 import           Debug.Trace
-import           GHCJS.Marshal
-import           GHCJS.Types
-import qualified JavaScript.Object.Internal as OI
+import           Language.Javascript.JSaddle hiding (catch, Object(Object))
+import qualified Language.Javascript.JSaddle as J
 import           System.IO.Unsafe
 import           Test.QuickCheck hiding (total)
 import           Test.QuickCheck.Instances
 import           Test.QuickCheck.Monadic
 ----------------------------------------------------------------------------
-import           Miso hiding (run, (.=))
-----------------------------------------------------------------------------
-instance Arbitrary Value where
-  arbitrary = sized sizedArbitraryValue
-----------------------------------------------------------------------------
-sizedArbitraryValue :: Int -> Gen Value
-sizedArbitraryValue n
-  | n <= 0 = oneof [pure Null, bool, number, string]
-  | otherwise = resize n' $ oneof [pure Null, bool, string, number, array, object']
-  where
-    n' = n `div` 2
-    bool = Bool <$> arbitrary
-    number = Number <$> arbitrary
-    string = String <$> arbitrary
-    array = Array <$> arbitrary
-    object' = Object <$> arbitrary
+import           Miso hiding (run)
 ----------------------------------------------------------------------------
 compareValue :: Value -> Value -> Bool
-compareValue (Object x) (Object y) = and $ zipWith compareValue (H.elems x) (H.elems y)
+compareValue (Object x) (Object y) = and $ zipWith compareValue (toList x) (toList y)
 compareValue (Array x) (Array y)   = and $ zipWith compareValue (V.toList x) (V.toList y)
 compareValue (String x) (String y) = x == y
 compareValue (Bool x) (Bool y)     = x == y
@@ -126,21 +110,21 @@ runTests t = do
 ----------------------------------------------------------------------------
 instance ToJSVal TestResult where
   toJSVal t = do
-    o@(OI.Object j) <- OI.create
-    flip (OI.setProp "passed") o =<< toJSVal (passed t)
-    flip (OI.setProp "failed") o =<< toJSVal (failed t)
-    flip (OI.setProp "total") o =<< toJSVal (total t)
-    flip (OI.setProp "duration") o =<< toJSVal (duration' t)
-    flip (OI.setProp "tests") o =<< toJSVal (tests t)
+    o@(J.Object j) <- create
+    set "passed" (passed t) o
+    set "failed" (failed t) o
+    set "total" (total t) o
+    set "duration" (duration' t) o
+    set "tests" (tests t) o
     pure j
 ----------------------------------------------------------------------------
 instance ToJSVal Test where
   toJSVal t = do
-    o@(OI.Object j) <- OI.create
-    flip (OI.setProp "name") o =<< toJSVal (name t)
-    flip (OI.setProp "result") o =<< toJSVal (result t)
-    flip (OI.setProp "message") o =<< toJSVal (message t)
-    flip (OI.setProp "duration") o =<< toJSVal (duration t)
+    o@(J.Object j) <- create
+    set "name" (name t) o
+    set "result" (result t) o
+    set "message" (message t) o
+    set "duration" (duration t) o
     pure j
 ----------------------------------------------------------------------------
 it :: String -> IO (Bool, String) -> TestM ()

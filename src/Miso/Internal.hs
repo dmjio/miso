@@ -284,7 +284,6 @@ runView prerender (Node ns tag key attrs kids) snk logLevel events = do
 runView _ (Text t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
-  FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
 runView prerender (TextRaw str) snk logLevel events =
