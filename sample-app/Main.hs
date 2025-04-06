@@ -8,15 +8,13 @@ module Main where
 import Miso
 import Miso.String
 ----------------------------------------------------------------------------
-import Control.Lens
-----------------------------------------------------------------------------
 -- | Application model state
 data Model
   = Model
   { _counter :: Int
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
-counter :: Lens' Model Int
+counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
 ----------------------------------------------------------------------------
 -- | Sum type for App events

@@ -256,8 +256,7 @@ import Miso
 import Miso.String
 ----------------------------------------------------------------------------
 -- | Application model state
-data Model
-  = Model
+newtype Model = Model
   { _counter :: Int
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
