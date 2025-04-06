@@ -36,10 +36,10 @@ module Miso
   , module Miso.Router
     -- * Run
   , module Miso.Run
+    -- * Lens
+  , module Miso.Lens
     -- * Exception
   , module Miso.Exception
-    -- * Lenses
-  , module Miso.Lens
     -- * Subs
   , module Miso.Subscription
     -- * Storage
