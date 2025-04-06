@@ -133,9 +133,9 @@ import Data.Function ((&))
 -- assignment of values to fields in a record. The power of a @Lens@ comes
 -- from its ability to be composed with other lenses.
 --
--- In the context of building applications with miso, the @model@ portion
--- is often a deeply nested product types and therefore highly amenable
--- to @Lens@ operations as described below.
+-- In the context of building applications with miso, the @model@ is
+-- often a deeply nested product type. This makes it highly conducive
+-- to @Lens@ operations (as defined below).
 --
 data Lens record field
   = Lens
