@@ -6,6 +6,100 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- This modules exposes a very simple 'Lens' formulation that is compatible with other lens libraries.
+--
+-- For state management of miso applications, this module should meet all of your needs. It also
+-- ensures a smaller payload size during compilation.
+--
+-- @
+-- data Lens record field
+--  = Lens
+--  { _get :: record -> field
+--  , _set :: record -> field -> record
+--  }
+-- @
+--
+-- The goal is to provide users with an out-of-the box lens experience without the large
+-- dependency footprint and cognitive load. This module also aims to preserve semantics of
+-- existing lens combinators using a simple formulation (not the Van Laarhoven). It must be imported
+-- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
+-- application (as described below).
+--
+-- This module is at fixity and interface parity with @lens@ and @microlens@ and can therefore
+-- be used interchangeably with them. Simply replace the @Miso.Lens@ import with @Control.Lens@.
+-- For convenience we re-export the 'Lens'' synonym to ease the transition into @lens@ or
+-- @microlens@.
+--
+-- For the curious reader, if you'd like more information on @lens@ and the Van Laarhoven
+-- formulation, we recommend the @lens@ library <https://hackage.haskell.org/package/lens>.
+--
+-- > -- Person type
+-- > data Person = Person
+-- >   { _name :: String
+-- >   , _address :: Address
+-- >   , _age  :: Int
+-- >   } deriving (Show, Eq, Generic)
+--
+-- > -- Address type
+-- > newtype Address
+-- >   = Address
+-- >   { _zipCode :: Zip
+-- >   } deriving (Show, Eq)
+--
+-- > -- | Zip code type synonym
+-- > type Zip = String
+--
+-- > -- | Name Lens
+-- > name :: Lens Person String
+-- > name = lens _name $ \record x -> record { _name = x }
+--
+-- > -- | Address Lens
+-- > address :: Lens Person Address
+-- > address = lens _address $ \record x -> record { _address = x }
+--
+-- > -- | Zip Code Lens
+-- > zipCode :: Lens Address Zip
+-- > zipCode = lens _zipCode $ \record x -> record { _zipCode = x }
+--
+-- > -- | Lens Composition example
+-- > personZip :: Lens Person Zip
+-- > personZip = zipCode . address
+--
+-- > -- | Person example
+-- > person :: Person
+-- > person = Person "john" (Address "90210") 33
+--
+-- > main :: IO ()
+-- > main = print $ john '&' address '.~' Address "10012"
+--
+-- > {--
+-- > Person
+-- >  { _name = "john"
+-- >  , _age = 33
+-- >  , _address = Address {_zipCode = "10012"}
+-- >  }
+-- > -- }
+--
+-- Example usage with miso's @Effect@ @Monad@
+--
+-- > newtype Model = Model { _value :: Int }
+--
+-- > value :: Lens Model Int
+-- > value = lens _value $ \model v -> model { _value = v }
+--
+-- > data Action = AddOne | SubtractOne | SayHelloWorld
+--
+-- > updateModel :: Action -> Effect Model Action ()
+-- > updateModel (AddOne event) = do
+-- >   value += 1
+-- >   io $ consoleLog (ms (show event))
+-- > updateModel (SubtractOne event) = do
+-- >   value -= 1
+-- >   io $ consoleLog (ms (show event))
+-- > updateModel SayHelloWorld =
+-- >   io (consoleLog "Hello World!")
+--
 ----------------------------------------------------------------------------
 module Miso.Lens
   ( -- ** Types
@@ -50,83 +144,6 @@ import Control.Monad.State (MonadState, modify, get)
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
 import Data.Function ((&))
-----------------------------------------------------------------------------
--- |
--- Exposes a simple @Lens@ abstraction that is compatible with other lens libraries.
--- This provides users an out-of-the box lens experience w/o the large dependency
--- footprint and cognitive load. Includes support for @MonadState@ so combinators
--- can be used with @Effect@. Example usage below.
---
--- This library is at fixity and interface parity with lens and microlens
--- and can therefore be used interchangeably with them.
---
--- > -- Person type
--- > data Person = Person
--- >   { _name :: String
--- >   , _address :: Address
--- >   , _age  :: Int
--- >   } deriving (Show, Eq, Generic)
---
--- > -- Address type
--- > newtype Address
--- >   = Address
--- >   { _zipCode :: Zip
--- >   } deriving (Show, Eq)
---
--- > -- | Zip code type synonym
--- > type Zip = String
---
--- > -- | Name Lens
--- > name :: Lens Person String
--- > name = lens _name $ \record x -> record { _name = x }
---
--- > -- | Address Lens
--- > address :: Lens Person Address
--- > address = lens _address $ \record x -> record { _address = x }
---
--- > -- | Zip Code Lens
--- > zipCode :: Lens Address Zip
--- > zipCode = lens _zipCode $ \record x -> record { _zipCode = x }
---
--- > -- | Lens Composition example
--- > personZip :: Lens Person Zip
--- > personZip = zipCode . address
---
--- > -- | Person example
--- > person :: Person
--- > person = Person "john" (Address "90210") 33
---
--- > main :: IO ()
--- > main = do
--- >   print $ john & address .~ Address "10012"
--- >   print $ john & zipCode . address %~ (++"!")
--- >   print $ john ^. address
---
--- > -- Person
--- > --  { _name = "john"
--- > --  , _age = 33
--- > --  , _address = Address {_zipCode = "10012"}
--- > --  }
---
--- > -- Example usage in miso's @Effect@ @Monad@
---
--- > newtype Model = Model { _value :: Int }
---
--- > value :: Lens Model Int
--- > value = lens _value $ \model v -> model { _value = v }
---
--- > data Action = AddOne | SubtractOne | SayHelloWorld
---
--- > updateModel :: Action -> Effect Model Action ()
--- > updateModel (AddOne event) = do
--- >   value += 1
--- >   io $ consoleLog (ms (show event))
--- > updateModel (SubtractOne event) = do
--- >   value -= 1
--- >   io $ consoleLog (ms (show event))
--- > updateModel SayHelloWorld =
--- >   io (consoleLog "Hello World!")
---
 ----------------------------------------------------------------------------
 -- | A @Lens@ is a generalized getter and setter.
 --
@@ -420,12 +437,12 @@ l <<.= b = do
 --
 -- > newtype Model = Model { _value :: Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = Modify (Int -> Int)
--- 
+--
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (Modify f) = do
 -- >   value .= 2
@@ -445,12 +462,12 @@ l <<%= f = do
 --
 -- > newtype Model = Model { _value :: Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = SetValue Int
--- 
+--
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update' :: Action -> Effect Model Action ()
 -- > update' (SetValue v) = value .= v
 --
@@ -468,12 +485,12 @@ assign = (.=)
 --
 -- > newtype Model = Model { _value :: Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = SetValue Int
--- 
+--
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (SetValue x) = do
 -- >   value .= x
@@ -488,12 +505,12 @@ use _lens = (^. _lens) <$> get
 --
 -- > newtype Model = Model { _value :: Maybe Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = AssignValue Int
--- 
+--
 -- > value :: Lens Model (Maybe Int)
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (AssignValue x) = value ?= x
 --
@@ -506,12 +523,12 @@ infix 4 ?=
 --
 -- > newtype Model = Model { _value :: Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = IncrementBy Int
--- 
+--
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (IncrementBy x) = value += x
 --
@@ -524,12 +541,12 @@ infix 4 +=
 --
 -- > newtype Model = Model { _value :: Int }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = MultiplyBy Int
--- 
+--
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (MultiplyBy x) = value *= x
 --
@@ -542,12 +559,12 @@ infix 4 *=
 --
 -- > newtype Model = Model { _value :: Double }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = DivideBy Double
--- 
+--
 -- > value :: Lens Model Double
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (DivideBy x) = value //= x
 --
@@ -560,12 +577,12 @@ infix 4 //=
 --
 -- > newtype Model = Model { _value :: Double }
 -- >   deriving (Show, Eq)
--- 
+--
 -- > data Action = SubtractBy Double
 --
 -- > value :: Lens Model Double
 -- > value = lens _value $ \p x -> p { _value = x }
--- 
+--
 -- > update :: Action -> Effect Model Action ()
 -- > update (SubtractBy x) = value -= x
 --
