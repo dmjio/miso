@@ -45,17 +45,16 @@ module Miso.Lens
   , (<>~)
   ) where
 ----------------------------------------------------------------------------
-import Control.Monad.State
-import Data.Function ((&))
+import Control.Monad.State (MonadState, modify, get)
+import Control.Category (Category (..))
 import Control.Arrow ((<<<))
-import Prelude hiding ((.), id)
-import Control.Category
+import Data.Function ((&))
 ----------------------------------------------------------------------------
 -- |
 -- Exposes a simple @Lens@ abstraction that is compatible with other lens libraries.
--- This provides users an out-of-the box lens experience w/o breaking the bank of
--- dependency footprint and cognitive load. Includes support for @MonadState@ so
--- it can be used with @Effect@. Example usage below.
+-- This provides users an out-of-the box lens experience w/o the large dependency
+-- footprint and cognitive load. Includes support for @MonadState@ so combinators
+-- can be used with @Effect@. Example usage below.
 --
 -- This library is at fixity and interface parity with lens and microlens
 -- and can therefore be used interchangeably with them.
@@ -272,8 +271,8 @@ infixr 4 <>~
 (<>~) :: Monoid field => Lens record field -> field -> record -> record
 (<>~) _lens x record = record & _lens %~ (<> x)
 ----------------------------------------------------------------------------
--- | Execute a monadic action that returns a field. Set the
--- return value equal to the field in the record of the monadic state.
+-- | Execute a monadic action in @MonadState@ that returns a field. Sets the
+-- return value equal to the field in the record.
 -- >
 -- > newtype List = List { _values :: [Int] }
 -- >
@@ -289,7 +288,7 @@ l <~ mb = do
   b <- mb
   l .= b
 ----------------------------------------------------------------------------
--- | Modify a record in a State monad at a field using a @Lens@
+-- | Modify a record in @MonadState@ monad at a field using a @Lens@
 -- >
 -- > newtype Model = Model { _value :: Int }
 -- >
@@ -310,7 +309,7 @@ infix 4 %=
 modifying :: MonadState record m => Lens record field -> (field -> field) -> m ()
 modifying = (%=)
 ----------------------------------------------------------------------------
--- | Modify the field of a record in a @State@ monad using a @Lens@, then
+-- | Modify the field of a record in @MonadState@ using a @Lens@, then
 -- return the newly modified field from the updated record.
 -- >
 -- > import Miso.String (ms)
@@ -334,7 +333,7 @@ l <%= f = do
   l %= f
   use l
 ----------------------------------------------------------------------------
--- | Assign the field of a record in a @State@ monad to a value using a @Lens@
+-- | Assign the field of a record in @MonadState@ to a value using a @Lens@
 -- Return the value after assignment.
 -- >
 -- > import Miso.String (ms)
@@ -407,7 +406,7 @@ l <<.= b = do
   l .= b
   return old
 ----------------------------------------------------------------------------
--- | Modifies the field of a record in a @State@ monad using a @Lens@.
+-- | Modifies the field of a record in @MonadState@ using a @Lens@.
 -- Returns the /previous/ value, before modification.
 -- >
 -- > import Miso.String (ms)
@@ -433,7 +432,7 @@ l <<%= f = do
   l %= f
   return old
 ----------------------------------------------------------------------------
--- | Sets the value of a field in a record using a State Monad and a @Lens@
+-- | Sets the value of a field in a record using @MonadState@ and a @Lens@
 -- >
 -- > import Miso.String (ms)
 -- >
@@ -456,7 +455,7 @@ infix 4 .=
 assign :: MonadState record m => Lens record field -> field -> m ()
 assign = (.=)
 ----------------------------------------------------------------------------
--- | Retrieves the value of a field in a record using a @Lens@ inside a @State@ Monad
+-- | Retrieves the value of a field in a record using a @Lens@ inside @MonadState@
 -- >
 -- > import Miso.String (ms)
 -- >
@@ -468,7 +467,7 @@ assign = (.=)
 -- > value :: Lens Model Int
 -- > value = lens _value $ \p x -> p { _value = x }
 -- > 
--- > update :: NoOp -> Effect Model Action ()
+-- > update :: Action -> Effect Model Action ()
 -- > update (SetValue x) = do
 -- >   value .= x
 -- >   result <- use value

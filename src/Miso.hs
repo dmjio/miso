@@ -32,12 +32,12 @@ module Miso
   , module Miso.Render
     -- * Mathml
   , module Miso.Mathml
+    -- * Lens
+  , module Miso.Lens
     -- * Router
   , module Miso.Router
     -- * Run
   , module Miso.Run
-    -- * Lens
-  , module Miso.Lens
     -- * Exception
   , module Miso.Exception
     -- * Subs
