@@ -41,7 +41,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${pkgs.coverage}/report";
+            root = "${coverage}/report";
            };
          };
        };
@@ -59,7 +59,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${pkgs.more-examples.flatris}/bin/app.jsexe";
+            root = "${more-examples.flatris}/bin/app.jsexe";
            };
          };
        };
@@ -68,7 +68,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = pkgs.more-examples.miso-plane;
+            root = more-examples.miso-plane;
            };
          };
        };
@@ -77,7 +77,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = pkgs.more-examples.the2048;
+            root = more-examples.the2048;
            };
          };
        };
@@ -95,7 +95,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${pkgs.more-examples.snake}/bin/app.jsexe";
+            root = "${more-examples.snake}/bin/app.jsexe";
            };
          };
        };

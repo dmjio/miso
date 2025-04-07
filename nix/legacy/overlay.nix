@@ -33,13 +33,27 @@ options: self: super: {
 
   haskell-miso-org-test = self.nixosTest {
     nodes.machine = { config, pkgs, ... }: {
-      imports = [ ../../haskell-miso.org/nix/machine.nix ];
+      imports = [ ../../haskell-miso.org/nix/machine.nix
+                ];
     };
     testScript = {nodes, ...}:
       ''
       startAll;
       $machine->waitForUnit("haskell-miso.service");
       $machine->succeed("curl localhost:3002");
+      '';
+  };
+
+  nginx-nixos-test = self.nixosTest {
+    nodes.machine = { config, pkgs, ... }: {
+      imports = [ ../../haskell-miso.org/nix/nginx.nix
+                ];
+    };
+    testScript = {nodes, ...}:
+      ''
+      startAll;
+      $machine->waitForUnit("nginx.service");
+      $machine->succeed("curl localhost:80");
       '';
   };
 
