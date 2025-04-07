@@ -1,6 +1,6 @@
 pkgs:
 let
-  source = import ../source.nix pkgs;
+  source = import ../../../source.nix pkgs;
 in
 with pkgs.haskell.lib;
 self: super:

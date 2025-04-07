@@ -26,23 +26,24 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+
      - name: Nix channel update
        run: nix-channel --update
 
      - name: Bun install
-       run: nix-env -iA bun -f '<nixpkgs>' && bun install
+       run: nix-build -A bun && nix-env -i ./result
 
      - name: Miso.ts tests
        run: bun run test
 
-     # - name: Miso.ts linting
-     #   run: bun run lint
-
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     - name: (JS) Miso GHCJS
+     - name: (JS) Miso GHCJS (GHC-8.6)
        run: nix-build -A miso-ghcjs
+
+     - name: (JS) Miso GHCJS (GHC-9.12.2)
+       run: nix-build -A miso-ghcjs-9122
 
      - name: (JS) Miso GHCJS Production
        run: nix-build -A miso-ghcjs-prod
@@ -99,16 +100,22 @@ jobs:
        with:
          name: miso-haskell
          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+
      - name: Nix channel update
        run: nix-channel --update
+
      - name: Bun install
-       run: nix-env -iA bun -f '<nixpkgs>' && bun install
+       run: nix-build -A bun && nix-env -i ./result
+
      - name: Bun build
        run: bun run build
+
      - name: Build
        run: nix-build -A miso-ghcjs
+
      - name: Miso.ts test coverage
        run: bun run test
+
      - name: Deploy
        run: nix-build -A deploy -j1 && ./result
        env:

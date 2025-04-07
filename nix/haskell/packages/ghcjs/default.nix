@@ -1,14 +1,13 @@
 pkgs:
 let
-  source = import ../source.nix pkgs;
+  source = import ../../../source.nix pkgs;
 in
 with pkgs.haskell.lib;
 with pkgs.lib;
 self: super:
 {
   /* miso */
-  miso = (self.callCabal2nixWithOptions "miso" source.miso "-ftests" {}).overrideAttrs
-    (drv: { doHaddock = true; });
+  miso = doHaddock (self.callCabal2nix "miso" source.miso {});
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};

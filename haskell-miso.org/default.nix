@@ -1,10 +1,10 @@
 {}:
 with (import ../default.nix {});
 let
-  src = import ../nix/haskell/packages/source.nix pkgs;
+  src = import ../nix/source.nix pkgs;
   inherit (pkgs) runCommand closurecompiler;
-  ghc = pkgs.haskell.packages.ghc9122;
-  ghcjs = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122;
+  ghc = legacyPkgs.haskell.packages.ghc865;
+  ghcjs = legacyPkgs.haskell.packages.ghcjs;
   client = ghcjs.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
   server = ghc.callCabal2nix "haskell-miso" (src.haskell-miso-src) {};
   dev = ghc.callCabal2nixWithOptions "haskell-miso" (src.haskell-miso-src) "-fdev" {};
@@ -15,7 +15,11 @@ in
   haskell-miso-runner = 
     runCommand "haskell-miso.org" { inherit client server; } ''
       mkdir -p $out/{bin,static}
-      cp -v ${server}/bin/* $out/bin
-      cp -v ${client}/bin/client.jsexe/all.js $out/static/all.js
+      cp ${server}/bin/* $out/bin
+      ${closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+        --jscomp_off=checkVars \
+        --externs=${client}/bin/client.jsexe/all.js.externs \
+        ${client}/bin/client.jsexe/all.js > temp.js
+      mv temp.js $out/static/all.js
     '';
 }
