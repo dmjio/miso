@@ -2,9 +2,10 @@
 with (import ../.. {});
 let
   inherit (pkgs) runCommand closurecompiler;
-  inherit (pkgs.haskell.packages) ghcjs86 ghc865;
-  client = ghcjs86.callCabal2nix "sse" ./. {};
-  server = ghc865.callCabal2nix "sse" ./. {};
+  ghc = legacyPkgs.haskell.packages.ghc865;
+  ghcjs = legacyPkgs.haskell.packages.ghcjs;
+  client = ghcjs.callCabal2nix "sse" ./. {};
+  server = ghc.callCabal2nix "sse" ./. {};
 in
 {
   sse-runner = runCommand "sse.haskell-miso.org" { inherit client server; } ''

@@ -45,6 +45,10 @@ self: super:
         src = self.wasmHelloWorld;
       };
 
+  # nix-build -A wasmExamples
+  #   && ./result/bin/build.sh
+  #   && nix-build -A svgWasm
+  #   && http-server ./result/svg.wasmexe
   svgWasm =
     self.wasmPkgExample {
        name = "svg";

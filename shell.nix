@@ -4,8 +4,8 @@ with (import ./default.nix {});
 
 if pkg == "ghcjs"
 then miso-ghcjs.env
-else miso-ghc.env.overrideAttrs (d: {  
+else miso-ghc-9122.env.overrideAttrs (d: {
   shellHook = ''
-    alias runner="${pkgs.haskell.packages.ghc865.ghcid}/bin/ghcid -c 'cabal repl'"
+    alias runner="${legacyPkgs.haskell.packages.ghc865.ghcid}/bin/ghcid -c 'cabal repl'"
   '';
 })

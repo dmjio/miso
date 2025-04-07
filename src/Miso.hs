@@ -61,7 +61,7 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef)
-import           Language.Javascript.JSaddle (Object(Object), JSM)
+import           Language.Javascript.JSaddle (Object(Object))
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)
 import           Language.Javascript.JSaddle (eval)
