@@ -33,11 +33,13 @@ with pkgs.haskell.lib;
   miso-examples-ghc = legacyPkgs.haskell.packages.ghc865.miso-examples;
   miso-examples-ghc-9122 = pkgs.haskell.packages.ghc9122.miso-examples;
 
+  # sample app legacy build
   inherit (legacyPkgs.haskell.packages.ghc865)
     sample-app;
 
-  inherit (pkgs.haskell.packages.ghc9122)
-    sample-app-ghc9122;
+  # sample app
+  sample-app-ghc9122 =
+    pkgs.haskell.packages.ghc9122.sample-app;
 
   # Miso wasm examples
   inherit (pkgs)
