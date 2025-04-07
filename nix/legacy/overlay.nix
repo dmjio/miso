@@ -44,7 +44,7 @@ options: self: super: {
       '';
   };
 
-  hosted-check = self.nixosTest {
+  nginx-nixos-test = self.nixosTest {
     nodes.machine = { config, pkgs, ... }: {
       imports = [ ../../haskell-miso.org/nix/nginx.nix
                 ];
