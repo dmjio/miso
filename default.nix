@@ -90,6 +90,11 @@ with pkgs.haskell.lib;
   inherit (legacyPkgs)
     more-examples;
 
+  # dmj: make a NixOS test to ensure examples can be hosted
+  # dry-running this ensures we catch the failure before deploy
+  inherit (legacyPkgs)
+    hosted-check;
+
   # bun
   inherit (pkgs)
     bun;

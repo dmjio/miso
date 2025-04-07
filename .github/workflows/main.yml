@@ -102,6 +102,9 @@ jobs:
      - name: (x86) NixOS test runner for haskell-miso.org
        run: nix-build -A haskell-miso-org-test
 
+     - name: (x86) Nginx example hosting check
+       run: nix-build -A hosted-check --dry-run
+
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
