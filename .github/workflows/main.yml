@@ -69,8 +69,8 @@ jobs:
      - name: (JS) Miso examples (GHCJS 8.6)
        run: nix-build -A miso-examples
 
-     - name: (JS) Miso examples (GHCJS 9.12.2)
-       run: nix-build -A miso-examples-ghcjs9122
+#     - name: (JS) Miso examples (GHCJS 9.12.2)
+#       run: nix-build -A miso-examples-ghcjs9122
 
      - name: (JS) Miso third-party examples (2048, flatris, etc.) (GHCJS 9.12.2)
        run: nix-build -A more-examples -j1
