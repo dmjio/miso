@@ -39,43 +39,58 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
-     - name: (JS) Miso GHCJS (GHC-8.6)
+     - name: (JS) Miso GHCJS (GHCJS 8.6)
        run: nix-build -A miso-ghcjs
 
-     - name: (JS) Miso GHCJS (GHC-9.12.2)
+     - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
 
      - name: (JS) Miso GHCJS Production
        run: nix-build -A miso-ghcjs-prod
 
-     - name: (x86) Miso GHC
+     - name: (x86) Miso GHC (GHC 8.6.5)
        run: nix-build -A miso-ghc
 
-     - name: (x86) Haskell-miso.org server
+     - name: (x86) Miso GHC (GHC 9.12.2)
+       run: nix-build -A miso-ghc-9122
+
+     - name: (x86) Haskell-miso.org server (GHC 8.6.5)
        run: nix-build -A haskell-miso-server
 
-     - name: (JS) Haskell-miso.org client
+     - name: (JS) Haskell-miso.org client (GHCJS 8.6)
        run: nix-build -A haskell-miso-client
 
-     - name: (x86) sse.haskell-miso.org server
+     - name: (x86) sse.haskell-miso.org server (GHC 8.6.5)
        run: nix-build -A sse-server
 
-     - name: (JS) sse.haskell-miso.org client
+     - name: (JS) sse.haskell-miso.org client (GHCJS 8.6)
        run: nix-build -A sse-client
 
-     - name: (JS) Miso examples
+     - name: (JS) Miso examples (GHCJS 8.6)
        run: nix-build -A miso-examples
 
-     - name: (JS) Miso third-party examples (2048, flatris, etc.)
+     - name: (JS) Miso examples (GHCJS 9.12.2)
+       run: nix-build -A miso-examples-ghcjs9122
+
+     - name: (JS) Miso third-party examples (2048, flatris, etc.) (GHCJS 9.12.2)
        run: nix-build -A more-examples -j1
 
-     - name: (x86) Miso examples
+     - name: (x86) Miso examples (GHC 8.6.5)
        run: nix-build -A miso-examples-ghc
 
-     - name: (JS) Miso sample app
+     - name: (x86) Miso examples (GHC 9.12.2)
+       run: nix-build -A miso-examples-ghc9122
+
+     - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
 
-     - name: (x86) Miso sample app jsaddle
+     - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
+       run: nix-build -A sample-app
+
+     - name: (JS) Miso sample app (GHCJS 9.12.2)
+       run: nix-build -A sample-app-js
+
+     - name: (x86) Miso sample app jsaddle (GHC 9.12.2)
        run: nix-build -A sample-app
 
      - name: (WASM) Miso examples
