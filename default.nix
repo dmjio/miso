@@ -8,12 +8,12 @@ with pkgs.haskell.lib;
 
   # hackage release
   release =
-    with legacyPkgs.haskell.packages.ghcjs;
+    with pkgs.haskell.packages.ghc9122;
     sdistTarball (buildStrictly miso);
 
   # hackage release examples
   release-examples =
-    with legacyPkgs.haskell.packages.ghcjs;
+    with pkgs.haskell.packages.ghc9122;
     sdistTarball (buildStrictly miso-examples);
 
   # ghcjs9122
