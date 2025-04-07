@@ -31,7 +31,7 @@ jobs:
        run: nix-channel --update
 
      - name: Bun install
-       run: nix-build -A bun && nix-env -i ./result
+       run: nix-env -iA bun -f '<nixpkgs>'
 
      - name: Miso.ts tests
        run: bun run test
@@ -120,7 +120,7 @@ jobs:
        run: nix-channel --update
 
      - name: Bun install
-       run: nix-build -A bun && nix-env -i ./result
+       run: nix-env -iA bun -f '<nixpkgs>'
 
      - name: Bun build
        run: bun run build
