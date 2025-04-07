@@ -7,7 +7,7 @@ with pkgs.lib;
 self: super:
 {
   /* miso */
-  miso = doHaddock (self.callCabal2nix "miso" source.miso {});
+  miso = self.callCabal2nix "miso" source.miso {};
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
