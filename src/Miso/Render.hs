@@ -120,7 +120,7 @@ renderAttrs (Property key value) =
   , stringUtf8 "\""
   ]
 renderAttrs (Event _) = mempty
-renderAttrs (Style style) =
+renderAttrs (Styles styles) =
   mconcat
   [ "style"
   , stringUtf8 "=\""
@@ -131,7 +131,7 @@ renderAttrs (Style style) =
       , fromMisoString v
       , charUtf8 ';'
       ]
-    | (k,v) <- M.toList style
+    | (k,v) <- M.toList styles
     ]
   , stringUtf8 "\""
   ]

@@ -24,6 +24,7 @@ module Miso.Types
   , Key              (..)
   , Attribute        (..)
   , NS               (..)
+  , CSS              (..)
   , LogLevel         (..)
   , Component        (..)
   , SomeComponent    (..)
@@ -67,6 +68,10 @@ data App effect model action a = App
   , events :: M.Map MisoString Bool
   -- ^ List of delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
+  , styles :: [CSS]
+  -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
+  -- These styles are appended dynamically to the <head> section of your HTML page
+  -- before the initial draw on <body> occurs.
   , initialAction :: Maybe action
   -- ^ Initial action that is run after the application has loaded, optional since *1.9*
   , mountPoint :: Maybe MisoString
@@ -78,6 +83,17 @@ data App effect model action a = App
   -- ^ natural transformation to allow others to use their own
   -- custom Monad stack.
   }
+-----------------------------------------------------------------------------
+-- | Allow users to express CSS and append it to <head> before the first draw
+--
+-- > Href "http://domain.com/style.css
+--
+data CSS
+  = Href MisoString
+  -- ^ 'Href' is a URL meant to link to hosted CSS
+  | Style MisoString
+  -- ^ 'Style' is meant to be raw CSS in a 'style_' tag
+  deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
 getMountPoint :: Maybe MisoString -> MisoString
@@ -95,6 +111,7 @@ defaultApp m u v = App
   , view = v
   , subs = []
   , events = defaultEvents
+  , styles = []
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
@@ -252,7 +269,7 @@ instance ToKey Word where toKey = Key . toMisoString
 data Attribute action
   = Property MisoString Value
   | Event (Sink action -> Object -> LogLevel -> Events -> JSM ())
-  | Style (M.Map MisoString MisoString)
+  | Styles (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | @IsString@ instance

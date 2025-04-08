@@ -94,6 +94,7 @@ miso :: Eq model => (URI -> App effect model action a) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getCurrentURI
   initialize app $ \snk -> do
+    renderStyles styles
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     setBodyComponent name
@@ -107,6 +108,7 @@ miso f = withJS $ do
 startApp :: Eq model => App effect model action a -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
+    renderStyles styles
     vtree <- runView DontPrerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     setBodyComponent name
