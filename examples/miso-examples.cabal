@@ -127,7 +127,7 @@ executable threejs
 
 executable file-reader
   import:
-    common-options, js-only
+    common-options
   default-language:
     Haskell2010
   main-is:
@@ -142,7 +142,7 @@ executable file-reader
     aeson,
     base < 5,
     containers,
-    ghcjs-base,
+    jsaddle,
     miso,
     mtl
 

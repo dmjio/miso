@@ -58,6 +58,9 @@ module Miso
   , reload
   , addStyle
   , addStyleSheet
+  , syncCallback
+  , syncCallback1
+  , asyncCallback
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
