@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect
@@ -36,8 +37,10 @@ module Miso.Effect
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (forM_)
+#if __GLASGOW_HASKELL__ <= 881
 import           Control.Monad.Fail (MonadFail, fail)
 import qualified Control.Monad.Fail as Fail
+#endif
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
 import           Control.Monad.State (MonadState, put)
@@ -136,7 +139,11 @@ newtype Effect model action a = Effect (StateT model (Writer [Sub action]) a)
 instance MonadFail (Effect model action) where
   fail s = do
     io $ consoleError (ms s)
+#if __GLASGOW_HASKELL__ <= 881
     Fail.fail s
+#else
+    fail s
+#endif
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an 'Effect'
 runEffect
@@ -177,7 +184,7 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -- which introduces a leaky-abstraction.
 scheduleSub :: Sub action -> Effect model action ()
 scheduleSub sub = Effect $ lift $ tell [ sub ]
------------------------------------------------------------------------------ 
+-----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --
 -- > update :: Action -> Effect Model Action ()
