@@ -73,13 +73,11 @@
 -- > main :: IO ()
 -- > main = print $ john '&' address '.~' Address "10012"
 --
--- > {--
 -- > Person
 -- >  { _name = "john"
 -- >  , _age = 33
 -- >  , _address = Address {_zipCode = "10012"}
 -- >  }
--- > -- }
 --
 -- Example usage with miso's @Effect@ @Monad@
 --
@@ -88,17 +86,11 @@
 -- > value :: Lens Model Int
 -- > value = lens _value $ \model v -> model { _value = v }
 --
--- > data Action = AddOne | SubtractOne | SayHelloWorld
+-- > data Action = AddOne | SubtractOne
 --
 -- > updateModel :: Action -> Effect Model Action ()
--- > updateModel (AddOne event) = do
--- >   value += 1
--- >   io $ consoleLog (ms (show event))
--- > updateModel (SubtractOne event) = do
--- >   value -= 1
--- >   io $ consoleLog (ms (show event))
--- > updateModel SayHelloWorld =
--- >   io (consoleLog "Hello World!")
+-- > updateModel AddOne      = value += 1
+-- > updateModel SubtractOne = value -= 1
 --
 ----------------------------------------------------------------------------
 module Miso.Lens
