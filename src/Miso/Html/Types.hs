@@ -90,5 +90,5 @@ prop k v = Property k (toJSON v)
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
 style_ :: Map MisoString MisoString -> Attribute action
-style_ = Style
+style_ = Styles
 -----------------------------------------------------------------------------

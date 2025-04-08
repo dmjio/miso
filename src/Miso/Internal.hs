@@ -24,6 +24,7 @@ module Miso.Internal
   , notify
   , runView
   , sample
+  , renderStyles
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
@@ -330,7 +331,7 @@ setAttrs vnode attrs snk logLevel events =
       o <- getProp "props" vnode
       FFI.set k value (Object o)
     Event attr -> attr snk vnode logLevel events
-    Style styles -> do
+    Styles styles -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do
         FFI.set k v (Object cssObj)
@@ -369,4 +370,11 @@ registerComponent componentState = liftIO
 -- | Millisecond helper, converts microseconds to milliseconds
 millis :: Int -> Int
 millis = (*1000)
+-----------------------------------------------------------------------------
+-- | Registers components in the global state
+renderStyles :: [CSS] -> JSM ()
+renderStyles styles =
+  forM_ styles $ \case
+    Href url -> FFI.addStyleSheet url
+    Style css -> FFI.addStyle css
 -----------------------------------------------------------------------------

@@ -93,6 +93,10 @@ main :: IO ()
 main = run $ startApp app
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
+  , styles =
+      [ Href "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
+      , Href "https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
+      ]
   }
 
 app :: App Effect Model Msg ()
@@ -100,13 +104,8 @@ app = defaultApp emptyModel updateModel viewModel
 
 updateModel :: Msg -> Effect Model Msg ()
 updateModel NoOp = pure ()
-updateModel FocusOnInput = do
-  io $ do
-    focus "input-box"
-#ifdef NATIVE
-    addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
-    addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
-#endif
+updateModel FocusOnInput =
+  io (focus "input-box")
 updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
 updateModel Add = do
     model@Model{..} <- get
