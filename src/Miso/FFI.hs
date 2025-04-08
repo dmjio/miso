@@ -50,6 +50,8 @@ module Miso.FFI
    , reload
    , getComponent
    , setBodyComponent
+   , addStyle
+   , addStyleSheet
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -370,4 +372,32 @@ setBodyComponent name = do
   component <- toJSVal name
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "setBodyComponent" $ [component]
+-----------------------------------------------------------------------------
+-- | Appends a 'style_' element containing CSS to 'head_'
+--
+-- > addCssStyle "body { background-color: green; }"
+--
+-- > <head><style>body { background-color: green; }</style></head>
+--
+addStyle :: MisoString -> JSM ()
+addStyle css = do
+  style <- jsg "document" # "createElement" $ ["style"]
+  (style <# "innerHTML") css
+  void $ jsg "document" ! "head" # "appendChild" $ [style]
+-----------------------------------------------------------------------------
+-- | Appends a StyleSheet 'link_' element to 'head_'
+-- The 'link_' tag will contain a URL to a CSS file.
+--
+-- *<link href="https://domain.com/style.css" rel="stylesheet" />*
+--
+-- > addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
+--
+-- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
+--
+addStyleSheet :: MisoString -> JSM ()
+addStyleSheet url = do
+  link <- jsg "document" # "createElement" $ ["link"]
+  _ <- link # "setAttribute" $ ["rel","stylesheet"]
+  _ <- link # "setAttribute" $ ["href", fromMisoString url]
+  void $ jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------

@@ -56,6 +56,8 @@ module Miso
   , blur
   , alert
   , reload
+  , addStyle
+  , addStyleSheet
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
