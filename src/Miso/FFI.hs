@@ -64,7 +64,7 @@ import           Language.Javascript.JSaddle
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
------------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- | Run given `JSM` action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
