@@ -20,10 +20,11 @@ let
     };
 in
 {
+  sse              = make-src-filter ../examples/sse;
   miso             = make-src-filter ../.;
   examples         = make-src-filter ../examples;
   sample-app       = make-src-filter ../sample-app;
-  haskell-miso-src = make-src-filter ../haskell-miso.org;
+  haskell-miso     = make-src-filter ../haskell-miso.org;
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-from-html";
