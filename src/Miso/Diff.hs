@@ -17,8 +17,9 @@ module Miso.Diff
 import           GHCJS.Foreign.Internal hiding (Object)
 import           GHCJS.Types
 import           JavaScript.Object.Internal
-import qualified Miso.FFI as FFI
-import           Miso.FFI (JSM)
+-----------------------------------------------------------------------------
+import qualified Miso.FFI.Internal as FFI
+import           Miso.FFI.Internal (JSM)
 import           Miso.Html.Types
 import           Miso.String
 -----------------------------------------------------------------------------

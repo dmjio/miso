@@ -27,7 +27,7 @@ import qualified Data.Set as S
 import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
 import           Miso.Effect (Sub)
-import           Miso.FFI
+import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | type for arrow keys currently pressed
 --  37 left arrow  ( x = -1 )
@@ -76,9 +76,9 @@ directionSub dirs = keyboardSub . (. toArrows dirs)
 keyboardSub :: (Set Int -> action) -> Sub action
 keyboardSub f sink = do
   keySetRef <- liftIO (newIORef mempty)
-  windowAddEventListener "keyup" $ keyUpCallback keySetRef
-  windowAddEventListener "keydown" $ keyDownCallback keySetRef
-  windowAddEventListener "blur" $ blurCallback keySetRef
+  FFI.windowAddEventListener "keyup" $ keyUpCallback keySetRef
+  FFI.windowAddEventListener "keydown" $ keyDownCallback keySetRef
+  FFI.windowAddEventListener "blur" $ blurCallback keySetRef
     where
       keyDownCallback keySetRef = \keyDownEvent -> do
           Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)

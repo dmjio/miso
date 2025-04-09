@@ -19,10 +19,9 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
-import           Miso.FFI (delegateEvent, undelegateEvent)
 import           Miso.Html.Types (VTree(..))
 import           Miso.String (MisoString)
-import qualified Miso.FFI as FFI
+import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | Local Event type, used to create field names for a delegated event
 data Event
@@ -50,7 +49,7 @@ delegator
   -> JSM ()
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
-  delegateEvent mountPointElement evts debug $ do
+  FFI.delegateEvent mountPointElement evts debug $ do
     VTree (Object vtree) <- liftIO (readIORef vtreeRef)
     pure vtree
 -----------------------------------------------------------------------------
@@ -63,7 +62,7 @@ undelegator
   -> JSM ()
 undelegator mountPointElement vtreeRef es debug = do
   events <- toJSVal (M.toList es)
-  undelegateEvent mountPointElement events debug $ do
+  FFI.undelegateEvent mountPointElement events debug $ do
     VTree (Object vtree) <- liftIO (readIORef vtreeRef)
     pure vtree
 -----------------------------------------------------------------------------

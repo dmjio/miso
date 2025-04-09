@@ -29,7 +29,7 @@ import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
 import qualified Data.Aeson as A
 import           Language.Javascript.JSaddle hiding (obj, val)
 -----------------------------------------------------------------------------
-import           Miso.FFI (jsonParse, jsonStringify)
+import           Miso.FFI.Internal (jsonParse, jsonStringify)
 import qualified Miso.FFI.Storage as Storage
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------

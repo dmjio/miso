@@ -27,7 +27,8 @@ module Miso.Subscription.History
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Miso.Concurrent
-import           Miso.FFI
+import           Miso.FFI.Internal (JSM)
+import qualified Miso.FFI.Internal as FFI
 import qualified Miso.FFI.History as FFI
 import           Miso.String
 import           Miso.Effect (Sub)
@@ -94,10 +95,10 @@ chan = unsafePerformIO waiter
 -- | Subscription for @popstate@ events, from the History API
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
-  void.forkJSM.forever $ do
+  void . FFI.forkJSM . forever $ do
     liftIO (wait chan)
     sink . f =<< getURI
-  windowAddEventListener "popstate" $ \_ ->
+  FFI.windowAddEventListener "popstate" $ \_ ->
     sink . f =<< getURI
 -----------------------------------------------------------------------------
 pushStateNoModel :: URI -> JSM ()

@@ -71,7 +71,7 @@ import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event
-import           Miso.FFI (syncCallback, set, eventJSON, asyncCallback1, consoleError)
+import qualified Miso.FFI.Internal as FFI
 import           Miso.Types ( Attribute (Event), LogLevel(..) )
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ onWithOptions options eventName Decoder{..} toAction =
     case M.lookup eventName events of
       Nothing ->
         when (logLevel `elem` [ DebugAll, DebugEvents ]) $
-          consoleError $ mconcat
+          FFI.consoleError $ mconcat
             [ "Event \""
             , eventName
             , "\" is not being listened on. To use this event, "
@@ -118,14 +118,14 @@ onWithOptions options eventName Decoder{..} toAction =
         eventHandlerObject@(Object eo) <- create
         jsOptions <- toJSVal options
         decodeAtVal <- toJSVal decodeAt
-        cb <- asyncCallback1 $ \e -> do
-            Just v <- fromJSVal =<< eventJSON decodeAtVal e
+        cb <- FFI.asyncCallback1 $ \e -> do
+            Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
             case parseEither decoder v of
               Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
               Right r -> sink (toAction r)
-        set "runEvent" cb eventHandlerObject
-        set "options" jsOptions eventHandlerObject
-        set eventName eo (Object eventObj)
+        FFI.set "runEvent" cb eventHandlerObject
+        FFI.set "options" jsOptions eventHandlerObject
+        FFI.set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
 -- | @onMounted action@ is an event that gets called after the actual DOM
 -- element is created.
@@ -143,8 +143,8 @@ onMounted = onCreated
 onCreated :: action -> Attribute action
 onCreated action =
   Event $ \sink object _ _ -> do
-    callback <- syncCallback (sink action)
-    set "onCreated" callback object
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -155,8 +155,8 @@ onCreated action =
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   Event $ \sink object _ _ -> do
-    callback <- syncCallback (sink action)
-    set "onDestroyed" callback object
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | @onUnmounted action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
@@ -176,8 +176,8 @@ onUnmounted = onBeforeDestroyed
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   Event $ \sink object _ _ -> do
-    callback <- syncCallback (sink action)
-    set "onBeforeDestroyed" callback object
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --

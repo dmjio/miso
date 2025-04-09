@@ -159,6 +159,7 @@ library
     Miso.FFI.SSE
     Miso.FFI.Storage
     Miso.FFI.WebSocket
+    Miso.FFI.Internal
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event

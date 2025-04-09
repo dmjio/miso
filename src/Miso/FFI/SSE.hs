@@ -19,7 +19,7 @@ module Miso.FFI.SSE
 import qualified Language.Javascript.JSaddle as JSaddle
 import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
-import qualified Miso.FFI as FFI
+import qualified Miso.FFI.Internal as FFI
 import           Miso.String
 -----------------------------------------------------------------------------
 newtype EventSource = EventSource JSVal
