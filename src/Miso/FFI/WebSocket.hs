@@ -24,7 +24,7 @@ module Miso.FFI.WebSocket
 -----------------------------------------------------------------------------
 import           Language.Javascript.JSaddle hiding (create)
 -----------------------------------------------------------------------------
-import qualified Miso.FFI as FFI
+import qualified Miso.FFI.Internal as FFI
 import           Miso.String
 import           Miso.WebSocket
 -----------------------------------------------------------------------------

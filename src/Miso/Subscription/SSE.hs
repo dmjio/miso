@@ -19,7 +19,7 @@ module Miso.Subscription.SSE
 -----------------------------------------------------------------------------
 import           Data.Aeson
 import           Miso.Effect (Sub)
-import           Miso.FFI
+import qualified Miso.FFI.Internal as FFI
 import           Miso.String
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.SSE as SSE
@@ -29,7 +29,7 @@ sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action
 sseSub url f = \sink -> do
   es <- SSE.new url
   SSE.addEventListener es "message" $ \val -> do
-    dat <- jsonParse =<< SSE.data' val
+    dat <- FFI.jsonParse =<< SSE.data' val
     sink (f (SSEMessage dat))
   SSE.addEventListener es "error" $ \_ ->
     sink (f SSEError)

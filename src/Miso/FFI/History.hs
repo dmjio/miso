@@ -19,6 +19,7 @@ module Miso.FFI.History
 import Control.Monad
 import GHCJS.Types
 import Language.Javascript.JSaddle
+-----------------------------------------------------------------------------
 import Miso.String
 -----------------------------------------------------------------------------
 getWindowLocationHref :: JSM MisoString

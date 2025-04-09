@@ -45,39 +45,25 @@ module Miso
     -- * Util
   , module Miso.Util
     -- * FFI
-  , set
-  , now
-  , consoleLog
-  , consoleLog'
-  , consoleError
-  , consoleWarn
-  , getElementById
-  , focus
-  , blur
-  , alert
-  , reload
-  , addStyle
-  , addStyleSheet
-  , syncCallback
-  , syncCallback1
-  , asyncCallback
+  , module Miso.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef)
-import           Language.Javascript.JSaddle (Object(Object))
+import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)
 import           Language.Javascript.JSaddle (eval)
 import           Miso.String (MisoString)
 #endif
 -----------------------------------------------------------------------------
-import           Miso.Diff (diff, mountElement)
+import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Exception
-import           Miso.FFI hiding (diff)
+import           Miso.FFI
+import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Internal
 import           Miso.Mathml
@@ -100,9 +86,9 @@ miso f = withJS $ do
     renderStyles styles
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    setBodyComponent name
-    mount <- getBody
-    hydrate (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
+    FFI.setBodyComponent name
+    mount <- FFI.getBody
+    FFI.hydrate (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
@@ -114,7 +100,7 @@ startApp app@App {..} = withJS $
     renderStyles styles
     vtree <- runView DontPrerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    setBodyComponent name
+    FFI.setBodyComponent name
     mount <- mountElement name
     diff mount Nothing (Just vtree)
     viewRef <- liftIO (newIORef vtree)

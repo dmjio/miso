@@ -48,7 +48,7 @@ import           Control.Monad.Trans.Writer.Strict (Writer, runWriter)
 import           Control.Monad.Writer (tell, MonadWriter)
 import           Data.Foldable (for_)
 -----------------------------------------------------------------------------
-import           Miso.FFI (JSM, consoleError)
+import           Miso.FFI.Internal (JSM, consoleError)
 import           Miso.String (ms)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
