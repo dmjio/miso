@@ -47,6 +47,7 @@ self: super: {
     super.stdenv.mkDerivation {
       name = "MicroHs";
       src = (import ../nix/source.nix super).microhs;
+      buildInputs = with super; [ emscripten ];
       installPhase = ''
         mkdir -p $out/{bin,share,lib/bin}
 
@@ -60,6 +61,7 @@ self: super: {
         cp -rv ./paths $out
         cp -rv ./doc $out
         cp -rv ./src $out
+        cat ./targets.conf
 
         cp README.md $out/share
       '';
