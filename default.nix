@@ -98,4 +98,11 @@ with pkgs.haskell.lib;
   # bun
   inherit (pkgs)
     bun;
+
+  # MicroHs-Miso
+  inherit (pkgs)
+    microhs
+    microhs-env
+    microhs-wrapper;
+
 }
