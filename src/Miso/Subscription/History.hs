@@ -14,7 +14,7 @@ module Miso.Subscription.History
   ( -- *** Subscription
     uriSub
     -- *** Functions
-  , getCurrentURI
+  , getURI
   , pushURI
   , replaceURI
   , back
@@ -34,11 +34,6 @@ import           Miso.String
 import           Miso.Effect (Sub)
 import           Network.URI hiding (path)
 import           System.IO.Unsafe
------------------------------------------------------------------------------
--- | Retrieves current URI of page
-getCurrentURI :: JSM URI
-{-# INLINE getCurrentURI #-}
-getCurrentURI = getURI
 -----------------------------------------------------------------------------
 -- | Retrieves current URI of page
 getURI :: JSM URI
