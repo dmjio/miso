@@ -37,4 +37,33 @@ self: super: {
       };
     };
   };
+
+  microhs-wrapper = super.writeShellScriptBin "mhs" ''
+    export MHSDIR=${self.microhs}
+    exec "${self.microhs}/lib/bin/mhs" "$@"
+  '';
+
+  microhs =
+    super.stdenv.mkDerivation {
+      name = "MicroHs";
+      src = (import ../nix/source.nix super).microhs;
+      installPhase = ''
+        mkdir -p $out/{bin,lib/bin,paths,share,doc,boards,mhs/bin}
+        cp -v ./bin/mcabal $out/bin
+        cp -v ./bin/cpphs $out/bin
+        cp -rv ./lib $out
+        cp -rv ./generated $out
+        cp -v ./bin/mhs $out/lib/bin/mhs
+        cp -rv ./boards $out
+        cp -rv ./paths $out
+        cp -rv ./doc $out
+        cp README.md $out/share
+      '';
+    };
+
+  microhs-env = super.mkShell {
+    name = "microhs-env";
+    buildInputs = with self; [ microhs microhs-wrapper ];
+  };
+
 }
