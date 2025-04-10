@@ -52,7 +52,9 @@ self: super: {
 
   microhs-env = super.mkShell {
     name = "microhs-env";
-    buildInputs = with self; [ microhs microhs-wrapper ];
+    buildInputs = with self;
+      [ microhs microhs-wrapper emscripten nodejs
+      ];
   };
 
 }
