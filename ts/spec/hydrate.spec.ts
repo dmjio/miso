@@ -1,7 +1,7 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
 import { vnode, vtext, vnodeKids } from '../miso/smart';
-import { VTree, VText, VNode } from '../miso/types';
+import { VText } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
