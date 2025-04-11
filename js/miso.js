@@ -1,18 +1,25 @@
 // ts/miso/smart.ts
-function mkVTree() {
+function vnode(props) {
+  return union(mkVNode(), props);
+}
+function union(obj, updates) {
+  return Object.assign({}, obj, updates);
+}
+function mkVNode() {
   return {
     props: {},
     css: {},
     children: [],
     ns: "html",
-    type: "vnode",
     domRef: null,
     tag: "div",
     key: null,
     events: {},
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
-    onCreated: () => {}
+    onCreated: () => {},
+    type: "vnode",
+    text: null
   };
 }
 
@@ -38,7 +45,7 @@ function replace(c, n, parent) {
     n["domRef"] = document.createTextNode(n["text"]);
     parent.replaceChild(n["domRef"], c["domRef"]);
   } else {
-    createElement(n, function(ref) {
+    createElement(n, (ref) => {
       parent.replaceChild(ref, c["domRef"]);
     });
   }
@@ -94,7 +101,7 @@ function callCreated(obj) {
 function populate(c, n) {
   if (n["type"] !== "vtext") {
     if (!c)
-      c = mkVTree();
+      c = vnode({});
     diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
     diffCss(c["css"], n["css"], n["domRef"]);
     if (n["type"] === "vnode") {
