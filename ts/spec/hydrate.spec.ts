@@ -1,7 +1,7 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
 import { vnode, vtext, vnodeKids } from '../miso/smart';
-import { VText, VNode } from '../miso/types';
+import { VTree, VText, VNode } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -121,7 +121,7 @@ describe ("Hydration tests", () => {
     nestedDiv1.appendChild(nestedDiv2);
     var txt = document.createTextNode('foo');
     nestedDiv2.appendChild(txt);
-    var tree = vnode({ children: [vnode({ children: [vtext('foo')] })] });
+    var tree:any = vnode({ children: [vnode({ children: [vtext('foo')] })] });
     var succeeded = hydrate(false, misoDiv, tree);
     expect(tree.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
@@ -142,7 +142,7 @@ describe ("Hydration tests", () => {
     nestedDiv1.appendChild(nestedDiv2);
     var txt = document.createTextNode('foo');
     nestedDiv2.appendChild(txt);
-    var currentNode : VNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
+    var currentNode : any = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
     var succeeded = hydrate(true, document.body, currentNode);
     expect(currentNode.children[0].children[0].domRef.textContent).toEqual(
         new Text('foo').textContent

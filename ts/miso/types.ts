@@ -47,7 +47,6 @@ type VText = {
   domRef: Text;
   ns: NS;
   key: string;
-  children: null;
 };
 
 type VTree = VComp | VNode | VText;

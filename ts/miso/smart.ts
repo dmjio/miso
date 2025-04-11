@@ -9,7 +9,6 @@ export function vtext(input: string) : VText {
       type: 'vtext',
       domRef : null,
       key : null,
-      children : null
     };
 }
 
