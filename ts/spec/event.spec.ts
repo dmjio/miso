@@ -1,7 +1,7 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate, eventJSON } from '../miso/event';
-import { EventCapture } from '../miso/types';
-import { vtree } from '../miso/smart';
+import { DOMRef, EventCapture } from '../miso/types';
+import { vnode } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -35,12 +35,12 @@ describe ('Event tests', () => {
         },
       },
     };
-    var vtreeChild = vtree({
+    var vtreeChild = vnode({
       tag: 'button',
       events: events,
     });
 
-    var vtreeParent = vtree({
+    var vtreeParent = vnode({
       children: [vtreeChild],
       events: events,
     });
@@ -49,20 +49,20 @@ describe ('Event tests', () => {
     diff(null, vtreeParent, document.body);
 
     /* ensure structures match */
-    expect(vtreeParent.domRef).toEqual(document.body.childNodes[0]);
+    expect(vtreeParent.domRef).toEqual(document.body.childNodes[0] as DOMRef);
     expect(vtreeChild.domRef).toEqual(
-      document.body.childNodes[0].childNodes[0],
+        document.body.childNodes[0].childNodes[0] as DOMRef
     );
 
     /* setup event delegation */
-    var getVTree = function (cb : (VTree) => void) {
+    var getVTree = (cb : any) => {
       cb(vtreeParent);
     };
     const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
     delegate(body, delegatedEvents, getVTree, true);
 
     /* initiate click event */
-    vtreeChild.domRef.click();
+   (vtreeChild.domRef as HTMLElement).click();
 
     /* check results */
     expect(count).toEqual(2);

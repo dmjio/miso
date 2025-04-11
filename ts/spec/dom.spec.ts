@@ -1,5 +1,6 @@
 import { diff } from '../miso/dom';
-import { mkVTree, vtree, vtext, vnodeKeyed } from '../miso/smart';
+import { vnode, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
+import { VNode, VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -46,19 +47,19 @@ describe('DOM tests', () => {
   });
 
   test('Should create a new DOM node', () => {
-    var newNode = mkVTree();
+    var newNode = vnode({});
     diff(null, newNode, document.body);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create an SVG DOM node', () => {
-    var newNode = vtree({ ns: 'svg' });
+    var newNode = vnode({ ns: 'svg' });
     diff(null, newNode, document.body);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create a MathML DOM node', () => {
-    var newNode = vtree({ ns: 'mathml', tag: 'math' });
+    var newNode = vnode({ ns: 'mathml', tag: 'math' });
     diff(null, newNode, document.body);
     expect(document.body.children[0].namespaceURI).toBe(
       'http://www.w3.org/1998/Math/MathML',
@@ -66,7 +67,7 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with href attribute', () => {
-    var tree = vtree({
+    var tree = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -83,7 +84,7 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with href attribute, and change it', () => {
-    var tree1 = vtree({
+    var tree1 = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -97,7 +98,7 @@ describe('DOM tests', () => {
         'href',
       ),
     ).toBe('https://google.com');
-    var tree2 = vtree({
+    var tree2 = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -114,7 +115,7 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with regular attribute', () => {
-    var tree = vtree({
+    var tree = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -126,7 +127,7 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with regular attribute, and change it', () => {
-    var tree1 = vtree({
+    var tree1 = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -135,7 +136,7 @@ describe('DOM tests', () => {
     });
     diff(null, tree1, document.body);
     expect(document.body.children[0].getAttribute('rx')).toBe('100');
-    var tree2 = vtree({
+    var tree2 = vnode({
       tag: 'ellipse',
       ns: 'svg',
       props: {
@@ -148,14 +149,14 @@ describe('DOM tests', () => {
 
   test('Should replace a Node with a new Node of a window different tag', () => {
     // populate DOM
-    var tree1 = vtree({ tag: 'div' });
+    var tree1 = vnode({ tag: 'div' });
     diff(null, tree1, document.body);
 
     // Test node was populated
     expect(document.body.children.length).toBe(1);
 
     // Replace node
-    var tree2 = vtree({ tag: 'a' });
+    var tree2 = vnode({ tag: 'a' });
     diff(tree1, tree2, document.body);
 
     // Test node is removed from DOM
@@ -164,7 +165,7 @@ describe('DOM tests', () => {
 
   test('Should create children', () => {
     // populate DOM
-    var tree = vtree({ children: [mkVTree()] });
+    var tree = vnode({ children: [vnode({})] });
     diff(null, tree, document.body);
     expect(tree.domRef.children.length).toBe(1);
     expect(tree.children.length).toBe(1);
@@ -172,21 +173,21 @@ describe('DOM tests', () => {
 
   test('Should remove a child', () => {
     // populate DOM
-    var tree1 = vtree({ children: [mkVTree()] });
+    var tree1 = vnode({ children: [vnode({})] });
     diff(null, tree1, document.body);
     expect(tree1.domRef.children.length).toBe(1);
 
     // remove children from DOM
-    var tree2 = vtree({ children: [] });
+    var tree2 = vnode({ children: [] });
     diff(tree1, tree2, document.body);
     expect(tree2.domRef.childNodes.length).toBe(0);
   });
 
   test('Should replace Node with TextNode', () => {
-    var node = mkVTree();
+    var node = vnode({});
     diff(null, node, document.body);
     expect(document.body.childNodes.length).toBe(1);
-    var textNode = vtree({ type: 'vtext', 'text': 'fooo' });
+    var textNode = vtext('fooo');
     diff(node, textNode, document.body);
     expect(document.body.childNodes[0].textContent).toBe('fooo');
   });
@@ -200,7 +201,7 @@ describe('DOM tests', () => {
     expect(document.body.childNodes.length).toBe(1);
 
     // Replace node
-    var node = mkVTree();
+    var node = vnode({});
     diff(textNode, node, document.body);
 
     // Test node is removed from DOM
@@ -209,7 +210,7 @@ describe('DOM tests', () => {
 
   test('Should remove a DOM node', () => {
     // populate DOM
-    var newNode = mkVTree();
+    var newNode = vnode({});
     diff(null, newNode, document.body);
 
     // Test node was populated
@@ -224,7 +225,7 @@ describe('DOM tests', () => {
 
   test('Should create a new property on a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       props: { id: 'a' },
     });
     diff(null, currentNode, document.body);
@@ -233,12 +234,12 @@ describe('DOM tests', () => {
 
   test('Should skip if window diffing identical properties', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       props: { id: 'a' },
     });
     diff(null, currentNode, document.body);
 
-    var newNode = vtree({
+    var newNode = vnode({
       props: { id: 'a' },
     });
     diff(currentNode, newNode, document.body);
@@ -247,7 +248,7 @@ describe('DOM tests', () => {
 
   test('Should create a custom attribute on a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       props: {
         lol: 'lol',
       },
@@ -258,7 +259,7 @@ describe('DOM tests', () => {
 
   test('Should change a custom attribute on a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       props: {
         lol: 'lol',
       },
@@ -266,7 +267,7 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
-    var newNode = vtree({
+    var newNode = vnode({
       props: {
         lol: 'lolz',
       },
@@ -278,7 +279,7 @@ describe('DOM tests', () => {
 
   test('Should remove a custom attribute from a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       props: {
         lol: 'lol',
       },
@@ -287,38 +288,38 @@ describe('DOM tests', () => {
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     // test property change
-    var newNode = mkVTree();
+    var newNode = vnode({});
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef.getAttribute('lol')).toBe(null);
   });
 
   test('Should remove a property from DOM node', () => {
     // populate DOM
-    var currentNode = vtree({ props: { id: 'someid' } });
+    var currentNode = vnode({ props: { id: 'someid' } });
     diff(null, currentNode, document.body);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
-    var newNode = mkVTree();
+    var newNode = vnode({});
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef['id']).toBe('');
   });
 
   test('Should change a property from DOM node', () => {
     // populate DOM
-    var currentNode = vtree({ props: { id: 'someid' } });
+    var currentNode = vnode({ props: { id: 'someid' } });
     diff(null, currentNode, document.body);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
-    var newNode = vtree({ props: { id: 'foo' } });
+    var newNode = vnode({ props: { id: 'foo' } });
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef['id']).toBe('foo');
   });
 
   test('Should create css on a DOM node', () => {
     // populate DOM
-    var newNode = vtree({
+    var newNode = vnode({
       css: {
         color: 'red',
       },
@@ -329,7 +330,7 @@ describe('DOM tests', () => {
 
   test('Should remove css from DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       css: {
         color: 'red',
       },
@@ -337,14 +338,14 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
 
     // test css change
-    var newNode = mkVTree();
+    var newNode = vnode({});
     diff(currentNode, newNode, document.body);
     expect(newNode.domRef.style['color']).toBe('');
   });
 
   test('Should change css on a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       css: {
         color: 'red',
       },
@@ -352,7 +353,7 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
 
     // test css change
-    var newNode = vtree({
+    var newNode = vnode({
       css: {
         color: 'blue',
       },
@@ -363,7 +364,7 @@ describe('DOM tests', () => {
 
   test('Should no-op change to css on a DOM node', () => {
     // populate DOM
-    var currentNode = vtree({
+    var currentNode = vnode({
       css: {
         color: 'red',
       },
@@ -371,7 +372,7 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
 
     // test css no-op change
-    var newNode = vtree({
+    var newNode = vnode({
       css: {
         color: 'red',
       },
@@ -384,7 +385,7 @@ describe('DOM tests', () => {
     // populate DOM
     let create = 0,
       destroy = 0;
-    const currentNode = vtree({
+    const currentNode = vnode({
       onCreated: () => {
         create++;
       },
@@ -403,7 +404,7 @@ describe('DOM tests', () => {
   test('Should call onCreated and onBeforeDestroyed', () => {
     let create = 0,
       destroy = 0;
-    const currentNode = vtree({
+    const currentNode = vnode({
       onCreated: () => {
         create++;
       },
@@ -422,13 +423,13 @@ describe('DOM tests', () => {
   test('Should call onDestroyed recursively', () => {
     let destroy = 0,
       childDestroy = 0;
-    const child = vtree({
+    const child = vnode({
       onDestroyed: () => {
         childDestroy++;
       },
     });
 
-    const parent = vtree({
+    const parent = vnode({
       onDestroyed: () => {
         destroy++;
       },
@@ -444,13 +445,13 @@ describe('DOM tests', () => {
     var destroy = 0;
     var childDestroy = 0;
 
-    const child = vtree({
+    const child = vnode({
       onDestroyed: () => {
         childDestroy++;
       }
     });
 
-    const parent = vtree({
+    const parent = vnode({
       onBeforeDestroyed: () => {
         destroy++;
       },
@@ -464,13 +465,13 @@ describe('DOM tests', () => {
 
   test('Should recreate a DOM node when tags are the same but keys are different', () => {
     var destroy = 0;
-      var currentNode = vtree({
+      var currentNode = vnode({
           onDestroyed : () => {
               destroy++;
           },
       });
     diff(null, currentNode, document.body);
-      var newNode = vtree({
+      var newNode = vnode({
           onDestroyed : () => {
               destroy++;
           },
@@ -478,7 +479,7 @@ describe('DOM tests', () => {
     diff(null, currentNode, document.body);
     expect(destroy).toBe(0);
     diff(currentNode, newNode, document.body);
-      var newKeyedNode = vtree({
+      var newKeyedNode = vnode({
           onDestroyed : () => {
               destroy++;
           },
@@ -490,7 +491,7 @@ describe('DOM tests', () => {
 
   test('Should execute left-hand side happy path key-window diffing case', () => {
     var body = document.body;
-    var currentNode = vtree({
+    var currentNode = vnode({
       children: [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -499,7 +500,7 @@ describe('DOM tests', () => {
       key: 'key-1',
     });
     diff(null, currentNode, body);
-    var newNode = vtree({
+    var newNode = vnode({
       children: [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -520,11 +521,11 @@ describe('DOM tests', () => {
 
   test('Should diff keys properly when keys are prepended', () => {
     var body = document.body;
-    var currentNode = vtree({
+    var currentNode = vnode({
       children : [vnodeKeyed('div', '1')],
     });
     diff(null, currentNode, body);
-    var newNode = vtree({
+    var newNode = vnode({
         children : [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
     });
     diff(currentNode, newNode, body);
@@ -540,11 +541,11 @@ describe('DOM tests', () => {
 
   test('Should execute right-hand side happy path key-window diffing case', () => {
     var body = document.body;
-    var currentNode = vtree({
+    var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')],
     });
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode = vnode({
           children : [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
       });
     diff(currentNode, newNode, body);
@@ -560,11 +561,11 @@ describe('DOM tests', () => {
 
   test('Should swap nodes', () => {
     var body = document.body;
-    var currentNode = vtree({
+    var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')],
     });
     diff(null, currentNode, body);
-    var newNode = vtree({
+    var newNode = vnode({
         children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
     diff(currentNode, newNode, body);
@@ -580,11 +581,11 @@ describe('DOM tests', () => {
 
   test('Should execute flip-flop case', () => {
     var body = document.body;
-    var currentNode = vtree({
+    var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
     });
     diff(null, currentNode, body);
-    var newNode = vtree({
+    var newNode = vnode({
         children : [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
     diff(currentNode, newNode, body);
@@ -604,25 +605,23 @@ describe('DOM tests', () => {
 
   test('Should execute swapped case on 1k nodes', () => {
     var body = document.body;
-    var kids = [];
-    for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i));
-
-      var currentNode = vtree({
+    var kids : Array<VNode> = [];
+    for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i.toString()));
+      var currentNode : any = vnode({
           children : kids
       });
-
-    var newKids = [];
+    var newKids : Array<VTree> = [];
     for (i = 1; i < 1001; i++) {
       if (i == 3) {
-        newKids.push(vnodeKeyed('div', 999));
+        newKids.push(vnodeKeyed('div', '999'));
       } else if (i == 999) {
-        newKids.push(vnodeKeyed('div', 3));
+        newKids.push(vnodeKeyed('div', '3'));
       } else {
-        newKids.push(vnodeKeyed('div', i));
+        newKids.push(vnodeKeyed('div', i.toString()));
       }
     }
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode : any = vnode({
           children : newKids,
       });
     diff(currentNode, newNode, body);
@@ -647,7 +646,7 @@ describe('DOM tests', () => {
 
   test('Should execute top-left and bottom-right match case', () => {
     var body = document.body;
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
@@ -657,7 +656,7 @@ describe('DOM tests', () => {
       ],
       });
     diff(null, currentNode, body);
-    var newNode = vtree({
+    var newNode = vnode({
         children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -679,7 +678,7 @@ describe('DOM tests', () => {
 
   test('Should handle duplicate keys case', () => {
     var body = document.body;
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'a'),
@@ -689,7 +688,7 @@ describe('DOM tests', () => {
           ],
       });
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode = vnode({
           children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'b'),
@@ -711,7 +710,7 @@ describe('DOM tests', () => {
 
   test('Should execute top-right and bottom-left match case', () => {
     var body = document.body;
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
@@ -720,7 +719,7 @@ describe('DOM tests', () => {
       ],
       });
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode = vnode({
           children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'g'),
@@ -741,11 +740,11 @@ describe('DOM tests', () => {
 
   test('Should match nothing', () => {
     var body = document.body;
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')],
       });
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode = vnode({
           children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')]
       });
     diff(currentNode, newNode, body);
@@ -761,7 +760,7 @@ describe('DOM tests', () => {
 
   test('Should handle nothing matches case where new key is found in old map', () => {
     var body = document.body;
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'k'),
@@ -771,7 +770,7 @@ describe('DOM tests', () => {
       ]
       });
     diff(null, currentNode, body);
-      var newNode = vtree({
+      var newNode = vnode({
           children:
       [
         vnodeKeyed('div', 'b'),
@@ -793,11 +792,11 @@ describe('DOM tests', () => {
   });
 
   test('Should append new nodes in keys patch', () => {
-      var currentNode = vtree({
+      var currentNode = vnode({
           children : [vnodeKeyed('div', 'a')]
       });
     diff(null, currentNode, document.body);
-    var newNode = vtree({
+    var newNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')]
     });
     diff(currentNode, newNode, document.body);
@@ -810,21 +809,21 @@ describe('DOM tests', () => {
   });
 
   test('Should diff keyed text nodes', () => {
-    var currentNode = vtree({
+    var currentNode = vnode({
       tag: 'div',
       children: [
-          vtree({ type : 'vtext', text : 'foo', key : '1' }),
-          vtree({ type : 'vtext', text : 'bar', key : '2' }),
-          vtree({ type : 'vtext', text : 'baz', key : '3' })
+        vtextKeyed('foo','1'),
+        vtextKeyed('bar','2'),
+        vtextKeyed('baz','3'),
       ]
     });
     diff(null, currentNode, document.body);
-    var newNode = vtree({
+    var newNode = vnode({
       tag: 'div',
       children: [
-          vtree({ type : 'vtext', text : 'baz', key : '3' }),
-          vtree({ type : 'vtext', text : 'bar', key : '2' }),
-          vtree({ type : 'vtext', text : 'foo', key : '1' })
+        vtextKeyed ('baz','3'),
+        vtextKeyed ('baz','2'),
+        vtextKeyed ('baz','1'),
       ]
     });
     diff(currentNode, newNode, document.body);

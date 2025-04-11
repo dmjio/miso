@@ -1,5 +1,5 @@
 import { DOMRef, VComp, VTree, Props, CSS } from './types';
-import { mkVTree } from './smart';
+import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
@@ -25,7 +25,7 @@ function replace(c: VTree, n: VTree, parent: Element): void {
     n['domRef'] = document.createTextNode(n['text']);
     parent.replaceChild(n['domRef'], c['domRef']);
   } else {
-    createElement(n, function (ref: Element) {
+    createElement(n, (ref: Element) => {
       parent.replaceChild(ref, c['domRef']);
     });
   }
@@ -96,7 +96,7 @@ export function callCreated(obj: VTree): void {
 
 export function populate(c: VTree, n: VTree): void {
   if (n['type'] !== 'vtext') {
-    if (!c) c = mkVTree();
+    if (!c) c = vnode({});
     diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
     diffCss(c['css'], n['css'], n['domRef']);
     if (n['type'] === 'vnode') {

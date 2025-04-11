@@ -1,22 +1,28 @@
 /* smart constructors for VTree */
-import { VTree, VNode, VComp } from './types';
+import { VText, VTree, VNode, VComp } from './types';
 
 /* vtext factory */
-export function vtext(input: string) {
-  return vtree({ text: input, type: 'vtext' });
+export function vtext(input: string) : VText {
+    return {
+      ns : 'text',
+      text: input,
+      type: 'vtext',
+      domRef : null,
+      key : null,
+    };
 }
 
-export function vtextKeyed(input: string, k: string) {
-  return vtree({ text: input, type: 'vtext', key: k });
+export function vtextKeyed(input: string, key: string) : VText {
+    return union(vtext(input), { key });
 }
 
 /* vtree factory */
-export function vtree(props: any): VNode {
-  return !props ? mkVTree() : union(mkVTree(), props);
+export function vnode(props: Partial<VNode>): VNode {
+  return union(mkVNode(), props);
 }
 
-export function vcomp(props: any): VComp {
-  return !props ? mkVComp() : union(mkVComp(), props);
+export function vcomp(props: Partial<VComp>): VComp {
+  return union(mkVComp(), props);
 }
 
 /* set union */
@@ -25,31 +31,28 @@ function union<T extends object>(obj: T, updates: Partial<T>): T {
 }
 
 /* smart constructors */
-export function vnodeKeyed(tag:string, key:string): VTree {
-  return vtree({
-    type: 'vnode',
+export function vnodeKeyed(tag:string, key:string): VNode {
+  return vnode({
     tag: tag,
     children: [vtext(key)],
     key: key,
   });
 }
 
-export function vnodeKids(tag:string, kids:Array<VTree>): VTree {
-  return vtree({
-    type: 'vnode',
+export function vnodeKids(tag:string, kids:Array<VTree>): VNode {
+  return vnode({
     tag: tag,
     children: kids,
   });
 }
 
 /* "smart" helper for constructing an empty virtual DOM */
-export function mkVTree(): VNode {
+function mkVNode() : VNode {
   return {
     props: {},
     css: {},
     children: [],
     ns: 'html',
-    type: 'vnode',
     domRef: null,
     tag: 'div',
     key: null,
@@ -57,25 +60,17 @@ export function mkVTree(): VNode {
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
     onCreated: () => {},
+    type : 'vnode',
   };
 }
 
-export function mkVComp(): VComp {
-  return {
-    props: {},
-    css: {},
-    children: [],
-    ns: 'html',
-    type: 'vcomp',
-    domRef: null,
-    tag: 'div',
-    key: null,
-    events: {},
+function mkVComp() : VComp {
+  return union(mkVNode() as any, {
+    type : 'vcomp',
     'data-component-id': '',
-    onDestroyed: () => {},
-    onBeforeDestroyed: () => {},
     mount: () => {},
     unmount: () => {},
     onCreated: () => {},
-  };
+  });
 }
+

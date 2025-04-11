@@ -4,7 +4,7 @@ type CSS = Record<string, string>;
 type Events = Record<string, EventObject>;
 
 /* element name spacing */
-type NS = 'html' | 'svg' | 'mathml';
+type NS = 'text' | 'html' | 'svg' | 'mathml';
 
 type DOMRef = HTMLElement | SVGElement | MathMLElement;
 
@@ -46,6 +46,7 @@ type VText = {
   text: string;
   domRef: Text;
   ns: NS;
+  key: string;
 };
 
 type VTree = VComp | VNode | VText;

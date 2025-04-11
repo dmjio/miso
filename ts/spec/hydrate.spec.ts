@@ -1,6 +1,7 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
-import { mkVTree, vtree, vtext, vnodeKids } from '../miso/smart';
+import { vnode, vtext, vnodeKids } from '../miso/smart';
+import { VText } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -26,8 +27,8 @@ describe ("Hydration tests", () => {
     div.appendChild(nestedDiv);
     var txt = document.createTextNode('foo');
     nestedDiv.appendChild(txt);
-    var currentNode = vtree({
-      children: [vtree({ children: [vtext('foo')] })],
+    var currentNode : any = vnode({
+      children: [vnode({ children: [vtext('foo')] })],
     });
     hydrate(false, document.body, currentNode);
     expect(currentNode.children[0].children[0].text).toEqual('foo');
@@ -38,7 +39,7 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var nestedDiv = document.createElement('div');
     div.appendChild(nestedDiv);
-    var currentNode = vtree({ children: [vtext('foo')] });
+    var currentNode = vnode({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, currentNode)).toEqual(false);
   });
 
@@ -47,8 +48,8 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
-    var currentNode = vtree({
-      children: [mkVTree()],
+    var currentNode = vnode({
+      children: [vnode({})],
     });
     expect(hydrate(false, document.body, currentNode)).toEqual(false);
   });
@@ -58,7 +59,7 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
-    var currentNode = vtree({ children: [vtext('bar')] });
+    var currentNode = vnode({ children: [vtext('bar')] });
     expect(hydrate(false, document.body, currentNode)).toEqual(false);
   });
 
@@ -67,7 +68,7 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foobar');
     div.appendChild(txt);
-    var currentNode = vtree({ children: [vtext('foo')] });
+    var currentNode = vnode({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, currentNode)).toEqual(false);
   });
 
@@ -76,7 +77,7 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foobarbaz');
     div.appendChild(txt);
-    var currentNode = vtree({
+    var currentNode = vnode({
       children: [vtext('foo'), vtext('bar'), vtext('baz')],
     });
     hydrate(false, document.body, currentNode);
@@ -88,19 +89,19 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     const txt = document.createTextNode('foobarbaz');
     div.appendChild(txt);
-    const currentNode = vtree({
+    const currentNode = vnode({
       children: [
         vtext('foo'),
         vtext('bar'),
         vtext('baz'),
-        mkVTree(),
+        vnode({}),
         vtext('foo'),
         vtext('bar'),
         vtext('baz'),
       ],
     });
     hydrate(false, null, currentNode);
-    // Expect "foobarbaz" to be split up into three nodes in the DOM
+    //Expect "foobarbaz" to be split up into three nodes in the DOM
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
     expect(div.childNodes[2].textContent).toEqual('foobarbaz');
   });
@@ -120,7 +121,7 @@ describe ("Hydration tests", () => {
     nestedDiv1.appendChild(nestedDiv2);
     var txt = document.createTextNode('foo');
     nestedDiv2.appendChild(txt);
-    var tree = vtree({ children: [vtree({ children: [vtext('foo')] })] });
+    var tree:any = vnode({ children: [vnode({ children: [vtext('foo')] })] });
     var succeeded = hydrate(false, misoDiv, tree);
     expect(tree.children[0].children[0].domRef).toEqual(txt);
     expect(succeeded).toEqual(true);
@@ -141,10 +142,10 @@ describe ("Hydration tests", () => {
     nestedDiv1.appendChild(nestedDiv2);
     var txt = document.createTextNode('foo');
     nestedDiv2.appendChild(txt);
-    var currentNode = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
+    var currentNode : any = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
     var succeeded = hydrate(true, document.body, currentNode);
     expect(currentNode.children[0].children[0].domRef.textContent).toEqual(
-      'foo',
+        new Text('foo').textContent
     );
     expect(succeeded).toEqual(false);
   });
@@ -152,12 +153,12 @@ describe ("Hydration tests", () => {
   test('Should fail to mount on a text node', () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(misoTxt);
-    var tree = vtree({ children: [vtree({ children: [vtext('foo')] })] });
+    var tree = vnode({ children: [vnode({ children: [vtext('foo')] })] });
     expect(hydrate(true, misoTxt, tree)).toEqual(false);
   });
 
   test('Should not hydrate on an empty page', () => {
-    var tree = vtree({ children: [vtree({ children: [vtext('foo')] })] });
+    var tree = vnode({ children: [vnode({ children: [vtext('foo')] })] });
     expect(hydrate(true, null, tree)).toEqual(false);
   });
 
@@ -167,7 +168,7 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({ children: [vtext('foo')] });
+    var tree = vnode({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, tree)).toEqual(true);
     expect(integrityCheck(tree)).toBe(true);
   });
@@ -177,7 +178,7 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({ children: [vtext('foo')] });
+    var tree = vnode({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, tree)).toEqual(true);
     expect(integrityCheck(tree)).toBe(true);
     tree.tag = 'lol';
@@ -189,7 +190,7 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({ children: [vtext('fool')] });
+    var tree = vnode({ children: [vtext('fool')] });
     expect(hydrate(true, document.body, tree)).toEqual(false);
   });
 
@@ -198,12 +199,12 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       children: [vtext('foo')],
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
     expect(integrityCheck(tree)).toBe(true);
-    tree.children[0].text = 'oops';
+    (tree.children[0] as VText).text = 'oops';
     expect(integrityCheck(tree)).toBe(false);
   });
 
@@ -212,7 +213,7 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       children: [vtext('foo')],
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
@@ -227,8 +228,8 @@ describe ("Hydration tests", () => {
     child.style['background-color'] = 'red';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
-      children: [{ type: 'vtext', text: 'foo' }],
+    var tree = vnode({
+      children: [vtext('foo')],
       css: { 'background-color': 'red' },
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
@@ -244,8 +245,8 @@ describe ("Hydration tests", () => {
     child.style['color'] = '#cccccc';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
-      children: [{ type: 'vtext', text: 'foo' }],
+    var tree = vnode({
+      children: [vtext('foo')],
       css: { 'background-color': 'red', color: '#cccccc' },
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
@@ -261,9 +262,9 @@ describe ("Hydration tests", () => {
     child.className = 'something';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       props: { class: 'something' },
-      children: [{ type: 'vtext', text: 'foo' }],
+      children: [vtext('foo')],
       css: { 'background-color': 'red' },
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
@@ -281,10 +282,10 @@ describe ("Hydration tests", () => {
     child.width = 100;
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       tag : 'img',
       props: { class: 'something', height: '100', width: '100' },
-      children: [{ type: 'vtext', text: 'foo' }],
+      children: [vtext('foo')],
       css: { 'background-color': 'red' },
     });
     expect(hydrate(false, document.body, tree)).toEqual(true);
@@ -300,7 +301,7 @@ describe ("Hydration tests", () => {
     child['title'] = 'bar';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       props: { title: 'bar' },
       children: [vtext('foo')],
     });
@@ -317,10 +318,10 @@ describe ("Hydration tests", () => {
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       tag : 'a',
       props: { href: 'google.com' },
-      children: [{ type: 'vtext', text: 'foo' }],
+      children: [vtext('foo')],
       css: { 'background-color': 'red' },
     });
     const result = hydrate(false, document.body, tree);
@@ -337,7 +338,7 @@ describe ("Hydration tests", () => {
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       tag : 'a',
       props: { href: 'google.com' },
       children: [vtext('foo')],
@@ -355,11 +356,10 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vtree({
+    var tree = vnode({
       tag : 'a',
       props: { foobah: 'lol' },
       children: [vtext('foo')],
-      ns: 'HTML',
     });
     const result = hydrate(false, document.body, tree);
     expect(result).toEqual(true);
