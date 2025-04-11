@@ -208,7 +208,7 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff(component, vcomp({}), document.body);
+    diff(component, vnode({}), document.body);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
