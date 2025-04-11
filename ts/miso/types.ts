@@ -4,7 +4,7 @@ type CSS = Record<string, string>;
 type Events = Record<string, EventObject>;
 
 /* element name spacing */
-type NS = 'html' | 'svg' | 'mathml';
+type NS = 'text' | 'html' | 'svg' | 'mathml';
 
 type DOMRef = HTMLElement | SVGElement | MathMLElement;
 
@@ -24,6 +24,7 @@ type VComp = {
   onBeforeDestroyed: () => void;
   mount: (f: (component: VTree) => void) => void;
   unmount: (e: Element) => void;
+  text: null;
 };
 
 type VNode = {
@@ -39,6 +40,7 @@ type VNode = {
   onDestroyed: () => void;
   onCreated: () => void;
   onBeforeDestroyed: () => void;
+  text: null;
 };
 
 type VText = {
@@ -46,6 +48,8 @@ type VText = {
   text: string;
   domRef: Text;
   ns: NS;
+  key: string;
+  children: null;
 };
 
 type VTree = VComp | VNode | VText;

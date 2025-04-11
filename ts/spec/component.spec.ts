@@ -1,6 +1,6 @@
 /* imports */
 import { diff } from '../miso/dom';
-import { mkVComp, vtree, vcomp, vtext } from '../miso/smart';
+import { vnode, vcomp, vtext } from '../miso/smart';
 import { VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
@@ -38,22 +38,20 @@ describe ('Component tests', () => {
   });
   test('Should detect duplicate component mounting', () => {
     var mountCount = 0;
-    var newComp1 = vtree({
-      type: 'vcomp',
+    var newComp1 = vcomp({
       mount: () => {
         mountCount++;
       },
       'data-component-id': 'vcomp-foo',
     });
     diff(null, newComp1, document.body);
-    var newComp2 = vtree({
-      type: 'vcomp',
+    var newComp2 = vcomp({
       mount: () => {
         mountCount++;
       },
       'data-component-id': 'vcomp-foo',
     });
-    var newNode = vtree({ children: [newComp2] });
+    var newNode = vnode({ children: [newComp2] });
     diff(null, newNode, document.body);
     expect(mountCount).toBe(1);
   });
@@ -61,11 +59,10 @@ describe ('Component tests', () => {
   test('Should mount and unmount a component', () => {
     var mountCount = 0;
     var unmountCount = 0;
-    var newNode = vtree({
-      type: 'vcomp',
+    var newNode = vcomp({
       mount: (cb) => {
         mountCount++;
-        var node = mkVComp();
+        var node = vcomp({});
         diff(null, node, document.body);
         cb(node);
       },
@@ -89,8 +86,7 @@ describe ('Component tests', () => {
   test('Should Diff attrs of two Components', () => {
     // populate DOM
     var mountCount = 0;
-    var compNode1 = vtree({
-      type: 'vcomp',
+    var compNode1 = vcomp({
       mount: () => {
         mountCount++;
       },
@@ -106,8 +102,7 @@ describe ('Component tests', () => {
 
     // Replace node
     mountCount = 0;
-    var compNode2 = vtree({
-      type: 'vcomp',
+    var compNode2 = vcomp({
       mount: () => {
         mountCount++;
       },
@@ -120,7 +115,7 @@ describe ('Component tests', () => {
 
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = mkVComp();
+    var node = vcomp({});
     diff(null, node, document.body);
 
     // Test node was populated
@@ -128,9 +123,8 @@ describe ('Component tests', () => {
 
     // Replace node
     var mountCount = 0;
-    var compNode = vtree({
-      type: 'vcomp',
-      'data-component-id': 'vcomp-id',
+    var compNode = vcomp({
+     'data-component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
       },
@@ -146,7 +140,7 @@ describe ('Component tests', () => {
 
   test('Should replace Text with Component', () => {
     // populate DOM
-    var node = vtree({ type: 'vtext', 'text': 'foo' });
+    var node = vtext('foo');
     diff(null, node, document.body);
 
     // Test node was populated
@@ -155,8 +149,7 @@ describe ('Component tests', () => {
 
     // Replace node
     var mountCount = 0;
-    var compNode = vtree({
-      type: 'vcomp',
+    var compNode = vcomp({
       'data-component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
@@ -172,14 +165,13 @@ describe ('Component tests', () => {
   });
   test('Should replace Component with TextNode', () => {
     var mountCount = 0, unmountCount = 0;
-    var component = vtree({
+    var component = vcomp({
       mount: () => {
         return mountCount++;
       },
       unmount: () => {
         return unmountCount++;
       },
-      type: 'vcomp',
     });
     diff(null, component, document.body);
     // Test component was populated
@@ -200,8 +192,7 @@ describe ('Component tests', () => {
     // populate DOM
     var mountCount = 0,
       unmountCount = 0;
-    var component = vtree({
-      type: 'vcomp',
+    var component = vcomp({
       mount: () => {
         mountCount++;
       },
@@ -217,7 +208,7 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff(component, mkVComp(), document.body);
+    diff(component, vcomp({}), document.body);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
