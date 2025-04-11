@@ -24,7 +24,6 @@ type VComp = {
   onBeforeDestroyed: () => void;
   mount: (f: (component: VTree) => void) => void;
   unmount: (e: Element) => void;
-  text: null;
 };
 
 type VNode = {
@@ -40,7 +39,6 @@ type VNode = {
   onDestroyed: () => void;
   onCreated: () => void;
   onBeforeDestroyed: () => void;
-  text: null;
 };
 
 type VText = {

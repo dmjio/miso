@@ -27,7 +27,7 @@ describe ("Hydration tests", () => {
     div.appendChild(nestedDiv);
     var txt = document.createTextNode('foo');
     nestedDiv.appendChild(txt);
-    var currentNode = vnode({
+    var currentNode : any = vnode({
       children: [vnode({ children: [vtext('foo')] })],
     });
     hydrate(false, document.body, currentNode);

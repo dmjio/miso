@@ -18,8 +18,7 @@ function mkVNode() {
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
     onCreated: () => {},
-    type: "vnode",
-    text: null
+    type: "vnode"
   };
 }
 

@@ -62,7 +62,6 @@ function mkVNode() : VNode {
     onBeforeDestroyed: () => {},
     onCreated: () => {},
     type : 'vnode',
-    text : null
   };
 }
 

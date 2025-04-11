@@ -607,7 +607,7 @@ describe('DOM tests', () => {
     var body = document.body;
     var kids : Array<VNode> = [];
     for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i.toString()));
-      var currentNode = vnode({
+      var currentNode : any = vnode({
           children : kids
       });
     var newKids : Array<VTree> = [];
@@ -621,7 +621,7 @@ describe('DOM tests', () => {
       }
     }
     diff(null, currentNode, body);
-      var newNode = vnode({
+      var newNode : any = vnode({
           children : newKids,
       });
     diff(currentNode, newNode, body);
