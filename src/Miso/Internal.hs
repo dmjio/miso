@@ -20,7 +20,6 @@ module Miso.Internal
   ( initialize
   , componentMap
   , sink
-  , mail
   , notify
   , runView
   , sample
@@ -140,7 +139,8 @@ sample (Component _ name _) = do
     Nothing -> throwIO (NotMountedException name)
     Just ComponentState {..} -> readIORef componentModel
 -----------------------------------------------------------------------------
--- | Like @mail@ but lifted to work with the @Transition@ interface.
+-- | Used for bidirectional communication between components.
+-- Specify the mounted @Component@'s 'App' you'd like to target.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
   :: Component effect model action a
@@ -188,25 +188,10 @@ sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
     Just ComponentState {..} -> componentSink a
     Nothing -> pure ()
------------------------------------------------------------------------------
--- | Used for bidirectional communication between components.
--- Specify the mounted Component's 'App' you'd like to target.
---
--- > update (MakeTodo entry) m -> do
--- >   m <# mail calendarComponent (NewCalendarEntry entry)
---
-mail
-  :: Component effect model action a
-  -> action
-  -> JSM ()
-mail (Component _ name _) action = do
-  dispatch <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name dispatch) $ \ComponentState {..} ->
-    componentSink action
------------------------------------------------------------------------------
+--------------------------------------------------
 -- | Internally used for runView and startApp
 -- Initial draw helper
--- If prerendering bypass diff and continue copying
+-- If prerendering, bypass diff and continue copying
 drawComponent
   :: Prerender
   -> MisoString
