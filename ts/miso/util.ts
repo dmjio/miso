@@ -19,16 +19,28 @@ export function setBodyComponent(componentId: string): void {
   document.body.setAttribute('data-component-id', componentId);
 }
 
-export function fetchJSON(url, callback: (string) => void): void {
-  const options = {
+export function fetchJSON (
+  url : string,
+  method : string,
+  body : any,
+  successful: (string) => void,
+  errorful: (string) => void
+): void
+{
+  var options = {
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     }
+    method,
   };
+  if (body) {
+    options['body'] = body;
+  }
   fetch (url, options)
     .then(response => response.json())
-    .then(callback)
-    .catch ((e) => console.error(e));
+    .then(successful) /* success callback */
+    .catch(errorful); /* error callback */
 }
 
 export const version: string = '1.9.0.0';

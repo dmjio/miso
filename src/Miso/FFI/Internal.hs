@@ -1,3 +1,12 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
@@ -69,6 +78,11 @@ import           Language.Javascript.JSaddle
 import           Language.Javascript.JSaddle hiding (Success)
 #endif
 import           Prelude hiding ((!!))
+
+import           Data.Kind (Type)
+import           Data.Proxy (Proxy(..))
+import           GHC.TypeLits
+import           Servant.API
 -----------------------------------------------------------------------------
 import           Miso.String
 ----------------------------------------------------------------------------
@@ -331,7 +345,7 @@ undelegate mountPoint events debug callback = do
 -- entry point into isomorphic javascript
 --
 -- <https://en.wikipedia.org/wiki/Hydration_(web_development)>
--- 
+--
 hydrate :: Bool -> JSVal -> JSVal -> JSM ()
 hydrate logLevel mountPoint vtree = void $ do
   ll <- toJSVal logLevel
@@ -417,17 +431,123 @@ addStyleSheet url = do
 fetchJSON
   :: FromJSON action
   => MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ method
+  -> Maybe MisoString
+  -- ^ body
   -> (action -> JSM ())
+  -- ^ successful callback
+  -> (MisoString -> JSM ())
+  -- ^ errorful callback
   -> JSM ()
-fetchJSON url callback = do
-  callback_ <- toJSVal =<< do
+fetchJSON url method body successful errorful = do
+  successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
         Error string ->
           error ("fetchJSON: " <> string <> ": decode failure")
         Success result -> do
-          callback result
+          successful result
+  errorful_ <- toJSVal =<< do
+    asyncCallback1 $ \jval ->
+      fromJSON <$> fromJSValUnchecked jval >>= \case
+        Error string -> do
+          errorful (ms string)
+        Success result -> do
+          successful result
   moduleMiso <- jsg "miso"
   url_ <- toJSVal url
-  void $ moduleMiso # "fetchJSON" $ [url_, callback_]
+  method_ <- toJSVal method
+  body_ <- toJSVal body
+  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, successful_, errorful_]
 -----------------------------------------------------------------------------
+data FetchOptions
+  = FetchOptions
+  { baseUrl :: MisoString
+  , currentPath :: MisoString
+  , body :: Maybe MisoString
+  , headers :: [MisoString]
+  , queryParams :: [(MisoString,MisoString)]
+  }
+-----------------------------------------------------------------------------
+defaultFetchOptions :: FetchOptions
+defaultFetchOptions
+  = FetchOptions
+  { headers = []
+  , baseUrl = mempty
+  , currentPath = ms "/"
+  , queryParams = []
+  , body = Nothing
+  }
+-----------------------------------------------------------------------------
+class HasFetch (api :: Type) where
+  type ToFetch api :: Type
+  fetch :: Proxy api -> MisoString -> ToFetch api
+  fetch proxy url = fetchWith proxy opts
+    where
+      opts = defaultFetchOptions { baseUrl = url }
+
+  fetchWith :: Proxy api -> FetchOptions -> ToFetch api
+
+instance (HasFetch left , HasFetch right) => HasFetch (left :<|> right) where
+  type ToFetch (left :<|> right) = ToFetch left :<|> ToFetch right
+  fetchWith Proxy o = fetchWith (Proxy @left) o :<|> fetchWith (Proxy @right) o
+
+instance (HasFetch api, KnownSymbol path) => HasFetch (path :> api) where
+  type ToFetch (path :> api) = ToFetch api
+  fetchWith Proxy options = fetchWith (Proxy @api) options_
+    where
+      path :: MisoString
+      path = ms $ symbolVal (Proxy @path)
+
+      options_ :: FetchOptions
+      options_ = options {
+        currentPath = currentPath options <> ms "/" <> path
+      }
+
+instance (Show a, HasFetch api, KnownSymbol path) => HasFetch (Capture path a :> api) where
+  type ToFetch (Capture path a :> api) = a -> ToFetch api
+  fetchWith Proxy options arg = fetchWith (Proxy @api) options_
+    where
+      options_ :: FetchOptions
+      options_ = options {
+        currentPath = currentPath options <> ms "/" <> ms (show arg)
+      }
+
+instance (Show a, HasFetch api, KnownSymbol name) => HasFetch (QueryParam name a :> api) where
+  type ToFetch (QueryParam name a :> api) = a -> ToFetch api
+  fetchWith Proxy options arg = fetchWith (Proxy @api) options_
+    where -- TODO: handle me
+      options_ :: FetchOptions
+      options_ = options {
+        currentPath = currentPath options <> ms "/" <> ms (show arg)
+      }
+
+instance (HasFetch api, KnownSymbol name) => HasFetch (QueryFlag name :> api) where
+  type ToFetch (QueryFlag name :> api) = Bool -> ToFetch api
+  fetchWith Proxy options arg = fetchWith (Proxy @api) options_
+    where -- TODO: handle me
+      options_ :: FetchOptions
+      options_ = options {
+        currentPath = currentPath options <> ms "/" <> ms (show arg)
+      }
+
+instance (ToJSON a, HasFetch api) => HasFetch (ReqBody '[JSON] a :> api) where
+  type ToFetch (ReqBody '[JSON] a :> api) = a -> ToFetch api
+  fetchWith Proxy options body_ =
+     fetchWith (Proxy @api) (options_ (ms (encode body_)))
+    where
+      options_ :: MisoString -> FetchOptions
+      options_ b = options { body = Just b }
+
+instance (ReflectMethod method, FromJSON a) => HasFetch (Verb method code content a) where
+  type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
+  fetchWith Proxy FetchOptions {..} success_ error_ = do
+     fetchJSON url (ms (reflectMethod (Proxy @method))) body success_ error_
+    where
+      url = baseUrl <> currentPath
+
+-- instance (KnownSymbol path, HasFetch api) => HasFetch (path :> api) where
+--   type ToFetch (path :> api) = path :> ToFetch api
+--   fetch Proxy = fetch (Proxy @left) :<|> fetch (Proxy @right)
