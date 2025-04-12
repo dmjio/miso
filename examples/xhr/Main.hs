@@ -13,21 +13,29 @@ import           Data.Aeson
 import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
-import           JavaScript.Web.XMLHttpRequest
+import           Language.Javascript.JSaddle (eval, fromJSValUnchecked)
 
 import           Miso hiding (defaultOptions)
 import           Miso.String
+import           Miso.Lens
 
 -- | Model
 newtype Model = Model
-    { info :: Maybe APIInfo
-    } deriving (Eq, Show)
+  { _info :: Maybe APIInfo
+  } deriving (Eq, Show)
+
+info :: Lens Model (Maybe APIInfo)
+info = lens _info $ \r x -> r { _info = x }
 
 -- | Action
 data Action
-    = FetchGitHub
-    | SetGitHub APIInfo
-    deriving (Show, Eq)
+  = FetchGitHub
+  | SetGitHub APIInfo
+  deriving (Show, Eq)
+
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 -- | Main entry point
 main :: IO ()
@@ -41,10 +49,10 @@ emptyModel = Model Nothing
 
 -- | Update your model
 updateModel :: Action -> Effect Model Action ()
-updateModel FetchGitHub = do
-  scheduleIO (SetGitHub <$> getGitHubAPIInfo)
+updateModel FetchGitHub =
+  io (SetGitHub <$> getGitHubAPIInfo)
 updateModel (SetGitHub apiInfo) =
-  modify $ \m -> m { info = Just apiInfo }
+  info ?= apiInfo
 
 -- | View function, with routing
 viewModel :: Model -> View Action
@@ -126,25 +134,14 @@ data APIInfo = APIInfo
     , user_organizations_url :: MisoString
     , user_repositories_url :: MisoString
     , user_search_url :: MisoString
-    }
-    deriving (Show, Eq, Generic)
+    } deriving (Show, Eq, Generic)
 
 instance FromJSON APIInfo where
-    parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' }
 
 getGitHubAPIInfo :: IO APIInfo
 getGitHubAPIInfo = do
-    Just resp <- contents <$> xhrByteString req
-    case eitherDecodeStrict resp :: Either String APIInfo of
-        Left s -> error s
-        Right j -> pure j
-  where
-    req =
-        Request
-            { reqMethod = GET
-            , reqURI = pack "https://api.github.com"
-            , reqLogin = Nothing
-            , reqHeaders = []
-            , reqWithCredentials = False
-            , reqData = NoData
-            }
+  json <- fromJSValUnchecked =<< eval "fetch('https://api.github.com').then(response => response.json())"
+  case eitherDecodeStrict json :: Either String APIInfo of
+    Left s -> error s
+    Right j -> pure j
