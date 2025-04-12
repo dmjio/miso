@@ -64,6 +64,7 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , Fetch (fetch)
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -481,7 +482,7 @@ defaultFetchOptions
   , body = Nothing
   }
 -----------------------------------------------------------------------------
-class HasFetch (api :: Type) where
+class Fetch (api :: Type) where
   type ToFetch api :: Type
   fetch :: Proxy api -> MisoString -> ToFetch api
   fetch proxy url = fetchWith proxy opts
@@ -490,11 +491,11 @@ class HasFetch (api :: Type) where
 
   fetchWith :: Proxy api -> FetchOptions -> ToFetch api
 
-instance (HasFetch left , HasFetch right) => HasFetch (left :<|> right) where
+instance (Fetch left , Fetch right) => Fetch (left :<|> right) where
   type ToFetch (left :<|> right) = ToFetch left :<|> ToFetch right
   fetchWith Proxy o = fetchWith (Proxy @left) o :<|> fetchWith (Proxy @right) o
 
-instance (HasFetch api, KnownSymbol path) => HasFetch (path :> api) where
+instance (Fetch api, KnownSymbol path) => Fetch (path :> api) where
   type ToFetch (path :> api) = ToFetch api
   fetchWith Proxy options = fetchWith (Proxy @api) options_
     where
@@ -506,7 +507,7 @@ instance (HasFetch api, KnownSymbol path) => HasFetch (path :> api) where
         currentPath = currentPath options <> ms "/" <> path
       }
 
-instance (Show a, HasFetch api, KnownSymbol path) => HasFetch (Capture path a :> api) where
+instance (Show a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
   type ToFetch (Capture path a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
@@ -515,7 +516,7 @@ instance (Show a, HasFetch api, KnownSymbol path) => HasFetch (Capture path a :>
         currentPath = currentPath options <> ms "/" <> ms (show arg)
       }
 
-instance (Show a, HasFetch api, KnownSymbol name) => HasFetch (QueryParam name a :> api) where
+instance (Show a, Fetch api, KnownSymbol name) => Fetch (QueryParam name a :> api) where
   type ToFetch (QueryParam name a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where -- TODO: handle me
@@ -524,7 +525,7 @@ instance (Show a, HasFetch api, KnownSymbol name) => HasFetch (QueryParam name a
         currentPath = currentPath options <> ms "/" <> ms (show arg)
       }
 
-instance (HasFetch api, KnownSymbol name) => HasFetch (QueryFlag name :> api) where
+instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
   type ToFetch (QueryFlag name :> api) = Bool -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where -- TODO: handle me
@@ -533,7 +534,7 @@ instance (HasFetch api, KnownSymbol name) => HasFetch (QueryFlag name :> api) wh
         currentPath = currentPath options <> ms "/" <> ms (show arg)
       }
 
-instance (ToJSON a, HasFetch api) => HasFetch (ReqBody '[JSON] a :> api) where
+instance (ToJSON a, Fetch api) => Fetch (ReqBody '[JSON] a :> api) where
   type ToFetch (ReqBody '[JSON] a :> api) = a -> ToFetch api
   fetchWith Proxy options body_ =
      fetchWith (Proxy @api) (options_ (ms (encode body_)))
@@ -541,13 +542,13 @@ instance (ToJSON a, HasFetch api) => HasFetch (ReqBody '[JSON] a :> api) where
       options_ :: MisoString -> FetchOptions
       options_ b = options { body = Just b }
 
-instance (ReflectMethod method, FromJSON a) => HasFetch (Verb method code content a) where
+instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
   type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy FetchOptions {..} success_ error_ = do
      fetchJSON url (ms (reflectMethod (Proxy @method))) body success_ error_
     where
       url = baseUrl <> currentPath
 
--- instance (KnownSymbol path, HasFetch api) => HasFetch (path :> api) where
+-- instance (KnownSymbol path, Fetch api) => Fetch (path :> api) where
 --   type ToFetch (path :> api) = path :> ToFetch api
 --   fetch Proxy = fetch (Proxy @left) :<|> fetch (Proxy @right)

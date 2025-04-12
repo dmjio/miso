@@ -31,7 +31,7 @@ export function fetchJSON (
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-    }
+    },
     method,
   };
   if (body) {

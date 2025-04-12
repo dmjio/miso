@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE DeriveGeneric     #-}
@@ -19,6 +21,9 @@ import           Data.Aeson
 import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
+import           Language.Javascript.JSaddle (JSM)
+import           Data.Proxy
+import           Servant.API
 ----------------------------------------------------------------------------
 import           Miso hiding (defaultOptions)
 import           Miso.String
@@ -39,19 +44,21 @@ main = run $ startApp app
 ----------------------------------------------------------------------------
 -- | Model
 newtype Model = Model
-  { _info :: Maybe APIInfo
+  { _info :: Maybe GitHub
   } deriving (Eq, Show)
 ----------------------------------------------------------------------------
 -- | Lens for info field
-info :: Lens Model (Maybe APIInfo)
+info :: Lens Model (Maybe GitHub)
 info = lens _info $ \r x -> r { _info = x }
 ----------------------------------------------------------------------------
 -- | Action
 data Action
-    = FetchGitHub
-    | SetGitHub APIInfo
-    deriving (Show, Eq)
+  = FetchGitHub
+  | SetGitHub GitHub
+  | ErrorHandler MisoString
+  deriving (Show, Eq)
 ----------------------------------------------------------------------------
+-- | WASM support
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
@@ -62,15 +69,27 @@ app = defaultApp emptyModel updateModel viewModel
 emptyModel :: Model
 emptyModel = Model Nothing
 ----------------------------------------------------------------------------
+-- | GitHub API method
+type GithubAPI = Get '[JSON] GitHub
+----------------------------------------------------------------------------
+-- | Uses servant to reify typesafe calls to the Fetch API
+getGithubAPI
+  :: (GitHub -> JSM ())
+  -- ^ Successful callback
+  -> (MisoString -> JSM ())
+  -- ^ Errorful callback
+  -> JSM ()
+getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
+----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action ()
 updateModel FetchGitHub
   = tell
-  [ \snk ->
-      fetchJSON "https://api.github.com"
-        (snk . SetGitHub)
+  [ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
   ]
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
+updateModel (ErrorHandler msg) =
+  io (consoleError msg)
 ----------------------------------------------------------------------------
 -- | View function, with routing
 viewModel :: Model -> View Action
@@ -98,7 +117,7 @@ viewModel m = view
             []
             [ "No data"
             ]
-          Just APIInfo {..} ->
+          Just GitHub {..} ->
             table_
             [ class_ "table is-striped" ]
             [ thead_
@@ -138,8 +157,8 @@ viewModel m = view
           ]
 ----------------------------------------------------------------------------
 -- | Structure to capture the JSON returned from https://api.github.com
-data APIInfo
-  = APIInfo
+data GitHub
+  = GitHub
   { current_user_url                     :: MisoString
   , current_user_authorizations_html_url :: MisoString
   , authorizations_url                   :: MisoString
@@ -172,6 +191,6 @@ data APIInfo
   , user_search_url                      :: MisoString
   } deriving (Show, Eq, Generic)
 ----------------------------------------------------------------------------
-instance FromJSON APIInfo where
-  parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
+instance FromJSON GitHub where
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' }
 ----------------------------------------------------------------------------
