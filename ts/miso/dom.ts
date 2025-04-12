@@ -1,8 +1,11 @@
 import { DOMRef, VComp, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
+// import { __AddClass } from '@lynx-js/type-element-api';
+
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
+  console.log(__AddClass);
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) create(newObj, parent);
   else if (!newObj) destroy(currentObj, parent);

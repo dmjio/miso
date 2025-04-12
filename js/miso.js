@@ -24,6 +24,7 @@ function mkVNode() {
 
 // ts/miso/dom.ts
 function diff(currentObj, newObj, parent) {
+  console.log(__AddClass);
   if (!currentObj && !newObj)
     return;
   else if (!currentObj && newObj)

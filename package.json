@@ -7,8 +7,8 @@
     "lint": "eslint --fix ts/*.ts",
     "test": "bun test && bun run lcov",
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",
-    "watch": "tsc ts/miso.ts --watch",
-    "watch-test": "tsc ts/spec/*.ts --watch",
+    "watch": "tsc --project tsconfig.lib.json --watch",
+    "watch-test": "tsc --project tsconfig.spec.json --watch",
     "test-runner": "bun test --watch",
     "pretty": "prettier --write ts/miso/*.ts ts/*.ts",
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
@@ -63,6 +63,7 @@
   ],
   "dependencies": {
     "@lcov-viewer/cli": "^1.3.0",
+    "@lynx-js/type-element-api": "./lynx/js_libraries/type-element-api",
     "eslint": "^9.23.0",
     "typescript": "^5.8.2"
   },
