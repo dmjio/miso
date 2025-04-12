@@ -72,6 +72,15 @@ self: super: {
     buildInputs = with self;
       [ microhs microhs-wrapper emscripten nodejs quickjs
       ];
+    # https://github.com/NixOS/nixpkgs/issues/139943#issuecomment-930432045
+    # dmj: Fix for using emcc in Darwin shell environment
+    shellHook = with super;
+      lib.optionalString stdenv.isDarwin ''
+        mkdir -p ~/.emscripten_cache
+        chmod u+rwX -R ~/.emscripten_cache
+        cp -r ${super.emscripten}/share/emscripten/cache ~/.emscripten_cache
+        export EM_CACHE=~/.emscripten_cache
+      '';
   };
 
 }
