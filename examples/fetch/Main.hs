@@ -132,14 +132,14 @@ viewModel m = view
               ]
             , tbody_
               []
-              [ tr current_user_url
-              , tr emojis_url
-              , tr emails_url
-              , tr events_url
-              , tr gists_url
-              , tr feeds_url
-              , tr followers_url
-              , tr following_url
+              [ tr currentUserUrl
+              , tr emojisUrl
+              , tr emailsUrl
+              , tr eventsUrl
+              , tr gistsUrl
+              , tr feedsUrl
+              , tr followersUrl
+              , tr followingUrl
               ]
             ]
       ]
@@ -159,36 +159,36 @@ viewModel m = view
 -- | Structure to capture the JSON returned from https://api.github.com
 data GitHub
   = GitHub
-  { current_user_url                     :: MisoString
-  , current_user_authorizations_html_url :: MisoString
-  , authorizations_url                   :: MisoString
-  , code_search_url                      :: MisoString
-  , commit_search_url                    :: MisoString
-  , emails_url                           :: MisoString
-  , emojis_url                           :: MisoString
-  , events_url                           :: MisoString
-  , feeds_url                            :: MisoString
-  , followers_url                        :: MisoString
-  , following_url                        :: MisoString
-  , gists_url                            :: MisoString
-  , hub_url                              :: MisoString
-  , issue_search_url                     :: MisoString
-  , issues_url                           :: MisoString
-  , keys_url                             :: MisoString
-  , notifications_url                    :: MisoString
-  , organization_repositories_url        :: MisoString
-  , organization_url                     :: MisoString
-  , public_gists_url                     :: MisoString
-  , rate_limit_url                       :: MisoString
-  , repository_url                       :: MisoString
-  , repository_search_url                :: MisoString
-  , current_user_repositories_url        :: MisoString
-  , starred_url                          :: MisoString
-  , starred_gists_url                    :: MisoString
-  , user_url                             :: MisoString
-  , user_organizations_url               :: MisoString
-  , user_repositories_url                :: MisoString
-  , user_search_url                      :: MisoString
+  { currentUserUrl                   :: MisoString
+  , currentUserAuthorizationsHtmlUrl :: MisoString
+  , authorizationsUrl                :: MisoString
+  , codeSearchUrl                    :: MisoString
+  , commitSearchUrl                  :: MisoString
+  , emailsUrl                        :: MisoString
+  , emojisUrl                        :: MisoString
+  , eventsUrl                        :: MisoString
+  , feedsUrl                         :: MisoString
+  , followersUrl                     :: MisoString
+  , followingUrl                     :: MisoString
+  , gistsUrl                         :: MisoString
+  , hubUrl                           :: MisoString
+  , issueSearchUrl                   :: MisoString
+  , issuesUrl                        :: MisoString
+  , keysUrl                          :: MisoString
+  , notificationsUrl                 :: MisoString
+  , organizationRepositoriesUrl      :: MisoString
+  , organizationUrl                  :: MisoString
+  , publicGistsUrl                   :: MisoString
+  , rateLimitUrl                     :: MisoString
+  , repositoryUrl                    :: MisoString
+  , repositorySearchUrl              :: MisoString
+  , currentUserRepositoriesUrl       :: MisoString
+  , starredUrl                       :: MisoString
+  , starredGistsUrl                  :: MisoString
+  , userUrl                          :: MisoString
+  , userOrganizationsUrl             :: MisoString
+  , userRepositoriesUrl              :: MisoString
+  , userSearchUrl                    :: MisoString
   } deriving (Show, Eq, Generic)
 ----------------------------------------------------------------------------
 instance FromJSON GitHub where
