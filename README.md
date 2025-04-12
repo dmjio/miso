@@ -21,7 +21,7 @@
     <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
   </a>
   <a href="https://discord.gg/2aQQuZ4H">
-    <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord">
+    <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord&logoColor=7289da">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
     <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
