@@ -15,9 +15,12 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {},
-    onBeforeDestroyed: () => {},
-    onCreated: () => {},
+    onDestroyed: () => {
+    },
+    onBeforeDestroyed: () => {
+    },
+    onCreated: () => {
+    },
     type: "vnode"
   };
 }
@@ -617,6 +620,14 @@ function callBlur(id, delay) {
 function setBodyComponent(componentId) {
   document.body.setAttribute("data-component-id", componentId);
 }
+function fetchJSON(url, callback) {
+  const options = {
+    headers: {
+      "Content-Type": "application/json"
+    }
+  };
+  fetch(url, options).then((response) => response.json()).then(callback).catch((e) => console.error(e));
+}
 var version = "1.9.0.0";
 
 // ts/index.ts
@@ -628,6 +639,7 @@ globalThis["miso"]["delegate"] = delegate;
 globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
+globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["setBodyComponent"] = setBodyComponent;

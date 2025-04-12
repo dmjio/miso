@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns        #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -52,6 +53,7 @@ module Miso.FFI.Internal
    , setBodyComponent
    , addStyle
    , addStyleSheet
+   , fetchJSON
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -60,7 +62,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
-import           Language.Javascript.JSaddle
+import           Language.Javascript.JSaddle hiding (Success)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
@@ -400,4 +402,27 @@ addStyleSheet url = do
   _ <- link # "setAttribute" $ ["rel","stylesheet"]
   _ <- link # "setAttribute" $ ["href", fromMisoString url]
   void $ jsg "document" ! "head" # "appendChild" $ [link]
+-----------------------------------------------------------------------------
+-- | Retrieve JSON via Fetch API
+--
+-- Basic GET of JSON using Fetch API, will be expanded upon.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
+--
+fetchJSON
+  :: FromJSON action
+  => MisoString
+  -> (action -> JSM ())
+  -> JSM ()
+fetchJSON url callback = do
+  callback_ <- toJSVal =<< do
+    asyncCallback1 $ \jval ->
+      fromJSON <$> fromJSValUnchecked jval >>= \case
+        Error string ->
+          error ("fetchJSON: " <> string <> ": decode failure")
+        Success result -> do
+          callback result
+  moduleMiso <- jsg "miso"
+  url_ <- toJSVal url
+  void $ moduleMiso # "fetchJSON" $ [url_, callback_]
 -----------------------------------------------------------------------------

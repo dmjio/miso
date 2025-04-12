@@ -146,7 +146,7 @@ executable file-reader
     miso,
     mtl
 
-executable xhr
+executable fetch
   import:
     common-options, js-only
   default-language:
@@ -158,7 +158,7 @@ executable xhr
   cpp-options:
     -DGHCJS_BROWSER
   hs-source-dirs:
-    xhr
+    fetch
   build-depends:
     aeson,
     base < 5,

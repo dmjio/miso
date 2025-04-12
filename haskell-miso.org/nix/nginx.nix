@@ -153,12 +153,12 @@ with (import ../../default.nix {});
            };
          };
        };
-       "xhr.haskell-miso.org" = {
+       "fetch.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;
           locations = {
           "/" = {
-            root = "${miso-examples}/bin/xhr.jsexe";
+            root = "${miso-examples}/bin/fetch.jsexe";
            };
          };
        };

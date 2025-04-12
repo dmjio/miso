@@ -30,7 +30,7 @@
   </a>
 </p>
 
-**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). **Miso** is pure by default, but side effects (like `XHR`) can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
+**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -47,7 +47,7 @@
   - [Miso Plane (Flappy Birds)](#miso-plane-flappy-birds)
   - [Websocket](#websocket)
   - [SSE](#sse)
-  - [XHR](#xhr)
+  - [Fetch](#fetch)
   - [Router](#router)
   - [SVG](#svg)
   - [Canvas 2D](#canvas-2d)
@@ -204,8 +204,8 @@ For details of the internals and general overview of how `miso` works, see the [
 ### SSE
   - [Link](http://sse.haskell-miso.org/) / [Client](https://github.com/dmjio/miso/blob/master/examples/sse/client/Main.hs) / [Server](https://github.com/dmjio/miso/blob/master/examples/sse/server/Main.hs)
 
-### XHR
-  - [Link](https://xhr.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/xhr/Main.hs)
+### Fetch
+  - [Link](https://fetch.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs)
 
 ### Router
   - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
@@ -334,7 +334,7 @@ This will build all examples and documentation into a folder named `result`
 |-- threejs.jsexe
 |-- todo-mvc.jsexe
 |-- websocket.jsexe
-`-- xhr.jsexe
+`-- fetch.jsexe
 ```
 
 To see examples, we recommend hosting them with a webserver
