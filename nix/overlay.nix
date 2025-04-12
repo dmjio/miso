@@ -74,8 +74,7 @@ self: super: {
       ];
     # https://github.com/NixOS/nixpkgs/issues/139943#issuecomment-930432045
     # dmj: Fix for using emcc in Darwin shell environment
-    shellHook = with super;
-      lib.optionalString stdenv.isDarwin ''
+    shellHook = with super; ''
         mkdir -p ~/.emscripten_cache
         chmod u+rwX -R ~/.emscripten_cache
         cp -r ${super.emscripten}/share/emscripten/cache ~/.emscripten_cache
