@@ -8,11 +8,9 @@
 </p>
 
 <p align="center">
-
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
     <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
   </a>
-
   <a href="https://haskell.org">
     <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
   </a>
@@ -21,6 +19,9 @@
   </a>
   <a href="https://github.com/dmjio/miso/actions">
     <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
+  </a>
+  <a href="https://discord.gg/2aQQuZ4H">
+    <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord">
   </a>
   <a href="http://hackage.haskell.org/package/miso">
     <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
