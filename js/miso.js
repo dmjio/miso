@@ -635,13 +635,18 @@ function callBlur(id, delay) {
 function setBodyComponent(componentId) {
   document.body.setAttribute("data-component-id", componentId);
 }
-function fetchJSON(url, callback) {
-  const options = {
+function fetchJSON(url, method, body, successful, errorful) {
+  var options = {
     headers: {
-      "Content-Type": "application/json"
-    }
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    method
   };
-  fetch(url, options).then((response) => response.json()).then(callback).catch((e) => console.error(e));
+  if (body) {
+    options["body"] = body;
+  }
+  fetch(url, options).then((response) => response.json()).then(successful).catch(errorful);
 }
 var version = "1.9.0.0";
 
