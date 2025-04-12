@@ -160,6 +160,13 @@ community = template v
                     ]
                     [ text "#haskell-miso"
                     ]
+                , text " / "
+                , a_
+                    [ href_ "https://discord.gg/2aQQuZ4H"
+                    , target_ "_blank"
+                    ]
+                    [ text "Discord"
+                    ]
                 ]
             ]
 
