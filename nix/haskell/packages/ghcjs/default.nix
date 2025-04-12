@@ -36,8 +36,6 @@ self: super:
     mkdir -p $out/bin/mario.jsexe/imgs
     cp -fr ${self.miso-examples-core}/bin/*.jsexe $out/*
     cp -frv ${source.examples}/mario/imgs $out/bin/mario.jsexe/
-    chmod +w $out/bin/xhr.jsexe/index.html
-    cp -fv ${source.examples}/xhr/index.html $out/bin/xhr.jsexe/index.html
     chmod +w $out/bin/threejs.jsexe/index.html
     cp -fv ${source.examples}/three/index.html $out/bin/threejs.jsexe/index.html
     chmod +w $out/bin/todo-mvc.jsexe/index.html

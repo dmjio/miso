@@ -19,4 +19,16 @@ export function setBodyComponent(componentId: string): void {
   document.body.setAttribute('data-component-id', componentId);
 }
 
+export function fetchJSON(url, callback: (string) => void): void {
+  const options = {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+  fetch (url, options)
+    .then(response => response.json())
+    .then(callback)
+    .catch ((e) => console.error(e));
+}
+
 export const version: string = '1.9.0.0';

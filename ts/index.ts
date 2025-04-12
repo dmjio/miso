@@ -6,6 +6,7 @@ import {
   callBlur,
   callFocus,
   eventJSON,
+  fetchJSON,
   undelegate,
   integrityCheck,
   setBodyComponent,
@@ -20,6 +21,7 @@ globalThis['miso']['delegate'] = delegate;
 globalThis['miso']['callBlur'] = callBlur;
 globalThis['miso']['callFocus'] = callFocus;
 globalThis['miso']['eventJSON'] = eventJSON;
+globalThis['miso']['fetchJSON'] = fetchJSON;
 globalThis['miso']['undelegate'] = undelegate;
 globalThis['miso']['integrityCheck'] = integrityCheck;
 globalThis['miso']['setBodyComponent'] = setBodyComponent;

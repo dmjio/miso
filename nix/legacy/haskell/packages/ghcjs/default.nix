@@ -31,7 +31,6 @@ self: super:
       mkdir -p $out/bin/mario.jsexe/imgs
       mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
-      cp ${drv.src}/xhr/index.html $out/bin/xhr.jsexe/
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
       ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
          --jscomp_off=checkVars \

@@ -27,6 +27,7 @@ module Miso.FFI
   , syncCallback
   , syncCallback1
   , asyncCallback
+  , fetchJSON
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
