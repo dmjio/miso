@@ -15,10 +15,14 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {},
-    onBeforeDestroyed: () => {},
-    onCreated: () => {},
-    onBeforeCreated: () => {},
+    onDestroyed: () => {
+    },
+    onBeforeDestroyed: () => {
+    },
+    onCreated: () => {
+    },
+    onBeforeCreated: () => {
+    },
     type: "vnode"
   };
 }
