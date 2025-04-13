@@ -1,10 +1,10 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -71,7 +71,7 @@ emptyModel = Model Nothing
 -- | GitHub API method
 type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
--- | Uses servant to reify typesafe calls to the Fetch API
+-- | Uses servant to reify type-safe calls to the Fetch API
 getGithubAPI
   :: (GitHub -> JSM ())
   -- ^ Successful callback

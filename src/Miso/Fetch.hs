@@ -19,6 +19,39 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Module for interacting with the Fetch API <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
+-- with a servant-style interface.
+--
+-- > import Miso (fetch)
+-- > import Data.Proxy
+-- > import Servant.API
+-- >
+-- > data Action
+-- >  = FetchGitHub
+-- >  | SetGitHub GitHub
+-- >  | ErrorHandler MisoString
+-- >  deriving (Show, Eq)
+-- >
+-- > type GithubAPI = Get '[JSON] GitHub
+-- >
+-- > getGithubAPI
+-- >   :: (GitHub -> JSM ())
+-- >   -- ^ Successful callback
+-- >   -> (MisoString -> JSM ())
+-- >   -- ^ Errorful callback
+-- >   -> JSM ()
+-- > getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
+-- >
+-- > updateModel :: Action -> Effect Model Action ()
+-- > updateModel FetchGitHub =
+-- >   withSink $ \snk ->
+-- >     getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
+-- > updateModel (SetGitHub apiInfo) =
+-- >   info ?= apiInfo
+-- > updateModel (ErrorHandler msg) =
+-- >   io (consoleError msg)
+--
 ----------------------------------------------------------------------------
 module Miso.Fetch
   ( -- * Class
