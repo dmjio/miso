@@ -20,7 +20,7 @@
   <a href="https://github.com/dmjio/miso/actions">
     <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
   </a>
-  <a href="https://discord.gg/2aQQuZ4H">
+  <a href="https://discord.gg/QVDtfYNSxq">
     <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord&logoColor=7289da">
   </a>
   <a href="http://hackage.haskell.org/package/miso">

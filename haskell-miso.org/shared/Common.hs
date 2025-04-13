@@ -162,7 +162,7 @@ community = template v
                     ]
                 , text " / "
                 , a_
-                    [ href_ "https://discord.gg/2aQQuZ4H"
+                    [ href_ "https://discord.gg/QVDtfYNSxq"
                     , target_ "_blank"
                     ]
                     [ text "Discord"
