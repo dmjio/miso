@@ -15,12 +15,10 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
     type: "vnode"
   };
 }
@@ -85,12 +83,13 @@ function callDestroyed(obj) {
     unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
-  if (obj["vtype"] === "vcomp" && "onBeforeUnmounted" in obj)
-    obj["onBeforeUnmounted"]();
   if (obj["onBeforeDestroyed"])
     obj["onBeforeDestroyed"]();
 }
 function callBeforeDestroyedRecursive(obj) {
+  if (obj["type"] === "vcomp" && obj["onBeforeUnmounted"]) {
+    obj["onBeforeUnmounted"]();
+  }
   callBeforeDestroyed(obj);
   for (const i in obj["children"]) {
     callBeforeDestroyedRecursive(obj["children"][i]);

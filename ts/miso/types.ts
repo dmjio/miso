@@ -38,8 +38,9 @@ type VNode = {
   events: Events;
   children: Array<VTree>;
   onDestroyed: () => void;
-  onCreated: () => void;
   onBeforeDestroyed: () => void;
+  onCreated: () => void;
+  onBeforeCreated: () => void;
 };
 
 type VText = {
