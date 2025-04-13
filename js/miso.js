@@ -95,10 +95,14 @@ function callBeforeDestroyedRecursive(obj) {
   }
 }
 function callCreated(obj) {
-  if (obj["onCreated"])
-    obj["onCreated"]();
   if (obj["type"] === "vcomp")
     mountComponent(obj);
+  if (obj["onCreated"])
+    obj["onCreated"]();
+}
+function callBeforeCreated(obj) {
+  if (obj["onBeforeCreated"])
+    obj["onBeforeCreated"]();
 }
 function populate(c, n) {
   if (n["type"] !== "vtext") {
@@ -193,6 +197,7 @@ function populateDomRef(obj) {
   }
 }
 function createElement(obj, cb) {
+  callBeforeCreated(obj);
   populateDomRef(obj);
   cb(obj["domRef"]);
   populate(null, obj);

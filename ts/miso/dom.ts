@@ -90,8 +90,8 @@ function callBeforeDestroyedRecursive(obj: VTree): void {
 
 // ** </> recursive calls to hooks
 export function callCreated(obj: VTree): void {
-  if (obj['type'] === 'vcomp') mountComponent(obj);
   if (obj['onCreated']) obj['onCreated']();
+  if (obj['type'] === 'vcomp') mountComponent(obj);
 }
 
 export function callBeforeCreated(obj: VTree): void {
