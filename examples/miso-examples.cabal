@@ -163,9 +163,10 @@ executable fetch
     aeson,
     base < 5,
     containers,
-    ghcjs-base,
+    jsaddle,
     miso,
-    mtl
+    mtl,
+    servant
 
 executable canvas2d
   import:
