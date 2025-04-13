@@ -32,6 +32,7 @@ module Miso.Effect
   , batchEff
   , io
   , issue
+  , withSink
   -- * Internal
   , runEffect
   ) where
@@ -184,6 +185,14 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -- which introduces a leaky-abstraction.
 scheduleSub :: Sub action -> Effect model action ()
 scheduleSub sub = Effect $ lift $ tell [ sub ]
+-----------------------------------------------------------------------------
+-- | 'withSink' allows users to access the sink of the 'Component' or top-level
+-- 'App' in their application. This is useful for introducing I/O into the system.
+--
+-- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+--
+withSink :: (Sink action -> JSM ()) -> Effect model action ()
+withSink f = Effect $ lift $ tell [ f ]
 -----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --

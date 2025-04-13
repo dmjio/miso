@@ -15,10 +15,14 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {},
-    onBeforeDestroyed: () => {},
-    onCreated: () => {},
-    onBeforeCreated: () => {},
+    onDestroyed: () => {
+    },
+    onBeforeDestroyed: () => {
+    },
+    onCreated: () => {
+    },
+    onBeforeCreated: () => {
+    },
     type: "vnode"
   };
 }
@@ -635,13 +639,17 @@ function callBlur(id, delay) {
 function setBodyComponent(componentId) {
   document.body.setAttribute("data-component-id", componentId);
 }
-function fetchJSON(url, callback) {
-  const options = {
-    headers: {
-      "Content-Type": "application/json"
+function fetchJSON(url, method, body, headers, successful, errorful) {
+  var options = { method, headers };
+  if (body) {
+    options["body"] = body;
+  }
+  fetch(url, options).then((response) => {
+    if (!response.ok) {
+      throw new Error(response.statusMessage);
     }
-  };
-  fetch(url, options).then((response) => response.json()).then(callback).catch((e) => console.error(e));
+    return response.json();
+  }).then(successful).catch(errorful);
 }
 var version = "1.9.0.0";
 

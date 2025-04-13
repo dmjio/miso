@@ -1,8 +1,10 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -14,11 +16,13 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import           Control.Monad.Writer
 import           Data.Aeson
 import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
+import           Language.Javascript.JSaddle (JSM)
+import           Data.Proxy
+import           Servant.API
 ----------------------------------------------------------------------------
 import           Miso hiding (defaultOptions)
 import           Miso.String
@@ -39,19 +43,21 @@ main = run $ startApp app
 ----------------------------------------------------------------------------
 -- | Model
 newtype Model = Model
-  { _info :: Maybe APIInfo
+  { _info :: Maybe GitHub
   } deriving (Eq, Show)
 ----------------------------------------------------------------------------
 -- | Lens for info field
-info :: Lens Model (Maybe APIInfo)
+info :: Lens Model (Maybe GitHub)
 info = lens _info $ \r x -> r { _info = x }
 ----------------------------------------------------------------------------
 -- | Action
 data Action
-    = FetchGitHub
-    | SetGitHub APIInfo
-    deriving (Show, Eq)
+  = FetchGitHub
+  | SetGitHub GitHub
+  | ErrorHandler MisoString
+  deriving (Show, Eq)
 ----------------------------------------------------------------------------
+-- | WASM support
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
@@ -62,15 +68,24 @@ app = defaultApp emptyModel updateModel viewModel
 emptyModel :: Model
 emptyModel = Model Nothing
 ----------------------------------------------------------------------------
+-- | GitHub API method
+type GithubAPI = Get '[JSON] GitHub
+----------------------------------------------------------------------------
+-- | Uses servant to reify type-safe calls to the Fetch API
+getGithubAPI
+  :: (GitHub -> JSM ())
+  -- ^ Successful callback
+  -> (MisoString -> JSM ())
+  -- ^ Errorful callback
+  -> JSM ()
+getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
+----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action ()
-updateModel FetchGitHub
-  = tell
-  [ \snk ->
-      fetchJSON "https://api.github.com"
-        (snk . SetGitHub)
-  ]
+updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
+updateModel (ErrorHandler msg) =
+  io (consoleError msg)
 ----------------------------------------------------------------------------
 -- | View function, with routing
 viewModel :: Model -> View Action
@@ -86,11 +101,11 @@ viewModel m = view
       [ h1_
         [ class_ $ pack "title"
         ]
-        [ text $ pack "Miso Fetch Example"
+        [ "🍜 Miso Fetch API"
         ]
       , button_
         attrs
-        [ text $ pack "Fetch JSON from https://api.github.com via Fetch API"
+        [ "Fetch JSON from https://api.github.com"
         ]
       , case m ^. info of
           Nothing ->
@@ -98,7 +113,7 @@ viewModel m = view
             []
             [ "No data"
             ]
-          Just APIInfo {..} ->
+          Just GitHub {..} ->
             table_
             [ class_ "table is-striped" ]
             [ thead_
@@ -113,14 +128,14 @@ viewModel m = view
               ]
             , tbody_
               []
-              [ tr current_user_url
-              , tr emojis_url
-              , tr emails_url
-              , tr events_url
-              , tr gists_url
-              , tr feeds_url
-              , tr followers_url
-              , tr following_url
+              [ tr currentUserUrl
+              , tr emojisUrl
+              , tr emailsUrl
+              , tr eventsUrl
+              , tr gistsUrl
+              , tr feedsUrl
+              , tr followersUrl
+              , tr followingUrl
               ]
             ]
       ]
@@ -138,40 +153,40 @@ viewModel m = view
           ]
 ----------------------------------------------------------------------------
 -- | Structure to capture the JSON returned from https://api.github.com
-data APIInfo
-  = APIInfo
-  { current_user_url                     :: MisoString
-  , current_user_authorizations_html_url :: MisoString
-  , authorizations_url                   :: MisoString
-  , code_search_url                      :: MisoString
-  , commit_search_url                    :: MisoString
-  , emails_url                           :: MisoString
-  , emojis_url                           :: MisoString
-  , events_url                           :: MisoString
-  , feeds_url                            :: MisoString
-  , followers_url                        :: MisoString
-  , following_url                        :: MisoString
-  , gists_url                            :: MisoString
-  , hub_url                              :: MisoString
-  , issue_search_url                     :: MisoString
-  , issues_url                           :: MisoString
-  , keys_url                             :: MisoString
-  , notifications_url                    :: MisoString
-  , organization_repositories_url        :: MisoString
-  , organization_url                     :: MisoString
-  , public_gists_url                     :: MisoString
-  , rate_limit_url                       :: MisoString
-  , repository_url                       :: MisoString
-  , repository_search_url                :: MisoString
-  , current_user_repositories_url        :: MisoString
-  , starred_url                          :: MisoString
-  , starred_gists_url                    :: MisoString
-  , user_url                             :: MisoString
-  , user_organizations_url               :: MisoString
-  , user_repositories_url                :: MisoString
-  , user_search_url                      :: MisoString
+data GitHub
+  = GitHub
+  { currentUserUrl                   :: MisoString
+  , currentUserAuthorizationsHtmlUrl :: MisoString
+  , authorizationsUrl                :: MisoString
+  , codeSearchUrl                    :: MisoString
+  , commitSearchUrl                  :: MisoString
+  , emailsUrl                        :: MisoString
+  , emojisUrl                        :: MisoString
+  , eventsUrl                        :: MisoString
+  , feedsUrl                         :: MisoString
+  , followersUrl                     :: MisoString
+  , followingUrl                     :: MisoString
+  , gistsUrl                         :: MisoString
+  , hubUrl                           :: MisoString
+  , issueSearchUrl                   :: MisoString
+  , issuesUrl                        :: MisoString
+  , keysUrl                          :: MisoString
+  , notificationsUrl                 :: MisoString
+  , organizationRepositoriesUrl      :: MisoString
+  , organizationUrl                  :: MisoString
+  , publicGistsUrl                   :: MisoString
+  , rateLimitUrl                     :: MisoString
+  , repositoryUrl                    :: MisoString
+  , repositorySearchUrl              :: MisoString
+  , currentUserRepositoriesUrl       :: MisoString
+  , starredUrl                       :: MisoString
+  , starredGistsUrl                  :: MisoString
+  , userUrl                          :: MisoString
+  , userOrganizationsUrl             :: MisoString
+  , userRepositoriesUrl              :: MisoString
+  , userSearchUrl                    :: MisoString
   } deriving (Show, Eq, Generic)
 ----------------------------------------------------------------------------
-instance FromJSON APIInfo where
-  parseJSON = genericParseJSON defaultOptions{fieldLabelModifier = camelTo2 '_'}
+instance FromJSON GitHub where
+  parseJSON = genericParseJSON defaultOptions { fieldLabelModifier = camelTo2 '_' }
 ----------------------------------------------------------------------------
