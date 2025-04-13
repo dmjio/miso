@@ -646,7 +646,13 @@ function fetchJSON(url, method, body, successful, errorful) {
   if (body) {
     options["body"] = body;
   }
-  fetch(url, options).then((response) => response.json()).then(successful).catch(errorful);
+  fetch(url, options).then((response) => {
+    console.log(response);
+    if (!response.ok) {
+      throw new Error("400/500 code received");
+    }
+    return response.json();
+  }).then(successful).catch(errorful);
 }
 var version = "1.9.0.0";
 

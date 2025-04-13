@@ -105,6 +105,7 @@ module Miso.Lens
   , (&)
     -- ** Combinators
   , (.~)
+  , (?~)
   , set
   , (%~)
   , over
@@ -186,6 +187,20 @@ infixr 4 .~
 --
 set :: Lens record field -> field -> record -> record
 set = (.~)
+----------------------------------------------------------------------------
+-- | Set an options field on a record
+--
+-- > newtype Person = Person { _name :: Maybe String }
+--
+-- > name :: Lens Person (Maybe String)
+-- > name = lens _name $ \person n -> person { _name = n }
+--
+-- > setName :: Person -> String -> Person
+-- > setName person newName = person & name ?~ newName
+--
+infixr 4 ?~
+(?~) :: Lens record (Maybe field) -> field -> record -> record
+(?~) _lens f r = r & _lens .~ Just f
 ----------------------------------------------------------------------------
 -- | Modify a field on a record
 --

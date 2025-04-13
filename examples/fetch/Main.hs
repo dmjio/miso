@@ -16,7 +16,6 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import           Control.Monad.Writer
 import           Data.Aeson
 import qualified Data.Map as M
 import           Data.Maybe
@@ -82,10 +81,7 @@ getGithubAPI
 getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action ()
-updateModel FetchGitHub
-  = tell
-  [ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
-  ]
+updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =
