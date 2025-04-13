@@ -381,6 +381,18 @@ describe('DOM tests', () => {
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
+  test('Should call onBeforeCreated', () => {
+    // populate DOM
+    let beforeCreated = 0;
+    const currentNode = vnode({
+      onBeforeCreated: () => {
+        beforeCreated++;
+      }
+    });
+    diff(null, currentNode, document.body);
+    expect(beforeCreated).toBe(1);
+  });
+
   test('Should call onCreated and onDestroyed', () => {
     // populate DOM
     let create = 0,

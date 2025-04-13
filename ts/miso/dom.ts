@@ -90,8 +90,12 @@ function callBeforeDestroyedRecursive(obj: VTree): void {
 
 // ** </> recursive calls to hooks
 export function callCreated(obj: VTree): void {
-  if (obj['onCreated']) obj['onCreated']();
   if (obj['type'] === 'vcomp') mountComponent(obj);
+  if (obj['onCreated']) obj['onCreated']();
+}
+
+export function callBeforeCreated(obj: VTree): void {
+  if (obj['onBeforeCreated']) obj['onBeforeCreated']();
 }
 
 export function populate(c: VTree, n: VTree): void {
@@ -198,6 +202,7 @@ function populateDomRef(obj: VTree): void {
 }
 // dmj: refactor this, the callback function feels meh
 function createElement(obj: VTree, cb: (e: Node) => void): void {
+  callBeforeCreated(obj);
   populateDomRef(obj);
   cb(obj['domRef']);
   populate(null, obj);
