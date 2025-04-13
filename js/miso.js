@@ -81,12 +81,14 @@ function callDestroyedRecursive(obj) {
 function callDestroyed(obj) {
   if (obj["onDestroyed"])
     obj["onDestroyed"]();
+  if (obj["type"] === "vcomp")
+    unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
+  if (obj["vtype"] === "vcomp" && "onBeforeUnmounted" in obj)
+    obj["onBeforeUnmounted"]();
   if (obj["onBeforeDestroyed"])
     obj["onBeforeDestroyed"]();
-  if (obj["type"] === "vcomp")
-    obj["unmount"](obj["domRef"]);
 }
 function callBeforeDestroyedRecursive(obj) {
   callBeforeDestroyed(obj);
@@ -95,10 +97,10 @@ function callBeforeDestroyedRecursive(obj) {
   }
 }
 function callCreated(obj) {
-  if (obj["type"] === "vcomp")
-    mountComponent(obj);
   if (obj["onCreated"])
     obj["onCreated"]();
+  if (obj["type"] === "vcomp")
+    mountComponent(obj);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
@@ -203,6 +205,11 @@ function createElement(obj, cb) {
   populate(null, obj);
   callCreated(obj);
 }
+function unmountComponent(obj) {
+  if ("onUnmounted" in obj)
+    obj["onUnmounted"]();
+  obj["unmount"]();
+}
 function mountComponent(obj) {
   const componentId = obj["data-component-id"], nodeList = document.querySelectorAll("[data-component-id='" + componentId + "']");
   if (nodeList.length > 0) {
@@ -210,9 +217,13 @@ function mountComponent(obj) {
     return;
   }
   obj["domRef"].setAttribute("data-component-id", componentId);
+  if (obj["onBeforeMounted"])
+    obj["onBeforeMounted"]();
   obj["mount"]((component) => {
     obj["children"].push(component);
     obj["domRef"].appendChild(component["domRef"]);
+    if (obj["onMounted"])
+      obj["onMounted"]();
   });
 }
 function create(obj, parent) {

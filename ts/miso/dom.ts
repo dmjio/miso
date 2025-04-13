@@ -74,11 +74,12 @@ function callDestroyedRecursive(obj: VTree): void {
 
 function callDestroyed(obj: VTree): void {
   if (obj['onDestroyed']) obj['onDestroyed']();
+  if (obj['type'] === 'vcomp') unmountComponent(obj);
 }
 
 function callBeforeDestroyed(obj: VTree): void {
+  if (obj['vtype'] === 'vcomp' && 'onBeforeUnmounted' in obj) obj['onBeforeUnmounted']();
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
-  if (obj['type'] === 'vcomp') obj['unmount'](obj['domRef']);
 }
 
 function callBeforeDestroyedRecursive(obj: VTree): void {
@@ -208,6 +209,13 @@ function createElement(obj: VTree, cb: (e: Node) => void): void {
   populate(null, obj);
   callCreated(obj);
 }
+
+// unmount components
+function unmountComponent(obj: VTree): void {
+  if ('onUnmounted' in obj) obj['onUnmounted']();
+  obj['unmount']();
+}
+
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent(obj: VTree): void {
@@ -222,11 +230,14 @@ function mountComponent(obj: VTree): void {
   // Now we gen the component and append it to the vdom and real dom
   (obj['domRef'] as Element).setAttribute('data-component-id', componentId);
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
+  if (obj['onBeforeMounted']) obj['onBeforeMounted']();
+  // Call 'onBeforeMounted' before calling 'mount'
   obj['mount']((component: VComp) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
     obj['domRef'].appendChild(component['domRef']);
+    if (obj['onMounted']) obj['onMounted']();
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)

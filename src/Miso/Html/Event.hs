@@ -134,13 +134,19 @@ onWithOptions options eventName Decoder{..} toAction =
 -- element is created.
 --
 onMounted :: action -> Attribute action
-onMounted = onCreated
+onMounted action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeMounted action@ is an event that gets called before the actual DOM
 -- element is created.
 --
 onBeforeMounted :: action -> Attribute action
-onBeforeMounted = onBeforeCreated
+onBeforeMounted action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onBeforeMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
@@ -165,13 +171,19 @@ onDestroyed action =
 -- is removed from the DOM.
 --
 onUnmounted :: action -> Attribute action
-onUnmounted = onDestroyed
+onUnmounted action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
 -- is removed from the DOM.
 --
 onBeforeUnmounted :: action -> Attribute action
-onBeforeUnmounted = onBeforeDestroyed
+onBeforeUnmounted action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
