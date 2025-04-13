@@ -27,7 +27,6 @@ module Miso.FFI
   , syncCallback
   , syncCallback1
   , asyncCallback
-  , Fetch(fetch)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

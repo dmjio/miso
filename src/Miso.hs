@@ -42,6 +42,8 @@ module Miso
   , module Miso.Subscription
     -- * Storage
   , module Miso.Storage
+    -- * Fetch
+  , module Miso.Fetch
     -- * Util
   , module Miso.Util
     -- * FFI
@@ -62,6 +64,7 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Exception
+import           Miso.Fetch
 import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
