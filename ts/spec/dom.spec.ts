@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { vnode, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
+import { vnode, vcomp, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
 import { VNode, VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
@@ -412,6 +412,44 @@ describe('DOM tests', () => {
     diff(currentNode, null, document.body);
     expect(destroy).toBe(1);
   });
+
+  test('Should call entire mounting lifecycle', () => {
+    let beforeMounted = 0;
+    let mount = 0;
+    let mounted = 0;
+    let beforeUnmounted = 0;
+    let unmounted = 0;
+    let unmount = 0;
+    const currentNode = vcomp({
+      onBeforeMounted: () => {
+        beforeMounted++;
+      },
+      mount: () => {
+        mount++;
+        mounted++; //dmj : 'onMounted' is called inside of 'mount' callback in dom.ts
+      },
+      onBeforeUnmounted: () => {
+        beforeUnmounted++;
+      },
+      onUnmounted: () => {
+        unmounted++;
+      },
+      unmount: () => {
+        unmount++;
+      }
+    });
+    diff(null, currentNode, document.body);
+    expect(beforeMounted).toBe(1);
+    expect(mount).toBe(1);
+    expect(mounted).toBe(1);
+
+    diff(currentNode, null, document.body);
+    expect(beforeUnmounted).toBe(1);
+    expect(unmounted).toBe(1);
+    expect(unmount).toBe(1);
+    expect(mounted).toBe(1);
+  });
+
 
   test('Should call onCreated and onBeforeDestroyed', () => {
     let create = 0,

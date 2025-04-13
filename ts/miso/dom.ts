@@ -78,11 +78,13 @@ function callDestroyed(obj: VTree): void {
 }
 
 function callBeforeDestroyed(obj: VTree): void {
-  if (obj['vtype'] === 'vcomp' && 'onBeforeUnmounted' in obj) obj['onBeforeUnmounted']();
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
 }
 
 function callBeforeDestroyedRecursive(obj: VTree): void {
+  if (obj['vtype'] === 'vcomp' && obj['onBeforeUnmounted']) {
+    obj['onBeforeUnmounted']();
+  }
   callBeforeDestroyed(obj);
   for (const i in obj['children']) {
     callBeforeDestroyedRecursive(obj['children'][i]);
