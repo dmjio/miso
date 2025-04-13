@@ -101,11 +101,11 @@ viewModel m = view
       [ h1_
         [ class_ $ pack "title"
         ]
-        [ text $ pack "Miso Fetch Example"
+        [ "🍜 Miso Fetch API"
         ]
       , button_
         attrs
-        [ text $ pack "Fetch JSON from https://api.github.com via Fetch API"
+        [ "Fetch JSON from https://api.github.com"
         ]
       , case m ^. info of
           Nothing ->
