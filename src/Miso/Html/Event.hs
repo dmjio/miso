@@ -17,8 +17,11 @@ module Miso.Html.Event
   , onWithOptions
   -- *** Lifecycle events
   , onMounted
+  , onBeforeMounted
   , onUnmounted
+  , onBeforeUnmounted
   , onCreated
+  , onBeforeCreated
   , onDestroyed
   , onBeforeDestroyed
    -- *** Mouse
@@ -130,16 +133,18 @@ onWithOptions options eventName Decoder{..} toAction =
 -- | @onMounted action@ is an event that gets called after the actual DOM
 -- element is created.
 --
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
 onMounted :: action -> Attribute action
 onMounted = onCreated
+-----------------------------------------------------------------------------
+-- | @onBeforeMounted action@ is an event that gets called before the actual DOM
+-- element is created.
+--
+onBeforeMounted :: action -> Attribute action
+onBeforeMounted = onBeforeCreated
 -----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
 --
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
 onCreated :: action -> Attribute action
 onCreated action =
   Event $ \sink object _ _ -> do
@@ -150,34 +155,43 @@ onCreated action =
 -- is removed from the DOM. The @action@ is given the DOM element that was
 -- removed from the DOM tree.
 --
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
 onDestroyed :: action -> Attribute action
 onDestroyed action =
   Event $ \sink object _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
--- | @onUnmounted action@ is an event that gets called before the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
+-- | @onUnmounted action@ is an event that gets called after the DOM element
+-- is removed from the DOM.
 --
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
 onUnmounted :: action -> Attribute action
-onUnmounted = onBeforeDestroyed
+onUnmounted = onDestroyed
+-----------------------------------------------------------------------------
+-- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
+-- is removed from the DOM.
+--
+onBeforeUnmounted :: action -> Attribute action
+onBeforeUnmounted = onBeforeDestroyed
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM. The @action@ is given the DOM element that was
 -- removed from the DOM tree.
 --
--- Important note: Any node that uses this event MUST have a unique @Key@,
--- otherwise the event may not be reliably called!
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
   Event $ \sink object _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
+-----------------------------------------------------------------------------
+-- | @onBeforeCreated action@ is an event that gets called before the DOM element
+-- is created on the DOM. The @action@ is given the DOM element that was
+-- removed from the DOM tree.
+--
+onBeforeCreated :: action -> Attribute action
+onBeforeCreated action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback (sink action)
+    FFI.set "onBeforeCreated" callback object
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --
