@@ -647,9 +647,8 @@ function fetchJSON(url, method, body, successful, errorful) {
     options["body"] = body;
   }
   fetch(url, options).then((response) => {
-    console.log(response);
     if (!response.ok) {
-      throw new Error("400/500 code received");
+      throw new Error(response.statusMessage);
     }
     return response.json();
   }).then(successful).catch(errorful);

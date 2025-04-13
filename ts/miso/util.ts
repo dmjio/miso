@@ -40,7 +40,7 @@ export function fetchJSON (
   fetch (url, options)
       .then(response => {
         if (!response.ok) {
-          throw new Error("400/500 code received")
+          throw new Error(response.statusMessage);
         }
         return response.json();
       })
