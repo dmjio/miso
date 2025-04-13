@@ -19,9 +19,10 @@ type VComp = {
   events: Events;
   'data-component-id': string;
   children: Array<VTree>;
-  onDestroyed: () => void;
-  onCreated: () => void;
-  onBeforeDestroyed: () => void;
+  onBeforeMounted: () => void;
+  onMounted: () => void;
+  onBeforeUnmounted: () => void;
+  onUnmounted: () => void;
   mount: (f: (component: VTree) => void) => void;
   unmount: (e: Element) => void;
 };
@@ -37,8 +38,9 @@ type VNode = {
   events: Events;
   children: Array<VTree>;
   onDestroyed: () => void;
-  onCreated: () => void;
   onBeforeDestroyed: () => void;
+  onCreated: () => void;
+  onBeforeCreated: () => void;
 };
 
 type VText = {

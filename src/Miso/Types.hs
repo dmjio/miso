@@ -80,7 +80,7 @@ data App effect model action a = App
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   , translate :: effect model action a -> Effect model action a
-  -- ^ natural transformation to allow others to use their own
+  -- ^ natural transformation to allow users to provide their own
   -- custom Monad stack.
   }
 -----------------------------------------------------------------------------

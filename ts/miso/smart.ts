@@ -60,6 +60,7 @@ function mkVNode() : VNode {
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
     onCreated: () => {},
+    onBeforeCreated: () => {},
     type : 'vnode',
   };
 }
@@ -70,7 +71,10 @@ function mkVComp() : VComp {
     'data-component-id': '',
     mount: () => {},
     unmount: () => {},
-    onCreated: () => {},
+    onUnmounted: () => {},
+    onBeforeUnmounted: () => {},
+    onMounted: () => {},
+    onBeforeMounted: () => {},
   });
 }
 

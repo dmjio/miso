@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -62,7 +63,11 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
+#ifdef GHCJS_OLD
+import           Language.Javascript.JSaddle
+#else
 import           Language.Javascript.JSaddle hiding (Success)
+#endif
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String

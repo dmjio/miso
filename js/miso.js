@@ -15,12 +15,10 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
     type: "vnode"
   };
 }
@@ -81,14 +79,17 @@ function callDestroyedRecursive(obj) {
 function callDestroyed(obj) {
   if (obj["onDestroyed"])
     obj["onDestroyed"]();
+  if (obj["type"] === "vcomp")
+    unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
   if (obj["onBeforeDestroyed"])
     obj["onBeforeDestroyed"]();
-  if (obj["type"] === "vcomp")
-    obj["unmount"](obj["domRef"]);
 }
 function callBeforeDestroyedRecursive(obj) {
+  if (obj["type"] === "vcomp" && obj["onBeforeUnmounted"]) {
+    obj["onBeforeUnmounted"]();
+  }
   callBeforeDestroyed(obj);
   for (const i in obj["children"]) {
     callBeforeDestroyedRecursive(obj["children"][i]);
@@ -99,6 +100,10 @@ function callCreated(obj) {
     obj["onCreated"]();
   if (obj["type"] === "vcomp")
     mountComponent(obj);
+}
+function callBeforeCreated(obj) {
+  if (obj["onBeforeCreated"])
+    obj["onBeforeCreated"]();
 }
 function populate(c, n) {
   if (n["type"] !== "vtext") {
@@ -193,10 +198,16 @@ function populateDomRef(obj) {
   }
 }
 function createElement(obj, cb) {
+  callBeforeCreated(obj);
   populateDomRef(obj);
   cb(obj["domRef"]);
   populate(null, obj);
   callCreated(obj);
+}
+function unmountComponent(obj) {
+  if ("onUnmounted" in obj)
+    obj["onUnmounted"]();
+  obj["unmount"]();
 }
 function mountComponent(obj) {
   const componentId = obj["data-component-id"], nodeList = document.querySelectorAll("[data-component-id='" + componentId + "']");
@@ -205,9 +216,13 @@ function mountComponent(obj) {
     return;
   }
   obj["domRef"].setAttribute("data-component-id", componentId);
+  if (obj["onBeforeMounted"])
+    obj["onBeforeMounted"]();
   obj["mount"]((component) => {
     obj["children"].push(component);
     obj["domRef"].appendChild(component["domRef"]);
+    if (obj["onMounted"])
+      obj["onMounted"]();
   });
 }
 function create(obj, parent) {
