@@ -58,7 +58,7 @@ module Miso.FFI.Internal
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void)
+import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
@@ -422,12 +422,14 @@ fetchJSON
   -- ^ method
   -> Maybe MisoString
   -- ^ body
+  -> [(MisoString,MisoString)]
+  -- ^ headers
   -> (action -> JSM ())
   -- ^ successful callback
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> JSM ()
-fetchJSON url method maybeBody successful errorful = do
+fetchJSON url method maybeBody headers successful errorful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
@@ -442,5 +444,14 @@ fetchJSON url method maybeBody successful errorful = do
   url_ <- toJSVal url
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
-  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, successful_, errorful_]
+  let jsonHeaders =
+        [ (ms "Content-Type", ms "application/json")
+        , (ms "Accept", ms "application/json")
+        ]
+  Object headers_ <- do
+    o <- create
+    forM_ (headers <> jsonHeaders) $ \(k,v) -> do
+      set k v o
+    pure o
+  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
 -----------------------------------------------------------------------------

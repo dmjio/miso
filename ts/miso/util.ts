@@ -23,17 +23,12 @@ export function fetchJSON (
   url : string,
   method : string,
   body : any,
+  headers : Record<string,string>,
   successful: (string) => void,
   errorful: (string) => void
 ): void
 {
-  var options = {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    method,
-  };
+  var options = { method, headers };
   if (body) {
     options['body'] = body;
   }

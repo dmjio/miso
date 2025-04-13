@@ -639,14 +639,8 @@ function callBlur(id, delay) {
 function setBodyComponent(componentId) {
   document.body.setAttribute("data-component-id", componentId);
 }
-function fetchJSON(url, method, body, successful, errorful) {
-  var options = {
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    method
-  };
+function fetchJSON(url, method, body, headers, successful, errorful) {
+  var options = { method, headers };
   if (body) {
     options["body"] = body;
   }

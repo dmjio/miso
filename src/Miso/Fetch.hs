@@ -170,7 +170,8 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api) => Fetch (Header name a 
 -----------------------------------------------------------------------------
 instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
   type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ = fetchJSON url method (options ^. body) success_ error_
+  fetchWith Proxy options success_ error_ =
+    fetchJSON url method (options ^. body) (options ^. headers) success_ error_
     where
       method = ms (reflectMethod (Proxy @method))
       params = MS.concat
