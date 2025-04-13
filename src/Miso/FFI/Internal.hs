@@ -443,3 +443,4 @@ fetchJSON url method maybeBody successful errorful = do
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
   void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, successful_, errorful_]
+-----------------------------------------------------------------------------

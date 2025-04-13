@@ -67,7 +67,8 @@ import           Servant.API
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (fetchJSON)
 import           Miso.Lens
-import           Miso.String
+import           Miso.String (MisoString, ms)
+import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Internal type used to accumulate options during the type-level traversal
 data FetchOptions
@@ -103,7 +104,7 @@ defaultFetchOptions
   = FetchOptions
   { _headers = []
   , _baseUrl = mempty
-  , _currentPath = ms "/"
+  , _currentPath = mempty
   , _queryParams = []
   , _queryFlags = []
   , _body = Nothing
@@ -169,9 +170,19 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api) => Fetch (Header name a 
 -----------------------------------------------------------------------------
 instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
   type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ =
-     fetchJSON url method (options ^. body) success_ error_
+  fetchWith Proxy options success_ error_ = fetchJSON url method (options ^. body) success_ error_
     where
       method = ms (reflectMethod (Proxy @method))
-      url = options ^. baseUrl <> options ^. currentPath
+      params = MS.concat
+        [ mconcat
+           [ ms "?"
+           , MS.intercalate (ms "&")
+             [ k <> ms "=" <> v
+             | (k,v) <- options ^. queryParams
+             ]
+           ]
+         | not $ null (options ^. queryParams)
+         ]
+      flags = MS.mconcat [ ms "?" <> k | k <- options ^. queryFlags ]
+      url = options ^. baseUrl <> options ^. currentPath <> params <> flags
 -----------------------------------------------------------------------------
