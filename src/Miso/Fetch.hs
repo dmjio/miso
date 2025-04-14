@@ -130,19 +130,24 @@ instance (Fetch api, KnownSymbol path) => Fetch (path :> api) where
       options_ :: FetchOptions
       options_ = options & currentPath %~ (<> ms "/" <> path)
 -----------------------------------------------------------------------------
-instance (Show a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
+instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
   type ToFetch (Capture path a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
-      options_ = options & currentPath %~ (<> ms "/" <> ms (show arg))
+      options_ = options & currentPath %~ (<> ms "/" <> ms (toEncodedUrlPiece arg))
 -----------------------------------------------------------------------------
-instance (Show a, Fetch api, KnownSymbol name) => Fetch (QueryParam name a :> api) where
+instance (ToHttpApiData a, Fetch api, KnownSymbol name) => Fetch (QueryParam name a :> api) where
   type ToFetch (QueryParam name a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
+#if MIN_VERSION_http_api_data(0,5,1)
+      enc = toEncodedQueryParam
+#else
+      enc = toEncodedUrlPiece
+#endif
       options_ :: FetchOptions
-      options_ = options & queryParams <>~ [(ms "/", ms (show arg))]
+      options_ = options & queryParams <>~ [(ms "/", ms (enc arg))]
 -----------------------------------------------------------------------------
 instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
   type ToFetch (QueryFlag name :> api) = Bool -> ToFetch api
