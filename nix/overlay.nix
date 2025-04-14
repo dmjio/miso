@@ -74,12 +74,15 @@ self: super: {
       ];
     # https://github.com/NixOS/nixpkgs/issues/139943#issuecomment-930432045
     # dmj: Fix for using emcc in Darwin shell environment
+    #
+    # dmj: to compile /only/ JS, and work w/ QuickJS:
+    # $ emcc -sENVIRONMENT=shell -sWASM=0 main.c -oout.js && qjs out.js
     shellHook = with super; ''
-        mkdir -p ~/.emscripten_cache
-        chmod u+rwX -R ~/.emscripten_cache
-        cp -r ${super.emscripten}/share/emscripten/cache ~/.emscripten_cache
-        export EM_CACHE=~/.emscripten_cache
-      '';
+      mkdir -p ~/.emscripten_cache
+      chmod u+rwX -R ~/.emscripten_cache
+      cp -r ${super.emscripten}/share/emscripten/cache ~/.emscripten_cache
+      export EM_CACHE=~/.emscripten_cache
+    '';
   };
 
 }
