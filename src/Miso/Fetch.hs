@@ -11,6 +11,8 @@
 {-# LANGUAGE CPP             #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
@@ -64,6 +66,7 @@ import           Data.Proxy (Proxy(..))
 import           GHC.TypeLits
 import           Language.Javascript.JSaddle (JSM)
 import           Servant.API
+import           Servant.API.Modifiers
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (fetchJSON)
 import           Miso.Lens
@@ -130,19 +133,25 @@ instance (Fetch api, KnownSymbol path) => Fetch (path :> api) where
       options_ :: FetchOptions
       options_ = options & currentPath %~ (<> ms "/" <> path)
 -----------------------------------------------------------------------------
-instance (Show a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
+instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
   type ToFetch (Capture path a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
-      options_ = options & currentPath %~ (<> ms "/" <> ms (show arg))
+      options_ = options & currentPath %~ (<> ms "/" <> ms (toEncodedUrlPiece arg))
 -----------------------------------------------------------------------------
-instance (Show a, Fetch api, KnownSymbol name) => Fetch (QueryParam name a :> api) where
-  type ToFetch (QueryParam name a :> api) = a -> ToFetch api
+instance (ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods), KnownSymbol name) => Fetch (QueryParam' mods name a :> api) where
+  type ToFetch (QueryParam' mods name a :> api) = RequiredArgument mods a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
+      param (x :: a) = [(ms "/", ms (enc x))]
+#if MIN_VERSION_http_api_data(0,5,1)
+      enc = toEncodedQueryParam
+#else
+      enc = toEncodedUrlPiece
+#endif
       options_ :: FetchOptions
-      options_ = options & queryParams <>~ [(ms "/", ms (show arg))]
+      options_ = options & queryParams <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) arg
 -----------------------------------------------------------------------------
 instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
   type ToFetch (QueryFlag name :> api) = Bool -> ToFetch api
