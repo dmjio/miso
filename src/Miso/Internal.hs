@@ -24,6 +24,7 @@ module Miso.Internal
   , runView
   , sample
   , renderStyles
+  , loadScripts
   , Prerender(..)
   ) where
 -----------------------------------------------------------------------------
@@ -362,4 +363,12 @@ renderStyles styles =
   forM_ styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
+-----------------------------------------------------------------------------
+-- | Registers components in the global state
+loadScripts :: [JS] -> JSM ()
+loadScripts scripts = do
+  FFI.consoleLog "loading scripts..."
+  forM_ scripts $ \case
+    Src url -> FFI.addJsSrc url
+    JS script -> FFI.addJs script
 -----------------------------------------------------------------------------

@@ -82,8 +82,9 @@ import           Miso.Util
 miso :: Eq model => (URI -> App effect model action a) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getURI
+  loadScripts scripts
+  renderStyles styles
   initialize app $ \snk -> do
-    renderStyles styles
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name
@@ -95,9 +96,10 @@ miso f = withJS $ do
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
 startApp :: Eq model => App effect model action a -> JSM ()
-startApp app@App {..} = withJS $
+startApp app@App {..} = withJS $ do
+  loadScripts scripts
+  renderStyles styles
   initialize app $ \snk -> do
-    renderStyles styles
     vtree <- runView DontPrerender (view model) snk logLevel events
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name

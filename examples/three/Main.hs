@@ -4,14 +4,14 @@
 
 module Main where
 
-import Control.Monad
-import Control.Monad.IO.Class (liftIO)
-import Data.IORef
+import           Control.Monad
+import           Control.Monad.IO.Class (liftIO)
+import           Data.IORef
 import qualified Data.Map as M
+import           System.IO.Unsafe
+import           Language.Javascript.JSaddle hiding ((<#))
 
-import Language.Javascript.JSaddle hiding ((<#))
-
-import Miso
+import           Miso
 
 data Action
   = GetTime
@@ -29,8 +29,8 @@ data Context = Context
     , stats :: JSVal
     }
 
-initContext :: IORef Context -> IO ()
-initContext ref = do
+initContext :: IO ()
+initContext = do
     canvas <- getElementById "canvas"
     scene <- newScene
     camera <- newCamera
@@ -57,14 +57,20 @@ initContext ref = do
                 render renderer scene camera
             }
 
+ref :: IORef Context
+{-# NOINLINE ref #-}
+ref = unsafePerformIO $ newIORef (undefined :: Context)
+
 main :: IO ()
 main = run $ do
-    stats <- newStats
-    ref <- newIORef $ Context (pure ()) (pure ()) stats
-    m <- now
-    startApp (defaultApp m (updateModel ref) viewModel)
-      { initialAction = Just Init
-      }
+  m <- now
+  startApp (defaultApp m updateModel viewModel)
+    { initialAction = Just Init
+    , scripts =
+        [ Src "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+        , Src "https://cdnjs.cloudflare.com/ajax/libs/stats.js/7/Stats.min.js"
+        ]
+    }
 
 viewModel :: Double -> View action
 viewModel _ =
@@ -83,21 +89,24 @@ viewModel _ =
             []
         ]
 
-updateModel ::
-    IORef Context ->
-    Action ->
-    Effect Double Action ()
-updateModel ref Init = do
-  io (initContext ref)
+updateModel
+  :: Action
+  -> Effect Double Action ()
+updateModel Init = do
+  io $ do
+    liftIO $ do
+      stats <- newStats
+      writeIORef ref (Context (pure ()) (pure ()) stats)
+      initContext
   issue GetTime
-updateModel ref GetTime = do
+updateModel GetTime = do
   io $ do
     Context{..} <- liftIO (readIORef ref)
     withStats stats $ do
       rotateCube
       renderScene
   scheduleIO (SetTime <$> now)
-updateModel _ (SetTime m) = do
+updateModel (SetTime m) = do
   noEff m
   issue GetTime
 

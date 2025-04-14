@@ -25,6 +25,7 @@ module Miso.Types
   , Attribute        (..)
   , NS               (..)
   , CSS              (..)
+  , JS               (..)
   , LogLevel         (..)
   , Component        (..)
   , SomeComponent    (..)
@@ -72,6 +73,10 @@ data App effect model action a = App
   -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
   -- These styles are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
+  , scripts :: [JS]
+  -- ^ List of JavaScript styles expressed as either a URL ('Href') or as 'Style' text.
+  -- These styles are appended dynamically to the <head> section of your HTML page
+  -- before the initial draw on <body> occurs.
   , initialAction :: Maybe action
   -- ^ Initial action that is run after the application has loaded, optional since *1.9*
   , mountPoint :: Maybe MisoString
@@ -95,6 +100,18 @@ data CSS
   -- ^ 'Style' is meant to be raw CSS in a 'style_' tag
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Allow users to link to and append JavaScript in <head> before the first draw.
+-- <script> tags are always appended with "defer"
+--
+-- > Src "http://domain.com/script.js
+--
+data JS
+  = Src MisoString
+  -- ^ 'Src' is a URL meant to load hosted JavaScript
+  | JS MisoString
+  -- ^ 'JS' will render as raw JavaScript in a 'script_' tag
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
@@ -112,6 +129,7 @@ defaultApp m u v = App
   , subs = []
   , events = defaultEvents
   , styles = []
+  , scripts = []
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing

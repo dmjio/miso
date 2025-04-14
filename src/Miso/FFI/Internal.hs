@@ -55,6 +55,8 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , addJs
+   , addJsSrc
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -407,6 +409,34 @@ addStyleSheet url = do
   _ <- link # "setAttribute" $ ["rel","stylesheet"]
   _ <- link # "setAttribute" $ ["href", fromMisoString url]
   void $ jsg "document" ! "head" # "appendChild" $ [link]
+-----------------------------------------------------------------------------
+-- | Appends a 'script_' element containing JavaScript to 'head_'
+--
+-- > addJs "(() => { console.log('hello world'); })()"
+--
+-- > <head><script>(() => { console.log('hello world'); })()</script></head>
+--
+addJs :: MisoString -> JSM ()
+addJs script = do
+  tag <- jsg "document" # "createElement" $ ["script"]
+  (tag <# "innerHTML") script
+  void $ jsg "document" ! "head" # "appendChild" $ [tag]
+-----------------------------------------------------------------------------
+-- | Appends a script 'script_' element to 'head_'
+-- The 'script_' tag will contain a URL to a JavaScript file.
+--
+-- *<script defer src="https://domain.com/script.js"></script>*
+--
+-- > addJsSrc "https://domain.com/script.js"
+--
+-- > <script src="https://domain.com/script.js" defer></head>
+--
+addJsSrc :: MisoString -> JSM ()
+addJsSrc url = do
+  tag <- jsg "document" # "createElement" $ ["script"]
+  (tag <# "src") url
+  (tag <# "defer") "true"
+  void $ jsg "document" ! "head" # "appendChild" $ [tag]
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --
