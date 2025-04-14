@@ -90,7 +90,7 @@ initialize App {..} getView = do
           atomicWriteIORef componentModel newModel
       syncPoint
       eventLoop newModel
-  componentMainThread <- FFI.forkJSM (eventLoop model)
+  _ <- FFI.forkJSM (eventLoop model)
   registerComponent ComponentState {..}
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
@@ -107,7 +107,6 @@ data Prerender
 data ComponentState model action
   = ComponentState
   { componentName       :: MisoString
-  , componentMainThread :: ThreadId
   , componentSubThreads :: [ThreadId]
   , componentMount      :: JSVal
   , componentVTree      :: IORef VTree
