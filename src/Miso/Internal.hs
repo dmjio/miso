@@ -28,7 +28,7 @@ module Miso.Internal
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (throwIO)
-import           Control.Concurrent (ThreadId, killThread, threadDelay)
+import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, when, void)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
@@ -37,6 +37,7 @@ import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, ato
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
+import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
 import           Language.Javascript.JSaddle
 import           Prelude hiding (null)
@@ -112,6 +113,7 @@ data ComponentState model action
   , componentVTree      :: IORef VTree
   , componentSink       :: action -> JSM ()
   , componentModel      :: IORef model
+  , componentActions    :: IORef (Seq action)
   }
 -----------------------------------------------------------------------------
 -- | componentMap
@@ -205,19 +207,33 @@ drawComponent prerender name App {..} snk = do
   ref <- liftIO (newIORef vtree)
   pure (name, mountElement, ref)
 -----------------------------------------------------------------------------
+-- | Drains the event queue before unmounting, executed synchronously
+drain
+  :: App effect model action a
+  -> ComponentState model action
+  -> JSM ()
+drain app@App{..} cs@ComponentState {..} = do
+  actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
+  if S.null actions then pure () else go actions
+    where
+      go as = do
+        x <- liftIO (readIORef componentModel)
+        y <- foldEffects translate update componentSink (toList as) x
+        liftIO (atomicWriteIORef componentModel y)
+        drain app cs
+-----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
   -> App effect model action a
   -> ComponentState model action
   -> JSM ()
-unmount mountCallback App{..} ComponentState {..} = do
+unmount mountCallback app@App {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (mapM_ killThread componentSubThreads)
-  liftIO $ do
-    killThread componentMainThread
-    modifyIORef' componentMap (M.delete componentName)
+  drain app cs
+  liftIO $ modifyIORef' componentMap (M.delete componentName)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -243,9 +259,7 @@ runView prerender (Embed attributes (SomeComponent (Component key mount app))) s
     FFI.syncCallback $ do
       M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
-        Just componentState -> do
-          liftIO (threadDelay (millis 1))
-          -- dmj ^ introduce 1ms delay to account for recursive component unmounting
+        Just componentState ->
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML key "div"
   setAttrs vcomp attributes snk (logLevel app) (events app)
@@ -351,10 +365,6 @@ registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
------------------------------------------------------------------------------
--- | Millisecond helper, converts microseconds to milliseconds
-millis :: Int -> Int
-millis = (*1000)
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 renderStyles :: [CSS] -> JSM ()
