@@ -64,8 +64,8 @@ self: super: {
 
         cp -v ./bin/mcabal $out/bin
         cp -v ./bin/cpphs $out/bin
+        cp -v ./bin/mhs $out/bin
         cp -rv ./lib $out
-        cp -v ${self.haskell.packages.ghc9122.microhs}/bin/mhs $out/bin/mhs
 
         cp -rv ./generated $out
         cp -rv ./boards $out
