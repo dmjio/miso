@@ -14,7 +14,7 @@ RUN nix-env -iA \
         nixpkgs.cabal-install
 
 RUN nix-env -iA cachix -f https://cachix.org/api/v1/install
-RUN SYSTEM_CERTIFICATE_PATH=$NIX_SSL_CERT_FILE USER=miso cachix use miso-haskell
+RUN SYSTEM_CERTIFICATE_PATH=$NIX_SSL_CERT_FILE USER=miso cachix use haskell-miso-cachix
 
 COPY ./sample-app /miso/sample-app 
 
