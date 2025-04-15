@@ -94,7 +94,7 @@ jobs:
        run: nix-build -A wasmExamples && ./result/bin/build.sh
 
      - name: (x86) Example.hs (MicroHS 0.12.4.0)
-       run: cd micro/ && nix-shell --run 'mhs -r Example'
+       run: cd micro/ && nix-shell --run 'mhs -temscripten Example -oout.js && qjs out.js'
 
      - name: Nix garbage collect
        run: nix-collect-garbage -d
