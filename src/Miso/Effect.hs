@@ -133,13 +133,13 @@ effectSub model sub = do
 --   , ...
 --   }
 -- @
+type Effect model action = EffectCore model action ()
+-----------------------------------------------------------------------------
+-- | The EffectCore Monad, underlies @Effect@
 newtype EffectCore model action a = EffectCore (StateT model (Writer [Sub action]) a)
   deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
 -----------------------------------------------------------------------------
--- | Synonym used for 'App'
-type Effect model action = EffectCore model action ()
------------------------------------------------------------------------------
--- | @MonadFail@ instance for @Effect@
+-- | @MonadFail@ instance for @EffectCore@
 instance MonadFail (EffectCore model action) where
   fail s = do
     io $ consoleError (ms s)
