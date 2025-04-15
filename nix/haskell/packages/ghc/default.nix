@@ -26,4 +26,7 @@ self: super:
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;
   servant-server = doJailbreak super.servant-server;
+
+  /* microhs */
+  microhs = self.callCabal2nix "microhs" source.microhs {};
 }
