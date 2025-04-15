@@ -77,7 +77,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = more-examples.the2048;
+            root = more-examples.hs2048;
            };
          };
        };

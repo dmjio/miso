@@ -83,6 +83,6 @@ options: self: super: {
       nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
   more-examples = with super.haskell.lib; {
-    inherit (self.haskell.packages.ghcjs) flatris the2048 snake miso-plane;
+    inherit (self.haskell.packages.ghcjs) flatris hs2048 snake miso-plane;
   };
 }

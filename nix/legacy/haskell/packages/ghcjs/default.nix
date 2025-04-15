@@ -22,7 +22,7 @@ self: super:
          rm $out/index.html
          cp -v ${source.miso-plane}/public/index.html $out
       '';
-  the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
+  hs2048 = import source.hs2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
   mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
   doctest = null;

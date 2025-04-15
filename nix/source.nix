@@ -49,7 +49,7 @@ in
     rev = "cbeb74e";
     sha256 = "sha256-QhoeeTVO+zWwgUmLXvpd3mgtLa5+G36Eryxdx/ofgp4=";
   };
-  the2048 = fetchFromGitHub {
+  hs2048 = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs2048";
     rev = "c8c19d6";
