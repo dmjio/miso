@@ -48,8 +48,8 @@ jobs:
      - name: (x86) Miso GHC (GHC 8.6.5)
        run: nix-build -A miso-ghc
 
-     # - name: (JS) Miso GHCJS (GHC 9.12.2)
-     #   run: nix-build -A miso-ghcjs-9122
+     - name: (JS) Miso GHCJS (GHC 9.12.2)
+       run: nix-build -A miso-ghcjs-9122
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
@@ -72,8 +72,8 @@ jobs:
      - name: (x86) Miso examples (GHC 9.12.2)
        run: nix-build -A miso-examples-ghc-9122
 
-     # - name: (JS) Miso examples (GHCJS 9.12.2)
-     #   run: nix-build -A miso-examples-ghcjs-9122
+     - name: (JS) Miso examples (GHCJS 9.12.2)
+       run: nix-build -A miso-examples-ghcjs-9122
 
      - name: (JS) Miso third-party examples (2048, flatris, etc.) (GHCJS 8.6.5)
        run: nix-build -A more-examples -j1
