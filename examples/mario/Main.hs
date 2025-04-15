@@ -71,7 +71,7 @@ mario =
         , window = (0, 0)
         }
 
-updateMario :: Action -> Effect Model Action ()
+updateMario :: Action -> Effect Model Action
 updateMario Start = get >>= step
 updateMario (GetArrows arrs) = do
   modify newModel
@@ -92,7 +92,7 @@ updateMario (WindowCoords coords) = do
     where
       newModel m = m { window = coords }
 
-step :: Model -> Effect Model Action ()
+step :: Model -> Effect Model Action
 step m@Model{..} = k <# Time <$> now
   where
     k =

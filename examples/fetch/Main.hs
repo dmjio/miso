@@ -62,7 +62,7 @@ data Action
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
-app :: App Effect Model Action ()
+app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 emptyModel :: Model

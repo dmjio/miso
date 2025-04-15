@@ -99,10 +99,10 @@ main = run $ startApp app
       ]
   }
 
-app :: App Effect Model Msg ()
+app :: App Model Msg
 app = defaultApp emptyModel updateModel viewModel
 
-updateModel :: Msg -> Effect Model Msg ()
+updateModel :: Msg -> Effect Model Msg
 updateModel NoOp = pure ()
 updateModel FocusOnInput =
   io (focus "input-box")
