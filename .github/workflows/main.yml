@@ -96,6 +96,9 @@ jobs:
      - name: (x86) Example.hs (MicroHS 0.12.4.0)
        run: cd micro/ && nix-shell --run 'mhs -temscripten Example -oout.js && qjs out.js'
 
+     - name: (JS) Example.hs (MicroHS 0.12.4.0)
+       run: cd micro/ && nix-shell --run 'mhs -r Example'
+
      - name: Nix garbage collect
        run: nix-collect-garbage -d
 
