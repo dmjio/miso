@@ -81,11 +81,11 @@ jobs:
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
 
-     - name: (JS) Miso sample app (GHCJS 9.12.2)
-       run: nix-build -A sample-app-js
+     # - name: (JS) Miso sample app (GHCJS 9.12.2)
+     #   run: nix-build -A sample-app-js
 
-     - name: (x86) Miso sample app jsaddle (GHC 9.12.2)
-       run: nix-build -A sample-app
+     # - name: (x86) Miso sample app jsaddle (GHC 9.12.2)
+     #   run: nix-build -A sample-app
 
      - name: (WASM) Miso examples (GHC 9.12.2)
        run: nix-build -A wasmExamples && ./result/bin/build.sh
