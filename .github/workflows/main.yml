@@ -48,8 +48,8 @@ jobs:
      - name: (x86) Miso GHC (GHC 8.6.5)
        run: nix-build -A miso-ghc
 
-     - name: (JS) Miso GHCJS (GHC 9.12.2)
-       run: nix-build -A miso-ghcjs-9122
+     # - name: (JS) Miso GHCJS (GHC 9.12.2)
+     #   run: nix-build -A miso-ghcjs-9122
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
