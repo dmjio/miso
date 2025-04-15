@@ -24,13 +24,13 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Effect Model Action ()
+app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model (0, 0)
 
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel (HandlePointer pointer) = modify update
   where
     update m = m { mouseCoords = client pointer }

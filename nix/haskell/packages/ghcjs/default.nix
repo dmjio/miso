@@ -21,14 +21,14 @@ self: super:
     chmod +w $out/index.html
     cp -v ${source.miso-plane}/public/index.html $out
   '';
-  the2048-core = self.callCabal2nix "hs2048" source.the2048 {};
-  the2048 = pkgs.runCommand "hs2048" {} ''
+  hs2048-core = self.callCabal2nix "hs2048" source.hs2048 {};
+  hs2048 = pkgs.runCommand "hs2048" {} ''
     mkdir -p $out/bin
-    cp -rv ${self.the2048-core}/bin/*.jsexe $out/*
+    cp -rv ${self.hs2048-core}/bin/*.jsexe $out/*
     chmod +w $out/bin/*.jsexe
     chmod +w $out/bin/*.jsexe/index.html
-    cp -v ${source.the2048}/static/main.css $out/bin/app.jsexe/main.css
-    cp -v ${source.the2048}/static/index.html $out/bin/app.jsexe/index.html
+    cp -v ${source.hs2048}/static/main.css $out/bin/app.jsexe/main.css
+    cp -v ${source.hs2048}/static/index.html $out/bin/app.jsexe/index.html
   '';
   snake = self.callCabal2nix "miso-snake" source.snake {};
   miso-examples-core = self.callCabal2nix "miso-examples" source.examples {};

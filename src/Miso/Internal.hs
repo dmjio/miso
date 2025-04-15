@@ -60,7 +60,7 @@ import           Miso.Effect (Sink, Effect, runEffect)
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
-  => App effect model action a
+  => App model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -77,7 +77,7 @@ initialize App {..} getView = do
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects translate update componentSink (toList as) oldModel
+      newModel <- foldEffects update componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -132,7 +132,7 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component effect model action a
+  :: Component model action
   -> JSM model
 sample (Component _ name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
@@ -144,7 +144,7 @@ sample (Component _ name _) = do
 -- Specify the mounted @Component@'s 'App' you'd like to target.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component effect model action a
+  :: Component model action
   -> action
   -> JSM ()
 notify (Component _ name _) action = io
@@ -156,19 +156,18 @@ notify (Component _ name _) action = io
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
-  :: (effect model action a -> Effect model action a)
-  -> (action -> effect model action a)
+  :: (action -> Effect model action)
   -> Sink action
   -> [action]
   -> model
   -> JSM model
-foldEffects _ _ _ [] m = pure m
-foldEffects f update snk (e:es) o =
-  case runEffect o (f (update e)) of
+foldEffects _ _ [] m = pure m
+foldEffects update snk (e:es) o =
+  case runEffect o (update e) of
     (n, subs) -> do
       forM_ subs $ \sub ->
         sub snk `catch` (void . exception)
-      foldEffects f update snk es n
+      foldEffects update snk es n
 -----------------------------------------------------------------------------
 -- | The sink function gives access to an @App@
 -- @Sink@. This is use for third-party integration, or for
@@ -183,7 +182,7 @@ foldEffects f update snk (e:es) o =
 --
 sink
   :: MisoString
-  -> App effect model action a
+  -> App model action
   -> Sink action
 sink name _ = \a ->
   M.lookup name <$> liftIO (readIORef componentMap) >>= \case
@@ -196,7 +195,7 @@ sink name _ = \a ->
 drawComponent
   :: Prerender
   -> MisoString
-  -> App effect model action a
+  -> App model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
@@ -208,7 +207,7 @@ drawComponent prerender name App {..} snk = do
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
-  :: App effect model action a
+  :: App model action
   -> ComponentState model action
   -> JSM ()
 drain app@App{..} cs@ComponentState {..} = do
@@ -217,14 +216,14 @@ drain app@App{..} cs@ComponentState {..} = do
     where
       go as = do
         x <- liftIO (readIORef componentModel)
-        y <- foldEffects translate update componentSink (toList as) x
+        y <- foldEffects update componentSink (toList as) x
         liftIO (atomicWriteIORef componentModel y)
         drain app cs
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> App effect model action a
+  -> App model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@App {..} cs@ComponentState {..} = do

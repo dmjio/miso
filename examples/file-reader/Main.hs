@@ -78,11 +78,11 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: App Effect Model Action ()
+app :: App Model Action
 app = defaultApp (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel ReadFile = scheduleIO $ do
   fileReaderInput <- M.getElementById "fileReader"
   file <- fileReaderInput ! ("files" :: String) !! 0

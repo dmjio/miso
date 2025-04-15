@@ -67,21 +67,21 @@ mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with no actions.
-noEff :: model -> Effect model action ()
+noEff :: model -> Effect model action
 noEff = put
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
-(<#) :: model -> JSM action -> Effect model action ()
+(<#) :: model -> JSM action -> Effect model action
 (<#) m action = put m >> tell [ \sink -> sink =<< action ]
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
-(#>) :: JSM action -> model -> Effect model action ()
+(#>) :: JSM action -> model -> Effect model action
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
-batchEff :: model -> [JSM action] -> Effect model action ()
+batchEff :: model -> [JSM action] -> Effect model action
 batchEff model actions = put model >> do
   forM_ actions $ \action ->
     tell [ \sink -> sink =<< action ]
@@ -94,7 +94,7 @@ batchEff model actions = put model >> do
 -- widget which has an associated callback. The callback can then call the sink
 -- to turn events into actions. To do this without accessing a sink requires
 -- going via a @'Sub'scription@ which introduces a leaky-abstraction.
-effectSub :: model -> Sub action -> Effect model action ()
+effectSub :: model -> Sub action -> Effect model action
 effectSub model sub = do
   put model
   tell [sub]
@@ -133,11 +133,14 @@ effectSub model sub = do
 --   , ...
 --   }
 -- @
-newtype Effect model action a = Effect (StateT model (Writer [Sub action]) a)
+type Effect model action = EffectCore model action ()
+-----------------------------------------------------------------------------
+-- | The EffectCore Monad, underlies @Effect@
+newtype EffectCore model action a = EffectCore (StateT model (Writer [Sub action]) a)
   deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
 -----------------------------------------------------------------------------
--- | @MonadFail@ instance for @Effect@
-instance MonadFail (Effect model action) where
+-- | @MonadFail@ instance for @EffectCore@
+instance MonadFail (EffectCore model action) where
   fail s = do
     io $ consoleError (ms s)
 #if __GLASGOW_HASKELL__ <= 881
@@ -149,15 +152,15 @@ instance MonadFail (Effect model action) where
 -- | Internal function used to unwrap an 'Effect'
 runEffect
     :: model
-    -> Effect model action a
+    -> Effect model action
     -> (model, [Sub action])
-runEffect m (Effect action) = runWriter (execStateT action m)
+runEffect m (EffectCore action) = runWriter (execStateT action m)
 -----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: JSM action -> Effect model action ()
+scheduleIO :: JSM action -> Effect model action
 scheduleIO action = scheduleSub (\sink -> action >>= sink)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
@@ -165,13 +168,13 @@ scheduleIO action = scheduleSub (\sink -> action >>= sink)
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: JSM () -> Effect model action ()
+scheduleIO_ :: JSM () -> Effect model action
 scheduleIO_ action = scheduleSub (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action ()
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
 scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | Like 'scheduleIO' but schedules a subscription which is an IO
@@ -183,16 +186,16 @@ scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
 -- can then call the sink to turn events into actions. To do this
 -- without accessing a sink requires going via a @'Sub'scription@
 -- which introduces a leaky-abstraction.
-scheduleSub :: Sub action -> Effect model action ()
-scheduleSub sub = Effect $ lift $ tell [ sub ]
+scheduleSub :: Sub action -> Effect model action
+scheduleSub sub = EffectCore $ lift $ tell [ sub ]
 -----------------------------------------------------------------------------
 -- | 'withSink' allows users to access the sink of the 'Component' or top-level
 -- 'App' in their application. This is useful for introducing I/O into the system.
 --
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
-withSink :: (Sink action -> JSM ()) -> Effect model action ()
-withSink f = Effect $ lift $ tell [ f ]
+withSink :: (Sink action -> JSM ()) -> Effect model action
+withSink f = tell [ f ]
 -----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --
@@ -203,7 +206,7 @@ withSink f = Effect $ lift $ tell [ f ]
 -- @since 1.9.0.0
 --
 -- Used to issue new @action@
-issue :: action -> Effect model action ()
+issue :: action -> Effect model action
 issue action = tell [ \sink -> sink action ]
 -----------------------------------------------------------------------------
 -- | A shorter synonym for @scheduleIO_@
@@ -216,6 +219,6 @@ issue action = tell [ \sink -> sink action ]
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-io :: JSM () -> Effect model action ()
+io :: JSM () -> Effect model action
 io = scheduleIO_
 -----------------------------------------------------------------------------

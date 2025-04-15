@@ -82,7 +82,7 @@ import           Miso.Util
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses @mountPoint@ as the @Component@ name.
 -- Always mounts to /<body>/. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> App effect model action a) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getURI
   initialize app $ \snk -> do
@@ -97,7 +97,7 @@ miso f = withJS $ do
 -----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
-startApp :: Eq model => App effect model action a -> JSM ()
+startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     renderStyles styles

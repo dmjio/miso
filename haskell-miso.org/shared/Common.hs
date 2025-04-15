@@ -61,7 +61,7 @@ type ClientRoutes = Routes (View Action)
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = App Effect Model Action ()
+type HaskellMisoComponent = App Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -100,7 +100,7 @@ haskellMisoComponent uri
   , logLevel = DebugAll
   }
   
-app :: URI -> App Effect Model Action ()
+app :: URI -> App Model Action
 app currentUri = defaultApp emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
@@ -109,7 +109,7 @@ app currentUri = defaultApp emptyModel updateModel viewModel
           Left _ -> the404 m
           Right v -> v
 
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel = \case
   HandleURI u ->
     modify $ \m -> m { uri = u }

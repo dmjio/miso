@@ -86,7 +86,7 @@ viewModel _ =
 updateModel ::
     IORef Context ->
     Action ->
-    Effect Double Action ()
+    Effect Double Action
 updateModel ref Init = do
   io (initContext ref)
   issue GetTime

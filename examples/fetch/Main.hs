@@ -62,7 +62,7 @@ data Action
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
-app :: App Effect Model Action ()
+app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 emptyModel :: Model
@@ -80,7 +80,7 @@ getGithubAPI
   -> JSM ()
 getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
 ----------------------------------------------------------------------------
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo

@@ -40,7 +40,7 @@ main = run $
        }
 
 -- | Update your model
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel (HandleURI u) = modify $ \m -> m { uri = u }
 updateModel (ChangeURI u) = scheduleIO_ (pushURI u)
 
