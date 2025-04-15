@@ -24,6 +24,9 @@ self: super: {
           then import ./haskell/packages/ghcjs self
           else import ./haskell/packages/ghc self;
       };
+      ghc9101 = super.haskell.packages.ghc9101.override {
+        overrides = import ./haskell/packages/ghc self;
+      };
     };
   };
 
