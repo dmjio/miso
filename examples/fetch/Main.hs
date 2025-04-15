@@ -80,7 +80,7 @@ getGithubAPI
   -> JSM ()
 getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
 ----------------------------------------------------------------------------
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
