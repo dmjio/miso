@@ -40,27 +40,7 @@
   - [Architecture](#architecture)
   - [Under the hood](#under-the-hood)
 - [Examples](#examples)
-  - [TodoMVC](#todomvc)
-  - [Flatris](#flatris)
-  - [2048](#2048)
-  - [Snake](#snake)
-  - [Mario](#mario)
-  - [Miso Plane (Flappy Birds)](#miso-plane-flappy-birds)
-  - [Websocket](#websocket)
-  - [SSE](#sse)
-  - [Fetch](#fetch)
-  - [Router](#router)
-  - [SVG](#svg)
-  - [Canvas 2D](#canvas-2d)
-  - [ThreeJS](#threejs)
-  - [Simple](#simple)
-  - [File Reader](#file-reader)
-  - [WebVR](#webvr)
-  - [Pixel Card Wars](#pixel-card-wars)
-  - [Currency Converter](#currency-converter)
 - [Haddocks](#haddocks)
-  - [GHC](#ghc)
-  - [GHCJS](#ghcjs)
 - [Sample Application](#sample-application)
 - [Transition Application](#transition-application)
 - [Live reload with JSaddle](#live-reload-with-jsaddle)
@@ -181,67 +161,28 @@ For details of the internals and general overview of how `miso` works, see the [
 
 ## Examples
 
-### TodoMVC
-  - [Link](https://todo-mvc.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)
-
-### Flatris
-  - [Link](https://flatris.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs-flatris/)
-
-### 2048
-  - [Link](https://2048.haskell-miso.org/) / [Source](https://github.com/ptigwe/hs2048/)
-
-### Snake
-  - [Link](https://snake.haskell-miso.org/) / [Source](https://github.com/lbonn/miso-snake)
-
-### Mario
-  - [Link](https://mario.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)
-
-### Miso Plane (Flappy Birds)
-  - [Link](http://miso-plane.haskell-miso.org) / [Source](https://github.com/Lermex/miso-plane)
-
-### Websocket
-  - [Link](https://websocket.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)
-
-### SSE
-  - [Link](http://sse.haskell-miso.org/) / [Client](https://github.com/dmjio/miso/blob/master/examples/sse/client/Main.hs) / [Server](https://github.com/dmjio/miso/blob/master/examples/sse/server/Main.hs)
-
-### Fetch
-  - [Link](https://fetch.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs)
-
-### Router
-  - [Link](https://router.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)
-
-### SVG
-  - [Link](https://svg.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)
-
-### Canvas 2D
-  - [Link](https://canvas.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
-
-### ThreeJS
-  - [Link](https://threejs.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs)
-
-### Simple
-  - [Link](https://simple.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/simple/Main.hs)
-
-### File Reader
-  - [Link](https://file-reader.haskell-miso.org/) / [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs)
-
-### WebVR
-  - [Link](http://fizruk.github.io/fpconf-2017-talk/miso-aframe-demo/dist/demo.jsexe/index.html) / [Source](https://github.com/fizruk/miso-aframe)
-
-### Pixel Card Wars
-  - [Link](https://smelc3.itch.io/pixel-card-wars) / [Source](https://github.com/smelc/miso-darkcraw)
-
-### Currency Converter
-  - [Link](https://functora.github.io/apps/currency-converter) / [Source](https://github.com/functora/functora.github.io/tree/master/ghcjs/currency-converter)
+| Name | Description | Source Link | Live Demo Link |
+|------|-------------|-------------|----------------|
+| **TodoMVC** | A classic TodoMVC implementation | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs) | [Demo](https://todo-mvc.haskell-miso.org/) |
+| **2048** | A clone of the 2048 game | [Source](https://github.com/dmjio/miso/blob/master/examples/2048/Main.hs) | [Demo](https://2048.haskell-miso.org/) |
+| **Flatris** | A Tetris-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/flatris/Main.hs) | [Demo](https://flatris.haskell-miso.org/) |
+| **Plane** | A flappy-birds-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/flatris/Main.hs) | [Demo](https://flatris.haskell-miso.org/) |
+| **Mario** | A Super Mario-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) |
+| **Snake** | The classic Snake game | [Source](https://github.com/dmjio/miso/blob/master/examples/snake/Main.hs) | [Demo](https://snake.haskell-miso.org/) |
+| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) |
+| **XHR** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) |
+| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) |
+| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) |
+| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas2d.haskell-miso.org/) |
+| **ThreeJS** | A 3D rendering example using ThreeJS | [Source](https://github.com/dmjio/miso/blob/master/examples/threejs/Main.hs) | [Demo](https://threejs.haskell-miso.org/) |
+| **File Reader** | An example demonstrating file reading | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) |
 
 ## Haddocks
 
-### GHCJS
-  - [Link](https://haddocks.haskell-miso.org/)
-
-### GHC
-  - [Link](http://hackage.haskell.org/package/miso)
+| Platform | URL |
+|------|-------------|
+| GHCJS | [Link](https://haddocks.haskell-miso.org/) |
+| GHC | [Link](http://hackage.haskell.org/package/miso) |
 
 ## Sample application
 
