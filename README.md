@@ -40,6 +40,7 @@
 
 ## Table of Contents
 - [Quick Start](#quick-start)
+  - [Scaffolding](#scaffolding)
   - [Compilation](#compilation)
     - [WASM](#wasm)
     - [JS](#JS)
@@ -68,13 +69,15 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 
 Now you should be able to setup a development environment with the [Sample App](#sample-application).
 
+### Scaffolding
+
 To start, you can call `cabal init` to make a new project. Ensure your new project has 3 files, `cabal.project` (with a `miso` entry), a `app.cabal` file, and a `Main.hs` for the `miso` code. The three files are shown below.
 
 - `cabal.project`
 
 This example includes `miso` at the tip of `master`, but you can use any hash you'd like. We recommend a tagged release.
 
-```bash
+```yaml
 packages:
   .
 
@@ -87,7 +90,7 @@ source-repository-package
 
 We recommend using at least `cabal-version: 2.2`, this will give you the "common sections" feature which we will use to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
 
-```bash
+```yaml
 cabal-version: 2.2
 name: app
 version: 0.1.0.0
