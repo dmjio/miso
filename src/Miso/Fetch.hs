@@ -144,7 +144,7 @@ instance (ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods), KnownSymbol na
   type ToFetch (QueryParam' mods name a :> api) = RequiredArgument mods a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
-      param (x :: a) = [(ms "/", ms (enc x))]
+      param (x :: a) = [(ms $ symbolVal (Proxy @name), ms (enc x))]
 #if MIN_VERSION_http_api_data(0,5,1)
       enc = toEncodedQueryParam
 #else
