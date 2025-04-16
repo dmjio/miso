@@ -58,7 +58,10 @@
 - [License](#license)
 
 ## Quick start
-To start building applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/). This can be done via [GHCUP](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
+To start building applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/). This can be done via [GHCUP](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/). 
+
+> [!TIP]
+> For new Haskell users we recommend using [GHCUP](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
 ### Begin
 To build and run the sample-app with `nix`, execute the commands below:
@@ -288,7 +291,7 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 ## Coverage
 
-The core algorithmic component of miso [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
+The core algorithmic component of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
 
 To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed. You can do this with `curl -fsSL https://bun.sh/install | bash` or nix `nix-env -iA bun -f '<nixpkgs>'`.
 
@@ -298,9 +301,9 @@ $ bun install && bun run test
 
 ## Isomorphic
 
-[Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, avoiding full-page postbacks as necessary.
+[Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
 
-The `miso` function is used to perform the pointer-copying behavior client-side.
+The `miso` function is used to facilitate the pointer-copying behavior client-side.
 
 For more information on how `miso` handles isomorphic javascript, we recommend [this tutorial](https://github.com/FPtje/miso-isomorphic-example).
 
