@@ -14,7 +14,7 @@
   <a href="https://haskell.org">
     <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
   </a>
-  <a href="https://miso-haskell.cachix.org">
+  <a href="https://haskell-miso-cachix.cachix.org">
     <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
   <a href="https://github.com/dmjio/miso/actions">
@@ -78,7 +78,7 @@
 - [License](#license)
 
 ## Quick start
-To get started quickly building applications, we recommend using the [`nix`](https://nixos.org/nix) package manager with miso's binary cache provided by [`cachix`](https://miso-haskell.cachix.org/). It is possible to use [`stack`](https://docs.haskellstack.org/en/stable/README/) to build GHCJS projects, but support for procuring `GHCJS` has been removed [as of stack 2.0](https://github.com/commercialhaskell/stack/issues/4086). `nix` is used to procure a working version of `GHCJS`. If you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means. All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
+To get started quickly building applications, we recommend using the [`nix`](https://nixos.org/nix) package manager with miso's binary cache provided by [`cachix`](https://haskell-miso-cachix.cachix.org/). It is possible to use [`stack`](https://docs.haskellstack.org/en/stable/README/) to build GHCJS projects, but support for procuring `GHCJS` has been removed [as of stack 2.0](https://github.com/commercialhaskell/stack/issues/4086). `nix` is used to procure a working version of `GHCJS`. If you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means. All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
 
 ### Begin
 To build and run the sample-app with `nix`, execute the commands below:
@@ -374,10 +374,10 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 
 ## Binary cache
 
-`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://miso-haskell.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://miso-haskell.cachix.org/).
+`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso-cachix.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso-cachix.cachix.org/).
 
 ```bash
-cachix use miso-haskell
+cachix use haskell-miso-cachix
 ```
 
 ## Benchmarks
