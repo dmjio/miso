@@ -98,4 +98,17 @@ with pkgs.haskell.lib;
   # bun
   inherit (pkgs)
     bun;
+
+  # nurl
+  # $ nurl https://github.com/nix-community/nurl
+  #
+  # fetchFromGitHub {
+  #   owner = "nix-community";
+  #   repo = "nurl";
+  #   rev = "3a3ba7f0d14d92e1266395d826c6e229797d0044";
+  #   hash = "sha256-WAFqmlsShuQngk6LMFlgz7Oyc41TAQeTa/49phhRizY=";
+  # }
+  #
+  inherit (pkgs)
+    nurl;
 }
