@@ -35,7 +35,7 @@
 
 **Miso** supports compilation with both the latest [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) backends for [GHC](https://www.haskell.org/ghc/). For development with hot-reload, `miso` supports the [jsaddle](https://github.com/ghcjs/jsaddle) package that enables fast iteration of development over a WebSocket with vanilla [GHC](https://www.haskell.org/ghc/). Combined with [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch), your development environment should reload your changes on every file save in your editor of choice.
 
-> [!Warning]
+> [!Info]
 > React-style Components are now added to Miso as of version 1.9. This has not yet been released, we recommend developing against 'master' if you'd like these latest features
 
 ## Table of Contents
