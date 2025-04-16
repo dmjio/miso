@@ -67,11 +67,11 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
-Now you should be able to setup a development environment with the [Sample App](#sample-application).
+Now you should be able to setup a development environment.
 
 ### Scaffolding
 
-To start, you can call `cabal init` to make a new project. Ensure your new project has 3 files, `cabal.project` (with a `miso` entry), a `app.cabal` file, and a `Main.hs` for the `miso` code. The three files are shown below.
+To create the necessary files, you can call `cabal init` to make a new project. Ensure your new project has 3 files, `cabal.project` (with a `miso` entry), a `app.cabal` file, and a `Main.hs` for the `miso` code. The three files are shown below.
 
 - `cabal.project`
 
@@ -213,9 +213,17 @@ Below is a screenshot of what hot-reload iterative development looks like with `
 When you're done developing your application, you will want to compile it to JavaScript or Web Assembly for distribution. This can be done by acquiring a `GHC` that supports WebAssembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
 
 > [!TIP]
-> For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM]() and [JS]() backends.
+> For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS]() backends.
 
 #### WASM
+
+Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
+
+> [!TIP]
+> For nix users it is possible to acquire the WASM backend via a Nix flake
+
+
+
 
 #### JS
 
