@@ -31,7 +31,7 @@
   </a>
 </p>
 
-**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/), [Redux](http://redux.js.org/) and [Bobril](http://github.com/bobris/bobril). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
+**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -58,7 +58,7 @@
 - [License](#license)
 
 ## Quick start
-To get started quickly building applications, we recommend using the [`nix`](https://nixos.org/nix) package manager with miso's binary cache provided by [`cachix`](https://haskell-miso-cachix.cachix.org/). It is possible to use [`stack`](https://docs.haskellstack.org/en/stable/README/) to build GHCJS projects, but support for procuring `GHCJS` has been removed [as of stack 2.0](https://github.com/commercialhaskell/stack/issues/4086). `nix` is used to procure a working version of `GHCJS`. If you're using `cabal` we assume you have [obtained `GHCJS`](https://github.com/ghcjs/ghcjs#installation) by other means. All source code depicted below for the quick start app is available [here](https://github.com/dmjio/miso/tree/master/sample-app).
+To start building applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/). This can be done via [GHCUP](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
 
 ### Begin
 To build and run the sample-app with `nix`, execute the commands below:
@@ -161,21 +161,21 @@ For details of the internals and general overview of how `miso` works, see the [
 
 ## Examples
 
-| Name | Description | Source Link | Live Demo Link |
-|------|-------------|-------------|----------------|
-| **TodoMVC** | A classic TodoMVC implementation | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs) | [Demo](https://todo-mvc.haskell-miso.org/) |
-| **2048** | A clone of the 2048 game | [Source](https://github.com/dmjio/miso/blob/master/examples/2048/Main.hs) | [Demo](https://2048.haskell-miso.org/) |
-| **Flatris** | A Tetris-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/flatris/Main.hs) | [Demo](https://flatris.haskell-miso.org/) |
-| **Plane** | A flappy-birds-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/flatris/Main.hs) | [Demo](https://flatris.haskell-miso.org/) |
-| **Mario** | A Super Mario-like game | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) |
-| **Snake** | The classic Snake game | [Source](https://github.com/dmjio/miso/blob/master/examples/snake/Main.hs) | [Demo](https://snake.haskell-miso.org/) |
-| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) |
-| **XHR** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) |
-| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) |
-| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) |
-| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas2d.haskell-miso.org/) |
-| **ThreeJS** | A 3D rendering example using ThreeJS | [Source](https://github.com/dmjio/miso/blob/master/examples/threejs/Main.hs) | [Demo](https://threejs.haskell-miso.org/) |
-| **File Reader** | An example demonstrating file reading | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) |
+| Name | Description | Source Link | Live Demo Link | Author |
+|------|-------------|-------------|----------------|--------|
+| **TodoMVC** | A classic TodoMVC implementation | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs) | [Demo](https://todo-mvc.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **2048** | A clone of the 2048 game | [Source](https://github.com/ptigwe/hs2048/) | [Demo](https://2048.haskell-miso.org/) | @[ptigwe](https://github.com/ptigwe) |
+| **Flatris** | A Tetris-like game | [Source](https://github.com/ptigwe/hs-flatris/) | [Demo](https://flatris.haskell-miso.org/) | @[ptigwe](https://github.com/ptigwe) |
+| **Plane** | A flappy-birds-like game | [Source](https://github.com/Lermex/miso-plane) | [Demo](https://miso-plane.haskell-miso.org/) | @[Lermex](https://github.com/Lermex) |
+| **Snake** | The classic Snake game | [Source](https://github.com/lbonn/miso-snake) | [Demo](https://snake.haskell-miso.org/) | @[lbonn](https://github.com/lbonn) |
+| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **Fetch** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **File Reader** | A FileReader API example | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **WebGL** | A 3D rendering example using Three.JS | [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs) | [Demo](https://threejs.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **Mario** | A Super Mario physics example | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
 
 ## Haddocks
 
@@ -288,22 +288,17 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 ## Coverage
 
-The core algorithmic component of miso [diff](https://github.com/dmjio/miso/blob/master/js/miso.js). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [jsdom](https://github.com/jsdom/jsdom) and [jest](https://github.com/facebook/jest).
+The core algorithmic component of miso [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts). It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
 
-To run the tests and build the coverage report:
+To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed. You can do this with `curl -fsSL https://bun.sh/install | bash` or nix `nix-env -iA bun -f '<nixpkgs>'`.
 
 ```bash
-cd miso/tests
-npm i
-npm run test
-## Or by using `yarn` instead of `npm`:
-# yarn
-# yarn test
+$ bun install && bun run test
 ```
 
 ## Isomorphic
 
-[Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM, and the application proceeds as normal. All subsequent page navigation is handled locally by the client, avoiding full-page postbacks as necessary.
+[Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, avoiding full-page postbacks as necessary.
 
 The `miso` function is used to perform the pointer-copying behavior client-side.
 
@@ -311,11 +306,12 @@ For more information on how `miso` handles isomorphic javascript, we recommend [
 
 ## Pinning nixpkgs
 
-By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json).
+By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
+We also maintain a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` and build `miso` with the original `GHCJS 8.6` backend.
 
 ## Binary cache
 
-`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso-cachix.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso-cachix.cachix.org/).
+`nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso-cachix.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso-cachix.cachix.org/). We highly recommend using [cachix]() when using `miso` with a `nix` workflow.
 
 ```bash
 cachix use haskell-miso-cachix
@@ -330,11 +326,6 @@ cachix use haskell-miso-cachix
 ## Maintainers
 
 [@dmjio](https://github.com/dmjio)
-
-## Commercial Users
-  - [Polimorphic](https://www.polimorphic.com)
-  - [LumiGuide](https://lumi.guide/en/)
-  - [Clovyr](https://clovyr.io)
 
 ## Contributing
 
