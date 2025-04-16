@@ -35,7 +35,7 @@ export function fetchJSON (
   fetch (url, options)
       .then(response => {
         if (!response.ok) {
-          throw new Error(response.statusMessage);
+          throw new Error(response.statusText);
         }
         return response.json();
       })

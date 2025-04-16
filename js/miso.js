@@ -646,7 +646,7 @@ function fetchJSON(url, method, body, headers, successful, errorful) {
   }
   fetch(url, options).then((response) => {
     if (!response.ok) {
-      throw new Error(response.statusMessage);
+      throw new Error(response.statusText);
     }
     return response.json();
   }).then(successful).catch(errorful);
