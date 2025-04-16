@@ -62,6 +62,7 @@ import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
+import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_OLD
 import           Language.Javascript.JSaddle
@@ -445,9 +446,9 @@ fetchJSON url method maybeBody headers successful errorful = do
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
   let jsonHeaders =
-        [ (ms "Content-Type", ms "application/json")
-        , (ms "Accept", ms "application/json")
-        ]
+        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
+        <>
+        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
     forM_ (headers <> jsonHeaders) $ \(k,v) -> do
