@@ -243,7 +243,7 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 For instructions on how to add a third-party channel with [GHCup](https://www.haskell.org/ghcup/), please see their official [README.md](https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta#using-ghcup)
 
 > [!TIP]
-> For [Nix](nixos.org) users it is possible to acquire the WASM backend via a Nix flake
+> For [Nix](nixos.org) users it is possible to acquire the WASM backend via a [Nix flake](https://nixos-and-flakes.thiscute.world/)
 
 ```bash
 $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
