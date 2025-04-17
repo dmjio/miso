@@ -202,9 +202,15 @@ $ cabal repl
 
 You should see the following output in your terminal.
 
-```
+```bash
 [1 of 2] Compiling Main             ( Main.hs, interpreted )
 Ok, one module loaded.
+ghci> 
+```
+
+Now call the `main` function in the `GHCi` REPL.
+
+```bash
 ghci> main
 Running on port 8008...
 <a href="http://localhost:8008">run</a>
