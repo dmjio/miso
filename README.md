@@ -541,9 +541,6 @@ Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) 
 See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
 
 ## Contributors
-
-## Code Contributors
-
 This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
 <a href="https://github.com/dmjio/miso/graphs/contributors"><img src="https://opencollective.com/miso/contributors.svg?width=890&button=false" /></a>
 
