@@ -57,7 +57,7 @@
 ----------------------------------------------------------------------------
 module Miso.Fetch
   ( -- * Class
-    Fetch (fetch)
+    Fetch (..)
     -- ** Simple non-Servant API
   , fetchJSON
   ) where
