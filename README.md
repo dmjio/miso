@@ -162,7 +162,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
-app :: App Effect Model Action ()
+app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
@@ -170,7 +170,7 @@ emptyModel :: Model
 emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
