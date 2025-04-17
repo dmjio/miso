@@ -116,7 +116,7 @@ executable app
   main-is:
     Main.hs
   build-depends:
-    base, miso, lens
+    base, miso
   default-language:
     Haskell2010
 ```
