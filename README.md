@@ -210,7 +210,7 @@ Running on port 8008...
 ghci>
 ```
 
-If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in the repl, and the application will update on the screen.
+If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in `GHCi`, and the application will update on the screen.
 
 > [!NOTE]
 > Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
