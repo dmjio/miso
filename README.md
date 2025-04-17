@@ -90,7 +90,7 @@ source-repository-package
 
 ### `app.cabal`
 
-We recommend using at least `cabal-version: 2.2`, this will give you the [common sections](https://vrom911.github.io/blog/common-stanzas) feature which we will use later to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
+We recommend using at least `cabal-version: 2.2`, this will give you the [common sections](https://vrom911.github.io/blog/common-stanzas) feature which we will use later to allow multiple compilers to build our project (so we can target `WASM` and `JS` backends)
 
 ```yaml
 cabal-version: 2.2
