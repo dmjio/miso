@@ -217,15 +217,29 @@ When you're done developing your application, you will want to compile it to Jav
 
 #### WASM
 
-Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
+Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the GHC-WASM compiler.
+
+For instructions on how to add a third-party channel with [GHCup](https://www.haskell.org/ghcup/), please see their [official README.md](https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta#using-ghcup)
+
+> [!TIP]
+> For [Nix](nixos.org) users it is possible to acquire the WASM backend via a Nix flake
+
+```bash
+$ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
+```
+
+This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. To build:
+
+```bash
+$ wasm32-wasi-cabal update && wasm32-wasi-cabal build --allow-newer
+```
+
+#### JS
+
+Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the JS-backend compiler.
 
 > [!TIP]
 > For nix users it is possible to acquire the WASM backend via a Nix flake
-
-
-
-
-#### JS
 
 
 ## Architecture
