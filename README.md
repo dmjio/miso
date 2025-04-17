@@ -411,7 +411,7 @@ $ http-server app.wasmexe
 
 ## JavaScript
 
-Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the JS-backend compiler.
+Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the latest GHC JS-backend compiler.
 
 > [!TIP]
 > For [Nix](https://nixos.org) users it is possible to acquire the latest JS backend via Nix
