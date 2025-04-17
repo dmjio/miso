@@ -232,9 +232,9 @@ When you're done developing your application, you will want to compile it to Web
 
 #### WASM
 
-Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the GHC-WASM compiler.
+Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
 
-For instructions on how to add a third-party channel with [GHCup](https://www.haskell.org/ghcup/), please see their [official README.md](https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta#using-ghcup)
+For instructions on how to add a third-party channel with [GHCup](https://www.haskell.org/ghcup/), please see their official [README.md](https://gitlab.haskell.org/haskell-wasm/ghc-wasm-meta#using-ghcup)
 
 > [!TIP]
 > For [Nix](nixos.org) users it is possible to acquire the WASM backend via a Nix flake
@@ -243,10 +243,140 @@ For instructions on how to add a third-party channel with [GHCup](https://www.ha
 $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
 ```
 
-This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. To build:
+This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages, from time to time. Update your `caba.project` to the following
+
+- `cabal.project`
+
+```
+packages:
+  .
+
+with-compiler:
+  wasm32-wasi-ghc
+
+with-hc-pkg:
+  wasm32-wasi-ghc-pkg
+
+source-repository-package
+  type: git
+  location: https://github.com/dmjio/miso
+  branch: master
+
+if arch(wasm32)
+  -- Required for TemplateHaskell. When using wasm32-wasi-cabal from
+  -- ghc-wasm-meta, this is superseded by the global cabal.config.
+  shared: True
+
+  -- https://github.com/haskellari/time-compat/issues/37
+  -- Older versions of time don't build on WASM.
+  constraints: time installed
+  allow-newer: time
+
+  -- https://github.com/haskellari/splitmix/pull/73
+  source-repository-package
+    type: git
+    location: https://github.com/amesgen/splitmix
+    tag: 5f5b766d97dc735ac228215d240a3bb90bc2ff75
+```
+
+Now call `wasm32-wasi-cabal build --allow-newer` and you should produce a `WASM` payload in the `dist-newstyle/` directory.
+
+```
+$ wasm32-wasi-cabal build --allow-newer
+Configuration is affected by the following files:
+- cabal.project
+Resolving dependencies...
+Build profile: -w ghc-9.12.2.20250327 -O1
+In order, the following will be built (use -v for more details):
+ - app-0.1.0.0 (exe:app) (configuration changed)
+Created semaphore called cabal_semaphore_b with 12 slots.
+Configuring executable 'app' for app-0.1.0.0...
+Preprocessing executable 'app' for app-0.1.0.0...
+Building executable 'app' for app-0.1.0.0...
+[1 of 1] Compiling Main             ( Main.hs, dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app-tmp/Main.o ) [Miso.Lens package changed]
+[2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
+```
+
+You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations. But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
 
 ```bash
-$ wasm32-wasi-cabal update && wasm32-wasi-cabal build --allow-newer
+$ mkdir -v app.wasmexe
+mkdir: created directory 'app.wasmexe'
+
+# 
+$ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \ 
+   --input $(wasm32-wasi-cabal list-bin app --allow-newer) \
+   --output app.wasmexe/ghc_wasm_jsffi.js
+
+Configuration is affected by the following files:
+- cabal.project
+
+$ cp -v $(wasm32-wasi-cabal list-bin app --allow-newer) app.wasmexe
+Configuration is affected by the following files:
+- cabal.project
+'/home/dmjio/Desktop/miso/sample-app/dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm' -> 'app.wasmexe'
+```
+
+Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
+
+- `index.html`
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sample miso WASM counter app</title>
+  </head>
+  <body>
+    <script>globalThis.example = app;</script>
+    <script src="index.js" type="module"></script>
+  </body>
+</html>
+```
+
+- `index.js`
+
+```javascript
+import { WASI, OpenFile, File, ConsoleStdout } from "https://cdn.jsdelivr.net/npm/@bjorn3/browser_wasi_shim@0.3.0/dist/index.js";
+import ghc_wasm_jsffi from "./ghc_wasm_jsffi.js";
+
+const args = [];
+const env = ["GHCRTS=-H64m"];
+const fds = [
+  new OpenFile(new File([])), // stdin
+  ConsoleStdout.lineBuffered((msg) => console.log(`[WASI stdout] ''${msg}`)),
+  ConsoleStdout.lineBuffered((msg) => console.warn(`[WASI stderr] ''${msg}`)),
+];
+const options = { debug: false };
+const wasi = new WASI(args, env, fds, options);
+
+const instance_exports = {};
+const { instance } = await WebAssembly.instantiateStreaming(fetch("app.wasm"), {
+  wasi_snapshot_preview1: wasi.wasiImport,
+  ghc_wasm_jsffi: ghc_wasm_jsffi(instance_exports),
+});
+Object.assign(instance_exports, instance.exports);
+
+wasi.initialize(instance);
+await instance.exports.hs_start(globalThis.example);
+```
+
+Your `app.wasmexe` folder should now look like this:
+
+```
+❯ ls app.wasmexe
+ app.wasm
+ ghc_wasm_jsffi.js
+ index.html
+ index.js
+```
+
+Now you can host this in the browser to see your Haskell `miso` counter application running on Web Assembly in the browser.
+
+```
+$ http-server app.wasmexe
 ```
 
 #### JS
