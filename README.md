@@ -513,15 +513,18 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 The core algorithmic component of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
 
-To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
+> [!NOTE] To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
 
 ```bash 
 $ curl -fsSL https://bun.sh/install | bash
 ```
+or
 
 ```bash
-nix `nix-env -iA bun -f '<nixpkgs>'
+$ nix-env -iA bun -f '<nixpkgs>'
 ```
+
+and
 
 ```bash
 $ bun install && bun run test
