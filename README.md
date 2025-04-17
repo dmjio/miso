@@ -457,7 +457,7 @@ For some details of the internals and general overview of how `miso` works, see 
 
 | Name            | Description                            | Source Link                                                                      | Live Demo Link                                | Author                               |
 |-----------------|----------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------|--------------------------------------|
-| **TodoMVC**     | A classic TodoMVC implementation       | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)    | [Demo](https://todo-mvc.haskell-miso.org/)    | @[dmjio](https://github.com/dmjio)   |
+| **TodoMVC**     | A classic TodoMVC implementation       | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)    | [Demo](https://todo-mvc.haskell-miso.org/)    | [@dmjio](https://github.com/dmjio)   |
 | **2048**        | A clone of the 2048 game               | [Source](https://github.com/ptigwe/hs2048/)                                      | [Demo](https://2048.haskell-miso.org/)        | [@ptigwe](https://github.com/ptigwe) |
 | **Flatris**     | A Tetris-like game                     | [Source](https://github.com/ptigwe/hs-flatris/)                                  | [Demo](https://flatris.haskell-miso.org/)     | [@ptigwe](https://github.com/ptigwe) |
 | **Plane**       | A flappy-birds-like game               | [Source](https://github.com/Lermex/miso-plane)                                   | [Demo](https://miso-plane.haskell-miso.org/)  | [@Lermex](https://github.com/Lermex) |
