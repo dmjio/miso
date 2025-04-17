@@ -44,7 +44,7 @@
 - [Hot Reload](#hot-reload)
 - [Compilation](#compilation)
 - [WebAssembly](#web-assembly)
-- [JS](#JS)
+- [JavaScript](#JavaScript)
 - [Architecture](#architecture)
 - [Internals](#internals)
 - [Examples](#examples)
@@ -409,7 +409,7 @@ $ http-server app.wasmexe
 
 ![Image](https://github.com/user-attachments/assets/41af274b-2c25-4b26-acb1-d2a5266cfa8a)
 
-## JS
+## JavaScript
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the JS-backend compiler.
 
