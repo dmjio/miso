@@ -621,7 +621,7 @@ If you'd like to support this project financially, be it through requesting feat
 
 Support this project with your organization. Your logo will show up here with a link to your website. [Contribute](https://opencollective.com/miso/contribute)
 
-<a href="https://opencollective.com/miso/organization/0/website"><img src="https://opencollective.com/miso/organization/0/avatar.svg"></a>
+<a target="_blank" href="https://opencollective.com/miso/organization/0/website"><img src="https://opencollective.com/miso/organization/0/avatar.svg"></a>
 
 ## License
 
