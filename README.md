@@ -4,7 +4,7 @@
 <a href="https://haskell-miso.org">
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
    </a>
-<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> front-end web framework</p>
+<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> front-end web framework 🍜</p>
 </p>
 
 <p align="center">
@@ -551,8 +551,8 @@ We are very thankful and grateful for our corporate and individual sponsors.
 
   - Moses Tschanz
   - [@MaxGabriel](https://github.com/MaxGabriel)
-  - [@DigitalOcean](https://github.com/MaxGabriel)
-  - TonyFu
+  - [@DigitalOcean](https://github.com/DigitOcean)
+  - [@maybetonyfu](https://github.com/maybetonyfu)
   - etc.
 
 #### Partnerships
