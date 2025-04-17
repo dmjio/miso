@@ -59,7 +59,7 @@
 - [Maintainers](#maintainers)
 - [Partnerships](#partnerships)
 - [Contributors](#contributors)
-- [Individual](#Individuals)
+- [Financial contributors](#financial-contributors)
 - [Organizations](#organizations)
 - [License](#license)
 
@@ -294,21 +294,25 @@ Call `wasm32-wasi-cabal build --allow-newer` and a `WASM` payload should be crea
 
 ```bash
 $ wasm32-wasi-cabal build --allow-newer
+```
+
+```bash
 Configuration is affected by the following files:
 - cabal.project
 Resolving dependencies...
 Build profile: -w ghc-9.12.2.20250327 -O1
 In order, the following will be built (use -v for more details):
  - app-0.1.0.0 (exe:app) (configuration changed)
-Created semaphore called cabal_semaphore_b with 12 slots.
 Configuring executable 'app' for app-0.1.0.0...
 Preprocessing executable 'app' for app-0.1.0.0...
 Building executable 'app' for app-0.1.0.0...
-[1 of 1] Compiling Main             ( Main.hs, dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app-tmp/Main.o ) [Miso.Lens package changed]
+[1 of 1] Compiling Main             ( Main.hs, dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app-tmp/Main.o )
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
 You have now successfully compiled Haskell `miso` code to Web Assembly 🔥
+
+***
 
 But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)).
 
@@ -619,7 +623,7 @@ See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) fo
 
 If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p>
 
-## Individuals
+## Financial contributors
 
 Become a [financial contributor](https://opencollective.com/miso/contribute) and help us sustain our project and community. We are very grateful and thankful for our individual sponsors.
 
