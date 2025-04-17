@@ -485,8 +485,7 @@ For real-world examples of Haskell `miso` applications, see below.
 The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
 
 > [!TIP]
-> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily.
-> $ cachix use haskell-miso-cachix
+> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily `cachix use haskell-miso-cachix`
 
 
 ```
