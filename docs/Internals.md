@@ -3,15 +3,17 @@ Internals
 
 ## Overview
 
-Miso’s external API has three main parts. The `model` (parameterized by `action`), the `view` function and `update` function. 
+Miso’s external API has three main parts. The `model`, `view` function, and `update` function. 
 
 ## Concurrency
 
-Under the hood miso’s concurrency model centers around an atomically updated `IORef (Seq action)` (known as queue). The queue is used to capture events and update the user-defined `model` [^1]. Each captured browser event causes a green thread [^2] to be forked, and an `action` appended to the queue.
+Under the hood miso’s concurrency model centers around an atomically updated `IORef (Seq action)` (known henceforth as event queue). The queue is used to capture events and update the user-defined `model` [^1]. Each captured browser event appends an `action` to the event queue.
 
 ## Event Loop
 
-`miso` operates in an event [loop](https://github.com/dmjio/miso/blob/master/src/Miso.hs#L124) that blocks on [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame). The `model` lives on the stack of the event loop function. Inside this loop we drain the queue of `action`s, and fold them against the `model` (known as “batching”). We then diff the new `model` against the old `model`. Finally, if the `model` has been updated (is dirty), `view` is invoked on the updated `model` to get a `VTree` [^3]. This `VTree` gets converted to a JS tree and is diffed + patched against the existing tree (that lives on the JS heap) and the DOM gets updated. The loop recurses on the new `model`.
+`miso` operates in an event [loop](https://github.com/dmjio/miso/blob/master/src/Miso.hs#L124) that blocks on [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame). The `model` lives on the stack of the event loop function. Inside this loop we drain the queue into `[action]`, and fold against the `model` (this is known as “event batching”). We do this to minimize calls to `diff`. 
+
+Miso then diffs the new `model` against the old `model`. If the `model` has been updated (dirty), the `view` function is invoked on the updated `model` produce a `VTree` [^3]. This `VTree` gets converted to a `JS` `vtree` and is diffed + patched against the existing tree (that lives on the JS heap) and the DOM updates. The loop recurses on the new `model`.
 
 ## Diffing and patching (simultaneously)
 
@@ -19,19 +21,19 @@ During [diffing](https://github.com/dmjio/miso/blob/master/js/miso.js#L3) we mut
 
 ## Events
 
-While the event loop is executing, browser events are raised asynchronously and delegated into Haskell callbacks that live on the virtual DOM in the JS heap [^6]. The event body is parsed into a Haskell structure via JSON (FromJSON), the update function is invoked to produce an Action that gets written to the queue atomically. Event delegation and DOM diffing occur simultaneously.
+While the event loop is executing, browser events are raised asynchronously and delegated into Haskell callbacks that live on the virtual DOM in the JS heap [^6]. The event body is parsed into a Haskell structure via JSON (`FromJSON`), the update function is invoked to produce an `Action` that gets written to the queue atomically. Event delegation and DOM diffing occur simultaneously.
 
 ## Misc. concurrency
 
-`subs` and `sink` are ways to write into the actions queue externally (useful for integration with third party components). There are some predefined `subs` in `Miso.Subscription` for conveniently working with the History, Websocket, Keyboard and Mouse APIs.
+`Sub` and `Sink` are ways to write into the actions queue externally (useful for integration with third party components as well). Each `Component` has its own `Sink`, and list of `Sub`. There are some predefined `Sub` in `Miso.Subscription` for conveniently working with the History, Websocket, Keyboard and Mouse APIs. All `Sub` are forked, and all `Sink` writes are executed synchronously. A `Sink` write appends to the event queue, its `action` is evaluated asynchronously in the event loop thread.
 
 ## Pre-rendering
 
-Pre-rendering (using the `miso` function) on application startup will traverse the DOM and copy pointers into miso’s virtual DOM structure (this process is known as hydration). This is necessary for events to work, since event delegation works by DOM pointer traversal on the virtual DOM to find the correct node to dispatch the event [^6].
+Pre-rendering (using the `miso` function) on application startup will traverse the DOM and copy pointers into miso’s virtual DOM structure (this process is known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development)). This is necessary for events to work, since event delegation works by DOM pointer traversal on the virtual DOM to find the correct node to dispatch the event [^6].
 
 ## View
 
-The `view` function is how templating works in miso. The `View` is a rose tree that represents the DOM. This function is used in the event loop to construct new virtual DOMs in response to browser events.
+The `view` function is how templating works in `miso`. The `View` is a [Rose Tree](https://en.wikipedia.org/wiki/Rose_tree) that represents the DOM. This function is used in the event loop to construct new virtual DOMs in response to browser events.
 
 [^1]: `Seq` is used to aid event ordering and avoid excessive redraws.
 
