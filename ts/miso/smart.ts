@@ -20,7 +20,11 @@ export function vtextKeyed(input: string, key: string) : VText {
 /* vtree factory */
 export function vnode(props: Partial<VNode>): VNode {
   var node = union(mkVNode(), props);
-  node['shouldSync'] = shouldSync(node);
+  /* dmj: If the property is already set the check is bypassed.
+     By setting 'shouldSync' manually in  'vnode' you are implicitly
+     saying all keys exist and should be synched.
+   */
+  if (!node['shouldSync']) node['shouldSync'] = shouldSync(node);
   return node;
 }
 

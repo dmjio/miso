@@ -48,7 +48,8 @@ var version = "1.9.0.0";
 // ts/miso/smart.ts
 function vnode(props) {
   var node = union(mkVNode(), props);
-  node["shouldSync"] = shouldSync(node);
+  if (!node["shouldSync"])
+    node["shouldSync"] = shouldSync(node);
   return node;
 }
 function union(obj, updates) {
