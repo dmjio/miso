@@ -211,7 +211,7 @@ ghci>
 
 If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in the repl, and the application will update on the screen. 
 
-> [!INFO] Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
+> [!NOTE] Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
 > [!TIP]
 > For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
