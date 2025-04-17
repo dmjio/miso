@@ -188,7 +188,7 @@ viewModel x = div_ []
 ----------------------------------------------------------------------------
 ```
 
-Now that your project files are populated, development can begin. 
+Now that your project files are populated, development can begin.
 
 ## Hot Reload
 
@@ -209,9 +209,10 @@ Running on port 8008...
 ghci>
 ```
 
-If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in the repl, and the application will update on the screen. 
+If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in the repl, and the application will update on the screen.
 
-> [!NOTE] Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
+> [!NOTE]
+> Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
 > [!TIP]
 > For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
@@ -250,7 +251,7 @@ $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
 ```
 
 > [!NOTE]
-> This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages from time to time. 
+> This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages from time to time.
 
 Update your `cabal.project` to the following
 
@@ -308,7 +309,7 @@ Building executable 'app' for app-0.1.0.0...
 
 You have now successfully compiled Haskell `miso` code to Web Assembly 🔥
 
-But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
+But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)).
 
 > [!NOTE]
 > The GHC WASM backend can execute any Haskell program in a WASI-compliant runtime (e.g. [wasmtime](https://github.com/bytecodealliance/wasmtime))
@@ -322,7 +323,7 @@ $ mkdir -v app.wasmexe
 mkdir: created directory 'app.wasmexe'
 
 # This command produces `ghc_wasm_jsffi.js`, which ensures our FFI works properly.
-$ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \ 
+$ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \
    --input $(wasm32-wasi-cabal list-bin app --allow-newer) \
    --output app.wasmexe/ghc_wasm_jsffi.js
 
@@ -333,7 +334,8 @@ Configuration is affected by the following files:
 '/home/dmjio/Desktop/miso/sample-app/dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm' -> 'app.wasmexe'
 ```
 
-> [!NOTE] Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
+> [!NOTE]
+> Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
 
 - `index.html`
 
@@ -405,7 +407,8 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 ❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9121.ghc '<nixpkgs>'
 ```
 
-> [!NOTE] This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
+> [!NOTE]
+> This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
 
 - `cabal.project`
 
@@ -425,7 +428,8 @@ with-hc-pkg:
   javascript-unknown-ghcjs-ghc-pkg
 ```
 
-> [!NOTE] `cabal` will use the `ghc` specified above in `with-compiler`
+> [!NOTE]
+> `cabal` will use the `ghc` specified above in `with-compiler`
 
 
 ```bash
@@ -434,7 +438,7 @@ $ cabal update && cabal build --allow-newer
 
 ## Architecture
 
-For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32). 
+For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32).
 
 > [!TIP] For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
 
@@ -502,7 +506,8 @@ This will compile all the examples to JavaScript into a folder named `result`.
 `-- fetch.jsexe
 ```
 
-> [!NOTE] To see examples, we recommend hosting them with a web server (we use [http-server](https://github.com/http-party/http-server))
+> [!NOTE]
+> To see examples, we recommend hosting them with a web server (we use [http-server](https://github.com/http-party/http-server))
 
 ```
 cd result/bin/todo-mvc.jsexe && http-sever
@@ -513,9 +518,10 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 The core algorithmic component of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
 
-> [!NOTE] To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
+> [!NOTE]
+> To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
 
-```bash 
+```bash
 $ curl -fsSL https://bun.sh/install | bash
 ```
 or
@@ -551,7 +557,8 @@ All files           |   92.37 |   85.48 |
 
 [Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
 
-> [!NOTE] The [miso](https://haddocks.haskell-miso.org/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
+> [!NOTE]
+> The [miso](https://haddocks.haskell-miso.org/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Benchmarks
 
@@ -569,7 +576,8 @@ All files           |   92.37 |   85.48 |
 
 By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
 
-> [!NOTE] `miso` also maintains a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` for deployment and to build `miso` with the original `GHCJS 8.6` backend.
+> [!NOTE]
+> `miso` also maintains a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` for deployment and to build `miso` with the original `GHCJS 8.6` backend.
 
 ### Binary cache
 
@@ -611,10 +619,10 @@ We are very grateful and thankful for our corporate and individual sponsors.
 
 ## Partnerships
 
-If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p> 
+If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p>
 
 ## Individuals
-    
+
 <a href="https://opencollective.com/miso"><img src="https://opencollective.com/miso/individuals.svg?width=890"></a>
 
 ## Organizations
