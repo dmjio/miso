@@ -586,7 +586,7 @@ All files           |   92.37 |   85.48 |
 > [!TIP]
 > If unfamiliar with `nix`, we recommend [@Gabriella439](https://github.com/Gabriella439)'s ["Nix and Haskell in production"](https://github.com/Gabriella439/haskell-nix) guide.
 
-### Pinning nixpkgs
+### Pinning nixpkgs 📌
 
 By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
 
