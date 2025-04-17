@@ -581,4 +581,4 @@ Support this project with your organization. Your logo will show up here with a 
 
 ## License
 
-[BSD3](LICENSE) © David Johnson
+[BSD3](LICENSE) © dmjio
