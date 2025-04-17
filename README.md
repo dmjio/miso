@@ -566,7 +566,7 @@ All files           |   92.37 |   85.48 |
 
 By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
 
-> [!INFO] `miso` also maintains a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` for deployment and to build `miso` with the original `GHCJS 8.6` backend.
+> [!NOTE] `miso` also maintains a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` for deployment and to build `miso` with the original `GHCJS 8.6` backend.
 
 ### Binary cache
 
