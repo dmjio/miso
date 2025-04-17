@@ -57,9 +57,10 @@
   - [Pinning nixpkgs](#pinning-nixpkgs)
   - [Binary cache](#binary-cache)
 - [Maintainers](#maintainers)
-- [Commercial Users](#commercial-users)
-- [Contributing](#contributing)
+- [Partnerships](#partnerships)
 - [Contributors](#contributors)
+- [Individual](#Individuals)
+- [Organizations](#organizations)
 - [License](#license)
 
 ## Quick start
@@ -445,7 +446,8 @@ $ cabal update && cabal build --allow-newer
 
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32).
 
-> [!TIP] For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
+> [!TIP]
+> For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
 
 ## Internals
 
@@ -571,11 +573,12 @@ All files           |   92.37 |   85.48 |
 
 <a target="_blank" href="https://krausest.github.io/js-framework-benchmark/current.html"><img src="https://cdn-images-1.medium.com/max/1600/1*6EjJTf1mhlTxd4QWsygCwA.png" width="500" height="600" /></a>
 
-## Nix
+## ![Image](https://github.com/user-attachments/assets/b67cdb60-5759-4f8a-bcdc-b17361d6dbfd)
 
 `Nix` is a powerful option for building web applications with `miso` since it encompasses development workflow, configuration management, and deployment. The source code for [`haskell-miso.org`](https://github.com/dmjio/miso/tree/master/haskell-miso.org) is an example of this.
 
-> [!TIP] If unfamiliar with `nix`, we recommend [@Gabriella439](https://github.com/Gabriella439)'s ["Nix and Haskell in production"](https://github.com/Gabriella439/haskell-nix) guide.
+> [!TIP]
+> If unfamiliar with `nix`, we recommend [@Gabriella439](https://github.com/Gabriella439)'s ["Nix and Haskell in production"](https://github.com/Gabriella439/haskell-nix) guide.
 
 ### Pinning nixpkgs
 
@@ -592,7 +595,7 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 > We highly recommend nix users consume the [cachix](https://cachix.org) cache that `cachix use haskell-miso-cachix`.
 
 ```bash
-cachix use haskell-miso-cachix
+$ cachix use haskell-miso-cachix
 ```
 
 ## Maintainers
@@ -601,26 +604,16 @@ cachix use haskell-miso-cachix
 
 ## Contributing
 
-Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) or submit [PRs](https://github.com/dmjio/miso/pulls).
+Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) or a submit [Pill Request](https://github.com/dmjio/miso/pulls).
 
 See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
 
 ## Contributors
 
-This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+> [!NOTE]
+> This project exists thanks to all the people who [contribute](CONTRIBUTING.md)
+
 <a href="https://github.com/dmjio/miso/graphs/contributors"><img src="https://opencollective.com/miso/contributors.svg?width=890&button=false" /></a>
-
-## Financial Contributors
-
-Become a financial contributor and help us sustain our project and community. [[Contribute](https://opencollective.com/miso/contribute)]
-
-We are very grateful and thankful for our corporate and individual sponsors.
-
-  - Moses Tschanz
-  - [@MaxGabriel](https://github.com/MaxGabriel)
-  - [@DigitalOcean](https://github.com/DigitOcean)
-  - [@maybetonyfu](https://github.com/maybetonyfu)
-  - etc.
 
 ## Partnerships
 
@@ -628,11 +621,19 @@ If you'd like to support this project financially, be it through requesting feat
 
 ## Individuals
 
+Become a financial contributor and help us sustain our project and community. [[Contribute](https://opencollective.com/miso/contribute)]. We are very grateful and thankful for our individual sponsors.
+
+  - Moses Tschanz
+  - [@MaxGabriel](https://github.com/MaxGabriel)
+  - [@DigitalOcean](https://github.com/DigitOcean)
+  - [@maybetonyfu](https://github.com/maybetonyfu)
+  - etc.
+
 <a href="https://opencollective.com/miso"><img src="https://opencollective.com/miso/individuals.svg?width=890"></a>
 
 ## Organizations
 
-Support this project with your organization. Your logo will show up here with a link to your website. [Contribute](https://opencollective.com/miso/contribute)
+Support this project with your organization. Your logo will show up here with a link to your website. [Contribute](https://opencollective.com/miso/contribute). We are also very grateful and thankful for our corporate sponsors.
 
 <a target="_blank" href="https://opencollective.com/miso/organization/0/website"><img src="https://opencollective.com/miso/organization/0/avatar.svg"></a>
 
