@@ -17,8 +17,8 @@
   <a href="https://haskell-miso-cachix.cachix.org">
     <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
   </a>
-  <a href="https://github.com/dmjio/miso/actions">
-    <img src="https://github.com/dmjio/miso/workflows/Miso%20CI/badge.svg" alt="GitHub Actions">
+  <a href="https://actions-badge.atrox.dev/dmjio/miso/goto?ref=master">
+    <img alt="Build Status" src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fdmjio%2Fmiso%2Fbadge%3Fref%3Dmaster&style=flat-square" />
   </a>
   <a href="https://discord.gg/QVDtfYNSxq">
     <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord&logoColor=7289da">
