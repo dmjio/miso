@@ -578,7 +578,7 @@ All files           |   92.37 |   85.48 |
 > [!NOTE]
 > The [miso](https://haddocks.haskell-miso.org/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
-## Benchmarks
+## Benchmarks 🏎️
 
 [According to benchmarks](https://krausest.github.io/js-framework-benchmark/current.html), `miso` is among the fastest functional programming web frameworks, second only to [Elm](http://elm-lang.org).
 
