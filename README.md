@@ -310,7 +310,7 @@ Building executable 'app' for app-0.1.0.0...
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
-You have now successfully compiled Haskell `miso` code to Web Assembly 🔥
+You have now successfully compiled a Haskell `miso` application to WebAssembly 🔥
 
 ***
 
@@ -481,7 +481,7 @@ The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/
 
 > [!TIP]
 > Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily.
-> `$ cachix use haskell-miso-cachix`
+> $ cachix use haskell-miso-cachix
 
 
 ```
