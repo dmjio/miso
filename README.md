@@ -237,7 +237,7 @@ When done developing, we can compile to Web Assembly or JavaScript for distribut
 
 ## ![Image](https://github.com/user-attachments/assets/c57d96b2-368b-410e-b968-28dfe22bf1b1) Web Assembly
 
-> [!NOTE]
+> [!WARNING]
 > The Haskell `miso` team currently recommends using the WASM backend as the default backend for compilation.
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
