@@ -33,7 +33,7 @@
 
 **Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
-**Miso** supports compilation with both the latest [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) backends for [GHC](https://www.haskell.org/ghc/). For development with hot-reload, `miso` supports the [jsaddle](https://github.com/ghcjs/jsaddle) package that enables fast iteration of development over a WebSocket with vanilla [GHC](https://www.haskell.org/ghc/). Combined with [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch), your development environment should reload your changes on every file save in your editor of choice.
+**Miso** supports compilation with both the latest [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) backends for [GHC](https://www.haskell.org/ghc/). For development with hot-reload, `miso` supports the [jsaddle](https://github.com/ghcjs/jsaddle) package that enables fast iteration of development using WebSockets). Combined with [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch), the development environment should update the page on all file changes, using any editor of choice.
 
 > [!Info]
 > React-style Components are now added to Miso as of version 1.9. This has not yet been released, we recommend developing against 'master' if you'd like these latest features
@@ -75,7 +75,7 @@ To create the necessary files, you can call `cabal init` to make a new project. 
   - `app.cabal`
   - `Main.hs`
 
-- `cabal.project`
+#### `cabal.project`
 
 ```yaml
 packages:
@@ -87,9 +87,9 @@ source-repository-package
   branch: master
 ```
 
-- `miso.cabal`
+#### `app.cabal`
 
-We recommend using at least `cabal-version: 2.2`, this will give you the "common sections" feature which we will use later to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
+We recommend using at least `cabal-version: 2.2`, this will give you the [common sections](https://vrom911.github.io/blog/common-stanzas) feature which we will use later to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
 
 ```yaml
 cabal-version: 2.2
@@ -118,7 +118,7 @@ executable app
     Haskell2010
 ```
 
-- `Main.hs`
+#### `Main.hs`
 
 This file contains a simple `miso` counter application.
 
@@ -187,7 +187,9 @@ viewModel x = div_ []
 ----------------------------------------------------------------------------
 ```
 
-Now that your project files are setup you can now begin development. If you call `cabal repl` and `main` you should now see the following:
+Now that your project files are populated, development can begin. 
+
+- `$ cabal repl`
 
 ```
 [1 of 2] Compiling Main             ( Main.hs, interpreted )
@@ -198,11 +200,7 @@ Running on port 8008...
 ghci>
 ```
 
-If you visit the URL at [http://localhost:8008](http://localhost:8008), you should see the [Sample Application](#sample-application) live.
-
-To reload the application after making changes you can edit the `Main.hs` file and call `:r` and `main` in the repl, and it should update the screen.
-
-Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools, and they will do it for you instead.
+If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit the `Main.hs` file and call `:r` and `main` in the repl, and it should update the screen. Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
 Below an example of usage with `ghcid`.
 
@@ -217,7 +215,7 @@ Below is a screenshot of what hot-reload iterative development looks like with `
 
 ### Compilation
 
-When you're done developing your application, you will want to compile it to JavaScript or Web Assembly for distribution. This can be done by acquiring a `GHC` that supports WebAssembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
+When you're done developing your application, you will want to compile it to Web Assembly or JavaScript for distribution. This can be done by acquiring a `GHC` that supports Web Assembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
 
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS]() backends.
