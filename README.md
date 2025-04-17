@@ -604,7 +604,7 @@ $ cachix use haskell-miso-cachix
 
 ## Contributing
 
-Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) or a submit [Pill Request](https://github.com/dmjio/miso/pulls).
+Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) or a submit [Pull Request](https://github.com/dmjio/miso/pulls).
 
 See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
 
