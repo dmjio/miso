@@ -306,7 +306,7 @@ Building executable 'app' for app-0.1.0.0...
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
-You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations.
+You have now successfully compiled Haskell `miso` code to Web Assembly 🔥
 
 But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
 
