@@ -58,6 +58,8 @@
 module Miso.Fetch
   ( -- * Class
     Fetch (fetch)
+    -- ** Simple non-Servant API
+  , fetchJSON
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
