@@ -449,6 +449,16 @@ with-hc-pkg:
 $ cabal update && cabal build --allow-newer
 ```
 
+## Haddocks
+
+Offical [Haskell](https://haskell.org) documentation of the [Miso](https://haskell-miso.org) web framework.
+
+| Platform | URL |
+|------|-------------|
+| GHCJS | [Link](https://haddocks.haskell-miso.org/) |
+| GHC | [Link](http://hackage.haskell.org/package/miso) |
+
+
 ## Architecture
 
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32).
@@ -489,17 +499,10 @@ The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/
 
 
 ```
-git clone https://github.com/dmjio/miso && cd miso && nix-build -A miso-examples
+$ git clone https://github.com/dmjio/miso
+$ cd miso
+$ nix-build -A miso-examples
 ```
-
-## Haddocks
-
-Offical [Haskell](https://haskell.org) documentation of the [Miso](https://haskell-miso.org) web framework.
-
-| Platform | URL |
-|------|-------------|
-| GHCJS | [Link](https://haddocks.haskell-miso.org/) |
-| GHC | [Link](http://hackage.haskell.org/package/miso) |
 
 This will compile all the examples to JavaScript into a folder named `result`.
 
