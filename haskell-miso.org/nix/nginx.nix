@@ -41,7 +41,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${coverage}/report";
+            root = coverage;
            };
          };
        };
