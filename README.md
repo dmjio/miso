@@ -561,7 +561,7 @@ We are very grateful and thankful for our corporate and individual sponsors.
 
 ## Partnerships
 
-If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line at <p><a href="mailto:code@dmj.io">code@dmj.io</a></p> regarding what you have in mind and we will be in touch shortly.
+If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p> 
 
 ## Individuals
     
