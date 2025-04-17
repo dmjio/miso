@@ -1,5 +1,6 @@
-import { DOMRef, VComp, VTree, Props, CSS } from './types';
+import { VNode, DOMRef, VComp, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
+import { shouldSync } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
@@ -107,7 +108,7 @@ export function populate(c: VTree, n: VTree): void {
     diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
     diffCss(c['css'], n['css'], n['domRef']);
     if (n['type'] === 'vnode') {
-      diffChildren(c['children'], n['children'], n['domRef']);
+      diffChildren(c as VNode, n as VNode, n['domRef']);
     }
   }
 }
@@ -179,18 +180,17 @@ function diffCss(cCss: CSS, nCss: CSS, node: DOMRef): void {
   }
 }
 
-function hasKeys(ns: Array<VTree>, cs: Array<VTree>): boolean {
-  return ns.length > 0 && cs.length > 0 && ns[0]['key'] != null && cs[0]['key'] != null;
-}
-
-function diffChildren(cs: Array<VTree>, ns: Array<VTree>, parent: Element): void {
-  const longest: number = ns.length > cs.length ? ns.length : cs.length;
-  if (hasKeys(ns, cs)) {
-    syncChildren(cs, ns, parent);
+function diffChildren(c: VNode, n: VNode, parent: Element): void {
+  if (c.shouldSync && n.shouldSync) {
+    syncChildren(c.children, n.children, parent);
   } else {
-    for (var i = 0; i < longest; i++) {
-      diff(cs[i], ns[i], parent);
-    }
+    const longest: number =
+      n.children.length > c.children.length
+        ? n.children.length
+        : c.children.length;
+
+    for (let i = 0; i < longest; i++)
+      diff(c.children[i], n.children[i], parent);
   }
 }
 

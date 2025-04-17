@@ -1,3 +1,5 @@
+import { VNode } from './types';
+
 /* various utilities */
 export function callFocus(id: string, delay: number): void {
   var setFocus = function () {
@@ -43,4 +45,30 @@ export function fetchJSON (
     .catch(errorful); /* error callback */
 }
 
+/*
+   'shouldSync'
+   dmj: Used to determine if we should enter `syncChildren`
+
+*/
+export function shouldSync (
+  node: VNode
+): boolean {
+    /* cannot sync on null children */
+    if (node.children.length === 0) {
+        return false;
+    }
+
+    /* only sync if keys exist on all children  */
+    var enterSync = true;
+    for (const child of node.children) {
+        if (!child.key) {
+          enterSync = false;
+          break;
+        }
+    }
+    return enterSync;
+}
+
+
+/* current miso version */
 export const version: string = '1.9.0.0';

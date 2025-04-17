@@ -36,6 +36,7 @@ type VNode = {
   props: Props;
   css: CSS;
   events: Events;
+  shouldSync: boolean;
   children: Array<VTree>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
