@@ -249,6 +249,34 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 > For nix users it is possible to acquire the WASM backend via a Nix flake
 
 
+This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
+
+- `cabal.project`
+
+```yaml
+packages:
+  .
+
+source-repository-package
+  type: git
+  location: https://github.com/dmjio/miso
+  branch: master
+
+with-compiler:
+  javascript-unknown-ghcjs-ghc
+
+with-hc-pkg:
+  javascript-unknown-ghcjs-ghc-pkg
+```
+
+To build (`cabal` will use the `ghc` specified above in `with-compiler`).
+
+
+```bash
+$ cabal update && cabal build --allow-newer
+```
+
+
 ## Architecture
 
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
