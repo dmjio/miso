@@ -573,7 +573,7 @@ All files           |   92.37 |   85.48 |
 
 <a target="_blank" href="https://krausest.github.io/js-framework-benchmark/current.html"><img src="https://cdn-images-1.medium.com/max/1600/1*6EjJTf1mhlTxd4QWsygCwA.png" width="500" height="600" /></a>
 
-## ![Image](https://github.com/user-attachments/assets/b67cdb60-5759-4f8a-bcdc-b17361d6dbfd)
+## <img src="https://raw.githubusercontent.com/NixOS/nixos-artwork/refs/heads/master/logo/nix-snowflake-colours.svg" alt="nixos-snowflake" width="200"/> Nix
 
 `Nix` is a powerful option for building web applications with `miso` since it encompasses development workflow, configuration management, and deployment. The source code for [`haskell-miso.org`](https://github.com/dmjio/miso/tree/master/haskell-miso.org) is an example of this.
 
