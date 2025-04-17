@@ -321,15 +321,12 @@ To start, we recommend creating an `app.wasmexe` folder to store the additional 
 $ mkdir -v app.wasmexe
 mkdir: created directory 'app.wasmexe'
 
-# This command produced `ghc_wasm_jsffi.js` , which ensures our FFI works properly.
+# This command produces `ghc_wasm_jsffi.js`, which ensures our FFI works properly.
 $ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \ 
    --input $(wasm32-wasi-cabal list-bin app --allow-newer) \
    --output app.wasmexe/ghc_wasm_jsffi.js
 
-Configuration is affected by the following files:
-- cabal.project
-
-# This copies our WASM `app` payload into `app.wasmexe`
+# This copies the `app.wasm` payload into `app.wasmexe`
 $ cp -v $(wasm32-wasi-cabal list-bin app --allow-newer) app.wasmexe
 Configuration is affected by the following files:
 - cabal.project
