@@ -250,7 +250,7 @@ $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
 ```
 
 > [!NOTE]
-> This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages, from time to time. 
+> This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages from time to time. 
 
 Update your `cabal.project` to the following
 
@@ -306,10 +306,13 @@ Building executable 'app' for app-0.1.0.0...
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
-You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations. But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
+You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations :cheers:
+
+But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
 
 > [!NOTE]
 > The GHC WASM backend can execute any Haskell program in a WASI-compliant runtime (e.g. [wasmtime](https://github.com/bytecodealliance/wasmtime))
+> See the [official documentation](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) for more information.
 
 To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
 
