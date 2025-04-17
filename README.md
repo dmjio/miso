@@ -40,11 +40,11 @@
 
 ## Table of Contents
 - [Quick Start](#quick-start)
-  - [Setup](#setup)
-  - [Hot Reload](#hot-reload)
-  - [Compilation](#compilation)
-    - [WASM](#wasm)
-    - [JS](#JS)
+- [Setup](#setup)
+- [Hot Reload](#hot-reload)
+- [Compilation](#compilation)
+- [WASM](#wasm)
+- [JS](#JS)
 - [Architecture](#architecture)
 - [Internals](#internals)
 - [Examples](#examples)
@@ -68,7 +68,7 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
-### Setup
+## Setup
 
 To create the necessary files, you can call `cabal init` to make a new project. Ensure your new project has 3 files:
 
@@ -76,7 +76,7 @@ To create the necessary files, you can call `cabal init` to make a new project. 
   - `app.cabal`
   - `Main.hs`
 
-#### `cabal.project`
+### `cabal.project`
 
 ```yaml
 packages:
@@ -88,7 +88,7 @@ source-repository-package
   branch: master
 ```
 
-#### `app.cabal`
+### `app.cabal`
 
 We recommend using at least `cabal-version: 2.2`, this will give you the [common sections](https://vrom911.github.io/blog/common-stanzas) feature which we will use later to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
 
@@ -119,7 +119,7 @@ executable app
     Haskell2010
 ```
 
-#### `Main.hs`
+### `Main.hs`
 
 This file contains a simple `miso` counter application.
 
@@ -190,9 +190,9 @@ viewModel x = div_ []
 
 Now that your project files are populated, development can begin. 
 
-### Hot Reload
+## Hot Reload
 
-With `GHC` and `cabal` on `$PATH`, call `cabal repl` to begin.
+With `GHC` and `cabal` on `$PATH`, call `cabal repl`
 
 - `$ cabal repl`
 
@@ -212,7 +212,7 @@ If you visit [http://localhost:8008](http://localhost:8008), the application wil
 > [!TIP]
 > For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
 
-Below is an example of usage with `ghcid`.
+Below is an example of usage with `ghcid`
 
 ```bash
 $ ghcid -c 'cabal repl app' -T=Main.main
@@ -223,14 +223,14 @@ This screenshot shows the hot-reload functionality in action. This is using `ghc
 ![Image](https://github.com/user-attachments/assets/4c5e7191-e4a9-4270-a28b-2f5f71ad6f40)
 
 
-### Compilation
+## Compilation
 
 When you're done developing your application, you will want to compile it to Web Assembly or JavaScript for distribution. This can be done by acquiring a `GHC` that supports Web Assembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
 
 > [!TIP]
-> For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS]() backends.
+> For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) backends.
 
-#### WASM
+## WASM
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
 
@@ -379,7 +379,7 @@ Now you can host this in the browser to see your Haskell `miso` counter applicat
 $ http-server app.wasmexe
 ```
 
-#### JS
+## JS
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the JS-backend compiler.
 
@@ -522,6 +522,10 @@ We also maintain a legacy version of nixpkgs known as `legacyPkgs` so we can use
 
 `nix` users on a Linux or OSX distro can take advantage of a [binary cache](https://haskell-miso-cachix.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso-cachix.cachix.org/). We highly recommend using [cachix]() when using `miso` with a `nix` workflow.
 
+> [!TIP]
+> We highly recommend nix users consume the [cachix](https://cachix.org) cache that `cachix use haskell-miso-cachix`.
+
+
 ```bash
 cachix use haskell-miso-cachix
 ```
@@ -538,16 +542,16 @@ See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) fo
 
 ## Contributors
 
-### Code Contributors
+## Code Contributors
 
 This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
 <a href="https://github.com/dmjio/miso/graphs/contributors"><img src="https://opencollective.com/miso/contributors.svg?width=890&button=false" /></a>
 
-### Financial Contributors
+## Financial Contributors
 
-Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/miso/contribute)]
+Become a financial contributor and help us sustain our project and community. [[Contribute](https://opencollective.com/miso/contribute)]
 
-We are very thankful and grateful for our corporate and individual sponsors.
+We are very grateful and thankful for our corporate and individual sponsors.
 
   - Moses Tschanz
   - [@MaxGabriel](https://github.com/MaxGabriel)
@@ -555,16 +559,15 @@ We are very thankful and grateful for our corporate and individual sponsors.
   - [@maybetonyfu](https://github.com/maybetonyfu)
   - etc.
 
-#### Partnerships
+## Partnerships
 
-If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership / funding situation, please drop us a line at
-[Miso Opportunities](mailto:code@dmj.io?subject=[Miso]%20Opportunities) regarding what you have in mind and we will be in touch shortly.
+If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line at <p><a href="mailto:code@dmj.io">code@dmj.io</a></p> regarding what you have in mind and we will be in touch shortly.
 
-#### Individuals
-
+## Individuals
+    
 <a href="https://opencollective.com/miso"><img src="https://opencollective.com/miso/individuals.svg?width=890"></a>
 
-#### Organizations
+## Organizations
 
 Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/miso/contribute)]
 
