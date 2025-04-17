@@ -459,6 +459,8 @@ For some details of the internals and general overview of how `miso` works, see 
 
 ## Examples
 
+For real-world examples of Haskell `miso` applications, see below.
+
 | Name            | Description                            | Source Link                                                                      | Live Demo Link                                | Author                               |
 |-----------------|----------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------|--------------------------------------|
 | **TodoMVC**     | A classic TodoMVC implementation       | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)    | [Demo](https://todo-mvc.haskell-miso.org/)    | [@dmjio](https://github.com/dmjio)   |
@@ -577,7 +579,7 @@ All files           |   92.37 |   85.48 |
 
 <a target="_blank" href="https://krausest.github.io/js-framework-benchmark/current.html"><img src="https://cdn-images-1.medium.com/max/1600/1*6EjJTf1mhlTxd4QWsygCwA.png" width="500" height="600" /></a>
 
-## Nix <img src="https://raw.githubusercontent.com/NixOS/nixos-artwork/refs/heads/master/logo/nix-snowflake-colours.svg" alt="nixos-snowflake" width="25"/> 
+## Nix <img src="https://raw.githubusercontent.com/NixOS/nixos-artwork/refs/heads/master/logo/nix-snowflake-colours.svg" alt="nixos-snowflake" width="25"/>
 
 `Nix` is a powerful option for building web applications with `miso` since it encompasses development workflow, configuration management, and deployment. The source code for [`haskell-miso.org`](https://github.com/dmjio/miso/tree/master/haskell-miso.org) is an example of this.
 
@@ -596,7 +598,7 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 `nix` users on a Linux or OSX distros can take advantage of a [binary cache](https://haskell-miso-cachix.cachix.org) for faster builds. To use the binary cache follow the instructions on [cachix](https://haskell-miso-cachix.cachix.org/).
 
 > [!TIP]
-> We highly recommend nix users consume the [cachix](https://cachix.org) cache that `cachix use haskell-miso-cachix`.
+> We highly recommend nix users consume the [cachix](https://cachix.org) cache. `cachix use haskell-miso-cachix`.
 
 ```bash
 $ cachix use haskell-miso-cachix
