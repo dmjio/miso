@@ -40,7 +40,7 @@
 
 ## Table of Contents
 - [Quick Start](#quick-start)
-  - [Scaffolding](#scaffolding)
+  - [Setup](#setup)
   - [Compilation](#compilation)
     - [WASM](#wasm)
     - [JS](#JS)
@@ -67,15 +67,15 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
-Now you should be able to setup a development environment.
+### Setup
 
-### Scaffolding
+To create the necessary files, you can call `cabal init` to make a new project. Ensure your new project has 3 files:
 
-To create the necessary files, you can call `cabal init` to make a new project. Ensure your new project has 3 files, `cabal.project` (with a `miso` entry), a `app.cabal` file, and a `Main.hs` for the `miso` code. The three files are shown below.
+  - `cabal.project`
+  - `app.cabal`
+  - `Main.hs`
 
 - `cabal.project`
-
-This example includes `miso` at the tip of `master`, but you can use any hash you'd like. We recommend a tagged release.
 
 ```yaml
 packages:
@@ -86,9 +86,10 @@ source-repository-package
   location: https://github.com/dmjio/miso
   branch: master
 ```
+
 - `miso.cabal`
 
-We recommend using at least `cabal-version: 2.2`, this will give you the "common sections" feature which we will use to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
+We recommend using at least `cabal-version: 2.2`, this will give you the "common sections" feature which we will use later to allow multiple compilers to build our project (so we can target WASM / JS, etc.)
 
 ```yaml
 cabal-version: 2.2
@@ -126,6 +127,7 @@ This file contains a simple `miso` counter application.
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
@@ -152,6 +154,11 @@ data Action
 main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
+-- | WASM export, required when compiling w/ the WASM backend.
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
 app :: App Effect Model Action ()
 app = defaultApp emptyModel updateModel viewModel
@@ -173,7 +180,7 @@ updateModel = \case
 viewModel :: Model -> View Action
 viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
-  , text . ms $ x^.counter
+  , text $ ms (x ^. counter)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
