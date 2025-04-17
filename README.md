@@ -306,7 +306,7 @@ Building executable 'app' for app-0.1.0.0...
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
-You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations :cheers:
+You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations.
 
 But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
 
@@ -317,9 +317,11 @@ But, we're not done yet. In order to view this in the browser there are still a 
 To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
 
 ```bash
+# Creates the directory for hosting
 $ mkdir -v app.wasmexe
 mkdir: created directory 'app.wasmexe'
 
+# This command produced `ghc_wasm_jsffi.js` , which ensures our FFI works properly.
 $ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \ 
    --input $(wasm32-wasi-cabal list-bin app --allow-newer) \
    --output app.wasmexe/ghc_wasm_jsffi.js
@@ -327,13 +329,14 @@ $ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \
 Configuration is affected by the following files:
 - cabal.project
 
+# This copies our WASM `app` payload into `app.wasmexe`
 $ cp -v $(wasm32-wasi-cabal list-bin app --allow-newer) app.wasmexe
 Configuration is affected by the following files:
 - cabal.project
 '/home/dmjio/Desktop/miso/sample-app/dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm' -> 'app.wasmexe'
 ```
 
-Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
+> [!NOTE] Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
 
 - `index.html`
 
@@ -432,10 +435,11 @@ with-hc-pkg:
 $ cabal update && cabal build --allow-newer
 ```
 
-
 ## Architecture
 
-For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32). For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
+For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32). 
+
+> [!TIP] For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
 
 ## Internals
 
@@ -464,7 +468,7 @@ For some details of the internals and general overview of how `miso` works, see 
 The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
 
 > [!TIP]
-> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecassarily.
+> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily.
 > `$ cachix use haskell-miso-cachix`
 
 
@@ -533,10 +537,10 @@ File                | % Funcs | % Lines | Uncovered Line #s
 All files           |   92.37 |   85.48 |
  ts/happydom.ts     |  100.00 |  100.00 |
  ts/miso/dom.ts     |  100.00 |  100.00 |
- ts/miso/event.ts   |   90.91 |   81.62 | 30,66-73,81,94,109-110,122-126,132-136,147-148
- ts/miso/hydrate.ts |   80.00 |   91.24 | 39,66-69,88-93,202-203,231-233
+ ts/miso/event.ts   |   90.91 |   81.62 |
+ ts/miso/hydrate.ts |   80.00 |   91.24 |
  ts/miso/smart.ts   |  100.00 |  100.00 |
- ts/miso/util.ts    |   83.33 |   40.00 | 22-42
+ ts/miso/util.ts    |   83.33 |   40.00 |
 --------------------|---------|---------|-------------------
 
  84 pass
@@ -547,7 +551,7 @@ All files           |   92.37 |   85.48 |
 
 [Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
 
-> [!NOTE] The `miso` function is used to facilitate the pointer-copying behavior client-side.
+> [!NOTE] The [miso](https://haddocks.haskell-miso.org/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Benchmarks
 
@@ -564,7 +568,8 @@ All files           |   92.37 |   85.48 |
 ### Pinning nixpkgs
 
 By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://github.com/dmjio/miso/blob/master/nix/nixpkgs.json) known as `pkgs`.
-We also maintain a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` and build `miso` with the original `GHCJS 8.6` backend.
+
+> [!INFO] `miso` also maintains a legacy version of nixpkgs known as `legacyPkgs` so we can use tools like `nixops` for deployment and to build `miso` with the original `GHCJS 8.6` backend.
 
 ### Binary cache
 
@@ -572,7 +577,6 @@ We also maintain a legacy version of nixpkgs known as `legacyPkgs` so we can use
 
 > [!TIP]
 > We highly recommend nix users consume the [cachix](https://cachix.org) cache that `cachix use haskell-miso-cachix`.
-
 
 ```bash
 cachix use haskell-miso-cachix
@@ -589,6 +593,7 @@ Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) 
 See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
 
 ## Contributors
+
 This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
 <a href="https://github.com/dmjio/miso/graphs/contributors"><img src="https://opencollective.com/miso/contributors.svg?width=890&button=false" /></a>
 
