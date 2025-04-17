@@ -210,6 +210,9 @@ Running on port 8008...
 ghci>
 ```
 
+> [!NOTE]
+> The code running in this example is not compiled to JavaScript or WebAssembly, rather it is running the client side application on the server. It works by sending commands to a small javascript interpreter over a websocket to render elements on the page. This is provided by the [jsaddle](https://github.com/ghcjs/jsaddle) library.
+
 If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in `GHCi`, and the application will update on the screen.
 
 > [!NOTE]
