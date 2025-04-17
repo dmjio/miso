@@ -1,6 +1,5 @@
 import { VNode, DOMRef, VComp, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
-import { shouldSync } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
