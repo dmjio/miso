@@ -455,21 +455,21 @@ For some details of the internals and general overview of how `miso` works, see 
 
 ## Examples
 
-| Name | Description | Source Link | Live Demo Link | Author |
-|------|-------------|-------------|----------------|--------|
-| **TodoMVC** | A classic TodoMVC implementation | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs) | [Demo](https://todo-mvc.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **2048** | A clone of the 2048 game | [Source](https://github.com/ptigwe/hs2048/) | [Demo](https://2048.haskell-miso.org/) | [@ptigwe](https://github.com/ptigwe) |
-| **Flatris** | A Tetris-like game | [Source](https://github.com/ptigwe/hs-flatris/) | [Demo](https://flatris.haskell-miso.org/) | [@ptigwe](https://github.com/ptigwe) |
-| **Plane** | A flappy-birds-like game | [Source](https://github.com/Lermex/miso-plane) | [Demo](https://miso-plane.haskell-miso.org/) | [@Lermex](https://github.com/Lermex) |
-| **Snake** | The classic Snake game | [Source](https://github.com/lbonn/miso-snake) | [Demo](https://snake.haskell-miso.org/) | [@lbonn](https://github.com/lbonn) |
-| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **Fetch** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **File Reader** | A FileReader API example | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **WebGL** | A 3D rendering example using Three.JS | [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs) | [Demo](https://threejs.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **Mario** | A Super Mario physics example | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
-| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| Name            | Description                            | Source Link                                                                      | Live Demo Link                                | Author                               |
+|-----------------|----------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------|--------------------------------------|
+| **TodoMVC**     | A classic TodoMVC implementation       | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)    | [Demo](https://todo-mvc.haskell-miso.org/)    | @[dmjio](https://github.com/dmjio)   |
+| **2048**        | A clone of the 2048 game               | [Source](https://github.com/ptigwe/hs2048/)                                      | [Demo](https://2048.haskell-miso.org/)        | [@ptigwe](https://github.com/ptigwe) |
+| **Flatris**     | A Tetris-like game                     | [Source](https://github.com/ptigwe/hs-flatris/)                                  | [Demo](https://flatris.haskell-miso.org/)     | [@ptigwe](https://github.com/ptigwe) |
+| **Plane**       | A flappy-birds-like game               | [Source](https://github.com/Lermex/miso-plane)                                   | [Demo](https://miso-plane.haskell-miso.org/)  | [@Lermex](https://github.com/Lermex) |
+| **Snake**       | The classic Snake game                 | [Source](https://github.com/lbonn/miso-snake)                                    | [Demo](https://snake.haskell-miso.org/)       | [@lbonn](https://github.com/lbonn)   |
+| **SVG**         | An example showcasing SVG rendering    | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)         | [Demo](https://svg.haskell-miso.org/)         | [@dmjio](https://github.com/dmjio)   |
+| **Fetch**       | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs)       | [Demo](https://fetch.haskell-miso.org/)       | [@dmjio](https://github.com/dmjio)   |
+| **File Reader** | A FileReader API example               | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | [@dmjio](https://github.com/dmjio)   |
+| **WebGL**       | A 3D rendering example using Three.JS  | [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs)       | [Demo](https://threejs.haskell-miso.org/)     | [@dmjio](https://github.com/dmjio)   |
+| **Mario**       | A Super Mario physics example          | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)       | [Demo](https://mario.haskell-miso.org/)       | [@dmjio](https://github.com/dmjio)   |
+| **WebSocket**   | A simple WebSocket example             | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)   | [Demo](https://websocket.haskell-miso.org/)   | [@dmjio](https://github.com/dmjio)   |
+| **Router**      | A client-side routing example          | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)      | [Demo](https://router.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
+| **Canvas 2D**   | A 2D Canvas rendering example          | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)    | [Demo](https://canvas.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
 
 ## Building examples
 
