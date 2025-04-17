@@ -464,8 +464,9 @@ fetchJSON url method maybeBody headers successful errorful = do
 -- have a populated 'key' node. We can determine this property more efficiently
 -- at tree construction time rather than dynamic detection during diffing.
 --
-shouldSync :: JSVal -> JSM JSVal
+shouldSync :: JSVal -> JSM Bool
 shouldSync vnode = do
   moduleMiso <- jsg "miso"
-  moduleMiso # "shouldSync" $ [vnode]
+  fromJSValUnchecked =<< do
+    moduleMiso # "shouldSync" $ [vnode]
 -----------------------------------------------------------------------------

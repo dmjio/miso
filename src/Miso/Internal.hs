@@ -270,8 +270,9 @@ runView prerender (Node ns tag key attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns key tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- ghcjsPure . jsval =<< procreate
-  flip (FFI.set "children") vnode vchildren
-  flip (FFI.set "shouldSync") vnode (FFI.shouldSync vchildren)
+  FFI.set "children" vchildren vnode
+  sync <- FFI.shouldSync =<< toJSVal vnode
+  FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
       procreate = do
