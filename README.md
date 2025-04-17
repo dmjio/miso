@@ -70,7 +70,7 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 
 ## Setup
 
-To create the necessary files, you can call `cabal init` to make a new project. Ensure your new project has 3 files:
+To develop and build your first `miso` application you will need 3 files:
 
   - `cabal.project`
   - `app.cabal`
@@ -194,7 +194,9 @@ Now that your project files are populated, development can begin.
 
 With `GHC` and `cabal` on `$PATH`, call `cabal repl`
 
-- `$ cabal repl`
+```bash
+$ cabal repl
+```
 
 You should see the following output in your terminal.
 
@@ -222,7 +224,6 @@ This screenshot shows the hot-reload functionality in action. This is using `ghc
 
 ![Image](https://github.com/user-attachments/assets/4c5e7191-e4a9-4270-a28b-2f5f71ad6f40)
 
-
 ## Compilation
 
 When you're done developing your application, you will want to compile it to Web Assembly or JavaScript for distribution. This can be done by acquiring a `GHC` that supports Web Assembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
@@ -231,6 +232,9 @@ When you're done developing your application, you will want to compile it to Web
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) backends.
 
 ## WASM
+
+> [!NOTE]
+> The Haskell `miso` team currently recommends using the WASM backend as the default backend for compilation.
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
 
@@ -243,11 +247,14 @@ For instructions on how to add a third-party channel with [GHCup](https://www.ha
 $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
 ```
 
-This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages, from time to time. Update your `caba.project` to the following
+> [!NOTE]
+> This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages, from time to time. 
+
+Update your `cabal.project` to the following
 
 - `cabal.project`
 
-```
+```yaml
 packages:
   .
 
@@ -279,9 +286,9 @@ if arch(wasm32)
     tag: 5f5b766d97dc735ac228215d240a3bb90bc2ff75
 ```
 
-Now call `wasm32-wasi-cabal build --allow-newer` and you should produce a `WASM` payload in the `dist-newstyle/` directory.
+Call `wasm32-wasi-cabal build --allow-newer` and a `WASM` payload should be created in `dist-newstyle/` directory.
 
-```
+```bash
 $ wasm32-wasi-cabal build --allow-newer
 Configuration is affected by the following files:
 - cabal.project
@@ -297,13 +304,17 @@ Building executable 'app' for app-0.1.0.0...
 [2 of 2] Linking dist-newstyle/build/wasm32-wasi/ghc-9.12.2.20250327/app-0.1.0.0/x/app/build/app/app.wasm
 ```
 
-You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations. But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
+You have now successfully compiled Haskell `miso` code to Web Assembly. Congratulations. But, we're not done yet. In order to view this in the browser there are still a few more steps. We need to add some additional files that emulate the [WASI interface](https://github.com/WebAssembly/WASI) in the browser (A [browser WASI shim](https://github.com/bjorn3/browser_wasi_shim)). 
+
+> [!NOTE]
+> The GHC WASM backend can execute any Haskell program in a WASI-compliant runtime (e.g. [wasmtime](https://github.com/bytecodealliance/wasmtime))
+
+To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
 
 ```bash
 $ mkdir -v app.wasmexe
 mkdir: created directory 'app.wasmexe'
 
-# 
 $ $(wasm32-wasi-ghc --print-libdir)/post-link.mjs \ 
    --input $(wasm32-wasi-cabal list-bin app --allow-newer) \
    --output app.wasmexe/ghc_wasm_jsffi.js
@@ -330,7 +341,6 @@ Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to i
     <title>Sample miso WASM counter app</title>
   </head>
   <body>
-    <script>globalThis.example = app;</script>
     <script src="index.js" type="module"></script>
   </body>
 </html>
@@ -363,7 +373,7 @@ wasi.initialize(instance);
 await instance.exports.hs_start(globalThis.example);
 ```
 
-Your `app.wasmexe` folder should now look like this:
+The `app.wasmexe` folder will now look like:
 
 ```
 ❯ ls app.wasmexe
@@ -373,7 +383,7 @@ Your `app.wasmexe` folder should now look like this:
  index.js
 ```
 
-Now you can host this in the browser to see your Haskell `miso` counter application running on Web Assembly in the browser.
+Now you can host and view your examples in a web browser.
 
 ```
 $ http-server app.wasmexe
@@ -384,8 +394,11 @@ $ http-server app.wasmexe
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the JS-backend compiler.
 
 > [!TIP]
-> For nix users it is possible to acquire the WASM backend via a Nix flake
+> For [Nix](https://nixos.org) users it is possible to acquire the latest JS backend via Nix
 
+```bash
+❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9121.ghc '<nixpkgs>'
+```
 
 This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
 
@@ -407,7 +420,7 @@ with-hc-pkg:
   javascript-unknown-ghcjs-ghc-pkg
 ```
 
-To build (`cabal` will use the `ghc` specified above in `with-compiler`).
+> [!NOTE] `cabal` will use the `ghc` specified above in `with-compiler`
 
 
 ```bash
@@ -421,45 +434,52 @@ For constructing client and server applications, we recommend using one `cabal` 
 
 ## Internals
 
-For details of the internals and general overview of how `miso` works, see the [Internals](docs/Internals.md).
+For some details of the internals and general overview of how `miso` works, see the [Internals](docs/Internals.md).
 
 ## Examples
 
 | Name | Description | Source Link | Live Demo Link | Author |
 |------|-------------|-------------|----------------|--------|
 | **TodoMVC** | A classic TodoMVC implementation | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs) | [Demo](https://todo-mvc.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **2048** | A clone of the 2048 game | [Source](https://github.com/ptigwe/hs2048/) | [Demo](https://2048.haskell-miso.org/) | @[ptigwe](https://github.com/ptigwe) |
-| **Flatris** | A Tetris-like game | [Source](https://github.com/ptigwe/hs-flatris/) | [Demo](https://flatris.haskell-miso.org/) | @[ptigwe](https://github.com/ptigwe) |
-| **Plane** | A flappy-birds-like game | [Source](https://github.com/Lermex/miso-plane) | [Demo](https://miso-plane.haskell-miso.org/) | @[Lermex](https://github.com/Lermex) |
-| **Snake** | The classic Snake game | [Source](https://github.com/lbonn/miso-snake) | [Demo](https://snake.haskell-miso.org/) | @[lbonn](https://github.com/lbonn) |
-| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **Fetch** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **File Reader** | A FileReader API example | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **WebGL** | A 3D rendering example using Three.JS | [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs) | [Demo](https://threejs.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **Mario** | A Super Mario physics example | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
-| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas.haskell-miso.org/) | @[dmjio](https://github.com/dmjio) |
+| **2048** | A clone of the 2048 game | [Source](https://github.com/ptigwe/hs2048/) | [Demo](https://2048.haskell-miso.org/) | [@ptigwe](https://github.com/ptigwe) |
+| **Flatris** | A Tetris-like game | [Source](https://github.com/ptigwe/hs-flatris/) | [Demo](https://flatris.haskell-miso.org/) | [@ptigwe](https://github.com/ptigwe) |
+| **Plane** | A flappy-birds-like game | [Source](https://github.com/Lermex/miso-plane) | [Demo](https://miso-plane.haskell-miso.org/) | [@Lermex](https://github.com/Lermex) |
+| **Snake** | The classic Snake game | [Source](https://github.com/lbonn/miso-snake) | [Demo](https://snake.haskell-miso.org/) | [@lbonn](https://github.com/lbonn) |
+| **SVG** | An example showcasing SVG rendering | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs) | [Demo](https://svg.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **Fetch** | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs) | [Demo](https://fetch.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **File Reader** | A FileReader API example | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **WebGL** | A 3D rendering example using Three.JS | [Source](https://github.com/dmjio/miso/blob/master/examples/three/Main.hs) | [Demo](https://threejs.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **Mario** | A Super Mario physics example | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs) | [Demo](https://mario.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **WebSocket** | A simple WebSocket example | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs) | [Demo](https://websocket.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **Router** | A client-side routing example | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs) | [Demo](https://router.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+| **Canvas 2D** | A 2D Canvas rendering example | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs) | [Demo](https://canvas.haskell-miso.org/) | [@dmjio](https://github.com/dmjio) |
+
+## Building examples
+
+The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
+
+> [!TIP]
+> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecassarily.
+> `$ cachix use haskell-miso-cachix`
+
+
+```
+git clone https://github.com/dmjio/miso && cd miso && nix-build -A miso-examples
+```
 
 ## Haddocks
+
+Offical [Haskell](https://haskell.org) documentation of the [Miso](https://haskell-miso.org) web framework.
 
 | Platform | URL |
 |------|-------------|
 | GHCJS | [Link](https://haddocks.haskell-miso.org/) |
 | GHC | [Link](http://hackage.haskell.org/package/miso) |
 
-## Building examples
-
-The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
-
-```
-git clone https://github.com/dmjio/miso && cd miso && nix-build -A miso-examples
-```
-
 This will compile all the examples to JavaScript into a folder named `result`.
 
 ```
-➜  miso git:(master) ✗ tree -d ./result/bin
+➜ tree -d ./result/bin
 ./result/bin
 |-- canvas2d.jsexe
 |-- file-reader.jsexe
@@ -476,7 +496,7 @@ This will compile all the examples to JavaScript into a folder named `result`.
 `-- fetch.jsexe
 ```
 
-To see examples, we recommend hosting them with a webserver
+> [!NOTE] To see examples, we recommend hosting them with a web server (we use [http-server](https://github.com/http-party/http-server))
 
 ```
 cd result/bin/todo-mvc.jsexe && http-sever
@@ -487,19 +507,42 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 The core algorithmic component of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven.sh/bun).
 
-To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed. You can do this with `curl -fsSL https://bun.sh/install | bash` or nix `nix-env -iA bun -f '<nixpkgs>'`.
+To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
+
+```bash 
+$ curl -fsSL https://bun.sh/install | bash
+```
+
+```bash
+nix `nix-env -iA bun -f '<nixpkgs>'
+```
 
 ```bash
 $ bun install && bun run test
+```
+
+```bash
+--------------------|---------|---------|-------------------
+File                | % Funcs | % Lines | Uncovered Line #s
+--------------------|---------|---------|-------------------
+All files           |   92.37 |   85.48 |
+ ts/happydom.ts     |  100.00 |  100.00 |
+ ts/miso/dom.ts     |  100.00 |  100.00 |
+ ts/miso/event.ts   |   90.91 |   81.62 | 30,66-73,81,94,109-110,122-126,132-136,147-148
+ ts/miso/hydrate.ts |   80.00 |   91.24 | 39,66-69,88-93,202-203,231-233
+ ts/miso/smart.ts   |  100.00 |  100.00 |
+ ts/miso/util.ts    |   83.33 |   40.00 | 22-42
+--------------------|---------|---------|-------------------
+
+ 84 pass
+ 0 fail
 ```
 
 ## Isomorphic
 
 [Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
 
-The `miso` function is used to facilitate the pointer-copying behavior client-side.
-
-For more information on how `miso` handles isomorphic javascript, we recommend [this tutorial](https://github.com/FPtje/miso-isomorphic-example).
+> [!NOTE] The `miso` function is used to facilitate the pointer-copying behavior client-side.
 
 ## Benchmarks
 
