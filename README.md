@@ -70,7 +70,7 @@ To start developing applications with `miso` you will need to acquire [GHC](http
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
-## Setup
+## Setup 🏗️
 
 To develop and build your first `miso` application you will need 3 files:
 
