@@ -65,7 +65,7 @@
 ## Quick start
 To start developing applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/). This can be done via [GHCup](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
 
-> [!INFO]
+> [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
 ### Setup
@@ -209,7 +209,7 @@ ghci>
 
 If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit the `Main.hs` file and call `:r` and `main` in the repl, and it should update the screen. Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
-> [!INFO]
+> [!TIP]
 > For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
 
 Below is an example of usage with `ghcid`.
