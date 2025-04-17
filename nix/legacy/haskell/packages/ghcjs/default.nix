@@ -37,9 +37,6 @@ self: super:
          --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
          $out/bin/todo-mvc.jsexe/all.js > temp.js
       mv temp.js $out/bin/todo-mvc.jsexe/all.js
-      cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
-      cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
-      cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
