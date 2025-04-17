@@ -1,6 +1,56 @@
+// ts/miso/util.ts
+function callFocus(id, delay) {
+  var setFocus = function() {
+    var e = document.getElementById(id);
+    if (e && e.focus)
+      e.focus();
+  };
+  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
+}
+function callBlur(id, delay) {
+  var setBlur = function() {
+    var e = document.getElementById(id);
+    if (e && e.blur)
+      e.blur();
+  };
+  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
+}
+function setBodyComponent(componentId) {
+  document.body.setAttribute("data-component-id", componentId);
+}
+function fetchJSON(url, method, body, headers, successful, errorful) {
+  var options = { method, headers };
+  if (body) {
+    options["body"] = body;
+  }
+  fetch(url, options).then((response) => {
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return response.json();
+  }).then(successful).catch(errorful);
+}
+function shouldSync(node) {
+  if (node.children.length === 0) {
+    return false;
+  }
+  var enterSync = true;
+  for (const child of node.children) {
+    if (!child.key) {
+      enterSync = false;
+      break;
+    }
+  }
+  return enterSync;
+}
+var version = "1.9.0.0";
+
 // ts/miso/smart.ts
 function vnode(props) {
-  return union(mkVNode(), props);
+  var node = union(mkVNode(), props);
+  if (!node["shouldSync"])
+    node["shouldSync"] = shouldSync(node);
+  return node;
 }
 function union(obj, updates) {
   return Object.assign({}, obj, updates);
@@ -23,6 +73,7 @@ function mkVNode() {
     },
     onBeforeCreated: () => {
     },
+    shouldSync: false,
     type: "vnode"
   };
 }
@@ -116,7 +167,7 @@ function populate(c, n) {
     diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
     diffCss(c["css"], n["css"], n["domRef"]);
     if (n["type"] === "vnode") {
-      diffChildren(c["children"], n["children"], n["domRef"]);
+      diffChildren(c, n, n["domRef"]);
     }
   }
 }
@@ -179,17 +230,13 @@ function diffCss(cCss, nCss, node) {
     node.style[n] = nCss[n];
   }
 }
-function hasKeys(ns, cs) {
-  return ns.length > 0 && cs.length > 0 && ns[0]["key"] != null && cs[0]["key"] != null;
-}
-function diffChildren(cs, ns, parent) {
-  const longest = ns.length > cs.length ? ns.length : cs.length;
-  if (hasKeys(ns, cs)) {
-    syncChildren(cs, ns, parent);
+function diffChildren(c, n, parent) {
+  if (c.shouldSync && n.shouldSync) {
+    syncChildren(c.children, n.children, parent);
   } else {
-    for (var i = 0;i < longest; i++) {
-      diff(cs[i], ns[i], parent);
-    }
+    const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
+    for (let i = 0;i < longest; i++)
+      diff(c.children[i], n.children[i], parent);
   }
 }
 function populateDomRef(obj) {
@@ -619,40 +666,6 @@ function walk(logLevel, vtree, node) {
   return true;
 }
 
-// ts/miso/util.ts
-function callFocus(id, delay) {
-  var setFocus = function() {
-    var e = document.getElementById(id);
-    if (e && e.focus)
-      e.focus();
-  };
-  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
-}
-function callBlur(id, delay) {
-  var setBlur = function() {
-    var e = document.getElementById(id);
-    if (e && e.blur)
-      e.blur();
-  };
-  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
-}
-function setBodyComponent(componentId) {
-  document.body.setAttribute("data-component-id", componentId);
-}
-function fetchJSON(url, method, body, headers, successful, errorful) {
-  var options = { method, headers };
-  if (body) {
-    options["body"] = body;
-  }
-  fetch(url, options).then((response) => {
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  }).then(successful).catch(errorful);
-}
-var version = "1.9.0.0";
-
 // ts/index.ts
 globalThis["miso"] = {};
 globalThis["miso"]["diff"] = diff;
@@ -664,5 +677,6 @@ globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
+globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["setBodyComponent"] = setBodyComponent;

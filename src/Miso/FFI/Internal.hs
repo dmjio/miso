@@ -55,6 +55,7 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , shouldSync
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -455,4 +456,17 @@ fetchJSON url method maybeBody headers successful errorful = do
       set k v o
     pure o
   void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+-----------------------------------------------------------------------------
+-- | shouldSync
+--
+-- Used to set whether or not the current VNode should enter the 'syncChildren'
+-- function during diffing. The criteria for entrance is that all children
+-- have a populated 'key' node. We can determine this property more efficiently
+-- at tree construction time rather than dynamic detection during diffing.
+--
+shouldSync :: JSVal -> JSM Bool
+shouldSync vnode = do
+  moduleMiso <- jsg "miso"
+  fromJSValUnchecked =<< do
+    moduleMiso # "shouldSync" $ [vnode]
 -----------------------------------------------------------------------------

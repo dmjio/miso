@@ -269,12 +269,13 @@ runView prerender (Embed attributes (SomeComponent (Component key mount app))) s
 runView prerender (Node ns tag key attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns key tag
   setAttrs vnode attrs snk logLevel events
-  flip (FFI.set "children") vnode
-    =<< ghcjsPure . jsval
-    =<< setKids
+  vchildren <- ghcjsPure . jsval =<< procreate
+  FFI.set "children" vchildren vnode
+  sync <- FFI.shouldSync =<< toJSVal vnode
+  FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
-      setKids = do
+      procreate = do
         kidsViews <- forM kids $ \kid -> do
           VTree (Object vtree) <- runView prerender kid snk logLevel events
           pure vtree

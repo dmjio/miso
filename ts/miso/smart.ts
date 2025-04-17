@@ -1,5 +1,6 @@
 /* smart constructors for VTree */
 import { VText, VTree, VNode, VComp } from './types';
+import { shouldSync } from './util';
 
 /* vtext factory */
 export function vtext(input: string) : VText {
@@ -18,7 +19,13 @@ export function vtextKeyed(input: string, key: string) : VText {
 
 /* vtree factory */
 export function vnode(props: Partial<VNode>): VNode {
-  return union(mkVNode(), props);
+  var node = union(mkVNode(), props);
+  /* dmj: If the property is already set the check is bypassed.
+     By setting 'shouldSync' manually in  'vnode' you are implicitly
+     saying all keys exist and should be synched.
+   */
+  if (!node['shouldSync']) node['shouldSync'] = shouldSync(node);
+  return node;
 }
 
 export function vcomp(props: Partial<VComp>): VComp {
@@ -61,6 +68,7 @@ function mkVNode() : VNode {
     onBeforeDestroyed: () => {},
     onCreated: () => {},
     onBeforeCreated: () => {},
+    shouldSync: false,
     type : 'vnode',
   };
 }
