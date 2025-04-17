@@ -41,6 +41,7 @@
 ## Table of Contents
 - [Quick Start](#quick-start)
   - [Setup](#setup)
+  - [Hot Reload](#hot-reload)
   - [Compilation](#compilation)
     - [WASM](#wasm)
     - [JS](#JS)
@@ -64,7 +65,7 @@
 ## Quick start
 To start developing applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/). This can be done via [GHCup](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
 
-> [!TIP]
+> [!Info]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire both [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/)
 
 ### Setup
@@ -189,7 +190,13 @@ viewModel x = div_ []
 
 Now that your project files are populated, development can begin. 
 
+### Hot Reload
+
+With `GHC` and `cabal` on `$PATH`, call `cabal repl` to begin.
+
 - `$ cabal repl`
+
+You should see the following output in your terminal.
 
 ```
 [1 of 2] Compiling Main             ( Main.hs, interpreted )
@@ -202,13 +209,16 @@ ghci>
 
 If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit the `Main.hs` file and call `:r` and `main` in the repl, and it should update the screen. Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
-Below an example of usage with `ghcid`.
+> [!Info]
+> For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
+
+Below is an example of usage with `ghcid`.
 
 ```bash
 $ ghcid -c 'cabal repl app' -T=Main.main
 ```
 
-Below is a screenshot of what hot-reload iterative development looks like with `ghcid`, `jsaddle` and `miso`.
+This screenshot shows the hot-reload functionality in action. This is using `ghcid`, `jsaddle` and `miso`.
 
 ![Image](https://github.com/user-attachments/assets/4c5e7191-e4a9-4270-a28b-2f5f71ad6f40)
 
