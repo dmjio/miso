@@ -627,7 +627,7 @@ See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) fo
 
 <a href="https://github.com/dmjio/miso/graphs/contributors"><img src="https://opencollective.com/miso/contributors.svg?width=890&button=false" /></a>
 
-## Partnerships
+## Partnerships 🤝
 
 If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p>
 
