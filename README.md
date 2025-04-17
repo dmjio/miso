@@ -209,7 +209,9 @@ Running on port 8008...
 ghci>
 ```
 
-If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit the `Main.hs` file and call `:r` and `main` in the repl, and it should update the screen. Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
+If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in the repl, and the application will update on the screen. 
+
+> [!INFO] Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
 
 > [!TIP]
 > For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
@@ -226,7 +228,7 @@ This screenshot shows the hot-reload functionality in action. This is using `ghc
 
 ## Compilation
 
-When you're done developing your application, you will want to compile it to Web Assembly or JavaScript for distribution. This can be done by acquiring a `GHC` that supports Web Assembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
+When done developing, we can compile to Web Assembly or JavaScript for distribution. This is done by acquiring a `GHC` that supports WebAssembly or JavaScript. We recommend acquiring these backends using `GHCUp` or `Nix`.
 
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) backends.
