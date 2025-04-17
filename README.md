@@ -390,11 +390,16 @@ The `app.wasmexe` folder will now look like:
  index.js
 ```
 
-Now you can host and view your examples in a web browser.
+Now you can host and view the `app.wasm` payload in a web browser.
 
 ```
 $ http-server app.wasmexe
 ```
+
+> [!TIP]
+> You can inspect the WASM payload in the `Sources` tab of your browser by right-clicking and then clicking `Inspect`.
+
+![Image](https://github.com/user-attachments/assets/41af274b-2c25-4b26-acb1-d2a5266cfa8a)
 
 ## JS
 
