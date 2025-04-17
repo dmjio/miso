@@ -43,7 +43,7 @@
 - [Setup](#setup)
 - [Hot Reload](#hot-reload)
 - [Compilation](#compilation)
-- [WASM](#wasm)
+- [WebAssembly](#web-assembly)
 - [JS](#JS)
 - [Architecture](#architecture)
 - [Internals](#internals)
@@ -233,7 +233,7 @@ When done developing, we can compile to Web Assembly or JavaScript for distribut
 > [!TIP]
 > For new Haskell users we recommend using [GHCup](https://www.haskell.org/ghcup/) to acquire the [WASM](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) and [JS](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) backends.
 
-## WASM
+## Web Assembly ![Image](https://github.com/user-attachments/assets/c57d96b2-368b-410e-b968-28dfe22bf1b1)
 
 > [!NOTE]
 > The Haskell `miso` team currently recommends using the WASM backend as the default backend for compilation.
