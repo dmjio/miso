@@ -336,7 +336,7 @@ Configuration is affected by the following files:
 ```
 
 > [!NOTE]
-> Along with the above `ghc_wasm_jsffi.js`, `app.wasm` artifacts we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
+> Along with the above `ghc_wasm_jsffi.js` and `app.wasm` artifacts, we also need to include an `index.html` and an `index.js` for loading the WASM payload into the browser.
 
 - `index.html`
 
