@@ -619,7 +619,7 @@ Feel free to dive in! [Open an issue](https://github.com/dmjio/miso/issues/new) 
 
 See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) for more info.
 
-## Contributors
+## Contributors 🦾
 
 > [!NOTE]
 > This project exists thanks to all the people who [contribute](CONTRIBUTING.md)
