@@ -405,7 +405,7 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 ❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9121.ghc '<nixpkgs>'
 ```
 
-This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
+> [!NOTE] This will put `javascript-unknown-ghcjs-ghc` in your `$PATH`, along with `javascript-unknown-ghcjs-ghc-pkg`. You might also need to specify in your `cabal.project` file that you are using the JS backend.
 
 - `cabal.project`
 
