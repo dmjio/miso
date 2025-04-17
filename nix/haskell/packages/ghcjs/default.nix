@@ -38,10 +38,6 @@ self: super:
     cp -frv ${source.examples}/mario/imgs $out/bin/mario.jsexe/
     chmod +w $out/bin/threejs.jsexe/index.html
     cp -fv ${source.examples}/three/index.html $out/bin/threejs.jsexe/index.html
-    chmod +w $out/bin/todo-mvc.jsexe/index.html
-    cp -fv ${source.examples}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/index.html
     chmod +w $out/bin/todo-mvc.jsexe
-    cp -fv ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe/base.css
-    cp -fv ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe/index.css
   '';
 }

@@ -61,16 +61,4 @@ in
     rev = "d26c0a3";
     sha256 = "sha256-jD1kBqOMFrhxt+yUcXLTLL+qv71X4/uOI4qdkpO6nGA=";
   };
-  todomvc-common = fetchFromGitHub {
-    owner = "tastejs";
-    repo = "todomvc-common";
-    rev = "3b6156d98fdc7070fc284038ac10e4ec4a5d1d1f";
-    sha256 = "1hvjvvrvbcfqgs77vg923w409cpkjisdyzxsd7b9zibrcqxz15l7";
-  };
-  todomvc-app-css = fetchFromGitHub {
-    owner = "tastejs";
-    repo = "todomvc-app-css";
-    rev = "d99f1965654568c0ced7bcd54c0d5083e08fce9c";
-    sha256 = "1fz4wac1if0lc54gvga640dybwlchi1ybzxw8yjz5836674mdkid";
-  };
 }

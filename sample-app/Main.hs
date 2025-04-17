@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
@@ -29,6 +30,11 @@ data Action
 main :: IO ()
 main = run (startApp app)
 ----------------------------------------------------------------------------
+-- | WASM export, required when compiling w/ the WASM backend.
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
 app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
@@ -52,6 +58,7 @@ viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
   , text . ms $ x^.counter
   , button_ [ onClick SubtractOne ] [ text "-" ]
+  , br_ []
   , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------
