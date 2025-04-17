@@ -456,7 +456,7 @@ For constructing client and server applications, we recommend using one `cabal` 
 > [!TIP]
 > For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
 
-## Internals
+## Internals ⚙️
 
 For some details of the internals and general overview of how `miso` works, see the [Internals](docs/Internals.md).
 
