@@ -68,7 +68,7 @@ common jsaddle
       jsaddle-wasm < 0.2
 
 common client
-  if impl(ghcjs) || arch(javascript)
+  if impl(ghcjs)
     build-depends:
       ghcjs-base -any
 
