@@ -205,7 +205,7 @@ You should see the following output in your terminal.
 ```bash
 [1 of 2] Compiling Main             ( Main.hs, interpreted )
 Ok, one module loaded.
-ghci> 
+ghci>
 ```
 
 Now call the `main` function in the `GHCi` REPL.
@@ -454,6 +454,42 @@ with-hc-pkg:
 
 ```bash
 $ cabal update && cabal build --allow-newer
+```
+
+```bash
+Configuring executable 'app' for app-0.1.0.0...
+Preprocessing executable 'app' for app-0.1.0.0...
+Building executable 'app' for app-0.1.0.0...
+[1 of 1] Compiling Main             ( Main.hs, dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app-tmp/Main.o )
+[2 of 2] Linking dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app.jsexe
+
+```
+
+> [!TIP]
+> To view the JavaScript in your browser, you can use `cabal list-bin` and `http-server`
+
+```bash
+$ http-server $(cabal list-bin app --allow-newer).jsexe
+Configuration is affected by the following files:
+- cabal.project
+Starting up http-server, serving /home/dmjio/Desktop/miso/sample-app/dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app.jsexe
+
+http-server version: 14.1.1
+
+http-server settings:
+CORS: disabled
+Cache: 3600 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://127.0.0.1:8080
+  http://192.168.1.114:8080
+Hit CTRL-C to stop the server
 ```
 
 ## Haddocks
