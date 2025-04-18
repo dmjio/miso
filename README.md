@@ -35,7 +35,7 @@
 
 **Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
-> [!WARNING]
+> [!TIP]
 > [React-style Components](https://github.com/dmjio/miso/pull/766) are now added to `miso` as of version `1.9`. This has not yet been released, we recommend developing against `master` if you'd like to use latest features.
 
 ## Table of Contents
@@ -247,7 +247,7 @@ When done developing, we can compile to Web Assembly or JavaScript for distribut
 
 ## ![Image](https://github.com/user-attachments/assets/c57d96b2-368b-410e-b968-28dfe22bf1b1) Web Assembly
 
-> [!WARNING]
+> [!TIP]
 > The Haskell `miso` team currently recommends using the WASM backend as the default backend for compilation.
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
