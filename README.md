@@ -35,7 +35,7 @@
 
 **Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
-> [!WARNING]
+> [!TIP]
 > [React-style Components](https://github.com/dmjio/miso/pull/766) are now added to `miso` as of version `1.9`. This has not yet been released, we recommend developing against `master` if you'd like to use latest features.
 
 ## Table of Contents
@@ -205,7 +205,7 @@ You should see the following output in your terminal.
 ```bash
 [1 of 2] Compiling Main             ( Main.hs, interpreted )
 Ok, one module loaded.
-ghci> 
+ghci>
 ```
 
 Now call the `main` function in the `GHCi` REPL.
@@ -247,7 +247,7 @@ When done developing, we can compile to Web Assembly or JavaScript for distribut
 
 ## ![Image](https://github.com/user-attachments/assets/c57d96b2-368b-410e-b968-28dfe22bf1b1) Web Assembly
 
-> [!WARNING]
+> [!TIP]
 > The Haskell `miso` team currently recommends using the WASM backend as the default backend for compilation.
 
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the `GHC` `WASM` compiler.
@@ -454,6 +454,42 @@ with-hc-pkg:
 
 ```bash
 $ cabal update && cabal build --allow-newer
+```
+
+```bash
+Configuring executable 'app' for app-0.1.0.0...
+Preprocessing executable 'app' for app-0.1.0.0...
+Building executable 'app' for app-0.1.0.0...
+[1 of 1] Compiling Main             ( Main.hs, dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app-tmp/Main.o )
+[2 of 2] Linking dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app.jsexe
+
+```
+
+> [!TIP]
+> To view the JavaScript in your browser, you can use `cabal list-bin` and `http-server`
+
+```bash
+$ http-server $(cabal list-bin app --allow-newer).jsexe
+Configuration is affected by the following files:
+- cabal.project
+Starting up http-server, serving /home/dmjio/Desktop/miso/sample-app/dist-newstyle/build/javascript-ghcjs/ghc-9.12.2/app-0.1.0.0/x/app/build/app/app.jsexe
+
+http-server version: 14.1.1
+
+http-server settings:
+CORS: disabled
+Cache: 3600 seconds
+Connection Timeout: 120 seconds
+Directory Listings: visible
+AutoIndex: visible
+Serve GZIP Files: false
+Serve Brotli Files: false
+Default File Extension: none
+
+Available on:
+  http://127.0.0.1:8080
+  http://192.168.1.114:8080
+Hit CTRL-C to stop the server
 ```
 
 ## Haddocks
