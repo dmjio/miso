@@ -132,8 +132,8 @@ instance (Fetch api, KnownSymbol path) => Fetch (path :> api) where
       options_ :: FetchOptions
       options_ = options & currentPath %~ (<> ms "/" <> path)
 -----------------------------------------------------------------------------
-instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
-  type ToFetch (Capture path a :> api) = a -> ToFetch api
+instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture' mods path a :> api) where
+  type ToFetch (Capture' mods path a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
@@ -159,22 +159,23 @@ instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
       options_ :: FetchOptions
       options_ = options & queryFlags <>~ [ ms $ symbolVal (Proxy @name) | flag ]
 -----------------------------------------------------------------------------
-instance (ToJSON a, Fetch api) => Fetch (ReqBody '[JSON] a :> api) where
-  type ToFetch (ReqBody '[JSON] a :> api) = a -> ToFetch api
+instance (ToJSON a, Fetch api) => Fetch (ReqBody' mods '[JSON] a :> api) where
+  type ToFetch (ReqBody' mods '[JSON] a :> api) = a -> ToFetch api
   fetchWith Proxy options body_ = fetchWith (Proxy @api) (options_ (ms (encode body_)))
     where
       options_ :: MisoString -> FetchOptions
       options_ b = options & body ?~ b
 -----------------------------------------------------------------------------
-instance (KnownSymbol name, ToHttpApiData a, Fetch api) => Fetch (Header name a :> api) where
-  type ToFetch (Header name a :> api) = a -> ToFetch api
+instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods)) => Fetch (Header' mods name a :> api) where
+  type ToFetch (Header' mods name a :> api) = RequiredArgument mods a -> ToFetch api
   fetchWith Proxy options value = fetchWith (Proxy @api) o
     where
       headerName :: MisoString
       headerName = ms $ symbolVal (Proxy @name)
+      param (x :: a) = [ (headerName, ms (toHeader x)) ]
 
       o :: FetchOptions
-      o = options & headers <>~ [ (headerName, ms (toHeader value)) ]
+      o = options & headers <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) value
 -----------------------------------------------------------------------------
 instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
   type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
