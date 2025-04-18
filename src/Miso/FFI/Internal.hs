@@ -65,7 +65,7 @@ import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
-#ifdef GHCJS_OLD
+#ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
 import           Language.Javascript.JSaddle hiding (Success)
