@@ -70,6 +70,7 @@ self: super:
   # call nix-build -A wasmExamples && ./result/bin/build.sh
   # to populate examples
   wasmExamples = self.writeScriptBin "build.sh" ''
+    nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal update
     nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal build miso examples
   '';
 
