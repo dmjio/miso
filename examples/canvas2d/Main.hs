@@ -9,7 +9,7 @@ import Control.Monad.State
 import GHCJS.Types
 import JavaScript.Web.Canvas
 
-import Miso hiding (translate)
+import Miso
 import Miso.String
 
 type Model = (Double, Double)
