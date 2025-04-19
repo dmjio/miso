@@ -84,6 +84,9 @@ jobs:
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
 
+     - name: (x86) Nix garbage collect
+       run: nix-collect-garbage -d
+
      - name: (WASM) Miso examples (GHC 9.12.2)
        run: nix-build -A wasmExamples && ./result/bin/build.sh
 
