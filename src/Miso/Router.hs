@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE PolyKinds             #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Router
