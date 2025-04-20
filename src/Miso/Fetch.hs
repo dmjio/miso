@@ -178,7 +178,7 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mod
       o :: FetchOptions
       o = options & headers <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) value
 -----------------------------------------------------------------------------
-instance (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
+instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
   type ToFetch (Verb method code cts' a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
     fetchJSON'
@@ -191,6 +191,31 @@ instance (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch 
       error_
     where
       ctProxy = Proxy @ct
+      method = ms (reflectMethod (Proxy @method))
+      params = MS.concat
+        [ mconcat
+           [ ms "?"
+           , MS.intercalate (ms "&")
+             [ k <> ms "=" <> v
+             | (k,v) <- options ^. queryParams
+             ]
+           ]
+         | not $ null (options ^. queryParams)
+         ]
+      flags = MS.mconcat [ ms "?" <> k | k <- options ^. queryFlags ]
+      url = options ^. baseUrl <> options ^. currentPath <> params <> flags
+instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
+  type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
+  fetchWith Proxy options success_ error_ =
+    fetchJSON'
+      (const $ pure NoContent)
+      url
+      method
+      (options ^. body)
+      (options ^. headers)
+      success_
+      error_
+    where
       method = ms (reflectMethod (Proxy @method))
       params = MS.concat
         [ mconcat
