@@ -158,12 +158,15 @@ instance (ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods), KnownSymbol na
   type ToFetch (QueryParam' mods name a :> api) = RequiredArgument mods a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
-      param (x :: a) = [(ms $ symbolVal (Proxy @name), ms (enc x))]
+      param :: a -> [(MisoString, MisoString)]
+      param x = [(ms $ symbolVal (Proxy @name), ms (enc x))]
+
 #if MIN_VERSION_http_api_data(0,5,1)
       enc = toEncodedQueryParam
 #else
       enc = toEncodedUrlPiece
 #endif
+
       options_ :: FetchOptions
       options_ = options & queryParams <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) arg
 -----------------------------------------------------------------------------
@@ -172,54 +175,55 @@ instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
   fetchWith Proxy options flag = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
-      options_ = options & queryFlags <>~ [ ms $ symbolVal (Proxy @name) | flag ]
+      options_ = options & queryFlags <>~ [ms $ symbolVal (Proxy @name) | flag]
 -----------------------------------------------------------------------------
 instance (MimeRender ct a, Fetch api) => Fetch (ReqBody' mods (ct ': cts) a :> api) where
   type ToFetch (ReqBody' mods (ct ': cts) a :> api) = a -> ToFetch api
-  fetchWith Proxy options body_ = fetchWith (Proxy @api) (options_ (ms (mimeRender ctProxy body_)))
+  fetchWith Proxy options body_ = fetchWith (Proxy @api) options_
     where
-      ctProxy = Proxy :: Proxy ct
-      options_ :: MisoString -> FetchOptions
-      options_ b = options & body ?~ b & headers <>~ [(ms "Content-Type", ms $ renderHeader $ contentType ctProxy)]
+      ctProxy :: Proxy ct
+      ctProxy = Proxy
+
+      options_ :: FetchOptions
+      options_ = options
+        & body ?~ (ms (mimeRender ctProxy body_))
+        & headers <>~ [(ms "Content-Type", ms $ renderHeader $ contentType ctProxy)]
 -----------------------------------------------------------------------------
 instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods)) => Fetch (Header' mods name a :> api) where
   type ToFetch (Header' mods name a :> api) = RequiredArgument mods a -> ToFetch api
-  fetchWith Proxy options value = fetchWith (Proxy @api) o
+  fetchWith Proxy options value = fetchWith (Proxy @api) options_
     where
       headerName :: MisoString
       headerName = ms $ symbolVal (Proxy @name)
-      param (x :: a) = [ (headerName, ms (toHeader x)) ]
 
-      o :: FetchOptions
-      o = options & headers <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) value
+      header :: a -> [(MisoString, MisoString)]
+      header x = [(headerName, ms (toHeader x))]
+
+      options_ :: FetchOptions
+      options_ = options & headers <>~ foldRequiredArgument (Proxy @mods) header (foldMap header) value
 -----------------------------------------------------------------------------
 instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
-  type ToFetch (Verb method code cts' a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
+  type ToFetch (Verb method code cts' a) = (a -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
     fetchJSON'
       (mimeUnrender ctProxy . MS.fromMisoString)
-      url
-      method
+      (optionsToUrl options)
+      (ms $ reflectMethod (Proxy @method))
       (options ^. body)
       (options ^. headers <> [(ms "Accept", ms $ renderHeader $ contentType ctProxy)])
       success_
       error_
     where
       ctProxy = Proxy @ct
-      method = ms (reflectMethod (Proxy @method))
-      url = optionsToUrl options
 instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
-  type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
+  type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
     fetchJSON'
       (const $ pure NoContent)
-      url
-      method
+      (optionsToUrl options)
+      (ms $ reflectMethod (Proxy @method))
       (options ^. body)
       (options ^. headers)
       success_
       error_
-    where
-      method = ms (reflectMethod (Proxy @method))
-      url = optionsToUrl options
 -----------------------------------------------------------------------------
