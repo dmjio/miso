@@ -64,10 +64,11 @@ import           Data.Kind (Type)
 import           Data.Proxy (Proxy(..))
 import           GHC.TypeLits
 import           Language.Javascript.JSaddle (JSM)
+import           Network.HTTP.Media (renderHeader)
 import           Servant.API
 import           Servant.API.Modifiers
 -----------------------------------------------------------------------------
-import           Miso.FFI.Internal (fetchJSON)
+import           Miso.FFI.Internal (fetchJSON, fetchJSON')
 import           Miso.Lens
 import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
@@ -159,12 +160,13 @@ instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
       options_ :: FetchOptions
       options_ = options & queryFlags <>~ [ ms $ symbolVal (Proxy @name) | flag ]
 -----------------------------------------------------------------------------
-instance (ToJSON a, Fetch api) => Fetch (ReqBody' mods '[JSON] a :> api) where
-  type ToFetch (ReqBody' mods '[JSON] a :> api) = a -> ToFetch api
-  fetchWith Proxy options body_ = fetchWith (Proxy @api) (options_ (ms (encode body_)))
+instance (MimeRender ct a, Fetch api) => Fetch (ReqBody' mods (ct ': cts) a :> api) where
+  type ToFetch (ReqBody' mods (ct ': cts) a :> api) = a -> ToFetch api
+  fetchWith Proxy options body_ = fetchWith (Proxy @api) (options_ (ms (mimeRender ctProxy body_)))
     where
+      ctProxy = Proxy :: Proxy ct
       options_ :: MisoString -> FetchOptions
-      options_ b = options & body ?~ b
+      options_ b = options & body ?~ b & headers <>~ [(ms "Content-Type", ms $ renderHeader $ contentType ctProxy)]
 -----------------------------------------------------------------------------
 instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods)) => Fetch (Header' mods name a :> api) where
   type ToFetch (Header' mods name a :> api) = RequiredArgument mods a -> ToFetch api
@@ -180,7 +182,7 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mod
 instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
   type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
-    fetchJSON url method (options ^. body) (options ^. headers) success_ error_
+    fetchJSON' url method (options ^. body) (options ^. headers) success_ error_
     where
       method = ms (reflectMethod (Proxy @method))
       params = MS.concat

@@ -55,6 +55,7 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , fetchJSON'
    , shouldSync
    ) where
 -----------------------------------------------------------------------------
@@ -429,7 +430,28 @@ fetchJSON
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> JSM ()
-fetchJSON url method maybeBody headers successful errorful = do
+fetchJSON url method maybeBody headers =
+  fetchJSON'
+    url
+    method
+    maybeBody
+    (headers <> [(ms "Content-Type", ms "application/json") | isJust maybeBody])
+fetchJSON'
+  :: FromJSON action
+  => MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ method
+  -> Maybe MisoString
+  -- ^ body
+  -> [(MisoString,MisoString)]
+  -- ^ headers
+  -> (action -> JSM ())
+  -- ^ successful callback
+  -> (MisoString -> JSM ())
+  -- ^ errorful callback
+  -> JSM ()
+fetchJSON' url method maybeBody headers successful errorful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
@@ -445,8 +467,6 @@ fetchJSON url method maybeBody headers successful errorful = do
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
   let jsonHeaders =
-        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
-        <>
         [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
