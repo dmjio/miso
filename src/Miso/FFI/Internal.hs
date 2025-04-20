@@ -432,13 +432,17 @@ fetchJSON
   -> JSM ()
 fetchJSON url method maybeBody headers =
   fetchJSON'
+    (eitherDecodeStrictText . fromMisoString)
     url
     method
     maybeBody
-    (headers <> [(ms "Content-Type", ms "application/json") | isJust maybeBody])
+    ( headers
+      <> [(ms "Content-Type", ms "application/json") | isJust maybeBody]
+      <> [(ms "Accept", ms $ "application/json")]
+    )
 fetchJSON'
-  :: FromJSON action
-  => MisoString
+  :: (MisoString -> Either String action)
+  -> MisoString
   -- ^ url
   -> MisoString
   -- ^ method
@@ -451,13 +455,13 @@ fetchJSON'
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> JSM ()
-fetchJSON' url method maybeBody headers successful errorful = do
+fetchJSON' decoder url method maybeBody headers successful errorful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
-      fromJSON <$> fromJSValUnchecked jval >>= \case
-        Error string ->
+      decoder <$> fromJSValUnchecked jval >>= \case
+        Left string ->
           error ("fetchJSON: " <> string <> ": decode failure")
-        Success result -> do
+        Right result ->
           successful result
   errorful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
@@ -466,11 +470,9 @@ fetchJSON' url method maybeBody headers successful errorful = do
   url_ <- toJSVal url
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
-  let jsonHeaders =
-        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
-    forM_ (headers <> jsonHeaders) $ \(k,v) -> do
+    forM_ headers $ \(k,v) -> do
       set k v o
     pure o
   void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]

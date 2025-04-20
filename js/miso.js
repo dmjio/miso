@@ -27,7 +27,7 @@ function fetchJSON(url, method, body, headers, successful, errorful) {
     if (!response.ok) {
       throw new Error(response.statusText);
     }
-    return response.json();
+    return response.text();
   }).then(successful).catch(errorful);
 }
 function shouldSync(node) {
@@ -65,14 +65,10 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
-    onBeforeCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
     shouldSync: false,
     type: "vnode"
   };

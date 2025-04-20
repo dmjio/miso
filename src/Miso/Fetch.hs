@@ -59,7 +59,6 @@ module Miso.Fetch
   , fetchJSON
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
 import           Data.Kind (Type)
 import           Data.Proxy (Proxy(..))
 import           GHC.TypeLits
@@ -179,11 +178,19 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mod
       o :: FetchOptions
       o = options & headers <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) value
 -----------------------------------------------------------------------------
-instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
-  type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
+instance (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
+  type ToFetch (Verb method code cts' a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
-    fetchJSON' url method (options ^. body) (options ^. headers) success_ error_
+    fetchJSON'
+      (mimeUnrender ctProxy . MS.fromMisoString)
+      url
+      method
+      (options ^. body)
+      (options ^. headers <> [(ms "Accept", ms $ renderHeader $ contentType ctProxy)])
+      success_
+      error_
     where
+      ctProxy = Proxy @ct
       method = ms (reflectMethod (Proxy @method))
       params = MS.concat
         [ mconcat
