@@ -67,7 +67,7 @@ import           Network.HTTP.Media (renderHeader)
 import           Servant.API
 import           Servant.API.Modifiers
 -----------------------------------------------------------------------------
-import           Miso.FFI.Internal (fetchJSON, fetchJSON')
+import           Miso.FFI.Internal (fetchJSON, fetchFFI)
 import           Miso.Lens
 import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
@@ -205,7 +205,7 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mod
 instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
   type ToFetch (Verb method code cts' a) = (a -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
-    fetchJSON'
+    fetchFFI
       (mimeUnrender ctProxy . MS.fromMisoString)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))
@@ -218,7 +218,7 @@ instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (
 instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
   type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
   fetchWith Proxy options success_ error_ =
-    fetchJSON'
+    fetchFFI
       (const $ pure NoContent)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))

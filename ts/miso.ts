@@ -1,7 +1,7 @@
 import { diff } from './miso/dom';
 import { delegate, undelegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
-import { shouldSync, version, callFocus, callBlur, setBodyComponent, fetchJSON } from './miso/util';
+import { shouldSync, version, callFocus, callBlur, setBodyComponent, fetchFFI } from './miso/util';
 import { VTree, VNode, VText, VComp, Props, CSS, Events, NS, DOMRef, EventCapture, EventObject, Options } from './miso/types';
 import { vcomp, vnode, vtext } from './miso/smart';
 
@@ -15,7 +15,7 @@ export {
   callBlur,
   callFocus,
   eventJSON,
-  fetchJSON,
+  fetchFFI,
   undelegate,
   integrityCheck,
   setBodyComponent,

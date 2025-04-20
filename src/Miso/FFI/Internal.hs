@@ -55,7 +55,7 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
-   , fetchJSON'
+   , fetchFFI
    , shouldSync
    ) where
 -----------------------------------------------------------------------------
@@ -431,7 +431,7 @@ fetchJSON
   -- ^ errorful callback
   -> JSM ()
 fetchJSON url method maybeBody headers =
-  fetchJSON'
+  fetchFFI
     (eitherDecodeStrictText . fromMisoString)
     url
     method
@@ -440,7 +440,7 @@ fetchJSON url method maybeBody headers =
       <> [(ms "Content-Type", ms "application/json") | isJust maybeBody]
       <> [(ms "Accept", ms $ "application/json")]
     )
-fetchJSON'
+fetchFFI
   :: (MisoString -> Either String action)
   -> MisoString
   -- ^ url
@@ -455,12 +455,12 @@ fetchJSON'
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> JSM ()
-fetchJSON' decoder url method maybeBody headers successful errorful = do
+fetchFFI decoder url method maybeBody headers successful errorful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       decoder <$> fromJSValUnchecked jval >>= \case
         Left string ->
-          error ("fetchJSON: " <> string <> ": decode failure")
+          error ("fetch: " <> string <> ": decode failure")
         Right result ->
           successful result
   errorful_ <- toJSVal =<< do
@@ -475,7 +475,7 @@ fetchJSON' decoder url method maybeBody headers successful errorful = do
     forM_ headers $ \(k,v) -> do
       set k v o
     pure o
-  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+  void $ moduleMiso # "fetchFFI" $ [url_, method_, body_, headers_, successful_, errorful_]
 -----------------------------------------------------------------------------
 -- | shouldSync
 --

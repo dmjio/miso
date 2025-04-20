@@ -21,7 +21,7 @@ export function setBodyComponent(componentId: string): void {
   document.body.setAttribute('data-component-id', componentId);
 }
 
-export function fetchJSON (
+export function fetchFFI (
   url : string,
   method : string,
   body : any,
