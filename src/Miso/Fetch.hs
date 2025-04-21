@@ -226,11 +226,16 @@ instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (
       ctProxy = Proxy @ct
 instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
   type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ =
+  fetchWith Proxy = fetchNoContent $ Proxy @method
+instance (ReflectMethod method) => Fetch (NoContentVerb method) where
+  type ToFetch (NoContentVerb method) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
+  fetchWith Proxy = fetchNoContent $ Proxy @method
+fetchNoContent :: ReflectMethod method => Proxy method -> FetchOptions -> (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
+fetchNoContent proxy_ options success_ error_ =
     fetchFFI
       (const $ pure NoContent)
       (optionsToUrl options)
-      (ms $ reflectMethod (Proxy @method))
+      (ms $ reflectMethod proxy_)
       (options ^. body)
       (options ^. headers)
       success_
