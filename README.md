@@ -421,10 +421,11 @@ $ http-server app.wasmexe
 Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the latest GHC JS-backend compiler.
 
 > [!TIP]
-> For [Nix](https://nixos.org) users it is possible to acquire the latest JS backend via Nix
+> For [Nix](https://nixos.org) users it is possible to acquire the latest JS backend (that `miso` uses) via Nix.
+> Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily `cachix use haskell-miso-cachix`
 
 ```bash
-❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9121.ghc '<nixpkgs>'
+❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc -I nixpkgs=https://github.com/alexfmpe/nixpkgs/archive/b594b289740a2bc917ed9c66fef5d905f389cb96.tar.gz
 ```
 
 > [!NOTE]
