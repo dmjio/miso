@@ -212,34 +212,34 @@ instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mod
       options_ = options & headers <>~ foldRequiredArgument (Proxy @mods) header (foldMap header) value
 -----------------------------------------------------------------------------
 instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
-  type ToFetch (Verb method code cts' a) = (a -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ =
+  type ToFetch (Verb method code cts' a) = (MisoString -> JSM ()) -> (a -> JSM ()) -> JSM ()
+  fetchWith Proxy options error_ success_ =
     fetchFFI
       (mimeUnrender ctProxy . MS.fromMisoString)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))
       (options ^. body)
       (options ^. headers <> [(ms "Accept", ms $ renderHeader $ contentType ctProxy)])
-      success_
       error_
+      success_
     where
       ctProxy = Proxy @ct
 instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
-  type ToFetch (Verb method code cts NoContent) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
+  type ToFetch (Verb method code cts NoContent) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
   fetchWith Proxy = fetchNoContent $ Proxy @method
 instance (ReflectMethod method) => Fetch (NoContentVerb method) where
-  type ToFetch (NoContentVerb method) = (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
+  type ToFetch (NoContentVerb method) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
   fetchWith Proxy = fetchNoContent $ Proxy @method
-fetchNoContent :: ReflectMethod method => Proxy method -> FetchOptions -> (NoContent -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
-fetchNoContent proxy_ options success_ error_ =
+fetchNoContent :: ReflectMethod method => Proxy method -> FetchOptions -> (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
+fetchNoContent proxy_ options error_ success_ =
     fetchFFI
       (const $ pure NoContent)
       (optionsToUrl options)
       (ms $ reflectMethod proxy_)
       (options ^. body)
       (options ^. headers)
-      success_
       error_
+      success_
 -----------------------------------------------------------------------------
 instance
   ( contentTypes ~ (ct ': otherContentTypes),
@@ -250,16 +250,16 @@ instance
   ) =>
   Fetch (UVerb method contentTypes as)
   where
-  type ToFetch (UVerb method contentTypes as) = (Union as -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ =
+  type ToFetch (UVerb method contentTypes as) = (MisoString -> JSM ()) -> (Union as -> JSM ()) -> JSM ()
+  fetchWith Proxy options error_ success_ =
     fetchFFI
       (first unlines . tryParsers . mimeUnrenders . MS.fromMisoString)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))
       (options ^. body)
       (options ^. headers <> map ((ms "Accept",) . ms . renderHeader) (allMime $ Proxy @contentTypes))
-      success_
       error_
+      success_
     where
       mimeUnrenders :: BSL.ByteString -> NP ([] :.: Either (MediaType, String)) as
       mimeUnrenders body_ = cpure_NP (Proxy @(UnrenderResponse contentTypes))

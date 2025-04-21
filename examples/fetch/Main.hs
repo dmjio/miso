@@ -68,15 +68,15 @@ type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
 -- | Uses servant to reify type-safe calls to the Fetch API
 getGithubAPI
-  :: (GitHub -> JSM ())
-  -- ^ Successful callback
-  -> (MisoString -> JSM ())
+  :: (MisoString -> JSM ())
   -- ^ Errorful callback
+  -> (GitHub -> JSM ())
+  -- ^ Successful callback
   -> JSM ()
 getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
-updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
+updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . ErrorHandler) (snk . SetGitHub)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =

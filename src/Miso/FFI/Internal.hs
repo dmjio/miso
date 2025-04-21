@@ -425,10 +425,10 @@ fetchJSON
   -- ^ body
   -> [(MisoString,MisoString)]
   -- ^ headers
-  -> (action -> JSM ())
-  -- ^ successful callback
   -> (MisoString -> JSM ())
   -- ^ errorful callback
+  -> (action -> JSM ())
+  -- ^ successful callback
   -> JSM ()
 fetchJSON url method maybeBody headers =
   fetchFFI
@@ -450,12 +450,12 @@ fetchFFI
   -- ^ body
   -> [(MisoString,MisoString)]
   -- ^ headers
-  -> (action -> JSM ())
-  -- ^ successful callback
   -> (MisoString -> JSM ())
   -- ^ errorful callback
+  -> (action -> JSM ())
+  -- ^ successful callback
   -> JSM ()
-fetchFFI decoder url method maybeBody headers successful errorful = do
+fetchFFI decoder url method maybeBody headers errorful successful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       decoder <$> fromJSValUnchecked jval >>= \case
