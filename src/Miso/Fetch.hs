@@ -67,8 +67,8 @@ import qualified Data.ByteString.Lazy as BSL
 import           Data.Either (partitionEithers)
 import           Data.Kind (Type)
 import           Data.Proxy (Proxy (Proxy))
-import           Generics.SOP (All, (:.:) (Comp), NS (S), I (I))
-import           Generics.SOP.NP (NP (..), cpure_NP)
+import           Data.SOP (All, (:.:) (Comp), NS (S), I (I))
+import           Data.SOP.NP (NP (..), cpure_NP)
 import           GHC.TypeLits
 import           Language.Javascript.JSaddle (JSM)
 import           Network.HTTP.Media (renderHeader, MediaType)
