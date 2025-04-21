@@ -10,6 +10,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
@@ -59,12 +61,19 @@ module Miso.Fetch
   , fetchJSON
   ) where
 -----------------------------------------------------------------------------
+import           Data.Bifunctor (bimap)
+import           Data.Bifunctor (first)
+import qualified Data.ByteString.Lazy as BSL
+import           Data.Either (partitionEithers)
 import           Data.Kind (Type)
-import           Data.Proxy (Proxy(..))
+import           Data.Proxy (Proxy (Proxy))
+import           Generics.SOP (All, (:.:) (Comp), NS (S), I (I))
+import           Generics.SOP.NP (NP (..), cpure_NP)
 import           GHC.TypeLits
 import           Language.Javascript.JSaddle (JSM)
-import           Network.HTTP.Media (renderHeader)
+import           Network.HTTP.Media (renderHeader, MediaType)
 import           Servant.API
+import           Servant.API.ContentTypes
 import           Servant.API.Modifiers
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (fetchJSON, fetchFFI)
@@ -226,4 +235,38 @@ instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code c
       (options ^. headers)
       success_
       error_
+-----------------------------------------------------------------------------
+instance
+  ( contentTypes ~ (ct ': otherContentTypes),
+    as ~ (a ': as'),
+    AllMime contentTypes,
+    ReflectMethod method,
+    All (UnrenderResponse contentTypes) as
+  ) =>
+  Fetch (UVerb method contentTypes as)
+  where
+  type ToFetch (UVerb method contentTypes as) = (Union as -> JSM ()) -> (MisoString -> JSM ()) -> JSM ()
+  fetchWith Proxy options success_ error_ =
+    fetchFFI
+      (first unlines . tryParsers . mimeUnrenders . MS.fromMisoString)
+      (optionsToUrl options)
+      (ms $ reflectMethod (Proxy @method))
+      (options ^. body)
+      (options ^. headers <> map ((ms "Accept",) . ms . renderHeader) (allMime $ Proxy @contentTypes))
+      success_
+      error_
+    where
+      mimeUnrenders :: BSL.ByteString -> NP ([] :.: Either (MediaType, String)) as
+      mimeUnrenders body_ = cpure_NP (Proxy @(UnrenderResponse contentTypes))
+        $ Comp $ unrenderResponse (Proxy @contentTypes) body_
+      tryParsers :: NP ([] :.: Either (MediaType, String)) xs -> Either [String] (Union xs)
+      tryParsers = \case
+        Nil -> Left ["no parsers"]
+        Comp x :* xs -> case partitionEithers x of
+          (err', []) -> bimap (map (\(t, s) -> show t <> ": " <> s) err' <>) S $ tryParsers xs
+          (_, (res : _)) -> Right . inject . I $ res
+class UnrenderResponse (cts :: [Type]) (a :: Type) where
+  unrenderResponse :: Proxy cts -> BSL.ByteString -> [Either (MediaType, String) a]
+instance AllMimeUnrender cts a => UnrenderResponse cts a where
+  unrenderResponse Proxy body_ = allMimeUnrender @_ @a (Proxy @cts) <&> \(t, f) -> first (t,) $ f body_
 -----------------------------------------------------------------------------

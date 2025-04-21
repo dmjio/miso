@@ -200,6 +200,7 @@ library
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,
+    generics-sop  < 0.6,
     http-api-data < 0.9,
     http-media    < 0.9,
     http-types    < 0.13,
