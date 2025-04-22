@@ -15,6 +15,7 @@
 module Miso.Event.Types
   ( -- ** Types
     Events
+  , Capture
     -- *** KeyboardEvent
   , KeyInfo (..)
   , KeyCode (..)
@@ -117,10 +118,18 @@ newtype AllowDrop = AllowDrop Bool
   deriving (Show, Eq, FromJSON)
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
-type Events = M.Map MisoString Bool
+type Events = M.Map MisoString Capture
+-----------------------------------------------------------------------------
+-- | Capture
+--
+-- Used to determine if *capture* should be set when using /addEventListener/
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#capture>
+--
+type Capture = Bool
 -----------------------------------------------------------------------------
 -- | Default delegated events
-defaultEvents :: M.Map MisoString Bool
+defaultEvents :: M.Map MisoString Capture
 defaultEvents = M.fromList
   [ ("blur", True)
   , ("change", False)
@@ -133,7 +142,7 @@ defaultEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Keyboard events
-keyboardEvents :: M.Map MisoString Bool
+keyboardEvents :: M.Map MisoString Capture
 keyboardEvents = M.fromList
   [ ("keydown", False)
   , ("keypress", False)
@@ -141,7 +150,7 @@ keyboardEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Mouse events
-mouseEvents :: M.Map MisoString Bool
+mouseEvents :: M.Map MisoString Capture
 mouseEvents = M.fromList
   [ ("mouseup", False)
   , ("mousedown", False)
@@ -152,7 +161,7 @@ mouseEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Drag events
-dragEvents :: M.Map MisoString Bool
+dragEvents :: M.Map MisoString Capture
 dragEvents = M.fromList
   [ ("dragstart", False)
   , ("dragover", False)
@@ -164,7 +173,7 @@ dragEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Pointer events
-pointerEvents :: M.Map MisoString Bool
+pointerEvents :: M.Map MisoString Capture
 pointerEvents = M.fromList
   [ ("pointerup", False)
   , ("pointerdown", False)
