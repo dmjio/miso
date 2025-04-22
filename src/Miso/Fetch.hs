@@ -246,7 +246,7 @@ instance
     as ~ (a ': as'),
     AllMime contentTypes,
     ReflectMethod method,
-    All (UnrenderResponse contentTypes) as
+    All (AllMimeUnrender contentTypes) as
   ) =>
   Fetch (UVerb method contentTypes as)
   where
@@ -262,16 +262,12 @@ instance
       success_
     where
       mimeUnrenders :: BSL.ByteString -> NP ([] :.: Either (MediaType, String)) as
-      mimeUnrenders body_ = cpure_NP (Proxy @(UnrenderResponse contentTypes))
-        $ Comp $ unrenderResponse (Proxy @contentTypes) body_
+      mimeUnrenders body_ = cpure_NP (Proxy @(AllMimeUnrender contentTypes))
+        $ Comp $ allMimeUnrender (Proxy @contentTypes) <&> \(t, f) -> first (t,) $ f body_
       tryParsers :: NP ([] :.: Either (MediaType, String)) xs -> Either [String] (Union xs)
       tryParsers = \case
         Nil -> Left ["no parsers"]
         Comp x :* xs -> case partitionEithers x of
           (err', []) -> bimap (map (\(t, s) -> show t <> ": " <> s) err' <>) S $ tryParsers xs
           (_, (res : _)) -> Right . inject . I $ res
-class UnrenderResponse (cts :: [Type]) (a :: Type) where
-  unrenderResponse :: Proxy cts -> BSL.ByteString -> [Either (MediaType, String) a]
-instance AllMimeUnrender cts a => UnrenderResponse cts a where
-  unrenderResponse Proxy body_ = allMimeUnrender @_ @a (Proxy @cts) <&> \(t, f) -> first (t,) $ f body_
 -----------------------------------------------------------------------------
