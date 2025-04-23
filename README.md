@@ -425,7 +425,7 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 > Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily `cachix use haskell-miso-cachix`
 
 ```bash
-❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc -I nixpkgs=https://github.com/alexfmpe/nixpkgs/archive/b594b289740a2bc917ed9c66fef5d905f389cb96.tar.gz
+❯ nix-shell -p pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/65f179f903e8bbeff3215cd613bdc570940c0eab.tar.gz
 ```
 
 > [!NOTE]
@@ -435,7 +435,7 @@ Using [GHCup](https://www.haskell.org/ghcup/) you should be able to acquire the 
 > Alternatively, if you'd like to install the compiler into your global environment (so you don't need to develop inside a `bash` shell) you can use the following command.
 >
 > ```bash
-> ❯ nix-env -iA pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc -f https://github.com/alexfmpe/nixpkgs/archive/b594b289740a2bc917ed9c66fef5d905f389cb96.tar.gz
+> ❯ nix-env -iA pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc -f https://github.com/NixOS/nixpkgs/archive/65f179f903e8bbeff3215cd613bdc570940c0eab.tar.gz
 > ```
 
 - `cabal.project`
