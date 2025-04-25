@@ -3,14 +3,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
@@ -199,7 +196,7 @@ viewEntries visibility entries =
         ]
   where
     cssVisibility = bool "visible" "hidden" (null entries)
-    allCompleted = all (== True) $ completed <$> entries
+    allCompleted = all completed entries
     isVisible Entry{..} =
         case visibility of
             "Completed" -> completed

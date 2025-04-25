@@ -1,10 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE TupleSections            #-}
-{-# LANGUAGE BangPatterns             #-}
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE OverloadedStrings        #-}
-{-# LANGUAGE NamedFieldPuns           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -100,7 +97,7 @@ iso_prop = monadicIO . run . roundTrip
 ----------------------------------------------------------------------------
 propTest :: Testable prop => prop -> IO (Bool, String)
 propTest prop = do
-  r <- flip quickCheckWithResult prop stdArgs { chatty = False }
+  r <- quickCheckWithResult prop { chatty = False } stdArgs
   pure $ case r of
     Success { output = o } -> (True, o)
     GaveUp { output = o } -> (False, o)

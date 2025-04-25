@@ -42,7 +42,7 @@ instance Accept HTML where
     "text" M.// "html" M./: ("charset", "utf-8") NE.:|
       ["text" M.// "html"]
 ----------------------------------------------------------------------------
--- | Class for rendering HTML 
+-- | Class for rendering HTML
 class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
@@ -85,12 +85,12 @@ renderBuilder (TextRaw "") = fromMisoString " "
 renderBuilder (TextRaw s)  = fromMisoString s
 renderBuilder (Node _ "doctype" _ [] []) = "<!doctype html>"
 renderBuilder (Node _ tag _ attrs children) =
-  mconcat $
+  mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
             | not (Prelude.null attrs)
-            ] 
+            ]
   , ">"
   , mconcat
     [ mconcat

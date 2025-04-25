@@ -384,7 +384,7 @@ setBodyComponent name = do
 -----------------------------------------------------------------------------
 -- | Appends a 'style_' element containing CSS to 'head_'
 --
--- > addCssStyle "body { background-color: green; }"
+-- > addStyle "body { background-color: green; }"
 --
 -- > <head><style>body { background-color: green; }</style></head>
 --
@@ -396,8 +396,6 @@ addStyle css = do
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'link_' element to 'head_'
 -- The 'link_' tag will contain a URL to a CSS file.
---
--- *<link href="https://domain.com/style.css" rel="stylesheet" />*
 --
 -- > addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
 --

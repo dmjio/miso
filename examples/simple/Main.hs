@@ -1,11 +1,10 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 -- | Haskell module declaration
 module Main where
 
--- | Miso framework import
+-- Miso framework import
 import           Prelude hiding (unlines)
 
 import           Miso

@@ -3,7 +3,7 @@ Internals
 
 ## Overview
 
-Miso’s external API has three main parts. The `model`, `view` function, and `update` function. 
+Miso’s external API has three main parts. The `model`, `view` function, and `update` function.
 
 ## Concurrency
 
@@ -11,7 +11,7 @@ Under the hood miso’s concurrency model centers around an atomically updated `
 
 ## Event Loop
 
-`miso` operates in an event [loop](https://github.com/dmjio/miso/blob/master/src/Miso.hs#L124) that blocks on [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame). The `model` lives on the stack of the event loop function. Inside this loop we drain the queue into `[action]`, and fold against the `model` (this is known as “event batching”). We do this to minimize calls to `diff`. 
+`miso` operates in an event [loop](https://github.com/dmjio/miso/blob/master/src/Miso.hs#L124) that blocks on [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame). The `model` lives on the stack of the event loop function. Inside this loop we drain the queue into `[action]`, and fold against the `model` (this is known as “event batching”). We do this to minimize calls to `diff`.
 
 Miso then diffs the new `model` against the old `model`. If the `model` has been updated (dirty), the `view` function is invoked on the updated `model` produce a `VTree` [^3]. This `VTree` gets converted to a `JS` `vtree` and is diffed + patched against the existing tree (that lives on the JS heap) and the DOM updates. The loop recurses on the new `model`.
 
@@ -29,7 +29,7 @@ While the event loop is executing, browser events are raised asynchronously and 
 
 ## Pre-rendering
 
-Pre-rendering (using the `miso` function) on application startup will traverse the DOM and copy pointers into miso’s virtual DOM structure (this process is known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development)). This is necessary for events to work, since event delegation works by DOM pointer traversal on the virtual DOM to find the correct node to dispatch the event [^6].
+Pre-rendering (using the `miso` function) on application startup will traverse the DOM and copy pointers into miso’s virtual DOM structure (this process is known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))). This is necessary for events to work, since event delegation works by DOM pointer traversal on the virtual DOM to find the correct node to dispatch the event [^6].
 
 ## View
 
@@ -45,4 +45,4 @@ The `view` function is how templating works in `miso`. The `View` is a [Rose Tre
 
 [^5]: `VTree` is the Haskell AST version of a JS virtual DOM. The `view` function constructs terms in this AST, it is then lowered into a `JSVal`. The `JSVal` is a virtual DOM tree structure that lives in the JS heap that is used for diffing. Once lowered, we diff against the existing virtual DOM that already lives in the JS heap.
 
-[^6]: The event handlers that live on the JS virtual DOM are how miso calls back into the Haskell heap from the JS heap to write to the `Action` queue. Events are defined on the `View` using the `onWithOptions` function. Lifecycle are also defined using the View DSL. 
+[^6]: The event handlers that live on the JS virtual DOM are how miso calls back into the Haskell heap from the JS heap to write to the `Action` queue. Events are defined on the `View` using the `onWithOptions` function. Lifecycle are also defined using the View DSL.

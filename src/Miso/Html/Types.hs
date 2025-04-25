@@ -85,7 +85,7 @@ prop k v = Property k (toJSON v)
 -- @style@ attributes not contained in @attrs@ will be deleted.
 --
 -- > import qualified Data.Map as M
--- > div_ [ style_  $ M.singleton "background" "red" ] [ ]
+-- > div_ [ style_ $ M.singleton "background" "red" ] [ ]
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --

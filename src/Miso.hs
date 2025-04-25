@@ -80,8 +80,8 @@ import           Miso.Util
 -----------------------------------------------------------------------------
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
--- Note: Uses @mountPoint@ as the @Component@ name.
--- Always mounts to /<body>/. Copies page into the virtual DOM.
+-- Note: Uses 'mountPoint' as the 'Component' name.
+-- Always mounts to \<body\>. Copies page into the virtual DOM.
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getURI
@@ -96,7 +96,7 @@ miso f = withJS $ do
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Runs a miso application
--- Initializes application at @mountPoint@ (defaults to /<body>/ when @Nothing@)
+-- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
 startApp :: Eq model => App model action -> JSM ()
 startApp app@App {..} = withJS $
   initialize app $ \snk -> do
