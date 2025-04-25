@@ -50,7 +50,7 @@ main = do
     _ <- forkIO (sendEvents chan)
     run port $ logStdout (compress (app chan))
   where
-    compress = gzip defaultGzipSettings{gzipFiles = GzipCompress}
+    compress = gzip def{gzipFiles = GzipCompress}
 
 -- Send 1 event/s containing the current server time
 sendEvents :: Chan ServerEvent -> IO ()
