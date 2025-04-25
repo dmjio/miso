@@ -58,7 +58,7 @@ windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink ->
           when preventDefault (FFI.eventPreventDefault e)
           sink (toAction r)
 -----------------------------------------------------------------------------
--- | window.addEventListener ("pointermove", (event) => handle(event))
--- A 'Sub' for handler PointerEvent on window
+-- | @window.addEventListener ("pointermove", (event) => handle(event))@
+-- A 'Sub' to handle @PointerEvent@s on window
 windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder

@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -94,7 +93,7 @@ viewModel1 x =
                 embed component2
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
-                  ] 
+                  ]
             else div_ [id_ "other test"] ["Main application content"]
         ]
 
@@ -139,7 +138,7 @@ viewModel2 x =
         , embed component3
           [ onMounted Mount
           , onUnmounted UnMount
-          ] 
+          ]
         ]
 
 counterApp3 :: App (Bool, Model) Action

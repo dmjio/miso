@@ -25,8 +25,11 @@ import           Miso.String
 import qualified Miso.FFI.SSE as SSE
 -----------------------------------------------------------------------------
 -- | Server-sent events Subscription
-sseSub :: FromJSON msg => MisoString -> (SSE msg -> action) -> Sub action
-sseSub url f = \sink -> do
+sseSub :: FromJSON msg
+    => MisoString -- ^ EventSource URL
+    -> (SSE msg -> action)
+    -> Sub action
+sseSub url f sink = do
   es <- SSE.new url
   SSE.addEventListener es "message" $ \val -> do
     dat <- FFI.jsonParse =<< SSE.data' val

@@ -3,7 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE OverloadedStrings         #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE TypeApplications          #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE DeriveFunctor             #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -60,12 +59,12 @@ data App model action = App
   -- ^ initial model
   , update :: action -> Effect model action
   -- ^ Function to update model, optionally providing effects.
-  --   See the @Transition@ monad for succinctly expressing model transitions.
+  --   See the 'Transition' monad for succinctly expressing model transitions.
   , view :: model -> View action
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
-  , events :: M.Map MisoString Bool
+  , events :: M.Map MisoString Capture
   -- ^ List of delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
@@ -73,7 +72,7 @@ data App model action = App
   -- These styles are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
   , initialAction :: Maybe action
-  -- ^ Initial action that is run after the application has loaded, optional since *1.9*
+  -- ^ Initial action that is run after the application has loaded, optional @since 1.9
   , mountPoint :: Maybe MisoString
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
@@ -153,7 +152,7 @@ data Component model action
 -- | Smart constructor for parameterizing @App@ by @name@
 -- Needed when calling @embed@ and @embedWith@
 component
-  :: MisoString  
+  :: MisoString
   -> App model action
   -> Component model action
 component = Component Nothing

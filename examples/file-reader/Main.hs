@@ -1,8 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP             #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -92,13 +91,13 @@ updateModel ReadFile = scheduleIO $ do
     M.asyncCallback $ do
       result <- J.fromJSValUnchecked =<< reader ! ("result" :: String)
       liftIO (putMVar mvar result)
-  void $ reader # ("readAsText" :: String) $ [file] 
+  void $ reader # ("readAsText" :: String) $ [file]
   SetContent <$> liftIO (readMVar mvar)
 updateModel (SetContent c) = info .= c
 updateModel ClickInput = io $ do
   fileReader <- M.getElementById "fileReader"
   void $ fileReader # ("click" :: String) $ ([] :: [JSVal])
-----------------------------------------------------------------------------  
+----------------------------------------------------------------------------
 -- | View function
 viewModel :: Model -> View Action
 viewModel Model{..} =

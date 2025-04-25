@@ -25,13 +25,13 @@ import           Miso.Html (View)
 -- @
 -- view model =
 --     div_ [] $
---      withFoldable (model ^. mSomeMaybeVal) $ \someVal ->
+--      withFoldable (model ^. mSomeMaybeVal) $ \\someVal ->
 --         p_ [] [ text $ "Hey, look at this value: " <> ms (show someVal) ]
 -- @
 withFoldable :: Foldable t => t a -> (a -> b) -> [b]
 withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
--- | Hides the @View@s the condition is False. Shows them when the condition
+-- | Hides the @View@s if the condition is False. Shows them when the condition
 -- is True.
 conditionalViews :: Bool -> [View action] -> [View action]
 conditionalViews condition views =
@@ -41,10 +41,10 @@ conditionalViews condition views =
 -----------------------------------------------------------------------------
 -- | Smart constructor for Attributes. This function is helpful when constructing numerous Attributes
 -- Example shown below.
--- 
--- @ 
+--
+-- @
 -- div_ [ style_  $ ("background" =: "red" <> "width" =: "250px" <> "height" =: "250px") ] []
 -- @
-(=:) :: k -> a -> M.Map k a 
+(=:) :: k -> a -> M.Map k a
 a =: b = M.singleton a b
 -----------------------------------------------------------------------------

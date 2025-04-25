@@ -27,7 +27,8 @@ newtype EventSource = EventSource JSVal
 data' :: JSVal -> JSM JSVal
 data' v = v ! ("data" :: JSString)
 -----------------------------------------------------------------------------
-new :: MisoString -> JSM EventSource
+new :: MisoString -- ^ EventSource URL
+  -> JSM EventSource
 new url = EventSource <$> JSaddle.new (jsg ("EventSource" :: JSString)) [url]
 -----------------------------------------------------------------------------
 addEventListener :: EventSource -> MisoString -> (JSVal -> JSM ()) -> JSM ()

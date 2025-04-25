@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeApplications #-}
@@ -21,7 +20,7 @@ import Network.Wai.EventSource
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.RequestLogger
-import Servant
+import Servant hiding (respond)
 import qualified System.IO as IO
 
 import Miso hiding (SSE, run)
@@ -51,7 +50,7 @@ main = do
     _ <- forkIO (sendEvents chan)
     run port $ logStdout (compress (app chan))
   where
-    compress = gzip def{gzipFiles = GzipCompress}
+    compress = gzip defaultGzipSettings{gzipFiles = GzipCompress}
 
 -- Send 1 event/s containing the current server time
 sendEvents :: Chan ServerEvent -> IO ()

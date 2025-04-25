@@ -1,15 +1,13 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
 import           Control.Monad.State
 import qualified Data.Map as M
 
-import           Miso
+import           Miso hiding (update)
 import           Miso.String (MisoString, ms)
 import           Miso.Svg hiding (height_, id_, style_, width_)
 

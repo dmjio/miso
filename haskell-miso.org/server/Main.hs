@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeApplications #-}
@@ -29,9 +28,9 @@ import Network.HTTP.Types hiding (Header)
 import Network.Wai (responseLBS)
 import Network.Wai.Application.Static (defaultWebAppSettings)
 import Network.Wai.Handler.Warp (run)
-import Network.Wai.Middleware.Gzip (GzipFiles (..), def, gzip, gzipFiles)
+import Network.Wai.Middleware.Gzip (GzipFiles (..), gzip, gzipFiles, defaultGzipSettings)
 import Network.Wai.Middleware.RequestLogger (logStdout)
-import Servant
+import Servant hiding (respond)
 import qualified System.IO as IO
 
 import Miso hiding (run)
@@ -46,7 +45,7 @@ main = do
     IO.hPutStrLn IO.stderr "Running on port 3002..."
     run 3002 $ logStdout (compress app)
   where
-    compress = gzip def{gzipFiles = GzipCompress}
+    compress = gzip defaultGzipSettings{gzipFiles = GzipCompress}
 
 app :: Application
 app = serve (Proxy @API) website
