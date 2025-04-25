@@ -72,7 +72,9 @@ data App model action = App
   -- These styles are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
   , initialAction :: Maybe action
-  -- ^ Initial action that is run after the application has loaded, optional @since 1.9
+  -- ^ Initial action that is run after the application has loaded, optional
+  --
+  -- @since 1.9.0.0
   , mountPoint :: Maybe MisoString
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
