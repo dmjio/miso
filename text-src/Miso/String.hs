@@ -64,9 +64,9 @@ fromMisoString s =
     Left err -> error err
     Right x  -> x
 ----------------------------------------------------------------------------
--- | Convenience function, shorthand for `toMisoString`
-ms :: ToMisoString str => str -> MisoString
-ms = toMisoString
+-- | Convenience function, shorthand for `fromMisoString . toMisoString`
+ms :: (FromMisoString b, ToMisoString a) => a -> b
+ms = fromMisoString . toMisoString
 ----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
