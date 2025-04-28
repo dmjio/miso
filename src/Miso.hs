@@ -15,6 +15,7 @@ module Miso
   ( -- * Miso
     -- ** Combinators
     miso
+  , (🍜)
   , startApp
     -- ** Sink
   , sink
@@ -77,7 +78,7 @@ import           Miso.Storage
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
------------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- | Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
@@ -95,6 +96,10 @@ miso f = withJS $ do
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
+-- | Alias for 'miso'.
+(🍜) :: Eq model => (URI -> App model action) -> JSM ()
+(🍜) = miso
+----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
 startApp :: Eq model => App model action -> JSM ()
