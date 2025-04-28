@@ -14,7 +14,8 @@
 module Miso
   ( -- * Miso
     -- ** Combinators
-    miso
+    (🍜)
+  , miso
   , startApp
     -- ** Sink
   , sink
@@ -78,10 +79,19 @@ import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
 -----------------------------------------------------------------------------
--- | Runs an isomorphic miso application.
+-- | Alias for miso.
+-- miso is described as:
+-- $misoFuncComments
+(🍜) :: Eq model => (URI -> App model action) -> JSM ()
+(🍜) = miso
+-----------------------------------------------------------------------------
+-- $misoFuncComments
+-- Runs an isomorphic miso application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
+-----------------------------------------------------------------------------
+-- | $misoFuncComments
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   app@App {..} <- f <$> getURI
