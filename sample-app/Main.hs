@@ -55,7 +55,7 @@ updateModel = \case
 viewModel :: Model -> View Action
 viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
-  , text . ms $ x^.counter
+  , text $ ms (x ^. counter)
   , button_ [ onClick SubtractOne ] [ text "-" ]
   , br_ []
   , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
