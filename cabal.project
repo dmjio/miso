@@ -5,7 +5,7 @@ packages:
   haskell-miso.org/
   sample-app/
 
-index-state: 2025-02-11T14:26:56Z
+index-state: 2025-04-29T21:50:43Z
 
 allow-newer:
   all:base
@@ -22,11 +22,6 @@ if arch(wasm32)
   -- ghc-wasm-meta, this is superseded by the global cabal.config.
   shared: True
 
-  -- https://github.com/haskellari/time-compat/issues/37
-  -- Older versions of time don't build on WASM.
-  constraints: time installed
-  allow-newer: time
-
   -- https://github.com/haskellari/splitmix/pull/73
   source-repository-package
     type: git
@@ -41,9 +36,3 @@ if arch(wasm32)
     location: https://github.com/haskell-wasm/foundation.git
     tag: 8e6dd48527fb429c1922083a5030ef88e3d58dd3
     subdir: basement
-
-  source-repository-package
-    type: git
-    location: https://github.com/amesgen/jsaddle-wasm
-    tag: cc6be1d1cf1c0539885ad8cc5292e4a1e93cccb3
-

@@ -288,11 +288,6 @@ if arch(wasm32)
   -- ghc-wasm-meta, this is superseded by the global cabal.config.
   shared: True
 
-  -- https://github.com/haskellari/time-compat/issues/37
-  -- Older versions of time don't build on WASM.
-  constraints: time installed
-  allow-newer: time
-
   -- https://github.com/haskellari/splitmix/pull/73
   source-repository-package
     type: git
