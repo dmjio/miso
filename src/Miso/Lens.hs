@@ -102,10 +102,9 @@ module Miso.Lens
   , Lens'
     -- ** Smart constructor
   , lens
-    -- ** Utils
-  , (<&>)
     -- ** Re-exports
   , (&)
+  , (<&>)
     -- ** Combinators
   , (.~)
   , (?~)
@@ -140,6 +139,7 @@ import Control.Monad.State (MonadState, modify, gets)
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
 import Data.Function ((&))
+import Data.Functor((<&>))
 ----------------------------------------------------------------------------
 -- | A @Lens@ is a generalized getter and setter.
 --
@@ -638,9 +638,4 @@ lens
   -> (record -> field -> record)
   -> Lens record field
 lens = Lens
-----------------------------------------------------------------------------
--- | Functor utility, a flipped infix @fmap@.
-infixl 1 <&>
-(<&>) :: Functor f => f a -> (a -> b) -> f b
-f <&> x = x <$> f
 ----------------------------------------------------------------------------
