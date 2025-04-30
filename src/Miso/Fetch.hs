@@ -242,9 +242,7 @@ fetchNoContent proxy_ options error_ success_ =
       success_
 -----------------------------------------------------------------------------
 instance
-  ( contentTypes ~ (ct ': otherContentTypes),
-    as ~ (a ': as'),
-    AllMime contentTypes,
+  ( AllMime contentTypes,
     ReflectMethod method,
     All (AllMimeUnrender contentTypes) as
   ) =>
