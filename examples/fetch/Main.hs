@@ -57,11 +57,6 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
--- | WASM support
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
-----------------------------------------------------------------------------
 app :: App Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
