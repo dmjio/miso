@@ -148,7 +148,7 @@ executable file-reader
 
 executable fetch
   import:
-    common-options, js-only
+    common-options
   default-language:
     Haskell2010
   main-is:
