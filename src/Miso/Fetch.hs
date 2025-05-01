@@ -10,6 +10,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
@@ -59,15 +61,22 @@ module Miso.Fetch
   , fetchJSON
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
+import           Data.Bifunctor (bimap)
+import           Data.Bifunctor (first)
+import qualified Data.ByteString.Lazy as BSL
+import           Data.Either (partitionEithers)
 import           Data.Kind (Type)
-import           Data.Proxy (Proxy(..))
+import           Data.Proxy (Proxy (Proxy))
+import           Data.SOP (All, (:.:) (Comp), NS (S), I (I))
+import           Data.SOP.NP (NP (..), cpure_NP)
 import           GHC.TypeLits
 import           Language.Javascript.JSaddle (JSM)
+import           Network.HTTP.Media (renderHeader, MediaType)
 import           Servant.API
+import           Servant.API.ContentTypes
 import           Servant.API.Modifiers
 -----------------------------------------------------------------------------
-import           Miso.FFI.Internal (fetchJSON)
+import           Miso.FFI.Internal (fetchJSON, fetchFFI)
 import           Miso.Lens
 import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
@@ -112,6 +121,21 @@ defaultFetchOptions
   , _body = Nothing
   }
 -----------------------------------------------------------------------------
+optionsToUrl :: FetchOptions -> MisoString
+optionsToUrl options = options ^. baseUrl <> options ^. currentPath <> params <> flags
+  where
+    params = MS.concat
+      [ mconcat
+         [ ms "?"
+         , MS.intercalate (ms "&")
+           [ k <> ms "=" <> v
+           | (k,v) <- options ^. queryParams
+           ]
+         ]
+       | not $ null (options ^. queryParams)
+       ]
+    flags = MS.mconcat [ ms "?" <> k | k <- options ^. queryFlags ]
+-----------------------------------------------------------------------------
 class Fetch (api :: Type) where
   type ToFetch api :: Type
   fetch :: Proxy api -> MisoString -> ToFetch api
@@ -132,8 +156,8 @@ instance (Fetch api, KnownSymbol path) => Fetch (path :> api) where
       options_ :: FetchOptions
       options_ = options & currentPath %~ (<> ms "/" <> path)
 -----------------------------------------------------------------------------
-instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture path a :> api) where
-  type ToFetch (Capture path a :> api) = a -> ToFetch api
+instance (ToHttpApiData a, Fetch api, KnownSymbol path) => Fetch (Capture' mods path a :> api) where
+  type ToFetch (Capture' mods path a :> api) = a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
@@ -143,12 +167,15 @@ instance (ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods), KnownSymbol na
   type ToFetch (QueryParam' mods name a :> api) = RequiredArgument mods a -> ToFetch api
   fetchWith Proxy options arg = fetchWith (Proxy @api) options_
     where
-      param (x :: a) = [(ms $ symbolVal (Proxy @name), ms (enc x))]
+      param :: a -> [(MisoString, MisoString)]
+      param x = [(ms $ symbolVal (Proxy @name), ms (enc x))]
+
 #if MIN_VERSION_http_api_data(0,5,1)
       enc = toEncodedQueryParam
 #else
       enc = toEncodedUrlPiece
 #endif
+
       options_ :: FetchOptions
       options_ = options & queryParams <>~ foldRequiredArgument (Proxy @mods) param (foldMap param) arg
 -----------------------------------------------------------------------------
@@ -157,41 +184,92 @@ instance (Fetch api, KnownSymbol name) => Fetch (QueryFlag name :> api) where
   fetchWith Proxy options flag = fetchWith (Proxy @api) options_
     where
       options_ :: FetchOptions
-      options_ = options & queryFlags <>~ [ ms $ symbolVal (Proxy @name) | flag ]
+      options_ = options & queryFlags <>~ [ms $ symbolVal (Proxy @name) | flag]
 -----------------------------------------------------------------------------
-instance (ToJSON a, Fetch api) => Fetch (ReqBody '[JSON] a :> api) where
-  type ToFetch (ReqBody '[JSON] a :> api) = a -> ToFetch api
-  fetchWith Proxy options body_ = fetchWith (Proxy @api) (options_ (ms (encode body_)))
+instance (MimeRender ct a, Fetch api) => Fetch (ReqBody' mods (ct ': cts) a :> api) where
+  type ToFetch (ReqBody' mods (ct ': cts) a :> api) = a -> ToFetch api
+  fetchWith Proxy options body_ = fetchWith (Proxy @api) options_
     where
-      options_ :: MisoString -> FetchOptions
-      options_ b = options & body ?~ b
+      ctProxy :: Proxy ct
+      ctProxy = Proxy
+
+      options_ :: FetchOptions
+      options_ = options
+        & body ?~ (ms (mimeRender ctProxy body_))
+        & headers <>~ [(ms "Content-Type", ms $ renderHeader $ contentType ctProxy)]
 -----------------------------------------------------------------------------
-instance (KnownSymbol name, ToHttpApiData a, Fetch api) => Fetch (Header name a :> api) where
-  type ToFetch (Header name a :> api) = a -> ToFetch api
-  fetchWith Proxy options value = fetchWith (Proxy @api) o
+instance (KnownSymbol name, ToHttpApiData a, Fetch api, SBoolI (FoldRequired mods)) => Fetch (Header' mods name a :> api) where
+  type ToFetch (Header' mods name a :> api) = RequiredArgument mods a -> ToFetch api
+  fetchWith Proxy options value = fetchWith (Proxy @api) options_
     where
       headerName :: MisoString
       headerName = ms $ symbolVal (Proxy @name)
 
-      o :: FetchOptions
-      o = options & headers <>~ [ (headerName, ms (toHeader value)) ]
+      header :: a -> [(MisoString, MisoString)]
+      header x = [(headerName, ms (toHeader x))]
+
+      options_ :: FetchOptions
+      options_ = options & headers <>~ foldRequiredArgument (Proxy @mods) header (foldMap header) value
 -----------------------------------------------------------------------------
-instance (ReflectMethod method, FromJSON a) => Fetch (Verb method code content a) where
-  type ToFetch (Verb method code content a) = (a -> JSM()) -> (MisoString -> JSM ()) -> JSM ()
-  fetchWith Proxy options success_ error_ =
-    fetchJSON url method (options ^. body) (options ^. headers) success_ error_
+instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (ct ': cts)) => Fetch (Verb method code cts' a) where
+  type ToFetch (Verb method code cts' a) = (MisoString -> JSM ()) -> (a -> JSM ()) -> JSM ()
+  fetchWith Proxy options error_ success_ =
+    fetchFFI
+      (mimeUnrender ctProxy)
+      (optionsToUrl options)
+      (ms $ reflectMethod (Proxy @method))
+      (options ^. body)
+      (options ^. headers <> [(ms "Accept", ms $ renderHeader $ contentType ctProxy)])
+      error_
+      success_
     where
-      method = ms (reflectMethod (Proxy @method))
-      params = MS.concat
-        [ mconcat
-           [ ms "?"
-           , MS.intercalate (ms "&")
-             [ k <> ms "=" <> v
-             | (k,v) <- options ^. queryParams
-             ]
-           ]
-         | not $ null (options ^. queryParams)
-         ]
-      flags = MS.mconcat [ ms "?" <> k | k <- options ^. queryFlags ]
-      url = options ^. baseUrl <> options ^. currentPath <> params <> flags
+      ctProxy = Proxy @ct
+instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
+  type ToFetch (Verb method code cts NoContent) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
+  fetchWith Proxy = fetchNoContent $ Proxy @method
+#if MIN_VERSION_servant(0,17,0)
+instance (ReflectMethod method) => Fetch (NoContentVerb method) where
+  type ToFetch (NoContentVerb method) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
+  fetchWith Proxy = fetchNoContent $ Proxy @method
+#endif
+fetchNoContent :: ReflectMethod method => Proxy method -> FetchOptions -> (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
+fetchNoContent proxy_ options error_ success_ =
+    fetchFFI
+      (const $ pure NoContent)
+      (optionsToUrl options)
+      (ms $ reflectMethod proxy_)
+      (options ^. body)
+      (options ^. headers)
+      error_
+      success_
+-----------------------------------------------------------------------------
+#if MIN_VERSION_servant(0,18,1)
+instance
+  ( AllMime contentTypes,
+    ReflectMethod method,
+    All (AllMimeUnrender contentTypes) as
+  ) =>
+  Fetch (UVerb method contentTypes as)
+  where
+  type ToFetch (UVerb method contentTypes as) = (MisoString -> JSM ()) -> (Union as -> JSM ()) -> JSM ()
+  fetchWith Proxy options error_ success_ =
+    fetchFFI
+      (first unlines . tryParsers . mimeUnrenders)
+      (optionsToUrl options)
+      (ms $ reflectMethod (Proxy @method))
+      (options ^. body)
+      (options ^. headers <> map ((ms "Accept",) . ms . renderHeader) (allMime $ Proxy @contentTypes))
+      error_
+      success_
+    where
+      mimeUnrenders :: BSL.ByteString -> NP ([] :.: Either (MediaType, String)) as
+      mimeUnrenders body_ = cpure_NP (Proxy @(AllMimeUnrender contentTypes))
+        $ Comp $ allMimeUnrender (Proxy @contentTypes) <&> \(t, f) -> first (t,) $ f body_
+      tryParsers :: NP ([] :.: Either (MediaType, String)) xs -> Either [String] (Union xs)
+      tryParsers = \case
+        Nil -> Left ["no parsers"]
+        Comp x :* xs -> case partitionEithers x of
+          (err', []) -> bimap (map (\(t, s) -> show t <> ": " <> s) err' <>) S $ tryParsers xs
+          (_, (res : _)) -> Right . inject . I $ res
+#endif
 -----------------------------------------------------------------------------

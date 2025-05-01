@@ -207,6 +207,7 @@ library
     mtl           < 2.4,
     network-uri   < 2.7,
     servant       < 0.21,
+    sop-core      < 0.6,
     tagsoup       < 0.15,
     text          < 2.2,
     transformers  < 0.7,

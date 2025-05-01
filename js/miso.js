@@ -18,7 +18,7 @@ function callBlur(id, delay) {
 function setBodyComponent(componentId) {
   document.body.setAttribute("data-component-id", componentId);
 }
-function fetchJSON(url, method, body, headers, successful, errorful) {
+function fetchFFI(url, method, body, headers, successful, errorful) {
   var options = { method, headers };
   if (body) {
     options["body"] = body;
@@ -27,7 +27,7 @@ function fetchJSON(url, method, body, headers, successful, errorful) {
     if (!response.ok) {
       throw new Error(response.statusText);
     }
-    return response.json();
+    return response.bytes();
   }).then(successful).catch(errorful);
 }
 function shouldSync(node) {
@@ -65,14 +65,10 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
-    onBeforeCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
     shouldSync: false,
     type: "vnode"
   };
@@ -675,7 +671,7 @@ globalThis["miso"]["delegate"] = delegate;
 globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
-globalThis["miso"]["fetchJSON"] = fetchJSON;
+globalThis["miso"]["fetchFFI"] = fetchFFI;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;

@@ -2,6 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -55,6 +56,7 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , fetchFFI
    , shouldSync
    ) where
 -----------------------------------------------------------------------------
@@ -63,12 +65,20 @@ import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as BSL
 import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
 import           Language.Javascript.JSaddle hiding (Success)
+#endif
+#ifdef WASM
+import qualified Data.ByteString.Internal as BS (create)
+import qualified Data.ByteString as BS
+import           Foreign.Ptr (Ptr)
+#else
+import           Data.Word (Word8)
 #endif
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
@@ -424,18 +434,43 @@ fetchJSON
   -- ^ body
   -> [(MisoString,MisoString)]
   -- ^ headers
-  -> (action -> JSM ())
-  -- ^ successful callback
   -> (MisoString -> JSM ())
   -- ^ errorful callback
+  -> (action -> JSM ())
+  -- ^ successful callback
   -> JSM ()
-fetchJSON url method maybeBody headers successful errorful = do
+fetchJSON url method maybeBody headers =
+  fetchFFI
+    eitherDecode
+    url
+    method
+    maybeBody
+    ( headers
+      <> [(ms "Content-Type", ms "application/json") | isJust maybeBody]
+      <> [(ms "Accept", ms $ "application/json")]
+    )
+fetchFFI
+  :: (BSL.ByteString -> Either String action)
+  -> MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ method
+  -> Maybe MisoString
+  -- ^ body
+  -> [(MisoString,MisoString)]
+  -- ^ headers
+  -> (MisoString -> JSM ())
+  -- ^ errorful callback
+  -> (action -> JSM ())
+  -- ^ successful callback
+  -> JSM ()
+fetchFFI decoder url method maybeBody headers errorful successful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
-      fromJSON <$> fromJSValUnchecked jval >>= \case
-        Error string ->
-          error ("fetchJSON: " <> string <> ": decode failure")
-        Success result -> do
+      decoder <$> toLazyByteString (JSUint8Array jval) >>= \case
+        Left string ->
+          error ("fetch: " <> string <> ": decode failure")
+        Right result ->
           successful result
   errorful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
@@ -444,16 +479,12 @@ fetchJSON url method maybeBody headers successful errorful = do
   url_ <- toJSVal url
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
-  let jsonHeaders =
-        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
-        <>
-        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
-    forM_ (headers <> jsonHeaders) $ \(k,v) -> do
+    forM_ headers $ \(k,v) -> do
       set k v o
     pure o
-  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+  void $ moduleMiso # "fetchFFI" $ [url_, method_, body_, headers_, successful_, errorful_]
 -----------------------------------------------------------------------------
 -- | shouldSync
 --
@@ -467,4 +498,31 @@ shouldSync vnode = do
   moduleMiso <- jsg "miso"
   fromJSValUnchecked =<< do
     moduleMiso # "shouldSync" $ [vnode]
+-----------------------------------------------------------------------------
+newtype JSUint8Array = JSUint8Array JSVal
+
+#ifdef WASM
+
+foreign import javascript unsafe "$1.byteLength"
+    byteLength :: JSUint8Array -> Int
+
+foreign import javascript unsafe "(new Uint8Array(__exports.memory.buffer, $1, $2)).set($3)"
+    memorySetUint8Array :: Ptr a -> Int -> JSUint8Array -> IO ()
+
+toStrictByteString :: JSUint8Array -> JSM BS.ByteString
+toStrictByteString src_buf = liftIO $ do
+    let len = byteLength src_buf
+    case len of
+        0 -> pure BS.empty
+        _ -> BS.create len $ \ptr -> memorySetUint8Array ptr len src_buf
+
+toLazyByteString :: JSUint8Array -> JSM BSL.ByteString
+toLazyByteString = fmap BSL.fromStrict . toStrictByteString
+
+#else
+
+toLazyByteString :: JSUint8Array -> JSM BSL.ByteString
+toLazyByteString = fmap BSL.pack . fromJSValUnchecked @[Word8] . \(JSUint8Array v) -> v
+
+#endif
 -----------------------------------------------------------------------------

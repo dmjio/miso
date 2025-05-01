@@ -21,7 +21,7 @@ export function setBodyComponent(componentId: string): void {
   document.body.setAttribute('data-component-id', componentId);
 }
 
-export function fetchJSON (
+export function fetchFFI (
   url : string,
   method : string,
   body : any,
@@ -39,7 +39,7 @@ export function fetchJSON (
         if (!response.ok) {
           throw new Error(response.statusText);
         }
-        return response.json();
+        return response.bytes();
       })
     .then(successful) /* success callback */
     .catch(errorful); /* error callback */
