@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,6 +24,7 @@ import           GHC.Generics
 import           Language.Javascript.JSaddle (JSM)
 import           Data.Proxy
 import           Servant.API
+import           Servant.Client.JS (ClientEnv (..), ClientError, parseBaseUrl, client, runClientM)
 ----------------------------------------------------------------------------
 import           Miso hiding (defaultOptions)
 import           Miso.String
@@ -68,15 +70,17 @@ type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
 -- | Uses servant to reify type-safe calls to the Fetch API
 getGithubAPI
-  :: (GitHub -> JSM ())
-  -- ^ Successful callback
-  -> (MisoString -> JSM ())
-  -- ^ Errorful callback
-  -> JSM ()
-getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
+  :: JSM (Either ClientError GitHub)
+getGithubAPI = do
+    baseUrl <- parseBaseUrl "https://api.github.com"
+    runClientM c (ClientEnv baseUrl)
+  where
+    c = Servant.Client.JS.client (Proxy @GithubAPI)
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
-updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
+updateModel FetchGitHub = scheduleIO $ getGithubAPI <&> \case
+  Right r -> SetGitHub r
+  Left e  -> ErrorHandler $ ms $ show e
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =

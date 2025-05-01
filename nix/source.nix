@@ -37,6 +37,12 @@ in
     rev = "0d5e427cb99391179b143dc93dfbac9c1019237b";
     sha256 = "sha256-jyJ7bdz0gNLOSzRxOWcv7eWGIwo3N/O4PcY7HyNF8Fo=";
   };
+  servant-client-js = fetchFromGitHub {
+    owner = "amesgen";
+    repo = "servant-client-js";
+    rev = "3ff9ad6906ebeeae52a7eaa31f7026790a59769a";
+    hash = "sha256-7x2bxbm2cyuzhotXtdQ0jwfc0aMzjQ/fxDfHjmVvivQ=";
+  };
   flatris = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs-flatris";
