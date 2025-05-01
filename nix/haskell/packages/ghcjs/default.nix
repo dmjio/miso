@@ -12,6 +12,8 @@ self: super:
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
+  servant-client-core = doJailbreak super.servant-client-core;
+  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
   flatris = self.callCabal2nix "flatris" source.flatris {};
   miso-plane-core = self.callCabal2nix "miso-plane" source.miso-plane {};
   miso-plane = pkgs.runCommand "miso-plane" {} ''

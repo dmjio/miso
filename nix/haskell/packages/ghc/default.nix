@@ -17,6 +17,8 @@ self: super:
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp =
     dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+  servant-client-core = doJailbreak super.servant-client-core;
+  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
 
   /* cruft */
   crypton = dontCheck super.crypton;
