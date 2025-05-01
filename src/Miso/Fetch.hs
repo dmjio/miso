@@ -227,9 +227,11 @@ instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (
 instance {-# OVERLAPPING #-} (ReflectMethod method) => Fetch (Verb method code cts NoContent) where
   type ToFetch (Verb method code cts NoContent) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
   fetchWith Proxy = fetchNoContent $ Proxy @method
+#if MIN_VERSION_servant(0,17,0)
 instance (ReflectMethod method) => Fetch (NoContentVerb method) where
   type ToFetch (NoContentVerb method) = (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
   fetchWith Proxy = fetchNoContent $ Proxy @method
+#endif
 fetchNoContent :: ReflectMethod method => Proxy method -> FetchOptions -> (MisoString -> JSM ()) -> (NoContent -> JSM ()) -> JSM ()
 fetchNoContent proxy_ options error_ success_ =
     fetchFFI
@@ -241,6 +243,7 @@ fetchNoContent proxy_ options error_ success_ =
       error_
       success_
 -----------------------------------------------------------------------------
+#if MIN_VERSION_servant(0,18,1)
 instance
   ( AllMime contentTypes,
     ReflectMethod method,
@@ -268,4 +271,5 @@ instance
         Comp x :* xs -> case partitionEithers x of
           (err', []) -> bimap (map (\(t, s) -> show t <> ": " <> s) err' <>) S $ tryParsers xs
           (_, (res : _)) -> Right . inject . I $ res
+#endif
 -----------------------------------------------------------------------------
