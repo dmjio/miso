@@ -166,7 +166,8 @@ executable fetch
     jsaddle,
     miso,
     mtl,
-    servant
+    servant,
+    servant-client-js
 
 executable canvas2d
   import:
