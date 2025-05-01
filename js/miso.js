@@ -27,7 +27,7 @@ function fetchFFI(url, method, body, headers, successful, errorful) {
     if (!response.ok) {
       throw new Error(response.statusText);
     }
-    return response.text();
+    return response.bytes();
   }).then(successful).catch(errorful);
 }
 function shouldSync(node) {

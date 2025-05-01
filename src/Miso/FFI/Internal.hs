@@ -2,6 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -64,12 +65,20 @@ import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as BSL
 import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
 import           Language.Javascript.JSaddle hiding (Success)
+#endif
+#ifdef WASM
+import qualified Data.ByteString.Internal as BS (create)
+import qualified Data.ByteString as BS
+import           Foreign.Ptr (Ptr)
+#else
+import           Data.Word (Word8)
 #endif
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
@@ -432,7 +441,7 @@ fetchJSON
   -> JSM ()
 fetchJSON url method maybeBody headers =
   fetchFFI
-    (eitherDecodeStrictText . fromMisoString)
+    eitherDecode
     url
     method
     maybeBody
@@ -441,7 +450,7 @@ fetchJSON url method maybeBody headers =
       <> [(ms "Accept", ms $ "application/json")]
     )
 fetchFFI
-  :: (MisoString -> Either String action)
+  :: (BSL.ByteString -> Either String action)
   -> MisoString
   -- ^ url
   -> MisoString
@@ -458,7 +467,7 @@ fetchFFI
 fetchFFI decoder url method maybeBody headers errorful successful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
-      decoder <$> fromJSValUnchecked jval >>= \case
+      decoder <$> toLazyByteString (JSUint8Array jval) >>= \case
         Left string ->
           error ("fetch: " <> string <> ": decode failure")
         Right result ->
@@ -489,4 +498,31 @@ shouldSync vnode = do
   moduleMiso <- jsg "miso"
   fromJSValUnchecked =<< do
     moduleMiso # "shouldSync" $ [vnode]
+-----------------------------------------------------------------------------
+newtype JSUint8Array = JSUint8Array JSVal
+
+#ifdef WASM
+
+foreign import javascript unsafe "$1.byteLength"
+    byteLength :: JSUint8Array -> Int
+
+foreign import javascript unsafe "(new Uint8Array(__exports.memory.buffer, $1, $2)).set($3)"
+    memorySetUint8Array :: Ptr a -> Int -> JSUint8Array -> IO ()
+
+toStrictByteString :: JSUint8Array -> JSM BS.ByteString
+toStrictByteString src_buf = liftIO $ do
+    let len = byteLength src_buf
+    case len of
+        0 -> pure BS.empty
+        _ -> BS.create len $ \ptr -> memorySetUint8Array ptr len src_buf
+
+toLazyByteString :: JSUint8Array -> JSM BSL.ByteString
+toLazyByteString = fmap BSL.fromStrict . toStrictByteString
+
+#else
+
+toLazyByteString :: JSUint8Array -> JSM BSL.ByteString
+toLazyByteString = fmap BSL.pack . fromJSValUnchecked @[Word8] . \(JSUint8Array v) -> v
+
+#endif
 -----------------------------------------------------------------------------

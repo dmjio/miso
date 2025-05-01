@@ -215,7 +215,7 @@ instance {-# OVERLAPPABLE #-} (ReflectMethod method, MimeUnrender ct a, cts' ~ (
   type ToFetch (Verb method code cts' a) = (MisoString -> JSM ()) -> (a -> JSM ()) -> JSM ()
   fetchWith Proxy options error_ success_ =
     fetchFFI
-      (mimeUnrender ctProxy . MS.fromMisoString)
+      (mimeUnrender ctProxy)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))
       (options ^. body)
@@ -254,7 +254,7 @@ instance
   type ToFetch (UVerb method contentTypes as) = (MisoString -> JSM ()) -> (Union as -> JSM ()) -> JSM ()
   fetchWith Proxy options error_ success_ =
     fetchFFI
-      (first unlines . tryParsers . mimeUnrenders . MS.fromMisoString)
+      (first unlines . tryParsers . mimeUnrenders)
       (optionsToUrl options)
       (ms $ reflectMethod (Proxy @method))
       (options ^. body)

@@ -39,7 +39,7 @@ export function fetchFFI (
         if (!response.ok) {
           throw new Error(response.statusText);
         }
-        return response.text();
+        return response.bytes();
       })
     .then(successful) /* success callback */
     .catch(errorful); /* error callback */
