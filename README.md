@@ -50,6 +50,7 @@
 - [Internals](#internals)
 - [Examples](#examples)
 - [Building examples](#building-examples)
+- [Coverage](#interacting-with-http-apis)
 - [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
 - [Benchmarks](#benchmarks)
@@ -577,6 +578,23 @@ This will compile all the examples to JavaScript into a folder named `result`.
 cd result/bin/todo-mvc.jsexe && http-sever
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
+
+## Interacting with HTTP APIs 🔌
+
+If you want to interact with an HTTP API, we recommend one of the following approaches:
+
+  1. For a simple JSON-based API, you can use Miso's `fetchJSON` function.
+
+  2. In more complex cases, you can define a [Servant](https://www.servant.dev/) API and automatically obtain client functions via `servant-client-js` (or any other `servant-client-core`-based backend).
+
+     The Fetch example ([Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs), [Demo](https://fetch.haskell-miso.org/)) demonstrates the necessary ingredients. Make sure to add the following to your `cabal.project`:
+
+     ```cabal
+     source-repository-package
+       type: git
+       location: https://github.com/amesgen/servant-client-js
+       tag: 2853fb4f26175f51ae7b9aaf0ec683c45070d06e
+     ```
 
 ## Coverage ✅
 
