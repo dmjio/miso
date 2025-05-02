@@ -50,7 +50,7 @@
 - [Internals](#internals)
 - [Examples](#examples)
 - [Building examples](#building-examples)
-- [Coverage](#interacting-with-http-apis)
+- [HTTP](#interacting-with-http-apis)
 - [Coverage](#coverage)
 - [Isomorphic](#isomorphic)
 - [Benchmarks](#benchmarks)
