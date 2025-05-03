@@ -33,6 +33,7 @@ module Miso.Types
   -- ** Functions
   , defaultApp
   , component
+  , component_
   , embed
   , embedKeyed
   , getMountPoint
@@ -143,7 +144,8 @@ data SomeComponent
    = forall model action . Eq model
   => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
--- | Used with @component@ to parameterize @App@ by @name@
+-- | A 'Component' wraps an 'App' and can be communicated with via 'componentName'
+-- when using 'notify'. It's state is accessible via 'sample'.
 data Component model action
   = Component
   { componentKey :: Maybe Key
@@ -151,13 +153,22 @@ data Component model action
   , componentApp :: App model action
   }
 -----------------------------------------------------------------------------
--- | Smart constructor for parameterizing @App@ by @name@
+-- | Smart constructor for 'Component' consutruction.
 -- Needed when calling @embed@ and @embedWith@
 component
   :: MisoString
   -> App model action
   -> Component model action
 component = Component Nothing
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Component' consutruction.
+-- This is a nameless component, which means that it is isolated and
+-- cannot be communicated with by other components via 'notify' or 'sample'.
+--
+component_
+  :: App model action
+  -> Component model action
+component_ = Component Nothing ""
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
 embed

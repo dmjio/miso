@@ -115,6 +115,17 @@ data ComponentState model action
   , componentActions    :: IORef (Seq action)
   }
 -----------------------------------------------------------------------------
+componentIds :: IORef [Int]
+{-# NOINLINE componentIds #-}
+componentIds = unsafePerformIO $ liftIO $ newIORef [ 1 .. ]
+-----------------------------------------------------------------------------
+freshComponentId :: IO MisoString
+freshComponentId = do
+  x <- atomicModifyIORef' componentIds $ \case
+    [] -> error "impossible"
+    (y:ys) -> (ys, y)
+  pure ("miso-component-id-" <> ms (show x))
+-----------------------------------------------------------------------------
 -- | componentMap
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
@@ -247,22 +258,26 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (Embed attributes (SomeComponent (Component key mount app))) snk _ _ = do
+runView prerender (Embed attributes (SomeComponent (Component key name app))) snk _ _ = do
+  compName <-
+    if null name
+    then liftIO freshComponentId
+    else pure name
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
-      vtreeRef <- initialize app (drawComponent prerender mount app) 
+      vtreeRef <- initialize app (drawComponent prerender compName app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback $ do
-      M.lookup mount <$> liftIO (readIORef componentMap) >>= \case
+      M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML key "div"
   setAttrs vcomp attributes snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  FFI.set "data-component-id" mount vcomp
+  FFI.set "data-component-id" compName vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)

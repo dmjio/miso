@@ -63,14 +63,14 @@ component2 =
 
 component3 :: Component (Bool, Model) Action
 component3 =
-    component "component-3"
+    component_
         counterApp3
             { subs = [loggerSub "component-3 sub"]
             }
 
 component4 :: Component Model Action
 component4 =
-    component "component-4"
+    component_
         counterApp4
             { subs = [loggerSub "component-4 sub"]
             }
