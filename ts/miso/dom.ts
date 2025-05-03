@@ -61,6 +61,11 @@ function diffNodes(c: VTree, n: VTree, parent: Element): void {
     populate(c, n);
   } else {
     // dmj: we replace when things just don't line up during the diff
+
+    // If we have a auto-generated component (nameless by the user), we don't replace it
+    if (n['type'] === 'vcomp' && n['data-component-id'].startsWith('miso-component-id'))
+      return;
+
     replace(c, n, parent);
   }
 }
