@@ -384,7 +384,7 @@ setBodyComponent name = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "setComponent" $ [node, component]
 -----------------------------------------------------------------------------
--- | Sets the body with data-component-id
+-- | Sets @data-component-id@ on the node given by second argument to a value given by the first argument
 setComponent :: MisoString -> JSVal -> JSM ()
 setComponent name node = do
   component <- toJSVal name
