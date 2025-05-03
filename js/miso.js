@@ -118,12 +118,10 @@ function diffNodes(c, n, parent) {
     n["domRef"] = c["domRef"];
     return;
   }
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["data-component-id"] === c["data-component-id"]) {
+  if (c["tag"] === n["tag"] && n["key"] === c["key"]) {
     n["domRef"] = c["domRef"];
     populate(c, n);
   } else {
-    if (n["type"] === "vcomp" && n["data-component-id"].startsWith("miso-component-id"))
-      return;
     replace(c, n, parent);
   }
 }
