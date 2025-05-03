@@ -299,6 +299,7 @@ if arch(wasm32)
 Call `wasm32-wasi-cabal build --allow-newer` and a `WASM` payload should be created in `dist-newstyle/` directory.
 
 ```bash
+$ wasm32-wasi-cabal update
 $ wasm32-wasi-cabal build --allow-newer
 ```
 
