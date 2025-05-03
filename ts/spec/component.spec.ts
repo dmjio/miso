@@ -241,5 +241,36 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(1);
   });
 
+  test('Should replace Component with Node', () => {
+    // populate DOM
+    var node = vnode({})
+
+    var mountCount = 0,
+      unmountCount = 0;
+    var component = vcomp({
+      mount: () => {
+        mountCount++;
+      },
+      unmount: () => {
+        unmountCount++;
+      },
+    });
+
+    diff(null, node, document.body);
+
+    // Test component was populated
+    expect(document.childNodes.length).toBe(1);
+    expect(mountCount).toBe(0);
+    expect(unmountCount).toBe(0);
+
+    // Replace component
+    diff(node, component, document.body);
+
+    // Test node is removed from DOM
+    expect(document.body.children[0].tagName).toBe('DIV');
+    expect(unmountCount).toBe(0);
+    expect(mountCount).toBe(1);
+  });
+
 
 })
