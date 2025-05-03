@@ -184,6 +184,12 @@ viewModel3 (toggle, x) =
           [ text $ "Toggle Component " <> if toggle then "4" else "5"
           ]
         ] ++ [ if toggle
+               -- dmj: N.B. if you are replacing a component w/ another component
+               -- you *must* use a key, think of it like a StableName. Failure
+               -- to do so is undefined behavior.
+               --
+               -- If you are replacing a component with anything else (e.g. 'vtext', 'vnode',
+               -- 'vcomp', null), then you don't need to worry about this.
                then
                  embedKeyed component4
                    [ onMounted (Mount "4")
