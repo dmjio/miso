@@ -241,13 +241,13 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(1);
   });
 
-  test('Should replace Component with Node', () => {
+  test('Should replace Node with Component', () => {
     // populate DOM
-    var node = vnode({})
+    let node = vnode({});
+    let mountCount = 0;
+    let unmountCount = 0;
 
-    var mountCount = 0,
-      unmountCount = 0;
-    var component = vcomp({
+    let component = vcomp({
       mount: () => {
         mountCount++;
       },
