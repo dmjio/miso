@@ -12,6 +12,7 @@ export function delegate(
       event['name'],
       function (e: Event) {
         listener(e, mount, getVTree, debug);
+        e.stopPropagation();
       },
       event['capture'],
     );
