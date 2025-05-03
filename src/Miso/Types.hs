@@ -153,7 +153,7 @@ data Component model action
   , componentApp :: App model action
   }
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Component' consutruction.
+-- | Smart constructor for 'Component' construction.
 -- Needed when calling @embed@ and @embedWith@
 component
   :: MisoString
