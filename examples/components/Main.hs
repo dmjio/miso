@@ -70,7 +70,7 @@ component3 =
 
 component4 :: Component Model Action
 component4 =
-    component_
+    component "component-4"
         counterApp4
             { subs = [loggerSub "component-4 sub"]
             }
@@ -191,15 +191,15 @@ viewModel3 (toggle, x) =
                -- If you are replacing a component with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 embedKeyed component4
+                 embed component4
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
-                   ] "key-4"
+                   ]
                else
-                 embedKeyed component5
+                 embed component5
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
-                   ] "key-5"
+                   ]
              ]
 
 counterApp4 :: App Model Action
@@ -237,7 +237,7 @@ viewModel4 x =
 
 component5 :: Component Model Action
 component5 =
-    component_
+    component "component-5"
         counterApp5
             { subs = [loggerSub "component-5 sub"]
             }

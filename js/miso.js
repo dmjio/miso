@@ -118,7 +118,13 @@ function diffNodes(c, n, parent) {
     n["domRef"] = c["domRef"];
     return;
   }
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
+  var componentIdCheck = function(n2, c2) {
+    if (n2["type"] === "vcomp" && typeof n2["data-component-id"] === "string" && !n2["data-component-id"].startsWith("miso-component-id")) {
+      return n2["data-component-id"] === c2["data-component-id"];
+    }
+    return true;
+  };
+  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
     n["domRef"] = c["domRef"];
     populate(c, n);
   } else {
