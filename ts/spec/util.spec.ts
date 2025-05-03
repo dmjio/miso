@@ -1,4 +1,4 @@
-import { callFocus, callBlur, setBodyComponent } from '../miso/util';
+import { callFocus, callBlur, setComponent } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -17,8 +17,8 @@ afterEach(() => {
 /* tests */
 describe ('Utils tests', () => {
 
-  test('Should set body[data-component-id] via setBodyComponent()', () => {
-    setBodyComponent('component-one');
+  test('Should set body[data-component-id] via setComponent()', () => {
+    setComponent(document.body, 'component-one');
     expect(document.body.getAttribute('data-component-id')).toEqual(
       'component-one',
     );
