@@ -119,7 +119,7 @@ function diffNodes(c, n, parent) {
     return;
   }
   var componentIdCheck = function(n2, c2) {
-    if (n2["type"] === "vcomp" && typeof n2["data-component-id"] === "string" && !n2["data-component-id"].startsWith("miso-component-id")) {
+    if (n2["type"] === "vcomp" && !n2["data-component-id"].startsWith("miso-component-id")) {
       return n2["data-component-id"] === c2["data-component-id"];
     }
     return true;
