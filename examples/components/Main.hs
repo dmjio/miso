@@ -185,10 +185,11 @@ viewModel3 (toggle, x) =
           ]
         ] ++ [ if toggle
                -- dmj: N.B. if you are replacing a component w/ another component
-               -- you *must* use a key, think of it like a StableName. Failure
-               -- to do so is undefined behavior.
+               -- when using the 'component_' function you *must* use 'embedKeyed'
+               -- , think of it like a StableName. Failure to do so is undefined behavior
+               -- but it will probably result in the component not actually getting replaced.
                --
-               -- If you are replacing a component with anything else (e.g. 'vtext', 'vnode',
+               -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
                  embed component4
