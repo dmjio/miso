@@ -242,7 +242,6 @@ unmount mountCallback app@App {..} cs@ComponentState {..} = do
   freeFunction mountCallback
   liftIO (mapM_ killThread componentSubThreads)
   drain app cs
-  liftIO $ modifyIORef' componentMap (M.delete componentName)
   liftIO $ atomicModifyIORef' componentMap $ \m -> (M.delete componentName m, ())
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
