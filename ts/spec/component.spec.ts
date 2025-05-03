@@ -113,6 +113,32 @@ describe ('Component tests', () => {
     expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
+  test('Should replace Component with Component', () => {
+    // populate DOM
+    var comp1 = vcomp({ key : 'a' });
+    diff(null, comp1, document.body);
+
+    // Test node was populated
+    expect(document.body.childNodes.length).toBe(1);
+
+    // Replace node
+    var mountCount = 0;
+    var comp2 = vcomp({
+     'data-component-id': 'vcomp-id',
+      key : 'b',
+      mount: () => {
+        mountCount++;
+      },
+    });
+    diff(comp1, comp2, document.body);
+
+    // Node is removed from DOM, Component is on the DOM
+    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
+      'vcomp-id',
+    );
+    expect(mountCount).toBe(1);
+  });
+
   test('Should replace Node with Component', () => {
     // populate DOM
     var node = vnode({});
