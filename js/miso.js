@@ -15,8 +15,8 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
-function setBodyComponent(componentId) {
-  document.body.setAttribute("data-component-id", componentId);
+function setComponent(node, componentId) {
+  node.setAttribute("data-component-id", componentId);
 }
 function fetchJSON(url, method, body, headers, successful, errorful) {
   var options = { method, headers };
@@ -118,7 +118,13 @@ function diffNodes(c, n, parent) {
     n["domRef"] = c["domRef"];
     return;
   }
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["data-component-id"] === c["data-component-id"]) {
+  var componentIdCheck = function(n2, c2) {
+    if (n2["type"] === "vcomp" && !n2["data-component-id"].startsWith("miso-component-id")) {
+      return n2["data-component-id"] === c2["data-component-id"];
+    }
+    return true;
+  };
+  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
     n["domRef"] = c["domRef"];
     populate(c, n);
   } else {
@@ -369,6 +375,7 @@ function delegate(mount, events, getVTree, debug) {
   for (const event of events) {
     mount.addEventListener(event["name"], function(e) {
       listener(e, mount, getVTree, debug);
+      e.stopPropagation();
     }, event["capture"]);
   }
 }
@@ -679,4 +686,4 @@ globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["setBodyComponent"] = setBodyComponent;
+globalThis["miso"]["setComponent"] = setComponent;
