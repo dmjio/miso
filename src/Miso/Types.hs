@@ -161,7 +161,7 @@ component
   -> Component model action
 component = Component Nothing
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Component' consutruction.
+-- | Smart constructor for 'Component' construction.
 -- This is a nameless component, which means that it is isolated and
 -- cannot be communicated with by other components via 'notify' or 'sample'.
 --
