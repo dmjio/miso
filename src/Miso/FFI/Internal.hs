@@ -56,6 +56,7 @@ module Miso.FFI.Internal
    , addStyleSheet
    , fetchJSON
    , shouldSync
+   , setComponent
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -379,8 +380,16 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 setBodyComponent :: MisoString -> JSM ()
 setBodyComponent name = do
   component <- toJSVal name
+  node <- jsg "document" ! "body"
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "setBodyComponent" $ [component]
+  void $ moduleMiso # "setComponent" $ [node, component]
+-----------------------------------------------------------------------------
+-- | Sets the body with data-component-id
+setComponent :: MisoString -> JSVal -> JSM ()
+setComponent name node = do
+  component <- toJSVal name
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "setComponent" $ [node, component]
 -----------------------------------------------------------------------------
 -- | Appends a 'style_' element containing CSS to 'head_'
 --

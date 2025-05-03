@@ -17,8 +17,8 @@ export function callBlur(id: string, delay: number): void {
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
 
-export function setBodyComponent(componentId: string): void {
-  document.body.setAttribute('data-component-id', componentId);
+export function setComponent(node: Element, componentId: string): void {
+  node.setAttribute('data-component-id', componentId);
 }
 
 export function fetchJSON (
