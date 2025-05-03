@@ -118,7 +118,7 @@ function diffNodes(c, n, parent) {
     n["domRef"] = c["domRef"];
     return;
   }
-  if (c["tag"] === n["tag"] && n["key"] === c["key"]) {
+  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
     n["domRef"] = c["domRef"];
     populate(c, n);
   } else {
