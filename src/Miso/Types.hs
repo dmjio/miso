@@ -145,7 +145,7 @@ data SomeComponent
   => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | A 'Component' wraps an 'App' and can be communicated with via 'componentName'
--- when using 'notify'. It's state is accessible via 'sample'.
+-- when using 'notify'. Its state is accessible via 'sample'.
 data Component model action
   = Component
   { componentKey :: Maybe Key
