@@ -110,7 +110,7 @@ startApp app@App {..} = withJS $
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- mountElement name
-    diff mount Nothing (Just vtree)
+    diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------

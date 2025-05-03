@@ -84,7 +84,7 @@ initialize App {..} getView = do
         newVTree <- runView DontPrerender (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
-        diff componentMount (Just oldVTree) (Just newVTree)
+        diff (Just oldVTree) (Just newVTree) componentMount
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomicWriteIORef componentModel newModel
@@ -212,7 +212,7 @@ drawComponent
 drawComponent prerender name App {..} snk = do
   vtree <- runView prerender (view model) snk logLevel events
   mountElement <- FFI.getComponent name
-  when (prerender == DontPrerender) $ diff mountElement Nothing (Just vtree)
+  when (prerender == DontPrerender) (diff Nothing (Just vtree) mountElement)
   ref <- liftIO (newIORef vtree)
   pure (name, mountElement, ref)
 -----------------------------------------------------------------------------
