@@ -369,6 +369,7 @@ function delegate(mount, events, getVTree, debug) {
   for (const event of events) {
     mount.addEventListener(event["name"], function(e) {
       listener(e, mount, getVTree, debug);
+      e.stopPropagation();
     }, event["capture"]);
   }
 }

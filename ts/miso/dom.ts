@@ -16,7 +16,7 @@ export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
 }
 // replace everything function
 function replace(c: VTree, n: VTree, parent: Element): void {
-  // step1 : prepare to delete, unmount things
+  // step1 : prepare to delete, pre-unmount call things
   callBeforeDestroyedRecursive(c);
   // ^ this will unmount sub components before we replace the child
   // and will recursively call hooks on nodes
