@@ -1,12 +1,13 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE DeriveFunctor             #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DataKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -182,10 +183,10 @@ embed comp attrs = Embed attrs (SomeComponent comp)
 embedKeyed
   :: Eq model
   => Component model action
-  -> Key
   -> [Attribute b]
+  -> Key
   -> View b
-embedKeyed comp key attrs
+embedKeyed comp attrs key
   = Embed attrs
   $ SomeComponent comp { componentKey = Just key }
 -----------------------------------------------------------------------------
@@ -230,6 +231,7 @@ instance ToJSVal NS where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
+  deriving (Show, Eq, IsString)
 -----------------------------------------------------------------------------
 -- | ToJSVal instance for Key
 instance ToJSVal Key where
