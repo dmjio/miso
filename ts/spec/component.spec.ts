@@ -115,7 +115,7 @@ describe ('Component tests', () => {
 
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = vcomp({});
+    var node = vcomp({ key: 'a' });
     diff(null, node, document.body);
 
     // Test node was populated
@@ -125,6 +125,7 @@ describe ('Component tests', () => {
     var mountCount = 0;
     var compNode = vcomp({
      'data-component-id': 'vcomp-id',
+      key: 'b',
       mount: () => {
         mountCount++;
       },
