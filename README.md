@@ -265,6 +265,13 @@ $ nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
 > [!NOTE]
 > This will put `wasm32-wasi-cabal` in your `$PATH`, along with `wasm32-wasi-ghc`. Since the WASM backend is relatively new, the ecosystem is not entirely patched to support it. Therefore, we will need to use patched packages from time to time.
 
+> [!TIP]
+> Instead of using a `nix shell`, it's possible to install the GHC WASM Flake into your environment so it will always be present on `$PATH`
+
+```bash
+$ nix profile install 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org'
+```
+
 Update your `cabal.project` to the following
 
 - `cabal.project`
