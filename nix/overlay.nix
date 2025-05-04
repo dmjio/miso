@@ -11,8 +11,8 @@ self: super: {
     name = "coverage";
     src = ../coverage;
     buildCommand = ''
-      mkdir -p $out/report
-      cp -rv $src $out/report
+      mkdir -p $out
+      cp -v $src/* $out
     '';
   };
 
