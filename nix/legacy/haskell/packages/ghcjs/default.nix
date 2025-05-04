@@ -41,5 +41,5 @@ self: super:
       '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
-  miso = doHaddock (self.callCabal2nix "miso" source.miso {});
+  miso = self.callCabal2nix "miso" source.miso {};
 }
