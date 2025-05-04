@@ -16,6 +16,17 @@ self: super: {
     '';
   };
 
+  # dmj: Ensure you call 'nix-shell --run 'cabal haddock-project'' first
+  # this happens in CI
+  haddocks = self.stdenv.mkDerivation {
+    name = "haddocks";
+    src = ../haddocks;
+    buildCommand = ''
+      mkdir -p $out
+      cp -rv $src/* $out
+    '';
+  };
+
   # haskell stuff
   haskell = super.haskell // {
     packages = super.haskell.packages // {

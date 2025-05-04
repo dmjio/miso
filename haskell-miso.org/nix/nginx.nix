@@ -50,7 +50,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${miso-ghcjs.doc}/share/doc/miso-1.9.0.0/html";
+            root = haddocks;
            };
          };
        };

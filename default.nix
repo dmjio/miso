@@ -25,12 +25,12 @@ with pkgs.haskell.lib;
   miso-ghcjs = legacyPkgs.haskell.packages.ghcjs.miso;
   miso-ghcjs-prod = legacyPkgs.haskell.packages.ghcjs86.miso-prod;
   inherit (legacyPkgs.haskell.packages.ghcjs) miso-examples sample-app-js;
-  
-  # x86
+
+  # miso x86
   miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
   miso-ghc-9122 = pkgs.haskell.packages.ghc9122.miso;
 
-  # x86
+  # miso-examples x86
   miso-examples-ghc = legacyPkgs.haskell.packages.ghc865.miso-examples;
   miso-examples-ghc-9122 = pkgs.haskell.packages.ghc9122.miso-examples;
 
@@ -71,6 +71,10 @@ with pkgs.haskell.lib;
   # code coverage
   inherit (pkgs)
     coverage;
+
+  # haddocks
+  inherit (pkgs)
+    haddocks;
 
   # ci
   inherit (legacyPkgs)
