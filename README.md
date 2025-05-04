@@ -293,7 +293,7 @@ if arch(wasm32)
   source-repository-package
     type: git
     location: https://github.com/amesgen/splitmix
-    tag: 5f5b766d97dc735ac228215d240a3bb90bc2ff75
+    tag: cea9e31bdd849eb0c17611bb99e33d590e126164
 ```
 
 Call `wasm32-wasi-cabal build --allow-newer` and a `WASM` payload should be created in `dist-newstyle/` directory.
