@@ -52,8 +52,8 @@ in
   miso-plane = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-plane";
-    rev = "cbeb74e";
-    sha256 = "sha256-QhoeeTVO+zWwgUmLXvpd3mgtLa5+G36Eryxdx/ofgp4=";
+    rev = "b49b6bf0fae4a4cae34255bf9dc7fb1d21dfb59e";
+    hash = "sha256-rE8aKReRE6cbJJvq2jjlYeYnHjf/kiCkBTzaAXmMRuo=";
   };
   hs2048 = fetchFromGitHub {
     owner = "dmjio";
@@ -64,7 +64,7 @@ in
   snake = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-snake";
-    rev = "d26c0a3";
-    sha256 = "sha256-jD1kBqOMFrhxt+yUcXLTLL+qv71X4/uOI4qdkpO6nGA=";
+    rev = "b47396f61907ed95ee578c917b84e7ee2909134e";
+    sha256 = "sha256-q4DviMlqz31m8uqAO5HbdM6JyAyC9RJbn7gU+K+K+a8=";
   };
 }

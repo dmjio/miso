@@ -78,7 +78,7 @@ getGithubAPI = do
     c = Servant.Client.JS.client (Proxy @GithubAPI)
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
-updateModel FetchGitHub = scheduleIO $ getGithubAPI <&> \case
+updateModel FetchGitHub = io_ $ getGithubAPI <&> \case
   Right r -> SetGitHub r
   Left e  -> ErrorHandler $ ms $ show e
 updateModel (SetGitHub apiInfo) =

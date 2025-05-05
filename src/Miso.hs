@@ -1,7 +1,8 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP             #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -12,17 +13,30 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso
-  ( -- * Miso
-    -- ** Combinators
+  ( -- * API
+    -- ** Entry
     miso
   , (🍜)
   , startApp
     -- ** Sink
   , sink
+  , Sink
     -- ** Sampling
   , sample
     -- ** Message Passing
   , notify
+    -- ** Subscription
+  , start
+  , start_
+  , stop
+  , Sub
+  , SubName
+  -- ** Effect
+  , issue
+  , batch
+  , io
+  , io_
+  , for
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -39,7 +53,7 @@ module Miso
   , module Miso.Run
     -- * Exception
   , module Miso.Exception
-    -- * Subs
+    -- * Subscriptions
   , module Miso.Subscription
     -- * Storage
   , module Miso.Storage
@@ -49,10 +63,19 @@ module Miso
   , module Miso.Util
     -- * FFI
   , module Miso.FFI
+    -- * State management
+  , ask
+  , modify
+  , modify'
+  , get
+  , gets
+  , put
+  , tell
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
 import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH

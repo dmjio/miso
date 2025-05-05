@@ -30,14 +30,14 @@ import Miso.String
 -- | Captures window coordinates changes as they occur and writes them to
 -- an event sink
 windowCoordsSub :: ((Int, Int) -> action) -> Sub action
-windowCoordsSub f = \sink -> do
-  sink . f =<< (,) <$> FFI.windowInnerHeight <*> FFI.windowInnerWidth
+windowCoordsSub f = \write -> do
+  write . f =<< (,) <$> FFI.windowInnerHeight <*> FFI.windowInnerWidth
   FFI.windowAddEventListener "resize" $
     \windowEvent -> do
       target <- getProp "target" (Object windowEvent)
       Just w <- fromJSVal =<< getProp "innerWidth" (Object target)
       Just h <- fromJSVal =<< getProp "innerHeight" (Object target)
-      sink $ f (h, w)
+      write $ f (h, w)
 -----------------------------------------------------------------------------
 -- | @windowSub eventName decoder toAction@ provides a subscription
 -- to listen to window level events.
@@ -47,7 +47,7 @@ windowSub = windowSubWithOptions defaultOptions
 -- | @windowSubWithOptions options eventName decoder toAction@ provides a
 -- subscription to listen to window level events.
 windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> Sub action
-windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink ->
+windowSubWithOptions Options{..} eventName Decoder{..} toAction = \write ->
   FFI.windowAddEventListener eventName $ \e -> do
       decodeAtVal <- toJSVal decodeAt
       Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
@@ -56,7 +56,7 @@ windowSubWithOptions Options{..} eventName Decoder{..} toAction = \sink ->
         Right r -> do
           when stopPropagation (FFI.eventStopPropagation e)
           when preventDefault (FFI.eventPreventDefault e)
-          sink (toAction r)
+          write (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@
 -- A 'Sub' to handle @PointerEvent@s on window

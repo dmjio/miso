@@ -96,7 +96,7 @@ updateModel ref GetTime = do
     withStats stats $ do
       rotateCube
       renderScene
-  scheduleIO (SetTime <$> now)
+  io_ (SetTime <$> now)
 updateModel _ (SetTime m) = do
   noEff m
   issue GetTime

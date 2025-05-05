@@ -12,45 +12,48 @@
 --
 -- This module defines `Effect`, `Sub` and `Sink` types, which are used to define
 -- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
+--
 ----------------------------------------------------------------------------
 module Miso.Effect
   ( -- ** Effect
     -- *** Types
     Effect
   , Sub
+  , SubName
   , Sink
     -- *** Combinators
-  , effectSub
+  , noEff
+  , (<#)
+  , (#>)
+  , batch
+  , io
+  , io_
+  , for
+  , issue
+  , sink
+  , mapSub
+  -- * Internal
+  , runEffect
+  -- * Deprecated
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
   , scheduleSub
-  , mapSub
-  , noEff
-  , (<#)
-  , (#>)
+  , effectSub
   , batchEff
-  , io
-  , issue
-  , withSink
-  -- * Internal
-  , runEffect
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (forM_)
 #if __GLASGOW_HASKELL__ <= 881
 import           Control.Monad.Fail (MonadFail, fail)
 import qualified Control.Monad.Fail as Fail
 #endif
-import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.State.Strict (StateT(StateT), execStateT)
-import           Control.Monad.State (MonadState, put)
-import           Control.Monad.Trans.Writer.Strict (Writer, runWriter)
-import           Control.Monad.Writer (tell, MonadWriter)
 import           Data.Foldable (for_)
+import           Control.Monad.RWS ( RWS, put, tell, execRWS
+                                   , MonadState, MonadReader, MonadWriter
+                                   )
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (JSM, consoleError)
-import           Miso.String (ms)
+import           Miso.String (ms, MisoString)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
 --
@@ -58,22 +61,18 @@ import           Miso.String (ms)
 -- back to the 'Miso.Types.update' function.
 type Sub action = Sink action -> JSM ()
 -----------------------------------------------------------------------------
+-- | SubName
+-- The name of a 'Sub' (e.g. "websocket")
+--
+type SubName = MisoString
+-----------------------------------------------------------------------------
 -- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
 type Sink action = action -> JSM ()
------------------------------------------------------------------------------
--- | Turn a subscription that consumes actions of type @a@ into a subscription
--- that consumes actions of type @b@ using the supplied function of type @a -> b@.
-mapSub :: (a -> b) -> Sub a -> Sub b
-mapSub f sub = \g -> sub (g . f)
------------------------------------------------------------------------------
--- | Smart constructor for an 'Effect' with no actions.
-noEff :: model -> Effect model action
-noEff = put
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
 (<#) :: model -> JSM action -> Effect model action
-(<#) m action = put m >> tell [ \sink -> sink =<< action ]
+(<#) m action = put m >> tell [ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
@@ -81,23 +80,12 @@ infixr 0 #>
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
-batchEff :: model -> [JSM action] -> Effect model action
-batchEff model actions = put model >> do
-  forM_ actions $ \action ->
-    tell [ \sink -> sink =<< action ]
------------------------------------------------------------------------------
--- | Like '<#' but schedules a subscription which is an IO computation which has
--- access to a 'Sink' which can be used to asynchronously dispatch actions to
--- the 'Miso.Types.update' function.
---
--- A use-case is scheduling an IO computation which creates a 3rd-party JS
--- widget which has an associated callback. The callback can then call the sink
--- to turn events into actions. To do this without accessing a sink requires
--- going via a @'Sub'scription@ which introduces a leaky-abstraction.
-effectSub :: model -> Sub action -> Effect model action
-effectSub model sub = do
-  put model
-  tell [sub]
+batch :: [JSM action] -> Effect model action
+batch actions
+  = sequence_
+  [ tell [ \f -> f =<< action ]
+  | action <- actions
+  ]
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
@@ -136,8 +124,20 @@ effectSub model sub = do
 type Effect model action = EffectCore model action ()
 -----------------------------------------------------------------------------
 -- | The EffectCore Monad, underlies @Effect@
-newtype EffectCore model action a = EffectCore (StateT model (Writer [Sub action]) a)
-  deriving (Functor, Applicative, Monad, MonadState model, MonadWriter [Sub action])
+type ComponentName = MisoString
+-----------------------------------------------------------------------------
+-- | The EffectCore Monad, underlies @Effect@
+newtype EffectCore model action a
+  = EffectCore
+  { runEffectCore :: RWS ComponentName [Sink action -> JSM ()] model a
+  } deriving
+    ( Functor
+    , Applicative
+    , Monad
+    , MonadState model
+    , MonadWriter [Sink action -> JSM ()]
+    , MonadReader ComponentName
+    )
 -----------------------------------------------------------------------------
 -- | @MonadFail@ instance for @EffectCore@
 instance MonadFail (EffectCore model action) where
@@ -151,51 +151,51 @@ instance MonadFail (EffectCore model action) where
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an 'Effect'
 runEffect
-    :: model
-    -> Effect model action
-    -> (model, [Sub action])
-runEffect m (EffectCore action) = runWriter (execStateT action m)
+    :: Effect model action
+    -> MisoString
+    -> model
+    -> (model, [Sink action -> JSM ()])
+runEffect = execRWS . runEffectCore
+-----------------------------------------------------------------------------
+-- | Turn a 'Sub' that consumes actions of type @a@ into a subscription
+-- that consumes actions of type @b@ using the supplied function of type @a -> b@.
+mapSub :: (a -> b) -> Sub a -> Sub b
+mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-scheduleIO :: JSM action -> Effect model action
-scheduleIO action = scheduleSub (\sink -> action >>= sink)
+io_ :: JSM action -> Effect model action
+io_ action = sink (action >>=)
 -----------------------------------------------------------------------------
--- | Like 'scheduleIO' but doesn't cause an action to be dispatched to
+-- | Like 'io' but doesn't cause an action to be dispatched to
 -- the @update@ function.
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-scheduleIO_ :: JSM () -> Effect model action
-scheduleIO_ action = scheduleSub (\_ -> action)
+io :: JSM () -> Effect model action
+io action = sink (\_ -> action)
 -----------------------------------------------------------------------------
--- | Like 'scheduleIO_ but generalized to any instance of 'Foldable'
+-- | Like 'io' but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling IO computations that return a `Maybe` value
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
-scheduleIOFor_ action = scheduleSub $ \sink -> action >>= flip for_ sink
------------------------------------------------------------------------------
--- | Like 'scheduleIO' but schedules a subscription which is an IO
--- computation that has access to a 'Sink' which can be used to
--- asynchronously dispatch actions to the @update@ function.
 --
--- A use-case is scheduling an IO computation which creates a
--- 3rd-party JS widget which has an associated callback. The callback
--- can then call the sink to turn events into actions. To do this
--- without accessing a sink requires going via a @'Sub'scription@
--- which introduces a leaky-abstraction.
-scheduleSub :: Sub action -> Effect model action
-scheduleSub sub = EffectCore $ lift $ tell [ sub ]
+for :: Foldable f => JSM (f action) -> Effect model action
+for actions = sink $ \write -> actions >>= flip for_ write
 -----------------------------------------------------------------------------
 -- | 'withSink' allows users to access the sink of the 'Component' or top-level
 -- 'App' in their application. This is useful for introducing I/O into the system.
 --
+-- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
+-- widget which has an associated callback. The callback can then call the sink
+-- to turn events into actions. To do this without accessing a sink requires
+-- going via a @'Sub'scription@ which introduces a leaky-abstraction.
+--
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
-withSink :: (Sink action -> JSM ()) -> Effect model action
-withSink f = tell [ f ]
+sink :: (Sink action -> JSM ()) -> Effect model action
+sink f = tell [ f ]
 -----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --
@@ -207,18 +207,35 @@ withSink f = tell [ f ]
 --
 -- Used to issue new @action@
 issue :: action -> Effect model action
-issue action = tell [ \sink -> sink action ]
+issue action = tell [ \f -> f action ]
 -----------------------------------------------------------------------------
--- | A shorter synonym for @scheduleIO_@
---
--- > update :: Action -> Effect Model Action ()
--- > update = \case
--- >   HelloWorld -> io (consoleLog "Hello World")
---
--- @since 1.9.0.0
---
--- This is handy for scheduling IO computations where you don't care
--- about their results or when they complete.
-io :: JSM () -> Effect model action
-io = scheduleIO_
+{-# DEPRECATED scheduleIO "Please use 'io_' instead" #-}
+scheduleIO :: JSM action -> Effect model action
+scheduleIO = io_
+-----------------------------------------------------------------------------
+{-# DEPRECATED scheduleIO_ "Please use 'io' instead" #-}
+scheduleIO_ :: JSM () -> Effect model action
+scheduleIO_ = io
+-----------------------------------------------------------------------------
+{-# DEPRECATED scheduleIOFor_ "Please use 'for' instead" #-}
+scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
+scheduleIOFor_ = for
+-----------------------------------------------------------------------------
+{-# DEPRECATED scheduleSub "Please use 'sink' instead" #-}
+scheduleSub :: (Sink action -> JSM ()) -> Effect model action
+scheduleSub = sink
+-----------------------------------------------------------------------------
+{-# DEPRECATED effectSub "Please use 'put' and 'sink' instead " #-}
+effectSub :: model -> (Sink action -> JSM ()) -> Effect model action
+effectSub m s = put m >> sink s
+-----------------------------------------------------------------------------
+{-# DEPRECATED noEff "Please use 'put' instead " #-}
+noEff :: model -> Effect model action
+noEff = put
+-----------------------------------------------------------------------------
+{-# DEPRECATED batchEff "Please use 'put' and 'batch' instead " #-}
+batchEff :: model -> [JSM action] -> Effect model action
+batchEff model actions = do
+  put model
+  batch actions
 -----------------------------------------------------------------------------

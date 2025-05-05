@@ -93,7 +93,6 @@ module Miso.Html.Property
    , seamless_
    , srcdoc_
    , reversed_
-   , start_
    , align_
    , colspan_
    , rowspan_
@@ -388,10 +387,6 @@ srcdoc_            = textProp "srcdoc"
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/reversed>
 reversed_ ::  MisoString -> Attribute action
 reversed_          = textProp "reversed"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/start>
-start_ ::  MisoString -> Attribute action
-start_             = textProp "start"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/align>
 align_ ::  MisoString -> Attribute action
