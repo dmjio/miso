@@ -255,7 +255,7 @@ unmount
 unmount mountCallback app@App {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
-  liftIO $ mapM_ killThread =<< M.elems <$> liftIO (readIORef componentSubThreads)
+  liftIO $ mapM_ killThread =<< readIORef componentSubThreads
   drain app cs
   liftIO $ atomicModifyIORef' componentMap $ \m -> (M.delete componentName m, ())
 -----------------------------------------------------------------------------
