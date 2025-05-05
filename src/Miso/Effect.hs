@@ -31,6 +31,7 @@ module Miso.Effect
   , for
   , issue
   , sink
+  , mapSub
   -- * Internal
   , runEffect
   -- * Deprecated
@@ -156,6 +157,11 @@ runEffect
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS . runEffectCore
 -----------------------------------------------------------------------------
+-- | Turn a 'Sub' that consumes actions of type @a@ into a subscription
+-- that consumes actions of type @b@ using the supplied function of type @a -> b@.
+mapSub :: (a -> b) -> Sub a -> Sub b
+mapSub f sub = \g -> sub (g . f)
+-----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
 -- Note that multiple IO action can be scheduled using
@@ -203,11 +209,11 @@ sink f = tell [ f ]
 issue :: action -> Effect model action
 issue action = tell [ \f -> f action ]
 -----------------------------------------------------------------------------
-{-# DEPRECATED scheduleIO "Please use io instead" #-}
+{-# DEPRECATED scheduleIO "Please use 'io_' instead" #-}
 scheduleIO :: JSM action -> Effect model action
 scheduleIO = io_
 -----------------------------------------------------------------------------
-{-# DEPRECATED scheduleIO_ "Please use 'io_' instead" #-}
+{-# DEPRECATED scheduleIO_ "Please use 'io' instead" #-}
 scheduleIO_ :: JSM () -> Effect model action
 scheduleIO_ = io
 -----------------------------------------------------------------------------
@@ -215,7 +221,7 @@ scheduleIO_ = io
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
 scheduleIOFor_ = for
 -----------------------------------------------------------------------------
-{-# DEPRECATED scheduleSub "Please use 'sink- instead" #-}
+{-# DEPRECATED scheduleSub "Please use 'sink' instead" #-}
 scheduleSub :: (Sink action -> JSM ()) -> Effect model action
 scheduleSub = sink
 -----------------------------------------------------------------------------
@@ -223,7 +229,7 @@ scheduleSub = sink
 effectSub :: model -> (Sink action -> JSM ()) -> Effect model action
 effectSub m s = put m >> sink s
 -----------------------------------------------------------------------------
-{-# DEPRECATED noEff "Please use 'put' and 'sink' instead " #-}
+{-# DEPRECATED noEff "Please use 'put' instead " #-}
 noEff :: model -> Effect model action
 noEff = put
 -----------------------------------------------------------------------------
