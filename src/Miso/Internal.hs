@@ -6,7 +6,6 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Internal
@@ -17,19 +16,23 @@
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
 module Miso.Internal
-  ( initialize
+  ( -- * Internal functions
+    initialize
   , componentMap
-  , sink
   , notify
   , runView
   , sample
   , renderStyles
   , Prerender(..)
+  -- * Subscription
+  , start
+  , stop
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (throwIO)
 import           Control.Concurrent (ThreadId, killThread)
 import           Control.Monad (forM, forM_, when, void)
+import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import           Data.Foldable (toList)
@@ -39,7 +42,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
-import           Language.Javascript.JSaddle
+import           Language.Javascript.JSaddle hiding (Sync)
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -55,7 +58,7 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 import           Miso.Event (Events)
-import           Miso.Effect (Sink, Effect, runEffect)
+import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
@@ -71,13 +74,18 @@ initialize App {..} getView = do
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
-  componentSubThreads <- forM subs $ \sub -> FFI.forkJSM (sub componentSink)
   (componentName, componentMount, componentVTree) <- getView componentSink
+  componentSubThreads <- liftIO (newIORef M.empty)
+  forM_ subs $ \sub -> do
+    threadId <- FFI.forkJSM (sub componentSink)
+    subName <- liftIO freshSubId
+    liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
+      (M.insert subName threadId m, ())
   componentModel <- liftIO (newIORef model)
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update componentSink (toList as) oldModel
+      newModel <- foldEffects update Async componentName componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -107,13 +115,24 @@ data Prerender
 data ComponentState model action
   = ComponentState
   { componentName       :: MisoString
-  , componentSubThreads :: [ThreadId]
+  , componentSubThreads :: IORef (Map MisoString ThreadId)
   , componentMount      :: JSVal
   , componentVTree      :: IORef VTree
   , componentSink       :: action -> JSM ()
   , componentModel      :: IORef model
   , componentActions    :: IORef (Seq action)
   }
+-----------------------------------------------------------------------------
+subIds :: IORef [Int]
+{-# NOINLINE subIds #-}
+subIds = unsafePerformIO $ liftIO $ newIORef [ 1 .. ]
+-----------------------------------------------------------------------------
+freshSubId :: IO MisoString
+freshSubId = do
+  x <- atomicModifyIORef' subIds $ \case
+    [] -> error "impossible"
+    (y:ys) -> (ys, y)
+  pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
 componentIds :: IORef [Int]
 {-# NOINLINE componentIds #-}
@@ -124,7 +143,7 @@ freshComponentId = do
   x <- atomicModifyIORef' componentIds $ \case
     [] -> error "impossible"
     (y:ys) -> (ys, y)
-  pure ("miso-component-id-" <> ms (show x))
+  pure ("miso-component-id-" <> ms x)
 -----------------------------------------------------------------------------
 -- | componentMap
 --
@@ -158,47 +177,42 @@ notify
   :: Component model action
   -> action
   -> JSM ()
-notify (Component _ name _) action = io
-  where
-    io = do
-      componentStateMap <- liftIO (readIORef componentMap)
-      forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
-        componentSink action
+notify (Component _ name _) action = do
+  componentStateMap <- liftIO (readIORef componentMap)
+  forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
+    componentSink action
+-----------------------------------------------------------------------------
+-- | Sychronicity
+--
+-- Data type to indicate if effects should be handled asynchronously
+-- or synchronously.
+--
+data Synchronicity
+  = Async
+  | Sync
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+syncWith :: Synchronicity -> JSM () -> JSM ()
+syncWith Sync  x = x
+syncWith Async x = void (FFI.forkJSM x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
   :: (action -> Effect model action)
+  -> Synchronicity
+  -> MisoString
   -> Sink action
   -> [action]
   -> model
   -> JSM model
-foldEffects _ _ [] m = pure m
-foldEffects update snk (e:es) o =
-  case runEffect o (update e) of
+foldEffects _ _ _ _ [] m = pure m
+foldEffects update synchronicity name snk (e:es) o =
+  case runEffect (update e) name o of
     (n, subs) -> do
-      forM_ subs $ \sub ->
-        sub snk `catch` (void . exception)
-      foldEffects update snk es n
------------------------------------------------------------------------------
--- | The sink function gives access to an @App@
--- @Sink@. This is use for third-party integration, or for
--- long-running @IO@ operations. Use at your own risk.
---
--- If the @Component@ or is not mounted, it does not exist
--- in the global component map, and will therefore be a no-op.
--- This is a backdoor function, caveat emptor.
---
--- It is recommended to use the @mail@ or @notify@ functions by default
--- when message passing with @App@ and @Component@
---
-sink
-  :: MisoString
-  -> App model action
-  -> Sink action
-sink name _ = \a ->
-  M.lookup name <$> liftIO (readIORef componentMap) >>= \case
-    Just ComponentState {..} -> componentSink a
-    Nothing -> pure ()
+      forM_ subs $ \sub -> do
+        syncWith synchronicity $
+          sub snk `catch` (void . exception)
+      foldEffects update synchronicity name snk es n
 --------------------------------------------------
 -- | Internally used for runView and startApp
 -- Initial draw helper
@@ -227,7 +241,7 @@ drain app@App{..} cs@ComponentState {..} = do
     where
       go as = do
         x <- liftIO (readIORef componentModel)
-        y <- foldEffects update componentSink (toList as) x
+        y <- foldEffects update Sync componentName componentSink (toList as) x
         liftIO (atomicWriteIORef componentModel y)
         drain app cs
 -----------------------------------------------------------------------------
@@ -240,7 +254,7 @@ unmount
 unmount mountCallback app@App {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
-  liftIO (mapM_ killThread componentSubThreads)
+  liftIO $ mapM_ killThread =<< M.elems <$> liftIO (readIORef componentSubThreads)
   drain app cs
   liftIO $ atomicModifyIORef' componentMap $ \m -> (M.delete componentName m, ())
 -----------------------------------------------------------------------------
@@ -386,4 +400,27 @@ renderStyles styles =
   forM_ styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
+-----------------------------------------------------------------------------
+start :: SubName -> Sub action -> Effect action model
+start subName sub = do
+  compName <- ask
+  io_ $ do
+    M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+      Nothing -> pure ()
+      Just ComponentState {..} -> do
+        tid <- FFI.forkJSM (sub componentSink)
+        liftIO $ do
+          atomicModifyIORef' componentSubThreads $ \m ->
+            (M.insert subName tid m, ())
+-----------------------------------------------------------------------------
+stop :: SubName -> Effect action model
+stop subName = do
+  compName <- ask
+  io_ $ do
+    M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+      Nothing -> pure ()
+      Just ComponentState {..} -> do
+        liftIO $ do
+          atomicModifyIORef' componentSubThreads $ \m ->
+            (M.delete subName m, ())
 -----------------------------------------------------------------------------

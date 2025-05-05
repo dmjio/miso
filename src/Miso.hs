@@ -1,7 +1,8 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP             #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso
@@ -12,17 +13,29 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso
-  ( -- * Miso
-    -- ** Combinators
+  ( -- * API
+    -- ** Entry
     miso
   , (🍜)
   , startApp
     -- ** Sink
   , sink
+  , Sink
     -- ** Sampling
   , sample
     -- ** Message Passing
   , notify
+    -- ** Subscription
+  , start
+  , stop
+  , Sub
+  , SubName
+    -- ** Effect
+  , issue
+  , batch
+  , io
+  , io_
+  , for
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -39,7 +52,6 @@ module Miso
   , module Miso.Run
     -- * Exception
   , module Miso.Exception
-    -- * Subs
   , module Miso.Subscription
     -- * Storage
   , module Miso.Storage
