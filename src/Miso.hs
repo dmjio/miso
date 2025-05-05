@@ -63,20 +63,19 @@ module Miso
   , module Miso.Util
     -- * FFI
   , module Miso.FFI
-    -- ** Re-exports
+    -- * State management
   , ask
   , modify
   , modify'
   , get
   , gets
-  , state
   , put
   , tell
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.RWS (get, gets, modify, modify', state, tell, put, ask)
+import           Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
 import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
