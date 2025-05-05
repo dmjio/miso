@@ -39,6 +39,7 @@ module Miso.Effect
   , scheduleIOFor_
   , scheduleSub
   , effectSub
+  , batchEff
   ) where
 -----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -225,4 +226,10 @@ effectSub m s = put m >> sink s
 {-# DEPRECATED noEff "Please use 'put' and 'sink' instead " #-}
 noEff :: model -> Effect model action
 noEff = put
+-----------------------------------------------------------------------------
+{-# DEPRECATED batchEff "Please use 'put' and 'batch' instead " #-}
+batchEff :: model -> [JSM action] -> Effect model action
+batchEff model actions = put model >> do
+  forM_ actions $ \action ->
+    tell [ \sink -> sink =<< action ]
 -----------------------------------------------------------------------------
