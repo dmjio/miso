@@ -22,7 +22,6 @@ module Miso.Effect
   , SubName
   , Sink
     -- *** Combinators
-  , noEff
   , (<#)
   , (#>)
   , batch
@@ -41,6 +40,7 @@ module Miso.Effect
   , scheduleSub
   , effectSub
   , batchEff
+  , noEff
   ) where
 -----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -58,7 +58,7 @@ import           Miso.String (ms, MisoString)
 -- | Type synonym for constructing event subscriptions.
 --
 -- The 'Sink' callback is used to dispatch actions which are then fed
--- back to the 'Miso.Types.update' function.
+-- back into the 'Miso.Types.update' function.
 type Sub action = Sink action -> JSM ()
 -----------------------------------------------------------------------------
 -- | SubName
@@ -81,23 +81,21 @@ infixr 0 #>
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
 batch :: [JSM action] -> Effect model action
-batch actions
-  = sequence_
+batch actions = sequence_
   [ tell [ \f -> f =<< action ]
   | action <- actions
   ]
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
--- @Effect@ is a state monad so it abstracts over manually passing the model
--- around. It's also a writer monad where the accumulator is a list of scheduled
--- IO actions. Multiple actions can be scheduled using
--- @Control.Monad.Writer.Class.tell@ from the @mtl@ library and a single action
--- can be scheduled using 'scheduleIO'.
+-- @Effect@ is a @RWS@, where the @State@ abstracts over manually passing the model
+-- around. It's also a @Writer@ @Monad@, where the accumulator is a list of scheduled
+-- @IO@ actions. Multiple actions can be scheduled using @Control.Monad.Writer.Class.tell@ 
+-- from the @mtl@ library and a single action can be scheduled using 'scheduleIO'.
 --
 -- An @Effect@ represents the results of an update action.
 --
--- It consists of the updated model and a list of subscriptions. Each 'Sub' is
+-- It consists of the updated model and a list of subscriptions. Each @Sub@ is
 -- run in a new thread so there is no risk of accidentally blocking the
 -- application.
 --
@@ -123,10 +121,10 @@ batch actions
 -- @
 type Effect model action = EffectCore model action ()
 -----------------------------------------------------------------------------
--- | The EffectCore Monad, underlies @Effect@
+-- | The name of a @Component@
 type ComponentName = MisoString
 -----------------------------------------------------------------------------
--- | The EffectCore Monad, underlies @Effect@
+-- | The @EffectCore@ Monad, underlies @Effect@
 newtype EffectCore model action a
   = EffectCore
   { runEffectCore :: RWS ComponentName [Sink action -> JSM ()] model a
@@ -149,7 +147,7 @@ instance MonadFail (EffectCore model action) where
     fail s
 #endif
 -----------------------------------------------------------------------------
--- | Internal function used to unwrap an 'Effect'
+-- | Internal function used to unwrap an @EffectCore@
 runEffect
     :: Effect model action
     -> MisoString
@@ -157,49 +155,49 @@ runEffect
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS . runEffectCore
 -----------------------------------------------------------------------------
--- | Turn a 'Sub' that consumes actions of type @a@ into a subscription
--- that consumes actions of type @b@ using the supplied function of type @a -> b@.
+-- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes 
+-- actions of type @b@ using the supplied function of type @a -> b@.
 mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
--- | Schedule a single IO action for later execution.
+-- | Schedule a single 'IO' action for later execution.
 --
--- Note that multiple IO action can be scheduled using
+-- Note that multiple 'IO' action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 io_ :: JSM action -> Effect model action
 io_ action = sink (action >>=)
 -----------------------------------------------------------------------------
--- | Like 'io' but doesn't cause an action to be dispatched to
+-- | Like 'io_' but doesn't cause an action to be dispatched to
 -- the @update@ function.
 --
--- This is handy for scheduling IO computations where you don't care
+-- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
 io :: JSM () -> Effect model action
 io action = sink (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
 --
--- This is handy for scheduling IO computations that return a `Maybe` value
+-- This is handy for scheduling @IO@ computations that return a @Maybe@ value
 --
 for :: Foldable f => JSM (f action) -> Effect model action
 for actions = sink $ \write -> actions >>= flip for_ write
 -----------------------------------------------------------------------------
--- | 'withSink' allows users to access the sink of the 'Component' or top-level
--- 'App' in their application. This is useful for introducing I/O into the system.
+-- | @sink@ allows users to access the sink of the 'Component' or top-level
+-- 'App' in their application. This is useful for introducing 'IO' into the system.
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
 -- widget which has an associated callback. The callback can then call the sink
 -- to turn events into actions. To do this without accessing a sink requires
 -- going via a @'Sub'scription@ which introduces a leaky-abstraction.
 --
--- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+-- > update FetchJSON = sink $ \write -> getJSON (write . ReceivedJSON) (write . HandleError)
 --
 sink :: (Sink action -> JSM ()) -> Effect model action
 sink f = tell [ f ]
 -----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --
--- > update :: Action -> Effect Model Action ()
+-- > update :: Action -> Effect Model Action
 -- > update = \case
 -- >   Click -> issue HelloWorld
 --
