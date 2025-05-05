@@ -18,7 +18,6 @@ module Miso.Effect
   ( -- ** Effect
     -- *** Types
     Effect
-  , Action
   , Sub
   , SubName
   , Sink
@@ -122,24 +121,19 @@ batch actions
 -- @
 type Effect model action = EffectCore model action ()
 -----------------------------------------------------------------------------
--- | 'Action'
---
--- An 'Action' is a function that takes 'Sink' as an argument and performs
--- a side effect.
---
-type Action action = Sink action -> JSM ()
------------------------------------------------------------------------------
 -- | The EffectCore Monad, underlies @Effect@
 type ComponentName = MisoString
 -----------------------------------------------------------------------------
 -- | The EffectCore Monad, underlies @Effect@
-newtype EffectCore model action a = EffectCore (RWS ComponentName [Action action] model a)
-  deriving
+newtype EffectCore model action a
+  = EffectCore
+  { runEffectCore :: RWS ComponentName [Sink action -> JSM ()] model a
+  } deriving
     ( Functor
     , Applicative
     , Monad
     , MonadState model
-    , MonadWriter [Action action]
+    , MonadWriter [Sink action -> JSM ()]
     , MonadReader ComponentName
     )
 -----------------------------------------------------------------------------
@@ -158,8 +152,8 @@ runEffect
     :: Effect model action
     -> MisoString
     -> model
-    -> (model, [Action action])
-runEffect (EffectCore rws) = execRWS rws
+    -> (model, [Sink action -> JSM ()])
+runEffect = execRWS . runEffectCore
 -----------------------------------------------------------------------------
 -- | Schedule a single IO action for later execution.
 --
