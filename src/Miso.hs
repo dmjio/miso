@@ -31,7 +31,7 @@ module Miso
   , stop
   , Sub
   , SubName
-    -- ** Effect
+  -- ** Effect
   , issue
   , batch
   , io
@@ -63,10 +63,20 @@ module Miso
   , module Miso.Util
     -- * FFI
   , module Miso.FFI
+    -- ** Re-exports
+  , ask
+  , modify
+  , modify'
+  , get
+  , gets
+  , state
+  , put
+  , tell
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.RWS (get, gets, modify, tell, put, ask)
 import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
