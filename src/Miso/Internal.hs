@@ -441,6 +441,11 @@ start subName sub = do
           atomicModifyIORef' componentSubThreads $ \m ->
             (M.insert subName tid m, ())
 -----------------------------------------------------------------------------
+-- | 'stop'
+--
+-- Stops a named 'Sub' dynamically, during the life of a 'Component'.
+-- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
+--
 stop :: SubName -> Effect action model
 stop subName = do
   compName <- ask
