@@ -229,7 +229,7 @@ noEff = put
 -----------------------------------------------------------------------------
 {-# DEPRECATED batchEff "Please use 'put' and 'batch' instead " #-}
 batchEff :: model -> [JSM action] -> Effect model action
-batchEff model actions = put model >> do
-  forM_ actions $ \action ->
-    tell [ \sink -> sink =<< action ]
+batchEff model actions = do
+  put model
+  batch actions
 -----------------------------------------------------------------------------
