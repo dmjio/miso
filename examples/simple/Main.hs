@@ -47,12 +47,12 @@ app = defaultApp (Model 0) updateModel viewModel
 updateModel :: Action -> Effect Model Action
 updateModel (AddOne event) = do
   value += 1
-  io_ $ consoleLog (ms (show event))
+  io $ consoleLog (ms (show event))
 updateModel (SubtractOne event) = do
   value -= 1
-  io_ $ consoleLog (ms (show event))
+  io $ consoleLog (ms (show event))
 updateModel SayHelloWorld =
-  io_ (consoleLog "Hello World!")
+  io (consoleLog "Hello World!")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

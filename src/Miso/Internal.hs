@@ -58,7 +58,7 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types hiding (componentName)
 import           Miso.Event (Events)
-import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
+import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
@@ -404,7 +404,7 @@ renderStyles styles =
 start :: SubName -> Sub action -> Effect action model
 start subName sub = do
   compName <- ask
-  io_ $ do
+  io $ do
     M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
       Nothing -> pure ()
       Just ComponentState {..} -> do
@@ -416,7 +416,7 @@ start subName sub = do
 stop :: SubName -> Effect action model
 stop subName = do
   compName <- ask
-  io_ $ do
+  io $ do
     M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
       Nothing -> pure ()
       Just ComponentState {..} -> do

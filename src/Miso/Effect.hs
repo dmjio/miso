@@ -140,7 +140,7 @@ newtype EffectCore model action a
 -- | @MonadFail@ instance for @EffectCore@
 instance MonadFail (EffectCore model action) where
   fail s = do
-    io_ $ consoleError (ms s)
+    io $ consoleError (ms s)
 #if __GLASGOW_HASKELL__ <= 881
     Fail.fail s
 #else
@@ -159,16 +159,16 @@ runEffect = execRWS . runEffectCore
 --
 -- Note that multiple IO action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
-io :: JSM action -> Effect model action
-io action = sink (action >>=)
+io_ :: JSM action -> Effect model action
+io_ action = sink (action >>=)
 -----------------------------------------------------------------------------
 -- | Like 'io' but doesn't cause an action to be dispatched to
 -- the @update@ function.
 --
 -- This is handy for scheduling IO computations where you don't care
 -- about their results or when they complete.
-io_ :: JSM () -> Effect model action
-io_ action = sink (\_ -> action)
+io :: JSM () -> Effect model action
+io action = sink (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
 --
@@ -204,11 +204,11 @@ issue action = tell [ \f -> f action ]
 -----------------------------------------------------------------------------
 {-# DEPRECATED scheduleIO "Please use io instead" #-}
 scheduleIO :: JSM action -> Effect model action
-scheduleIO = io
+scheduleIO = io_
 -----------------------------------------------------------------------------
 {-# DEPRECATED scheduleIO_ "Please use 'io_' instead" #-}
 scheduleIO_ :: JSM () -> Effect model action
-scheduleIO_ = io_
+scheduleIO_ = io
 -----------------------------------------------------------------------------
 {-# DEPRECATED scheduleIOFor_ "Please use 'for' instead" #-}
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
