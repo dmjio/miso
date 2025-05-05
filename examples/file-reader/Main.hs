@@ -20,7 +20,7 @@ import           Language.Javascript.JSaddle ((!), (!!), (#), JSVal, (<#))
 import qualified Language.Javascript.JSaddle as J
 import           Prelude hiding ((!!), null, unlines)
 ----------------------------------------------------------------------------
-import           Miso (App(styles), View,Effect, defaultApp, run, CSS(..), scheduleIO, startApp, io, (=:))
+import           Miso (App(styles), View,Effect, defaultApp, run, CSS(..), startApp, io, io_, (=:))
 import qualified Miso as M
 import           Miso.Lens ((.=), Lens, lens)
 import           Miso.String (MisoString, unlines, null)
@@ -82,7 +82,7 @@ app = defaultApp (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function
 updateModel :: Action -> Effect Model Action
-updateModel ReadFile = scheduleIO $ do
+updateModel ReadFile = io_ $ do
   fileReaderInput <- M.getElementById "fileReader"
   file <- fileReaderInput ! ("files" :: String) !! 0
   reader <- J.new (J.jsg ("FileReader" :: String)) ([] :: [JSVal])

@@ -33,23 +33,23 @@ data Action
 -- | Main entry point
 main :: IO ()
 main = run $
-  miso $ \uri ->
-    (defaultApp (Model uri) updateModel viewModel)
+  miso $ \u ->
+    (defaultApp (Model u) updateModel viewModel)
        { subs = [uriSub HandleURI]
        }
 
 -- | Update your model
 updateModel :: Action -> Effect Model Action
 updateModel (HandleURI u) = modify $ \m -> m { uri = u }
-updateModel (ChangeURI u) = scheduleIO_ (pushURI u)
+updateModel (ChangeURI u) = io (pushURI u)
 
 -- | View function, with routing
 viewModel :: Model -> View Action
-viewModel model = view
+viewModel m = view_
   where
-    view =
+    view_ =
         either (const the404) id $
-            route (Proxy :: Proxy API) handlers uri model
+            route (Proxy :: Proxy API) handlers uri m
     handlers = about :<|> home
     home (_ :: Model) =
         div_
