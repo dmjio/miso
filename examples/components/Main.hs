@@ -109,11 +109,11 @@ viewModel1 x =
 updateModel1 :: MainAction -> Effect MainModel MainAction
 updateModel1 Toggle = modify not
 updateModel1 UnMountMain =
-  io (consoleLog "Component 2 was unmounted!")
+  io_ (consoleLog "Component 2 was unmounted!")
 updateModel1 MountMain =
-  io (consoleLog "Component 2 was mounted!")
+  io_ (consoleLog "Component 2 was mounted!")
 updateModel1 SampleChild = do
-  io $ do
+  io_ $ do
     componentTwoModel <- sample component2
     consoleLog $
         "Sampling child component 2 from parent component main (unsafe): " <>
@@ -129,15 +129,15 @@ updateModel2 SubtractOne = modify (subtract 1)
 updateModel2 u@UnMount{} = unmountAction u
 updateModel2 m@Mount{} = mountAction m
 updateModel2 SayHelloWorld = do
-  io (consoleLog "Hello World from Component 2")
+  io_ (consoleLog "Hello World from Component 2")
 updateModel2 _ = pure ()
 
 unmountAction :: Action -> Effect model action
-unmountAction (UnMount name) = io $ consoleLog ("Component " <> name <> " was unmounted!")
+unmountAction (UnMount name) = io_ $ consoleLog ("Component " <> name <> " was unmounted!")
 unmountAction _ = pure ()
 
 mountAction :: Action -> Effect model action
-mountAction (Mount name) = io $ consoleLog ("Component " <> name <> " was mounted!")
+mountAction (Mount name) = io_ $ consoleLog ("Component " <> name <> " was mounted!")
 mountAction _ = pure ()
 
 -- | Constructs a virtual DOM from a model
@@ -169,7 +169,7 @@ updateModel3 ToggleAction =
 updateModel3 x@UnMount{} = unmountAction x
 updateModel3 x@Mount{} = mountAction x
 updateModel3 SayHelloWorld = do
-  io (consoleLog "Hello World from Component 3")
+  io_ (consoleLog "Hello World from Component 3")
 updateModel3 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
@@ -210,18 +210,18 @@ counterApp4 = defaultApp 0 updateModel4 viewModel4
 updateModel4 :: Action -> Effect Model Action
 updateModel4 AddOne = do
   modify (+1)
-  io (notify component3 AddOne)
+  io_ (notify component3 AddOne)
 updateModel4 SubtractOne = do
   modify (subtract 1)
-  io (notify component3 SubtractOne)
+  io_ (notify component3 SubtractOne)
 updateModel4 Sample =
-  io $ do
+  io_ $ do
     componentTwoModel <- sample component3
     consoleLog $
       "Sampling parent component 3 from child component 4: " <>
          ms (show componentTwoModel)
 updateModel4 SayHelloWorld = do
-  io (consoleLog "Hello World from Component 4")
+  io_ (consoleLog "Hello World from Component 4")
 updateModel4 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
@@ -250,18 +250,18 @@ counterApp5 = defaultApp 0 updateModel5 viewModel5
 updateModel5 :: Action -> Effect Model Action
 updateModel5 AddOne = do
   modify (+1)
-  io (notify component2 AddOne)
+  io_ (notify component2 AddOne)
 updateModel5 SubtractOne = do
   modify (subtract 1)
-  io (notify component2 SubtractOne)
+  io_ (notify component2 SubtractOne)
 updateModel5 Sample =
-  io $ do
+  io_ $ do
     componentTwoModel <- sample component2
     consoleLog $
       "Sampling parent component 2 from child component 5: " <>
          ms (show componentTwoModel)
 updateModel5 SayHelloWorld = do
-  io (consoleLog "Hello World from Component 5")
+  io_ (consoleLog "Hello World from Component 5")
 updateModel5 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
