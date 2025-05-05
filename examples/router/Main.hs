@@ -7,7 +7,6 @@
 {-# LANGUAGE TypeOperators #-}
 module Main where
 
-import Control.Monad.State (modify)
 import Data.Proxy
 import Miso
 import Servant.API
