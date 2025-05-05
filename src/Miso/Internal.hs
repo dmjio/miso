@@ -426,7 +426,7 @@ start_ sub = do
 -- | 'start'
 --
 -- Starts a named 'Sub' dynamically, during the life of a 'Component'.
--- The 'Sub' can be stopped by calling 'stop subName' from the 'update' function.
+-- The 'Sub' can be stopped by calling @stop subName@ from the 'update' function.
 -- All 'Sub' started will be stopped if a 'Component' is unmounted.
 --
 start :: SubName -> Sub action -> Effect action model
