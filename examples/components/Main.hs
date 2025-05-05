@@ -7,7 +7,6 @@ module Main where
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (modify)
 
 import Miso
 import Miso.String

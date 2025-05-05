@@ -12,7 +12,6 @@ module Common (
     the404,
 ) where
 
-import Control.Monad.State (modify)
 import Data.Proxy
 import Servant.API
 import Servant.Links
@@ -67,8 +66,8 @@ sse currentURI
           ]
         }
   where
-    app = defaultApp (Model currentURI "No event received") updateModel view
-    view m
+    app = defaultApp (Model currentURI "No event received") updateModel viewModel
+    viewModel m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
         | otherwise = the404
@@ -79,10 +78,9 @@ handleSseMsg SSEClose = ServerMsg "SSE connection closed"
 handleSseMsg SSEError = ServerMsg "SSE error"
 
 updateModel :: Action -> Effect Model Action
-updateModel (ServerMsg msg) = modify update
-  where
-    update m = m { modelMsg = "Event received: " ++ msg }
-updateModel (HandleURI u) = modify update
-  where
-    update m = m { modelUri = u }
-updateModel (ChangeURI u) = io (pushURI u)
+updateModel (ServerMsg msg) =
+    modify $ \m -> m { modelMsg = "Event received: " ++ msg }
+updateModel (HandleURI u) =
+    modify $ \m -> m { modelUri = u }
+updateModel (ChangeURI u) =
+    io (pushURI u)

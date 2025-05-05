@@ -106,7 +106,7 @@ updateModel FocusOnInput =
 updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
 updateModel Add = do
     model@Model{..} <- get
-    noEff
+    put
         model
             { uid = uid + 1
             , field = mempty

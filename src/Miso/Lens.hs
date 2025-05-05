@@ -91,7 +91,7 @@
 --
 -- data Action = AddOne | SubtractOne
 --
--- updateModel :: Action -> 'Effect' Model Action ()
+-- updateModel :: Action -> 'Effect' Model Action
 -- updateModel AddOne      = value '+=' 1
 -- updateModel SubtractOne = value '-=' 1
 -- @
@@ -349,7 +349,7 @@ l <~ mb = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update AddOne = do
 --   value %= (+1)
 -- @
@@ -375,7 +375,7 @@ modifying = (%=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update AddOne = do
 --   result <- value <%= (+1)
 --   io $ consoleLog (ms result)
@@ -399,7 +399,7 @@ l <%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (Assign x) = do
 --   result <- value <.= x
 --   io $ consoleLog (ms result) -- x
@@ -423,7 +423,7 @@ l <.= b = do
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (SetValue x) = do
 --   result <- value <?= x
 --   io $ consoleLog (ms result) -- Just 1
@@ -449,7 +449,7 @@ l <?= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (Assign x) = do
 --   value .= x
 --   previousValue <- value <<.= 1
@@ -476,7 +476,7 @@ l <<.= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (Modify f) = do
 --   value .= 2
 --   result <- value <<%= f
@@ -500,7 +500,7 @@ l <<%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update' :: Action -> Effect Model Action ()
+-- update' :: Action -> Effect Model Action
 -- update' (SetValue v) = value .= v
 -- @
 infix 4 .=
@@ -524,7 +524,7 @@ assign = (.=)
 -- value :: Lens Model Int
 -- value = lens _value $ \p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (SetValue x) = do
 --   value .= x
 --   result <- use value
@@ -545,7 +545,7 @@ use _lens = gets (^. _lens)
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (AssignValue x) = value ?= x
 -- @
 infix 4 ?=
@@ -564,7 +564,7 @@ infix 4 ?=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (IncrementBy x) = value += x
 --
 infix 4 +=
@@ -583,7 +583,7 @@ infix 4 +=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (MultiplyBy x) = value *= x
 -- @
 infix 4 *=
@@ -602,7 +602,7 @@ infix 4 *=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (DivideBy x) = value //= x
 -- @
 infix 4 //=
@@ -621,7 +621,7 @@ infix 4 //=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action ()
+-- update :: Action -> Effect Model Action
 -- update (SubtractBy x) = value -= x
 -- @
 infix 4 -=
