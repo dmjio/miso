@@ -710,6 +710,7 @@ Become a [financial contributor](https://opencollective.com/miso/contribute) and
   - [@MaxGabriel](https://github.com/MaxGabriel)
   - [@DigitalOcean](https://github.com/DigitalOcean)
   - [@maybetonyfu](https://github.com/maybetonyfu)
+  - [@jhrcek](https://github.com/jhrcek)
   - etc.
 
 <a href="https://opencollective.com/miso"><img src="https://opencollective.com/miso/individuals.svg?width=890"></a>
