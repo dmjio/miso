@@ -80,7 +80,7 @@ forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
   liftIO (forkIO (runJSM a ctx))
-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 -- | Creates a synchronous callback function (no return value)
 syncCallback :: JSM () -> JSM Function
 syncCallback a = function (\_ _ _ -> a)
