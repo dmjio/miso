@@ -27,6 +27,7 @@ module Miso
   , notify
     -- ** Subscription
   , start
+  , start_
   , stop
   , Sub
   , SubName
