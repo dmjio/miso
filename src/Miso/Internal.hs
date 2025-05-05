@@ -411,7 +411,17 @@ renderStyles styles =
 -- be stopped.
 --
 start_ :: Sub action -> Effect action model
-start_ sub = start subId =<< liftIO freshSubId
+start_ sub = do
+  compName <- ask
+  io $ do
+    M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+      Nothing -> pure ()
+      Just ComponentState {..} -> do
+        tid <- FFI.forkJSM (sub componentSink)
+        subName <- liftIO freshSubId
+        liftIO $ do
+          atomicModifyIORef' componentSubThreads $ \m ->
+            (M.insert subName tid m, ())
 -----------------------------------------------------------------------------
 -- | 'start'
 --
