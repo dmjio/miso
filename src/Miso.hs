@@ -53,6 +53,7 @@ module Miso
   , module Miso.Run
     -- * Exception
   , module Miso.Exception
+    -- * Subscriptions
   , module Miso.Subscription
     -- * Storage
   , module Miso.Storage
