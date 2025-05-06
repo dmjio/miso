@@ -31,11 +31,12 @@ module Miso.Html.Types
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..))
-import           Data.Map.Strict (Map)
+import           Data.Map.Strict (fromList)
 import           Language.Javascript.JSaddle (Object)
 -----------------------------------------------------------------------------
 import           Miso.String hiding (reverse)
 import           Miso.Types
+import           Miso.Style (Style)
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Html.Types.TextRaw@.
 --
@@ -89,6 +90,6 @@ prop k v = Property k (toJSON v)
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style_ :: Map MisoString MisoString -> Attribute action
-style_ = Styles
+style_ :: [Style] -> Attribute action
+style_ = Styles . fromList
 -----------------------------------------------------------------------------
