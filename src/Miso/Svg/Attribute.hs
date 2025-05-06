@@ -13,7 +13,7 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Svg.Attribute
-  ( -- *** Attributes
+  ( -- *** Regular Attributes
     accumulate_
   , additive_
   , amplitude_
@@ -29,7 +29,7 @@ module Miso.Svg.Attribute
   , cx_
   , cy_
   , d_
-  -- TODO decoding
+  , decoding_
   , diffuseConstant_
   , divisor_
   , dur_
@@ -40,17 +40,14 @@ module Miso.Svg.Attribute
   , end_
   , exponent_
   , filterUnits_
-  -- TODO fr
-  -- TODO glyph-orientation-horizontal
-  -- TODO glyph-orientation-vertical
-  -- TODO href
-  -- TODO hreflang
+  , fr_
   , from_
   , fx_
   , fy_
   , gradientTransform_
   , gradientUnits_
   , height_
+  , href_
   , id_
   , in_'
   , in2_
@@ -80,19 +77,13 @@ module Miso.Svg.Attribute
   , operator_
   , order_
   , orient_
-  -- TODO paint-order
-  -- TODO ping
   , origin_
+  , paintOrder_
   , path_
   , pathLength_
   , patternContentUnits_
   , patternTransform_
   , patternUnits_
-  -- TODO referrerPolicy
-  -- TODO rel
-  -- TODO requiredExtensions
-  -- TODO requiredFeatures
-  -- TODO side
   , points_
   , pointsAtX_
   , pointsAtY_
@@ -113,6 +104,7 @@ module Miso.Svg.Attribute
   , ry_
   , scale_
   , seed_
+  , side_
   , slope_
   , spacing_
   , specularConstant_
@@ -124,6 +116,7 @@ module Miso.Svg.Attribute
   , style_
   , surfaceScale_
   , systemLanguage_
+  , tabindex_
   , tableValues_
   , target_
   , targetX_
@@ -131,13 +124,11 @@ module Miso.Svg.Attribute
   , textLength_
   , to_
   , transform_
-  -- TODO transform-origin
+  , transformOrigin_
   , type_'
   , values_
-  -- TODO vector-effect
-  -- TODO version
+  , vectorEffect_
   , viewBox_
-  -- TODO zoomAndPan
   , width_
   , x_
   , x1_
@@ -155,23 +146,23 @@ module Miso.Svg.Attribute
   , baselineShift_
   , clipPath_
   , clipRule_
-  , colorInterpolationFilters_
-  , colorInterpolation_
-  -- TODO crossorigin
   , color_
+  , colorInterpolation_
+  , colorInterpolationFilters_
+  , crossorigin_
   , cursor_
   , direction_
   , display_
   , dominantBaseline_
+  , fill_
   , fillOpacity_
   , fillRule_
-  , fill_
   , filter_
   , floodColor_
   , floodOpacity_
   , fontFamily_
-  , fontSizeAdjust_
   , fontSize_
+  , fontSizeAdjust_
   , fontStyle_
   , fontVariant_
   , fontWeight_
@@ -188,6 +179,7 @@ module Miso.Svg.Attribute
   , shapeRendering_
   , stopColor_
   , stopOpacity_
+  , stroke_
   , strokeDasharray_
   , strokeDashoffset_
   , strokeLinecap_
@@ -195,7 +187,6 @@ module Miso.Svg.Attribute
   , strokeMiterlimit_
   , strokeOpacity_
   , strokeWidth_
-  , stroke_
   , textAnchor_
   , textDecoration_
   , textRendering_
@@ -272,6 +263,10 @@ cy_ = attr "cy"
 d_ ::  MisoString -> Attribute action
 d_ = attr "d"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/decoding>
+decoding_ ::  MisoString -> Attribute action
+decoding_ = attr "decoding"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/diffuseConstant>
 diffuseConstant_ ::  MisoString -> Attribute action
 diffuseConstant_ = attr "diffuseConstant"
@@ -312,6 +307,10 @@ exponent_ = attr "exponent"
 filterUnits_ ::  MisoString -> Attribute action
 filterUnits_ = attr "filterUnits"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/fr>
+fr_ ::  MisoString -> Attribute action
+fr_ = attr "fr"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/from>
 from_ ::  MisoString -> Attribute action
 from_ = attr "from"
@@ -335,6 +334,10 @@ gradientUnits_ = attr "gradientUnits"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/height>
 height_ ::  MisoString -> Attribute action
 height_ = attr "height"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/href>
+href_ ::  MisoString -> Attribute action
+href_ = attr "href"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/id>
 id_ ::  MisoString -> Attribute action
@@ -460,6 +463,10 @@ origin_ = attr "origin"
 path_ ::  MisoString -> Attribute action
 path_ = attr "path"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/paint-order>
+paintOrder_ ::  MisoString -> Attribute action
+paintOrder_ = attr "paint-order"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pathLength>
 pathLength_ ::  MisoString -> Attribute action
 pathLength_ = attr "pathLength"
@@ -556,6 +563,10 @@ scale_ = attr "scale"
 seed_ ::  MisoString -> Attribute action
 seed_ = attr "seed"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/side>
+side_ ::  MisoString -> Attribute action
+side_ = attr "side"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/slope>
 slope_ ::  MisoString -> Attribute action
 slope_ = attr "slope"
@@ -600,6 +611,10 @@ surfaceScale_ = attr "surfaceScale"
 systemLanguage_ ::  MisoString -> Attribute action
 systemLanguage_ = attr "systemLanguage"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/tabindex>
+tabindex_ ::  MisoString -> Attribute action
+tabindex_ = attr "tabindex"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/tableValues>
 tableValues_ ::  MisoString -> Attribute action
 tableValues_ = attr "tableValues"
@@ -628,6 +643,10 @@ to_ = attr "to"
 transform_ ::  MisoString -> Attribute action
 transform_ = attr "transform"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform-origin>
+transformOrigin_ ::  MisoString -> Attribute action
+transformOrigin_ = attr "transform-origin"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/type>
 type_' ::  MisoString -> Attribute action
 type_' = attr "type"
@@ -635,6 +654,10 @@ type_' = attr "type"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/values>
 values_ ::  MisoString -> Attribute action
 values_ = attr "values"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/vector-effect>
+vectorEffect_ ::  MisoString -> Attribute action
+vectorEffect_ = attr "vector-effect"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/viewBox>
 viewBox_ ::  MisoString -> Attribute action
@@ -696,13 +719,17 @@ clipPath_ = attr "clip-path"
 clipRule_ ::  MisoString -> Attribute action
 clipRule_ = attr "clip-rule"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation>
+colorInterpolation_ ::  MisoString -> Attribute action
+colorInterpolation_ = attr "color-interpolation"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation-filters>
 colorInterpolationFilters_ ::  MisoString -> Attribute action
 colorInterpolationFilters_ = attr "color-interpolation-filters"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color-interpolation>
-colorInterpolation_ ::  MisoString -> Attribute action
-colorInterpolation_ = attr "color-interpolation"
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/crossorigin>
+crossorigin_ ::  MisoString -> Attribute action
+crossorigin_ = attr "crossorigin"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/color>
 color_ ::  MisoString -> Attribute action
