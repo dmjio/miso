@@ -237,6 +237,16 @@ newtype StyleSheet = StyleSheet { getStyleSheet :: Map MisoString Styles }
 sheet_ :: [(MisoString, Styles)] -> StyleSheet
 sheet_ = StyleSheet . M.fromList
 -----------------------------------------------------------------------------
+-- | @style_@ is an attribute that will set the @style@
+-- attribute of the associated DOM node to @attrs@.
+--
+-- @style@ attributes not contained in @attrs@ will be deleted.
+--
+-- > import qualified Data.Map as M
+-- > div_ [ style_ [ backgroundColor "red" ] [ ]
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/CSS>
+--
 style_ :: [Style] -> Attribute action
 style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------

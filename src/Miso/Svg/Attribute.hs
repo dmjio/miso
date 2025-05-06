@@ -599,10 +599,6 @@ stdDeviation_ = attr "stdDeviation"
 stitchTiles_ ::  MisoString -> Attribute action
 stitchTiles_ = attr "stitchTiles"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/style>
-style_ ::  MisoString -> Attribute action
-style_ = attr "style"
------------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/surfaceScale>
 surfaceScale_ ::  MisoString -> Attribute action
 surfaceScale_ = attr "surfaceScale"

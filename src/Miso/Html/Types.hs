@@ -80,16 +80,3 @@ newtype VTree = VTree { getTree :: Object }
 prop :: ToJSON a => MisoString -> a -> Attribute action
 prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
--- | @style_ attrs@ is an attribute that will set the @style@
--- attribute of the associated DOM node to @attrs@.
---
--- @style@ attributes not contained in @attrs@ will be deleted.
---
--- > import qualified Data.Map as M
--- > div_ [ style_ $ M.singleton "background" "red" ] [ ]
---
--- <https://developer.mozilla.org/en-US/docs/Web/CSS>
---
-style_ :: [Style] -> Attribute action
-style_ = Styles . fromList
------------------------------------------------------------------------------

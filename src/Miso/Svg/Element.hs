@@ -341,10 +341,6 @@ filter_ = nodeSvg_ "filter"
 script_ :: [Attribute action] -> [View action] -> View action
 script_ = nodeSvg_ "script"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/style>
-style_ :: [Attribute action] -> [View action] -> View action
-style_ = nodeSvg_ "style"
------------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/view>
 view_ :: [Attribute action] -> [View action] -> View action
 view_ = nodeSvg_ "view"
