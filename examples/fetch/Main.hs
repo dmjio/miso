@@ -31,6 +31,10 @@ import           Miso.String
 import           Miso.Lens
 import           Miso.Style
 ----------------------------------------------------------------------------
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
 main = run $ startApp app
