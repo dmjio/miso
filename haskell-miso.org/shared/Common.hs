@@ -10,7 +10,6 @@ module Common where
 
 import           Control.Monad.State
 import           Data.Bool
-import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Servant.API
 import           Servant.Links
