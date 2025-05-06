@@ -53,7 +53,7 @@ module Miso.Html.Element
     , math_
     , script_
     , link_
-    , style
+    , style_
     , select_
     , option_
     , textarea_
@@ -571,8 +571,8 @@ link_ = flip (nodeHtml "link") []
 -- You can also easily shoot yourself in the foot with something like:
 --
 -- @'style_' [] "\</style\>"@
-style :: [Attribute action] -> MisoString -> View action
-style attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
+style_ :: [Attribute action] -> MisoString -> View action
+style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script
 --
