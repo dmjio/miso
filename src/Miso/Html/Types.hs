@@ -30,7 +30,6 @@ module Miso.Html.Types
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..))
-import           Data.Map.Strict (Map)
 import           Language.Javascript.JSaddle (Object)
 -----------------------------------------------------------------------------
 import           Miso.String hiding (reverse)
