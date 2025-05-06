@@ -14,12 +14,13 @@ module Main where
 import           Control.Monad.State
 import           Data.Aeson
 import           Data.Bool
-import qualified Data.Map as M
 import           GHC.Generics
 
 import           Miso
 import           Miso.String (MisoString)
 import qualified Miso.String as S
+
+import qualified Miso.Style as CSS
 
 #if WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -70,9 +71,14 @@ data Model = Model
 appView :: Model -> View Action
 appView Model{..} =
     div_
-        [style_ $ M.fromList [("text-align", "center")]]
+        [ CSS.style_ [ CSS.textAlign "center" ] ]
         [ link_ [rel_ "stylesheet", href_ "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"]
-        , h1_ [style_ $ M.fromList [("font-weight", "bold")]] [a_ [href_ "https://github.com/dmjio/miso"] [text $ S.pack "Miso Websocket Example"]]
+        , h1_ [ CSS.style_ [CSS.fontWeight "bold"]
+              ]
+          [ a_
+            [ href_ "https://github.com/dmjio/miso"]
+            [ text $ S.pack "Miso Websocket Example"]
+          ]
         , h3_ [] [text $ S.pack "wss://echo.websocket.org"]
         , input_
             [ type_ "text"
