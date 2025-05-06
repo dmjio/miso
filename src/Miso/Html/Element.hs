@@ -53,7 +53,6 @@ module Miso.Html.Element
     , math_
     , script_
     , link_
-    , style_
     , style
     , select_
     , option_
