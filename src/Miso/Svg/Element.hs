@@ -81,6 +81,7 @@ module Miso.Svg.Element
   , clipPath_
   , filter_
   , script_
+  , style_
   , view_
   ) where
 -----------------------------------------------------------------------------
@@ -339,6 +340,10 @@ filter_ = nodeSvg_ "filter"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/script>
 script_ :: [Attribute action] -> [View action] -> View action
 script_ = nodeSvg_ "script"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/style>
+style_ :: [Attribute action] -> [View action] -> View action
+style_ = nodeSvg_ "style"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/view>
 view_ :: [Attribute action] -> [View action] -> View action
