@@ -19,7 +19,7 @@ module Miso
   , (🍜)
   , startApp
     -- ** Sink
-  , sink
+  , withSink
   , Sink
     -- ** Sampling
   , sample

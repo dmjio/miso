@@ -29,7 +29,7 @@ module Miso.Effect
   , io_
   , for
   , issue
-  , sink
+  , withSink
   , mapSub
   -- * Internal
   , runEffect
@@ -165,7 +165,7 @@ mapSub f sub = \g -> sub (g . f)
 -- Note that multiple 'IO' action can be scheduled using
 -- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
 io_ :: JSM action -> Effect model action
-io_ action = sink (action >>=)
+io_ action = withSink (action >>=)
 -----------------------------------------------------------------------------
 -- | Like 'io_' but doesn't cause an action to be dispatched to
 -- the @update@ function.
@@ -173,14 +173,14 @@ io_ action = sink (action >>=)
 -- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
 io :: JSM () -> Effect model action
-io action = sink (\_ -> action)
+io action = withSink (\_ -> action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
 --
 -- This is handy for scheduling @IO@ computations that return a @Maybe@ value
 --
 for :: Foldable f => JSM (f action) -> Effect model action
-for actions = sink $ \write -> actions >>= flip for_ write
+for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | @sink@ allows users to access the sink of the 'Component' or top-level
 -- 'App' in their application. This is useful for introducing 'IO' into the system.
@@ -190,10 +190,10 @@ for actions = sink $ \write -> actions >>= flip for_ write
 -- to turn events into actions. To do this without accessing a sink requires
 -- going via a @'Sub'scription@ which introduces a leaky-abstraction.
 --
--- > update FetchJSON = sink $ \write -> getJSON (write . ReceivedJSON) (write . HandleError)
+-- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
-sink :: (Sink action -> JSM ()) -> Effect model action
-sink f = tell [ f ]
+withSink :: (Sink action -> JSM ()) -> Effect model action
+withSink f = tell [ f ]
 -----------------------------------------------------------------------------
 -- | A synonym for @tell@, specialized to @Effect@
 --
@@ -219,13 +219,13 @@ scheduleIO_ = io
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect model action
 scheduleIOFor_ = for
 -----------------------------------------------------------------------------
-{-# DEPRECATED scheduleSub "Please use 'sink' instead" #-}
+{-# DEPRECATED scheduleSub "Please use 'withSink' instead" #-}
 scheduleSub :: (Sink action -> JSM ()) -> Effect model action
-scheduleSub = sink
+scheduleSub = withSink
 -----------------------------------------------------------------------------
-{-# DEPRECATED effectSub "Please use 'put' and 'sink' instead " #-}
+{-# DEPRECATED effectSub "Please use 'put' and 'withSink' instead " #-}
 effectSub :: model -> (Sink action -> JSM ()) -> Effect model action
-effectSub m s = put m >> sink s
+effectSub m s = put m >> withSink s
 -----------------------------------------------------------------------------
 {-# DEPRECATED noEff "Please use 'put' instead " #-}
 noEff :: model -> Effect model action
