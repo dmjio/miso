@@ -113,7 +113,6 @@ module Miso.Svg.Attribute
   , startOffset_
   , stdDeviation_
   , stitchTiles_
-  , style_
   , surfaceScale_
   , systemLanguage_
   , tabindex_
