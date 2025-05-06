@@ -81,7 +81,6 @@ module Miso.Svg.Element
   , clipPath_
   , filter_
   , script_
-  , style_
   , view_
   ) where
 -----------------------------------------------------------------------------
