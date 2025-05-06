@@ -124,26 +124,22 @@ data ComponentState model action
   , componentActions    :: IORef (Seq action)
   }
 -----------------------------------------------------------------------------
-subIds :: IORef [Int]
+subIds :: IORef Int
 {-# NOINLINE subIds #-}
-subIds = unsafePerformIO $ liftIO $ newIORef [ 1 .. ]
+subIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
 freshSubId :: IO MisoString
 freshSubId = do
-  x <- atomicModifyIORef' subIds $ \case
-    [] -> error "impossible"
-    (y:ys) -> (ys, y)
+  x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
   pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
-componentIds :: IORef [Int]
+componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
-componentIds = unsafePerformIO $ liftIO $ newIORef [ 1 .. ]
+componentIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
 freshComponentId :: IO MisoString
 freshComponentId = do
-  x <- atomicModifyIORef' componentIds $ \case
-    [] -> error "impossible"
-    (y:ys) -> (ys, y)
+  x <- atomicModifyIORef' componentIds $ \y -> (y + 1, y)
   pure ("miso-component-id-" <> ms x)
 -----------------------------------------------------------------------------
 -- | componentMap
@@ -255,7 +251,7 @@ unmount
 unmount mountCallback app@App {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
-  liftIO $ mapM_ killThread =<< readIORef componentSubThreads
+  liftIO (mapM_ killThread =<< readIORef componentSubThreads)
   drain app cs
   liftIO $ atomicModifyIORef' componentMap $ \m -> (M.delete componentName m, ())
 -----------------------------------------------------------------------------
