@@ -226,7 +226,7 @@ type Style = (MisoString, MisoString)
 -----------------------------------------------------------------------------
 -- | 'Styles'
 --
--- Type for a list of CSS 'Style'
+-- Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
 --
 type Styles = Map MisoString MisoString
 -----------------------------------------------------------------------------
