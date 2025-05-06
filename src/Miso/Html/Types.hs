@@ -27,16 +27,14 @@ module Miso.Html.Types
   , textRaw
   , rawHtml
   , prop
-  , style_
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..))
-import           Data.Map.Strict (fromList)
+import           Data.Map.Strict (Map)
 import           Language.Javascript.JSaddle (Object)
 -----------------------------------------------------------------------------
 import           Miso.String hiding (reverse)
 import           Miso.Types
-import           Miso.Style (Style)
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Html.Types.TextRaw@.
 --
