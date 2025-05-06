@@ -10,6 +10,7 @@ import qualified Data.Map as M
 import           Miso hiding (update)
 import           Miso.String (MisoString, ms)
 import           Miso.Svg hiding (height_, id_, style_, width_)
+import           Miso.Style
 
 #if WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -46,12 +47,11 @@ viewModel (Model (x, y)) =
     div_
         []
         [ svg_
-            [ style_ $
-                M.fromList
-                    [ ("border-style", "solid")
-                    , ("height", "700px")
-                    , ("width", "100%")
-                    ]
+            [ style_
+              [ borderStyle "solid"
+              , height "700px"
+              , width "100%"
+              ]
             , onPointerMove HandlePointer
             ]
             [ g_
@@ -59,7 +59,11 @@ viewModel (Model (x, y)) =
                 [ ellipse_
                     [ cx_ $ ms x
                     , cy_ $ ms y
-                    , style_ svgStyle
+                    , style_
+                        [ fill "yellow"
+                        , stroke "purple"
+                        , strokeWidth "2"
+                        ]
                     , rx_ "100"
                     , ry_ "100"
                     ]
@@ -72,10 +76,3 @@ viewModel (Model (x, y)) =
                 [text $ ms $ show (x, y)]
             ]
         ]
-
-svgStyle :: M.Map MisoString MisoString
-svgStyle = M.fromList
-  [ ("fill", "yellow")
-  , ("stroke", "purple")
-  , ("stroke-width", "2")
-  ]
