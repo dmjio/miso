@@ -139,7 +139,7 @@ display m@Model{..} = marioImage
             , width_ $ ms w
             ]
             [ nodeHtml "style" [] ["@keyframes play { 100% { background-position: -296px; } }"]
-            , div_ [CSS.style (marioStyle m groundY)] []
+            , div_ [CSS.style_ (marioStyle m groundY)] []
             ]
 
 marioStyle :: Model -> Double -> [CSS.Style]

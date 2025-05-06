@@ -71,9 +71,9 @@ data Model = Model
 appView :: Model -> View Action
 appView Model{..} =
     div_
-        [ CSS.style [ CSS.textAlign "center" ] ]
+        [ CSS.style_ [ CSS.textAlign "center" ] ]
         [ link_ [rel_ "stylesheet", href_ "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"]
-        , h1_ [ CSS.style [CSS.fontWeight "bold"]
+        , h1_ [ CSS.style_ [CSS.fontWeight "bold"]
               ]
           [ a_
             [ href_ "https://github.com/dmjio/miso"]

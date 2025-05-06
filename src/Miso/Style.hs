@@ -15,9 +15,9 @@ module Miso.Style
   , Styles
   , StyleSheet
     -- *** Smart Constructor
-  , style
-  , styleInline
-  , styleSheet
+  , style_
+  , styleInline_
+  , sheet_
   , (===)
     -- *** Render
   , renderStyleSheet
@@ -236,8 +236,8 @@ type Styles = Map MisoString MisoString
 --
 newtype StyleSheet = StyleSheet { getStyleSheet :: Map MisoString Styles }
 -----------------------------------------------------------------------------
-styleSheet :: [(MisoString, Styles)] -> StyleSheet
-styleSheet = StyleSheet . M.fromList
+sheet_ :: [(MisoString, Styles)] -> StyleSheet
+sheet_ = StyleSheet . M.fromList
 -----------------------------------------------------------------------------
 -- | @style_@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
@@ -249,16 +249,16 @@ styleSheet = StyleSheet . M.fromList
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
 --
-style :: [Style] -> Attribute action
-style = MT.Styles . M.fromList
+style_ :: [Style] -> Attribute action
+style_ = MT.Styles . M.fromList
 -----------------------------------------------------------------------------
 -- | Set "style" property
 --
 -- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
 --
 -- https://developer.mozilla.org/en-US/docs/Web/CSS
-styleInline ::  MisoString -> Attribute action
-styleInline = textProp "style"
+styleInline_ ::  MisoString -> Attribute action
+styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | 'renderStyleSheet'
 --
@@ -289,13 +289,13 @@ renderStyles m = MS.unlines
   ]
 -----------------------------------------------------------------------------  
 renderStyleSheet :: StyleSheet -> MisoString
-renderStyleSheet sheet = mconcat
+renderStyleSheet styleSheet = mconcat
   [ MS.unlines
     [ selector
     , "{"
     , renderStyles styles <> "}"
     ]
-  | (selector, styles) <- M.toList (getStyleSheet sheet)
+  | (selector, styles) <- M.toList (getStyleSheet styleSheet)
   ]
 -----------------------------------------------------------------------------
 -- 'alignContent'

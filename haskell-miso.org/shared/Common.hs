@@ -10,6 +10,7 @@ module Common where
 
 import           Control.Monad.State
 import           Data.Bool
+import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Servant.API
 import           Servant.Links
@@ -138,7 +139,7 @@ community = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , CSS.style
+                , CSS.style_
                     [ CSS.fontSize "82px"
                     , CSS.fontWeight "100"
                     ]
@@ -186,7 +187,7 @@ docs = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , CSS.style
+                , CSS.style_
                     [ CSS.fontSize "82px"
                     , CSS.fontWeight "100"
                     ]
@@ -228,7 +229,7 @@ examples = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , CSS.style
+                , CSS.style_
                     [ CSS.fontSize "82px"
                     , CSS.fontWeight "100"
                     ]
@@ -279,7 +280,7 @@ home = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , CSS.style
+                , CSS.style_
                     [ CSS.fontSize "82px"
                     , CSS.fontWeight "100"
                     ]
@@ -460,7 +461,7 @@ the404 = template v
                 ]
             , h1_
                 [ class_ "title"
-                , CSS.style
+                , CSS.style_
                     [ CSS.fontSize "82px"
                     , CSS.fontWeight "100"
                     ]
@@ -614,13 +615,13 @@ footer =
                     , text " by "
                     , a_
                         [ href_ "https://github.com/dmjio/miso"
-                        , CSS.style [ CSS.color (CSS.hex "363636") ]
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text "dmjio"]
                     , text ". BSD3"
                     , a_
                         [ href_ "https://opensource.org/licenses/BSD-3-Clause"
-                        , CSS.style [ CSS.color (CSS.hex "363636") ]
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text " licensed."]
                     ]
@@ -629,7 +630,7 @@ footer =
                     [ text "The source code for this website is located "
                     , a_
                         [ href_ "https://github.com/dmjio/miso/tree/master/haskell-miso.org"
-                        , CSS.style [ CSS.color (CSS.hex "363636") ]
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text " here."]
                     ]
@@ -682,7 +683,7 @@ newNav navMenuOpen' =
                         [ span_
                             [ class_ "icon"
                             , name_ "github"
-                            , CSS.style [ CSS.color (CSS.hex "333") ]
+                            , CSS.style_ [ CSS.color (CSS.hex "333") ]
                             ]
                             [ i_ [class_ "fa fa-github"] []
                             ]
@@ -696,7 +697,7 @@ newNav navMenuOpen' =
                         [ span_
                             [ class_ "icon"
                             , name_ "twitter"
-                            , CSS.style [ CSS.color (CSS.hex "55acee") ]
+                            , CSS.style_ [ CSS.color (CSS.hex "55acee") ]
                             ]
                             [ i_ [class_ "fa fa-twitter"] []
                             ]
