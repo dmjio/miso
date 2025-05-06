@@ -16,6 +16,7 @@ module Miso.Style
   , StyleSheet
     -- *** Smart Constructor
   , style_
+  , styleInline_
   , sheet_
   , (===)
     -- *** Render
@@ -206,6 +207,7 @@ import qualified Data.Map as M
 import           Miso.String (MisoString)
 import qualified Miso.String as MS
 import           Miso.Style.Color
+import           Miso.Property
 import           Miso.Types (Attribute)
 import qualified Miso.Types as MT
 -----------------------------------------------------------------------------
@@ -249,6 +251,14 @@ sheet_ = StyleSheet . M.fromList
 --
 style_ :: [Style] -> Attribute action
 style_ = MT.Styles . M.fromList
+-----------------------------------------------------------------------------
+-- | Set "style" property
+--
+-- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
+--
+-- https://developer.mozilla.org/en-US/docs/Web/CSS
+styleInline_ ::  MisoString -> Attribute action
+styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | 'renderStyleSheet'
 --

@@ -169,6 +169,7 @@ library
     Miso.Internal
     Miso.Mathml
     Miso.Mathml.Element
+    Miso.Property
     Miso.Render
     Miso.Router
     Miso.Run

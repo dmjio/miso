@@ -15,15 +15,8 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Property
-  ( -- *** Smart constructors
-     textProp
-   , stringProp
-   , boolProp
-   , intProp
-   , integerProp
-   , doubleProp
-   -- *** Combinators
-   , class_
+  ( -- *** Combinators
+     class_
    , classList_
    , id_
    , title_
@@ -106,39 +99,11 @@ module Miso.Html.Property
    , language_
    , scoped_
    , data_
-   , styleInline_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Html.Types
+import           Miso.Property
 import           Miso.String (MisoString, intercalate)
------------------------------------------------------------------------------
--- | Set field to `Bool` value
-boolProp :: MisoString -> Bool -> Attribute action
-boolProp = prop
------------------------------------------------------------------------------
--- | Set field to `String` value
-stringProp ::  MisoString -> String -> Attribute action
-stringProp = prop
------------------------------------------------------------------------------
--- | Set field to `Text` value
-textProp ::  MisoString -> MisoString -> Attribute action
-textProp = prop
------------------------------------------------------------------------------
--- | Set field to `Int` value
-intProp ::  MisoString -> Int -> Attribute action
-intProp = prop
------------------------------------------------------------------------------
--- | Set field to `Integer` value
-integerProp ::  MisoString -> Int -> Attribute action
-integerProp = prop
------------------------------------------------------------------------------
--- | Set field to `Double` value
-doubleProp ::  MisoString -> Double -> Attribute action
-doubleProp = prop
--- | Define multiple classes conditionally
---
--- > div_ [ classList_ [ ("empty", null items) ] [ ]
---
 -----------------------------------------------------------------------------
 classList_ ::  [(MisoString, Bool)] -> Attribute action
 classList_ xs =
@@ -474,12 +439,4 @@ class_ = textProp "class"
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
 data_ ::  MisoString -> MisoString -> Attribute action
 data_ k v = textProp ("data-" <> k) v
------------------------------------------------------------------------------
--- | Set "style" property
---
--- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
---
--- https://developer.mozilla.org/en-US/docs/Web/CSS
-styleInline_ ::  MisoString -> Attribute action
-styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
