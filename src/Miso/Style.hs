@@ -199,7 +199,6 @@ module Miso.Style
   , zIndex
   -- *** Colors
   , module Miso.Style.Color
-  -- *** Re-exports
   ) where
 -----------------------------------------------------------------------------
 import           Data.Map (Map)
