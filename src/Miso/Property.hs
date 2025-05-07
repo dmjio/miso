@@ -25,8 +25,15 @@ module Miso.Property
   , prop
   ) where
 -----------------------------------------------------------------------------
-import           Miso.Html.Types
+import           Data.Aeson (ToJSON(..))
+-----------------------------------------------------------------------------
+import           Miso.Types
 import           Miso.String (MisoString)
+-----------------------------------------------------------------------------
+-- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM 
+-- node associated with the vnode to @v@.
+prop :: ToJSON a => MisoString -> a -> Attribute action
+prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
 -- | Set field to `Bool` value
 boolProp :: MisoString -> Bool -> Attribute action

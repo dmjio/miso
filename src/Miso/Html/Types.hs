@@ -26,10 +26,8 @@ module Miso.Html.Types
   , text
   , textRaw
   , rawHtml
-  , prop
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (ToJSON(..))
 import           Language.Javascript.JSaddle (Object)
 -----------------------------------------------------------------------------
 import           Miso.String hiding (reverse)
@@ -71,9 +69,4 @@ textRaw = TextRaw
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
------------------------------------------------------------------------------
--- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
--- to @v@.
-prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = Property k (toJSON v)
 -----------------------------------------------------------------------------
