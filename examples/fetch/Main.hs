@@ -18,7 +18,6 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Data.Aeson
-import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
 import           Language.Javascript.JSaddle (JSM)

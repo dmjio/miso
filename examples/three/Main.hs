@@ -10,7 +10,7 @@ import           Data.IORef
 import           Language.Javascript.JSaddle hiding ((<#))
 
 import           Miso
-import           Miso.Style ((:=))
+import           Miso.Style ((=:))
 import qualified Miso.Style as CSS
 
 data Action
@@ -72,7 +72,7 @@ viewModel _ =
         []
         [ div_
             [ id_ "stats"
-            , CSS.style_ [ "position" := "absolute" ]
+            , CSS.style_ [ "position" =: "absolute" ]
             ]
             []
         , canvas_
