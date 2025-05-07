@@ -58,8 +58,8 @@ in
   hs2048 = fetchFromGitHub {
     owner = "dmjio";
     repo = "hs2048";
-    rev = "acb43b2fab19d8cb1b73f48f90843bd64f4ce143";
-    hash = "sha256-2P9QUC6ny8O8fGgQRQWCIq1IRch15CWOM9Qo7xhDgh0=";
+    rev = "eb6e1b6f85546607d3f0f150ec480ceee69668ba";
+    hash = "sha256-DelAE0ArLXan1Gx52qsKO9umfvJAW2xtY2UuNZkJQUY=";
   };
   snake = fetchFromGitHub {
     owner = "dmjio";
