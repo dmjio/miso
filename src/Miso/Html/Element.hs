@@ -10,114 +10,138 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Html.Element
-  ( -- *** Smart constructors
+  ( -- ** Smart constructors
       nodeHtml
     , nodeHtmlKeyed
-    -- *** Combinators
-    , doctype_
+    -- ** Document metadata
     , html_
+    , doctype_
+    , base_
     , head_
+    , link_
     , meta_
+    , style
+    , title_
+    -- ** Sectioning root
+    , body_
+    -- ** Content sectioning
+    , address_
+    , article_
+    , aside_
+    , footer_
+    , header_
     , h1_
     , h2_
     , h3_
     , h4_
     , h5_
     , h6_
-    , div_
-    , p_
-    , hr_
-    , pre_
+    , hgroup_
+    , main_
+    , nav_
+    , section_
+    , search_
+    -- ** Text content
     , blockquote_
-    , code_
-    , em_
-    , span_
-    , a_
-    , strong_
-    , i_
-    , b_
-    , u_
-    , sub_
-    , sup_
-    , br_
-    , ol_
-    , ul_
-    , li_
-    , liKeyed_
+    , dd_
+    , div_
     , dl_
     , dt_
-    , dd_
-    , img_
-    , iframe_
-    , canvas_
-    , script_
-    , link_
-    , style_
-    , style
-    , select_
-    , option_
-    , textarea_
-    , form
-    , input_
-    , button_
-    , section_
-    , header_
-    , footer_
-    , nav_
-    , article_
-    , aside_
-    , address_
-    , main_
-    , body_
-    , figure_
     , figcaption_
-    , table_
-    , caption_
-    , colgroup_
-    , col_
-    , tbody_
-    , thead_
-    , tfoot_
-    , tr_
-    , trKeyed_
-    , td_
-    , th_
-    , label_
-    , fieldset_
-    , legend_
-    , datalist_
-    , optgroup_
-    , output_
-    , progress_
-    , meter_
-    , mark_
-    , ruby_
-    , rt_
-    , rp_
+    , figure_
+    , hr_
+    , li_
+    , liKeyed_
+    , menu_
+    , ol_
+    , p_
+    , pre_
+    , ul_
+    -- ** Inline text semantics
+    , a_
+    , abbr_
+    , b_
     , bdi_
     , bdo_
-    , wbr_
-    , audio_
-    , video_
-    , source_
-    , track_
-    , embed_
-    , object_
-    , ins_
-    , del_
-    , small_
+    , br_
     , cite_
+    , code_
+    , data_
     , dfn_
-    , abbr_
-    , time_
-    , var_
-    , samp_
+    , em_
+    , i_
     , kbd_
+    , mark_
     , q_
+    , rp_
+    , rt_
+    , ruby_
     , s_
+    , samp_
+    , small_
+    , span_
+    , strong_
+    , sub_
+    , sup_
+    , time_
+    , u_
+    , var_
+    , wbr_
+    -- ** Image and multimedia
+    , area_
+    , audio_
+    , img_
+    , map_
+    , track_
+    , video_
+    -- ** Embedded content
+    , embed_
+    , fencedframe_
+    , iframe_
+    , object_
+    , picture_
+    , source_
+    -- ** Scripting
+    , canvas_
+    , noscript_
+    , script_
+    -- ** Demarcating edits
+    , del_
+    , ins_
+    -- ** Table content
+    , caption_
+    , col_
+    , colgroup_
+    , table_
+    , tbody_
+    , td_
+    , tfoot_
+    , th_
+    , thead_
+    , tr_
+    , trKeyed_
+    -- ** Forms
+    , button_
+    , datalist_
+    , fieldset_
+    , form
+    , input_
+    , label_
+    , legend_
+    , meter_
+    , optgroup_
+    , option_
+    , output_
+    , progress_
+    , select_
+    , textarea_
+    -- ** Interactive elements
     , details_
+    , dialog_
     , summary_
-    , menu_
+    -- ** Web components
+    , slot_
+    , template_
     ) where
 -----------------------------------------------------------------------------
 import           Miso.Html.Types
@@ -133,23 +157,23 @@ nodeHtmlKeyed name = node HTML name . pure
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/div
 div_ :: [Attribute action] -> [View action] -> View action
-div_  = nodeHtml "div"
+div_ = nodeHtml "div"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/table
 table_ :: [Attribute action] -> [View action] -> View action
-table_  = nodeHtml "table"
+table_ = nodeHtml "table"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/thead
 thead_ :: [Attribute action] -> [View action] -> View action
-thead_  = nodeHtml "thead"
+thead_ = nodeHtml "thead"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tbody
 tbody_ :: [Attribute action] -> [View action] -> View action
-tbody_  = nodeHtml "tbody"
+tbody_ = nodeHtml "tbody"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tr
 tr_ :: [Attribute action] -> [View action] -> View action
-tr_  = nodeHtml "tr"
+tr_ = nodeHtml "tr"
 -----------------------------------------------------------------------------
 -- | Contains `Key`, inteded to be used for child replacement patch
 --
@@ -160,27 +184,27 @@ trKeyed_ = node HTML "tr" . pure
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/th
 th_ :: [Attribute action] -> [View action] -> View action
-th_  = nodeHtml "th"
+th_ = nodeHtml "th"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/td
 td_ :: [Attribute action] -> [View action] -> View action
-td_  = nodeHtml "td"
+td_ = nodeHtml "td"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tfoot
 tfoot_ :: [Attribute action] -> [View action] -> View action
-tfoot_  = nodeHtml "tfoot"
+tfoot_ = nodeHtml "tfoot"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/section
 section_ :: [Attribute action] -> [View action] -> View action
-section_  = nodeHtml "section"
+section_ = nodeHtml "section"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/header
 header_ :: [Attribute action] -> [View action] -> View action
-header_  = nodeHtml "header"
+header_ = nodeHtml "header"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/footer
 footer_ :: [Attribute action] -> [View action] -> View action
-footer_  = nodeHtml "footer"
+footer_ = nodeHtml "footer"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button
 button_ :: [Attribute action] -> [View action] -> View action
@@ -579,4 +603,56 @@ head_ = nodeHtml "head"
 -- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta
 meta_ :: [Attribute action] -> View action
 meta_ = flip (nodeHtml "meta") []
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/area
+area_ :: [Attribute action] -> [View action] -> View action
+area_ = nodeHtml "area"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/base
+base_ :: [Attribute action] -> [View action] -> View action
+base_ = nodeHtml "base"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/data
+data_ :: [Attribute action] -> [View action] -> View action
+data_ = nodeHtml "data"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog
+dialog_ :: [Attribute action] -> [View action] -> View action
+dialog_ = nodeHtml "dialog"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/fencedframe
+fencedframe_ :: [Attribute action] -> [View action] -> View action
+fencedframe_ = nodeHtml "fencedframe"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup
+hgroup_ :: [Attribute action] -> [View action] -> View action
+hgroup_ = nodeHtml "hgroup"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/map
+map_ :: [Attribute action] -> [View action] -> View action
+map_ = nodeHtml "map"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/noscript
+noscript_ :: [Attribute action] -> [View action] -> View action
+noscript_ = nodeHtml "noscript"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/picture
+picture_ :: [Attribute action] -> [View action] -> View action
+picture_ = nodeHtml "picture"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/search
+search_ :: [Attribute action] -> [View action] -> View action
+search_ = nodeHtml "search"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/slot
+slot_ :: [Attribute action] -> [View action] -> View action
+slot_ = nodeHtml "slot"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/template
+template_ :: [Attribute action] -> [View action] -> View action
+template_ = nodeHtml "template"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/title
+title_ :: [Attribute action] -> [View action] -> View action
+title_ = nodeHtml "title"
 -----------------------------------------------------------------------------
