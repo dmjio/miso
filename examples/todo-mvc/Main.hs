@@ -14,7 +14,6 @@ module Main where
 import           Control.Monad.State
 import           Data.Aeson hiding (Object)
 import           Data.Bool
-import qualified Data.Map as M
 import           GHC.Generics
 
 import           Miso
