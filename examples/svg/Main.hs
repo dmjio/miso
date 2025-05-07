@@ -11,7 +11,7 @@ import           Miso hiding (update)
 import           Miso.String (ms)
 import           Miso.Svg hiding (height_, id_, style_, width_)
 import qualified Miso.Style as CSS
-import           Miso.Style ((===))
+import           Miso.Style ((:=))
 
 #if WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -61,9 +61,9 @@ viewModel (Model (x, y)) =
                     [ cx_ $ ms x
                     , cy_ $ ms y
                     , CSS.style_
-                        [ "fill" === "yellow"
-                        , "stroke" === "purple"
-                        , "stroke-width" === "2"
+                        [ "fill" := "yellow"
+                        , "stroke" := "purple"
+                        , "stroke-width" := "2"
                         ]
                     , rx_ "100"
                     , ry_ "100"

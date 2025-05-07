@@ -10,7 +10,6 @@
 module Miso.Util
   ( withFoldable
   , conditionalViews
-  , (=:)
   ) where
 -----------------------------------------------------------------------------
 import           Data.Foldable
@@ -39,12 +38,4 @@ conditionalViews condition views =
     then views
     else []
 -----------------------------------------------------------------------------
--- | Smart constructor for Attributes. This function is helpful when constructing numerous Attributes
--- Example shown below.
---
--- @
--- div_ [ style_  $ ("background" =: "red" <> "width" =: "250px" <> "height" =: "250px") ] []
--- @
-(=:) :: k -> a -> M.Map k a
-a =: b = M.singleton a b
------------------------------------------------------------------------------
+
