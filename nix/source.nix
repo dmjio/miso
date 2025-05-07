@@ -52,8 +52,8 @@ in
   miso-plane = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-plane";
-    rev = "7ec6ed1421db94b8a38a3b7b6bc80650b401f05c";
-    hash = "sha256-Z55eZeK2fANZ9Ty2b+PV+YMKzVawIOAddejGnzNUD6g=";
+    rev = "0b7153a0174e2df456188a38084ba5cbbbdd7243";
+    hash = "sha256-WThKRb1k1kpVlcdkNtIDHneko1Mt0KEecq8x4sV944g=";
   };
   hs2048 = fetchFromGitHub {
     owner = "dmjio";
