@@ -29,7 +29,7 @@ import           Servant.Client.JS (ClientEnv (..), ClientError, parseBaseUrl, c
 import           Miso hiding (defaultOptions)
 import           Miso.String
 import           Miso.Lens
-import           Miso.Style
+import qualified Miso.Style as CSS
 ----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -93,9 +93,9 @@ viewModel m = view
   where
     view =
       div_
-      [ style_
-        [ textAlign "center"
-        , margin "200px"
+      [ CSS.style_
+        [ CSS.textAlign "center"
+        , CSS.margin "200px"
         ]
       ]
       [ h1_
