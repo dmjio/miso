@@ -4,14 +4,15 @@
 
 module Main where
 
-import Control.Monad
-import Control.Monad.IO.Class (liftIO)
-import Data.IORef
+import           Control.Monad
+import           Control.Monad.IO.Class (liftIO)
+import           Data.IORef
 import qualified Data.Map as M
+import           Language.Javascript.JSaddle hiding ((<#))
 
-import Language.Javascript.JSaddle hiding ((<#))
-
-import Miso
+import           Miso
+import           Miso.Style ((===))
+import qualified Miso.Style as CSS
 
 data Action
   = GetTime
@@ -72,7 +73,7 @@ viewModel _ =
         []
         [ div_
             [ id_ "stats"
-            , style_ $ M.singleton "position" "absolute"
+            , CSS.style_ [ "position" === "absolute" ]
             ]
             []
         , canvas_

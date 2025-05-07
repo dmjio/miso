@@ -20,6 +20,8 @@ import           GHC.Generics
 import           Miso
 import           Miso.String (MisoString)
 import qualified Miso.String as S
+import qualified Miso.Style as CSS 
+import           Miso.Style ((===))
 
 default (MisoString)
 
@@ -177,7 +179,7 @@ viewEntries :: MisoString -> [Entry] -> View Msg
 viewEntries visibility entries =
     section_
         [ class_ "main"
-        , style_ $ M.singleton "visibility" cssVisibility
+        , CSS.style_ [ "visibility" === cssVisibility ]
         ]
         [ input_
             [ class_ "toggle-all"
