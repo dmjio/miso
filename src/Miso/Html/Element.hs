@@ -130,7 +130,7 @@ import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Used to construct @Node@ in @View@
 nodeHtml :: MisoString -> [Attribute action] -> [View action] -> View action
-nodeHtml = flip (node HTML) Nothing
+nodeHtml nodeName = node HTML nodeName Nothing
 -----------------------------------------------------------------------------
 -- | Construct a node with a @Key@
 nodeHtmlKeyed :: MisoString -> Key -> [Attribute action] -> [View action] -> View action

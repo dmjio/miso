@@ -1,6 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE NoImplicitPrelude #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Mathml.Element
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -16,9 +14,8 @@ module Miso.Mathml.Element
 -----------------------------------------------------------------------------
 import           Miso.Html.Types
 import           Miso.String (MisoString)
-import qualified Prelude            as P
 -----------------------------------------------------------------------------
 -- | Used to construct @Node@ in @View@
 nodeMathml :: MisoString -> [Attribute action] -> [View action] -> View action
-nodeMathml = P.flip (node MATHML) P.Nothing
+nodeMathml nodeName = node MATHML nodeName Nothing
 -----------------------------------------------------------------------------
