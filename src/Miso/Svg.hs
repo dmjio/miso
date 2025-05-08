@@ -27,13 +27,13 @@
 module Miso.Svg
    ( -- ** Element
      module Miso.Svg.Element
-     -- ** Attribute
-   , module Miso.Svg.Attribute
+     -- ** Property
+   , module Miso.Svg.Property
      -- ** Event
    , module Miso.Svg.Event
    ) where
 -----------------------------------------------------------------------------
-import Miso.Svg.Attribute hiding (filter_, path_, mask_, clipPath_, cursor_)
+import Miso.Svg.Property hiding (filter_, path_, mask_, clipPath_, cursor_, style_)
 import Miso.Svg.Element
 import Miso.Svg.Event
 -----------------------------------------------------------------------------

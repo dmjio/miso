@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Mathml.Element
@@ -12,13 +12,17 @@
 module Miso.Mathml.Element
   ( -- ** Combinator
     nodeMathml
+  , math_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Html.Types
 import           Miso.String (MisoString)
-import qualified Prelude            as P
 -----------------------------------------------------------------------------
 -- | Used to construct @Node@ in @View@
 nodeMathml :: MisoString -> [Attribute action] -> [View action] -> View action
-nodeMathml = P.flip (node MATHML) P.Nothing
+nodeMathml nodeName = node MATHML nodeName Nothing
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/math
+math_ :: [Attribute action] -> [View action] -> View action
+math_ = nodeMathml "math"
 -----------------------------------------------------------------------------
