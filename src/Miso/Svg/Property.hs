@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Svg.Attribute
+-- Module      :  Miso.Svg.Property
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
@@ -12,7 +12,7 @@
 -- <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute>
 --
 ----------------------------------------------------------------------------
-module Miso.Svg.Attribute
+module Miso.Svg.Property
   ( -- *** Regular Attributes
     accumulate_
   , additive_
