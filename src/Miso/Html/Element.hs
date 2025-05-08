@@ -20,7 +20,7 @@ module Miso.Html.Element
     , head_
     , link_
     , meta_
-    , style
+    , style_
     , title_
     -- ** Sectioning root
     , body_
