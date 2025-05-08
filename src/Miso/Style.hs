@@ -218,7 +218,7 @@ import           Prelude hiding (filter)
 -- Example shown below.
 --
 -- @
--- div_ [ style_  [ "background" =: "red" ] []
+-- div_ [ style_  [ "background" =: "red" ] ] []
 -- @
 --
 (=:) :: k -> v -> (k, v)
