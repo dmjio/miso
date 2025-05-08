@@ -112,7 +112,7 @@ miso f = withJS $ do
   initialize app $ \snk -> do
     renderStyles styles
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
-    let name = getMountPoint mountPoint
+    let name = componentPrefix <> getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
@@ -130,7 +130,7 @@ startApp app@App {..} = withJS $
   initialize app $ \snk -> do
     renderStyles styles
     vtree <- runView DontPrerender (view model) snk logLevel events
-    let name = getMountPoint mountPoint
+    let name = componentPrefix <> getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- mountElement name
     diff Nothing (Just vtree) mount

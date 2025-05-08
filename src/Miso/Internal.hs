@@ -28,6 +28,9 @@ module Miso.Internal
   , start
   , start_
   , stop
+  -- * Prefix
+  , componentPrefix
+  , subPrefix
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (throwIO)
@@ -128,10 +131,19 @@ subIds :: IORef Int
 {-# NOINLINE subIds #-}
 subIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
+subPrefix :: MisoString
+subPrefix = "miso-sub-id-"
+-----------------------------------------------------------------------------
+componentPrefix :: MisoString
+componentPrefix = "miso-component-id-"
+-----------------------------------------------------------------------------
+autoPrefix :: MisoString
+autoPrefix = "auto-"
+-----------------------------------------------------------------------------
 freshSubId :: IO MisoString
 freshSubId = do
   x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
-  pure ("miso-sub-id-" <> ms x)
+  pure (subPrefix <> autoPrefix <> ms x)
 -----------------------------------------------------------------------------
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
@@ -140,7 +152,7 @@ componentIds = unsafePerformIO $ liftIO (newIORef 0)
 freshComponentId :: IO MisoString
 freshComponentId = do
   x <- atomicModifyIORef' componentIds $ \y -> (y + 1, y)
-  pure ("miso-component-id-" <> ms x)
+  pure (componentPrefix <> autoPrefix <> ms x)
 -----------------------------------------------------------------------------
 -- | componentMap
 --
@@ -163,7 +175,7 @@ sample
   -> JSM model
 sample (Component _ name _) = do
   componentStateMap <- liftIO (readIORef componentMap)
-  liftIO $ case M.lookup name componentStateMap of
+  liftIO $ case M.lookup (componentPrefix <> name) componentStateMap of
     Nothing -> throwIO (NotMountedException name)
     Just ComponentState {..} -> readIORef componentModel
 -----------------------------------------------------------------------------
@@ -176,7 +188,7 @@ notify
   -> JSM ()
 notify (Component _ name _) action = do
   componentStateMap <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
+  forM_ (M.lookup (componentPrefix <> name) componentStateMap) $ \ComponentState {..} ->
     componentSink action
 -----------------------------------------------------------------------------
 -- | Sychronicity
@@ -273,7 +285,7 @@ runView prerender (Embed attributes (SomeComponent (Component key name app))) sn
   compName <-
     if null name
     then liftIO freshComponentId
-    else pure name
+    else pure (componentPrefix <> name)
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent prerender compName app)
@@ -435,7 +447,7 @@ start subName sub = do
         tid <- FFI.forkJSM (sub componentSink)
         liftIO $ do
           atomicModifyIORef' componentSubThreads $ \m ->
-            (M.insert subName tid m, ())
+            (M.insert (subPrefix <> subName) tid m, ())
 -----------------------------------------------------------------------------
 -- | 'stop'
 --
@@ -451,5 +463,5 @@ stop subName = do
       Just ComponentState {..} -> do
         liftIO $ do
           atomicModifyIORef' componentSubThreads $ \m ->
-            (M.delete subName m, ())
+            (M.delete (subPrefix <> subName) m, ())
 -----------------------------------------------------------------------------

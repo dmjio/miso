@@ -169,7 +169,7 @@ component = Component Nothing
 component_
   :: App model action
   -> Component model action
-component_ = Component Nothing ""
+component_ = Component Nothing mempty
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
 embed
