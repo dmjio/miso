@@ -5,7 +5,9 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Internal
@@ -20,8 +22,10 @@ module Miso.Internal
     initialize
   , componentMap
   , notify
+  , notify_
   , runView
   , sample
+  , sample_
   , renderStyles
   , Prerender(..)
   -- * Subscription
@@ -44,6 +48,8 @@ import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
 import           Language.Javascript.JSaddle hiding (Sync)
+import           GHC.TypeLits (KnownSymbol, symbolVal)
+import           Data.Proxy (Proxy(..))
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -64,7 +70,7 @@ import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io)
 -- | Helper function to abstract out initialization of @App@ between top-level API functions.
 initialize
   :: Eq model
-  => App model action
+  => App name model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -159,22 +165,50 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
+  :: forall name model action . KnownSymbol name
+  => App name model action
+  -> JSM model
+sample _ = do
+  componentStateMap <- liftIO (readIORef componentMap)
+  liftIO (case M.lookup name componentStateMap of
+    Nothing -> throwIO (NotMountedException name)
+    Just ComponentState {..} -> readIORef componentModel)
+  where
+    name = ms $ symbolVal (Proxy @name)
+-----------------------------------------------------------------------------
+sample_
   :: MisoString
   -> JSM model
-sample name = do
+sample_ name = do
   componentStateMap <- liftIO (readIORef componentMap)
-  liftIO $ case M.lookup name componentStateMap of
+  liftIO (case M.lookup name componentStateMap of
     Nothing -> throwIO (NotMountedException name)
-    Just ComponentState {..} -> readIORef componentModel
+    Just ComponentState {..} -> readIORef componentModel)
 -----------------------------------------------------------------------------
 -- | Used for bidirectional communication between components.
--- Specify the mounted @Component@'s 'App' you'd like to target.
--- This function is used to send messages to @Component@s on other parts of the application
+-- Specify the mounted @App@ you'd like to target
+-- This function is used to send messages to @App@ that are mounted on
+-- other parts of the DOM tree.
 notify
+  :: forall name model action . KnownSymbol name
+  => App name model action
+  -> action
+  -> JSM ()
+notify _ action = do
+  componentStateMap <- liftIO (readIORef componentMap)
+  forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
+    componentSink action
+  where
+    name = ms $ symbolVal (Proxy @name)
+-----------------------------------------------------------------------------
+-- | Used for bidirectional communication between components.
+-- Specify the mounted @App@ you'd like to target
+-- This function is used to send messages to @Component@s on other parts of the application
+notify_
   :: MisoString
   -> action
   -> JSM ()
-notify name action = do
+notify_ name action = do
   componentStateMap <- liftIO (readIORef componentMap)
   forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
     componentSink action
@@ -217,7 +251,7 @@ foldEffects update synchronicity name snk (e:es) o =
 drawComponent
   :: Prerender
   -> MisoString
-  -> App model action
+  -> App name model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent prerender name App {..} snk = do
@@ -229,7 +263,7 @@ drawComponent prerender name App {..} snk = do
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
-  :: App model action
+  :: App name model action
   -> ComponentState model action
   -> JSM ()
 drain app@App{..} cs@ComponentState {..} = do
@@ -245,7 +279,7 @@ drain app@App{..} cs@ComponentState {..} = do
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> App model action
+  -> App name model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@App {..} cs@ComponentState {..} = do

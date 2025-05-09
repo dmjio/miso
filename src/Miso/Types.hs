@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
@@ -46,16 +47,18 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
+import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
+import           GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App model action = App
+data App (name :: Symbol) model action = App
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -103,7 +106,7 @@ defaultApp
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> App model action
+  -> App name model action
 defaultApp m u v = App
   { model = m
   , update = u
@@ -141,46 +144,47 @@ data View action
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @App@ in @App@
 data SomeApp
-   = forall model action . Eq model
-  => SomeApp (App model action)
+   = forall name model action . Eq model
+  => SomeApp (App name model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @App@ into another @App@
 -- Since the name is omitted here
 component
-  :: Eq model
-  => MisoString
-  -> App model action
+  :: forall name model action a . (Eq model, KnownSymbol name)
+  => App name model action
   -> View a
-component name app = Component name [] Nothing (SomeApp app)
+component app = Component (ms name) [] Nothing (SomeApp app)
+  where
+    name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to embed an @App@ into another @App@
--- Since the name is omitted here
+-- | Like @component@, but it ignores the parameterized @name@, instead
+-- the name is dynamically generated at runtime. This is for dynamic
+-- component creation, where a mounted @App@ isn't necessarily statically known.
 component_
   :: Eq model
-  => App model action
+  => App name model action
   -> View a
 component_ app = Component mempty [] Nothing (SomeApp app)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@
+-- | Used in the @view@ function to embed @App@ in @App@
 componentWith
-  :: Eq model
-  => MisoString
-  -> App model action
+  :: forall name model action a . (Eq model, KnownSymbol name)
+  => App name model action
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith name app key attrs =
-  Component name attrs key (SomeApp app)
+componentWith app key attrs = Component (ms name) attrs key (SomeApp app)
+  where
+    name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to @Component@s in @App@
+-- | Used in the @view@ function to embed @App@ in @App@
 componentWith_
   :: Eq model
-  => App model action
+  => App name model action
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith_ app key attrs =
-  Component mempty attrs key (SomeApp app)
+componentWith_ app key attrs = Component mempty attrs key (SomeApp app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -196,8 +200,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (App model action) where
-  type ToViewAction (App model action) = action
+instance ToView (App name model action) where
+  type ToViewAction (App name model action) = action
   toView App {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

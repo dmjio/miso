@@ -47,30 +47,27 @@ secs = (* 1000000)
 
 loggerSub :: MisoString -> Sub action
 loggerSub msg = \_ ->
-    forever $ do
-        liftIO $ threadDelay (secs 10)
-        consoleLog msg
+  forever $ do
+    liftIO $ threadDelay (secs 10)
+    consoleLog msg
 
-app :: App MainModel MainAction
+app :: App "app" MainModel MainAction
 app = defaultApp False updateModel1 viewModel1
 
-app2 :: App Model Action
-app2 =
-        counterApp2
-            { subs = [loggerSub "component-2 sub"]
-            }
+counterApp2 :: App "app-2" Model Action
+counterApp2 = (defaultApp 0 updateModel2 viewModel2)
+  { subs = [loggerSub "component-2 sub"]
+  }
 
-app3 :: App (Bool, Model) Action
-app3 =
-        counterApp3
-            { subs = [ loggerSub "component-3 sub"]
-            }
+counterApp3 :: App "app-3" (Bool, Model) Action
+counterApp3 = (defaultApp (True, 0) updateModel3 viewModel3)
+  { subs = [ loggerSub "component-3 sub"]
+  }
 
-app4 :: App Model Action
-app4 =
-        counterApp4
-            { subs = [loggerSub "component-4 sub"]
-            }
+counterApp4 :: App "app-4" Model Action
+counterApp4 = (defaultApp 0 updateModel4 viewModel4)
+  { subs = [loggerSub "component-4 sub"]
+  }
 
 -- | Constructs a virtual DOM from a model
 viewModel1 :: MainModel -> View MainAction
@@ -95,7 +92,7 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                componentWith "component-2" app2 Nothing
+                componentWith counterApp2 Nothing
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
                   ]
@@ -111,13 +108,10 @@ updateModel1 MountMain =
   io (consoleLog "Component 2 was mounted!")
 updateModel1 SampleChild = do
   io $ do
-    componentTwoModel <- sample @Model "component-2"
+    componentTwoModel <- sample counterApp2
     consoleLog $
         "Sampling child component 2 from parent component main (unsafe): " <>
           ms (show componentTwoModel)
-
-counterApp2 :: App Model Action
-counterApp2 = defaultApp 0 updateModel2 viewModel2
 
 -- | Updates model, optionally introduces side effects
 updateModel2 :: Action -> Effect Model Action
@@ -146,14 +140,11 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , componentWith "component-3" app3 Nothing
+        , componentWith counterApp3 Nothing
           [ onMounted (Mount "3")
           , onUnmounted (UnMount "3")
           ]
         ]
-
-counterApp3 :: App (Bool, Model) Action
-counterApp3 = defaultApp (True, 0) updateModel3 viewModel3
 
 -- | Updates model, optionally introduces side effects
 updateModel3 :: Action -> Effect (Bool, Model) Action
@@ -189,31 +180,28 @@ viewModel3 (toggle, x) =
                -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 componentWith "component-4" app4 Nothing
+                 componentWith counterApp4 Nothing
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
                    ]
                else
-                 componentWith "component-5" app5 Nothing
+                 componentWith counterApp5 Nothing
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
                    ]
              ]
 
-counterApp4 :: App Model Action
-counterApp4 = defaultApp 0 updateModel4 viewModel4
-
 -- | Updates model, optionally introduces side effects
 updateModel4 :: Action -> Effect Model Action
 updateModel4 AddOne = do
   modify (+1)
-  io (notify "component-3" AddOne)
+  io (notify counterApp3 AddOne)
 updateModel4 SubtractOne = do
   modify (subtract 1)
-  io (notify "component-3" SubtractOne)
+  io (notify counterApp3 SubtractOne)
 updateModel4 Sample =
   io $ do
-    componentTwoModel <- sample @(Bool, Model) "component-3"
+    componentTwoModel <- sample counterApp3
     consoleLog $
       "Sampling parent component 3 from child component 4: " <>
          ms (show componentTwoModel)
@@ -233,26 +221,26 @@ viewModel4 x =
         , button_ [onClick Sample] [text "Sample Component 3 state"]
         ]
 
-app5 :: App Model Action
+app5 :: App "app-5" Model Action
 app5 =
         counterApp5
             { subs = [loggerSub "component-5 sub"]
             }
 
-counterApp5 :: App Model Action
+counterApp5 :: App "app-5" Model Action
 counterApp5 = defaultApp 0 updateModel5 viewModel5
 
 -- | Updates model, optionally introduces side effects
 updateModel5 :: Action -> Effect Model Action
 updateModel5 AddOne = do
   modify (+1)
-  io (notify "component-2" AddOne)
+  io (notify counterApp2 AddOne)
 updateModel5 SubtractOne = do
   modify (subtract 1)
-  io (notify "component-2" SubtractOne)
+  io (notify counterApp2 SubtractOne)
 updateModel5 Sample =
   io $ do
-    componentTwoModel <- sample @Model "component-2"
+    componentTwoModel <- sample counterApp2
     consoleLog $
       "Sampling parent component 2 from child component 5: " <>
          ms (show componentTwoModel)
