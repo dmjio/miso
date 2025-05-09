@@ -33,13 +33,15 @@ data MainAction
     | MountMain
     | UnMountMain
     | SampleChild
+    | StartLogger
+    | StopLogger
 
 type MainModel = Bool
 
 main :: IO ()
 main = run $ startApp app
   { logLevel = DebugPrerender
-  , subs = [loggerSub "main-app"]
+  , subs = []
   }
 
 secs :: Int -> Int
@@ -48,7 +50,7 @@ secs = (* 1000000)
 loggerSub :: MisoString -> Sub action
 loggerSub msg = \_ ->
   forever $ do
-    liftIO $ threadDelay (secs 10)
+    liftIO $ threadDelay (secs 1)
     consoleLog msg
 
 app :: App "app" MainModel MainAction
@@ -88,6 +90,11 @@ viewModel1 x =
         , br_ []
         , "Sample state will read from component 2 or 3's state depending on the toggle"
         , br_ []
+        , "Example of using 'start' and 'stop' subscriptions dynamically"
+        , div_ []
+          [ button_ [ onClick StartLogger ] [ "start logger" ]
+          , button_ [ onClick StopLogger ] [ "stop logger" ]
+          ]
         , button_ [onClick Toggle] [text "Toggle Component 2"]
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
@@ -101,6 +108,8 @@ viewModel1 x =
 
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> Effect MainModel MainAction
+updateModel1 StartLogger = start "logger" (loggerSub "main-app")
+updateModel1 StopLogger  = stop "logger"
 updateModel1 Toggle = modify not
 updateModel1 UnMountMain =
   io (consoleLog "Component 2 was unmounted!")
