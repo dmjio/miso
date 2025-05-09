@@ -308,7 +308,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (Component name attributes key (SomeApp app)) snk _ _ = do
+runView prerender (VComp name attributes key (Component app)) snk _ _ = do
   compName <-
     if null name
     then liftIO freshComponentId

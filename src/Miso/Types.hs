@@ -21,7 +21,7 @@
 module Miso.Types
   ( -- ** Types
     App              (..)
-  , SomeApp          (..)
+  , Component        (..)
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -139,13 +139,13 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | Component MisoString [Attribute action] (Maybe Key) SomeApp
+  | VComp MisoString [Attribute action] (Maybe Key) Component
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @App@ in @App@
-data SomeApp
+data Component
    = forall name model action . Eq model
-  => SomeApp (App name model action)
+  => Component (App name model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @App@ into another @App@
 -- Use this function if you'd like send messages to this @App@ at @name@ via
@@ -154,19 +154,19 @@ component
   :: forall name model action a . (Eq model, KnownSymbol name)
   => App name model action
   -> View a
-component app = Component (ms name) [] Nothing (SomeApp app)
+component app = VComp (ms name) [] Nothing (Component app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Like @component@, but uses a dynamically generated @name@ (enforced via @SomeApp@).
+-- | Like @component@, but uses a dynamically generated @name@ (enforced via @Component@).
 -- The component name is dynamically generated at runtime and available via 'ask'.
 -- This is for dynamic component creation, where a mounted @App@ isn't necessarily
 -- statically known. Use this during circumstances where a parent would like
 -- to dynamically generate / destroy n-many children in response to user input.
 component_
-  :: SomeApp
+  :: Component
   -> View a
-component_ = Component mempty [] Nothing
+component_ = VComp mempty [] Nothing
 -----------------------------------------------------------------------------
 -- | Like @component@ except it allows the specification of @Key@
 -- and @Attribute action@.
@@ -176,18 +176,18 @@ componentWith
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith app key attrs = Component (ms name) attrs key (SomeApp app)
+componentWith app key attrs = VComp (ms name) attrs key (Component app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Like @component_@ except it allows the specification of @Key@
 -- and @Attribute action@. Note: the @name@ parameter is ignored here.
 componentWith_
-  :: SomeApp
+  :: Component
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith_ someApp key attrs = Component mempty attrs key someApp
+componentWith_ someApp key attrs = VComp mempty attrs key someApp
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where

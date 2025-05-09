@@ -93,7 +93,7 @@ renderBuilder (Node _ tag _ attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (Component mount attributes _ (SomeApp App {..})) =
+renderBuilder (VComp mount attributes _ (Component App {..})) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
   , fromMisoString mount
