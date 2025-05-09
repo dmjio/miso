@@ -33,7 +33,7 @@ module Miso.Svg
    , module Miso.Svg.Event
    ) where
 -----------------------------------------------------------------------------
-import Miso.Svg.Property hiding (filter_, path_, mask_, clipPath_, cursor_, style_)
+import Miso.Svg.Property hiding (filter_, path_, mask_, clipPath_, cursor_)
 import Miso.Svg.Element
 import Miso.Svg.Event
 -----------------------------------------------------------------------------
