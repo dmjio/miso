@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
@@ -20,23 +21,24 @@
 module Miso.Types
   ( -- ** Types
     App              (..)
+  , Component        (..)
   , View             (..)
   , Key              (..)
   , Attribute        (..)
   , NS               (..)
   , CSS              (..)
   , LogLevel         (..)
-  , Component        (..)
-  , SomeComponent    (..)
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
-  -- ** Functions
+  -- ** Smart Constructors
   , defaultApp
+  -- ** Components
   , component
   , component_
-  , embed
-  , embedKeyed
+  , componentWith
+  , componentWith_
+  -- ** Utils
   , getMountPoint
   ) where
 -----------------------------------------------------------------------------
@@ -47,16 +49,18 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
+import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
+import           GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App model action = App
+data App (name :: Symbol) model action = App
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -104,7 +108,7 @@ defaultApp
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> App model action
+  -> App name model action
 defaultApp m u v = App
   { model = m
   , update = u
@@ -137,58 +141,55 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | Embed [Attribute action] SomeComponent
+  | VComp MisoString [Attribute action] (Maybe Key) Component
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @Component@ in @App@
-data SomeComponent
-   = forall model action . Eq model
-  => SomeComponent (Component model action)
+-- | Existential wrapper used to allow the nesting of @App@ in @App@
+data Component
+   = forall name model action . Eq model
+  => Component (App name model action)
 -----------------------------------------------------------------------------
--- | A 'Component' wraps an 'App' and can be communicated with via 'componentName'
--- when using 'notify'. Its state is accessible via 'sample'.
-data Component model action
-  = Component
-  { componentKey :: Maybe Key
-  , componentName :: MisoString
-  , componentApp :: App model action
-  }
------------------------------------------------------------------------------
--- | Smart constructor for 'Component' construction.
--- Needed when calling @embed@ and @embedWith@
+-- | Used in the @view@ function to embed an @App@ into another @App@
+-- Use this function if you'd like send messages to this @App@ at @name@ via
+-- @notify@ or to read the state of this @App@ via @sample@.
 component
-  :: MisoString
-  -> App model action
-  -> Component model action
-component = Component Nothing
+  :: forall name model action a . (Eq model, KnownSymbol name)
+  => App name model action
+  -> View a
+component app = VComp (ms name) [] Nothing (Component app)
+  where
+    name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Component' construction.
--- This is a nameless component, which means that it is isolated and
--- cannot be communicated with by other components via 'notify' or 'sample'.
---
+-- | Like @component@, but uses a dynamically generated @name@ (enforced via @Component@).
+-- The component name is dynamically generated at runtime and available via 'ask'.
+-- This is for dynamic component creation, where a mounted @App@ isn't necessarily
+-- statically known. Use this during circumstances where a parent would like
+-- to dynamically generate / destroy n-many children in response to user input.
 component_
-  :: App model action
-  -> Component model action
-component_ = Component Nothing ""
+  :: Component
+  -> View a
+component_ = VComp mempty [] Nothing
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed
-  :: Eq model
-  => Component model action
-  -> [Attribute b]
-  -> View b
-embed comp attrs = Embed attrs (SomeComponent comp)
+-- | Like @component@ except it allows the specification of @Key@
+-- and @Attribute action@.
+componentWith
+  :: forall name model action a . (Eq model, KnownSymbol name)
+  => App name model action
+  -> Maybe Key
+  -> [Attribute a]
+  -> View a
+componentWith app key attrs = VComp (ms name) attrs key (Component app)
+  where
+    name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
-embedKeyed
-  :: Eq model
-  => Component model action
-  -> [Attribute b]
-  -> Key
-  -> View b
-embedKeyed comp attrs key
-  = Embed attrs
-  $ SomeComponent comp { componentKey = Just key }
+-- | Like @component_@ except it allows the specification of @Key@
+-- and @Attribute action@. Note: the @name@ parameter is ignored here.
+componentWith_
+  :: Component
+  -> Maybe Key
+  -> [Attribute a]
+  -> View a
+componentWith_ someApp key attrs = VComp mempty attrs key someApp
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -204,12 +205,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component model action) where
-  type ToViewAction (Component model action) = action
-  toView (Component _ _ app) = toView app
------------------------------------------------------------------------------
-instance ToView (App model action) where
-  type ToViewAction (App model action) = action
+instance ToView (App name model action) where
+  type ToViewAction (App name model action) = action
   toView App {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

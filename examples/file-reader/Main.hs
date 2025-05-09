@@ -78,7 +78,7 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: App Model Action
+app :: App name Model Action
 app = defaultApp (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function

@@ -46,10 +46,6 @@ instance Accept HTML where
 class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
--- | Render a @Component@ to a @L.ByteString@
-instance ToHtml (Component model action) where
-  toHtml = renderComponent
-----------------------------------------------------------------------------
 -- | Render a @View@ to a @L.ByteString@
 instance ToHtml (View a) where
   toHtml = renderView
@@ -64,9 +60,6 @@ instance ToHtml a => MimeRender HTML a where
 ----------------------------------------------------------------------------
 renderView :: View a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
-----------------------------------------------------------------------------
-renderComponent :: Component model action -> L.ByteString
-renderComponent (Component _ _ App {..}) = renderView (view model)
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
@@ -100,7 +93,7 @@ renderBuilder (Node _ tag _ attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (Embed attributes (SomeComponent (Component _ mount App {..}))) =
+renderBuilder (VComp mount attributes _ (Component App {..})) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
   , fromMisoString mount

@@ -164,7 +164,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
-app :: App Model Action
+app :: App name Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state

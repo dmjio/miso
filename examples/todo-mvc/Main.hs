@@ -97,7 +97,7 @@ main = run $ startApp app
       ]
   }
 
-app :: App Model Msg
+app :: App name Model Msg
 app = defaultApp emptyModel updateModel viewModel
 
 updateModel :: Msg -> Effect Model Msg
