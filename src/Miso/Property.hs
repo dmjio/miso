@@ -52,7 +52,7 @@ intProp ::  MisoString -> Int -> Attribute action
 intProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to `Integer` value
-integerProp ::  MisoString -> Int -> Attribute action
+integerProp ::  MisoString -> Integer -> Attribute action
 integerProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to `Double` value
