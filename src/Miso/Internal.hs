@@ -186,9 +186,11 @@ sample_ name = do
     Just ComponentState {..} -> readIORef componentModel)
 -----------------------------------------------------------------------------
 -- | Used for bidirectional communication between components.
--- Specify the mounted @App@ you'd like to target
+-- Specify the mounted @App@ you'd like to target.
+--
 -- This function is used to send messages to @App@ that are mounted on
 -- other parts of the DOM tree.
+--
 notify
   :: forall name model action . KnownSymbol name
   => App name model action
@@ -202,8 +204,11 @@ notify _ action = do
     name = ms $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Used for bidirectional communication between components.
--- Specify the mounted @App@ you'd like to target
--- This function is used to send messages to @Component@s on other parts of the application
+--
+-- Specify the mounted @App@ you'd like to target.
+-- This function is used to send messages to @App@ on other parts of the
+-- DOM tree.
+--
 notify_
   :: MisoString
   -> action

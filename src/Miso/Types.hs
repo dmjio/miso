@@ -148,7 +148,8 @@ data SomeApp
   => SomeApp (App name model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @App@ into another @App@
--- Since the name is omitted here
+-- Use this function if you'd like send messages to this @App@ at @name@ via
+-- @notify@ or to read the state of this @App@ via @sample@.
 component
   :: forall name model action a . (Eq model, KnownSymbol name)
   => App name model action
@@ -157,16 +158,18 @@ component app = Component (ms name) [] Nothing (SomeApp app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Like @component@, but it ignores the parameterized @name@, instead
--- the name is dynamically generated at runtime. This is for dynamic
--- component creation, where a mounted @App@ isn't necessarily statically known.
+-- | Like @component@, but uses a dynamically generated @name@ (enforced via @SomeApp@).
+-- The component name is dynamically generated at runtime and available via 'ask'.
+-- This is for dynamic component creation, where a mounted @App@ isn't necessarily
+-- statically known. Use this during circumstances where a parent would like
+-- to dynamically generate / destroy n-many children in response to user input.
 component_
-  :: Eq model
-  => App name model action
+  :: SomeApp
   -> View a
-component_ app = Component mempty [] Nothing (SomeApp app)
+component_ = Component mempty [] Nothing
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to embed @App@ in @App@
+-- | Like @component@ except it allows the specification of @Key@
+-- and @Attribute action@.
 componentWith
   :: forall name model action a . (Eq model, KnownSymbol name)
   => App name model action
@@ -177,14 +180,14 @@ componentWith app key attrs = Component (ms name) attrs key (SomeApp app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to embed @App@ in @App@
+-- | Like @component_@ except it allows the specification of @Key@
+-- and @Attribute action@. Note: the @name@ parameter is ignored here.
 componentWith_
-  :: Eq model
-  => App name model action
+  :: SomeApp
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith_ app key attrs = Component mempty attrs key (SomeApp app)
+componentWith_ someApp key attrs = Component mempty attrs key someApp
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where

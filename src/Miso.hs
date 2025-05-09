@@ -23,8 +23,10 @@ module Miso
   , Sink
     -- ** Sampling
   , sample
+  , sample_
     -- ** Message Passing
   , notify
+  , notify_
     -- ** Subscription
   , start
   , start_
