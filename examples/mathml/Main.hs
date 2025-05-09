@@ -3,6 +3,7 @@
 module Main where
 
 import Miso
+import Miso.Mathml
 
 #if defined(wasm32_HOST_ARCH)
 foreign export javascript "hs_start" main :: IO ()
@@ -22,11 +23,38 @@ updateModel _ = pure ()
 viewModel :: Model -> View ()
 viewModel _ =
     math_
-        []
-        [ nodeMathml
-            "msup"
-            []
-            [ nodeMathml "mi" [] [text "x"]
-            , nodeMathml "mn" [] [text "2"]
+        [display_ "block"]
+        [ mrow_ []
+            [ msub_ []
+                [ mi_ [] [text "x"]
+                , mtext_ [] [text "1,2"]
+                ]
+            , mo_ [] [text "="]
+            , mfrac_ []
+                [ mrow_ []
+                    [ mo_ [] [text "−"]
+                    , mi_ [] [text "b"]
+                    , mo_ [] [text "±"]
+                    , msqrt_
+                        []
+                        [ mrow_ []
+                            [ msup_ []
+                                [ mi_ [] [text "b"]
+                                , mn_ [] [text "2"]
+                                ]
+                            , mo_ [] [text "−"]
+                            , mrow_ []
+                                [ mn_ [] [text "4"]
+                                , mi_ [] [text "a"]
+                                , mi_ [] [text "c"]
+                                ]
+                            ]
+                        ]
+                    ]
+                , mrow_ []
+                    [ mn_ [] [text "2"]
+                    , mi_ [] [text "a"]
+                    ]
+                ]
             ]
         ]

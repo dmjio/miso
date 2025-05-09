@@ -10,16 +10,26 @@
 -- Example usage:
 --
 -- @
+-- xSquared :: View action
+-- xSquared  =
+--     math_ []
+--         [ msup_ []
+--             [ mi_ [] [text "x"]
+--             , mn_ [] [text "2"]
+--             ]
+--         ]
 -- @
 --
--- More information on how to use miso is available on GitHub
---
--- <http://github.com/dmjio/miso>
+-- More complex example in [examples/mathml](https://github.com/dmjio/miso/blob/master/examples/mathml/Main.hs).
 --
 ----------------------------------------------------------------------------
 module Miso.Mathml
-   ( module Miso.Mathml.Element
+   ( -- * Elements
+     module Miso.Mathml.Element
+     -- * Properties
+   , module Miso.Mathml.Property
    ) where
 -----------------------------------------------------------------------------
 import Miso.Mathml.Element
+import Miso.Mathml.Property hiding (align_)
 -----------------------------------------------------------------------------

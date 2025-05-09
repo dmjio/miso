@@ -48,8 +48,6 @@ module Miso
     -- * Html
   , module Miso.Html
   , module Miso.Render
-    -- * Mathml
-  , module Miso.Mathml
     -- * Router
   , module Miso.Router
     -- * Run
@@ -96,7 +94,6 @@ import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Internal
-import           Miso.Mathml
 import           Miso.Property
 import           Miso.Render
 import           Miso.Router
