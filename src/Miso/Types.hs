@@ -31,12 +31,14 @@ module Miso.Types
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
-  -- ** Functions
+  -- ** Smart Constructors
   , defaultApp
+  -- ** Components
   , component
   , component_
   , componentWith
   , componentWith_
+  -- ** Utils
   , getMountPoint
   ) where
 -----------------------------------------------------------------------------
