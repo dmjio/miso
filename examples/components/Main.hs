@@ -95,7 +95,7 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                componentWith_ component2 Nothing
+                componentWith "component-2" component2 Nothing
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
                   ]
@@ -146,7 +146,7 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , componentWith_ component3 Nothing
+        , componentWith "component-3" component3 Nothing
           [ onMounted (Mount "3")
           , onUnmounted (UnMount "3")
           ]
@@ -189,12 +189,12 @@ viewModel3 (toggle, x) =
                -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 componentWith_ component4 Nothing
+                 componentWith "component-4" component4 Nothing
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
                    ]
                else
-                 componentWith_ component5 Nothing
+                 componentWith "component-5" component5 Nothing
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
                    ]
