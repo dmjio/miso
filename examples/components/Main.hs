@@ -54,20 +54,20 @@ loggerSub msg = \_ ->
 app :: App MainModel MainAction
 app = defaultApp False updateModel1 viewModel1
 
-component2 :: App Model Action
-component2 =
+app2 :: App Model Action
+app2 =
         counterApp2
             { subs = [loggerSub "component-2 sub"]
             }
 
-component3 :: App (Bool, Model) Action
-component3 =
+app3 :: App (Bool, Model) Action
+app3 =
         counterApp3
             { subs = [ loggerSub "component-3 sub"]
             }
 
-component4 :: App Model Action
-component4 =
+app4 :: App Model Action
+app4 =
         counterApp4
             { subs = [loggerSub "component-4 sub"]
             }
@@ -95,7 +95,7 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                componentWith "component-2" component2 Nothing
+                componentWith "component-2" app2 Nothing
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
                   ]
@@ -146,7 +146,7 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , componentWith "component-3" component3 Nothing
+        , componentWith "component-3" app3 Nothing
           [ onMounted (Mount "3")
           , onUnmounted (UnMount "3")
           ]
@@ -189,12 +189,12 @@ viewModel3 (toggle, x) =
                -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 componentWith "component-4" component4 Nothing
+                 componentWith "component-4" app4 Nothing
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
                    ]
                else
-                 componentWith "component-5" component5 Nothing
+                 componentWith "component-5" app5 Nothing
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
                    ]
@@ -233,8 +233,8 @@ viewModel4 x =
         , button_ [onClick Sample] [text "Sample Component 3 state"]
         ]
 
-component5 :: App Model Action
-component5 =
+app5 :: App Model Action
+app5 =
         counterApp5
             { subs = [loggerSub "component-5 sub"]
             }
