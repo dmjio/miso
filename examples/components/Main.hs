@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -53,23 +54,20 @@ loggerSub msg = \_ ->
 app :: App MainModel MainAction
 app = defaultApp False updateModel1 viewModel1
 
-component2 :: Component Model Action
+component2 :: App Model Action
 component2 =
-    component "component-2"
         counterApp2
             { subs = [loggerSub "component-2 sub"]
             }
 
-component3 :: Component (Bool, Model) Action
+component3 :: App (Bool, Model) Action
 component3 =
-    component "component-3"
         counterApp3
             { subs = [ loggerSub "component-3 sub"]
             }
 
-component4 :: Component Model Action
+component4 :: App Model Action
 component4 =
-    component "component-4"
         counterApp4
             { subs = [loggerSub "component-4 sub"]
             }
@@ -97,7 +95,7 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                embed component2
+                componentWith_ component2 Nothing
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
                   ]
@@ -113,7 +111,7 @@ updateModel1 MountMain =
   io (consoleLog "Component 2 was mounted!")
 updateModel1 SampleChild = do
   io $ do
-    componentTwoModel <- sample component2
+    componentTwoModel <- sample @Model "component-2"
     consoleLog $
         "Sampling child component 2 from parent component main (unsafe): " <>
           ms (show componentTwoModel)
@@ -148,7 +146,7 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , embed component3
+        , componentWith_ component3 Nothing
           [ onMounted (Mount "3")
           , onUnmounted (UnMount "3")
           ]
@@ -191,12 +189,12 @@ viewModel3 (toggle, x) =
                -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 embed component4
+                 componentWith_ component4 Nothing
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
                    ]
                else
-                 embed component5
+                 componentWith_ component5 Nothing
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
                    ]
@@ -209,13 +207,13 @@ counterApp4 = defaultApp 0 updateModel4 viewModel4
 updateModel4 :: Action -> Effect Model Action
 updateModel4 AddOne = do
   modify (+1)
-  io (notify component3 AddOne)
+  io (notify "component-3" AddOne)
 updateModel4 SubtractOne = do
   modify (subtract 1)
-  io (notify component3 SubtractOne)
+  io (notify "component-3" SubtractOne)
 updateModel4 Sample =
   io $ do
-    componentTwoModel <- sample component3
+    componentTwoModel <- sample @(Bool, Model) "component-3"
     consoleLog $
       "Sampling parent component 3 from child component 4: " <>
          ms (show componentTwoModel)
@@ -235,9 +233,8 @@ viewModel4 x =
         , button_ [onClick Sample] [text "Sample Component 3 state"]
         ]
 
-component5 :: Component Model Action
+component5 :: App Model Action
 component5 =
-    component "component-5"
         counterApp5
             { subs = [loggerSub "component-5 sub"]
             }
@@ -249,13 +246,13 @@ counterApp5 = defaultApp 0 updateModel5 viewModel5
 updateModel5 :: Action -> Effect Model Action
 updateModel5 AddOne = do
   modify (+1)
-  io (notify component2 AddOne)
+  io (notify "component-2" AddOne)
 updateModel5 SubtractOne = do
   modify (subtract 1)
-  io (notify component2 SubtractOne)
+  io (notify "component-2" SubtractOne)
 updateModel5 Sample =
   io $ do
-    componentTwoModel <- sample component2
+    componentTwoModel <- sample @Model "component-2"
     consoleLog $
       "Sampling parent component 2 from child component 5: " <>
          ms (show componentTwoModel)

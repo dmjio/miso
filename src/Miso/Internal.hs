@@ -57,7 +57,7 @@ import           Miso.Exception (MisoException(..), exception)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
-import           Miso.Types hiding (componentName)
+import           Miso.Types
 import           Miso.Event (Events)
 import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io)
 -----------------------------------------------------------------------------
@@ -159,9 +159,9 @@ componentMap = unsafePerformIO (newIORef mempty)
 -- to be accessed. Then we throw a @NotMountedException@, in the case the
 -- @Component@ being accessed is not available.
 sample
-  :: Component model action
+  :: MisoString
   -> JSM model
-sample (Component _ name _) = do
+sample name = do
   componentStateMap <- liftIO (readIORef componentMap)
   liftIO $ case M.lookup name componentStateMap of
     Nothing -> throwIO (NotMountedException name)
@@ -171,10 +171,10 @@ sample (Component _ name _) = do
 -- Specify the mounted @Component@'s 'App' you'd like to target.
 -- This function is used to send messages to @Component@s on other parts of the application
 notify
-  :: Component model action
+  :: MisoString
   -> action
   -> JSM ()
-notify (Component _ name _) action = do
+notify name action = do
   componentStateMap <- liftIO (readIORef componentMap)
   forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
     componentSink action
@@ -269,7 +269,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (Embed attributes (SomeComponent (Component key name app))) snk _ _ = do
+runView prerender (Component name attributes key (SomeApp app)) snk _ _ = do
   compName <-
     if null name
     then liftIO freshComponentId

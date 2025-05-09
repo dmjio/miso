@@ -20,14 +20,13 @@
 module Miso.Types
   ( -- ** Types
     App              (..)
+  , SomeApp          (..)
   , View             (..)
   , Key              (..)
   , Attribute        (..)
   , NS               (..)
   , CSS              (..)
   , LogLevel         (..)
-  , Component        (..)
-  , SomeComponent    (..)
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -35,8 +34,8 @@ module Miso.Types
   , defaultApp
   , component
   , component_
-  , embed
-  , embedKeyed
+  , componentWith
+  , componentWith_
   , getMountPoint
   ) where
 -----------------------------------------------------------------------------
@@ -137,58 +136,51 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | Embed [Attribute action] SomeComponent
+  | Component MisoString [Attribute action] (Maybe Key) SomeApp
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @Component@ in @App@
-data SomeComponent
+-- | Existential wrapper used to allow the nesting of @App@ in @App@
+data SomeApp
    = forall model action . Eq model
-  => SomeComponent (Component model action)
+  => SomeApp (App model action)
 -----------------------------------------------------------------------------
--- | A 'Component' wraps an 'App' and can be communicated with via 'componentName'
--- when using 'notify'. Its state is accessible via 'sample'.
-data Component model action
-  = Component
-  { componentKey :: Maybe Key
-  , componentName :: MisoString
-  , componentApp :: App model action
-  }
------------------------------------------------------------------------------
--- | Smart constructor for 'Component' construction.
--- Needed when calling @embed@ and @embedWith@
+-- | Used in the @view@ function to embed an @App@ into another @App@
+-- Since the name is omitted here
 component
-  :: MisoString
+  :: Eq model
+  => MisoString
   -> App model action
-  -> Component model action
-component = Component Nothing
+  -> View a
+component name app = Component name [] Nothing (SomeApp app)
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Component' construction.
--- This is a nameless component, which means that it is isolated and
--- cannot be communicated with by other components via 'notify' or 'sample'.
---
+-- | Used in the @view@ function to embed an @App@ into another @App@
+-- Since the name is omitted here
 component_
-  :: App model action
-  -> Component model action
-component_ = Component Nothing ""
+  :: Eq model
+  => App model action
+  -> View a
+component_ app = Component mempty [] Nothing (SomeApp app)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed
+componentWith
   :: Eq model
-  => Component model action
-  -> [Attribute b]
-  -> View b
-embed comp attrs = Embed attrs (SomeComponent comp)
+  => MisoString
+  -> App model action
+  -> Maybe Key
+  -> [Attribute a]
+  -> View a
+componentWith name app key attrs =
+  Component name attrs key (SomeApp app)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
-embedKeyed
+-- | Used in the @view@ function to @Component@s in @App@
+componentWith_
   :: Eq model
-  => Component model action
-  -> [Attribute b]
-  -> Key
-  -> View b
-embedKeyed comp attrs key
-  = Embed attrs
-  $ SomeComponent comp { componentKey = Just key }
+  => App model action
+  -> Maybe Key
+  -> [Attribute a]
+  -> View a
+componentWith_ app key attrs =
+  Component mempty attrs key (SomeApp app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -203,10 +195,6 @@ class ToView a where
 instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
------------------------------------------------------------------------------
-instance ToView (Component model action) where
-  type ToViewAction (Component model action) = action
-  toView (Component _ _ app) = toView app
 -----------------------------------------------------------------------------
 instance ToView (App model action) where
   type ToViewAction (App model action) = action
