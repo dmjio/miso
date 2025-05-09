@@ -113,7 +113,6 @@ module Miso.Svg.Property
   , startOffset_
   , stdDeviation_
   , stitchTiles_
-  , style_
   , surfaceScale_
   , systemLanguage_
   , tabindex_
@@ -197,8 +196,8 @@ module Miso.Svg.Property
   ) where
 -----------------------------------------------------------------------------
 import Miso.Html.Types ( Attribute )
-import Miso.Html.Property ( textProp )
-import Miso.String        ( MisoString )
+import Miso.Property ( textProp )
+import Miso.String ( MisoString )
 -----------------------------------------------------------------------------
 attr :: MisoString -> MisoString -> Attribute action
 attr = textProp
@@ -598,10 +597,6 @@ stdDeviation_ = attr "stdDeviation"
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/stitchTiles>
 stitchTiles_ ::  MisoString -> Attribute action
 stitchTiles_ = attr "stitchTiles"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/style>
-style_ ::  MisoString -> Attribute action
-style_ = attr "style"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/surfaceScale>
 surfaceScale_ ::  MisoString -> Attribute action

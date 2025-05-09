@@ -11,7 +11,6 @@ import Common
 import Control.Concurrent
 import Control.Monad
 import Data.Binary.Builder
-import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Time.Clock
 import Network.HTTP.Types

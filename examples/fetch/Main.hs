@@ -18,7 +18,6 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Data.Aeson
-import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
 import           Language.Javascript.JSaddle (JSM)
@@ -29,6 +28,7 @@ import           Servant.Client.JS (ClientEnv (..), ClientError, parseBaseUrl, c
 import           Miso hiding (defaultOptions)
 import           Miso.String
 import           Miso.Lens
+import qualified Miso.Style as CSS
 ----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -92,9 +92,9 @@ viewModel m = view
   where
     view =
       div_
-      [ style_ $ M.fromList
-        [ (pack "text-align", pack "center")
-        , (pack "margin", pack "200px")
+      [ CSS.style_
+        [ CSS.textAlign "center"
+        , CSS.margin "200px"
         ]
       ]
       [ h1_

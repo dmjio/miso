@@ -7,10 +7,10 @@ module Main where
 
 import Data.Bool
 import Data.Function
-import qualified Data.Map as M
 
 import Miso
 import Miso.String
+import qualified Miso.Style as CSS
 
 data Action
   = GetArrows !Arrows
@@ -139,12 +139,11 @@ display m@Model{..} = marioImage
             , width_ $ ms w
             ]
             [ nodeHtml "style" [] ["@keyframes play { 100% { background-position: -296px; } }"]
-            , div_ [style_ (marioStyle m groundY)] []
+            , div_ [CSS.style_ (marioStyle m groundY)] []
             ]
 
-marioStyle :: Model -> Double -> M.Map MisoString MisoString
+marioStyle :: Model -> Double -> [CSS.Style]
 marioStyle Model{..} gy =
-    M.fromList
         [ ("transform", matrix dir x $ abs (y + gy))
         , ("display", "block")
         , ("width", "37px")

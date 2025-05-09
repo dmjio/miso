@@ -169,10 +169,12 @@ library
     Miso.Internal
     Miso.Mathml
     Miso.Mathml.Element
+    Miso.Property
     Miso.Render
     Miso.Router
     Miso.Run
     Miso.Storage
+    Miso.Style.Color
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
@@ -191,6 +193,7 @@ library
     Miso.Lens
     Miso.Svg
     Miso.String
+    Miso.Style
   ghc-options:
     -Wall
   hs-source-dirs:

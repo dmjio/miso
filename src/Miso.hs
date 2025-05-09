@@ -42,6 +42,8 @@ module Miso
   , module Miso.Effect
     -- * Event
   , module Miso.Event
+    -- * Property
+  , module Miso.Property
     -- * Html
   , module Miso.Html
   , module Miso.Render
@@ -94,6 +96,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Internal
 import           Miso.Mathml
+import           Miso.Property
 import           Miso.Render
 import           Miso.Router
 import           Miso.Run
