@@ -36,7 +36,7 @@ main = run $ startApp app
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-app :: App Model Action
+app :: App name Model Action
 app = defaultApp emptyModel updateModel appView
 
 emptyModel :: Model

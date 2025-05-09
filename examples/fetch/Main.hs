@@ -59,7 +59,7 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
-app :: App Model Action
+app :: App name Model Action
 app = defaultApp emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 emptyModel :: Model

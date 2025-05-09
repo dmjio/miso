@@ -24,7 +24,7 @@ main = run $ startApp app
   }
 
 -- | Application definition (uses 'defaultApp' smart constructor)
-app :: App Model Action
+app :: App name Model Action
 app = defaultApp emptyModel updateModel viewModel
 
 emptyModel :: Model
