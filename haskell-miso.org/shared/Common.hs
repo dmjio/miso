@@ -61,7 +61,7 @@ type ClientRoutes = Routes (View Action)
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = App Model Action
+type HaskellMisoComponent = App "app" Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -100,7 +100,7 @@ haskellMisoComponent uri
   , logLevel = DebugAll
   }
   
-app :: URI -> App Model Action
+app :: URI -> App name Model Action
 app currentUri = defaultApp emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
