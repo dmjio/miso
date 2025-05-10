@@ -230,7 +230,7 @@ k =: v = (k,v)
 type Style = (MisoString, MisoString)
 -----------------------------------------------------------------------------
 -- | Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
--- It mas CSS properties to their values.
+-- It maps CSS properties to their values.
 type Styles = Map MisoString MisoString
 -----------------------------------------------------------------------------
 -- | Type for a CSS style on native.
