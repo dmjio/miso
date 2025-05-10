@@ -139,7 +139,7 @@ import Miso
 import Miso.String
 import Miso.Lens
 ----------------------------------------------------------------------------
--- | Application model state
+-- | Component model state
 newtype Model = Model
   { _counter :: Int
   } deriving (Show, Eq)
