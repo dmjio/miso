@@ -39,6 +39,7 @@ module Miso
   , io
   , io_
   , for
+  , componentId
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
