@@ -164,7 +164,7 @@ mapSub f sub = \g -> sub (g . f)
 -- | Schedule a single 'IO' action for later execution.
 --
 -- Note that multiple 'IO' action can be scheduled using
--- @Control.Monad.Writer.Class.tell@ from the @mtl@ library.
+-- 'Control.Monad.Writer.Class.tell' from the @mtl@ library.
 io_ :: JSM action -> Effect model action
 io_ action = withSink (action >>=)
 -----------------------------------------------------------------------------
@@ -183,8 +183,9 @@ io action = withSink (\_ -> action)
 for :: Foldable f => JSM (f action) -> Effect model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
--- | @sink@ allows users to access the sink of the 'Component' or top-level
+-- | @withSink@ allows users to access the sink of the 'Component' or top-level
 -- 'App' in their application. This is useful for introducing 'IO' into the system.
+-- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
 -- widget which has an associated callback. The callback can then call the sink
@@ -196,7 +197,7 @@ for actions = withSink $ \sink -> actions >>= flip for_ sink
 withSink :: (Sink action -> JSM ()) -> Effect model action
 withSink f = tell [ f ]
 -----------------------------------------------------------------------------
--- | Issue a new 'Action' to be processed by 'update'. A synonym for @tell@, specialized to @Effect@
+-- | Issue a new 'Action' to be processed by 'update'.
 --
 -- > update :: Action -> Effect Model Action
 -- > update = \case
