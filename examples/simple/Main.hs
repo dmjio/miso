@@ -34,25 +34,25 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { events = pointerEvents
   , styles = [ Style css ]
   }
 
--- | Application definition (uses 'defaultApp' smart constructor)
-app :: App name Model Action
-app = defaultApp (Model 0) updateModel viewModel
+-- | Component definition (uses 'defaultComponent' smart constructor)
+app :: Component name Model Action
+app = defaultComponent (Model 0) updateModel viewModel
 
 -- | UpdateModels model, optionally introduces side effects
 updateModel :: Action -> Effect Model Action
 updateModel (AddOne event) = do
   value += 1
-  io $ consoleLog (ms (show event))
+  io_ $ consoleLog (ms (show event))
 updateModel (SubtractOne event) = do
   value -= 1
-  io $ consoleLog (ms (show event))
+  io_ $ consoleLog (ms (show event))
 updateModel SayHelloWorld =
-  io (consoleLog "Hello World!")
+  io_ (consoleLog "Hello World!")
 
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Action

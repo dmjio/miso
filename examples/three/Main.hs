@@ -62,7 +62,7 @@ main = run $ do
     stats <- newStats
     ref <- newIORef $ Context (pure ()) (pure ()) stats
     m <- now
-    startApp (defaultApp m (updateModel ref) viewModel)
+    startComponent (defaultComponent m (updateModel ref) viewModel)
       { initialAction = Just Init
       }
 
@@ -88,18 +88,18 @@ updateModel ::
     Action ->
     Effect Double Action
 updateModel ref Init = do
-  io (initContext ref)
-  issue GetTime
+  io $ do
+    initContext ref
+    pure GetTime
 updateModel ref GetTime = do
   io $ do
     Context{..} <- liftIO (readIORef ref)
     withStats stats $ do
       rotateCube
       renderScene
-  io_ (SetTime <$> now)
-updateModel _ (SetTime m) = do
-  put m
-  issue GetTime
+    SetTime <$> now
+updateModel _ (SetTime m) =
+  m <# pure GetTime
 
 #ifdef GHCJS_NEW
 foreign import javascript unsafe "(() => { return new Stats(); })"

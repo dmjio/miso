@@ -33,14 +33,14 @@ data Action
 main :: IO ()
 main = run $
   miso $ \u ->
-    (defaultApp (Model u) updateModel viewModel)
+    (defaultComponent (Model u) updateModel viewModel)
        { subs = [uriSub HandleURI]
        }
 
 -- | Update your model
 updateModel :: Action -> Effect Model Action
 updateModel (HandleURI u) = modify $ \m -> m { uri = u }
-updateModel (ChangeURI u) = io (pushURI u)
+updateModel (ChangeURI u) = io_ (pushURI u)
 
 -- | View function, with routing
 viewModel :: Model -> View Action

@@ -17,16 +17,16 @@ module Miso
     -- ** Entry
     miso
   , (🍜)
-  , startApp
+  , startComponent
     -- ** Sink
   , withSink
   , Sink
     -- ** Sampling
   , sample
-  , sample_
+  , sample'
     -- ** Message Passing
   , notify
-  , notify_
+  , notify'
     -- ** Subscription
   , startSub
   , stopSub
@@ -38,7 +38,6 @@ module Miso
   , io
   , io_
   , for
-  , componentId
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -107,13 +106,13 @@ import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
--- | Runs an isomorphic miso application.
+-- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> App name model action) -> JSM ()
+miso :: Eq model => (URI -> Component name model action) -> JSM ()
 miso f = withJS $ do
-  app@App {..} <- f <$> getURI
+  app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
     renderStyles styles
     VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
@@ -125,13 +124,13 @@ miso f = withJS $ do
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> App name model action) -> JSM ()
+(🍜) :: Eq model => (URI -> Component name model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startApp :: Eq model => App name model action -> JSM ()
-startApp app@App {..} = withJS $
+startComponent :: Eq model => Component name model action -> JSM ()
+startComponent app@Component {..} = withJS $
   initialize app $ \snk -> do
     renderStyles styles
     vtree <- runView DontPrerender (view model) snk logLevel events

@@ -29,7 +29,7 @@ main :: IO ()
 main = run $ do
     time <- now
     let m = mario{time = time}
-    startApp (defaultApp m updateMario display)
+    startComponent (defaultComponent m updateMario display)
       { subs =
           [ arrowsSub GetArrows
           , windowCoordsSub WindowCoords

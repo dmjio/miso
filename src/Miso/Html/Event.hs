@@ -114,7 +114,7 @@ onWithOptions options eventName Decoder{..} toAction =
             [ "Event \""
             , eventName
             , "\" is not being listened on. To use this event, "
-            , "add to the 'events' Map in 'App'"
+            , "add to the 'events' @Map@ in @Component@"
             ]
       Just _ -> do
         eventObj <- getProp "events" n

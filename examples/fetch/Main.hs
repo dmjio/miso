@@ -36,7 +36,7 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { styles =
     [ Href "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"
     , Href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
@@ -59,8 +59,8 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
-app :: App name Model Action
-app = defaultApp emptyModel updateModel viewModel
+app :: Component name Model Action
+app = defaultComponent emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 emptyModel :: Model
 emptyModel = Model Nothing
@@ -78,13 +78,13 @@ getGithubAPI = do
     c = Servant.Client.JS.client (Proxy @GithubAPI)
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
-updateModel FetchGitHub = io_ $ getGithubAPI <&> \case
+updateModel FetchGitHub = io $ getGithubAPI <&> \case
   Right r -> SetGitHub r
-  Left e  -> ErrorHandler $ ms $ show e
+  Left e  -> ErrorHandler $ ms (show e)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =
-  io (consoleError msg)
+  io_ (consoleError msg)
 ----------------------------------------------------------------------------
 -- | View function, with routing
 viewModel :: Model -> View Action

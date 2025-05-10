@@ -42,7 +42,7 @@ import           Miso.Types
 rawHtml
   :: MisoString
   -> View action
-rawHtml = TextRaw
+rawHtml = VTextRaw
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Html.Types.Node@.
 --
@@ -55,15 +55,15 @@ node :: NS
      -> [Attribute action]
      -> [View action]
      -> View action
-node = Node
+node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
 text :: MisoString -> View action
-text = Text
+text = VText
 -----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
 textRaw :: MisoString -> View action
-textRaw = TextRaw
+textRaw = VTextRaw
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript `Object`.
 --   Used for diffing, patching and event delegation.

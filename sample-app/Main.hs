@@ -9,7 +9,7 @@ import Miso
 import Miso.String
 import Miso.Lens
 ----------------------------------------------------------------------------
--- | Application model state
+-- | Component model state
 data Model
   = Model
   { _counter :: Int
@@ -27,7 +27,7 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startApp app)
+main = run (startComponent app)
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
@@ -35,8 +35,8 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
-app :: App name Model Action
-app = defaultApp emptyModel updateModel viewModel
+app :: Component name Model Action
+app = defaultComponent emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
@@ -47,7 +47,7 @@ updateModel :: Action -> Effect Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> io $ do
+  SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
 ----------------------------------------------------------------------------
