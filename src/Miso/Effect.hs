@@ -11,7 +11,7 @@
 -- Portability :  non-portable
 --
 -- This module defines `Effect`, `Sub` and `Sink` types, which are used to define
--- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.App`.
+-- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.Component`.
 --
 ----------------------------------------------------------------------------
 module Miso.Effect
@@ -114,7 +114,7 @@ batch_ actions = sequence_
 -- @LambdaCase@ language extension is enabled:
 --
 -- @
--- myApp = App
+-- myComponent = Component
 --   { update = \\case
 --       MyAction1 -> do
 --         field1 .= value1
@@ -191,7 +191,7 @@ for :: Foldable f => JSM (f action) -> Effect model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the 'Component' or top-level
--- 'App' in their application. This is useful for introducing 'IO' into the system.
+-- 'Component' in their application. This is useful for introducing 'IO' into the system.
 -- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS

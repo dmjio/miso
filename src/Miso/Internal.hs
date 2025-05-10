@@ -66,7 +66,7 @@ import           Miso.Types
 import           Miso.Event (Events)
 import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
--- | Helper function to abstract out initialization of @App@ between top-level API functions.
+-- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
   :: Eq model
   => Component name model action

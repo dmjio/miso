@@ -1,10 +1,10 @@
-{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -148,9 +148,9 @@ data SomeComponent
    = forall name model action . Eq model
   => SomeComponent (Component name model action)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to embed an @App@ into another @App@
--- Use this function if you'd like send messages to this @App@ at @name@ via
--- @notify@ or to read the state of this @App@ via @sample@.
+-- | Used in the @view@ function to embed an @Component@ into another @Component@
+-- Use this function if you'd like send messages to this @Component@ at @name@ via
+-- @notify@ or to read the state of this @Component@ via @sample@.
 component
   :: forall name model action a . (Eq model, KnownSymbol name)
   => Component name model action

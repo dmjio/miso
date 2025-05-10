@@ -106,7 +106,7 @@ import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
--- | Runs an isomorphic miso application.
+-- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
