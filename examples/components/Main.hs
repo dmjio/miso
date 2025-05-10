@@ -108,8 +108,8 @@ viewModel1 x =
 
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> Effect MainModel MainAction
-updateModel1 StartLogger = start "logger" (loggerSub "main-app")
-updateModel1 StopLogger  = stop "logger"
+updateModel1 StartLogger = startSub "logger" (loggerSub "main-app")
+updateModel1 StopLogger  = stopSub "logger"
 updateModel1 Toggle = modify not
 updateModel1 UnMountMain =
   io (consoleLog "Component 2 was unmounted!")
