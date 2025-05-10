@@ -115,7 +115,7 @@ updateModel = \case
     modify $ \m -> m { uri = u }
   ChangeURI u -> do
     modify $ \m -> m { navMenuOpen = False }
-    io (pushURI u)
+    io_ (pushURI u)
   ToggleNavMenu -> do
     m@Model{..} <- get
     put m { navMenuOpen = not navMenuOpen }
