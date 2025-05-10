@@ -137,9 +137,9 @@ data LogLevel
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View action
-  = Node NS MisoString (Maybe Key) [Attribute action] [View action]
-  | Text MisoString
-  | TextRaw MisoString
+  = VNode NS MisoString (Maybe Key) [Attribute action] [View action]
+  | VText MisoString
+  | VTextRaw MisoString
   | VComp MisoString [Attribute action] (Maybe Key) SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
@@ -280,5 +280,5 @@ data Attribute action
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
 instance IsString (View a) where
-  fromString = Text . fromString
+  fromString = VText . fromString
 -----------------------------------------------------------------------------

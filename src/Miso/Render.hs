@@ -72,12 +72,12 @@ intercalate sep (x:xs) =
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: View a -> Builder
-renderBuilder (Text "")    = fromMisoString " "
-renderBuilder (Text s)     = fromMisoString s
-renderBuilder (TextRaw "") = fromMisoString " "
-renderBuilder (TextRaw s)  = fromMisoString s
-renderBuilder (Node _ "doctype" _ [] []) = "<!doctype html>"
-renderBuilder (Node _ tag _ attrs children) =
+renderBuilder (VText "")    = fromMisoString " "
+renderBuilder (VText s)     = fromMisoString s
+renderBuilder (VTextRaw "") = fromMisoString " "
+renderBuilder (VTextRaw s)  = fromMisoString s
+renderBuilder (VNode _ "doctype" _ [] []) = "<!doctype html>"
+renderBuilder (VNode _ tag _ attrs children) =
   mconcat
   [ "<"
   , fromMisoString tag
@@ -134,8 +134,8 @@ renderAttrs (Styles styles) =
 -- this means we must collapse adjacent text nodes during hydration.
 collapseSiblingTextNodes :: [View a] -> [View a]
 collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (Text x : Text y : xs) =
-  collapseSiblingTextNodes (Text (x <> y) : xs)
+collapseSiblingTextNodes (VText x : VText y : xs) =
+  collapseSiblingTextNodes (VText (x <> y) : xs)
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 ----------------------------------------------------------------------------

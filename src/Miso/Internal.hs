@@ -329,7 +329,7 @@ runView prerender (VComp name attributes key (SomeComponent app)) snk _ _ = do
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
-runView prerender (Node ns tag key attrs kids) snk logLevel events = do
+runView prerender (VNode ns tag key attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns key tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- ghcjsPure . jsval =<< procreate
@@ -343,20 +343,20 @@ runView prerender (Node ns tag key attrs kids) snk logLevel events = do
           VTree (Object vtree) <- runView prerender kid snk logLevel events
           pure vtree
         ghcjsPure (JSArray.fromList kidsViews)
-runView _ (Text t) _ _ _ = do
+runView _ (VText t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
-runView prerender (TextRaw str) snk logLevel events =
+runView prerender (VTextRaw str) snk logLevel events =
   case parseView str of
     [] ->
-      runView prerender (Text (" " :: MisoString)) snk logLevel events
+      runView prerender (VText (" " :: MisoString)) snk logLevel events
     [parent] ->
       runView prerender parent snk logLevel events
     kids -> do
-      runView prerender (Node HTML "div" Nothing mempty kids) snk logLevel events
+      runView prerender (VNode HTML "div" Nothing mempty kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
@@ -407,7 +407,7 @@ parseView html = reverse (go (parseTree html) [])
   where
     go [] xs = xs
     go (TagLeaf (TagText s) : next) views =
-      go next (Text s : views)
+      go next (VText s : views)
     go (TagLeaf (TagOpen name attrs) : next) views =
       go (TagBranch name attrs [] : next) views
     go (TagBranch name attrs kids : next) views =
@@ -416,7 +416,7 @@ parseView html = reverse (go (parseTree html) [])
                  | (key, value) <- attrs
                  ]
         newNode =
-          Node HTML name Nothing attrs' (reverse (go kids []))
+          VNode HTML name Nothing attrs' (reverse (go kids []))
       in
         go next (newNode:views)
     go (TagLeaf _ : next) views =
