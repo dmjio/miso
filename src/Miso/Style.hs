@@ -282,9 +282,9 @@ styleInline_ = textProp "style"
 -- | Renders a 'Styles' to a 'MisoString'
 renderStyles :: Styles -> MisoString
 renderStyles m = MS.unlines
-  [ mconcat [ spaced, k, ":", v, ";" ]
-  | (k,v) <- M.toList m
-  , let spaced = " "
+  [ mconcat [ indent, k, ":", v, ";" ]
+  | let indent = "  "
+  , (k,v) <- M.toList m
   ]
 -----------------------------------------------------------------------------
 renderStyleSheet :: StyleSheet -> MisoString
