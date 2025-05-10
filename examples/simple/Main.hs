@@ -39,7 +39,7 @@ main = run $ startComponent app
   , styles = [ Style css ]
   }
 
--- | Application definition (uses 'defaultComponent' smart constructor)
+-- | Component definition (uses 'defaultComponent' smart constructor)
 app :: Component name Model Action
 app = defaultComponent (Model 0) updateModel viewModel
 

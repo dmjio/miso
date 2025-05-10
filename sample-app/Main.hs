@@ -9,7 +9,7 @@ import Miso
 import Miso.String
 import Miso.Lens
 ----------------------------------------------------------------------------
--- | Application model state
+-- | Component model state
 data Model
   = Model
   { _counter :: Int
