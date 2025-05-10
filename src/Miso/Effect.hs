@@ -91,8 +91,8 @@ batch actions = sequence_
 --
 -- @Effect@ is a @RWS@, where the @State@ abstracts over manually passing the model
 -- around. It's also a @Writer@ @Monad@, where the accumulator is a list of scheduled
--- @IO@ actions. Multiple actions can be scheduled using @Control.Monad.Writer.Class.tell@ 
--- from the @mtl@ library and a single action can be scheduled using 'scheduleIO'.
+-- @IO@ actions. Multiple actions can be scheduled using 'Control.Monad.Writer.Class.tell'
+-- from the @mtl@ library and a single action can be scheduled using 'io_'.
 --
 -- An @Effect@ represents the results of an update action.
 --
@@ -114,7 +114,7 @@ batch actions = sequence_
 --         counter += 1
 --       MyAction2 -> do
 --         field2 %= f
---         scheduleIO $ do
+--         io_ $ do
 --           putStrLn \"Hello\"
 --           putStrLn \"World!\"
 --   , ...
@@ -156,7 +156,7 @@ runEffect
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS . runEffectCore
 -----------------------------------------------------------------------------
--- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes 
+-- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
 -- actions of type @b@ using the supplied function of type @a -> b@.
 mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
@@ -196,15 +196,13 @@ for actions = withSink $ \sink -> actions >>= flip for_ sink
 withSink :: (Sink action -> JSM ()) -> Effect model action
 withSink f = tell [ f ]
 -----------------------------------------------------------------------------
--- | A synonym for @tell@, specialized to @Effect@
+-- | Issue a new 'Action' to be processed by 'update'. A synonym for @tell@, specialized to @Effect@
 --
 -- > update :: Action -> Effect Model Action
 -- > update = \case
 -- >   Click -> issue HelloWorld
 --
 -- @since 1.9.0.0
---
--- Used to issue new @action@
 issue :: action -> Effect model action
 issue action = tell [ \f -> f action ]
 -----------------------------------------------------------------------------
@@ -239,6 +237,8 @@ batchEff model actions = do
   batch actions
 -----------------------------------------------------------------------------
 -- | Retrieves the @name@ of the @App@
+--
+-- @since 1.9.0.0
 componentId :: EffectCore action model MisoString
 componentId = ask
 -----------------------------------------------------------------------------
