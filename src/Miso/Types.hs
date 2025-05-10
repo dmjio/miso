@@ -65,7 +65,6 @@ data App (name :: Symbol) model action = App
   -- ^ initial model
   , update :: action -> Effect model action
   -- ^ Function to update model, optionally providing effects.
-  --   See the 'Transition' monad for succinctly expressing model transitions.
   , view :: model -> View action
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
