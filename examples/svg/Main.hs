@@ -18,14 +18,14 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { events = M.insert "pointermove" False pointerEvents
   , subs = [ mouseSub HandlePointer ]
   }
 
--- | Application definition (uses 'defaultApp' smart constructor)
-app :: App name Model Action
-app = defaultApp emptyModel updateModel viewModel
+-- | Application definition (uses 'defaultComponent' smart constructor)
+app :: Component name Model Action
+app = defaultComponent emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model (0, 0)

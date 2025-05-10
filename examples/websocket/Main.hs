@@ -27,7 +27,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { events = defaultEvents <> keyboardEvents
   , subs =
     [ websocketSub url protocols HandleWebSocket
@@ -36,8 +36,8 @@ main = run $ startApp app
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-app :: App name Model Action
-app = defaultApp emptyModel updateModel appView
+app :: Component name Model Action
+app = defaultComponent emptyModel updateModel appView
 
 emptyModel :: Model
 emptyModel = Model (Message "") mempty
@@ -46,7 +46,7 @@ updateModel :: Action -> Effect Model Action
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) =
   modify $ \model -> model { received = m }
 updateModel (SendMessage msg) =
-  io (send msg)
+  io_ (send msg)
 updateModel (UpdateMessage m) = do
   modify $ \model -> model { msg = Message m }
 updateModel _ = pure ()

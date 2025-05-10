@@ -20,7 +20,7 @@ import           Language.Javascript.JSaddle ((!), (!!), (#), JSVal, (<#))
 import qualified Language.Javascript.JSaddle as J
 import           Prelude hiding ((!!), null, unlines)
 ----------------------------------------------------------------------------
-import           Miso (App(styles), View,Effect, defaultApp, run, CSS(..), startApp, io, io_)
+import           Miso (Component(styles), View,Effect, defaultComponent, run, CSS(..), startComponent, io, io_)
 import qualified Miso as M
 import           Miso.Lens ((.=), Lens, lens)
 import           Miso.String (MisoString, unlines, null)
@@ -50,7 +50,7 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { styles =
     [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
     , Style css
@@ -78,12 +78,12 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: App name Model Action
-app = defaultApp (Model mempty) updateModel viewModel
+app :: Component name Model Action
+app = defaultComponent (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function
 updateModel :: Action -> Effect Model Action
-updateModel ReadFile = io_ $ do
+updateModel ReadFile = io $ do
   fileReaderInput <- M.getElementById "fileReader"
   file <- fileReaderInput ! ("files" :: String) !! 0
   reader <- J.new (J.jsg ("FileReader" :: String)) ([] :: [JSVal])
@@ -95,7 +95,7 @@ updateModel ReadFile = io_ $ do
   void $ reader # ("readAsText" :: String) $ [file]
   SetContent <$> liftIO (readMVar mvar)
 updateModel (SetContent c) = info .= c
-updateModel ClickInput = io $ do
+updateModel ClickInput = io_ $ do
   fileReader <- M.getElementById "fileReader"
   void $ fileReader # ("click" :: String) $ ([] :: [JSVal])
 ----------------------------------------------------------------------------

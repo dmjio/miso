@@ -88,7 +88,7 @@ data Msg
     deriving (Show)
 
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =
@@ -97,14 +97,14 @@ main = run $ startApp app
       ]
   }
 
-app :: App name Model Msg
-app = defaultApp emptyModel updateModel viewModel
+app :: Component name Model Msg
+app = defaultComponent emptyModel updateModel viewModel
 
 updateModel :: Msg -> Effect Model Msg
 updateModel NoOp = pure ()
 updateModel FocusOnInput =
-  io (focus "input-box")
-updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
+  io_ (focus "input-box")
+updateModel (CurrentTime time) = io_ $ consoleLog $ S.ms (show time)
 updateModel Add = do
     model@Model{..} <- get
     put

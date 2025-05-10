@@ -10,7 +10,7 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startApp (defaultApp Main.Empty updateModel viewModel)
+main = run $ startComponent (defaultComponent Main.Empty updateModel viewModel)
 
 data Model = Empty
   deriving (Eq)

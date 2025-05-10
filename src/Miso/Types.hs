@@ -20,8 +20,8 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
-    App              (..)
-  , Component        (..)
+    Component        (..)
+  , SomeComponent    (..)
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -32,7 +32,7 @@ module Miso.Types
   , ToView           (..)
   , ToKey            (..)
   -- ** Smart Constructors
-  , defaultApp
+  , defaultComponent
   -- ** Components
   , component
   , component_
@@ -60,7 +60,7 @@ import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App (name :: Symbol) model action = App
+data Component (name :: Symbol) model action = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -102,13 +102,13 @@ data CSS
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
--- | Smart constructor for @App@ with sane defaults.
-defaultApp
+-- | Smart constructor for @Component@ with sane defaults.
+defaultComponent
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> App name model action
-defaultApp m u v = App
+  -> Component name model action
+defaultComponent m u v = Component
   { model = m
   , update = u
   , view = v
@@ -140,32 +140,32 @@ data View action
   = Node NS MisoString (Maybe Key) [Attribute action] [View action]
   | Text MisoString
   | TextRaw MisoString
-  | VComp MisoString [Attribute action] (Maybe Key) Component
+  | VComp MisoString [Attribute action] (Maybe Key) SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @App@ in @App@
-data Component
+-- | Existential wrapper used to allow the nesting of @Component@ in @Component@
+data SomeComponent
    = forall name model action . Eq model
-  => Component (App name model action)
+  => SomeComponent (Component name model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @App@ into another @App@
 -- Use this function if you'd like send messages to this @App@ at @name@ via
 -- @notify@ or to read the state of this @App@ via @sample@.
 component
   :: forall name model action a . (Eq model, KnownSymbol name)
-  => App name model action
+  => Component name model action
   -> View a
-component app = VComp (ms name) [] Nothing (Component app)
+component app = VComp (ms name) [] Nothing (SomeComponent app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Like @component@, but uses a dynamically generated @name@ (enforced via @Component@).
 -- The component name is dynamically generated at runtime and available via 'ask'.
--- This is for dynamic component creation, where a mounted @App@ isn't necessarily
+-- This is for dynamic component creation, where a mounted @Component@ isn't necessarily
 -- statically known. Use this during circumstances where a parent would like
 -- to dynamically generate / destroy n-many children in response to user input.
 component_
-  :: Component
+  :: SomeComponent
   -> View a
 component_ = VComp mempty [] Nothing
 -----------------------------------------------------------------------------
@@ -173,22 +173,22 @@ component_ = VComp mempty [] Nothing
 -- and @Attribute action@.
 componentWith
   :: forall name model action a . (Eq model, KnownSymbol name)
-  => App name model action
+  => Component name model action
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith app key attrs = VComp (ms name) attrs key (Component app)
+componentWith app key attrs = VComp (ms name) attrs key (SomeComponent app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Like @component_@ except it allows the specification of @Key@
 -- and @Attribute action@. Note: the @name@ parameter is ignored here.
 componentWith_
-  :: Component
+  :: SomeComponent
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith_ someApp key attrs = VComp mempty attrs key someApp
+componentWith_ someComponent key attrs = VComp mempty attrs key someComponent
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -204,9 +204,9 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (App name model action) where
-  type ToViewAction (App name model action) = action
-  toView App {..} = toView (view model)
+instance ToView (Component name model action) where
+  type ToViewAction (Component name model action) = action
+  toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS

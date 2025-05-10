@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Common (
-    -- * App
+    -- * Component
     sse,
     -- * Types
     Model,
@@ -58,7 +58,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> App name Model Action
+sse :: URI -> Component name Model Action
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
@@ -66,7 +66,7 @@ sse currentURI
           ]
         }
   where
-    app = defaultApp (Model currentURI "No event received") updateModel viewModel
+    app = defaultComponent (Model currentURI "No event received") updateModel viewModel
     viewModel m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
@@ -83,4 +83,4 @@ updateModel (ServerMsg msg) =
 updateModel (HandleURI u) =
     modify $ \m -> m { modelUri = u }
 updateModel (ChangeURI u) =
-    io (pushURI u)
+    io_ (pushURI u)
