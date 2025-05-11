@@ -11,6 +11,7 @@ import Control.Monad.IO.Class (liftIO)
 
 import Miso
 import Miso.String
+import Miso.Lens
 
 type Model = Int
 
@@ -230,22 +231,25 @@ viewModel4 x =
         , button_ [onClick Sample] [text "Sample Component 3 state"]
         ]
 
-app5 :: Component "app-5" Model Action
+app5 :: Component "app-5" (Model, Maybe MisoString) Action
 app5 =
         counterComponent5
             { subs = [loggerSub "component-5 sub"]
             }
 
-counterComponent5 :: Component "app-5" Model Action
-counterComponent5 = defaultComponent 0 updateModel5 viewModel5
+counterComponent5 :: Component "app-5" (Model, Maybe MisoString) Action
+counterComponent5 = defaultComponent (0, Nothing) updateModel5 viewModel5
 
 -- | Updates model, optionally introduces side effects
-updateModel5 :: Action -> Effect Model Action
+updateModel5 :: Action -> Effect (Model, Maybe MisoString) Action
 updateModel5 AddOne = do
-  modify (+1)
+  _1 += 1
+  maybeChildId <- use _2
+  forM_ maybeChildId $ \childId ->
+    io_ (notify' childId AddOne)
   io_ (notify counterComponent2 AddOne)
 updateModel5 SubtractOne = do
-  modify (subtract 1)
+  _1 -= 1
   io_ (notify counterComponent2 SubtractOne)
 updateModel5 Sample =
   io_ $ do
@@ -255,11 +259,14 @@ updateModel5 Sample =
          ms (show componentTwoModel)
 updateModel5 SayHelloWorld = do
   io_ (consoleLog "Hello World from Component 5")
+updateModel5 (Mount childId) = do
+  io_ $ consoleLog $ "In mount, setting childId: " <> childId
+  _2 ?= childId
 updateModel5 _ = pure ()
 
 -- | Constructs a virtual DOM from a model
-viewModel5 :: Model -> View Action
-viewModel5 x =
+viewModel5 :: (Model, Maybe MisoString) -> View Action
+viewModel5 (x, _) =
     div_
         []
         [ "This is the view for Component 5"
@@ -267,8 +274,11 @@ viewModel5 x =
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
         , button_ [onClick Sample] [text "Sample Component 2 state"]
-        , "here is dynamic component 6..."
-        , component_ counterComponent6
+        , "Here is dynamic component 6..."
+        , br_ []
+        , componentWith_ counterComponent6 Nothing
+          [ onMountedWith Mount
+          ]
         ]
 
 -- | "" here means the component is given a dynamically generated name, can also leave generic
@@ -280,15 +290,13 @@ counterComponent6 = defaultComponent 0 updateModel6 viewModel6
 updateModel6 :: Action -> Effect Model Action
 updateModel6 AddOne = do
   modify (+1)
-  io_ (notify counterComponent2 AddOne)
 updateModel6 SubtractOne = do
   modify (subtract 1)
-  io_ (notify counterComponent2 SubtractOne)
 updateModel6 Sample =
   io_ $ do
-    componentTwoModel <- sample counterComponent2
+    componentTwoModel <- sample counterComponent3
     consoleLog $
-      "Sampling parent component 2 from child component 6: " <>
+      "Sampling parent component 3 from child component 6: " <>
          ms (show componentTwoModel)
 updateModel6 SayHelloWorld = do
   io_ (consoleLog "Hello World from Component 6")
@@ -303,5 +311,5 @@ viewModel6 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , button_ [onClick Sample] [text "Sample Component 2 state"]
+        , button_ [onClick Sample] [text "Sample Component 3 state"]
         ]

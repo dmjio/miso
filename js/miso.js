@@ -65,14 +65,10 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
-    onBeforeCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
     shouldSync: false,
     type: "vnode"
   };
@@ -263,7 +259,7 @@ function createElement(obj, cb) {
 }
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
-    obj["onUnmounted"]();
+    obj["onUnmounted"](obj["data-component-id"]);
   obj["unmount"]();
 }
 function mountComponent(obj) {
@@ -279,7 +275,7 @@ function mountComponent(obj) {
     obj["children"].push(component);
     obj["domRef"].appendChild(component["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"]();
+      obj["onMounted"](componentId);
   });
 }
 function create(obj, parent) {
