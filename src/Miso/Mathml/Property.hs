@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Html.Property
+-- Module      :  Miso.Mathml.Property
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
