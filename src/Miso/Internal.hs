@@ -46,7 +46,11 @@ import qualified Data.Map.Strict as M
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
+#ifndef GHCJS_BOTH
 import           Language.Javascript.JSaddle hiding (Sync)
+#else
+import           Language.Javascript.JSaddle
+#endif
 import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
 import           Data.Proxy (Proxy(..))
