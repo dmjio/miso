@@ -9,6 +9,7 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE PolyKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -53,7 +54,7 @@ import qualified Data.Text as T
 import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
-import           GHC.TypeLits (KnownSymbol, Symbol, symbolVal)
+import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
@@ -61,7 +62,7 @@ import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component (name :: Symbol) model action = Component
+data Component (name :: k) model action = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -165,13 +166,19 @@ component app = VComp (ms name) [] Nothing (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | Like @component@, but uses a dynamically generated @name@ (enforced via @Component@).
 -- The component name is dynamically generated at runtime and available via 'ask'.
--- This is for dynamic component creation, where a mounted @Component@ isn't necessarily
+-- This is for dynamic @Component@ creation, where a mounted @Component@ isn't necessarily
 -- statically known. Use this during circumstances where a parent would like
 -- to dynamically generate / destroy n-many children in response to user input.
+--
+-- Note: the @name@ parameter is @()@ here.
+-- This symbolizes the fact that the @Component@ is dynamically generated
+-- and it's /component-id/ can only be known at runtime.
+--
 component_
-  :: SomeComponent
+  :: Eq model
+  => Component () model action
   -> View a
-component_ = VComp mempty [] Nothing
+component_ vcomp = VComp mempty [] Nothing (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | Like @component@ except it allows the specification of @Key@
 -- and @Attribute action@.
@@ -186,13 +193,16 @@ componentWith app key attrs = VComp (ms name) attrs key (SomeComponent app)
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Like @component_@ except it allows the specification of @Key@
--- and @Attribute action@. Note: the @name@ parameter is ignored here.
+-- and @Attribute action@. Note: the @name@ parameter is @()@ here.
+-- This symbolizes the fact that the @Component@ is dynamically generated
+-- and it's /component-id/ can only be known at runtime.
 componentWith_
-  :: SomeComponent
+  :: Eq model
+  => Component () model action
   -> Maybe Key
   -> [Attribute a]
   -> View a
-componentWith_ someComponent key attrs = VComp mempty attrs key someComponent
+componentWith_ vcomp key attrs = VComp mempty attrs key (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where

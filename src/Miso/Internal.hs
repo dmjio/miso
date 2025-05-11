@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE KindSignatures      #-}
@@ -204,7 +205,7 @@ notify _ action = do
   where
     name = ms $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Like @notify@ except used for dynamic @Component@ where the component-id
+-- | Like @notify@ except used for dynamic @Component@ where the /component-id/
 -- has been retrieved via @ask@.
 --
 notify'
