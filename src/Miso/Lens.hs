@@ -233,7 +233,7 @@ over = (%~)
 --   deriving (Show, Eq)
 --
 -- name :: Lens Person String
--- name = lens _name $ \person n -> person { _name = n }
+-- name = lens _name $ \\person n -> person { _name = n }
 --
 -- getName :: Person -> String
 -- getName = person ^. name
@@ -280,8 +280,8 @@ infixr 4 *~
 -- radius :: Lens Circle Int
 -- radius = lens _radius $ \\circle r -> circle { _radius = r }
 --
--- expand :: Circle -> Circle
--- expand circle = circle & radius *~ 10
+-- shrink :: Circle -> Circle
+-- shrink circle = circle & radius //~ 10
 -- @
 infixr 4 //~
 (//~) :: Fractional field => Lens record field -> field -> record -> record
@@ -324,15 +324,22 @@ infixr 4 <>~
 -- | Execute a monadic action in @MonadState@ that returns a field. Sets the
 -- return value equal to the field in the record.
 --
--- @
--- newtype List = List { _values :: [Int] }
+-- As a reasonable mnemonic, this lets you store the result of a monadic action in a 'Lens' rather than
+-- in a local variable.
 --
--- values :: Lens List [Int]
--- values = lens _values $ \\l vs -> l { _values = vs }
---
--- addElement :: List -> List
--- addElement list = list & values <>~ [2]
 -- @
+-- do foo <- bar
+--    ...
+-- @
+--
+-- will store the result in a variable, while
+--
+-- @
+-- do fooLens '<~' bar
+--    ...
+-- @
+--
+-- will store the result in field focused by the 'Lens'.
 infixr 2 <~
 (<~) :: MonadState record m => Lens record field -> m field -> m ()
 l <~ mb = do
@@ -378,7 +385,7 @@ modifying = (%=)
 -- update :: Action -> Effect Model Action
 -- update AddOne = do
 --   result <- value <%= (+1)
---   io $ consoleLog (ms result)
+--   io_ $ consoleLog (ms result)
 -- @
 infix 4 <%=
 (<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
@@ -402,7 +409,7 @@ l <%= f = do
 -- update :: Action -> Effect Model Action
 -- update (Assign x) = do
 --   result <- value <.= x
---   io $ consoleLog (ms result) -- x
+--   io_ $ consoleLog (ms result) -- x
 -- @
 infix 4 <.=
 (<.=) :: MonadState record m => Lens record field -> field -> m field
@@ -426,7 +433,7 @@ l <.= b = do
 -- update :: Action -> Effect Model Action
 -- update (SetValue x) = do
 --   result <- value <?= x
---   io $ consoleLog (ms result) -- Just 1
+--   io_ $ consoleLog (ms result) -- Just 1
 -- @
 infix 4 <?=
 (<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
@@ -453,7 +460,7 @@ l <?= b = do
 -- update (Assign x) = do
 --   value .= x
 --   previousValue <- value <<.= 1
---   io $ consoleLog $ ms previousValue -- prints value at x
+--   io_ $ consoleLog $ ms previousValue -- prints value at x
 -- @
 infix 4 <<.=
 (<<.=) :: MonadState record m => Lens record field -> field -> m field
@@ -474,13 +481,13 @@ l <<.= b = do
 -- data Action = Modify (Int -> Int)
 --
 -- value :: Lens Model Int
--- value = lens _value $ \p x -> p { _value = x }
+-- value = lens _value $ \\p x -> p { _value = x }
 --
 -- update :: Action -> Effect Model Action
 -- update (Modify f) = do
 --   value .= 2
 --   result <- value <<%= f
---   io $ consoleLog (ms result) -- prints previous value of 2
+--   io_ $ consoleLog (ms result) -- prints previous value of 2
 -- @
 infix 4 <<%=
 (<<%=) :: MonadState record m => Lens record field -> (field -> field) -> m field
@@ -522,13 +529,13 @@ assign = (.=)
 -- data Action = SetValue Int
 --
 -- value :: Lens Model Int
--- value = lens _value $ \p x -> p { _value = x }
+-- value = lens _value $ \\p x -> p { _value = x }
 --
 -- update :: Action -> Effect Model Action
 -- update (SetValue x) = do
 --   value .= x
 --   result <- use value
---   io $ consoleLog (ms result) -- prints the value of 'x'
+--   io_ $ consoleLog (ms result) -- prints the value of 'x'
 -- @
 use :: MonadState record m => Lens record field -> m field
 use _lens = gets (^. _lens)
