@@ -19,7 +19,7 @@ module Miso.Mathml.Property
   ( -- * Global attributes
     dir_
   , displaystyle_
-  , scriptlevel_ -- Corrected typo: sciptlevel_ -> scriptlevel_
+  , scriptlevel_
   -- * Regular attributes
   , accent_
   , accentunder_
