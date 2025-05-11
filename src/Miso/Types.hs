@@ -28,6 +28,7 @@ module Miso.Types
   , NS               (..)
   , CSS              (..)
   , LogLevel         (..)
+  , MountPoint
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -69,7 +70,7 @@ data Component (name :: Symbol) model action = Component
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
-  , events :: M.Map MisoString Capture
+  , events :: Events
   -- ^ List of delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
@@ -80,12 +81,15 @@ data Component (name :: Symbol) model action = Component
   -- ^ Initial action that is run after the application has loaded, optional
   --
   -- @since 1.9.0.0
-  , mountPoint :: Maybe MisoString
+  , mountPoint :: Maybe MountPoint
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   }
+-----------------------------------------------------------------------------
+-- | @mountPoint@ for @Component@, e.g "body"
+type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to <head> before the first draw
 --
