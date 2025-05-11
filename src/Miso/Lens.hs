@@ -133,6 +133,8 @@ module Miso.Lens
   , use
   , (?=)
   , (<>~)
+  , _1
+  , _2
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.State (MonadState, modify, gets)
@@ -634,6 +636,24 @@ infix 4 //=
 infix 4 -=
 (-=) :: (MonadState record m, Num field) => Lens record field -> field -> m ()
 (-=) _lens f = modify (\r -> r & _lens -~ f)
+---------------------------------------------------------------------------------
+-- | @Lens@ that operates on the first element of a tuple
+--
+-- @
+-- update AddOne = do
+--   _1 += 1
+-- @
+_1 :: Lens (a,b) a
+_1 = lens fst $ \(_,b) x -> (x,b)
+---------------------------------------------------------------------------------
+-- | @Lens@ that operates on the second element of a tuple
+--
+-- @
+-- update AddOne = do
+--   _2 += 1
+-- @
+_2 :: Lens (a,b) b
+_2 = lens snd $ \(a,_) x -> (a,x)
 ---------------------------------------------------------------------------------
 -- | Smart constructor @lens@ function. Used to easily construct a @Lens@
 --
