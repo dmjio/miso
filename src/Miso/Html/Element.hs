@@ -147,7 +147,8 @@ module Miso.Html.Element
 import           Miso.Html.Types
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Used to construct @Node@ in @View@
+-- | Low-level helper used to construct 'HTML' 'node' in 'View'.
+-- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute action] -> [View action] -> View action
 nodeHtml nodeName = node HTML nodeName Nothing
 -----------------------------------------------------------------------------

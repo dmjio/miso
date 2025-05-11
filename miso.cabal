@@ -167,8 +167,8 @@ library
     Miso.Html.Property
     Miso.Html.Types
     Miso.Internal
-    Miso.Mathml
     Miso.Mathml.Element
+    Miso.Mathml.Property
     Miso.Property
     Miso.Render
     Miso.Router
@@ -191,6 +191,7 @@ library
   exposed-modules:
     Miso
     Miso.Lens
+    Miso.Mathml
     Miso.Svg
     Miso.String
     Miso.Style

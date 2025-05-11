@@ -44,7 +44,7 @@ rawHtml
   -> View action
 rawHtml = VTextRaw
 -----------------------------------------------------------------------------
--- | Create a new @Miso.Html.Types.Node@.
+-- | Create a new @Miso.Html.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
 -- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
