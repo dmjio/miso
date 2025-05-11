@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -263,6 +263,41 @@ viewModel5 x =
     div_
         []
         [ "This is the view for Component 5"
+        , button_ [onClick AddOne] [text "+"]
+        , text (ms x)
+        , button_ [onClick SubtractOne] [text "-"]
+        , button_ [onClick Sample] [text "Sample Component 2 state"]
+        , "here is dynamic component 6..."
+        , component_ counterComponent6
+        ]
+
+counterComponent6 :: Component name Model Action
+counterComponent6 = defaultComponent 0 updateModel6 viewModel6
+
+-- | Updates model, optionally introduces side effects
+updateModel6 :: Action -> Effect Model Action
+updateModel6 AddOne = do
+  modify (+1)
+  io_ (notify counterComponent2 AddOne)
+updateModel6 SubtractOne = do
+  modify (subtract 1)
+  io_ (notify counterComponent2 SubtractOne)
+updateModel6 Sample =
+  io_ $ do
+    componentTwoModel <- sample counterComponent2
+    consoleLog $
+      "Sampling parent component 2 from child component 6: " <>
+         ms (show componentTwoModel)
+updateModel6 SayHelloWorld = do
+  io_ (consoleLog "Hello World from Component 6")
+updateModel6 _ = pure ()
+
+-- | Constructs a virtual DOM from a model
+viewModel6 :: Model -> View Action
+viewModel6 x =
+    div_
+        []
+        [ "This is the view for Component 6"
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
