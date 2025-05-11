@@ -19,7 +19,7 @@ import Network.Wai.EventSource
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.RequestLogger
-import Servant hiding (respond)
+import Servant
 import qualified System.IO as IO
 
 import Miso hiding (SSE, run)
