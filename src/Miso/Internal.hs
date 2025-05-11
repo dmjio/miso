@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE KindSignatures      #-}
