@@ -29,7 +29,7 @@ import Network.Wai.Application.Static (defaultWebAppSettings)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Gzip (GzipFiles (..), def, gzip, gzipFiles)
 import Network.Wai.Middleware.RequestLogger (logStdout)
-import Servant hiding (respond)
+import Servant
 import qualified System.IO as IO
 
 import Miso hiding (run)

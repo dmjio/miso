@@ -271,7 +271,9 @@ viewModel5 x =
         , component_ counterComponent6
         ]
 
-counterComponent6 :: Component name Model Action
+-- | "" here means the component is given a dynamically generated name, can also leave generic
+-- the component_ or componentWith_
+counterComponent6 :: Component "" Model Action
 counterComponent6 = defaultComponent 0 updateModel6 viewModel6
 
 -- | Updates model, optionally introduces side effects

@@ -9,7 +9,6 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE PolyKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -54,7 +53,7 @@ import qualified Data.Text as T
 import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
-import           GHC.TypeLits (KnownSymbol, symbolVal)
+import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
@@ -62,7 +61,7 @@ import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component (name :: k) model action = Component
+data Component (name :: Symbol) model action = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -176,7 +175,7 @@ component app = VComp (ms name) [] Nothing (SomeComponent app)
 --
 component_
   :: Eq model
-  => Component () model action
+  => Component "" model action
   -> View a
 component_ vcomp = VComp mempty [] Nothing (SomeComponent vcomp)
 -----------------------------------------------------------------------------
@@ -198,7 +197,7 @@ componentWith app key attrs = VComp (ms name) attrs key (SomeComponent app)
 -- and it's /component-id/ can only be known at runtime.
 componentWith_
   :: Eq model
-  => Component () model action
+  => Component "" model action
   -> Maybe Key
   -> [Attribute a]
   -> View a
