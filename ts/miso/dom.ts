@@ -223,7 +223,7 @@ function createElement(obj: VTree, cb: (e: Node) => void): void {
 
 // unmount components
 function unmountComponent(obj: VTree): void {
-  if ('onUnmounted' in obj) obj['onUnmounted']();
+  if ('onUnmounted' in obj) obj['onUnmounted'](obj['data-component-id']);
   obj['unmount']();
 }
 
@@ -248,7 +248,7 @@ function mountComponent(obj: VTree): void {
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
     obj['domRef'].appendChild(component['domRef']);
-    if (obj['onMounted']) obj['onMounted']();
+    if (obj['onMounted']) obj['onMounted'](componentId);
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)

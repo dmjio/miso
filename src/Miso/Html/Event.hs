@@ -17,8 +17,10 @@ module Miso.Html.Event
   , onWithOptions
   -- *** Lifecycle events
   , onMounted
+  , onMountedWith
   , onBeforeMounted
   , onUnmounted
+  , onUnmountedWith
   , onBeforeUnmounted
   , onCreated
   , onBeforeCreated
@@ -68,7 +70,7 @@ module Miso.Html.Event
   , onPointerMove
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (when)
+import           Control.Monad (when, forM_)
 import qualified Data.Map.Strict as M
 import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
@@ -139,6 +141,24 @@ onMounted action =
     callback <- FFI.syncCallback (sink action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
+-- | @onMountedWith action@ is an event that gets called after the actual DOM
+-- element is created. It returns the /component-id/ from the component.
+-- Returning /component-id/ is useful when creating 'Component' dynamically.
+--
+-- This way the parent can maintain a 'Map' of the child 'Component' IDs. When
+-- the parent 'Component' wants to send a child 'Component' a message it can use
+-- @notify'@.
+--
+-- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
+--
+onMountedWith :: (MisoString -> action) -> Attribute action
+onMountedWith action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback1 $ \jval -> do
+      maybeName <- fromJSVal jval
+      forM_ maybeName (sink . action)
+    FFI.set "onMounted" callback object
+-----------------------------------------------------------------------------
 -- | @onBeforeMounted action@ is an event that gets called before the actual DOM
 -- element is created.
 --
@@ -174,6 +194,25 @@ onUnmounted :: action -> Attribute action
 onUnmounted action =
   Event $ \sink object _ _ -> do
     callback <- FFI.syncCallback (sink action)
+    FFI.set "onUnmounted" callback object
+-----------------------------------------------------------------------------
+-- | @onUnmounted action@ is an event that gets called after the DOM element
+-- is removed from the DOM. It returns the /component-id/ after the unmount call.
+-- Returning /component-id/ is useful when dynamically created @Component@ need
+-- to notify their parents about their own destruction.
+--
+-- This way the parent can maintain a @Map@ of the child @Component@ IDs. When
+-- the parent @Component@ wants to send a child @Component@ a message it can use
+-- @notify'@.
+--
+-- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
+--
+onUnmountedWith :: (MisoString -> action) -> Attribute action
+onUnmountedWith action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback1 $ \jval -> do
+      maybeName <- fromJSVal jval
+      forM_ maybeName (sink . action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
