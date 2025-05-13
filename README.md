@@ -544,6 +544,7 @@ For real-world examples of Haskell `miso` applications, see below.
 | **WebSocket**   | A simple WebSocket example             | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)   | [Demo](https://websocket.haskell-miso.org/)   | [@dmjio](https://github.com/dmjio)   |
 | **Router**      | A client-side routing example          | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)      | [Demo](https://router.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
 | **Canvas 2D**   | A 2D Canvas rendering example          | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)    | [Demo](https://canvas.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
+| **Space Invaders**   | A Space-Invaders-like game       | [Source](https://gitlab.com/juliendehos/miso-invaders)    | [Demo](https://juliendehos.gitlab.io/miso-invaders/)      | [@juliendehos](https://github.com/juliendehos)   |
 
 ## Building examples
 
