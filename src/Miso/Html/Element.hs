@@ -564,7 +564,7 @@ link_ = flip (nodeHtml "link") []
 --
 -- That means that if any part of the text is not trusted there's
 -- a potential CSS injection. Read more at
--- https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client_Side_Testing/05-Testing_for_CSS_Injection
+-- https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client-side_Testing/05-Testing_for_CSS_Injection
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
@@ -603,54 +603,80 @@ meta_ :: [Attribute action] -> View action
 meta_ = flip (nodeHtml "meta") []
 -----------------------------------------------------------------------------
 -- | [\<area\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/area)
+--
+-- @since 1.9.0.0
 area_ :: [Attribute action] -> [View action] -> View action
 area_ = nodeHtml "area"
 -----------------------------------------------------------------------------
 -- | [\<base\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/base)
+--
+-- @since 1.9.0.0
 base_ :: [Attribute action] -> [View action] -> View action
 base_ = nodeHtml "base"
 -----------------------------------------------------------------------------
 -- | [\<data\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/data)
+--
+-- @since 1.9.0.0
 data_ :: [Attribute action] -> [View action] -> View action
 data_ = nodeHtml "data"
 -----------------------------------------------------------------------------
 -- | [\<dialog\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog)
+--
+-- @since 1.9.0.0
 dialog_ :: [Attribute action] -> [View action] -> View action
 dialog_ = nodeHtml "dialog"
 -----------------------------------------------------------------------------
 -- | [\<fencedframe\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/fencedframe)
+--
+-- @since 1.9.0.0
 fencedframe_ :: [Attribute action] -> [View action] -> View action
 fencedframe_ = nodeHtml "fencedframe"
 -----------------------------------------------------------------------------
 -- | [\<hgroup\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup)
+--
+-- @since 1.9.0.0
 hgroup_ :: [Attribute action] -> [View action] -> View action
 hgroup_ = nodeHtml "hgroup"
 -----------------------------------------------------------------------------
 -- | [\<map\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/map)
+--
+-- @since 1.9.0.0
 map_ :: [Attribute action] -> [View action] -> View action
 map_ = nodeHtml "map"
 -----------------------------------------------------------------------------
 -- | [\<noscript\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/noscript)
+--
+-- @since 1.9.0.0
 noscript_ :: [Attribute action] -> [View action] -> View action
 noscript_ = nodeHtml "noscript"
 -----------------------------------------------------------------------------
 -- | [\<picture\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/picture)
+--
+-- @since 1.9.0.0
 picture_ :: [Attribute action] -> [View action] -> View action
 picture_ = nodeHtml "picture"
 -----------------------------------------------------------------------------
 -- | [\<search\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/search)
+--
+-- @since 1.9.0.0
 search_ :: [Attribute action] -> [View action] -> View action
 search_ = nodeHtml "search"
 -----------------------------------------------------------------------------
 -- | [\<slot\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/slot)
+--
+-- @since 1.9.0.0
 slot_ :: [Attribute action] -> [View action] -> View action
 slot_ = nodeHtml "slot"
 -----------------------------------------------------------------------------
 -- | [\<template\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/template)
+--
+-- @since 1.9.0.0
 template_ :: [Attribute action] -> [View action] -> View action
 template_ = nodeHtml "template"
 -----------------------------------------------------------------------------
 -- | [\<title\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/title)
+--
+-- @since 1.9.0.0
 title_ :: [Attribute action] -> [View action] -> View action
 title_ = nodeHtml "title"
 -----------------------------------------------------------------------------
