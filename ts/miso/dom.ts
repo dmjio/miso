@@ -119,6 +119,7 @@ export function populate(c: VTree, n: VTree): void {
     if (n['type'] === 'vnode') {
       diffChildren(c as VNode, n as VNode, n['domRef']);
     }
+    drawCanvas(n);
   }
 }
 
@@ -219,6 +220,13 @@ function createElement(obj: VTree, cb: (e: Node) => void): void {
   cb(obj['domRef']);
   populate(null, obj);
   callCreated(obj);
+}
+
+/* draw the canvas if you need to */
+function drawCanvas (obj: VTree) {
+    if ('tag' in obj && obj['tag'] === 'canvas' && 'draw' in obj) {
+      obj['draw'](obj['domRef']);
+    }
 }
 
 // unmount components

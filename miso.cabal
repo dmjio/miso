@@ -190,6 +190,7 @@ library
     Miso.WebSocket
   exposed-modules:
     Miso
+    Miso.Canvas
     Miso.Lens
     Miso.Mathml
     Miso.Svg
