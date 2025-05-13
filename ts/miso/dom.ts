@@ -64,7 +64,7 @@ function diffNodes(c: VTree, n: VTree, parent: Element): void {
     c['tag'] === n['tag'] &&
     n['key'] === c['key'] &&
     n['type'] === c['type'] &&
-   componentIdCheck(n,c)
+    componentIdCheck(n,c)
   ) {
     n['domRef'] = c['domRef'];
     // dmj: we will diff properties on 'vcomp' as well

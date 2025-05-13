@@ -175,7 +175,7 @@ import qualified Miso.String as MS
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
 data Color
-  = RGBA Int Int Int Int
+  = RGBA Int Int Int Double
   | HSL Int Int Int
   | Hex MisoString
   deriving (Show, Eq)
@@ -198,7 +198,7 @@ renderColor (HSL h s l) = "hsl(" <> values <> ")"
       ]
 renderColor (Hex s) = "#" <> s
 -----------------------------------------------------------------------------
-rgba :: Int -> Int -> Int -> Int -> Color
+rgba :: Int -> Int -> Int -> Double -> Color
 rgba = RGBA
 -----------------------------------------------------------------------------
 hsl :: Int -> Int -> Int -> Color

@@ -47,6 +47,7 @@ with pkgs.haskell.lib;
     wasmExamples
     svgWasm
     componentsWasm
+    canvas2DWasm
     todoWasm;
 
   # wasm utils

@@ -171,6 +171,7 @@ function populate(c, n) {
     if (n["type"] === "vnode") {
       diffChildren(c, n, n["domRef"]);
     }
+    drawCanvas(n);
   }
 }
 function diffProps(cProps, nProps, node, isSvg) {
@@ -256,6 +257,11 @@ function createElement(obj, cb) {
   cb(obj["domRef"]);
   populate(null, obj);
   callCreated(obj);
+}
+function drawCanvas(obj) {
+  if ("tag" in obj && obj["tag"] === "canvas" && "draw" in obj) {
+    obj["draw"](obj["domRef"]);
+  }
 }
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)

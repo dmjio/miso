@@ -102,7 +102,6 @@ module Miso.Html.Element
     , picture_
     , source_
     -- ** Scripting
-    , canvas_
     , noscript_
     , script_
     -- ** Demarcating edits
@@ -494,11 +493,7 @@ img_ = flip (nodeHtml "img") []
 iframe_ :: [Attribute action] -> [View action] -> View action
 iframe_ = nodeHtml "iframe"
 -----------------------------------------------------------------------------
--- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
-canvas_ :: [Attribute action] -> [View action] -> View action
-canvas_ = nodeHtml "canvas"
------------------------------------------------------------------------------
--- | [\<select\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select)
+-- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select
 select_ :: [Attribute action] -> [View action] -> View action
 select_ = nodeHtml "select"
 -----------------------------------------------------------------------------
