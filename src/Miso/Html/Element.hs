@@ -102,6 +102,7 @@ module Miso.Html.Element
     , picture_
     , source_
     -- ** Scripting
+    , canvas_
     , noscript_
     , script_
     -- ** Demarcating edits
@@ -638,6 +639,10 @@ hgroup_ = nodeHtml "hgroup"
 -- @since 1.9.0.0
 map_ :: [Attribute action] -> [View action] -> View action
 map_ = nodeHtml "map"
+-----------------------------------------------------------------------------
+-- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
+canvas_ :: [Attribute action] -> [View action] -> View action
+canvas_ = nodeHtml "canvas"
 -----------------------------------------------------------------------------
 -- | [\<noscript\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/noscript)
 --
