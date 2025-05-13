@@ -10,6 +10,7 @@ import Language.Javascript.JSaddle (JSM, (#), fromJSVal, new, jsg)
 -----------------------------------------------------------------------------
 import Miso
 import Miso.Canvas
+import qualified Miso.Canvas as Canvas
 import Miso.String
 import Miso.Style
 -----------------------------------------------------------------------------
@@ -38,7 +39,7 @@ main =
     view_ sun moon earth m =
       div_
       [ id_ "canvas grid" ]
-      [ canvas_
+      [ Canvas.canvas_
         [ id_ "canvas"
         , width_ "300"
         , height_ "300"
