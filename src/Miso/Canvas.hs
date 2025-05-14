@@ -370,7 +370,7 @@ interpret ctx (PutImageData (imgData, x',y')) = do
     ctx # ("putImageData" :: MisoString) $
       [img,x,y]
 interpret _ (SetImageData imgData index value) = do
-  o <- imgData ! "data"
+  o <- imgData ! ("data" :: MisoString)
   (o <## index) value
 interpret _ (ImageDataHeight imgData) = do
   Just h <- fromJSVal =<< imgData ! ("height" :: MisoString)
