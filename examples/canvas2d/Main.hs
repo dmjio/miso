@@ -61,25 +61,25 @@ canvasDraw sun moon earth (millis', secs') n = do
    let
      secs = secs' + fromIntegral n
      millis = millis' + fromIntegral n
-   globalCompositeOperation ("destination-over")
+   globalCompositeOperation DestinationOver
    clearRect (0,0,300,300)
-   fillStyle (rgba 0 0 0 0.6)
+   fillStyle $ Canvas.color (rgba 0 0 0 0.6)
    strokeStyle (rgba 0 153 255 0.4)
    save ()
    translate (150, 150)
    rotate ((((2 * pi) / 60) * secs) + (((2 * pi) / 60000) * millis))
    translate (105,0)
    fillRect (0 ,-12, 50, 24)
-   drawImage earth (-12, -12)
+   drawImage (earth, -12, -12)
    save ()
    rotate ((((2 * pi) / 6) * secs) + (((2 * pi) / 6000) * millis))
    translate (0,28.5)
-   drawImage moon (-3.5, -3.5)
+   drawImage (moon, -3.5, -3.5)
    replicateM_ 2 (restore ())
    beginPath ()
    arc (150, 150, 105, 0, pi * 2)
    stroke ()
-   drawImage' sun (0, 0, 300, 300)
+   drawImage' (sun, 0, 0, 300, 300)
 -----------------------------------------------------------------------------
 updateModel
   :: Action
