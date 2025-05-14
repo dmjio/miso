@@ -96,6 +96,7 @@ import           Miso.Html.Types
 import           Miso.Style (Color, renderColor)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
 canvas_ :: forall action a . [ Attribute action ] -> Canvas a -> View action
 canvas_ attributes canvas = node HTML "canvas" Nothing attrs []
   where
