@@ -224,9 +224,9 @@ function createElement(obj: VTree, cb: (e: Node) => void): void {
 
 /* draw the canvas if you need to */
 function drawCanvas (obj: VTree) {
-    if ('tag' in obj && obj['tag'] === 'canvas' && 'draw' in obj) {
-      obj['draw'](obj['domRef']);
-    }
+  if (obj['tag'] === 'canvas' && 'draw' in obj) {
+    obj['draw'](obj['domRef']);
+  }
 }
 
 // unmount components

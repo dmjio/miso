@@ -259,7 +259,7 @@ function createElement(obj, cb) {
   callCreated(obj);
 }
 function drawCanvas(obj) {
-  if ("tag" in obj && obj["tag"] === "canvas" && "draw" in obj) {
+  if (obj["tag"] === "canvas" && "draw" in obj) {
     obj["draw"](obj["domRef"]);
   }
 }
