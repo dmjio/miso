@@ -494,7 +494,11 @@ img_ = flip (nodeHtml "img") []
 iframe_ :: [Attribute action] -> [View action] -> View action
 iframe_ = nodeHtml "iframe"
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select
+-- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
+canvas_ :: [Attribute action] -> [View action] -> View action
+canvas_ = nodeHtml "canvas"
+-----------------------------------------------------------------------------
+-- | [\<select\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/select)
 select_ :: [Attribute action] -> [View action] -> View action
 select_ = nodeHtml "select"
 -----------------------------------------------------------------------------
@@ -639,10 +643,6 @@ hgroup_ = nodeHtml "hgroup"
 -- @since 1.9.0.0
 map_ :: [Attribute action] -> [View action] -> View action
 map_ = nodeHtml "map"
------------------------------------------------------------------------------
--- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
-canvas_ :: [Attribute action] -> [View action] -> View action
-canvas_ = nodeHtml "canvas"
 -----------------------------------------------------------------------------
 -- | [\<noscript\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/noscript)
 --
