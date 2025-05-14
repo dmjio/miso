@@ -1,8 +1,8 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
@@ -68,7 +68,7 @@ module Miso.Canvas
   , drawImage'
   , createImageData
   , getImageData
-  , imageDataData
+  , setImageData
   , height
   , width
   , putImageData
@@ -185,7 +185,7 @@ data Canvas :: Type -> Type where
   DrawImage' :: Image -> (Double, Double, Double, Double) -> Canvas ()
   CreateImageData :: (Double, Double) -> Canvas ImageData
   GetImageData :: (Double, Double, Double, Double) -> Canvas ImageData
-  ImageDataData :: Canvas ()
+  SetImageData :: ImageData -> Int -> Double -> Canvas ()
   ImageDataHeight :: ImageData -> Canvas Double
   ImageDataWidth :: ImageData -> Canvas Double
   PutImageData :: (ImageData, Double, Double) -> Canvas ()
@@ -198,8 +198,12 @@ data Canvas :: Type -> Type where
 instance MonadIO Canvas where
   liftIO = LiftIO
 -----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+instance MonadJSM Canvas
+#else
 instance MonadJSM Canvas where
   liftJSM' = LiftJSM
+#endif
 -----------------------------------------------------------------------------
 instance Monad Canvas where
   (>>=) = Bind
@@ -364,8 +368,8 @@ interpret ctx (PutImageData (imgData, x',y')) = do
   void $
     ctx # ("putImageData" :: MisoString) $
       [img,x,y]
-interpret _ (ImageDataData) = do
-  error "image data"
+interpret _ (SetImageData imgData index value) = do
+  undefined -- imgData ! "data" !! index $ value
 interpret _ (ImageDataHeight imgData) = do
   Just h <- fromJSVal =<< imgData ! ("height" :: MisoString)
   pure h
@@ -509,8 +513,8 @@ createImageData = CreateImageData
 getImageData :: (Double, Double, Double, Double) -> Canvas ImageData
 getImageData = GetImageData
 -----------------------------------------------------------------------------
-imageDataData :: Canvas ()
-imageDataData = ImageDataData
+setImageData :: ImageData -> Int -> Double -> Canvas ()
+setImageData = SetImageData
 -----------------------------------------------------------------------------
 height :: ImageData -> Canvas Double
 height = ImageDataHeight
