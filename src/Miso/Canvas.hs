@@ -115,7 +115,7 @@ canvas_ attributes canvas = node HTML "canvas" Nothing attrs []
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
       flip (FFI.set "draw") obj =<< do
         FFI.syncCallback1 $ \domRef -> do
-          ctx <- domRef # ("getContext" :: String) $ ["2d" :: MisoString]
+          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
           void (interpret ctx canvas)
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
@@ -339,42 +339,42 @@ interpret _ (LiftJSM jsm) =
 interpret _ (Pure m) =
   pure m
 interpret ctx (ClearRect (x,y,h,w)) =
-  void $ ctx # ("clearRect" :: String) $ [ x, y, h, w ]
+  void $ ctx # ("clearRect" :: MisoString) $ [ x, y, h, w ]
 interpret ctx (FillRect (x,y,h,w)) =
-  void $ ctx # ("fillRect" :: String) $ [ x, y, h, w ]
+  void $ ctx # ("fillRect" :: MisoString) $ [ x, y, h, w ]
 interpret ctx (StrokeRect (x,y,h,w)) =
-  void $ ctx # ("strokeRect" :: String) $ [ x, y, h, w ]
+  void $ ctx # ("strokeRect" :: MisoString) $ [ x, y, h, w ]
 interpret ctx BeginPath =
-  void $ ctx # ("beginPath" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("beginPath" :: MisoString) $ ([] :: [MisoString])
 interpret ctx ClosePath =
-  void $ ctx # ("closePath" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("closePath" :: MisoString) $ ([] :: [MisoString])
 interpret ctx Clip =
-  void $ ctx # ("clip" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("clip" :: MisoString) $ ([] :: [MisoString])
 interpret ctx Save =
-  void $ ctx # ("save" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("save" :: MisoString) $ ([] :: [MisoString])
 interpret ctx Restore =
-  void $ ctx # ("restore" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("restore" :: MisoString) $ ([] :: [MisoString])
 interpret ctx (MoveTo (x,y)) =
-  void $ ctx # ("moveTo" :: String) $ [x,y]
+  void $ ctx # ("moveTo" :: MisoString) $ [x,y]
 interpret ctx (LineTo (x,y)) =
-  void $ ctx # ("lineTo" :: String) $ [x,y]
+  void $ ctx # ("lineTo" :: MisoString) $ [x,y]
 interpret ctx Stroke =
-  void $ ctx # ("stroke" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("stroke" :: MisoString) $ ([] :: [MisoString])
 interpret ctx Fill =
-  void $ ctx # ("fill" :: String) $ ([] :: [MisoString])
+  void $ ctx # ("fill" :: MisoString) $ ([] :: [MisoString])
 interpret ctx (Rect (x,y,h,w)) =
-  void $ ctx # ("rect" :: String) $ [x,y,h,w]
+  void $ ctx # ("rect" :: MisoString) $ [x,y,h,w]
 interpret ctx (BezierCurveTo (a,b,c,d,e,f)) =
-  void $ ctx # ("bezierCurveTo" :: String) $ [a,b,c,d,e,f]
+  void $ ctx # ("bezierCurveTo" :: MisoString) $ [a,b,c,d,e,f]
 interpret ctx (Arc (a,b,c,d,e)) =
-  void $ ctx # ("arc" :: String) $ [a,b,c,d,e]
+  void $ ctx # ("arc" :: MisoString) $ [a,b,c,d,e]
 interpret ctx (ArcTo (a,b,c,d,e)) =
-  void $ ctx # ("arcTo" :: String) $ [a,b,c,d,e]
+  void $ ctx # ("arcTo" :: MisoString) $ [a,b,c,d,e]
 interpret ctx (QuadraticCurveTo (a,b,c,d)) =
-  void $ ctx # ("quadraticCurveTo" :: String) $ [a,b,c,d]
+  void $ ctx # ("quadraticCurveTo" :: MisoString) $ [a,b,c,d]
 interpret ctx (IsPointInPath (x,y)) = do
   Just result <- fromJSVal =<< do
-    ctx # ("isPointInPath" :: String) $ [x,y]
+    ctx # ("isPointInPath" :: MisoString) $ [x,y]
   pure result
 interpret ctx (Direction d) =
   void $ (ctx <# ("direction" :: MisoString)) (renderDirectionType d)
@@ -393,15 +393,15 @@ interpret ctx (FillText args) =
 interpret ctx (StrokeText args) =
   void $ (ctx # ("strokeText" :: MisoString)) =<< toJSVal args
 interpret ctx (MeasureText txt) = do
-  o <- ctx # ("measureText" :: String) $ [txt]
+  o <- ctx # ("measureText" :: MisoString) $ [txt]
   Just w <- fromJSVal =<< o ! ("width" :: MisoString)
   pure w
 interpret ctx (Translate (x,y)) =
-  void $ ctx # ("translate" :: String) $ [ x, y ]
+  void $ ctx # ("translate" :: MisoString) $ [ x, y ]
 interpret _ (AddColorStop (Gradient grd) x' color') = do
   x <- toJSVal x'
   c <- toJSVal (renderColor color')
-  void $ grd # ("addColorStop" :: String) $ [ x, c ]
+  void $ grd # ("addColorStop" :: MisoString) $ [ x, c ]
 interpret ctx (CreateLinearGradient (w,x,y,z)) =
   Gradient <$> do
     ctx # ("createLinearGradient" :: MisoString) $
@@ -584,43 +584,43 @@ createPattern = CreatePattern
 createRadialGradient :: (Double,Double,Double,Double,Double,Double) -> Canvas Gradient
 createRadialGradient = CreateRadialGradient
 -----------------------------------------------------------------------------
--- | [ctx.fillStyle = "red")](https://www.w3schools.com/tags/canvas_fillstyle.asp)
+-- | [ctx.fillStyle = "red"](https://www.w3schools.com/tags/canvas_fillstyle.asp)
 fillStyle :: StyleArg -> Canvas ()
 fillStyle = FillStyle
 -----------------------------------------------------------------------------
--- | [ctx.lineCap = "butt")](https://www.w3schools.com/tags/canvas_lineCap.asp)
+-- | [ctx.lineCap = "butt"](https://www.w3schools.com/tags/canvas_lineCap.asp)
 lineCap :: LineCapType -> Canvas ()
 lineCap = LineCap
 -----------------------------------------------------------------------------
--- | [ctx.lineJoin = "bevel")](https://www.w3schools.com/tags/canvas_lineJoin.asp)
+-- | [ctx.lineJoin = "bevel"](https://www.w3schools.com/tags/canvas_lineJoin.asp)
 lineJoin :: LineJoinType -> Canvas ()
 lineJoin = LineJoin
 -----------------------------------------------------------------------------
--- | [ctx.lineWidth = 10)](https://www.w3schools.com/tags/canvas_lineWidth.asp)
+-- | [ctx.lineWidth = 10](https://www.w3schools.com/tags/canvas_lineWidth.asp)
 lineWidth :: Double -> Canvas ()
 lineWidth = LineWidth
 -----------------------------------------------------------------------------
--- | [ctx.miterLimit = 10)](https://www.w3schools.com/tags/canvas_miterLimit.asp)
+-- | [ctx.miterLimit = 10](https://www.w3schools.com/tags/canvas_miterLimit.asp)
 miterLimit :: Double -> Canvas ()
 miterLimit = MiterLimit
 -----------------------------------------------------------------------------
--- | [ctx.shadowBlur = 10)](https://www.w3schools.com/tags/canvas_shadowBlur.asp)
+-- | [ctx.shadowBlur = 10](https://www.w3schools.com/tags/canvas_shadowBlur.asp)
 shadowBlur :: Double -> Canvas ()
 shadowBlur = ShadowBlur
 -----------------------------------------------------------------------------
--- | [ctx.shadowColor = "red")](https://www.w3schools.com/tags/canvas_shadowColor.asp)
+-- | [ctx.shadowColor = "red"](https://www.w3schools.com/tags/canvas_shadowColor.asp)
 shadowColor :: Color -> Canvas ()
 shadowColor = ShadowColor
 -----------------------------------------------------------------------------
--- | [ctx.shadowOffsetX = 20)](https://www.w3schools.com/tags/canvas_shadowOffsetX.asp)
+-- | [ctx.shadowOffsetX = 20](https://www.w3schools.com/tags/canvas_shadowOffsetX.asp)
 shadowOffsetX :: Double -> Canvas ()
 shadowOffsetX = ShadowOffsetX
 -----------------------------------------------------------------------------
--- | [ctx.shadowOffsetY = 20)](https://www.w3schools.com/tags/canvas_shadowOffsetY.asp)
+-- | [ctx.shadowOffsetY = 20](https://www.w3schools.com/tags/canvas_shadowOffsetY.asp)
 shadowOffsetY :: Double -> Canvas ()
 shadowOffsetY = ShadowOffsetY
 -----------------------------------------------------------------------------
--- | [ctx.strokeStyle = "red")](https://www.w3schools.com/tags/canvas_strokeStyle.asp)
+-- | [ctx.strokeStyle = "red"](https://www.w3schools.com/tags/canvas_strokeStyle.asp)
 strokeStyle :: StyleArg -> Canvas ()
 strokeStyle = StrokeStyle
 -----------------------------------------------------------------------------
