@@ -64,7 +64,7 @@ canvasDraw sun moon earth (millis', secs') n = do
    globalCompositeOperation DestinationOver
    clearRect (0,0,300,300)
    fillStyle $ Canvas.color (rgba 0 0 0 0.6)
-   strokeStyle (rgba 0 153 255 0.4)
+   strokeStyle $ Canvas.color (rgba 0 153 255 0.4)
    save ()
    translate (150, 150)
    rotate ((((2 * pi) / 60) * secs) + (((2 * pi) / 60000) * millis))
