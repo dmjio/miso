@@ -42,6 +42,7 @@ type VNode = {
   onBeforeDestroyed: () => void;
   onCreated: () => void;
   onBeforeCreated: () => void;
+  draw?: (DOMRef) => void;
 };
 
 type VText = {

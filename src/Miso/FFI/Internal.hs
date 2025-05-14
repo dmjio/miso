@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
@@ -57,6 +58,8 @@ module Miso.FFI.Internal
    , fetchJSON
    , shouldSync
    , setComponent
+   , Image (..)
+   , newImage
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -476,4 +479,14 @@ shouldSync vnode = do
   moduleMiso <- jsg "miso"
   fromJSValUnchecked =<< do
     moduleMiso # "shouldSync" $ [vnode]
+-----------------------------------------------------------------------------
+newtype Image = Image JSVal
+  deriving (ToJSVal)
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a 'Image' w/ 'src' attribute.
+newImage :: MisoString -> JSM Image
+newImage url = do
+  img <- new (jsg "Image") ([] :: [MisoString])
+  img <# "src" $ url
+  pure (Image img)
 -----------------------------------------------------------------------------

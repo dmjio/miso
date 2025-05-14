@@ -61,6 +61,12 @@ self: super:
        title = "Components WASM Example";
     };
 
+  canvas2DWasm =
+    self.wasmPkgExample {
+       name = "canvas2d";
+       title = "Canvas 2D WASM Example";
+    };
+
   todoWasm =
     self.wasmPkgExample {
        name = "todo-mvc";
