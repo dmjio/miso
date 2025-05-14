@@ -59,7 +59,7 @@ module Miso.FFI.Internal
    , shouldSync
    , setComponent
    , Image (..)
-   , image
+   , newImage
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -483,9 +483,9 @@ shouldSync vnode = do
 newtype Image = Image JSVal
   deriving (ToJSVal)
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'Image'
-image :: MisoString -> JSM Image
-image url = do
+-- | Smart constructor for building a 'Image' w/ 'src' attribute.
+newImage :: MisoString -> JSM Image
+newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
   img <# "src" $ url
   pure (Image img)

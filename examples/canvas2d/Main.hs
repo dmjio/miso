@@ -30,9 +30,9 @@ baseUrl = "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/W
 main :: IO ()
 main =
   run $ do
-    sun <- image (baseUrl <> "canvas_sun.png")
-    moon <- image (baseUrl <> "canvas_moon.png")
-    earth <- image (baseUrl <> "canvas_earth.png")
+    sun <- newImage (baseUrl <> "canvas_sun.png")
+    moon <- newImage (baseUrl <> "canvas_moon.png")
+    earth <- newImage (baseUrl <> "canvas_earth.png")
     startComponent (app sun moon earth) { initialAction = Just GetTime }
   where
     app sun moon earth = defaultComponent (0.0, 0.0) updateModel (view_ sun moon earth)

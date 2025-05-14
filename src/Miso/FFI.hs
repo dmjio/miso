@@ -27,7 +27,7 @@ module Miso.FFI
   , asyncCallback
   -- ** Image
   , Image (..)
-  , image
+  , newImage
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
