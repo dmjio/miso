@@ -81,7 +81,7 @@ import           Control.Monad (void, liftM, ap, liftM2)
 import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
-                                             , liftJSM
+                                             , liftJSM, MonadJSM(..)
                                              )
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
@@ -167,6 +167,9 @@ data Canvas :: Type -> Type where
 -----------------------------------------------------------------------------
 instance MonadIO Canvas where
   liftIO = LiftIO
+-----------------------------------------------------------------------------
+instance MonadJSM Canvas where
+  liftJSM' = LiftJSM
 -----------------------------------------------------------------------------
 instance Monad Canvas where
   (>>=) = Bind
