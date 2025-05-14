@@ -20,7 +20,10 @@ module Miso.Canvas
     Canvas (..)
   , Pattern (..)
   , PatternType (..)
+  , LineJoinType (..)
+  , LineCapType (..)
   , Gradient (..)
+  , ImageData (..)
     -- * Property
   , canvas_
     -- * API
@@ -123,7 +126,7 @@ data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 renderLineJoinType :: LineJoinType -> MisoString
-renderLineJoinType LineJoinBevel = "butt"
+renderLineJoinType LineJoinBevel = "bevel"
 renderLineJoinType LineJoinRound = "round"
 renderLineJoinType LineJoinMiter = "miter"
 -----------------------------------------------------------------------------
