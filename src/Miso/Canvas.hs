@@ -84,7 +84,7 @@ import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
                                              , liftJSM, MonadJSM(..)
-                                             , ToJSVal, MakeObject
+                                             , ToJSVal, MakeObject, (<##)
                                              )
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
@@ -369,7 +369,8 @@ interpret ctx (PutImageData (imgData, x',y')) = do
     ctx # ("putImageData" :: MisoString) $
       [img,x,y]
 interpret _ (SetImageData imgData index value) = do
-  undefined -- imgData ! "data" !! index $ value
+  o <- imgData ! "data"
+  (o <## index) value
 interpret _ (ImageDataHeight imgData) = do
   Just h <- fromJSVal =<< imgData ! ("height" :: MisoString)
   pure h
