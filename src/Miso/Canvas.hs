@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -16,6 +18,9 @@
 module Miso.Canvas
   ( -- * Types
     Canvas (..)
+  , Pattern (..)
+  , PatternType (..)
+  , Gradient (..)
     -- * Property
   , canvas_
     -- * API
@@ -64,16 +69,13 @@ module Miso.Canvas
   , createImageData
   , getImageData
   , imageDataData
-  , imageDataHeight
-  , imageDataWidth
+  , height
+  , width
   , putImageData
   , globalAlpha
   , clip
   , save
   , restore
-  , createEvent
-  , getContext
-  , toDataUrl
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad.IO.Class (MonadIO(liftIO))
@@ -82,6 +84,7 @@ import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
                                              , liftJSM, MonadJSM(..)
+                                             , ToJSVal, MakeObject
                                              )
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
@@ -96,9 +99,39 @@ canvas_ attributes canvas = node HTML "canvas" Nothing attrs []
     attrs :: [ Attribute action ]
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
       flip (FFI.set "draw") obj =<< do
-      FFI.syncCallback1 $ \domRef -> do
+        FFI.syncCallback1 $ \domRef -> do
           ctx <- domRef # ("getContext" :: String) $ ["2d" :: MisoString]
           void (interpret ctx canvas)
+-----------------------------------------------------------------------------
+data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
+-----------------------------------------------------------------------------
+renderPattern :: PatternType -> MisoString
+renderPattern Repeat   = "repeat"
+renderPattern RepeatX  = "repeat-x"
+renderPattern RepeatY  = "repeat-y"
+renderPattern NoRepeat = "no-repeat"
+-----------------------------------------------------------------------------
+data LineCapType = LineCapButt | LineCapRound | LineCapSquare
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+renderLineCapType :: LineCapType -> MisoString
+renderLineCapType LineCapButt = "butt"
+renderLineCapType LineCapRound = "round"
+renderLineCapType LineCapSquare = "square"
+-----------------------------------------------------------------------------
+data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+renderLineJoinType :: LineJoinType -> MisoString
+renderLineJoinType LineJoinBevel = "butt"
+renderLineJoinType LineJoinRound = "round"
+renderLineJoinType LineJoinMiter = "miter"
+-----------------------------------------------------------------------------
+newtype Pattern = Pattern JSVal
+-----------------------------------------------------------------------------
+newtype Gradient = Gradient JSVal
+-----------------------------------------------------------------------------
+newtype ImageData = ImageData JSVal deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 type Coord = (Double, Double)
 -----------------------------------------------------------------------------
@@ -129,41 +162,38 @@ data Canvas :: Type -> Type where
   StrokeText :: (MisoString, Double, Double) -> Canvas ()
   TextAlign :: MisoString -> Canvas ()
   TextBaseline :: MisoString -> Canvas ()
-  AddColorStop :: Canvas ()
-  CreateLinearGradient :: Canvas ()
-  CreatePattern :: Canvas ()
-  CreateRadialGradient :: Canvas ()
+  AddColorStop :: Gradient -> Double -> Color -> Canvas ()
+  CreateLinearGradient :: (Double, Double, Double, Double) -> Canvas Gradient
+  CreatePattern :: Image -> PatternType -> Canvas Pattern
+  CreateRadialGradient :: (Double, Double, Double, Double, Double, Double) -> Canvas Gradient
   FillStyle :: MisoString -> Canvas ()
-  LineCap :: Canvas ()
-  LineJoin :: Canvas ()
-  LineWidth :: Canvas ()
-  MiterLimit :: Canvas ()
-  ShadowBlur :: Canvas ()
-  ShadowColor :: Canvas ()
-  ShadowOffsetX :: Canvas ()
-  ShadowOffsetY :: Canvas ()
+  LineCap :: LineCapType -> Canvas ()
+  LineJoin :: LineJoinType -> Canvas ()
+  LineWidth :: Double -> Canvas ()
+  MiterLimit :: Double -> Canvas ()
+  ShadowBlur :: Double -> Canvas ()
+  ShadowColor :: Color -> Canvas ()
+  ShadowOffsetX :: Double -> Canvas ()
+  ShadowOffsetY :: Double -> Canvas ()
   StrokeStyle :: MisoString -> Canvas ()
-  Scale :: Canvas ()
+  Scale :: (Double, Double) -> Canvas ()
   Rotate :: Double -> Canvas ()
   Translate :: Coord -> Canvas ()
-  Transform :: Canvas ()
-  SetTransform :: Canvas ()
+  Transform :: (Double,Double,Double,Double,Double,Double) -> Canvas ()
+  SetTransform :: (Double,Double,Double,Double,Double,Double) -> Canvas ()
   DrawImage :: Image -> Coord -> Canvas ()
   DrawImage' :: Image -> (Double, Double, Double, Double) -> Canvas ()
-  CreateImageData :: Canvas ()
-  GetImageData :: Canvas ()
+  CreateImageData :: (Double, Double) -> Canvas ImageData
+  GetImageData :: (Double, Double, Double, Double) -> Canvas ImageData
   ImageDataData :: Canvas ()
-  ImageDataHeight :: Canvas ()
-  ImageDataWidth :: Canvas ()
-  PutImageData :: Canvas ()
-  GlobalAlpha :: Canvas ()
+  ImageDataHeight :: ImageData -> Canvas Double
+  ImageDataWidth :: ImageData -> Canvas Double
+  PutImageData :: (ImageData, Double, Double) -> Canvas ()
+  GlobalAlpha :: Double -> Canvas ()
   GlobalCompositeOperation :: MisoString -> Canvas ()
   Clip :: Canvas ()
   Save :: Canvas ()
   Restore :: Canvas ()
-  CreateEvent :: Canvas ()
-  GetContext :: Canvas ()
-  ToDataURL :: Canvas ()
 -----------------------------------------------------------------------------
 instance MonadIO Canvas where
   liftIO = LiftIO
@@ -192,6 +222,14 @@ instance Monoid a => Monoid (Canvas a) where
   mempty  = return mempty
 -----------------------------------------------------------------------------
 interpret :: JSVal -> Canvas a -> JSM a
+interpret ctx (Bind m f) =
+  interpret ctx =<< f <$> interpret ctx m
+interpret _ (LiftIO io) =
+  liftIO io
+interpret _ (LiftJSM jsm) =
+  liftJSM jsm
+interpret _ (Pure m) =
+  pure m
 interpret ctx (ClearRect (x,y,h,w)) =
   void $ ctx # ("clearRect" :: String) $ [ x, y, h, w ]
 interpret ctx (FillRect (x,y,h,w)) =
@@ -227,7 +265,8 @@ interpret ctx (ArcTo (a,b,c,d,e)) =
 interpret ctx (QuadraticCurveTo (a,b,c,d)) =
   void $ ctx # ("quadraticCurveTo" :: String) $ [a,b,c,d]
 interpret ctx (IsPointInPath (x,y)) = do
-  Just result <- fromJSVal =<< do ctx # ("isPointInPath" :: String) $ [x,y]
+  Just result <- fromJSVal =<< do
+    ctx # ("isPointInPath" :: String) $ [x,y]
   pure result
 interpret ctx (Direction d) =
   void $ (ctx <# ("direction" :: MisoString)) d
@@ -247,52 +286,57 @@ interpret ctx (StrokeText args) =
   void $ (ctx # ("strokeText" :: MisoString)) =<< toJSVal args
 interpret ctx (MeasureText txt) = do
   o <- ctx # ("measureText" :: String) $ [txt]
-  Just width <- fromJSVal =<< o ! ("width" :: MisoString)
-  pure width
+  Just w <- fromJSVal =<< o ! ("width" :: MisoString)
+  pure w
 interpret ctx (Translate (x,y)) =
   void $ ctx # ("translate" :: String) $ [ x, y ]
-interpret ctx (Bind m f) =
-  interpret ctx =<< f <$> interpret ctx m
-interpret _ (LiftIO io) =
-  liftIO io
-interpret _ (LiftJSM jsm) =
-  liftJSM jsm
-interpret _ (Pure m) =
-  pure m
-interpret _ (AddColorStop) =
-  error "add color stop"
-interpret _ (CreateLinearGradient) =
-  error "create linear gradient"
-interpret _ (CreatePattern) =
-  error "create pattern"
-interpret _ (CreateRadialGradient) =
-  error "create radial grandient"
-interpret _ (LineCap) =
-  error "LineCap"
-interpret _ (LineJoin) =
-  error "LineJoin"
-interpret _ (LineWidth) =
-  error "LineWidth"
-interpret _ (MiterLimit) =
-  error "MiterLimit"
-interpret _ (ShadowBlur) =
-  error "ShadowBlur"
-interpret _ (ShadowColor) =
-  error "ShadowColor"
-interpret _ (ShadowOffsetX) =
-  error "ShadowOffsetX"
-interpret _ (ShadowOffsetY) =
-  error "ShadowOffsetY"
+interpret _ (AddColorStop (Gradient grd) x' color') = do
+  x <- toJSVal x'
+  color <- toJSVal (renderColor color')
+  void $ grd # ("addColorStop" :: String) $ [ x, color ]
+interpret ctx (CreateLinearGradient (w,x,y,z)) =
+  Gradient <$> do
+    ctx # ("createLinearGradient" :: MisoString) $
+      [w,x,y,z]
+interpret ctx (CreatePattern image patternType) = do
+  img <- toJSVal image
+  pt <- toJSVal (renderPattern patternType)
+  Pattern <$> do
+    ctx # ("createPattern" :: MisoString) $
+      [ img, pt ]
+interpret ctx (CreateRadialGradient (w,x,y,z,k,j)) =
+  Gradient <$> do
+    ctx # ("createRadialGradient" :: MisoString) $
+      [w,x,y,z,k,j]
+interpret ctx (LineCap typ) = do
+  t <- toJSVal (renderLineCapType typ)
+  void $ do
+    ctx <# ("lineCap" :: MisoString) $ t
+interpret ctx (LineJoin ljt') = do
+  ljt <- toJSVal (renderLineJoinType ljt')
+  void $ do ctx <# ("lineJoin" :: MisoString) $ ljt
+interpret ctx (LineWidth w) =
+  void $ do ctx <# ("lineWidth" :: MisoString) $ w
+interpret ctx (MiterLimit w) =
+  void $ do ctx <# ("miterLimit" :: MisoString) $ w
+interpret ctx (ShadowBlur w) =
+  void $ do ctx <# ("shadowBlur" :: MisoString) $ w
+interpret ctx (ShadowColor color) =
+  void $ do ctx <# ("shadowColor" :: MisoString) $ renderColor color
+interpret ctx (ShadowOffsetX x) =
+  void $ do ctx <# ("shadowOffsetX" :: MisoString) $ x
+interpret ctx (ShadowOffsetY y) =
+  void $ do ctx <# ("shadowOffsetY" :: MisoString) $ y
 interpret ctx (StrokeStyle s) =
   (ctx <# ("strokeStyle" :: MisoString)) s
-interpret _ (Scale) =
-  error "Scale"
+interpret ctx (Scale (w,h)) = do
+  void $ ctx # ("scale" :: MisoString) $ [w,h]
 interpret ctx (Rotate x) =
   void $ ctx # ("rotate" :: MisoString) $ [x]
-interpret _ (Transform) =
-  error "Transform"
-interpret _ (SetTransform) =
-  error "SetTransform"
+interpret ctx (Transform (a,b,c,d,e,f)) =
+  void $ ctx # ("transform" :: MisoString) $ [a,b,c,d,e,f]
+interpret ctx (SetTransform (a,b,c,d,e,f)) =
+  void $ ctx # ("setTransform" :: MisoString) $ [a,b,c,d,e,f]
 interpret ctx (DrawImage img' (x',y')) = do
   img <- toJSVal img'
   x <- toJSVal x'
@@ -305,26 +349,31 @@ interpret ctx (DrawImage' img' (w',x',y',z')) = do
   y <- toJSVal y'
   z <- toJSVal z'
   void $ ctx # ("drawImage" :: MisoString) $ [img,w,x,y,z]
-interpret _ (CreateImageData) =
-  error "CreateImageData"
-interpret _ (GetImageData) =
-  error "GetImageData"
-interpret _ (ImageDataData) =
-  error "ImageDataData"
-interpret _ (ImageDataHeight) =
-  error "ImageDataHeight"
-interpret _ (ImageDataWidth) =
-  error "ImageDataWidth"
-interpret _ (PutImageData) =
-  error "PutImageData"
-interpret _ (GlobalAlpha) =
-  error "GlobalAlpha"
-interpret _ (CreateEvent) =
-  error "CreateEvent"
-interpret _ (GetContext) =
-  error "GetContext"
-interpret _ (ToDataURL) =
-  error "ToDataURL"
+interpret ctx (CreateImageData (x,y)) =
+  ImageData <$> do
+    ctx # ("createImageData" :: MisoString) $
+      [x,y]
+interpret ctx (GetImageData (w,x,y,z)) =
+  ImageData <$> do
+    ctx # ("getImageData" :: MisoString) $
+      [w,x,y,z]
+interpret ctx (PutImageData (imgData, x',y')) = do
+  img <- toJSVal imgData
+  x <- toJSVal x'
+  y <- toJSVal y'
+  void $
+    ctx # ("putImageData" :: MisoString) $
+      [img,x,y]
+interpret _ (ImageDataData) = do
+  error "image data"
+interpret _ (ImageDataHeight imgData) = do
+  Just h <- fromJSVal =<< imgData ! ("height" :: MisoString)
+  pure h
+interpret _ (ImageDataWidth imgData) = do
+  Just w <- fromJSVal =<< imgData ! ("width" :: MisoString)
+  pure w
+interpret ctx (GlobalAlpha alpha) =
+  ctx <# ("globalAlpha" :: MisoString) $ alpha
 -----------------------------------------------------------------------------
 globalCompositeOperation :: MisoString -> Canvas ()
 globalCompositeOperation = GlobalCompositeOperation
@@ -389,61 +438,63 @@ textAlign = TextAlign
 textBaseline :: MisoString -> Canvas ()
 textBaseline = TextBaseline
 -----------------------------------------------------------------------------
-addColorStop :: Canvas ()
+addColorStop :: Gradient -> Double -> Color -> Canvas ()
 addColorStop = AddColorStop
 -----------------------------------------------------------------------------
-createLinearGradient :: Canvas ()
+createLinearGradient :: (Double, Double, Double, Double) -> Canvas Gradient
 createLinearGradient = CreateLinearGradient
 -----------------------------------------------------------------------------
-createPattern :: Canvas ()
+createPattern :: Image -> PatternType -> Canvas Pattern
 createPattern = CreatePattern
 -----------------------------------------------------------------------------
-createRadialGradient :: Canvas ()
+createRadialGradient :: (Double,Double,Double,Double,Double,Double) -> Canvas Gradient
 createRadialGradient = CreateRadialGradient
 -----------------------------------------------------------------------------
 fillStyle :: Color -> Canvas ()
-fillStyle color = (FillStyle (renderColor color))
+fillStyle color = FillStyle (renderColor color)
 -----------------------------------------------------------------------------
-lineCap :: Canvas ()
+lineCap :: LineCapType -> Canvas ()
 lineCap = LineCap
 -----------------------------------------------------------------------------
-lineJoin :: Canvas ()
+lineJoin :: LineJoinType -> Canvas ()
 lineJoin = LineJoin
 -----------------------------------------------------------------------------
-lineWidth :: Canvas ()
+lineWidth :: Double -> Canvas ()
 lineWidth = LineWidth
 -----------------------------------------------------------------------------
-miterLimit :: Canvas ()
+miterLimit :: Double -> Canvas ()
 miterLimit = MiterLimit
 -----------------------------------------------------------------------------
-shadowBlur :: Canvas ()
+shadowBlur :: Double -> Canvas ()
 shadowBlur = ShadowBlur
 -----------------------------------------------------------------------------
-shadowColor :: Canvas ()
+shadowColor :: Color -> Canvas ()
 shadowColor = ShadowColor
 -----------------------------------------------------------------------------
-shadowOffsetX :: Canvas ()
+shadowOffsetX :: Double -> Canvas ()
 shadowOffsetX = ShadowOffsetX
 -----------------------------------------------------------------------------
-shadowOffsetY :: Canvas ()
+shadowOffsetY :: Double -> Canvas ()
 shadowOffsetY = ShadowOffsetY
 -----------------------------------------------------------------------------
 strokeStyle :: Color -> Canvas ()
-strokeStyle color = (StrokeStyle (renderColor color))
+strokeStyle color = StrokeStyle (renderColor color)
 -----------------------------------------------------------------------------
-scale :: Canvas ()
+scale :: (Double, Double) -> Canvas ()
 scale = Scale
 -----------------------------------------------------------------------------
 rotate :: Double -> Canvas ()
 rotate = Rotate
 -----------------------------------------------------------------------------
 translate :: Coord -> Canvas ()
-translate coord = (Translate coord)
+translate = Translate
 -----------------------------------------------------------------------------
-transform :: Canvas ()
+transform :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
 transform = Transform
 -----------------------------------------------------------------------------
-setTransform :: Canvas ()
+setTransform
+  :: (Double, Double, Double, Double, Double, Double)
+  -> Canvas ()
 setTransform = SetTransform
 -----------------------------------------------------------------------------
 drawImage :: Image -> Coord -> Canvas ()
@@ -452,25 +503,25 @@ drawImage = DrawImage
 drawImage' :: Image -> (Double, Double, Double, Double) -> Canvas ()
 drawImage' = DrawImage'
 -----------------------------------------------------------------------------
-createImageData :: Canvas ()
+createImageData :: (Double, Double) -> Canvas ImageData
 createImageData = CreateImageData
 -----------------------------------------------------------------------------
-getImageData :: Canvas ()
+getImageData :: (Double, Double, Double, Double) -> Canvas ImageData
 getImageData = GetImageData
 -----------------------------------------------------------------------------
 imageDataData :: Canvas ()
 imageDataData = ImageDataData
 -----------------------------------------------------------------------------
-imageDataHeight :: Canvas ()
-imageDataHeight = ImageDataHeight
+height :: ImageData -> Canvas Double
+height = ImageDataHeight
 -----------------------------------------------------------------------------
-imageDataWidth :: Canvas ()
-imageDataWidth = ImageDataWidth
+width :: ImageData -> Canvas Double
+width = ImageDataWidth
 -----------------------------------------------------------------------------
-putImageData :: Canvas ()
+putImageData :: (ImageData, Double, Double) -> Canvas ()
 putImageData = PutImageData
 -----------------------------------------------------------------------------
-globalAlpha :: Canvas ()
+globalAlpha :: Double -> Canvas ()
 globalAlpha = GlobalAlpha
 -----------------------------------------------------------------------------
 clip :: () -> Canvas ()
@@ -481,13 +532,4 @@ save () = Save
 -----------------------------------------------------------------------------
 restore :: () -> Canvas ()
 restore () = Restore
------------------------------------------------------------------------------
-createEvent :: Canvas ()
-createEvent = CreateEvent
------------------------------------------------------------------------------
-getContext :: Canvas ()
-getContext = GetContext
------------------------------------------------------------------------------
-toDataUrl :: Canvas ()
-toDataUrl = ToDataURL
 -----------------------------------------------------------------------------
