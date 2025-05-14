@@ -47,15 +47,6 @@ main =
       | n <- [ 1 :: Int .. 4 ]
       ]
 -----------------------------------------------------------------------------
-newTime :: JSM (Double, Double)
-newTime = do
-  date <- new (jsg @MisoString "Date") ([] :: [MisoString])
-  millis' <- date # ("getMilliseconds" :: MisoString) $ ([] :: [MisoString])
-  seconds' <- date # ("getSeconds" :: MisoString) $ ([] :: [MisoString])
-  Just millis <- fromJSVal millis'
-  Just seconds <- fromJSVal seconds'
-  pure (millis, seconds)
------------------------------------------------------------------------------
 canvasDraw :: Image -> Image -> Image -> (Double, Double) -> Int -> Canvas ()
 canvasDraw sun moon earth (millis', secs') n = do
    let
@@ -80,6 +71,15 @@ canvasDraw sun moon earth (millis', secs') n = do
    arc (150, 150, 105, 0, pi * 2)
    stroke ()
    drawImage' (sun, 0, 0, 300, 300)
+-----------------------------------------------------------------------------
+newTime :: JSM (Double, Double)
+newTime = do
+  date <- new (jsg @MisoString "Date") ([] :: [MisoString])
+  millis' <- date # ("getMilliseconds" :: MisoString) $ ([] :: [MisoString])
+  seconds' <- date # ("getSeconds" :: MisoString) $ ([] :: [MisoString])
+  Just millis <- fromJSVal millis'
+  Just seconds <- fromJSVal seconds'
+  pure (millis, seconds)
 -----------------------------------------------------------------------------
 updateModel
   :: Action
