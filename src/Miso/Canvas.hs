@@ -94,8 +94,11 @@ import           Control.Monad (void, liftM, ap, liftM2)
 import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
-                                             , liftJSM, MonadJSM(..)
+                                             , liftJSM
                                              , ToJSVal, MakeObject, (<##)
+#ifndef GHCJS_BOTH
+                                             , MonadJSM(..)
+#endif
                                              )
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
