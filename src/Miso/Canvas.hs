@@ -202,7 +202,7 @@ data Canvas :: Type -> Type where
 instance MonadIO Canvas where
   liftIO = LiftIO
 -----------------------------------------------------------------------------
-#ifndef GHCJS_OLD
+#ifndef GHCJS_BOTH
 instance MonadJSM Canvas where
   liftJSM' = LiftJSM
 #endif
