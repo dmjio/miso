@@ -385,7 +385,7 @@ instance Monoid a => Monoid (Canvas a) where
 -- | Interprets 'Canvas' DSL inside of the "draw" synchronous callback.
 interpret :: JSVal -> Canvas a -> JSM a
 interpret ctx (Bind m f) =
-  interpret ctx . f =<< interpret ctx m
+  interpret ctx =<< f <$> interpret ctx m
 interpret _ (LiftIO io) =
   liftIO io
 interpret _ (LiftJSM jsm) =
