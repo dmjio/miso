@@ -1,35 +1,43 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE CPP #-}
 module Main where
 
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef
-import           Language.Javascript.JSaddle hiding ((<#))
+import           Language.Javascript.JSaddle
 
-import           Miso
+import           Miso hiding ((<#))
+import           Miso.String
 import           Miso.Style ((=:))
 import qualified Miso.Style as CSS
+
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
 
 data Action
   = GetTime
   | Init
   | SetTime !Double
 
-withStats :: JSVal -> IO () -> IO ()
-withStats stats m = do
-    statsBegin stats >> m
-    statsEnd stats
+withStats :: Stats -> JSM () -> JSM ()
+withStats stats action = do
+  statsBegin stats
+  action
+  statsEnd stats
 
 data Context = Context
-    { rotateCube :: IO ()
-    , renderScene :: IO ()
-    , stats :: JSVal
-    }
+  { rotateCube :: JSM ()
+  , renderScene :: JSM ()
+  , stats :: Stats
+  }
 
-initContext :: IORef Context -> IO ()
+initContext :: IORef Context -> JSM ()
 initContext ref = do
     canvas <- getElementById "canvas"
     scene <- newScene
@@ -46,7 +54,7 @@ initContext ref = do
     stats <- newStats
     statsContainer <- getElementById "stats"
     addStatsToDOM statsContainer stats
-    writeIORef
+    liftIO $ writeIORef
         ref
         Context
             { stats = stats
@@ -59,12 +67,12 @@ initContext ref = do
 
 main :: IO ()
 main = run $ do
-    stats <- newStats
-    ref <- newIORef $ Context (pure ()) (pure ()) stats
-    m <- now
-    startComponent (defaultComponent m (updateModel ref) viewModel)
-      { initialAction = Just Init
-      }
+  stats <- newStats
+  ref <- liftIO $ newIORef $ Context (pure ()) (pure ()) stats
+  m <- now
+  startComponent (defaultComponent m (updateModel ref) viewModel)
+    { initialAction = Just Init
+    }
 
 viewModel :: Double -> View action
 viewModel _ =
@@ -83,10 +91,10 @@ viewModel _ =
             []
         ]
 
-updateModel ::
-    IORef Context ->
-    Action ->
-    Effect Double Action
+updateModel
+  :: IORef Context
+  -> Action
+  -> Effect Double Action
 updateModel ref Init = do
   io $ do
     initContext ref
@@ -99,116 +107,107 @@ updateModel ref GetTime = do
       renderScene
     SetTime <$> now
 updateModel _ (SetTime m) =
-  m <# pure GetTime
+  pure GetTime #> m
 
-#ifdef GHCJS_NEW
-foreign import javascript unsafe "(() => { return new Stats(); })"
-  newStats :: IO JSVal
+newtype Stats = Stats { unStats :: JSVal }
+  deriving (MakeObject)
 
-foreign import javascript unsafe "((x) => { x.begin(); })"
-  statsBegin :: JSVal -> IO ()
+newStats :: JSM Stats
+newStats = Stats <$> new (jsg @MisoString "Stats") ([] :: [MisoString])
 
-foreign import javascript unsafe "((x) => { x.end(); })"
-  statsEnd :: JSVal -> IO ()
+newtype Renderer = Renderer { unRenderer :: JSVal }
+  deriving (MakeObject)
 
-foreign import javascript unsafe "((x) => { x.showPanel(0); })"
-  showPanel :: JSVal -> IO ()
+newRenderer :: JSVal -> JSM Renderer
+newRenderer e = do
+  renderer <- jsg ("THREE" :: MisoString) ! ("WebGLRenderer" :: MisoString)
+  o <- create
+  set "canvas" e o
+  set "antialias" True o 
+  Renderer <$> new renderer [o]
 
-foreign import javascript unsafe "(() => { return new THREE.Scene();})"
-  newScene :: IO JSVal
+newtype Scene = Scene { unScene :: JSVal }
+  deriving (MakeObject)
 
-foreign import javascript unsafe "((x,y,z) => { return new THREE.BoxGeometry(x,y,z); })"
-  newBoxGeometry :: Int -> Int -> Int -> IO JSVal
+newScene :: JSM Scene
+newScene = do
+  scene <- jsg ("THREE" :: MisoString) ! ("Scene" :: MisoString)
+  Scene <$> new scene ([] :: [MisoString])
 
-foreign import javascript unsafe "(() => { return new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 ); })"
-  newCamera :: IO JSVal
+newtype BoxGeometry = BoxGeometry { unBoxGeometry :: JSVal }
+  deriving (MakeObject)
 
-foreign import javascript unsafe "((x,y) => { return new THREE.Mesh( x, y ); })"
-  newMesh :: JSVal -> JSVal -> IO JSVal
+newBoxGeometry :: Double -> Double -> Double -> JSM BoxGeometry
+newBoxGeometry x y z = do
+  boxGeometry <- jsg ("THREE" :: MisoString) ! ("BoxGeometry" :: MisoString)
+  BoxGeometry <$> new boxGeometry [x,y,z]
 
-foreign import javascript unsafe "(() => { return new THREE.MeshBasicMaterial( { color: 0x00ff00 } ); })"
-  newMeshBasicMaterial :: IO JSVal
+newtype Camera = Camera { unCamera :: JSVal }
+  deriving (MakeObject)
 
-foreign import javascript unsafe "((x) => { return new THREE.WebGLRenderer({canvas:x, antialias : true}); })"
-  newRenderer :: JSVal -> IO JSVal
+newCamera :: JSM Camera
+newCamera = do
+  camera <- jsg ("THREE" :: MisoString) ! ("PerspectiveCamera" :: MisoString)
+  Just w <- fromJSVal =<< jsg ("window" :: MisoString) ! ("innerWidth" :: MisoString)
+  Just h <- fromJSVal =<< jsg ("window" :: MisoString) ! ("innerHeight" :: MisoString)
+  Camera <$> new camera [75.0, w / h, 0.1, 1000 :: Double ]
 
-foreign import javascript unsafe "((x) => { x.setSize( window.innerWidth, window.innerHeight ); })"
-  setSize :: JSVal -> IO ()
+newtype Mesh = Mesh { unMesh :: JSVal }
+  deriving (ToJSVal, MakeObject)
 
-foreign import javascript unsafe "((x, y) => { x.add(y); })"
-  addToScene :: JSVal -> JSVal -> IO ()
+newMesh :: ToJSVal material => BoxGeometry -> material -> JSM Mesh
+newMesh (BoxGeometry box) m = do
+  mesh <- jsg ("THREE" :: MisoString) ! ("Mesh" :: MisoString)
+  material <- toJSVal m
+  Mesh <$> new mesh [box, material]
 
-foreign import javascript unsafe "((x, y) => { x.position.z = y; })"
-  cameraZ :: JSVal -> Int -> IO ()
+newtype MeshBasicMaterial = MeshBasicMaterial { unMeshBasicMaterial :: JSVal }
+  deriving (MakeObject, ToJSVal)
 
-foreign import javascript unsafe "((a, y) => { a.rotation.x += y; })"
-  rotateX :: JSVal -> Double -> IO ()
+newMeshBasicMaterial :: JSM MeshBasicMaterial
+newMeshBasicMaterial = do
+  material <- jsg ("THREE" :: MisoString) ! ("MeshBasicMaterial" :: MisoString)
+  o <- create
+  set "color" ("green" :: MisoString) o
+  MeshBasicMaterial <$> new material [o]
 
-foreign import javascript unsafe "((x, a) => { x.rotation.y += a; })"
-  rotateY :: JSVal -> Double -> IO ()
+statsBegin :: Stats -> JSM ()
+statsBegin stats = void $ do
+  stats # ("begin" :: MisoString) $ ([] :: [JSVal])
 
-foreign import javascript unsafe "((x, y, z) => { x.render(y, z); })"
-  render :: JSVal -> JSVal -> JSVal -> IO ()
+statsEnd :: Stats -> JSM ()
+statsEnd stats = void $ do
+  stats # ("end" :: MisoString) $ ([] :: [JSVal])
 
-foreign import javascript unsafe "((x, y) => { x.position.z = y; })"
-  positionCamera :: JSVal -> Double -> IO ()
+render :: Renderer -> Scene -> Camera -> JSM ()
+render renderer (Scene scene) (Camera camera) = do
+  void $ do renderer # ("render" :: MisoString) $ [scene, camera]
 
-foreign import javascript unsafe "((x, y) => { x.appendChild( y.domElement ); })"
-  addStatsToDOM :: JSVal -> JSVal -> IO ()
-#endif
+addStatsToDOM :: JSVal -> Stats -> JSM ()
+addStatsToDOM e stats = do
+  child <- stats ! ("domElement" :: MisoString)
+  void $ e # ("appendChild" :: MisoString) $ [child]
 
-#ifdef GHCJS_OLD
-foreign import javascript unsafe "$r = new Stats();"
-  newStats :: IO JSVal
+setSize :: Renderer -> JSM ()
+setSize e = do
+  w <- jsg ("window" :: MisoString) ! ("innerWidth" :: MisoString)
+  h <- jsg ("window" :: MisoString) ! ("innerHeight" :: MisoString)
+  void $ e # ("setSize" :: MisoString) $ [w,h]
 
-foreign import javascript unsafe "$1.begin();"
-  statsBegin :: JSVal -> IO ()
+addToScene :: Scene -> Mesh -> JSM ()
+addToScene x y = do
+  void $ x # ("add" :: MisoString) $ [y]
 
-foreign import javascript unsafe "$1.end();"
-  statsEnd :: JSVal -> IO ()
+rotateY :: Mesh -> Double -> JSM ()
+rotateY mesh v = do
+  Just y <- fromJSVal =<< (mesh ! ("rotation" :: MisoString) ! ("y" :: MisoString))
+  void $ (mesh ! ("rotation" :: MisoString) <# ("y" :: MisoString)) (y + v)
 
-foreign import javascript unsafe "$1.showPanel(0);"
-  showPanel :: JSVal -> IO ()
+rotateX :: Mesh -> Double -> JSM ()
+rotateX mesh v = do
+  Just x <- fromJSVal =<< (mesh ! ("rotation" :: MisoString) ! ("x" :: MisoString))
+  void $ (mesh ! ("rotation" :: MisoString) <# ("x" :: MisoString)) (x + v)
 
-foreign import javascript unsafe "$r = new THREE.Scene();"
-  newScene :: IO JSVal
-
-foreign import javascript unsafe "$r = new THREE.BoxGeometry( $1, $2, $3 );"
-  newBoxGeometry :: Int -> Int -> Int -> IO JSVal
-
-foreign import javascript unsafe "$r = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );"
-  newCamera :: IO JSVal
-
-foreign import javascript unsafe "$r = new THREE.Mesh( $1, $2 );"
-  newMesh :: JSVal -> JSVal -> IO JSVal
-
-foreign import javascript unsafe "$r = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );"
-  newMeshBasicMaterial :: IO JSVal
-
-foreign import javascript unsafe "$r = new THREE.WebGLRenderer({canvas:$1, antialias : true});"
-  newRenderer :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.setSize( window.innerWidth, window.innerHeight );"
-  setSize :: JSVal -> IO ()
-
-foreign import javascript unsafe "$1.add($2);"
-  addToScene :: JSVal -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.position.z = $2;"
-  cameraZ :: JSVal -> Int -> IO ()
-
-foreign import javascript unsafe "$1.rotation.x += $2;"
-  rotateX :: JSVal -> Double -> IO ()
-
-foreign import javascript unsafe "$1.rotation.y += $2;"
-  rotateY :: JSVal -> Double -> IO ()
-
-foreign import javascript unsafe "$1.render($2, $3);"
-  render :: JSVal -> JSVal -> JSVal -> IO ()
-
-foreign import javascript unsafe "$1.position.z = $2;"
-  positionCamera :: JSVal -> Double -> IO ()
-
-foreign import javascript unsafe "$1.appendChild( $2.domElement );"
-  addStatsToDOM :: JSVal -> JSVal -> IO ()
-#endif
+positionCamera :: Camera -> Double -> JSM ()
+positionCamera camera v = void $ do
+  (camera ! ("position" :: MisoString) <# ("z" :: MisoString)) v

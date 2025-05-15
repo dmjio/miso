@@ -38,10 +38,6 @@ common common-options
     cpp-options:
       -DNATIVE
 
-common js-only
-  if arch(wasm32) || !(impl(ghcjs) || arch(javascript))
-     buildable: False
-
 executable components
   import:
     common-options
@@ -107,7 +103,7 @@ executable todo-mvc
 
 executable threejs
   import:
-    common-options, js-only
+    common-options
   default-language:
     Haskell2010
   main-is:

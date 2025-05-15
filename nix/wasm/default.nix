@@ -31,10 +31,10 @@ self: super:
               --input ${name}.wasm \
               --output ghc_wasm_jsffi.js
 
-         cp -v ghc_wasm_jsffi.js            $out/${name}.jsexe/
-         mv -v ${name}.wasm                 $out/${name}.jsexe/
-         cat ${wasmIndexJs name}          > $out/${name}.jsexe/index.js
-         cat ${wasmIndexHtml title name}  > $out/${name}.jsexe/index.html
+         cp -v ghc_wasm_jsffi.js $out/${name}.jsexe/
+         mv -v ${name}.wasm $out/${name}.jsexe/
+         cat ${wasmIndexJs name} > $out/${name}.jsexe/index.js
+         cat ${wasmIndexHtml title name scripts} > $out/${name}.jsexe/index.html
       '';
     };
 
@@ -43,6 +43,7 @@ self: super:
       { name = "hello-world";
         title = "Hello world Example";
         src = self.wasmHelloWorld;
+        scripts = "";
       };
 
   # nix-build -A wasmExamples
@@ -53,24 +54,38 @@ self: super:
     self.wasmPkgExample {
        name = "svg";
        title = "SVG WASM Example";
+       scripts = "";
     };
 
   componentsWasm =
     self.wasmPkgExample {
        name = "components";
        title = "Components WASM Example";
+       scripts = "";
+    };
+
+  threejsWasm =
+    self.wasmPkgExample {
+       name = "threejs";
+       title = "Three.js WASM Example";
+       scripts = ''
+         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.js" defer></script>
+         <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.js" defer></script>
+       '';
     };
 
   canvas2DWasm =
     self.wasmPkgExample {
        name = "canvas2d";
        title = "Canvas 2D WASM Example";
+       scripts = "";
     };
 
   todoWasm =
     self.wasmPkgExample {
        name = "todo-mvc";
        title = "Todo-mvc WASM Example";
+       scripts = "";
     };
 
   # call nix-build -A wasmExamples && ./result/bin/build.sh
@@ -100,9 +115,9 @@ self: super:
               --input $WASMPATH/${name}.wasm \
               --output $out/${name}.jsexe/ghc_wasm_jsffi.js
 
-         cp -v $WASMPATH/${name}.wasm            $out/${name}.jsexe/
-         cat ${self.wasmIndexJs name}          > $out/${name}.jsexe/index.js
-         cat ${self.wasmIndexHtml title name}  > $out/${name}.jsexe/index.html
+         cp -v $WASMPATH/${name}.wasm $out/${name}.jsexe/
+         cat ${self.wasmIndexJs name} > $out/${name}.jsexe/index.js
+         cat ${self.wasmIndexHtml title name scripts} > $out/${name}.jsexe/index.html
       '';
     };
 
@@ -111,7 +126,7 @@ self: super:
     text = builtins.readFile ../../examples/wasm-hello-world/Main.hs;
   };
 
-  wasmIndexHtml = title: name:
+  wasmIndexHtml = title: name: scripts:
     super.writeTextFile {
       name = "index.html";
       text = ''<!DOCTYPE html>
@@ -120,6 +135,7 @@ self: super:
                    <meta charset="utf-8">
                    <meta name="viewport" content="width=device-width, initial-scale=1">
                    <title>${title}</title>
+                   ${scripts}
                  </head>
                  <body>
                    <script>globalThis.example = "${name}";</script>
