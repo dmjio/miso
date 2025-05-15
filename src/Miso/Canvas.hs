@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
@@ -443,10 +442,16 @@ interpret ctx (FillStyle style) =
   void $ (ctx <# ("fillStyle" :: MisoString)) =<< renderStyleArg style
 interpret ctx (GlobalCompositeOperation s) =
   void $ (ctx <# ("globalCompositeOperation" :: MisoString)) (renderCompositeOperation s)
-interpret ctx (FillText args) =
-  void $ (ctx # ("fillText" :: MisoString)) =<< toJSVal args
-interpret ctx (StrokeText args) =
-  void $ (ctx # ("strokeText" :: MisoString)) =<< toJSVal args
+interpret ctx (FillText (txt', x' , y')) = do
+  txt <- toJSVal txt'
+  x <- toJSVal x'
+  y <- toJSVal y'
+  void $ (ctx # ("fillText" :: MisoString)) [txt, x, y]
+interpret ctx (StrokeText (txt', x', y')) = do
+  txt <- toJSVal txt'
+  x <- toJSVal x'
+  y <- toJSVal y'
+  void $ (ctx # ("strokeText" :: MisoString)) [txt, x, y]
 interpret ctx (MeasureText txt) = do
   o <- ctx # ("measureText" :: MisoString) $ [txt]
   Just w <- fromJSVal =<< o ! ("width" :: MisoString)
@@ -485,7 +490,7 @@ interpret ctx (MiterLimit w) =
 interpret ctx (ShadowBlur w) =
   void $ do ctx <# ("shadowBlur" :: MisoString) $ w
 interpret ctx (ShadowColor c) =
-  void $ do ctx <# ("shadowColor" :: MisoString) $ (renderColor c)
+  void $ do ctx <# ("shadowColor" :: MisoString) $ renderColor c
 interpret ctx (ShadowOffsetX x) =
   void $ do ctx <# ("shadowOffsetX" :: MisoString) $ x
 interpret ctx (ShadowOffsetY y) =
