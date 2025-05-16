@@ -13,11 +13,15 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
------------------------------------------------------------------------------
 --
--- <canvas.haskell-miso.org>
+-- [Canvas Example](https://canvas.haskell-miso.org)
 --
 -- @
+-- -----------------------------------------------------------------------------
+-- import Miso
+-- import qualified Miso.Canvas as Canvas
+-- import Miso.Canvas
+-- -----------------------------------------------------------------------------
 -- baseUrl :: MisoString
 -- baseUrl = "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/"
 -- -----------------------------------------------------------------------------
