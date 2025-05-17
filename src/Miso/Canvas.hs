@@ -28,9 +28,9 @@
 -- main :: IO ()
 -- main =
 --   run $ do
---     sun <- newImage (baseUrl <> "canvas_sun.png")
---     moon <- newImage (baseUrl <> "canvas_moon.png")
---     earth <- newImage (baseUrl <> "canvas_earth.png")
+--     sun \<- newImage (baseUrl \<> "canvas_sun.png")
+--     moon \<- newImage (baseUrl \<> "canvas_moon.png")
+--     earth \<- newImage (baseUrl \<> "canvas_earth.png")
 --     startComponent (app sun moon earth) { initialAction = Just GetTime }
 --   where
 --     app sun moon earth = defaultComponent (0.0, 0.0) updateModel (view_ sun moon earth)
@@ -42,7 +42,7 @@
 --         , width_ "300"
 --         , height_ "300"
 --         ] (canvasDraw sun moon earth m n)
---       | n <- [ 1 :: Int .. 4 ]
+--       | n \<- [ 1 :: Int .. 4 ]
 --       ]
 -- -----------------------------------------------------------------------------
 -- canvasDraw :: Image -> Image -> Image -> (Double, Double) -> Int -> Canvas ()
