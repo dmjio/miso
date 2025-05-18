@@ -87,6 +87,7 @@ module Miso.Canvas
   , StyleArg           (..)
   , Coord
    -- * Property
+  , canvas
   , canvas_
     -- * API
   , globalCompositeOperation
@@ -166,15 +167,31 @@ import           Miso.Style (Color, renderColor)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
-canvas_ :: forall action a . [ Attribute action ] -> Canvas a -> View action
-canvas_ attributes canvas = node HTML "canvas" Nothing attrs []
+-- This function abstracts over the context and interpret callback,
+-- including dimension ("2d" or "3d") canvas.
+canvas
+  :: forall action
+   . [ Attribute action ]
+  -> JSM JSVal
+  -> View action
+canvas attributes callback = node HTML "canvas" Nothing attrs []
   where
     attrs :: [ Attribute action ]
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
-      flip (FFI.set "draw") obj =<< do
-        FFI.syncCallback1 $ \domRef -> do
-          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
-          void (interpret ctx canvas)
+      flip (FFI.set "draw") obj =<< callback
+-----------------------------------------------------------------------------
+-- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
+-- Specialized to "2d" canvas.
+canvas_
+  :: [ Attribute action ]
+  -> Canvas a
+  -> View action
+canvas_ attributes canvas' =
+  canvas attributes $
+    toJSVal =<< do
+      FFI.syncCallback1 $ \domRef -> do
+        ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+        void (interpret ctx canvas')
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
 -----------------------------------------------------------------------------
