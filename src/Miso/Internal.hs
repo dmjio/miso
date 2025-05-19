@@ -443,7 +443,7 @@ renderStyles styles =
 -- The 'Sub' can be stopped by calling @stop subName@ from the 'update' function.
 -- All 'Sub' started will be stopped if a 'Component' is unmounted.
 --
-startSub :: SubName -> Sub action -> Effect action model
+startSub :: SubName -> Sub action -> Effect model action
 startSub subName sub = do
   compName <- ask
   io_
@@ -469,7 +469,7 @@ startSub subName sub = do
 -- | Stops a named 'Sub' dynamically, during the life of a 'Component'.
 -- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
 --
-stopSub :: SubName -> Effect action model
+stopSub :: SubName -> Effect model action
 stopSub subName = do
   compName <- ask
   io_
