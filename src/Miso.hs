@@ -112,7 +112,7 @@ miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
     renderStyles styles
-    VTree (Object vtree) <- runView Prerender (view model) snk logLevel events
+    VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- FFI.getBody
@@ -130,7 +130,7 @@ startComponent :: Eq model => Component name model action -> JSM ()
 startComponent app@Component {..} = withJS $
   initialize app $ \snk -> do
     renderStyles styles
-    vtree <- runView DontPrerender (view model) snk logLevel events
+    vtree <- runView Draw (view model) snk logLevel events
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- mountElement name

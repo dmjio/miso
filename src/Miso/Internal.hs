@@ -27,7 +27,7 @@ module Miso.Internal
   , sample
   , sample'
   , renderStyles
-  , Prerender(..)
+  , Hydrate(..)
   -- * Subscription
   , startSub
   , stopSub
@@ -99,7 +99,7 @@ initialize Component {..} getView = do
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
-        newVTree <- runView DontPrerender (view newModel) componentSink logLevel events
+        newVTree <- runView Draw (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         diff (Just oldVTree) (Just newVTree) componentMount
@@ -114,11 +114,11 @@ initialize Component {..} getView = do
   forM_ initialAction componentSink
   pure componentVTree
 -----------------------------------------------------------------------------
--- | Prerender avoids calling @diff@
--- and instead calls @hydrate@
-data Prerender
-  = DontPrerender
-  | Prerender
+-- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
+-- 'Draw' invokes 'diff'
+data Hydrate
+  = Draw
+  | Hydrate
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | @Component@ state, data associated with the lifetime of a @Component@
@@ -272,17 +272,17 @@ foldEffects update synchronicity name snk (e:es) o =
 --------------------------------------------------
 -- | Internally used for runView and startComponent
 -- Initial draw helper
--- If prerendering, bypass diff and continue copying
+-- If hydrateing, bypass diff and continue copying
 drawComponent
-  :: Prerender
+  :: Hydrate
   -> MisoString
   -> Component name model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
-drawComponent prerender name Component {..} snk = do
-  vtree <- runView prerender (view model) snk logLevel events
+drawComponent hydrate name Component {..} snk = do
+  vtree <- runView hydrate (view model) snk logLevel events
   mountElement <- FFI.getComponent name
-  when (prerender == DontPrerender) (diff Nothing (Just vtree) mountElement)
+  when (hydrate == Draw) (diff Nothing (Just vtree) mountElement)
   ref <- liftIO (newIORef vtree)
   pure (name, mountElement, ref)
 -----------------------------------------------------------------------------
@@ -322,20 +322,20 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 runView
-  :: Prerender
+  :: Hydrate
   -> View action
   -> Sink action
   -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (VComp name attrs (SomeComponent app)) snk _ _ = do
+runView hydrate (VComp name attrs (SomeComponent app)) snk _ _ = do
   compName <-
     if null name
     then liftIO freshComponentId
     else pure name
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
-      vtreeRef <- initialize app (drawComponent prerender compName app)
+      vtreeRef <- initialize app (drawComponent hydrate compName app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
@@ -351,7 +351,7 @@ runView prerender (VComp name attrs (SomeComponent app)) snk _ _ = do
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
-runView prerender (VNode ns tag attrs kids) snk logLevel events = do
+runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- ghcjsPure . jsval =<< procreate
@@ -362,7 +362,7 @@ runView prerender (VNode ns tag attrs kids) snk logLevel events = do
     where
       procreate = do
         kidsViews <- forM kids $ \kid -> do
-          VTree (Object vtree) <- runView prerender kid snk logLevel events
+          VTree (Object vtree) <- runView hydrate kid snk logLevel events
           pure vtree
         ghcjsPure (JSArray.fromList kidsViews)
 runView _ (VText t) _ _ _ = do
@@ -371,14 +371,14 @@ runView _ (VText t) _ _ _ = do
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
-runView prerender (VTextRaw str) snk logLevel events =
+runView hydrate (VTextRaw str) snk logLevel events =
   case parseView str of
     [] ->
-      runView prerender (VText (" " :: MisoString)) snk logLevel events
+      runView hydrate (VText (" " :: MisoString)) snk logLevel events
     [parent] ->
-      runView prerender parent snk logLevel events
+      runView hydrate parent snk logLevel events
     kids -> do
-      runView prerender (VNode HTML "div" mempty kids) snk logLevel events
+      runView hydrate (VNode HTML "div" mempty kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
