@@ -76,8 +76,8 @@ renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VTextRaw "") = fromMisoString " "
 renderBuilder (VTextRaw s)  = fromMisoString s
-renderBuilder (VNode _ "doctype" _ [] []) = "<!doctype html>"
-renderBuilder (VNode _ tag _ attrs children) =
+renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
+renderBuilder (VNode _ tag attrs children) =
   mconcat
   [ "<"
   , fromMisoString tag
@@ -93,7 +93,7 @@ renderBuilder (VNode _ tag _ attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp mount attributes _ (SomeComponent Component {..})) =
+renderBuilder (VComp mount attributes (SomeComponent Component {..})) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
   , fromMisoString mount

@@ -23,6 +23,8 @@ module Miso.Property
   , integerProp
   , doubleProp
   , prop
+  , keyProp
+  , key_
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..))
@@ -58,4 +60,13 @@ integerProp = prop
 -- | Set field to `Double` value
 doubleProp ::  MisoString -> Double -> Attribute action
 doubleProp = prop
+-----------------------------------------------------------------------------
+-- | Set `Key` on 'VNode'.
+keyProp :: ToKey key => key -> Attribute action
+keyProp key = prop "key" (toKey key)
+-----------------------------------------------------------------------------
+-- | Synonym for 'keyProp'
+-- Allows a user to specify a 'Key' inside of an @[Attribute action]@
+key_ :: ToKey key => key -> Attribute action
+key_ = keyProp
 -----------------------------------------------------------------------------

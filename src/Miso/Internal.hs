@@ -37,7 +37,6 @@ import           Control.Exception (throwIO)
 import           Control.Monad (forM, forM_, when, void)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
-import qualified Data.Aeson as A
 import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
@@ -68,6 +67,7 @@ import           Miso.Html hiding (on)
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Event (Events)
+import           Miso.Property (textProp)
 import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
@@ -310,7 +310,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView prerender (VComp name attributes key (SomeComponent app)) snk _ _ = do
+runView prerender (VComp name attrs (SomeComponent app)) snk _ _ = do
   compName <-
     if null name
     then liftIO freshComponentId
@@ -326,15 +326,15 @@ runView prerender (VComp name attributes key (SomeComponent app)) snk _ _ = do
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
-  vcomp <- createNode "vcomp" HTML key "div"
-  setAttrs vcomp attributes snk (logLevel app) (events app)
+  vcomp <- createNode "vcomp" HTML "div"
+  setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   FFI.set "data-component-id" compName vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
-runView prerender (VNode ns tag key attrs kids) snk logLevel events = do
-  vnode <- createNode "vnode" ns key tag
+runView prerender (VNode ns tag attrs kids) snk logLevel events = do
+  vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- ghcjsPure . jsval =<< procreate
   FFI.set "children" vchildren vnode
@@ -360,13 +360,13 @@ runView prerender (VTextRaw str) snk logLevel events =
     [parent] ->
       runView prerender parent snk logLevel events
     kids -> do
-      runView prerender (VNode HTML "div" Nothing mempty kids) snk logLevel events
+      runView prerender (VNode HTML "div" mempty kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
 -- Doesn't handle children
-createNode :: MisoString -> NS -> Maybe Key -> MisoString -> JSM Object
-createNode typ ns key tag = do
+createNode :: MisoString -> NS -> MisoString -> JSM Object
+createNode typ ns tag = do
   vnode <- create
   cssObj <- create
   propsObj <- create
@@ -377,7 +377,6 @@ createNode typ ns key tag = do
   FFI.set "events" eventsObj vnode
   FFI.set "ns" ns vnode
   FFI.set "tag" tag vnode
-  FFI.set "key" key vnode
   pure vnode
 -----------------------------------------------------------------------------
 -- | Helper function for populating "props" and "css" fields on a virtual
@@ -391,6 +390,9 @@ setAttrs
   -> JSM ()
 setAttrs vnode attrs snk logLevel events =
   forM_ attrs $ \case
+    Property "key" v -> do
+      value <- toJSVal v
+      FFI.set "key" value vnode
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode
@@ -416,11 +418,11 @@ parseView html = reverse (go (parseTree html) [])
       go (TagBranch name attrs [] : next) views
     go (TagBranch name attrs kids : next) views =
       let
-        attrs' = [ Property key $ A.String (fromMisoString value)
+        attrs' = [ textProp key value
                  | (key, value) <- attrs
                  ]
         newNode =
-          VNode HTML name Nothing attrs' (reverse (go kids []))
+          VNode HTML name attrs' (reverse (go kids []))
       in
         go next (newNode:views)
     go (TagLeaf _ : next) views =
