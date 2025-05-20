@@ -12,7 +12,6 @@
 module Miso.Html.Element
   ( -- ** Smart constructors
       nodeHtml
-    , nodeHtmlKeyed
     -- ** Document metadata
     , html_
     , doctype_
@@ -51,7 +50,6 @@ module Miso.Html.Element
     , figure_
     , hr_
     , li_
-    , liKeyed_
     , menu_
     , ol_
     , p_
@@ -119,7 +117,6 @@ module Miso.Html.Element
     , th_
     , thead_
     , tr_
-    , trKeyed_
     -- ** Forms
     , button_
     , datalist_
@@ -150,11 +147,7 @@ import           Miso.String (MisoString)
 -- | Low-level helper used to construct 'HTML' 'node' in 'View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute action] -> [View action] -> View action
-nodeHtml nodeName = node HTML nodeName Nothing
------------------------------------------------------------------------------
--- | Construct a node with a 'Key'
-nodeHtmlKeyed :: MisoString -> Key -> [Attribute action] -> [View action] -> View action
-nodeHtmlKeyed name key = node HTML name (Just key)
+nodeHtml nodeName = node HTML nodeName
 -----------------------------------------------------------------------------
 -- | [\<div\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/div)
 div_ :: [Attribute action] -> [View action] -> View action
@@ -175,13 +168,6 @@ tbody_ = nodeHtml "tbody"
 -- | [\<tr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tr)
 tr_ :: [Attribute action] -> [View action] -> View action
 tr_ = nodeHtml "tr"
------------------------------------------------------------------------------
--- | Contains `Key`, inteded to be used for child replacement patch
---
--- [\<tr\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/tr)
------------------------------------------------------------------------------
-trKeyed_ :: Key -> [Attribute action] -> [View action] -> View action
-trKeyed_ = node HTML "tr" . pure
 -----------------------------------------------------------------------------
 -- | [\<th\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/th)
 th_ :: [Attribute action] -> [View action] -> View action
@@ -247,12 +233,6 @@ strong_ = nodeHtml "strong"
 -- | [\<li\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/li)
 li_ :: [Attribute action] -> [View action] -> View action
 li_ = nodeHtml "li"
------------------------------------------------------------------------------
--- | Contains `Key`, inteded to be used for child replacement patch
---
--- [\<li\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/li)
-liKeyed_ :: Key -> [Attribute action] -> [View action] -> View action
-liKeyed_ = node HTML "li" . pure
 -----------------------------------------------------------------------------
 -- | [\<h1\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/Heading_Elements)
 h1_ :: [Attribute action] -> [View action] -> View action
@@ -570,7 +550,7 @@ link_ = flip (nodeHtml "link") []
 --
 -- @'style_' [] "\</style\>"@
 style_ :: [Attribute action] -> MisoString -> View action
-style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
+style_ attrs rawText = node HTML "style" attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script)
 --
@@ -584,7 +564,7 @@ style_ attrs rawText = node HTML "style" Nothing attrs [textRaw rawText]
 --
 -- @'script_' [] "\</script\>"@
 script_ :: [Attribute action] -> MisoString -> View action
-script_ attrs rawText = node HTML "script" Nothing attrs [textRaw rawText]
+script_ attrs rawText = node HTML "script" attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | [\<doctype\>](https://developer.mozilla.org/en-US/docs/Glossary/Doctype)
 doctype_ :: View action

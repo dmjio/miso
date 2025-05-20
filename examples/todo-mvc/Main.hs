@@ -209,11 +209,11 @@ viewKeyedEntry = viewEntry
 
 viewEntry :: Entry -> View Msg
 viewEntry Entry{..} =
-    liKeyed_
-        (toKey eid)
+    li_
         [ class_ $
             S.intercalate " " $
                 ["completed" | completed] <> ["editing" | editing]
+        , key_ eid
         ]
         [ div_
             [class_ "view"]

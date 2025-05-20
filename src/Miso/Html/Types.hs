@@ -51,7 +51,6 @@ rawHtml = VTextRaw
 -- the node is created and its children are initialized to @children@.
 node :: NS
      -> MisoString
-     -> Maybe Key
      -> [Attribute action]
      -> [View action]
      -> View action
