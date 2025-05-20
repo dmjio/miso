@@ -125,7 +125,8 @@ defaultComponent m u v = Component
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  | DebugPrerender
+  -- ^ No debug logging, the default value used in @defaultComponent@
+  | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.
   | DebugEvents
@@ -133,6 +134,8 @@ data LogLevel
   -- handler that raised it. Also will warn if an event handler is
   -- being used, yet it's not being listened for by the event
   -- delegator mount point.
+  | DebugNotify
+  -- ^ Will warn if a @Component@ can't be found when using @notify@ or @notify'@
   | DebugAll
   -- ^ Logs on all of the above
   deriving (Show, Eq)

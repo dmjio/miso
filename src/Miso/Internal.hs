@@ -179,12 +179,16 @@ sample _ = do
   where
     name = ms $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Like @sample@ except used for dynamic @Component@ where the component-id
--- has been retrieved via @ask@.
+-- | Like @sample@ except used for @Component Dynamic model action@ where the component-id has been retrieved via @ask@ and generated using @onMountedWith@.
+--
+-- We use the @Component Dynamic model action@ argument to ensure the 'model'
+-- sampled unifies with what @sample'@ returns.
+--
 sample'
   :: MisoString
+  -> Component Dynamic model action
   -> JSM model
-sample' name = do
+sample' name _ = do
   componentStateMap <- liftIO (readIORef componentMap)
   liftIO (case M.lookup name componentStateMap of
     Nothing -> throwIO (NotMountedException name)
@@ -201,24 +205,38 @@ notify
   => Component name model action
   -> action
   -> JSM ()
-notify _ action = do
+notify Component {..} action = do
   componentStateMap <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
-    componentSink action
+  case M.lookup name componentStateMap of
+    Nothing -> do
+      when (logLevel `elem` [DebugNotify, DebugAll]) $ do
+        FFI.consoleWarn $
+          "[DEBUG_NOTIFY] Could not find component named: " <> name
+    Just ComponentState {..} ->
+      componentSink action
   where
     name = ms $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 -- | Like @notify@ except used for dynamic @Component@ where the /component-id/
--- has been retrieved via @ask@.
+-- has been retrieved via @ask@ and generated from @onMountedWith@.
+--
+-- We use the @Component Dynamic model action@ argument to ensure the 'action'
+-- being used unified with what the component expects.
 --
 notify'
   :: MisoString
+  -> Component Dynamic model action
   -> action
   -> JSM ()
-notify' name action = do
+notify' name Component {..} action = do
   componentStateMap <- liftIO (readIORef componentMap)
-  forM_ (M.lookup name componentStateMap) $ \ComponentState {..} ->
-    componentSink action
+  case M.lookup name componentStateMap of
+    Nothing ->
+      when (logLevel `elem` [DebugNotify, DebugAll]) $ do
+        FFI.consoleWarn $
+          "[DEBUG_NOTIFY'] Could not find component named: " <> name
+    Just ComponentState {..} ->
+      componentSink action
 -----------------------------------------------------------------------------
 -- | Sychronicity
 --

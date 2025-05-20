@@ -52,7 +52,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   if (!walk(logLevel, vtree, node)) {
     // If we failed to prerender because the structures were different, fallback to drawing
     if (logLevel) {
-      console.warn('Could not copy DOM into virtual DOM, falling back to diff');
+      console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
     }
 
     // Remove all children before rebuilding DOM
@@ -64,16 +64,16 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   } else {
     if (logLevel) {
       if (!integrityCheck(vtree)) {
-        console.warn('Integrity check completed with errors');
+        console.warn('[DEBUG_HYDRATE] Integrity check completed with errors');
       } else {
-        console.info('Successfully prerendered page');
+        console.info('[DEBUG_HYDRATE] Successfully prerendered page');
       }
     }
   }
   return true;
 }
 function diagnoseError(logLevel: boolean, vtree: VTree, node: Node): void {
-  if (logLevel) console.warn('VTree differed from node', vtree, node);
+  if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
 }
 // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
 function parseColor(input: string): number[] {

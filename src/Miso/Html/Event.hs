@@ -112,8 +112,8 @@ onWithOptions options eventName Decoder{..} toAction =
     case M.lookup eventName events of
       Nothing ->
         when (logLevel `elem` [ DebugAll, DebugEvents ]) $
-          FFI.consoleError $ mconcat
-            [ "Event \""
+          FFI.consoleWarn $ mconcat
+            [ "[DEBUG_EVENTS] \""
             , eventName
             , "\" is not being listened on. To use this event, "
             , "add to the 'events' @Map@ in @Component@"
@@ -126,7 +126,7 @@ onWithOptions options eventName Decoder{..} toAction =
         cb <- FFI.asyncCallback1 $ \e -> do
             Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
             case parseEither decoder v of
-              Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+              Left s -> error $ "[ERROR] Parse error on " <> unpack eventName <> ": " <> s
               Right r -> sink (toAction r)
         FFI.set "runEvent" cb eventHandlerObject
         FFI.set "options" jsOptions eventHandlerObject

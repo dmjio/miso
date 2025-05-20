@@ -116,7 +116,7 @@ miso f = withJS $ do
     let name = getMountPoint mountPoint
     FFI.setBodyComponent name
     mount <- FFI.getBody
-    FFI.hydrate (logLevel `elem` [DebugPrerender, DebugAll]) mount vtree
+    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------

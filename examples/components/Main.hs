@@ -41,7 +41,7 @@ type MainModel = Bool
 
 main :: IO ()
 main = run $ startComponent app
-  { logLevel = DebugPrerender
+  { logLevel = DebugHydrate
   , subs = []
   }
 
@@ -246,17 +246,26 @@ updateModel5 AddOne = do
   _1 += 1
   maybeChildId <- use _2
   forM_ maybeChildId $ \childId ->
-    io_ (notify' childId AddOne)
+    io_ (notify' childId counterComponent6 AddOne)
   io_ (notify counterComponent2 AddOne)
 updateModel5 SubtractOne = do
   _1 -= 1
   io_ (notify counterComponent2 SubtractOne)
-updateModel5 Sample =
+updateModel5 Sample = do
   io_ $ do
     componentTwoModel <- sample counterComponent2
     consoleLog $
       "Sampling parent component 2 from child component 5: " <>
          ms (show componentTwoModel)
+
+  maybeChildId <- use _2
+  io_ $ do
+    forM_ maybeChildId $ \childId -> do
+      componentTwoModel <- sample' childId counterComponent6
+      consoleLog $
+        "Sampling parent component 6 from child component 5: " <>
+           ms (show componentTwoModel)
+
 updateModel5 SayHelloWorld = do
   io_ (consoleLog "Hello World from Component 5")
 updateModel5 (Mount childId) = do
