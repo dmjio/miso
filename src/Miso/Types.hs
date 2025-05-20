@@ -22,6 +22,7 @@ module Miso.Types
   ( -- ** Types
     Component        (..)
   , SomeComponent    (..)
+  , Dynamic
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -35,7 +36,6 @@ module Miso.Types
   -- ** Smart Constructors
   , defaultComponent
   -- ** Components
-  , component
   , component_
   -- ** Utils
   , getMountPoint
@@ -153,31 +153,20 @@ data SomeComponent
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
 -- Use this function if you'd like send messages to this @Component@ at @name@ via
 -- @notify@ or to read the state of this @Component@ via @sample@.
-component
+component_
   :: forall name model action a . (Eq model, KnownSymbol name)
   => Component name model action
   -> [Attribute a]
   -> View a
-component app attrs = VComp (ms name) attrs (SomeComponent app)
+component_ app attrs = VComp (ms name) attrs (SomeComponent app)
   where
     name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Like @component@, but uses a dynamically generated @name@ (enforced via @Component@).
--- The component name is dynamically generated at runtime and available via 'ask'.
--- This is for dynamic @Component@ creation, where a mounted @Component@ isn't necessarily
--- statically known. Use this during circumstances where a parent would like
--- to dynamically generate / destroy n-many children in response to user input.
---
--- Note: the @name@ parameter is @()@ here.
--- This symbolizes the fact that the @Component@ is dynamically generated
--- and it's /component-id/ can only be known at runtime.
---
-component_
-  :: Eq model
-  => Component "" model action
-  -> [Attribute a]
-  -> View a
-component_ vcomp attrs = VComp mempty attrs (SomeComponent vcomp)
+-- | Type synonym for Dynamically constructed @Component@
+-- @
+-- sampleComponent :: Component Dynamic Model Action
+-- @
+type Dynamic = ""
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
