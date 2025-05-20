@@ -93,7 +93,7 @@ import           Miso.String        (MisoString)
 -- > document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 --
 nodeSvg :: MisoString -> [Attribute action] -> [View action] -> View action
-nodeSvg nodeName = node SVG nodeName Nothing
+nodeSvg nodeName = node SVG nodeName
 -----------------------------------------------------------------------------
 -- | [\<svg\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/svg)
 svg_ :: [Attribute action] -> [View action] -> View action

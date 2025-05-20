@@ -174,7 +174,7 @@ canvas
    . [ Attribute action ]
   -> JSM JSVal
   -> View action
-canvas attributes callback = node HTML "canvas" Nothing attrs []
+canvas attributes callback = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
