@@ -41,7 +41,7 @@ type MainModel = Bool
 
 main :: IO ()
 main = run $ startComponent app
-  { logLevel = DebugPrerender
+  { logLevel = DebugHydrate
   , subs = []
   }
 
@@ -100,7 +100,7 @@ viewModel1 x =
         , button_ [onClick SampleChild] [text "Sample Child (unsafe)"]
         , if x
             then
-                component counterComponent2
+                component_ counterComponent2
                   [ onMounted MountMain
                   , onUnmounted UnMountMain
                   ]
@@ -150,7 +150,7 @@ viewModel2 x =
         , button_ [onClick AddOne] [text "+"]
         , text (ms x)
         , button_ [onClick SubtractOne] [text "-"]
-        , component counterComponent3
+        , component_ counterComponent3
           [ onMounted (Mount "3")
           , onUnmounted (UnMount "3")
           ]
@@ -190,12 +190,12 @@ viewModel3 (toggle, x) =
                -- If you are replacing an unnamed component (using 'component_') with anything else (e.g. 'vtext', 'vnode',
                -- 'vcomp', null), then you don't need to worry about this.
                then
-                 component counterComponent4
+                 component_ counterComponent4
                    [ onMounted (Mount "4")
                    , onUnmounted (UnMount "4")
                    ]
                else
-                 component counterComponent5
+                 component_ counterComponent5
                    [ onMounted (Mount "5")
                    , onUnmounted (UnMount "5")
                    ]
@@ -246,17 +246,26 @@ updateModel5 AddOne = do
   _1 += 1
   maybeChildId <- use _2
   forM_ maybeChildId $ \childId ->
-    io_ (notify' childId AddOne)
+    io_ (notify' childId counterComponent6 AddOne)
   io_ (notify counterComponent2 AddOne)
 updateModel5 SubtractOne = do
   _1 -= 1
   io_ (notify counterComponent2 SubtractOne)
-updateModel5 Sample =
+updateModel5 Sample = do
   io_ $ do
     componentTwoModel <- sample counterComponent2
     consoleLog $
       "Sampling parent component 2 from child component 5: " <>
          ms (show componentTwoModel)
+
+  maybeChildId <- use _2
+  io_ $ do
+    forM_ maybeChildId $ \childId -> do
+      componentTwoModel <- sample' childId counterComponent6
+      consoleLog $
+        "Sampling parent component 6 from child component 5: " <>
+           ms (show componentTwoModel)
+
 updateModel5 SayHelloWorld = do
   io_ (consoleLog "Hello World from Component 5")
 updateModel5 (Mount childId) = do
@@ -283,7 +292,7 @@ viewModel5 (x, _) =
 
 -- | "" here means the component is given a dynamically generated name, can also leave generic
 -- the component_ or componentWith_
-counterComponent6 :: Component "" Model Action
+counterComponent6 :: Component Dynamic Model Action
 counterComponent6 = defaultComponent 0 updateModel6 viewModel6
 
 -- | Updates model, optionally introduces side effects

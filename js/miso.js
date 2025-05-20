@@ -527,7 +527,7 @@ function hydrate(logLevel, mountPoint, vtree) {
   const node = preamble(mountPoint);
   if (!walk(logLevel, vtree, node)) {
     if (logLevel) {
-      console.warn("Could not copy DOM into virtual DOM, falling back to diff");
+      console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (node.firstChild)
       node.removeChild(node.lastChild);
@@ -537,9 +537,9 @@ function hydrate(logLevel, mountPoint, vtree) {
   } else {
     if (logLevel) {
       if (!integrityCheck(vtree)) {
-        console.warn("Integrity check completed with errors");
+        console.warn("[DEBUG_HYDRATE] Integrity check completed with errors");
       } else {
-        console.info("Successfully prerendered page");
+        console.info("[DEBUG_HYDRATE] Successfully prerendered page");
       }
     }
   }
@@ -547,7 +547,7 @@ function hydrate(logLevel, mountPoint, vtree) {
 }
 function diagnoseError(logLevel, vtree, node) {
   if (logLevel)
-    console.warn("VTree differed from node", vtree, node);
+    console.warn("[DEBUG_HYDRATE] VTree differed from node", vtree, node);
 }
 function parseColor(input) {
   if (input.substr(0, 1) == "#") {
