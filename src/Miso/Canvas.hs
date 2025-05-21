@@ -153,7 +153,7 @@ import           Control.Monad (void, liftM, ap, liftM2)
 import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
-                                             , liftJSM
+                                             , liftJSM, Function
                                              , ToJSVal, MakeObject, (<##)
 #ifndef GHCJS_BOTH
                                              , MonadJSM(..)
@@ -172,13 +172,13 @@ import           Miso.String (MisoString)
 canvas
   :: forall action
    . [ Attribute action ]
-  -> JSM JSVal
+  -> JSM Function
   -> View action
 canvas attributes callback = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
-      flip (FFI.set "draw") obj =<< callback
+      flip (FFI.set "draw") obj =<< toJSVal =<< callback
 -----------------------------------------------------------------------------
 -- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
 -- Specialized to "2d" canvas.
@@ -188,10 +188,9 @@ canvas_
   -> View action
 canvas_ attributes canvas' =
   canvas attributes $
-    toJSVal =<< do
-      FFI.syncCallback1 $ \domRef -> do
-        ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
-        void (interpret ctx canvas')
+    FFI.syncCallback1 $ \domRef -> do
+      ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+      void (interpret ctx canvas')
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
 -----------------------------------------------------------------------------
