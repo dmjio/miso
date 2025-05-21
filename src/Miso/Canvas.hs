@@ -51,18 +51,18 @@
 --      secs = secs' + fromIntegral n
 --      millis = millis' + fromIntegral n
 --    globalCompositeOperation DestinationOver
---    clearRect (0,0,300,300)
+--    clearRect (0, 0, 300, 300)
 --    fillStyle $ Canvas.color (rgba 0 0 0 0.6)
 --    strokeStyle $ Canvas.color (rgba 0 153 255 0.4)
 --    save ()
 --    translate (150, 150)
---    rotate ((((2 * pi) / 60) * secs) + (((2 * pi) / 60000) * millis))
+--    rotate ((((2 * pi) \/ 60) * secs) + (((2 * pi) \/ 60000) * millis))
 --    translate (105,0)
---    fillRect (0 ,-12, 50, 24)
+--    fillRect (0, -12, 50, 24)
 --    drawImage (earth, -12, -12)
 --    save ()
---    rotate ((((2 * pi) / 6) * secs) + (((2 * pi) / 6000) * millis))
---    translate (0,28.5)
+--    rotate ((((2 * pi) \/ 6) * secs) + (((2 * pi) \/ 6000) * millis))
+--    translate (0, 28.5)
 --    drawImage (moon, -3.5, -3.5)
 --    replicateM_ 2 (restore ())
 --    beginPath ()
@@ -166,13 +166,13 @@ import           Miso.Html.Types
 import           Miso.Style (Color, renderColor)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
+-- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas).
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
   :: forall action
    . [ Attribute action ]
-  -> JSM Function
+  -> JSM Function -- ^ Callback to render graphics using this canvas' context
   -> View action
 canvas attributes callback = node HTML "canvas" attrs []
   where
@@ -180,8 +180,9 @@ canvas attributes callback = node HTML "canvas" attrs []
     attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
       flip (FFI.set "draw") obj =<< toJSVal =<< callback
 -----------------------------------------------------------------------------
--- | Element for drawing on a <canvas>, includes a @Canvas@ DSL.
--- Specialized to "2d" canvas.
+-- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas),
+-- includes a 'Canvas' DSL.
+-- Specialized to ["2d"](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext#2d) canvas.
 canvas_
   :: [ Attribute action ]
   -> Canvas a

@@ -475,6 +475,9 @@ iframe_ :: [Attribute action] -> [View action] -> View action
 iframe_ = nodeHtml "iframe"
 -----------------------------------------------------------------------------
 -- | [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas)
+--
+-- Note this just renders a canvas element.
+-- See also 'Miso.Canvas.canvas_' which supports canvas drawing DSL.
 canvas_ :: [Attribute action] -> [View action] -> View action
 canvas_ = nodeHtml "canvas"
 -----------------------------------------------------------------------------
