@@ -107,10 +107,13 @@ viewModel1 x =
             else div_ [id_ "other test"] ["Main application content"]
         ]
 
+data LoggerSub = LoggerSub
+  deriving (Eq, Ord)
+
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> Effect MainModel MainAction
-updateModel1 StartLogger = startSub "logger" (loggerSub "main-app")
-updateModel1 StopLogger  = stopSub "logger"
+updateModel1 StartLogger = startSub LoggerSub (loggerSub "main-app")
+updateModel1 StopLogger  = stopSub LoggerSub
 updateModel1 Toggle = modify not
 updateModel1 UnMountMain =
   io_ (consoleLog "Component 2 was unmounted!")

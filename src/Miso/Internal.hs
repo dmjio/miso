@@ -68,7 +68,7 @@ import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
+import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -122,10 +122,10 @@ data Hydrate
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | @Component@ state, data associated with the lifetime of a @Component@
-data ComponentState model action
+data ComponentState key model action
   = ComponentState
   { componentName       :: MisoString
-  , componentSubThreads :: IORef (Map MisoString ThreadId)
+  , componentSubThreads :: IORef (Map key ThreadId)
   , componentMount      :: JSVal
   , componentVTree      :: IORef VTree
   , componentSink       :: action -> JSM ()
@@ -155,7 +155,7 @@ freshComponentId = do
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-componentMap :: IORef (Map MisoString (ComponentState model action))
+componentMap :: IORef (Map MisoString (ComponentState key model action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
@@ -289,7 +289,7 @@ drawComponent hydrate name Component {..} snk = do
 -- | Drains the event queue before unmounting, executed synchronously
 drain
   :: Component name model action
-  -> ComponentState model action
+  -> ComponentState key model action
   -> JSM ()
 drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
@@ -305,7 +305,7 @@ drain app@Component{..} cs@ComponentState {..} = do
 unmount
   :: Function
   -> Component name model action
-  -> ComponentState model action
+  -> ComponentState key model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
@@ -447,7 +447,7 @@ parseView html = reverse (go (parseTree html) [])
       go next views
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
-registerComponent :: MonadIO m => ComponentState model action -> m ()
+registerComponent :: MonadIO m => ComponentState key model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
@@ -463,7 +463,7 @@ renderStyles styles =
 -- The 'Sub' can be stopped by calling @stop subName@ from the 'update' function.
 -- All 'Sub' started will be stopped if a 'Component' is unmounted.
 --
-startSub :: SubName -> Sub action -> Effect model action
+startSub :: Ord key => key -> Sub action -> Effect model action
 startSub subName sub = do
   compName <- ask
   io_
@@ -489,17 +489,17 @@ startSub subName sub = do
 -- | Stops a named 'Sub' dynamically, during the life of a 'Component'.
 -- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
 --
-stopSub :: SubName -> Effect model action
-stopSub subName = do
+stopSub :: Ord key => key -> Effect model action
+stopSub key = do
   compName <- ask
   io_
     (M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do
-        mtid <- liftIO (M.lookup subName <$> readIORef componentSubThreads)
-        forM_ mtid $ \tid -> do
+        mtid <- liftIO (M.lookup key <$> readIORef componentSubThreads)
+        forM_ mtid $ \tid ->
           liftIO $ do
-            atomicModifyIORef' componentSubThreads $ \m -> (M.delete subName m, ())
+            atomicModifyIORef' componentSubThreads $ \m -> (M.delete key m, ())
             killThread tid)
 -----------------------------------------------------------------------------
