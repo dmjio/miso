@@ -463,7 +463,13 @@ renderStyles styles =
 -- The 'Sub' can be stopped by calling @stop subName@ from the 'update' function.
 -- All 'Sub' started will be stopped if a 'Component' is unmounted.
 --
-startSub :: Ord key => key -> Sub action -> Effect model action
+-- @
+-- data SubType = LoggerSub | TimerSub
+--
+-- update Action =
+--   startSub LoggerSub $ \sink -> forever (threadDelay (secs 1) >> consoleLog "test")
+-- @
+startSub :: Ord sub => sub -> Sub action -> Effect model action
 startSub subName sub = do
   compName <- ask
   io_
@@ -489,7 +495,13 @@ startSub subName sub = do
 -- | Stops a named 'Sub' dynamically, during the life of a 'Component'.
 -- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
 --
-stopSub :: Ord key => key -> Effect model action
+-- @
+-- data SubType = LoggerSub | TimerSub
+--
+-- update Action = do
+--   stopSub LoggerSub
+-- @
+stopSub :: Ord sub => sub -> Effect model action
 stopSub key = do
   compName <- ask
   io_
