@@ -498,6 +498,7 @@ startSub subKey sub = do
 --
 -- @
 -- data SubType = LoggerSub | TimerSub
+--   deriving (Eq, Ord)
 --
 -- update Action = do
 --   stopSub LoggerSub
