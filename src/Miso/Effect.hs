@@ -19,7 +19,6 @@ module Miso.Effect
     -- *** Types
     Effect
   , Sub
-  , SubName
   , Sink
     -- *** Combinators
   , (<#)
@@ -61,11 +60,6 @@ import           Miso.String (ms, MisoString)
 -- The 'Sink' callback is used to dispatch actions which are then fed
 -- back into the 'Miso.Types.update' function.
 type Sub action = Sink action -> JSM ()
------------------------------------------------------------------------------
--- | SubName
--- The name of a 'Sub' (e.g. "websocket")
---
-type SubName = MisoString
 -----------------------------------------------------------------------------
 -- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
 type Sink action = action -> JSM ()

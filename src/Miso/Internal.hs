@@ -68,7 +68,7 @@ import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, SubName, Sink, Effect, runEffect, io_)
+import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -88,9 +88,9 @@ initialize Component {..} getView = do
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
-    subName <- liftIO freshSubId
+    subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
-      (M.insert subName threadId m, ())
+      (M.insert subKey threadId m, ())
   componentModel <- liftIO (newIORef model)
   let
     eventLoop !oldModel = liftIO wait >> do
@@ -122,10 +122,10 @@ data Hydrate
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | @Component@ state, data associated with the lifetime of a @Component@
-data ComponentState model action
+data ComponentState subKey model action
   = ComponentState
   { componentName       :: MisoString
-  , componentSubThreads :: IORef (Map MisoString ThreadId)
+  , componentSubThreads :: IORef (Map subKey ThreadId)
   , componentMount      :: JSVal
   , componentVTree      :: IORef VTree
   , componentSink       :: action -> JSM ()
@@ -155,7 +155,7 @@ freshComponentId = do
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-componentMap :: IORef (Map MisoString (ComponentState model action))
+componentMap :: IORef (Map MisoString (ComponentState subKey model action))
 {-# NOINLINE componentMap #-}
 componentMap = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
@@ -238,9 +238,7 @@ notify' name Component {..} action = do
     Just ComponentState {..} ->
       componentSink action
 -----------------------------------------------------------------------------
--- | Sychronicity
---
--- Data type to indicate if effects should be handled asynchronously
+-- | Data type to indicate if effects should be handled asynchronously
 -- or synchronously.
 --
 data Synchronicity
@@ -289,7 +287,7 @@ drawComponent hydrate name Component {..} snk = do
 -- | Drains the event queue before unmounting, executed synchronously
 drain
   :: Component name model action
-  -> ComponentState model action
+  -> ComponentState subKey model action
   -> JSM ()
 drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
@@ -305,7 +303,7 @@ drain app@Component{..} cs@ComponentState {..} = do
 unmount
   :: Function
   -> Component name model action
-  -> ComponentState model action
+  -> ComponentState subKey model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
@@ -447,7 +445,7 @@ parseView html = reverse (go (parseTree html) [])
       go next views
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
-registerComponent :: MonadIO m => ComponentState model action -> m ()
+registerComponent :: MonadIO m => ComponentState subKey model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' componentMap
   $ M.insert (componentName componentState) componentState
@@ -460,17 +458,24 @@ renderStyles styles =
     Style css -> FFI.addStyle css
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
--- The 'Sub' can be stopped by calling @stop subName@ from the 'update' function.
+-- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
 -- All 'Sub' started will be stopped if a 'Component' is unmounted.
 --
-startSub :: SubName -> Sub action -> Effect model action
-startSub subName sub = do
+-- @
+-- data SubType = LoggerSub | TimerSub
+--   deriving (Eq, Ord)
+--
+-- update Action =
+--   startSub LoggerSub $ \sink -> forever (threadDelay (secs 1) >> consoleLog "test")
+-- @
+startSub :: Ord subKey => subKey -> Sub action -> Effect model action
+startSub subKey sub = do
   compName <- ask
   io_
     (M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
       Nothing -> pure ()
       Just compState@ComponentState {..} -> do
-        mtid <- liftIO (M.lookup subName <$> readIORef componentSubThreads)
+        mtid <- liftIO (M.lookup subKey <$> readIORef componentSubThreads)
         case mtid of
           Nothing ->
             startThread compState
@@ -484,22 +489,29 @@ startSub subName sub = do
     startThread ComponentState {..} = do
       tid <- FFI.forkJSM (sub componentSink)
       liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
-        (M.insert subName tid m, ())
+        (M.insert subKey tid m, ())
 -----------------------------------------------------------------------------
 -- | Stops a named 'Sub' dynamically, during the life of a 'Component'.
 -- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
 --
-stopSub :: SubName -> Effect model action
-stopSub subName = do
+-- @
+-- data SubType = LoggerSub | TimerSub
+--   deriving (Eq, Ord)
+--
+-- update Action = do
+--   stopSub LoggerSub
+-- @
+stopSub :: Ord subKey => subKey -> Effect model action
+stopSub subKey = do
   compName <- ask
   io_
     (M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do
-        mtid <- liftIO (M.lookup subName <$> readIORef componentSubThreads)
-        forM_ mtid $ \tid -> do
+        mtid <- liftIO (M.lookup subKey <$> readIORef componentSubThreads)
+        forM_ mtid $ \tid ->
           liftIO $ do
-            atomicModifyIORef' componentSubThreads $ \m -> (M.delete subName m, ())
+            atomicModifyIORef' componentSubThreads $ \m -> (M.delete subKey m, ())
             killThread tid)
 -----------------------------------------------------------------------------
