@@ -238,9 +238,7 @@ notify' name Component {..} action = do
     Just ComponentState {..} ->
       componentSink action
 -----------------------------------------------------------------------------
--- | Sychronicity
---
--- Data type to indicate if effects should be handled asynchronously
+-- | Data type to indicate if effects should be handled asynchronously
 -- or synchronously.
 --
 data Synchronicity
