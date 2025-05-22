@@ -31,7 +31,6 @@ module Miso
   , startSub
   , stopSub
   , Sub
-  , SubName
   -- ** Effect
   , issue
   , batch
