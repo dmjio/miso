@@ -117,7 +117,7 @@ function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
     */
-export function eventJSON(at: string | string[], obj: any): string[] {
+export function eventJSON(at: string | Array<string>, obj: Event): Object[] {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] === 'object') {
     var ret = [];
@@ -159,7 +159,7 @@ export function eventJSON(at: string | string[], obj: any): string[] {
   return newObj;
 }
 /* get static and dynamic properties */
-function getAllPropertyNames(obj: VTree): Object {
+function getAllPropertyNames(obj: Event): Object {
   var props: Object = {},
     i: number = 0;
   do {
