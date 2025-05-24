@@ -75,6 +75,8 @@ data Component (name :: Symbol) model action = Component
   -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
   -- These styles are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
+  --
+  -- @since 1.9.0.0
   , initialAction :: Maybe action
   -- ^ Initial action that is run after the application has loaded, optional
   --
