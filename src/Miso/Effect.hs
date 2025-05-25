@@ -1,6 +1,10 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+-----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect
@@ -45,6 +49,10 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS )
+#if __GLASGOW_HASKELL__ <= 881
+import qualified Control.Monad.Fail as Fail
+import           Data.Functor.Identity (Identity(..))
+#endif
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (JSM)
 import           Miso.String (MisoString)
@@ -116,6 +124,12 @@ batch_ actions = sequence_
 --   }
 -- @
 type Effect model action = RWS ComponentName [Sink action -> JSM ()] model ()
+-----------------------------------------------------------------------------
+-- | @MonadFail@ instance for @EffectCore@
+#if __GLASGOW_HASKELL__ <= 881
+instance Fail.MonadFail Identity where
+  fail = error
+#endif
 -----------------------------------------------------------------------------
 -- | The name of a @Component@
 type ComponentName = MisoString
