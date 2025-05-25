@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Effect
@@ -43,17 +43,11 @@ module Miso.Effect
   , noEff
   ) where
 -----------------------------------------------------------------------------
-#if __GLASGOW_HASKELL__ <= 881
-import           Control.Monad.Fail (MonadFail, fail)
-import qualified Control.Monad.Fail as Fail
-#endif
 import           Data.Foldable (for_)
-import           Control.Monad.RWS ( RWS, put, tell, execRWS
-                                   , MonadState, MonadReader, MonadWriter
-                                   )
+import           Control.Monad.RWS ( RWS, put, tell, execRWS )
 -----------------------------------------------------------------------------
-import           Miso.FFI.Internal (JSM, consoleError)
-import           Miso.String (ms, MisoString)
+import           Miso.FFI.Internal (JSM)
+import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
 --
@@ -121,33 +115,10 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect model action = EffectCore model action ()
+type Effect model action = RWS ComponentName [Sink action -> JSM ()] model ()
 -----------------------------------------------------------------------------
 -- | The name of a @Component@
 type ComponentName = MisoString
------------------------------------------------------------------------------
--- | The @EffectCore@ Monad, underlies @Effect@
-newtype EffectCore model action a
-  = EffectCore
-  { runEffectCore :: RWS ComponentName [Sink action -> JSM ()] model a
-  } deriving
-    ( Functor
-    , Applicative
-    , Monad
-    , MonadState model
-    , MonadWriter [Sink action -> JSM ()]
-    , MonadReader ComponentName
-    )
------------------------------------------------------------------------------
--- | @MonadFail@ instance for @EffectCore@
-instance MonadFail (EffectCore model action) where
-  fail s = do
-    io_ $ consoleError (ms s)
-#if __GLASGOW_HASKELL__ <= 881
-    Fail.fail s
-#else
-    fail s
-#endif
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an @EffectCore@
 runEffect
@@ -155,7 +126,7 @@ runEffect
     -> MisoString
     -> model
     -> (model, [Sink action -> JSM ()])
-runEffect = execRWS . runEffectCore
+runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
 -- actions of type @b@ using the supplied function of type @a -> b@.
