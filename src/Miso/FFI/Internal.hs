@@ -60,6 +60,12 @@ module Miso.FFI.Internal
    , setComponent
    , Image (..)
    , newImage
+   , Audio (..)
+   , newAudio
+   , play
+   , volume
+   , pause
+   , paused
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -67,7 +73,7 @@ import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
-import           Data.Maybe (isJust)
+import           Data.Maybe (isJust, fromMaybe)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
@@ -489,4 +495,28 @@ newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
   img <# "src" $ url
   pure (Image img)
+-----------------------------------------------------------------------------
+newtype Audio = Audio JSVal
+  deriving (ToJSVal)
+-----------------------------------------------------------------------------
+newAudio :: MisoString -> JSM Audio
+newAudio url = do
+  a <- new (jsg "Audio") ([] :: [MisoString])
+  o <- makeObject a
+  set (ms "src") url o
+  pure (Audio a)
+-----------------------a------------------------------------------------------
+play :: Audio -> JSM ()
+play (Audio a) = void $ a # "play" $ ()
+-----------------------------------------------------------------------------
+volume :: Audio -> Double -> JSM ()
+volume (Audio a) = a <# "volume"
+-----------------------------------------------------------------------------
+paused :: Audio -> JSM Bool
+paused (Audio a) = do
+  value <- a ! "paused"
+  fromMaybe False <$> fromJSVal value
+-----------------------------------------------------------------------------
+pause :: Audio -> JSM ()
+pause (Audio a) = void $ a # "pause" $ ()
 -----------------------------------------------------------------------------

@@ -28,6 +28,13 @@ module Miso.FFI
   -- ** Image
   , Image (..)
   , newImage
+  -- ** Audio
+  , Audio (..)
+  , newAudio
+  , play
+  , volume
+  , pause
+  , paused
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
