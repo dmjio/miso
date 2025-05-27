@@ -34,6 +34,7 @@ module Miso.FFI
   , play
   , volume
   , pause
+  , isPaused
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
