@@ -65,7 +65,7 @@ module Miso.FFI.Internal
    , play
    , volume
    , pause
-   , isPaused
+   , paused
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -512,8 +512,8 @@ play (Audio a) = void $ a # "play" $ ()
 volume :: Audio -> Double -> JSM ()
 volume (Audio a) = a <# "volume"
 -----------------------------------------------------------------------------
-isPaused :: Audio -> JSM Bool
-isPaused (Audio a) = do
+paused :: Audio -> JSM Bool
+paused (Audio a) = do
   value <- a ! "paused"
   fromMaybe False <$> fromJSVal value
 -----------------------------------------------------------------------------
