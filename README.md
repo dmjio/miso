@@ -607,10 +607,10 @@ If you want to interact with an HTTP API, we recommend one of the following appr
 
 ## Coverage ✅
 
-The core engine of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven-sh/bun).
+The core engine of `miso` is the [diff](https://github.com/dmjio/miso/blob/master/ts/miso/dom.ts) function. It is responsible for all DOM manipulation that occurs in a miso application and has [100% code coverage](http://coverage.haskell-miso.org). Tests and coverage made possible using [bun](https://github.com/oven-sh/bun).
 
 > [!NOTE]
-> To run the tests and build the coverage report ensure [bun](https://github.com/oven.sh/bun) is installed.
+> To run the tests and build the coverage report ensure [bun](https://github.com/oven-sh/bun) is installed.
 
 ```bash
 $ curl -fsSL https://bun.sh/install | bash
@@ -649,7 +649,7 @@ All files           |   92.37 |   85.48 |
 [Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
 
 > [!NOTE]
-> The [miso](https://haddocks.haskell-miso.org/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
+> The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Benchmarks 🏎️
 
