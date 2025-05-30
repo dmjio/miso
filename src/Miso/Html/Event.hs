@@ -44,6 +44,7 @@ module Miso.Html.Event
   -- *** Form
   , onInput
   , onChange
+  , onChangeWith
   , onChecked
   , onSubmit
   -- *** Focus
@@ -280,6 +281,10 @@ onInput f = on "input" valueDecoder (\action _ -> f action)
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChange :: (MisoString -> action) -> Attribute action
 onChange f = on "change" valueDecoder (\action _ -> f action)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/change
+onChangeWith :: (MisoString -> JSVal -> action) -> Attribute action
+onChangeWith = on "change" valueDecoder
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/select
 onSelect :: (MisoString -> action) -> Attribute action
