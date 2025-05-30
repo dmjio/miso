@@ -426,7 +426,7 @@ function delegateEvent(event, obj, stack, parentStack, debug) {
       if (options["preventDefault"]) {
         event.preventDefault();
       }
-      eventObj["runEvent"](event);
+      eventObj["runEvent"](event, stack[0]);
       if (!options["stopPropagation"]) {
         propagateWhileAble(parentStack, event);
       }

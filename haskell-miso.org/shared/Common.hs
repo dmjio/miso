@@ -597,7 +597,7 @@ onPreventClick action =
         defaultOptions{preventDefault = True}
         "click"
         emptyDecoder
-        (\() -> action)
+        (\() -> const action)
 
 -- | Footer
 footer :: View action
