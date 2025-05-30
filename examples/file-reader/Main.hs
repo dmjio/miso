@@ -38,10 +38,9 @@ info = lens _info $ \r x -> r { _info = x }
 ----------------------------------------------------------------------------
 -- | Action
 data Action
-  = ReadFile
+  = ReadFile JSVal
   | SetContent MisoString
-  | ClickInput
-  deriving (Show, Eq)
+  | ClickInput JSVal
 ----------------------------------------------------------------------------
 -- | WASM support
 #ifdef WASM
@@ -83,8 +82,7 @@ app = defaultComponent (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function
 updateModel :: Action -> Effect Model Action
-updateModel ReadFile = io $ do
-  fileReaderInput <- M.getElementById "fileReader"
+updateModel (ReadFile fileReaderInput) = io $ do
   file <- fileReaderInput ! ("files" :: String) !! 0
   reader <- J.new (J.jsg ("FileReader" :: String)) ([] :: [JSVal])
   mvar <- liftIO newEmptyMVar
@@ -95,8 +93,8 @@ updateModel ReadFile = io $ do
   void $ reader # ("readAsText" :: String) $ [file]
   SetContent <$> liftIO (readMVar mvar)
 updateModel (SetContent c) = info .= c
-updateModel ClickInput = io_ $ do
-  fileReader <- M.getElementById "fileReader"
+updateModel (ClickInput button) = io_ $ do
+  fileReader <- button ! ("nextSibling" :: MisoString) -- dmj: gets hidden input
   void $ fileReader # ("click" :: String) $ ([] :: [JSVal])
 ----------------------------------------------------------------------------
 -- | View function
@@ -127,7 +125,7 @@ viewModel Model{..} =
             ]
             [ M.button_
               [ M.class_ "button is-primary is-large"
-              , M.onClick ClickInput
+              , M.onClickWith ClickInput
               ]
               [ "Select File" ]
             , M.input_
@@ -135,7 +133,7 @@ viewModel Model{..} =
               , M.id_ "fileReader"
               , M.type_ "file"
               , M.class_ "button is-large"
-              , M.onChange (\_ -> ReadFile)
+              , M.onChangeWith (const ReadFile)
               ]
             ]
           ]
