@@ -72,7 +72,7 @@ function delegateEvent(
       );
     }
     return;
-  } /* stack not length 1, recurse */ else if (stack.length > 1) {
+  } else if (stack.length > 1) { /* stack not length 1, recurse */
     parentStack.unshift(obj);
     for (const child of obj['children']) {
       if (child['type'] === 'vcomp') continue;
@@ -81,14 +81,16 @@ function delegateEvent(
         break;
       }
     }
-  } /* stack.length == 1 */ else {
+  } /* stack.length == 1 */
+  else {
     const eventObj: EventObject = obj['events'][event.type];
     if (eventObj) {
       const options: Options = eventObj['options'];
       if (options['preventDefault']) {
         event.preventDefault();
       }
-      eventObj['runEvent'](event);
+      /* dmj: stack[0] represents the domRef that raised the event */
+      eventObj['runEvent'](event, stack[0]);
       if (!options['stopPropagation']) {
         propagateWhileAble(parentStack, event);
       }

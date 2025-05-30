@@ -19,6 +19,7 @@ module Miso.FFI.Internal
    , syncCallback1
    , asyncCallback
    , asyncCallback1
+   , asyncCallback2
    , ghcjsPure
    , syncPoint
    , addEventListener
@@ -104,6 +105,14 @@ asyncCallback1 f = asyncFunction handle
   where
     handle _ _ []    = error "asyncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
+-----------------------------------------------------------------------------
+-- | Creates an asynchronous callback function with a single argument
+asyncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
+asyncCallback2 f = asyncFunction handle
+  where
+    handle _ _ []    = error "asyncCallback2: no args, impossible"
+    handle _ _ [_]   = error "asyncCallback2: 1 arg, impossible"
+    handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 syncCallback1 f = function handle
