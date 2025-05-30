@@ -35,6 +35,7 @@ module Miso.Event.Types
   , mouseEvents
   , dragEvents
   , pointerEvents
+  , audioVideoEvents
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
@@ -129,7 +130,7 @@ type Events = M.Map MisoString Capture
 type Capture = Bool
 -----------------------------------------------------------------------------
 -- | Default delegated events
-defaultEvents :: M.Map MisoString Capture
+defaultEvents :: Events
 defaultEvents = M.fromList
   [ ("blur", True)
   , ("change", False)
@@ -142,7 +143,7 @@ defaultEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Keyboard events
-keyboardEvents :: M.Map MisoString Capture
+keyboardEvents :: Events
 keyboardEvents = M.fromList
   [ ("keydown", False)
   , ("keypress", False)
@@ -150,7 +151,7 @@ keyboardEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Mouse events
-mouseEvents :: M.Map MisoString Capture
+mouseEvents :: Events
 mouseEvents = M.fromList
   [ ("mouseup", False)
   , ("mousedown", False)
@@ -161,7 +162,7 @@ mouseEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Drag events
-dragEvents :: M.Map MisoString Capture
+dragEvents :: Events
 dragEvents = M.fromList
   [ ("dragstart", False)
   , ("dragover", False)
@@ -173,7 +174,7 @@ dragEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Pointer events
-pointerEvents :: M.Map MisoString Capture
+pointerEvents :: Events
 pointerEvents = M.fromList
   [ ("pointerup", False)
   , ("pointerdown", False)
@@ -184,3 +185,32 @@ pointerEvents = M.fromList
   , ("pointerout", False)
   ]
 -----------------------------------------------------------------------------
+-- | Audio video events
+-- For use with the /<audio/> and /<video/> tags.
+audioVideoEvents :: Events
+audioVideoEvents = M.fromList
+  [ ("abort", False)
+  , ("canplay", False)
+  , ("canplaythrough", False)
+  , ("durationchange", False)
+  , ("emptied", False)
+  , ("ended", False)
+  , ("error", False)
+  , ("loadeddata", False)
+  , ("loadedmetadata", False)
+  , ("loadstart", False)
+  , ("pause", False)
+  , ("play", False)
+  , ("playing", False)
+  , ("progress", False)
+  , ("ratechange", False)
+  , ("seeked", False)
+  , ("seeking", False)
+  , ("stalled", False)
+  , ("suspend", False)
+  , ("timeupdate", False)
+  , ("volumechange", False)
+  , ("waiting", False)
+  ]
+-----------------------------------------------------------------------------
+
