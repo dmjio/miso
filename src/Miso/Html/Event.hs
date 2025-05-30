@@ -28,6 +28,7 @@ module Miso.Html.Event
   , onBeforeDestroyed
    -- *** Mouse
   , onClick
+  , onClickWith
   , onDoubleClick
   , onMouseDown
   , onMouseUp
@@ -258,6 +259,11 @@ onChecked f = on "change" checkedDecoder (\action _ -> f action)
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClick :: action -> Attribute action
 onClick action = on "click" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/click
+-- Like 'onClick', but passes the DOM reference along (akin to 'getElementBydId').
+onClickWith :: (JSVal -> action) -> Attribute action
+onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
 onFocus :: action -> Attribute action
