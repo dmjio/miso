@@ -117,4 +117,15 @@ with pkgs.haskell.lib;
   #
   inherit (pkgs)
     nurl;
+
+  # favicon.ico and miso.png
+  miso-logos = pkgs.stdenv.mkDerivation {
+    name = "miso-logos";
+    src = ./logo;
+    buildCommand = ''
+      mkdir -p $out
+      cp -v $src/* $out/
+    '';
+  };
+
 }

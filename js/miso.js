@@ -585,7 +585,7 @@ function check(result, vtree) {
       result = false;
     }
     for (const key in vtree["props"]) {
-      if (key === "href") {
+      if (key === "href" || key === "src") {
         const absolute = window.location.origin + "/" + vtree["props"][key], url = vtree["domRef"][key], relative = vtree["props"][key];
         if (absolute !== url && relative !== url && relative + "/" !== url && absolute + "/" !== url) {
           console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"][key]);

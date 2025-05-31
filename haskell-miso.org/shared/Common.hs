@@ -209,7 +209,7 @@ docs = template v
             ]
 
 misoSrc :: MisoString
-misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png"
+misoSrc = pack "static/miso.png"
 
 examples :: Model -> View Action
 examples = template v

@@ -127,7 +127,7 @@ instance ToHtml Page where
                         ]
                     , link_
                         [ rel_ "icon"
-                        , href_ "https://www.haskell.org/img/favicon.ico"
+                        , href_ "static/favicon.ico"
                         , type_ "image/x-icon"
                         ]
                     , meta_
