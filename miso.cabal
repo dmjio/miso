@@ -113,6 +113,14 @@ library
     Miso.Concurrent
     Miso.Delegate
     Miso.Diff
+    Miso.FFI.History
+    Miso.FFI.SSE
+    Miso.FFI.Storage
+    Miso.FFI.Internal
+    Miso.Internal
+  exposed-modules:
+    Miso
+    Miso.Canvas
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -120,25 +128,19 @@ library
     Miso.Exception
     Miso.Fetch
     Miso.FFI
-    Miso.FFI.History
-    Miso.FFI.SSE
-    Miso.FFI.Storage
-    Miso.FFI.WebSocket
-    Miso.FFI.Internal
     Miso.Html
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
     Miso.Html.Types
-    Miso.Internal
+    Miso.Lens
+    Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property
     Miso.Property
     Miso.Render
     Miso.Router
     Miso.Run
-    Miso.Storage
-    Miso.Style.Color
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
@@ -146,20 +148,16 @@ library
     Miso.Subscription.WebSocket
     Miso.Subscription.Window
     Miso.Subscription.SSE
+    Miso.Svg
     Miso.Svg.Property
     Miso.Svg.Element
     Miso.Svg.Event
-    Miso.Types
-    Miso.Util
-    Miso.WebSocket
-  exposed-modules:
-    Miso
-    Miso.Canvas
-    Miso.Lens
-    Miso.Mathml
-    Miso.Svg
+    Miso.Storage
     Miso.String
     Miso.Style
+    Miso.Style.Color
+    Miso.Types
+    Miso.Util
   ghc-options:
     -Wall
   hs-source-dirs:
