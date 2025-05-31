@@ -132,7 +132,7 @@ function check(result: boolean, vtree: VTree): boolean {
     }
     // properties must be identical
     for (const key in vtree['props']) {
-      if (key === 'href') {
+      if (key === 'href' || key === 'src') {
         const absolute = window.location.origin + '/' + vtree['props'][key],
           url = vtree['domRef'][key],
           relative = vtree['props'][key];
