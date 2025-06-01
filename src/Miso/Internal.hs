@@ -63,7 +63,7 @@ import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
 import           Miso.Exception (MisoException(..), exception)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Html hiding (on)
+import           Miso.Html
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Event (Events)
