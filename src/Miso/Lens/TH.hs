@@ -32,7 +32,7 @@ makeLenses name = do
     processFieldNames fieldNames = concat
       [ mkFields fName (ConT name) fieldType
       | (fieldName, _, fieldType) <- fieldNames
-      , let fName = show (nameBase fieldName)
+      , let fName = nameBase fieldName
       , listToMaybe fName == Just '_'
       ]
     mkFields fieldName conType fieldType =
