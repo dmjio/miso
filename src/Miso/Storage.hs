@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Storage
@@ -25,21 +26,25 @@ module Miso.Storage
   , sessionStorageLength
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (void)
 import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
 import qualified Data.Aeson as A
 import           Language.Javascript.JSaddle hiding (obj, val)
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (jsonParse, jsonStringify)
-import qualified Miso.FFI.Storage as Storage
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage
 getStorageCommon
-  :: FromJSON b => (t -> JSM (Maybe JSVal)) -> t -> JSM (Either String b)
+  :: FromJSON b
+  => (t -> JSM (Maybe JSVal))
+  -> t
+  -> JSM (Either String b)
 getStorageCommon f key = do
   result <- f key
   case result of
-    Nothing -> pure $ Left "Not Found"
+    Nothing ->
+      pure (Left "Not Found")
     Just v -> do
       r <- jsonParse v
       pure $ case fromJSON r of
@@ -47,73 +52,116 @@ getStorageCommon f key = do
         A.Error y -> Left y
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in session storage
-getSessionStorage :: FromJSON model => MisoString -> JSM (Either String model)
+getSessionStorage
+  :: FromJSON model
+  => MisoString
+  -> JSM (Either String model)
 getSessionStorage =
   getStorageCommon $ \t -> do
-    s <- Storage.sessionStorage
-    r <- Storage.getItem s t
+    s <- sessionStorage
+    r <- getItem s t
     fromJSVal r
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in local storage
-getLocalStorage :: FromJSON model => MisoString -> JSM (Either String model)
+getLocalStorage
+  :: FromJSON model
+  => MisoString
+  -> JSM (Either String model)
 getLocalStorage = getStorageCommon $ \t -> do
-    s <- Storage.localStorage
-    r <- Storage.getItem s t
+    s <- localStorage
+    r <- getItem s t
     fromJSVal r
 -----------------------------------------------------------------------------
 -- | Set the value of a key in local storage.
 --
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
-setLocalStorage :: ToJSON model => MisoString -> model -> JSM ()
+setLocalStorage
+  :: ToJSON model
+  => MisoString
+  -> model
+  -> JSM ()
 setLocalStorage key model = do
-  s <- Storage.localStorage
-  Storage.setItem s key =<< jsonStringify model
+  s <- localStorage
+  setItem s key =<< jsonStringify model
 -----------------------------------------------------------------------------
 -- | Set the value of a key in session storage.
 --
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
-setSessionStorage :: ToJSON model => MisoString -> model -> JSM ()
+setSessionStorage
+  :: ToJSON model
+  => MisoString
+  -> model
+  -> JSM ()
 setSessionStorage key model = do
-  s <- Storage.sessionStorage
-  Storage.setItem s key =<< jsonStringify model
+  s <- sessionStorage
+  setItem s key =<< jsonStringify model
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage
 --
 -- @removeLocalStorage key@ removes the value of @key@.
-removeLocalStorage :: MisoString -> JSM ()
+removeLocalStorage
+  :: MisoString
+  -> JSM ()
 removeLocalStorage key = do
-  s <- Storage.localStorage
-  Storage.removeItem s key
+  s <- localStorage
+  removeItem s key
 -----------------------------------------------------------------------------
 -- | Removes an item from session storage.
 --
 -- @removeSessionStorage key@ removes the value of @key@.
-removeSessionStorage :: MisoString -> JSM ()
+removeSessionStorage
+  :: MisoString
+  -> JSM ()
 removeSessionStorage key = do
-  s <- Storage.sessionStorage
-  Storage.removeItem s key
+  s <- sessionStorage
+  removeItem s key
 -----------------------------------------------------------------------------
 -- | Clear local storage
 --
 -- @clearLocalStorage@ removes all values from local storage.
 clearLocalStorage :: JSM ()
-clearLocalStorage = Storage.clear =<< Storage.localStorage
+clearLocalStorage = clear =<< localStorage
 -----------------------------------------------------------------------------
 -- | Clear session storage
 --
 -- @clearSessionStorage@ removes all values from session storage.
 clearSessionStorage :: JSM ()
-clearSessionStorage = Storage.clear =<< Storage.sessionStorage
+clearSessionStorage = clear =<< sessionStorage
 -----------------------------------------------------------------------------
 -- | Local storage length
 --
 -- @localStorageLength@ returns the count of items in local storage
 localStorageLength :: JSM Int
-localStorageLength = Storage.length =<< Storage.localStorage
+localStorageLength = fromJSValUnchecked =<< localStorage ! (ms "length")
 -----------------------------------------------------------------------------
 -- | Session storage length
 --
 -- @sessionStorageLength@ returns the count of items in session storage
 sessionStorageLength :: JSM Int
-sessionStorageLength = Storage.length =<< Storage.sessionStorage
+sessionStorageLength = fromJSValUnchecked =<< sessionStorage ! (ms "length")
+-----------------------------------------------------------------------------
+localStorage :: JSM Storage
+localStorage = Storage <$> (jsg "window" ! "localStorage")
+-----------------------------------------------------------------------------
+sessionStorage :: JSM Storage
+sessionStorage = Storage <$> (jsg "window" ! "sessionStorage")
+-----------------------------------------------------------------------------
+getItem :: Storage -> MisoString -> JSM JSVal
+getItem (Storage s) key = s # "getItem" $ [key]
+-----------------------------------------------------------------------------
+removeItem :: Storage -> MisoString -> JSM ()
+removeItem (Storage s) key = void $ s # "removeItem" $ [key]
+-----------------------------------------------------------------------------
+setItem :: Storage -> MisoString -> MisoString -> JSM ()
+setItem (Storage s) key val = do
+  _ <- s # "setItem" $ (key, val)
+  pure ()
+-----------------------------------------------------------------------------
+clear :: Storage -> JSM ()
+clear (Storage s) = do
+  _ <- s # "clear" $ ()
+  pure ()
+-----------------------------------------------------------------------------
+newtype Storage = Storage JSVal
+  deriving (MakeObject, ToJSVal)
 -----------------------------------------------------------------------------
