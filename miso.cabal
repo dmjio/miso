@@ -121,9 +121,6 @@ library
     Miso.Concurrent
     Miso.Delegate
     Miso.Diff
-    Miso.FFI.History
-    Miso.FFI.SSE
-    Miso.FFI.Storage
     Miso.FFI.Internal
     Miso.Internal
   exposed-modules:
