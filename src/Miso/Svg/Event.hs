@@ -38,8 +38,8 @@ module Miso.Svg.Event
   , onMouseUp
   ) where
 -----------------------------------------------------------------------------
-import Miso.Event (emptyDecoder)
-import Miso.Html.Event (on, onClick)
+import Miso.Event (on, emptyDecoder)
+import Miso.Html.Event (onClick)
 import Miso.Html.Types (Attribute)
 -----------------------------------------------------------------------------
 -- | onBegin event
