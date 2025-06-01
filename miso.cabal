@@ -85,6 +85,14 @@ flag production
     Uses miso's production quality JS (miso.prod.js).
     This is built from calling "bun build --production"
 
+flag template-haskell
+  manual:
+    True
+  default:
+    False
+  description:
+    Checks if template-haskell is enabled. If so, allows Miso.Lens.TH
+
 flag tests
   manual:
     True
@@ -158,6 +166,13 @@ library
     Miso.Style.Color
     Miso.Types
     Miso.Util
+
+  if flag (template-haskell)
+    exposed-modules:
+      Miso.Lens.TH
+    build-depends:
+      template-haskell < 2.24
+
   ghc-options:
     -Wall
   hs-source-dirs:
