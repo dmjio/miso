@@ -7,7 +7,7 @@ with pkgs.lib;
 self: super:
 {
   /* miso */
-  miso = self.callCabal2nix "miso" source.miso {};
+  miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell" {};
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
