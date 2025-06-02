@@ -75,7 +75,6 @@ module Miso.Html.Property
    , alt_
    , loading_
    , autoplay_
-   , buffered_
    , currentTime_
    , defaultMuted_
    , volume_
@@ -318,10 +317,6 @@ loading_           = textProp "loading"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/autoplay>
 autoplay_ ::  Bool -> Attribute action
 autoplay_          = boolProp "autoplay"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/buffered>
-buffered_ ::  Bool -> Attribute action
-buffered_          = boolProp "buffered"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime>
 currentTime_ ::  Double -> Attribute action

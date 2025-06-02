@@ -24,7 +24,6 @@ module Miso.Media
   , pause
   -- *** Properties
   , autoplay
-  , buffered
   , controls
   , currentSrc
   , currentTime
@@ -100,10 +99,6 @@ canPlayType :: Media -> JSM MisoString
 canPlayType (Media m) = do
   fromJSValUnchecked =<< do
     m # ("canPlayType" :: MisoString) $ ()
------------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_buffered.asp
-buffered :: Media -> JSM Bool
-buffered (Media m) = fromJSValUnchecked =<< m ! ("buffered" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_met_autoplay.asp
 autoplay :: Media -> JSM Bool
