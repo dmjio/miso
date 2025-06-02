@@ -240,90 +240,90 @@ onPointerMove :: (PointerEvent -> action) -> Attribute action
 onPointerMove f = on "pointermove" pointerDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_abort.asp
-onAbort ::action -> Attribute action
+onAbort :: action -> Attribute action
 onAbort action = on "abort" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplay.asp
-onCanplay ::action -> Attribute action
+onCanplay :: action -> Attribute action
 onCanplay action = on "canplay" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
-onCanPlayThrough ::action -> Attribute action
+onCanPlayThrough :: action -> Attribute action
 onCanPlayThrough action = on "canplaythrough" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_duractionchange.asp
-onDurationChange ::action -> Attribute action
+onDurationChange :: action -> Attribute action
 onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_emptied.asp
-onEmptied ::action -> Attribute action
+onEmptied :: action -> Attribute action
 onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ended.asp
-onEnded ::action -> Attribute action
+onEnded :: action -> Attribute action
 onEnded action = on "ended" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_error.asp
-onError ::action -> Attribute action
+onError :: action -> Attribute action
 onError action = on "error" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loaddeddata.asp
-onLoadedData ::action -> Attribute action
+onLoadedData :: action -> Attribute action
 onLoadedData action = on "loadeddata" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadedmetadata.asp
-onLoadedMetadata ::action -> Attribute action
+onLoadedMetadata :: action -> Attribute action
 onLoadedMetadata action = on "loadedmetadata" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadstart.asp
-onLoadStart ::action -> Attribute action
+onLoadStart :: action -> Attribute action
 onLoadStart action = on "loadstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_pause.asp
-onPause ::action -> Attribute action
+onPause :: action -> Attribute action
 onPause action = on "pause" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_play.asp
-onPlay ::action -> Attribute action
+onPlay :: action -> Attribute action
 onPlay action = on "play" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_playing.asp
-onPlaying ::action -> Attribute action
+onPlaying :: action -> Attribute action
 onPlaying action = on "playing" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_progress.asp
-onProgress ::action -> Attribute action
+onProgress :: action -> Attribute action
 onProgress action = on "progress" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_ratechange.asp
-onRateChange ::action -> Attribute action
+onRateChange :: action -> Attribute action
 onRateChange action = on "ratechange" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeked.asp
-onSeeked ::action -> Attribute action
+onSeeked :: action -> Attribute action
 onSeeked action = on "seeked" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_seeking.asp
-onSeeking ::action -> Attribute action
+onSeeking :: action -> Attribute action
 onSeeking action = on "seeking" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_stalled.asp
-onStalled ::action -> Attribute action
+onStalled :: action -> Attribute action
 onStalled action = on "stalled" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_suspend.asp
-onSuspend ::action -> Attribute action
+onSuspend :: action -> Attribute action
 onSuspend action = on "suspend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_timeupdate.asp
-onTimeUpdate ::action -> Attribute action
+onTimeUpdate :: action -> Attribute action
 onTimeUpdate action = on "timeupdate" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_volumechange.asp
-onVolumeChange ::action -> Attribute action
+onVolumeChange :: action -> Attribute action
 onVolumeChange action = on "volumechange" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_waiting.asp
-onWaiting ::action -> Attribute action
+onWaiting :: action -> Attribute action
 onWaiting action = on "waiting" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
