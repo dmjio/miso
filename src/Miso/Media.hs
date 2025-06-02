@@ -109,7 +109,7 @@ controls :: Media -> JSM Bool
 controls (Media m) = fromJSValUnchecked =<< m ! ("controls" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_currentsrc.asp
-currentSrc :: Media -> JSM Bool
+currentSrc :: Media -> JSM MisoString
 currentSrc (Media m) = fromJSValUnchecked =<< m ! ("currentSrc" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_currenttime.asp
