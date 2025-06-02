@@ -58,7 +58,7 @@ module Miso.Html.Event
   , onPointerMove
   -- *** Media
   , onAbort
-  , onCanplay
+  , onCanPlay
   , onCanPlayThrough
   , onDurationChange
   , onEmptied
@@ -244,8 +244,8 @@ onAbort :: action -> Attribute action
 onAbort action = on "abort" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplay.asp
-onCanplay :: action -> Attribute action
-onCanplay action = on "canplay" emptyDecoder $ \() _ -> action
+onCanPlay :: action -> Attribute action
+onCanPlay action = on "canplay" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
 onCanPlayThrough :: action -> Attribute action
