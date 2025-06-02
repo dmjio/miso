@@ -347,10 +347,6 @@ muted_ = boolProp "muted"
 playbackRate_ :: Double -> Attribute action
 playbackRate_ = doubleProp "playbackRate"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/played>
-played_ :: Bool -> Attribute action
-played_ = boolProp "played"
------------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
 preload_ :: MisoString -> Attribute action
 preload_ = textProp "preload"
