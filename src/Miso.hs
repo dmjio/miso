@@ -59,8 +59,6 @@ module Miso
   , module Miso.Storage
     -- * Fetch
   , module Miso.Fetch
-    -- * Media
-  , module Miso.Media
     -- * Util
   , module Miso.Util
     -- * FFI
@@ -103,7 +101,6 @@ import           Miso.Storage
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
-import           Miso.Media
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
