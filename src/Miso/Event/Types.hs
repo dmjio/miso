@@ -35,7 +35,7 @@ module Miso.Event.Types
   , mouseEvents
   , dragEvents
   , pointerEvents
-  , audioVideoEvents
+  , mediaEvents
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
@@ -187,8 +187,8 @@ pointerEvents = M.fromList
 -----------------------------------------------------------------------------
 -- | Audio video events
 -- For use with the /<audio/> and /<video/> tags.
-audioVideoEvents :: Events
-audioVideoEvents = M.fromList
+mediaEvents :: Events
+mediaEvents = M.fromList
   [ ("abort", True)
   , ("canplay", True)
   , ("canplaythrough", True)

@@ -56,11 +56,57 @@ module Miso.Html.Event
   , onPointerOut
   , onPointerCancel
   , onPointerMove
+  -- *** Media
+  , onAbort
+  , onAbortWith
+  , onCanPlay
+  , onCanPlayWith
+  , onCanPlayThrough
+  , onCanPlayThroughWith
+  , onDurationChange
+  , onDurationChangeWith
+  , onEmptied
+  , onEmptiedWith
+  , onEnded
+  , onEndedWith
+  , onError
+  , onErrorWith
+  , onLoadedData
+  , onLoadedDataWith
+  , onLoadedMetadata
+  , onLoadedMetadataWith
+  , onLoadStart
+  , onLoadStartWith
+  , onPause
+  , onPauseWith
+  , onPlay
+  , onPlayWith
+  , onPlaying
+  , onPlayingWith
+  , onProgress
+  , onProgressWith
+  , onRateChange
+  , onRateChangeWith
+  , onSeeked
+  , onSeekedWith
+  , onSeeking
+  , onSeekingWith
+  , onStalled
+  , onStalledWith
+  , onSuspend
+  , onSuspendWith
+  , onTimeUpdate
+  , onTimeUpdateWith
+  , onVolumeChange
+  , onVolumeChangeWith
+  , onWaiting
+  , onWaitingWith
   ) where
 -----------------------------------------------------------------------------
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event
+import           Miso.Media (Media(..))
 import           Miso.String (MisoString)
 import           Miso.Types (Attribute)
 -----------------------------------------------------------------------------
@@ -215,4 +261,180 @@ onPointerCancel f = on "pointercancel" pointerDecoder (\action _ -> f action)
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointermove
 onPointerMove :: (PointerEvent -> action) -> Attribute action
 onPointerMove f = on "pointermove" pointerDecoder (\action _ -> f action)
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_abort.asp
+onAbort :: action -> Attribute action
+onAbort action = on "abort" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_abort.asp
+onAbortWith :: (Media -> action) -> Attribute action
+onAbortWith action = on "abort" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_canplay.asp
+onCanPlay :: action -> Attribute action
+onCanPlay action = on "canplay" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_canplay.asp
+onCanPlayWith :: (Media -> action) -> Attribute action
+onCanPlayWith action = on "canplay" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
+onCanPlayThrough :: action -> Attribute action
+onCanPlayThrough action = on "canplaythrough" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_canplaythrough.asp
+onCanPlayThroughWith :: (Media -> action) -> Attribute action
+onCanPlayThroughWith action = on "canplaythrough" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_duractionchange.asp
+onDurationChange :: action -> Attribute action
+onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_duractionchange.asp
+onDurationChangeWith :: (Media -> action) -> Attribute action
+onDurationChangeWith action = on "durationchange" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_emptied.asp
+onEmptied :: action -> Attribute action
+onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_emptied.asp
+onEmptiedWith :: (Media -> action) -> Attribute action
+onEmptiedWith action = on "emptied" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_ended.asp
+onEnded :: action -> Attribute action
+onEnded action = on "ended" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_ended.asp
+onEndedWith :: (Media -> action) -> Attribute action
+onEndedWith action = on "ended" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_error.asp
+onError :: action -> Attribute action
+onError action = on "error" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_error.asp
+onErrorWith :: (Media -> action) -> Attribute action
+onErrorWith action = on "error" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loaddeddata.asp
+onLoadedData :: action -> Attribute action
+onLoadedData action = on "loadeddata" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loaddeddata.asp
+onLoadedDataWith :: (Media -> action) -> Attribute action
+onLoadedDataWith action = on "loadeddata" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loadedmetadata.asp
+onLoadedMetadata :: action -> Attribute action
+onLoadedMetadata action = on "loadedmetadata" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loadedmetadata.asp
+onLoadedMetadataWith :: (Media -> action) -> Attribute action
+onLoadedMetadataWith action = on "loadedmetadata" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loadstart.asp
+onLoadStart :: action -> Attribute action
+onLoadStart action = on "loadstart" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_loadstart.asp
+onLoadStartWith :: (Media -> action) -> Attribute action
+onLoadStartWith action = on "loadstart" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_pause.asp
+onPause :: action -> Attribute action
+onPause action = on "pause" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_pause.asp
+onPauseWith :: (Media -> action) -> Attribute action
+onPauseWith action = on "pause" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_play.asp
+onPlay :: action -> Attribute action
+onPlay action = on "play" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_play.asp
+onPlayWith :: (Media -> action) -> Attribute action
+onPlayWith action = on "play" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_playing.asp
+onPlaying :: action -> Attribute action
+onPlaying action = on "playing" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_playing.asp
+onPlayingWith :: (Media -> action) -> Attribute action
+onPlayingWith action = on "playing" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_progress.asp
+onProgress :: action -> Attribute action
+onProgress action = on "progress" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_progress.asp
+onProgressWith :: (Media -> action) -> Attribute action
+onProgressWith action = on "progress" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_ratechange.asp
+onRateChange :: action -> Attribute action
+onRateChange action = on "ratechange" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_ratechange.asp
+onRateChangeWith :: (Media -> action) -> Attribute action
+onRateChangeWith action = on "ratechange" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_seeked.asp
+onSeeked :: action -> Attribute action
+onSeeked action = on "seeked" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_seeked.asp
+onSeekedWith :: (Media -> action) -> Attribute action
+onSeekedWith action = on "seeked" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_seeking.asp
+onSeeking :: action -> Attribute action
+onSeeking action = on "seeking" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_seeking.asp
+onSeekingWith :: (Media -> action) -> Attribute action
+onSeekingWith action = on "seeking" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_stalled.asp
+onStalled :: action -> Attribute action
+onStalled action = on "stalled" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_stalled.asp
+onStalledWith :: (Media -> action) -> Attribute action
+onStalledWith action = on "stalled" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_suspend.asp
+onSuspend :: action -> Attribute action
+onSuspend action = on "suspend" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_suspend.asp
+onSuspendWith :: (Media -> action) -> Attribute action
+onSuspendWith action = on "suspend" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_timeupdate.asp
+onTimeUpdate :: action -> Attribute action
+onTimeUpdate action = on "timeupdate" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_timeupdate.asp
+onTimeUpdateWith :: (Media -> action) -> Attribute action
+onTimeUpdateWith action = on "timeupdate" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_volumechange.asp
+onVolumeChange :: action -> Attribute action
+onVolumeChange action = on "volumechange" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_volumechange.asp
+onVolumeChangeWith :: (Media -> action) -> Attribute action
+onVolumeChangeWith action = on "volumechange" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_waiting.asp
+onWaiting :: action -> Attribute action
+onWaiting action = on "waiting" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_event_waiting.asp
+onWaitingWith :: (Media -> action) -> Attribute action
+onWaitingWith action = on "waiting" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------

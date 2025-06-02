@@ -75,8 +75,16 @@ module Miso.Html.Property
    , alt_
    , loading_
    , autoplay_
+   , currentTime_
+   , defaultMuted_
+   , volume_
    , controls_
    , loop_
+   , defaultPlaybackRate_
+   , mediaGroup_
+   , muted_
+   , playbackRate_
+   , seeking_
    , preload_
    , poster_
    , default_
@@ -309,6 +317,42 @@ loading_           = textProp "loading"
 autoplay_ ::  Bool -> Attribute action
 autoplay_          = boolProp "autoplay"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime>
+currentTime_ ::  Double -> Attribute action
+currentTime_          = doubleProp "currentTime"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultMuted>
+defaultMuted_ ::  Bool -> Attribute action
+defaultMuted_          = boolProp "defaultMuted"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultPlaybackRate>
+defaultPlaybackRate_ ::  Double -> Attribute action
+defaultPlaybackRate_          = doubleProp "defaultPlaybackRate"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/mediaGroup>
+mediaGroup_ :: MisoString -> Attribute action
+mediaGroup_ = textProp "mediaGroup"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/muted>
+muted_ :: Bool -> Attribute action
+muted_ = boolProp "muted"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/playbackRate>
+playbackRate_ :: Double -> Attribute action
+playbackRate_ = doubleProp "playbackRate"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
+preload_ :: MisoString -> Attribute action
+preload_ = textProp "preload"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seeking>
+seeking_ :: Bool -> Attribute action
+seeking_ = boolProp "seeking"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume>
+volume_ :: Double -> Attribute action
+volume_ = doubleProp "volume"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/controls>
 controls_ ::  Bool -> Attribute action
 controls_          = boolProp "controls"
@@ -316,10 +360,6 @@ controls_          = boolProp "controls"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/loop>
 loop_ ::  Bool -> Attribute action
 loop_              = boolProp "loop"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
-preload_ ::  MisoString -> Attribute action
-preload_           = textProp "preload"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster>
 poster_ ::  MisoString -> Attribute action
