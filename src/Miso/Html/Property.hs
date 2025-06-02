@@ -84,10 +84,7 @@ module Miso.Html.Property
    , defaultPlaybackRate_
    , mediaGroup_
    , muted_
-   , paused_
    , playbackRate_
-   , played_
-   , readyState_
    , seekable_
    , seeking_
    , preload_
@@ -346,13 +343,9 @@ mediaGroup_ = textProp "mediaGroup"
 muted_ :: Bool -> Attribute action
 muted_ = boolProp "muted"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/paused>
-paused_ :: Bool -> Attribute action
-paused_ = boolProp "paused"
------------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/playbackRate>
-playbackRate_ :: Bool -> Attribute action
-playbackRate_ = boolProp "playbackRate"
+playbackRate_ :: Double -> Attribute action
+playbackRate_ = doubleProp "playbackRate"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/played>
 played_ :: Bool -> Attribute action
@@ -361,10 +354,6 @@ played_ = boolProp "played"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
 preload_ :: Bool -> Attribute action
 preload_ = boolProp "preload"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/readyState>
-readyState_ :: Bool -> Attribute action
-readyState_ = boolProp "readyState"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seekable>
 seekable_ :: Bool -> Attribute action

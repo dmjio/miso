@@ -14,6 +14,7 @@ module Miso.Media
   ( -- *** Types
     Media        (..)
   , NetworkState (..)
+  , ReadyState   (..)
   -- *** Constructors
   , new
   -- *** Methods
@@ -37,7 +38,6 @@ module Miso.Media
   , networkState
   , paused
   , playbackRate
-  , played
   , preload
   , readyState
   , seekable
@@ -58,11 +58,21 @@ import           Miso.String
 newtype Media = Media JSVal
   deriving (ToJSVal)
 -----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_prop_networkstate.asp
 data NetworkState
   = NETWORK_EMPTY
   | NETWORK_IDLE
   | NETWORK_LOADING
   | NETWORK_NO_SOURCE
+  deriving (Show, Eq, Enum)
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/tags/av_prop_readystate.asp
+data ReadyState
+  = HAVE_NOTHING
+  | HAVE_METADATA
+  | HAVE_CURRENT_DATA
+  | HAVE_FUTURE_DATA
+  | HAVE_ENOUGH_DATA
   deriving (Show, Eq, Enum)
 -----------------------------------------------------------------------------
 -- | Smart constructor for @Media@ with 'src' element
@@ -153,24 +163,22 @@ paused (Media a) = fromJSValUnchecked =<< a ! ("paused" :: MisoString)
 playbackRate :: Media -> JSM Double
 playbackRate (Media a) = fromJSValUnchecked =<< a ! ("playbackRate" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_played.asp
-played :: Media -> JSM Double
-played (Media a) = fromJSValUnchecked =<< a ! ("played" :: MisoString)
------------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_preload.asp
 preload :: Media -> JSM Double
 preload (Media a) = fromJSValUnchecked =<< a ! ("preload" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_readyState.asp
-readyState :: Media -> JSM Double
-readyState (Media a) = fromJSValUnchecked =<< a ! ("readyState" :: MisoString)
+readyState :: Media -> JSM ReadyState
+readyState (Media a) = do
+  number <- fromJSValUnchecked =<< a ! ("readyState" :: MisoString)
+  pure (toEnum number)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_seekable.asp
-seekable :: Media -> JSM Double
+seekable :: Media -> JSM Bool
 seekable (Media a) = fromJSValUnchecked =<< a ! ("seekable" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_seeking.asp
-seeking :: Media -> JSM Double
+seeking :: Media -> JSM Bool
 seeking (Media a) = fromJSValUnchecked =<< a ! ("seeking" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_met_volume.asp
