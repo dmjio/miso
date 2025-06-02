@@ -164,7 +164,7 @@ playbackRate :: Media -> JSM Double
 playbackRate (Media a) = fromJSValUnchecked =<< a ! ("playbackRate" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_preload.asp
-preload :: Media -> JSM Double
+preload :: Media -> JSM MisoString
 preload (Media a) = fromJSValUnchecked =<< a ! ("preload" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_readyState.asp
