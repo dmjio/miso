@@ -84,7 +84,6 @@ module Miso.Html.Property
    , defaultPlaybackRate_
    , mediaGroup_
    , muted_
-   , networkState_
    , paused_
    , playbackRate_
    , played_
@@ -346,10 +345,6 @@ mediaGroup_ = textProp "mediaGroup"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/muted>
 muted_ :: Bool -> Attribute action
 muted_ = boolProp "muted"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/networkState>
-networkState_ :: Bool -> Attribute action
-networkState_ = boolProp "networkState"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/paused>
 paused_ :: Bool -> Attribute action
