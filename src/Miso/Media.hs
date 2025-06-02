@@ -39,7 +39,6 @@ module Miso.Media
   , playbackRate
   , preload
   , readyState
-  , seekable
   , seeking
   , volume
   -- *** Event Map
@@ -167,10 +166,6 @@ readyState :: Media -> JSM ReadyState
 readyState (Media a) = do
   number <- fromJSValUnchecked =<< a ! ("readyState" :: MisoString)
   pure (toEnum number)
------------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_seekable.asp
-seekable :: Media -> JSM Bool
-seekable (Media a) = fromJSValUnchecked =<< a ! ("seekable" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_seeking.asp
 seeking :: Media -> JSM Bool

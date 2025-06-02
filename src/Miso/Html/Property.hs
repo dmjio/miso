@@ -84,7 +84,6 @@ module Miso.Html.Property
    , mediaGroup_
    , muted_
    , playbackRate_
-   , seekable_
    , seeking_
    , preload_
    , poster_
@@ -345,10 +344,6 @@ playbackRate_ = doubleProp "playbackRate"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
 preload_ :: MisoString -> Attribute action
 preload_ = textProp "preload"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seekable>
-seekable_ :: Bool -> Attribute action
-seekable_ = boolProp "seekable"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seeking>
 seeking_ :: Bool -> Attribute action
