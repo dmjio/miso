@@ -353,7 +353,7 @@ played_ = boolProp "played"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
 preload_ :: MisoString -> Attribute action
-preload_ = stringProp "preload"
+preload_ = textProp "preload"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seekable>
 seekable_ :: Bool -> Attribute action
