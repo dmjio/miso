@@ -132,7 +132,7 @@ ended :: Media -> JSM Double
 ended (Media m) = fromJSValUnchecked =<< m ! ("ended" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_loop.asp
-loop :: Media -> JSM Double
+loop :: Media -> JSM Bool
 loop (Media m) = fromJSValUnchecked =<< m ! ("loop" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_mediagroup.asp
