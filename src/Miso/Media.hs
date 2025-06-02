@@ -121,7 +121,7 @@ defaultMuted :: Media -> JSM Bool
 defaultMuted (Media m) = fromJSValUnchecked =<< m ! ("defaultMuted" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_defaultplaybackrate.asp
-defaultPlaybackRate :: Media -> JSM Bool
+defaultPlaybackRate :: Media -> JSM Double
 defaultPlaybackRate (Media m) = fromJSValUnchecked =<< m ! ("defaultPlaybackRate" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_duration.asp
