@@ -286,19 +286,17 @@ onCanPlayThrough action = on "canplaythrough" emptyDecoder $ \() _ -> action
 onCanPlayThroughWith :: (Media -> action) -> Attribute action
 onCanPlayThroughWith action = on "canplaythrough" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_duractionchange.asp
+-- | https://www.w3schools.com/tags/av_event_durationchange.asp
 onDurationChange :: action -> Attribute action
 onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_duractionchange.asp
+-- | https://www.w3schools.com/tags/av_event_durationchange.asp
 onDurationChangeWith :: (Media -> action) -> Attribute action
 onDurationChangeWith action = on "durationchange" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_emptied.asp
 onEmptied :: action -> Attribute action
 onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_emptied.asp
 onEmptiedWith :: (Media -> action) -> Attribute action
 onEmptiedWith action = on "emptied" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
@@ -318,11 +316,11 @@ onError action = on "error" emptyDecoder $ \() _ -> action
 onErrorWith :: (Media -> action) -> Attribute action
 onErrorWith action = on "error" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_loaddeddata.asp
+-- | https://www.w3schools.com/tags/av_event_loadeddata.asp
 onLoadedData :: action -> Attribute action
 onLoadedData action = on "loadeddata" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_event_loaddeddata.asp
+-- | https://www.w3schools.com/tags/av_event_loadeddata.asp
 onLoadedDataWith :: (Media -> action) -> Attribute action
 onLoadedDataWith action = on "loadeddata" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------

@@ -83,7 +83,7 @@ new url = do
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_met_load.asp
 load :: Media -> JSM ()
-load (Media m) = void $ m <# ("load" :: MisoString) $ ()
+load (Media m) = void $ m # ("load" :: MisoString) $ ()
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_met_play.asp
 play :: Media -> JSM ()
@@ -99,11 +99,11 @@ canPlayType (Media m) = do
   fromJSValUnchecked =<< do
     m # ("canPlayType" :: MisoString) $ ()
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_autoplay.asp
+-- | https://www.w3schools.com/tags/av_prop_autoplay.asp
 autoplay :: Media -> JSM Bool
 autoplay (Media m) = fromJSValUnchecked =<< m ! ("autoplay" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_controls.asp
+-- | https://www.w3schools.com/tags/av_prop_controls.asp
 controls :: Media -> JSM Bool
 controls (Media m) = fromJSValUnchecked =<< m ! ("controls" :: MisoString)
 -----------------------------------------------------------------------------
@@ -171,7 +171,7 @@ readyState (Media a) = do
 seeking :: Media -> JSM Bool
 seeking (Media a) = fromJSValUnchecked =<< a ! ("seeking" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_volume.asp
+-- | https://www.w3schools.com/tags/av_prop_volume.asp
 volume :: Media -> JSM Double
 volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 -----------------------------------------------------------------------------
