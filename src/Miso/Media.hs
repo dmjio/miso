@@ -37,9 +37,12 @@ module Miso.Media
   , networkState
   , paused
   , playbackRate
+  , poster
   , preload
   , readyState
   , seeking
+  , videoHeight
+  , videoWidth
   , volume
   -- *** Event Map
   , mediaEvents
