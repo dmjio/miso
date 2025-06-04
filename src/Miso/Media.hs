@@ -157,6 +157,12 @@ paused (Media a) = fromJSValUnchecked =<< a ! ("paused" :: MisoString)
 playbackRate :: Media -> JSM Double
 playbackRate (Media a) = fromJSValUnchecked =<< a ! ("playbackRate" :: MisoString)
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster
+--
+-- Specific to videos.
+poster :: Media -> JSM MisoString
+poster (Media a) = fromJSValUnchecked =<< a ! ("poster" :: MisoString)
+-----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_preload.asp
 preload :: Media -> JSM MisoString
 preload (Media a) = fromJSValUnchecked =<< a ! ("preload" :: MisoString)
@@ -170,6 +176,18 @@ readyState (Media a) = do
 -- | https://www.w3schools.com/tags/av_prop_seeking.asp
 seeking :: Media -> JSM Bool
 seeking (Media a) = fromJSValUnchecked =<< a ! ("seeking" :: MisoString)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoHeight
+--
+-- Specific to videos.
+videoHeight :: Media -> JSM Int
+videoHeight (Media m) = fromJSValUnchecked =<< m ! ("videoHeight" :: MisoString)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoWidth
+--
+-- Specific to videos.
+videoWidth :: Media -> JSM Int
+videoWidth (Media m) = fromJSValUnchecked =<< m ! ("videoWidth" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_volume.asp
 volume :: Media -> JSM Double
