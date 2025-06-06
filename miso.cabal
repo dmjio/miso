@@ -164,6 +164,7 @@ library
     Miso.Style.Color
     Miso.Types
     Miso.Util
+    Miso.Util.Lexer
 
   if flag (template-haskell)
     exposed-modules:
