@@ -195,6 +195,7 @@ withLocation lexer = do
   let
     adjustLoc :: Location -> MisoString -> Location
     adjustLoc l = MS.foldl' adjust (next l)
+
   setLocation =<< adjustLoc <$> getLocation <*> pure (MS.ms result)
   Located result <$> getLocation
     where
