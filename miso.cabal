@@ -165,6 +165,7 @@ library
     Miso.Types
     Miso.Util
     Miso.Util.Lexer
+    Miso.Util.Parser
 
   if flag (template-haskell)
     exposed-modules:
