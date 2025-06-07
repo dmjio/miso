@@ -42,8 +42,8 @@ export function undelegate(
 function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => void, debug: boolean, context: Context): void {
   getVTree(function (vtree: VTree) {
       if (Array.isArray(e)) {
-          for (var i in e) {
-              dispatch(e[i], vtree, mount, debug, context);
+          for (const key of e) {
+              dispatch(key, vtree, mount, debug, context);
           }
       } else {
           dispatch (e, vtree, mount, debug, context);
