@@ -61,7 +61,7 @@
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Partnerships](#partnerships)
-- [Financial contributors](#financial-contributors)
+- [Backers](#backers)
 - [Organizations](#organizations)
 - [License](#license)
 
@@ -705,7 +705,7 @@ See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) fo
 
 If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p>
 
-## Financial contributors
+## Backers
 
 Become a [financial contributor](https://opencollective.com/miso/contribute) and help us sustain our project and community. We are very grateful and thankful for our individual sponsors.
 
