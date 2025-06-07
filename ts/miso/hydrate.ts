@@ -156,15 +156,6 @@ function check(result: boolean, vtree: VTree, context: Context): boolean {
           console.warn('Property class differs', vtree['props'][key], context['getAttribute'](vtree['domRef'], 'class'));
           result = false;
         }
-      } else if (!context['getAttribute'](vtree['domRef'], key)) {
-      if (vtree['props'][key] !== context['getAttribute'](vtree['domRef'], key)) {
-          console.warn(
-            'Property ' + key + ' differs',
-            vtree['props'][key],
-            context['getAttribute'](vtree['domRef'], key),
-          );
-          result = false;
-        }
       } else if (vtree['props'][key] !== context['getAttribute'](vtree['domRef'], key)) {
         console.warn('Property ' + key + ' differs', vtree['props'][key], context['getAttribute'](vtree['domRef'], key));
         result = false;
