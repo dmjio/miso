@@ -1,9 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP                       #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE TemplateHaskell           #-}
-{-# LANGUAGE OverloadedStrings         #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Util.Lexer
 -- Copyright   :  (C) 2016-2025 David M. Johnson (@dmjio)
@@ -64,7 +59,7 @@ data Location
   } deriving Eq
 ----------------------------------------------------------------------------
 instance Show Location where
-  show (Location line col) = show line <> " " <> show col
+  show (Location l col) = show l <> " " <> show col
 ----------------------------------------------------------------------------
 getStartColumn :: Location -> Int
 getStartColumn = fst . column
@@ -83,7 +78,7 @@ newtype Lexer token
   }
 ----------------------------------------------------------------------------
 oops :: Lexer token
-oops = Lexer $ \stream -> Left (streamError stream)
+oops = Lexer $ \s -> Left (streamError s)
 ----------------------------------------------------------------------------
 streamError :: Stream -> LexerError
 streamError (Stream xs l) = unexpected xs l
@@ -145,9 +140,9 @@ peek = Lexer $ \ys ->
 satisfy :: (Char -> Bool) -> Lexer Char
 satisfy predicate = Lexer $ \ys ->
   case ys of
-    Stream stream l ->
-      case MS.uncons stream of
-        Nothing -> Left (unexpected stream l)
+    Stream s l ->
+      case MS.uncons s of
+        Nothing -> Left (unexpected s l)
         Just (z,zs)
           | predicate z -> Right (z, Stream zs l)
           | otherwise -> Left (unexpected zs l)
@@ -199,16 +194,16 @@ withLocation lexer = do
   result <- lexer
   let
     adjustLoc :: Location -> MisoString -> Location
-    adjustLoc l token = MS.foldl' adjust (next l) token
+    adjustLoc l = MS.foldl' adjust (next l)
 
   setLocation =<< adjustLoc <$> getLocation <*> pure (MS.ms result)
   Located result <$> getLocation
     where
       next :: Location -> Location
-      next (Location line (_, end)) = Location line (end, end)
+      next (Location l (_, end)) = Location l (end, end)
 
       adjust :: Location -> Char -> Location
-      adjust (Location line (_, _)) '\n'       = Location (line + 1) (1,1)
-      adjust (Location line (start, end)) '\t' = Location line (start, end + 8)
-      adjust (Location line (start, end))   _  = Location line (start, end + 1)
+      adjust (Location l (_, _)) '\n'       = Location (l + 1) (1,1)
+      adjust (Location l (start, end)) '\t' = Location l (start, end + 8)
+      adjust (Location l (start, end))   _  = Location l (start, end + 1)
 ----------------------------------------------------------------------------
