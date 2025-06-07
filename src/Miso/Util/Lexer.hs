@@ -15,8 +15,6 @@ module Miso.Util.Lexer
   , LexerError (..)
   , Stream (..)
     -- ** Combinators
-  , oneOf
-  , enclosed
   , getStartColumn
   , zeroLocation
   , initialLocation
@@ -182,12 +180,6 @@ string prefix = Lexer $ \s ->
           Right (prefix, Stream (MS.drop (MS.length prefix) ys) l)
       | otherwise ->
           Left (unexpected ys l)
-----------------------------------------------------------------------------
-oneOf :: Alternative f => [f a] -> f a
-oneOf = foldr (<|>) empty
-----------------------------------------------------------------------------
-enclosed :: Applicative f => f a -> f b -> f c -> f c
-enclosed l r x = l *> x <* r
 ----------------------------------------------------------------------------
 withLocation :: ToMisoString token => Lexer token -> Lexer (Located token)
 withLocation lexer = do

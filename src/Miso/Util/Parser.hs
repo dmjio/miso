@@ -16,22 +16,14 @@ module Miso.Util.Parser
     -- ** Combinators
   , parse
   , satisfy
-  , sepBy
-  , sepBy1
-  , between
-  , optionalDefault
-  , exists
   , peek
   , token_
-  , oneOf
-  , enclosed
   ) where
 ----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
 import           Control.Monad.Fail (MonadFail (..))
 #endif
 import           Control.Applicative
-import           Data.Maybe
 ----------------------------------------------------------------------------
 import           Miso.Util.Lexer (LexerError)
 ----------------------------------------------------------------------------
@@ -95,27 +87,6 @@ satisfy f = Parser $ \input ->
 ----------------------------------------------------------------------------
 token_ :: Eq token => token -> Parser token token
 token_ t = satisfy (==t)
-----------------------------------------------------------------------------
-sepBy1 :: Alternative m => m sep -> m a -> m [a]
-sepBy1 sep p = (:) <$> p <*> many (sep *> p)
-----------------------------------------------------------------------------
-sepBy :: Alternative m => m sep -> m a -> m [a]
-sepBy sep p = sepBy1 sep p <|> pure []
-----------------------------------------------------------------------------
-between :: Applicative f => f a -> f b -> f c -> f (b, c)
-between c l r = liftA2 (,) l (c *> r)
-----------------------------------------------------------------------------
-enclosed :: Applicative f => f a -> f b -> f c -> f c
-enclosed l r x = l *> x <* r
-----------------------------------------------------------------------------
-oneOf :: Alternative f => [f a] -> f a
-oneOf = foldr (<|>) empty
-----------------------------------------------------------------------------
-optionalDefault :: Alternative f => b -> f b -> f b
-optionalDefault def p = fromMaybe def <$> optional p
-----------------------------------------------------------------------------
-exists :: Alternative f => f a -> f Bool
-exists p = isJust <$> optional p
 ----------------------------------------------------------------------------
 peek :: Parser a a
 peek = Parser $ \tokens ->
