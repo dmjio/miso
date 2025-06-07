@@ -1,4 +1,4 @@
-import { VTree, Context } from '../types';
+import { Context } from '../types';
 
 const context : Context = {
   'addEventListener' : (mount, event, listener, capture) => {
