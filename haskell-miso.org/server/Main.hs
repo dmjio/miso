@@ -32,7 +32,7 @@ import Network.Wai.Middleware.RequestLogger (logStdout)
 import Servant
 import qualified System.IO as IO
 
-import Miso hiding (run)
+import Miso hiding (run, display)
 import Miso.String
 
 #ifdef WASM

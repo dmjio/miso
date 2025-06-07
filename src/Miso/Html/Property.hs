@@ -113,6 +113,10 @@ import           Miso.Html.Types
 import           Miso.Property
 import           Miso.String (MisoString, intercalate)
 -----------------------------------------------------------------------------
+-- | Define multiple classes conditionally
+--
+-- > div_ [ classList_ [ ("empty", null items) ] [ ]
+--
 classList_ ::  [(MisoString, Bool)] -> Attribute action
 classList_ xs =
   textProp "class" $ intercalate (" " :: MisoString) [ t | (t, True) <- xs ]

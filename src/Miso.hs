@@ -47,6 +47,8 @@ module Miso
     -- * Html
   , module Miso.Html
   , module Miso.Render
+    -- * Property
+  , module Miso.Property
     -- * Router
   , module Miso.Router
     -- * Run
@@ -113,7 +115,7 @@ miso f = withJS $ do
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    FFI.setBodyComponent name
+    FFI.setComponentId name
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
@@ -131,7 +133,7 @@ startComponent app@Component {..} = withJS $
     renderStyles styles
     vtree <- runView Draw (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    FFI.setBodyComponent name
+    FFI.setComponentId name
     mount <- mountElement name
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)

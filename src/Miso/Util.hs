@@ -20,10 +20,8 @@ module Miso.Util
   ) where
 -----------------------------------------------------------------------------
 import           Data.Maybe (isJust, fromMaybe)
-import           Control.Applicative (Alternative, many, empty, (<|>), optional, liftA2)
+import           Control.Applicative (Alternative, many, empty, (<|>), optional)
 import           Data.Foldable (toList)
------------------------------------------------------------------------------
-import           Miso.Html (View)
 -----------------------------------------------------------------------------
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
@@ -40,7 +38,7 @@ withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
 -- | Hides the @View@s if the condition is False. Shows them when the condition
 -- is True.
-conditionalViews :: Bool -> [View action] -> [View action]
+conditionalViews :: Bool -> [view] -> [view]
 conditionalViews condition views =
     if condition
     then views
@@ -65,5 +63,5 @@ sepBy :: Alternative m => m sep -> m a -> m [a]
 sepBy sep p = sepBy1 sep p <|> pure []
 ----------------------------------------------------------------------------
 between :: Applicative f => f a -> f b -> f c -> f (b, c)
-between c l r = liftA2 (,) l (c *> r)
+between c l r = (,) <$> l <*> (c *> r)
 ----------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { diff } from '../miso/dom';
 import { vnode, vcomp, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
 import { VNode, VTree } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+import { context } from '../miso/context/dom';
 
 /* silence */
 beforeAll(() => {
@@ -18,49 +19,49 @@ afterEach(() => {
 
 describe('DOM tests', () => {
   test('Should be null when diffing two null virtual DOMs', () => {
-    diff(null, null, document.body);
+    diff(null, null, document.body, context);
     expect(document.body.childNodes.length).toBe(0);
   });
 
   test('Should create a new text node', () => {
     var newNode = vtext('foo');
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
     expect(newNode.domRef.textContent).toBe('foo');
   });
 
   test('Should window diff two identical text nodes', () => {
     var currentNode = vtext('foo');
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef.textContent).toBe('foo');
     var newNode = vtext('foo');
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect('foo').toBe(newNode.domRef.textContent);
   });
 
   test('Should window diff two window different text nodes', () => {
     var currentNode = vtext('foo');
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef.textContent).toBe('foo');
     var newNode = vtext('bar');
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef.textContent).toBe('bar');
   });
 
   test('Should create a new DOM node', () => {
     var newNode = vnode({});
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create an SVG DOM node', () => {
     var newNode = vnode({ ns: 'svg' });
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create a MathML DOM node', () => {
     var newNode = vnode({ ns: 'mathml', tag: 'math' });
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
     expect(document.body.children[0].namespaceURI).toBe(
       'http://www.w3.org/1998/Math/MathML',
     );
@@ -75,7 +76,7 @@ describe('DOM tests', () => {
       },
       ns: 'html'
     });
-    diff(null, tree, document.body);
+    diff(null, tree, document.body, context);
     expect(drawCount).toBe(1);
   });
 
@@ -87,7 +88,7 @@ describe('DOM tests', () => {
         href: 'https://google.com',
       },
     });
-    diff(null, tree, document.body);
+    diff(null, tree, document.body, context);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
@@ -104,7 +105,7 @@ describe('DOM tests', () => {
         href: 'https://google.com',
       },
     });
-    diff(null, tree1, document.body);
+    diff(null, tree1, document.body, context);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
@@ -118,7 +119,7 @@ describe('DOM tests', () => {
         href: 'https://yahoo.com',
       },
     });
-    diff(tree1, tree2, document.body);
+    diff(tree1, tree2, document.body, context);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
@@ -135,7 +136,7 @@ describe('DOM tests', () => {
         rx: '100',
       },
     });
-    diff(null, tree, document.body);
+    diff(null, tree, document.body, context);
     expect(document.body.children[0].getAttribute('rx')).toBe('100');
   });
 
@@ -147,7 +148,7 @@ describe('DOM tests', () => {
         rx: '100',
       },
     });
-    diff(null, tree1, document.body);
+    diff(null, tree1, document.body, context);
     expect(document.body.children[0].getAttribute('rx')).toBe('100');
     var tree2 = vnode({
       tag: 'ellipse',
@@ -156,21 +157,21 @@ describe('DOM tests', () => {
         rx: '200',
       },
     });
-    diff(tree1, tree2, document.body);
+    diff(tree1, tree2, document.body, context);
     expect(document.body.children[0].getAttribute('rx')).toBe('200');
   });
 
   test('Should replace a Node with a new Node of a window different tag', () => {
     // populate DOM
     var tree1 = vnode({ tag: 'div' });
-    diff(null, tree1, document.body);
+    diff(null, tree1, document.body, context);
 
     // Test node was populated
     expect(document.body.children.length).toBe(1);
 
     // Replace node
     var tree2 = vnode({ tag: 'a' });
-    diff(tree1, tree2, document.body);
+    diff(tree1, tree2, document.body, context);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('A');
@@ -179,7 +180,7 @@ describe('DOM tests', () => {
   test('Should create children', () => {
     // populate DOM
     var tree = vnode({ children: [vnode({})] });
-    diff(null, tree, document.body);
+    diff(null, tree, document.body, context);
     expect(tree.domRef.children.length).toBe(1);
     expect(tree.children.length).toBe(1);
   });
@@ -187,35 +188,35 @@ describe('DOM tests', () => {
   test('Should remove a child', () => {
     // populate DOM
     var tree1 = vnode({ children: [vnode({})] });
-    diff(null, tree1, document.body);
+    diff(null, tree1, document.body, context);
     expect(tree1.domRef.children.length).toBe(1);
 
     // remove children from DOM
     var tree2 = vnode({ children: [] });
-    diff(tree1, tree2, document.body);
+    diff(tree1, tree2, document.body, context);
     expect(tree2.domRef.childNodes.length).toBe(0);
   });
 
   test('Should replace Node with TextNode', () => {
     var node = vnode({});
-    diff(null, node, document.body);
+    diff(null, node, document.body, context);
     expect(document.body.childNodes.length).toBe(1);
     var textNode = vtext('fooo');
-    diff(node, textNode, document.body);
+    diff(node, textNode, document.body, context);
     expect(document.body.childNodes[0].textContent).toBe('fooo');
   });
 
   test('Should replace TextNode with Node', () => {
     // populate DOM
     var textNode = vtext('fooo');
-    diff(null, textNode, document.body);
+    diff(null, textNode, document.body, context);
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
 
     // Replace node
     var node = vnode({});
-    diff(textNode, node, document.body);
+    diff(textNode, node, document.body, context);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
@@ -224,13 +225,13 @@ describe('DOM tests', () => {
   test('Should remove a DOM node', () => {
     // populate DOM
     var newNode = vnode({});
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
 
     // Test node was populated
     expect(document.body.children.length).toBe(1);
 
     // Remove node
-    diff(newNode, null, document.body);
+    diff(newNode, null, document.body, context);
 
     // Test node is removed from DOM
     expect(document.body.children.length).toBe(0);
@@ -241,7 +242,7 @@ describe('DOM tests', () => {
     var currentNode = vnode({
       props: { id: 'a' },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef['id']).toBe('a');
   });
 
@@ -250,12 +251,12 @@ describe('DOM tests', () => {
     var currentNode = vnode({
       props: { id: 'a' },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
 
     var newNode = vnode({
       props: { id: 'a' },
     });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(currentNode.domRef).toBe(newNode.domRef);
   });
 
@@ -266,7 +267,7 @@ describe('DOM tests', () => {
         lol: 'lol',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
   });
 
@@ -277,7 +278,7 @@ describe('DOM tests', () => {
         lol: 'lol',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     var newNode = vnode({
@@ -286,7 +287,7 @@ describe('DOM tests', () => {
       },
     });
 
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lolz');
   });
 
@@ -297,36 +298,36 @@ describe('DOM tests', () => {
         lol: 'lol',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
 
     // test property change
     var newNode = vnode({});
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef.getAttribute('lol')).toBe(null);
   });
 
   test('Should remove a property from DOM node', () => {
     // populate DOM
     var currentNode = vnode({ props: { id: 'someid' } });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
     var newNode = vnode({});
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef['id']).toBe('');
   });
 
   test('Should change a property from DOM node', () => {
     // populate DOM
     var currentNode = vnode({ props: { id: 'someid' } });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
     var newNode = vnode({ props: { id: 'foo' } });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef['id']).toBe('foo');
   });
 
@@ -337,7 +338,7 @@ describe('DOM tests', () => {
         color: 'red',
       },
     });
-    diff(null, newNode, document.body);
+    diff(null, newNode, document.body, context);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
@@ -348,11 +349,11 @@ describe('DOM tests', () => {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
 
     // test css change
     var newNode = vnode({});
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef.style['color']).toBe('');
   });
 
@@ -363,7 +364,7 @@ describe('DOM tests', () => {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
 
     // test css change
     var newNode = vnode({
@@ -371,7 +372,7 @@ describe('DOM tests', () => {
         color: 'blue',
       },
     });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef.style['color']).toBe('blue');
   });
 
@@ -382,7 +383,7 @@ describe('DOM tests', () => {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
 
     // test css no-op change
     var newNode = vnode({
@@ -390,7 +391,7 @@ describe('DOM tests', () => {
         color: 'red',
       },
     });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
@@ -402,7 +403,7 @@ describe('DOM tests', () => {
         beforeCreated++;
       }
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(beforeCreated).toBe(1);
   });
 
@@ -419,10 +420,10 @@ describe('DOM tests', () => {
       },
     });
 
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(create).toBe(1);
 
-    diff(currentNode, null, document.body);
+    diff(currentNode, null, document.body, context);
     expect(destroy).toBe(1);
   });
 
@@ -451,12 +452,12 @@ describe('DOM tests', () => {
         unmount++;
       }
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(beforeMounted).toBe(1);
     expect(mount).toBe(1);
     expect(mounted).toBe(1);
 
-    diff(currentNode, null, document.body);
+    diff(currentNode, null, document.body, context);
     expect(beforeUnmounted).toBe(1);
     expect(unmounted).toBe(1);
     expect(unmount).toBe(1);
@@ -476,10 +477,10 @@ describe('DOM tests', () => {
       },
     });
 
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(create).toBe(1);
 
-    diff(currentNode, null, document.body);
+    diff(currentNode, null, document.body, context);
     expect(destroy).toBe(1);
   });
 
@@ -498,8 +499,8 @@ describe('DOM tests', () => {
       },
       children: [child],
     });
-    diff(null, parent, document.body);
-    diff(parent, null, document.body);
+    diff(null, parent, document.body, context);
+    diff(parent, null, document.body, context);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
@@ -520,8 +521,8 @@ describe('DOM tests', () => {
       },
       children: [child],
     });
-    diff(null, parent, document.body);
-    diff(parent, null, document.body);
+    diff(null, parent, document.body, context);
+    diff(parent, null, document.body, context);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
@@ -533,22 +534,22 @@ describe('DOM tests', () => {
               destroy++;
           },
       });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
       var newNode = vnode({
           onDestroyed : () => {
               destroy++;
           },
       });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     expect(destroy).toBe(0);
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
       var newKeyedNode = vnode({
           onDestroyed : () => {
               destroy++;
           },
           key : 'key-2'
       });
-    diff(currentNode, newKeyedNode, document.body);
+    diff(currentNode, newKeyedNode, document.body, context);
     expect(destroy).toBe(1);
   });
 
@@ -562,7 +563,7 @@ describe('DOM tests', () => {
       ],
       key: 'key-1',
     });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
     var newNode = vnode({
       children: [
         vnodeKeyed('div', 'a'),
@@ -571,7 +572,7 @@ describe('DOM tests', () => {
       ],
       key: 'key-1',
     });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -587,11 +588,11 @@ describe('DOM tests', () => {
     var currentNode = vnode({
       children : [vnodeKeyed('div', '1')],
     });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
     var newNode = vnode({
         children : [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
     });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -607,11 +608,11 @@ describe('DOM tests', () => {
     var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')],
     });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode = vnode({
           children : [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -627,11 +628,11 @@ describe('DOM tests', () => {
     var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')],
     });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
     var newNode = vnode({
         children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -647,11 +648,11 @@ describe('DOM tests', () => {
     var currentNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
     });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
     var newNode = vnode({
         children : [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -683,11 +684,11 @@ describe('DOM tests', () => {
         newKids.push(vnodeKeyed('div', i.toString()));
       }
     }
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode : any = vnode({
           children : newKids,
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -718,7 +719,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
       ],
       });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
     var newNode = vnode({
         children : [
         vnodeKeyed('div', 'a'),
@@ -728,7 +729,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'd'),
         ],
     });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -750,7 +751,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
           ],
       });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode = vnode({
           children : [
         vnodeKeyed('div', 'b'),
@@ -760,7 +761,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'a'),
       ],
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -781,7 +782,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
       ],
       });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode = vnode({
           children : [
         vnodeKeyed('div', 'b'),
@@ -790,7 +791,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'a'),
       ],
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -806,11 +807,11 @@ describe('DOM tests', () => {
       var currentNode = vnode({
           children : [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')],
       });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode = vnode({
           children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')]
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -832,7 +833,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'g'),
       ]
       });
-    diff(null, currentNode, body);
+    diff(null, currentNode, body, context);
       var newNode = vnode({
           children:
       [
@@ -843,7 +844,7 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'k'),
       ]
       });
-    diff(currentNode, newNode, body);
+    diff(currentNode, newNode, body, context);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -858,11 +859,11 @@ describe('DOM tests', () => {
       var currentNode = vnode({
           children : [vnodeKeyed('div', 'a')]
       });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     var newNode = vnode({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')]
     });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -880,7 +881,7 @@ describe('DOM tests', () => {
         vtextKeyed('baz','3'),
       ]
     });
-    diff(null, currentNode, document.body);
+    diff(null, currentNode, document.body, context);
     var newNode = vnode({
       tag: 'div',
       children: [
@@ -889,7 +890,7 @@ describe('DOM tests', () => {
         vtextKeyed ('baz','1'),
       ]
     });
-    diff(currentNode, newNode, document.body);
+    diff(currentNode, newNode, document.body, context);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(newNode.children[i].key).toBe(currentNode.children[i].key);

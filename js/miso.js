@@ -1,4 +1,5 @@
 // ts/miso/util.ts
+var version = "1.9.0.0";
 function callFocus(id, delay) {
   var setFocus = function() {
     var e = document.getElementById(id);
@@ -43,7 +44,6 @@ function shouldSync(node) {
   }
   return enterSync;
 }
-var version = "1.9.0.0";
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -75,42 +75,43 @@ function mkVNode() {
 }
 
 // ts/miso/dom.ts
-function diff(currentObj, newObj, parent) {
+function diff(currentObj, newObj, parent, context) {
   if (!currentObj && !newObj)
     return;
   else if (!currentObj && newObj)
-    create(newObj, parent);
+    create(newObj, parent, context);
   else if (!newObj)
-    destroy(currentObj, parent);
+    destroy(currentObj, parent, context);
   else {
     if (currentObj["type"] === newObj["type"]) {
-      diffNodes(currentObj, newObj, parent);
+      diffNodes(currentObj, newObj, parent, context);
     } else {
-      replace(currentObj, newObj, parent);
+      replace(currentObj, newObj, parent, context);
     }
   }
 }
-function replace(c, n, parent) {
+function replace(c, n, parent, context) {
   callBeforeDestroyedRecursive(c);
   if (n["type"] === "vtext") {
-    n["domRef"] = document.createTextNode(n["text"]);
-    parent.replaceChild(n["domRef"], c["domRef"]);
+    n["domRef"] = context["createTextNode"](n["text"]);
+    context["replaceChild"](parent, n["domRef"], c["domRef"]);
   } else {
-    createElement(n, (ref) => {
-      parent.replaceChild(ref, c["domRef"]);
+    createElement(n, context, (newChild) => {
+      context["replaceChild"](parent, newChild, c["domRef"]);
     });
   }
   callDestroyedRecursive(c);
 }
-function destroy(obj, parent) {
+function destroy(obj, parent, context) {
   callBeforeDestroyedRecursive(obj);
-  parent.removeChild(obj["domRef"]);
+  context["removeChild"](parent, obj["domRef"]);
   callDestroyedRecursive(obj);
 }
-function diffNodes(c, n, parent) {
+function diffNodes(c, n, parent, context) {
   if (c["type"] === "vtext") {
-    if (c["text"] !== n["text"])
-      c["domRef"].textContent = n["text"];
+    if (c["text"] !== n["text"]) {
+      context["setTextContent"](c["domRef"], n["text"]);
+    }
     n["domRef"] = c["domRef"];
     return;
   }
@@ -122,9 +123,9 @@ function diffNodes(c, n, parent) {
   };
   if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
     n["domRef"] = c["domRef"];
-    populate(c, n);
+    populate(c, n, context);
   } else {
-    replace(c, n, parent);
+    replace(c, n, parent, context);
   }
 }
 function callDestroyedRecursive(obj) {
@@ -152,51 +153,51 @@ function callBeforeDestroyedRecursive(obj) {
     callBeforeDestroyedRecursive(obj["children"][i]);
   }
 }
-function callCreated(obj) {
+function callCreated(obj, context) {
   if (obj["onCreated"])
     obj["onCreated"]();
   if (obj["type"] === "vcomp")
-    mountComponent(obj);
+    mountComponent(obj, context);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
     obj["onBeforeCreated"]();
 }
-function populate(c, n) {
+function populate(c, n, context) {
   if (n["type"] !== "vtext") {
     if (!c)
       c = vnode({});
-    diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
-    diffCss(c["css"], n["css"], n["domRef"]);
+    diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg", context);
+    diffCss(c["css"], n["css"], n["domRef"], context);
     if (n["type"] === "vnode") {
-      diffChildren(c, n, n["domRef"]);
+      diffChildren(c, n, n["domRef"], context);
     }
     drawCanvas(n);
   }
 }
-function diffProps(cProps, nProps, node, isSvg) {
+function diffProps(cProps, nProps, node, isSvg, context) {
   var newProp;
   for (const c in cProps) {
     newProp = nProps[c];
     if (newProp === undefined) {
       if (isSvg || !(c in node)) {
-        node.removeAttribute(cProps[c]);
+        context["removeAttribute"](node, cProps[c]);
       } else {
-        node[c] = "";
+        context["setAttribute"](node, c, "");
       }
     } else {
       if (newProp === cProps[c] && c !== "checked" && c !== "value")
         continue;
       if (isSvg) {
         if (c === "href") {
-          node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+          context["setAttributeNS"](node, "http://www.w3.org/1999/xlink", "href", newProp);
         } else {
-          node.setAttribute(c, newProp);
+          context["setAttribute"](node, c, newProp);
         }
       } else if (c in node && !(c === "list" || c === "form")) {
         node[c] = newProp;
       } else {
-        node.setAttribute(c, newProp);
+        context["setAttribute"](node, c, newProp);
       }
     }
   }
@@ -206,57 +207,44 @@ function diffProps(cProps, nProps, node, isSvg) {
     newProp = nProps[n];
     if (isSvg) {
       if (n === "href") {
-        node.setAttributeNS("http://www.w3.org/1999/xlink", "href", newProp);
+        context["setAttributeNS"](node, "http://www.w3.org/1999/xlink", "href", newProp);
       } else {
-        node.setAttribute(n, newProp);
+        context["setAttribute"](node, n, newProp);
       }
     } else if (n in node && !(n === "list" || n === "form")) {
       node[n] = nProps[n];
     } else {
-      node.setAttribute(n, newProp);
+      context["setAttribute"](node, n, newProp);
     }
   }
 }
-function diffCss(cCss, nCss, node) {
-  var result;
-  for (const c in cCss) {
-    result = nCss[c];
-    if (!result) {
-      node.style[c] = "";
-    } else if (result !== cCss[c]) {
-      node.style[c] = result;
-    }
-  }
-  for (const n in nCss) {
-    if (cCss && cCss[n])
-      continue;
-    node.style[n] = nCss[n];
-  }
+function diffCss(cCss, nCss, node, context) {
+  context["setStyle"](cCss, nCss, node);
 }
-function diffChildren(c, n, parent) {
-  if (c.shouldSync && n.shouldSync) {
-    syncChildren(c.children, n.children, parent);
+function diffChildren(c, n, parent, context) {
+  if (c["shouldSync"] && n["shouldSync"]) {
+    syncChildren(c.children, n.children, parent, context);
   } else {
     const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
     for (let i = 0;i < longest; i++)
-      diff(c.children[i], n.children[i], parent);
+      diff(c.children[i], n.children[i], parent, context);
   }
 }
-function populateDomRef(obj) {
+function populateDomRef(obj, context) {
   if (obj["ns"] === "svg") {
-    obj["domRef"] = document.createElementNS("http://www.w3.org/2000/svg", obj["tag"]);
+    obj["domRef"] = context["createElementNS"]("http://www.w3.org/2000/svg", obj["tag"]);
   } else if (obj["ns"] === "mathml") {
-    obj["domRef"] = document.createElementNS("http://www.w3.org/1998/Math/MathML", obj["tag"]);
+    obj["domRef"] = context["createElementNS"]("http://www.w3.org/1998/Math/MathML", obj["tag"]);
   } else {
-    obj["domRef"] = document.createElement(obj["tag"]);
+    obj["domRef"] = context["createElement"](obj["tag"]);
   }
 }
-function createElement(obj, cb) {
+function createElement(obj, context, attach) {
   callBeforeCreated(obj);
-  populateDomRef(obj);
-  cb(obj["domRef"]);
-  populate(null, obj);
-  callCreated(obj);
+  populateDomRef(obj, context);
+  attach(obj["domRef"]);
+  populate(null, obj, context);
+  callCreated(obj, context);
 }
 function drawCanvas(obj) {
   if (obj["tag"] === "canvas" && "draw" in obj) {
@@ -268,33 +256,34 @@ function unmountComponent(obj) {
     obj["onUnmounted"](obj["data-component-id"]);
   obj["unmount"]();
 }
-function mountComponent(obj) {
-  const componentId = obj["data-component-id"], nodeList = document.querySelectorAll("[data-component-id='" + componentId + "']");
+function mountComponent(obj, context) {
+  const componentId = obj["data-component-id"];
+  const nodeList = context["querySelectorAll"]("[data-component-id='" + componentId + "']");
   if (nodeList.length > 0) {
     console.error('AlreadyMountedException: Component "' + componentId + "' is already mounted");
     return;
   }
-  obj["domRef"].setAttribute("data-component-id", componentId);
+  context["setAttribute"](obj["domRef"], "data-component-id", componentId);
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
   obj["mount"]((component) => {
     obj["children"].push(component);
-    obj["domRef"].appendChild(component["domRef"]);
+    context["appendChild"](obj["domRef"], component["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"](componentId);
+      obj["onMounted"]();
   });
 }
-function create(obj, parent) {
+function create(obj, parent, context) {
   if (obj["type"] === "vtext") {
-    obj["domRef"] = document.createTextNode(obj["text"]);
-    parent.appendChild(obj["domRef"]);
+    obj["domRef"] = context["createTextNode"](obj["text"]);
+    context["appendChild"](parent, obj["domRef"]);
   } else {
-    createElement(obj, (e) => {
-      parent.appendChild(e);
+    createElement(obj, context, (child) => {
+      context["appendChild"](parent, child);
     });
   }
 }
-function syncChildren(os, ns, parent) {
+function syncChildren(os, ns, parent, context) {
   var oldFirstIndex = 0, newFirstIndex = 0, oldLastIndex = os.length - 1, newLastIndex = ns.length - 1, tmp, nFirst, nLast, oLast, oFirst, found, node;
   for (;; ) {
     if (newFirstIndex > newLastIndex && oldFirstIndex > oldLastIndex) {
@@ -305,34 +294,34 @@ function syncChildren(os, ns, parent) {
     oFirst = os[oldFirstIndex];
     oLast = os[oldLastIndex];
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent);
-      parent.insertBefore(nFirst["domRef"], oFirst ? oFirst["domRef"] : null);
+      diff(null, nFirst, parent, context);
+      context["insertBefore"](parent, nFirst["domRef"], oFirst ? oFirst["domRef"] : null);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        parent.removeChild(os[oldLastIndex--]["domRef"]);
+        context["removeChild"](parent, os[oldLastIndex--]["domRef"]);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
     } else if (oFirst["key"] === nFirst["key"]) {
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
+      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
     } else if (oLast["key"] === nLast["key"]) {
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+      diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst["key"] === nLast["key"] && nFirst["key"] === oLast["key"]) {
-      swapDOMRefs(oLast["domRef"], oFirst["domRef"], parent);
+      context["swapDOMRefs"](oLast["domRef"], oFirst["domRef"], parent);
       swap(os, oldFirstIndex, oldLastIndex);
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
+      diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst["key"] === nLast["key"]) {
-      parent.insertBefore(oFirst["domRef"], oLast["domRef"].nextSibling);
+      context["insertBefore"](parent, oFirst["domRef"], oLast["domRef"].nextSibling);
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+      diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast["key"] === nFirst["key"]) {
-      parent.insertBefore(oLast["domRef"], oFirst["domRef"]);
+      context["insertBefore"](parent, oLast["domRef"], oFirst["domRef"]);
       os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-      diff(os[oldFirstIndex++], nFirst, parent);
+      diff(os[oldFirstIndex++], nFirst, parent, context);
       newFirstIndex++;
     } else {
       found = false;
@@ -347,12 +336,12 @@ function syncChildren(os, ns, parent) {
       }
       if (found) {
         os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
-        diff(os[oldFirstIndex++], nFirst, parent);
-        parent.insertBefore(node["domRef"], os[oldFirstIndex]["domRef"]);
+        diff(os[oldFirstIndex++], nFirst, parent, context);
+        context["insertBefore"](parent, node["domRef"], os[oldFirstIndex]["domRef"]);
         newFirstIndex++;
       } else {
-        createElement(nFirst, (e) => {
-          parent.insertBefore(e, oFirst["domRef"]);
+        createElement(nFirst, context, (e) => {
+          context["insertBefore"](parent, e, oFirst["domRef"]);
         });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
@@ -361,11 +350,6 @@ function syncChildren(os, ns, parent) {
     }
   }
 }
-function swapDOMRefs(a, b, p) {
-  const tmp = a.nextSibling;
-  p.insertBefore(a, b);
-  p.insertBefore(b, tmp);
-}
 function swap(os, l, r) {
   const k = os[l];
   os[l] = os[r];
@@ -373,37 +357,47 @@ function swap(os, l, r) {
 }
 
 // ts/miso/event.ts
-function delegate(mount, events, getVTree, debug) {
+function delegate(mount, events, getVTree, debug, context) {
   for (const event of events) {
-    mount.addEventListener(event["name"], function(e) {
-      listener(e, mount, getVTree, debug);
-      e.stopPropagation();
+    context.addEventListener(mount, event["name"], function(e) {
+      listener(e, mount, getVTree, debug, context);
     }, event["capture"]);
   }
 }
-function undelegate(mount, events, getVTree, debug) {
+function undelegate(mount, events, getVTree, debug, context) {
   for (const event of events) {
     mount.removeEventListener(event["name"], function(e) {
-      listener(e, mount, getVTree, debug);
+      listener(e, mount, getVTree, debug, context);
     }, event["capture"]);
   }
 }
-function listener(e, mount, getVTree, debug) {
-  getVTree(function(obj) {
-    if (e.target) {
-      delegateEvent(e, obj, buildTargetToElement(mount, e.target), [], debug);
+function listener(e, mount, getVTree, debug, context) {
+  getVTree(function(vtree) {
+    if (Array.isArray(e)) {
+      for (var i in e) {
+        dispatch(e[i], vtree, mount, debug, context);
+      }
+    } else {
+      dispatch(e, vtree, mount, debug, context);
     }
   });
 }
-function buildTargetToElement(element, target) {
+function dispatch(ev, vtree, mount, debug, context) {
+  var target = context["getTarget"](ev);
+  if (target) {
+    var stack = buildTargetToElement(mount, target, context);
+    delegateEvent(ev, vtree, stack, [], debug, context);
+  }
+}
+function buildTargetToElement(element, target, context) {
   var stack = [];
-  while (element !== target) {
+  while (!context["isEqual"](element, target)) {
     stack.unshift(target);
-    target = target.parentNode;
+    target = context["parentNode"](target);
   }
   return stack;
 }
-function delegateEvent(event, obj, stack, parentStack, debug) {
+function delegateEvent(event, obj, stack, parentStack, debug, context) {
   if (!stack.length) {
     if (debug) {
       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
@@ -411,11 +405,12 @@ function delegateEvent(event, obj, stack, parentStack, debug) {
     return;
   } else if (stack.length > 1) {
     parentStack.unshift(obj);
-    for (const child of obj["children"]) {
+    for (var c in obj["children"]) {
+      var child = obj["children"][c];
       if (child["type"] === "vcomp")
         continue;
-      if (child["domRef"] === stack[1]) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug);
+      if (context["isEqual"](child["domRef"], stack[1])) {
+        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
       }
     }
@@ -501,13 +496,13 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
-function preamble(mountPoint) {
+function preamble(mountPoint, context) {
   var mountChildIdx = 0, node;
   if (!mountPoint) {
     if (document.body.childNodes.length > 0) {
       node = document.body.firstChild;
     } else {
-      node = document.body.appendChild(document.createElement("div"));
+      node = document.body.appendChild(context["createElement"]("div"));
     }
   } else if (mountPoint.childNodes.length === 0) {
     node = mountPoint.appendChild(document.createElement("div"));
@@ -523,20 +518,20 @@ function preamble(mountPoint) {
   }
   return node;
 }
-function hydrate(logLevel, mountPoint, vtree) {
-  const node = preamble(mountPoint);
-  if (!walk(logLevel, vtree, node)) {
+function hydrate(logLevel, mountPoint, vtree, context) {
+  const node = preamble(mountPoint, context);
+  if (!walk(logLevel, vtree, node, context)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
-    while (node.firstChild)
-      node.removeChild(node.lastChild);
+    while (context["firstChild"](node))
+      context["removeChild"](node, context["lastChild"](node));
     vtree["domRef"] = node;
-    populate(null, vtree);
+    populate(null, vtree, context);
     return false;
   } else {
     if (logLevel) {
-      if (!integrityCheck(vtree)) {
+      if (!integrityCheck(vtree, context)) {
         console.warn("[DEBUG_HYDRATE] Integrity check completed with errors");
       } else {
         console.info("[DEBUG_HYDRATE] Successfully prerendered page");
@@ -563,73 +558,73 @@ function parseColor(input) {
       return +x;
     });
 }
-function integrityCheck(vtree) {
-  return check(true, vtree);
+function integrityCheck(vtree, context) {
+  return check(true, vtree, context);
 }
-function check(result, vtree) {
+function check(result, vtree, context) {
   if (vtree["type"] == "vtext") {
-    if (vtree["domRef"].nodeType !== 3) {
+    if (context["getTag"](vtree["domRef"]) !== "#text") {
       console.warn("VText domRef not a TEXT_NODE", vtree);
       result = false;
-    } else if (vtree["text"] !== vtree["domRef"].textContent) {
+    } else if (vtree["text"] !== context["getTextContent"](vtree["domRef"])) {
       console.warn("VText node content differs", vtree);
       result = false;
     }
   } else {
-    if (vtree["tag"].toUpperCase() !== vtree["domRef"].tagName) {
-      console.warn("Integrity check failed, tags differ", vtree["tag"].toUpperCase(), vtree["domRef"].tagName);
+    if (vtree["tag"].toUpperCase() !== context["getTag"](vtree["domRef"]).toUpperCase()) {
+      console.warn("Integrity check failed, tags differ", vtree["tag"].toUpperCase(), context["getTag"](vtree["domRef"]));
       result = false;
     }
-    if ("children" in vtree && vtree["children"].length !== vtree["domRef"].childNodes.length) {
-      console.warn("Integrity check failed, children lengths differ", vtree, vtree.children, vtree["domRef"].childNodes);
+    if ("children" in vtree && vtree["children"].length !== context["children"](vtree["domRef"]).length) {
+      console.warn("Integrity check failed, children lengths differ", vtree, vtree.children, context["children"](vtree["domRef"]));
       result = false;
     }
     for (const key in vtree["props"]) {
       if (key === "href" || key === "src") {
-        const absolute = window.location.origin + "/" + vtree["props"][key], url = vtree["domRef"][key], relative = vtree["props"][key];
+        const absolute = window.location.origin + "/" + vtree["props"][key], url = context["getAttribute"](vtree["domRef"], key), relative = vtree["props"][key];
         if (absolute !== url && relative !== url && relative + "/" !== url && absolute + "/" !== url) {
-          console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"][key]);
+          console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
           result = false;
         }
       } else if (key === "height" || key === "width") {
-        if (parseFloat(vtree["props"][key]) !== parseFloat(vtree["domRef"][key])) {
-          console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"][key]);
+        if (parseFloat(vtree["props"][key]) !== parseFloat(context["getAttribute"](vtree["domRef"], key))) {
+          console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
           result = false;
         }
       } else if (key === "class" || key === "className") {
-        if (vtree["props"][key] !== vtree["domRef"].className) {
-          console.warn("Property class differs", vtree["props"][key], vtree["domRef"].className);
+        if (vtree["props"][key] !== context["getAttribute"](vtree["domRef"], "class")) {
+          console.warn("Property class differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], "class"));
           result = false;
         }
-      } else if (!vtree["domRef"][key]) {
-        if (vtree["props"][key] !== vtree["domRef"].getAttribute(key)) {
-          console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"].getAttribute(key));
+      } else if (!context["getAttribute"](vtree["domRef"], key)) {
+        if (vtree["props"][key] !== context["getAttribute"](vtree["domRef"], key)) {
+          console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
           result = false;
         }
-      } else if (vtree["props"][key] !== vtree["domRef"][key]) {
-        console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"][key]);
+      } else if (vtree["props"][key] !== context["getAttribute"](vtree["domRef"], key)) {
+        console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
         result = false;
       }
     }
     for (const key in vtree["css"]) {
       if (key === "color") {
-        if (parseColor(vtree["domRef"].style[key]).toString() !== parseColor(vtree["css"][key]).toString()) {
-          console.warn("Style " + key + " differs", vtree["css"][key], vtree["domRef"].style[key]);
+        if (parseColor(context["getStyle"](vtree["domRef"], key)).toString() !== parseColor(vtree["css"][key]).toString()) {
+          console.warn("Style " + key + " differs", vtree["css"][key], context["getStyle"](vtree["domRef"], key));
           result = false;
         }
-      } else if (vtree["css"][key] !== vtree["domRef"].style[key]) {
-        console.warn("Style " + key + " differs", vtree["css"][key], vtree["domRef"].style[key]);
+      } else if (vtree["css"][key] !== context["getStyle"](vtree["domRef"], key)) {
+        console.warn("Style " + key + " differs", vtree["css"][key], context["getStyle"](vtree["domRef"], key));
         result = false;
       }
     }
     for (const child of vtree["children"]) {
-      const value = check(result, child);
+      const value = check(result, child, context);
       result = result && value;
     }
   }
   return result;
 }
-function walk(logLevel, vtree, node) {
+function walk(logLevel, vtree, node, context) {
   switch (vtree["type"]) {
     case "vtext":
       vtree["domRef"] = node;
@@ -637,7 +632,7 @@ function walk(logLevel, vtree, node) {
     default:
       vtree["domRef"] = node;
       vtree["children"] = collapseSiblingTextNodes(vtree["children"]);
-      callCreated(vtree);
+      callCreated(vtree, context);
       for (var i = 0;i < vtree["children"].length; i++) {
         const vdomChild = vtree["children"][i];
         const domChild = node.childNodes[i];
@@ -652,7 +647,7 @@ function walk(logLevel, vtree, node) {
               return false;
             }
             if (vdomChild["text"] === domChild.textContent) {
-              vdomChild["domRef"] = node.childNodes[i];
+              vdomChild["domRef"] = context["children"](node)[i];
             } else {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;
@@ -661,19 +656,125 @@ function walk(logLevel, vtree, node) {
           case "vcomp":
             vdomChild["mount"]((component) => {
               vdomChild["children"].push(component);
-              walk(logLevel, vdomChild, node.childNodes[i]);
+              walk(logLevel, vdomChild, node.childNodes[i], context);
             });
             break;
           default:
             if (domChild.nodeType !== 1)
               return false;
             vdomChild["domRef"] = node.childNodes[i];
-            walk(logLevel, vdomChild, vdomChild["domRef"]);
+            walk(logLevel, vdomChild, vdomChild["domRef"], context);
         }
       }
   }
   return true;
 }
+
+// ts/miso/context/dom.ts
+var context = {
+  addEventListener: (mount, event, listener2, capture) => {
+    mount.addEventListener(event, listener2, capture);
+  },
+  firstChild: (node) => {
+    return node.firstChild;
+  },
+  lastChild: (node) => {
+    return node.lastChild;
+  },
+  parentNode: (node) => {
+    return node.parentNode;
+  },
+  createTextNode: (s) => {
+    return document.createTextNode(s);
+  },
+  createElementNS: (ns, tag) => {
+    return document.createElementNS(ns, tag);
+  },
+  appendChild: (parent, child) => {
+    return parent.appendChild(child);
+  },
+  replaceChild: (parent, n, old) => {
+    return parent.replaceChild(n, old);
+  },
+  removeChild: (parent, child) => {
+    parent.removeChild(child);
+  },
+  createElement: (tag) => {
+    return document.createElement(tag);
+  },
+  insertBefore: (parent, child, node) => {
+    return parent.insertBefore(child, node);
+  },
+  swapDOMRefs: (a, b, p) => {
+    const tmp = a.nextSibling;
+    p.insertBefore(a, b);
+    p.insertBefore(b, tmp);
+    return;
+  },
+  querySelectorAll: (sel) => {
+    return document.querySelectorAll(sel);
+  },
+  setStyle: (cCss, nCss, node) => {
+    var result;
+    for (const key in cCss) {
+      result = nCss[key];
+      if (!result) {
+        node.style[key] = "";
+      } else if (result !== cCss[key]) {
+        node.style[key] = result;
+      }
+    }
+    for (const n in nCss) {
+      if (cCss && cCss[n])
+        continue;
+      node.style[n] = nCss[n];
+    }
+  },
+  getStyle: (node, key) => {
+    return node.style[key];
+  },
+  setAttribute: (node, key, value) => {
+    return node.setAttribute(key, value);
+  },
+  getAttribute: (node, key) => {
+    if (key === "class")
+      return node.className;
+    if (key in node)
+      return node[key];
+    return node.getAttribute(key);
+  },
+  setAttributeNS: (node, ns, key, value) => {
+    return node.setAttributeNS(ns, key, value);
+  },
+  removeAttribute: (node, key) => {
+    return node.removeAttribute(key);
+  },
+  setTextContent: (node, text) => {
+    node.textContent = text;
+    return;
+  },
+  getTag: (node) => {
+    return node.nodeName;
+  },
+  getTextContent: (node) => {
+    return node.textContent;
+  },
+  children: (node) => {
+    return node.childNodes;
+  },
+  isEqual: (x, y) => {
+    return x === y;
+  },
+  getTarget: (e) => {
+    return e.target;
+  },
+  setComponentId: (componentId) => {
+    document.body.setAttribute("data-component-id", componentId);
+  },
+  requestAnimationFrame: (callback) => {
+    window.requestAnimationFrame(callback);
+  }
+};
 
 // ts/index.ts
 globalThis["miso"] = {};
@@ -689,3 +790,7 @@ globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["setComponent"] = setComponent;
+globalThis["miso"]["context"] = context;
+globalThis["miso"]["flush"] = function(e) {
+  return;
+};

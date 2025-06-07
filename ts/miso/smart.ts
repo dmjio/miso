@@ -83,6 +83,7 @@ function mkVComp() : VComp {
     onBeforeUnmounted: () => {},
     onMounted: () => {},
     onBeforeMounted: () => {},
+    onCreated: () => {},
   });
 }
 

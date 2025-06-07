@@ -103,12 +103,12 @@ module Miso.Html.Event
   , onWaitingWith
   ) where
 -----------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
------------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Media (Media(..))
-import           Miso.String (MisoString)
 import           Miso.Types (Attribute)
+import           Miso.String (MisoString)
+-----------------------------------------------------------------------------
+import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --

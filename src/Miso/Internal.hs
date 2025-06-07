@@ -63,7 +63,7 @@ import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
 import           Miso.Exception (MisoException(..), exception)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Html
+import           Miso.Html (VTree(..))
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Event (Events)
@@ -101,11 +101,11 @@ initialize Component {..} getView = do
       when (oldName /= newName && oldModel /= newModel) $ do
         newVTree <- runView Draw (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
-        void waitForAnimationFrame
-        diff (Just oldVTree) (Just newVTree) componentMount
-        liftIO $ do
-          atomicWriteIORef componentVTree newVTree
-          atomicWriteIORef componentModel newModel
+        FFI.requestAnimationFrame $ do
+          diff (Just oldVTree) (Just newVTree) componentMount
+          liftIO $ do
+            atomicWriteIORef componentVTree newVTree
+            atomicWriteIORef componentModel newModel
       syncPoint
       eventLoop newModel
   _ <- FFI.forkJSM (eventLoop model)

@@ -1,5 +1,8 @@
 import { VNode } from './types';
 
+/* current miso version */
+export const version: string = '1.9.0.0';
+
 /* various utilities */
 export function callFocus(id: string, delay: number): void {
   var setFocus = function () {
@@ -57,7 +60,6 @@ export function shouldSync (
     if (node.children.length === 0) {
         return false;
     }
-
     /* only sync if keys exist on all children  */
     var enterSync = true;
     for (const child of node.children) {
@@ -68,7 +70,3 @@ export function shouldSync (
     }
     return enterSync;
 }
-
-
-/* current miso version */
-export const version: string = '1.9.0.0';

@@ -3,6 +3,7 @@ import { delegate, undelegate, eventJSON } from '../miso/event';
 import { DOMRef, EventCapture } from '../miso/types';
 import { vnode } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+import { context } from '../miso/context/dom';
 
 /* silence */
 beforeAll(() => {
@@ -46,7 +47,7 @@ describe ('Event tests', () => {
     });
 
     /* initial page draw */
-    diff(null, vtreeParent, document.body);
+    diff(null, vtreeParent, document.body, context);
 
     /* ensure structures match */
     expect(vtreeParent.domRef).toEqual(document.body.childNodes[0] as DOMRef);
@@ -59,7 +60,7 @@ describe ('Event tests', () => {
       cb(vtreeParent);
     };
     const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true);
+    delegate(body, delegatedEvents, getVTree, true, context);
 
     /* initiate click event */
    (vtreeChild.domRef as HTMLElement).click();
@@ -69,7 +70,7 @@ describe ('Event tests', () => {
     expect(result).not.toEqual(null);
 
     /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true);
+    undelegate(document.body, delegatedEvents, getVTree, true, context);
   });
 
 });

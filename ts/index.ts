@@ -13,6 +13,8 @@ import {
   setComponent,
 } from './miso';
 
+import { context } from './miso/context/dom';
+
 /* export globally */
 globalThis['miso'] = {};
 globalThis['miso']['diff'] = diff;
@@ -27,3 +29,5 @@ globalThis['miso']['undelegate'] = undelegate;
 globalThis['miso']['shouldSync'] = shouldSync;
 globalThis['miso']['integrityCheck'] = integrityCheck;
 globalThis['miso']['setComponent'] = setComponent;
+globalThis['miso']['context'] = context;
+globalThis['miso']['flush'] = function (e) { return; }

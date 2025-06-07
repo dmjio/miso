@@ -25,6 +25,7 @@ module Miso.FFI
   , syncCallback
   , syncCallback1
   , asyncCallback
+  , flush
   -- ** Image
   , Image (..)
   , newImage
