@@ -10,9 +10,18 @@
 module Miso.Util
   ( withFoldable
   , conditionalViews
+  , oneOf
+  , enclosed
+  , optionalDefault
+  , exists
+  , sepBy1
+  , sepBy
+  , between
   ) where
 -----------------------------------------------------------------------------
-import           Data.Foldable
+import           Data.Maybe (isJust, fromMaybe)
+import           Control.Applicative (Alternative, many, empty, (<|>), optional, liftA2)
+import           Data.Foldable (toList)
 -----------------------------------------------------------------------------
 import           Miso.Html (View)
 -----------------------------------------------------------------------------
@@ -37,4 +46,24 @@ conditionalViews condition views =
     then views
     else []
 -----------------------------------------------------------------------------
-
+oneOf :: Alternative f => [f a] -> f a
+oneOf = foldr (<|>) empty
+----------------------------------------------------------------------------
+enclosed :: Applicative f => f a -> f b -> f c -> f c
+enclosed l r x = l *> x <* r
+----------------------------------------------------------------------------
+optionalDefault :: Alternative f => b -> f b -> f b
+optionalDefault def p = fromMaybe def <$> optional p
+----------------------------------------------------------------------------
+exists :: Alternative f => f a -> f Bool
+exists p = isJust <$> optional p
+----------------------------------------------------------------------------
+sepBy1 :: Alternative m => m sep -> m a -> m [a]
+sepBy1 sep p = (:) <$> p <*> many (sep *> p)
+----------------------------------------------------------------------------
+sepBy :: Alternative m => m sep -> m a -> m [a]
+sepBy sep p = sepBy1 sep p <|> pure []
+----------------------------------------------------------------------------
+between :: Applicative f => f a -> f b -> f c -> f (b, c)
+between c l r = liftA2 (,) l (c *> r)
+----------------------------------------------------------------------------
