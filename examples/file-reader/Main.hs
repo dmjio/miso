@@ -1,8 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP             #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -21,10 +20,11 @@ import           Language.Javascript.JSaddle ((!), (!!), (#), JSVal, (<#))
 import qualified Language.Javascript.JSaddle as J
 import           Prelude hiding ((!!), null, unlines)
 ----------------------------------------------------------------------------
-import           Miso (App(styles), View,Effect, defaultApp, run, CSS(..), scheduleIO, startApp, io, (=:))
+import           Miso (Component(styles), View,Effect, defaultComponent, run, CSS(..), startComponent, io, io_)
 import qualified Miso as M
 import           Miso.Lens ((.=), Lens, lens)
 import           Miso.String (MisoString, unlines, null)
+import qualified Miso.Style as CSS
 ----------------------------------------------------------------------------
 -- | Model
 newtype Model
@@ -38,10 +38,9 @@ info = lens _info $ \r x -> r { _info = x }
 ----------------------------------------------------------------------------
 -- | Action
 data Action
-  = ReadFile
+  = ReadFile JSVal
   | SetContent MisoString
-  | ClickInput
-  deriving (Show, Eq)
+  | ClickInput JSVal
 ----------------------------------------------------------------------------
 -- | WASM support
 #ifdef WASM
@@ -50,7 +49,7 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { styles =
     [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
     , Style css
@@ -78,13 +77,12 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: App Effect Model Action ()
-app = defaultApp (Model mempty) updateModel viewModel
+app :: Component name Model Action
+app = defaultComponent (Model mempty) updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Update function
-updateModel :: Action -> Effect Model Action ()
-updateModel ReadFile = scheduleIO $ do
-  fileReaderInput <- M.getElementById "fileReader"
+updateModel :: Action -> Effect Model Action
+updateModel (ReadFile fileReaderInput) = io $ do
   file <- fileReaderInput ! ("files" :: String) !! 0
   reader <- J.new (J.jsg ("FileReader" :: String)) ([] :: [JSVal])
   mvar <- liftIO newEmptyMVar
@@ -92,13 +90,13 @@ updateModel ReadFile = scheduleIO $ do
     M.asyncCallback $ do
       result <- J.fromJSValUnchecked =<< reader ! ("result" :: String)
       liftIO (putMVar mvar result)
-  void $ reader # ("readAsText" :: String) $ [file] 
+  void $ reader # ("readAsText" :: String) $ [file]
   SetContent <$> liftIO (readMVar mvar)
 updateModel (SetContent c) = info .= c
-updateModel ClickInput = io $ do
-  fileReader <- M.getElementById "fileReader"
+updateModel (ClickInput button) = io_ $ do
+  fileReader <- button ! ("nextSibling" :: MisoString) -- dmj: gets hidden input
   void $ fileReader # ("click" :: String) $ ([] :: [JSVal])
-----------------------------------------------------------------------------  
+----------------------------------------------------------------------------
 -- | View function
 viewModel :: Model -> View Action
 viewModel Model{..} =
@@ -127,15 +125,15 @@ viewModel Model{..} =
             ]
             [ M.button_
               [ M.class_ "button is-primary is-large"
-              , M.onClick ClickInput
+              , M.onClickWith ClickInput
               ]
               [ "Select File" ]
             , M.input_
-              [ M.style_ ("display" =: "none")
+              [ CSS.style_ [ CSS.display "none" ]
               , M.id_ "fileReader"
               , M.type_ "file"
               , M.class_ "button is-large"
-              , M.onChange (\_ -> ReadFile)
+              , M.onChangeWith (const ReadFile)
               ]
             ]
           ]

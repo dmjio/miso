@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeApplications #-}
@@ -12,7 +11,6 @@ import Common
 import Control.Concurrent
 import Control.Monad
 import Data.Binary.Builder
-import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Time.Clock
 import Network.HTTP.Types
@@ -64,7 +62,7 @@ sendEvents chan =
         threadDelay (10 ^ (6 :: Int))
 
 -- | Page for setting HTML doctype and header
-newtype Page = Page (App Effect Model Action ())
+newtype Page = Page (Component "app" Model Action)
 
 instance ToHtml Page where
     toHtml (Page x) =

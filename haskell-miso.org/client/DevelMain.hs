@@ -2,7 +2,7 @@
 module DevelMain (update) where
 
 import Common (haskellMisoComponent, uriHome)
-import Miso (startApp, run)
+import Miso (startComponent, run)
 import Miso.String (MisoString)
 
 import Rapid
@@ -11,4 +11,4 @@ update :: IO ()
 update =
   rapid 0 $ \r ->
     restart r ("miso-client" :: MisoString) $
-      run (startApp (haskellMisoComponent uriHome))
+      run (startComponent (haskellMisoComponent uriHome))

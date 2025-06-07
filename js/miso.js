@@ -1,6 +1,56 @@
+// ts/miso/util.ts
+function callFocus(id, delay) {
+  var setFocus = function() {
+    var e = document.getElementById(id);
+    if (e && e.focus)
+      e.focus();
+  };
+  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
+}
+function callBlur(id, delay) {
+  var setBlur = function() {
+    var e = document.getElementById(id);
+    if (e && e.blur)
+      e.blur();
+  };
+  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
+}
+function setComponent(node, componentId) {
+  node.setAttribute("data-component-id", componentId);
+}
+function fetchJSON(url, method, body, headers, successful, errorful) {
+  var options = { method, headers };
+  if (body) {
+    options["body"] = body;
+  }
+  fetch(url, options).then((response) => {
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return response.json();
+  }).then(successful).catch(errorful);
+}
+function shouldSync(node) {
+  if (node.children.length === 0) {
+    return false;
+  }
+  var enterSync = true;
+  for (const child of node.children) {
+    if (!child.key) {
+      enterSync = false;
+      break;
+    }
+  }
+  return enterSync;
+}
+var version = "1.9.0.0";
+
 // ts/miso/smart.ts
 function vnode(props) {
-  return union(mkVNode(), props);
+  var node = union(mkVNode(), props);
+  if (!node["shouldSync"])
+    node["shouldSync"] = shouldSync(node);
+  return node;
 }
 function union(obj, updates) {
   return Object.assign({}, obj, updates);
@@ -15,14 +65,11 @@ function mkVNode() {
     tag: "div",
     key: null,
     events: {},
-    onDestroyed: () => {
-    },
-    onBeforeDestroyed: () => {
-    },
-    onCreated: () => {
-    },
-    onBeforeCreated: () => {
-    },
+    onDestroyed: () => {},
+    onBeforeDestroyed: () => {},
+    onCreated: () => {},
+    onBeforeCreated: () => {},
+    shouldSync: false,
     type: "vnode"
   };
 }
@@ -67,7 +114,13 @@ function diffNodes(c, n, parent) {
     n["domRef"] = c["domRef"];
     return;
   }
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["data-component-id"] === c["data-component-id"]) {
+  var componentIdCheck = function(n2, c2) {
+    if (n2["type"] === "vcomp" && !n2["data-component-id"].startsWith("miso-component-id")) {
+      return n2["data-component-id"] === c2["data-component-id"];
+    }
+    return true;
+  };
+  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
     n["domRef"] = c["domRef"];
     populate(c, n);
   } else {
@@ -116,8 +169,9 @@ function populate(c, n) {
     diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg");
     diffCss(c["css"], n["css"], n["domRef"]);
     if (n["type"] === "vnode") {
-      diffChildren(c["children"], n["children"], n["domRef"]);
+      diffChildren(c, n, n["domRef"]);
     }
+    drawCanvas(n);
   }
 }
 function diffProps(cProps, nProps, node, isSvg) {
@@ -179,17 +233,13 @@ function diffCss(cCss, nCss, node) {
     node.style[n] = nCss[n];
   }
 }
-function hasKeys(ns, cs) {
-  return ns.length > 0 && cs.length > 0 && ns[0]["key"] != null && cs[0]["key"] != null;
-}
-function diffChildren(cs, ns, parent) {
-  const longest = ns.length > cs.length ? ns.length : cs.length;
-  if (hasKeys(ns, cs)) {
-    syncChildren(cs, ns, parent);
+function diffChildren(c, n, parent) {
+  if (c.shouldSync && n.shouldSync) {
+    syncChildren(c.children, n.children, parent);
   } else {
-    for (var i = 0;i < longest; i++) {
-      diff(cs[i], ns[i], parent);
-    }
+    const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
+    for (let i = 0;i < longest; i++)
+      diff(c.children[i], n.children[i], parent);
   }
 }
 function populateDomRef(obj) {
@@ -208,9 +258,14 @@ function createElement(obj, cb) {
   populate(null, obj);
   callCreated(obj);
 }
+function drawCanvas(obj) {
+  if (obj["tag"] === "canvas" && "draw" in obj) {
+    obj["draw"](obj["domRef"]);
+  }
+}
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
-    obj["onUnmounted"]();
+    obj["onUnmounted"](obj["data-component-id"]);
   obj["unmount"]();
 }
 function mountComponent(obj) {
@@ -226,7 +281,7 @@ function mountComponent(obj) {
     obj["children"].push(component);
     obj["domRef"].appendChild(component["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"]();
+      obj["onMounted"](componentId);
   });
 }
 function create(obj, parent) {
@@ -322,6 +377,7 @@ function delegate(mount, events, getVTree, debug) {
   for (const event of events) {
     mount.addEventListener(event["name"], function(e) {
       listener(e, mount, getVTree, debug);
+      e.stopPropagation();
     }, event["capture"]);
   }
 }
@@ -370,7 +426,7 @@ function delegateEvent(event, obj, stack, parentStack, debug) {
       if (options["preventDefault"]) {
         event.preventDefault();
       }
-      eventObj["runEvent"](event);
+      eventObj["runEvent"](event, stack[0]);
       if (!options["stopPropagation"]) {
         propagateWhileAble(parentStack, event);
       }
@@ -471,7 +527,7 @@ function hydrate(logLevel, mountPoint, vtree) {
   const node = preamble(mountPoint);
   if (!walk(logLevel, vtree, node)) {
     if (logLevel) {
-      console.warn("Could not copy DOM into virtual DOM, falling back to diff");
+      console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (node.firstChild)
       node.removeChild(node.lastChild);
@@ -481,9 +537,9 @@ function hydrate(logLevel, mountPoint, vtree) {
   } else {
     if (logLevel) {
       if (!integrityCheck(vtree)) {
-        console.warn("Integrity check completed with errors");
+        console.warn("[DEBUG_HYDRATE] Integrity check completed with errors");
       } else {
-        console.info("Successfully prerendered page");
+        console.info("[DEBUG_HYDRATE] Successfully prerendered page");
       }
     }
   }
@@ -491,7 +547,7 @@ function hydrate(logLevel, mountPoint, vtree) {
 }
 function diagnoseError(logLevel, vtree, node) {
   if (logLevel)
-    console.warn("VTree differed from node", vtree, node);
+    console.warn("[DEBUG_HYDRATE] VTree differed from node", vtree, node);
 }
 function parseColor(input) {
   if (input.substr(0, 1) == "#") {
@@ -529,7 +585,7 @@ function check(result, vtree) {
       result = false;
     }
     for (const key in vtree["props"]) {
-      if (key === "href") {
+      if (key === "href" || key === "src") {
         const absolute = window.location.origin + "/" + vtree["props"][key], url = vtree["domRef"][key], relative = vtree["props"][key];
         if (absolute !== url && relative !== url && relative + "/" !== url && absolute + "/" !== url) {
           console.warn("Property " + key + " differs", vtree["props"][key], vtree["domRef"][key]);
@@ -619,40 +675,6 @@ function walk(logLevel, vtree, node) {
   return true;
 }
 
-// ts/miso/util.ts
-function callFocus(id, delay) {
-  var setFocus = function() {
-    var e = document.getElementById(id);
-    if (e && e.focus)
-      e.focus();
-  };
-  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
-}
-function callBlur(id, delay) {
-  var setBlur = function() {
-    var e = document.getElementById(id);
-    if (e && e.blur)
-      e.blur();
-  };
-  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
-}
-function setBodyComponent(componentId) {
-  document.body.setAttribute("data-component-id", componentId);
-}
-function fetchJSON(url, method, body, headers, successful, errorful) {
-  var options = { method, headers };
-  if (body) {
-    options["body"] = body;
-  }
-  fetch(url, options).then((response) => {
-    if (!response.ok) {
-      throw new Error(response.statusMessage);
-    }
-    return response.json();
-  }).then(successful).catch(errorful);
-}
-var version = "1.9.0.0";
-
 // ts/index.ts
 globalThis["miso"] = {};
 globalThis["miso"]["diff"] = diff;
@@ -664,5 +686,6 @@ globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
+globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["setBodyComponent"] = setBodyComponent;
+globalThis["miso"]["setComponent"] = setComponent;

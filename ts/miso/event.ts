@@ -12,6 +12,7 @@ export function delegate(
       event['name'],
       function (e: Event) {
         listener(e, mount, getVTree, debug);
+        e.stopPropagation();
       },
       event['capture'],
     );
@@ -71,7 +72,7 @@ function delegateEvent(
       );
     }
     return;
-  } /* stack not length 1, recurse */ else if (stack.length > 1) {
+  } else if (stack.length > 1) { /* stack not length 1, recurse */
     parentStack.unshift(obj);
     for (const child of obj['children']) {
       if (child['type'] === 'vcomp') continue;
@@ -80,14 +81,16 @@ function delegateEvent(
         break;
       }
     }
-  } /* stack.length == 1 */ else {
+  } /* stack.length == 1 */
+  else {
     const eventObj: EventObject = obj['events'][event.type];
     if (eventObj) {
       const options: Options = eventObj['options'];
       if (options['preventDefault']) {
         event.preventDefault();
       }
-      eventObj['runEvent'](event);
+      /* dmj: stack[0] represents the domRef that raised the event */
+      eventObj['runEvent'](event, stack[0]);
       if (!options['stopPropagation']) {
         propagateWhileAble(parentStack, event);
       }
@@ -116,7 +119,7 @@ function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
     */
-export function eventJSON(at: string | string[], obj: any): string[] {
+export function eventJSON(at: string | Array<string>, obj: Event): Object[] {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] === 'object') {
     var ret = [];
@@ -158,7 +161,7 @@ export function eventJSON(at: string | string[], obj: any): string[] {
   return newObj;
 }
 /* get static and dynamic properties */
-function getAllPropertyNames(obj: VTree): Object {
+function getAllPropertyNames(obj: Event): Object {
   var props: Object = {},
     i: number = 0;
   do {

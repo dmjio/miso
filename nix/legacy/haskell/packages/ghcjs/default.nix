@@ -10,6 +10,7 @@ self: super:
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
   flatris = self.callCabal2nix "flatris" source.flatris {};
   miso-plane =
     let
@@ -22,7 +23,7 @@ self: super:
          rm $out/index.html
          cp -v ${source.miso-plane}/public/index.html $out
       '';
-  the2048 = import source.the2048 { inherit pkgs; inherit (self) miso; };
+  hs2048 = import source.hs2048 { inherit pkgs; inherit (self) miso; };
   snake = self.callCabal2nix "miso-snake" source.snake {};
   mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
   doctest = null;
@@ -37,11 +38,8 @@ self: super:
          --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
          $out/bin/todo-mvc.jsexe/all.js > temp.js
       mv temp.js $out/bin/todo-mvc.jsexe/all.js
-      cp -fv ${drv.src}/todo-mvc/index.html $out/bin/todo-mvc.jsexe/
-      cp -v ${source.todomvc-common}/base.css $out/bin/todo-mvc.jsexe
-      cp -v ${source.todomvc-app-css}/index.css $out/bin/todo-mvc.jsexe
       '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
-  miso = doHaddock (self.callCabal2nix "miso" source.miso {});
+  miso = self.callCabal2nix "miso" source.miso {};
 }

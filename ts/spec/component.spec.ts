@@ -113,9 +113,35 @@ describe ('Component tests', () => {
     expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
+  test('Should replace Component with Component', () => {
+    // populate DOM
+    var comp1 = vcomp({ key : 'a' });
+    diff(null, comp1, document.body);
+
+    // Test node was populated
+    expect(document.body.childNodes.length).toBe(1);
+
+    // Replace node
+    var mountCount = 0;
+    var comp2 = vcomp({
+     'data-component-id': 'vcomp-id',
+      key : 'b',
+      mount: () => {
+        mountCount++;
+      },
+    });
+    diff(comp1, comp2, document.body);
+
+    // Node is removed from DOM, Component is on the DOM
+    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
+      'vcomp-id',
+    );
+    expect(mountCount).toBe(1);
+  });
+
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = vcomp({});
+    var node = vnode({});
     diff(null, node, document.body);
 
     // Test node was populated
@@ -213,6 +239,37 @@ describe ('Component tests', () => {
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
     expect(unmountCount).toBe(1);
+  });
+
+  test('Should replace Node with Component', () => {
+    // populate DOM
+    let node = vnode({});
+    let mountCount = 0;
+    let unmountCount = 0;
+
+    let component = vcomp({
+      mount: () => {
+        mountCount++;
+      },
+      unmount: () => {
+        unmountCount++;
+      },
+    });
+
+    diff(null, node, document.body);
+
+    // Test component was populated
+    expect(document.childNodes.length).toBe(1);
+    expect(mountCount).toBe(0);
+    expect(unmountCount).toBe(0);
+
+    // Replace component
+    diff(node, component, document.body);
+
+    // Test node is removed from DOM
+    expect(document.body.children[0].tagName).toBe('DIV');
+    expect(unmountCount).toBe(0);
+    expect(mountCount).toBe(1);
   });
 
 

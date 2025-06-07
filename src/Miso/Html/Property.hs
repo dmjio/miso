@@ -15,15 +15,8 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Property
-  ( -- *** Smart constructors
-     textProp
-   , stringProp
-   , boolProp
-   , intProp
-   , integerProp
-   , doubleProp
-   -- *** Combinators
-   , class_
+  ( -- *** Combinators
+     class_
    , classList_
    , id_
    , title_
@@ -82,8 +75,16 @@ module Miso.Html.Property
    , alt_
    , loading_
    , autoplay_
+   , currentTime_
+   , defaultMuted_
+   , volume_
    , controls_
    , loop_
+   , defaultPlaybackRate_
+   , mediaGroup_
+   , muted_
+   , playbackRate_
+   , seeking_
    , preload_
    , poster_
    , default_
@@ -93,7 +94,6 @@ module Miso.Html.Property
    , seamless_
    , srcdoc_
    , reversed_
-   , start_
    , align_
    , colspan_
    , rowspan_
@@ -107,39 +107,11 @@ module Miso.Html.Property
    , language_
    , scoped_
    , data_
-   , styleInline_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Html.Types
+import           Miso.Property
 import           Miso.String (MisoString, intercalate)
------------------------------------------------------------------------------
--- | Set field to `Bool` value
-boolProp :: MisoString -> Bool -> Attribute action
-boolProp = prop
------------------------------------------------------------------------------
--- | Set field to `String` value
-stringProp ::  MisoString -> String -> Attribute action
-stringProp = prop
------------------------------------------------------------------------------
--- | Set field to `Text` value
-textProp ::  MisoString -> MisoString -> Attribute action
-textProp = prop
------------------------------------------------------------------------------
--- | Set field to `Int` value
-intProp ::  MisoString -> Int -> Attribute action
-intProp = prop
------------------------------------------------------------------------------
--- | Set field to `Integer` value
-integerProp ::  MisoString -> Int -> Attribute action
-integerProp = prop
------------------------------------------------------------------------------
--- | Set field to `Double` value
-doubleProp ::  MisoString -> Double -> Attribute action
-doubleProp = prop
--- | Define multiple classes conditionally
---
--- > div_ [ classList_ [ ("empty", null items) ] [ ]
---
 -----------------------------------------------------------------------------
 classList_ ::  [(MisoString, Bool)] -> Attribute action
 classList_ xs =
@@ -345,6 +317,42 @@ loading_           = textProp "loading"
 autoplay_ ::  Bool -> Attribute action
 autoplay_          = boolProp "autoplay"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime>
+currentTime_ ::  Double -> Attribute action
+currentTime_          = doubleProp "currentTime"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultMuted>
+defaultMuted_ ::  Bool -> Attribute action
+defaultMuted_          = boolProp "defaultMuted"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/defaultPlaybackRate>
+defaultPlaybackRate_ ::  Double -> Attribute action
+defaultPlaybackRate_          = doubleProp "defaultPlaybackRate"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/mediaGroup>
+mediaGroup_ :: MisoString -> Attribute action
+mediaGroup_ = textProp "mediaGroup"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/muted>
+muted_ :: Bool -> Attribute action
+muted_ = boolProp "muted"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/playbackRate>
+playbackRate_ :: Double -> Attribute action
+playbackRate_ = doubleProp "playbackRate"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
+preload_ :: MisoString -> Attribute action
+preload_ = textProp "preload"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/seeking>
+seeking_ :: Bool -> Attribute action
+seeking_ = boolProp "seeking"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/volume>
+volume_ :: Double -> Attribute action
+volume_ = doubleProp "volume"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/controls>
 controls_ ::  Bool -> Attribute action
 controls_          = boolProp "controls"
@@ -352,10 +360,6 @@ controls_          = boolProp "controls"
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/loop>
 loop_ ::  Bool -> Attribute action
 loop_              = boolProp "loop"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload>
-preload_ ::  MisoString -> Attribute action
-preload_           = textProp "preload"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster>
 poster_ ::  MisoString -> Attribute action
@@ -388,10 +392,6 @@ srcdoc_            = textProp "srcdoc"
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/reversed>
 reversed_ ::  MisoString -> Attribute action
 reversed_          = textProp "reversed"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/start>
-start_ ::  MisoString -> Attribute action
-start_             = textProp "start"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/align>
 align_ ::  MisoString -> Attribute action
@@ -479,12 +479,4 @@ class_ = textProp "class"
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
 data_ ::  MisoString -> MisoString -> Attribute action
 data_ k v = textProp ("data-" <> k) v
------------------------------------------------------------------------------
--- | Set "style" property
---
--- > view m = div_ [ styleInline_ "background-color:red;color:blue;" ] [ "foo" ]
---
--- https://developer.mozilla.org/en-US/docs/Web/CSS
-styleInline_ ::  MisoString -> Attribute action
-styleInline_ = textProp "style"
 -----------------------------------------------------------------------------

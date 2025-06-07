@@ -66,6 +66,19 @@ describe('DOM tests', () => {
     );
   });
 
+  test('Should draw the canvas if we need to', () => {
+    var drawCount = 0;
+    var tree = vnode({
+      tag: 'canvas',
+      draw: () => {
+        drawCount++;
+      },
+      ns: 'html'
+    });
+    diff(null, tree, document.body);
+    expect(drawCount).toBe(1);
+  });
+
   test('Should create an SVG DOM node, with href attribute', () => {
     var tree = vnode({
       tag: 'ellipse',

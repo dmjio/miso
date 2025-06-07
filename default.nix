@@ -18,19 +18,19 @@ with pkgs.haskell.lib;
 
   # ghcjs9122
   miso-ghcjs-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
-  miso-examples-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-examples;
+  miso-examples-ghcjs-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-examples;
   sample-app-js-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.sample-app-js;
 
   # ghcjs86
   miso-ghcjs = legacyPkgs.haskell.packages.ghcjs.miso;
   miso-ghcjs-prod = legacyPkgs.haskell.packages.ghcjs86.miso-prod;
   inherit (legacyPkgs.haskell.packages.ghcjs) miso-examples sample-app-js;
-  
-  # x86
+
+  # miso x86
   miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
   miso-ghc-9122 = pkgs.haskell.packages.ghc9122.miso;
 
-  # x86
+  # miso-examples x86
   miso-examples-ghc = legacyPkgs.haskell.packages.ghc865.miso-examples;
   miso-examples-ghc-9122 = pkgs.haskell.packages.ghc9122.miso-examples;
 
@@ -47,6 +47,8 @@ with pkgs.haskell.lib;
     wasmExamples
     svgWasm
     componentsWasm
+    threejsWasm
+    canvas2DWasm
     todoWasm;
 
   # wasm utils
@@ -71,6 +73,10 @@ with pkgs.haskell.lib;
   # code coverage
   inherit (pkgs)
     coverage;
+
+  # haddocks
+  inherit (pkgs)
+    haddocks;
 
   # ci
   inherit (legacyPkgs)
@@ -104,5 +110,28 @@ with pkgs.haskell.lib;
     microhs
     microhs-env
     microhs-wrapper;
+
+  # nurl
+  # $ nurl https://github.com/nix-community/nurl
+  #
+  # fetchFromGitHub {
+  #   owner = "nix-community";
+  #   repo = "nurl";
+  #   rev = "3a3ba7f0d14d92e1266395d826c6e229797d0044";
+  #   hash = "sha256-WAFqmlsShuQngk6LMFlgz7Oyc41TAQeTa/49phhRizY=";
+  # }
+  #
+  inherit (pkgs)
+    nurl;
+
+  # favicon.ico and miso.png
+  miso-logos = pkgs.stdenv.mkDerivation {
+    name = "miso-logos";
+    src = ./logo;
+    buildCommand = ''
+      mkdir -p $out
+      cp -v $src/* $out/
+    '';
+  };
 
 }

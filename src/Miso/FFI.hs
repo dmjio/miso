@@ -1,6 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ViewPatterns        #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -27,6 +25,9 @@ module Miso.FFI
   , syncCallback
   , syncCallback1
   , asyncCallback
+  -- ** Image
+  , Image (..)
+  , newImage
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

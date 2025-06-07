@@ -30,10 +30,11 @@ import           Miso.Effect (Sub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | type for arrow keys currently pressed
---  37 left arrow  ( x = -1 )
---  38 up arrow    ( y =  1 )
---  39 right arrow ( x =  1 )
---  40 down arrow  ( y = -1 )
+--
+--  * 37 left arrow  ( x = -1 )
+--  * 38 up arrow    ( y =  1 )
+--  * 39 right arrow ( x =  1 )
+--  * 40 down arrow  ( y = -1 )
 data Arrows
  = Arrows
  { arrowX :: !Int
@@ -72,7 +73,8 @@ directionSub
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
--- | Returns subscription for Keyboard
+-- | Returns subscription for Keyboard.
+-- The callback will be called with the Set of currently pressed @keyCode@s.
 keyboardSub :: (Set Int -> action) -> Sub action
 keyboardSub f sink = do
   keySetRef <- liftIO (newIORef mempty)

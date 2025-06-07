@@ -41,7 +41,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${coverage}/report";
+            root = coverage;
            };
          };
        };
@@ -50,7 +50,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${miso-ghcjs.doc}/share/doc/miso-1.9.0.0/html";
+            root = haddocks;
            };
          };
        };
@@ -77,7 +77,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = more-examples.the2048;
+            root = more-examples.hs2048;
            };
          };
        };

@@ -1,9 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Common (
-    -- * App
+    -- * Component
     sse,
     -- * Types
     Model,
@@ -13,7 +12,6 @@ module Common (
     the404,
 ) where
 
-import Control.Monad.State (modify)
 import Data.Proxy
 import Servant.API
 import Servant.Links
@@ -60,7 +58,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> App Effect Model Action ()
+sse :: URI -> Component name Model Action
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
@@ -68,8 +66,8 @@ sse currentURI
           ]
         }
   where
-    app = defaultApp (Model currentURI "No event received") updateModel view
-    view m
+    app = defaultComponent (Model currentURI "No event received") updateModel viewModel
+    viewModel m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
         | otherwise = the404
@@ -79,11 +77,10 @@ handleSseMsg (SSEMessage msg) = ServerMsg msg
 handleSseMsg SSEClose = ServerMsg "SSE connection closed"
 handleSseMsg SSEError = ServerMsg "SSE error"
 
-updateModel :: Action -> Effect Model Action ()
-updateModel (ServerMsg msg) = modify update
-  where
-    update m = m { modelMsg = "Event received: " ++ msg }
-updateModel (HandleURI u) = modify update
-  where
-    update m = m { modelUri = u }
-updateModel (ChangeURI u) = io (pushURI u)
+updateModel :: Action -> Effect Model Action
+updateModel (ServerMsg msg) =
+    modify $ \m -> m { modelMsg = "Event received: " ++ msg }
+updateModel (HandleURI u) =
+    modify $ \m -> m { modelUri = u }
+updateModel (ChangeURI u) =
+    io_ (pushURI u)

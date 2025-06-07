@@ -24,8 +24,8 @@ import           Miso.Html.Types
 import           Miso.String
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
-diff :: JSVal -> Maybe VTree -> Maybe VTree -> JSM ()
-diff mountEl current new =
+diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
+diff current new mountEl =
   case (current, new) of
     (Nothing, Nothing) -> pure ()
     (Just (VTree current'), Just (VTree new')) ->

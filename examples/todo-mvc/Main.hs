@@ -3,26 +3,24 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
 import           Control.Monad.State
 import           Data.Aeson hiding (Object)
 import           Data.Bool
-import qualified Data.Map as M
 import           GHC.Generics
 
 import           Miso
 import           Miso.String (MisoString)
 import qualified Miso.String as S
+import qualified Miso.Style as CSS 
+import           Miso.Style ((=:))
 
 default (MisoString)
 
@@ -90,7 +88,7 @@ data Msg
     deriving (Show)
 
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =
@@ -99,17 +97,17 @@ main = run $ startApp app
       ]
   }
 
-app :: App Effect Model Msg ()
-app = defaultApp emptyModel updateModel viewModel
+app :: Component name Model Msg
+app = defaultComponent emptyModel updateModel viewModel
 
-updateModel :: Msg -> Effect Model Msg ()
+updateModel :: Msg -> Effect Model Msg
 updateModel NoOp = pure ()
 updateModel FocusOnInput =
-  io (focus "input-box")
-updateModel (CurrentTime time) = io $ consoleLog $ S.ms (show time)
+  io_ (focus "input-box")
+updateModel (CurrentTime time) = io_ $ consoleLog $ S.ms (show time)
 updateModel Add = do
     model@Model{..} <- get
-    noEff
+    put
         model
             { uid = uid + 1
             , field = mempty
@@ -180,7 +178,7 @@ viewEntries :: MisoString -> [Entry] -> View Msg
 viewEntries visibility entries =
     section_
         [ class_ "main"
-        , style_ $ M.singleton "visibility" cssVisibility
+        , CSS.style_ [ "visibility" =: cssVisibility ]
         ]
         [ input_
             [ class_ "toggle-all"
@@ -199,7 +197,7 @@ viewEntries visibility entries =
         ]
   where
     cssVisibility = bool "visible" "hidden" (null entries)
-    allCompleted = all (== True) $ completed <$> entries
+    allCompleted = all completed entries
     isVisible Entry{..} =
         case visibility of
             "Completed" -> completed
@@ -211,11 +209,11 @@ viewKeyedEntry = viewEntry
 
 viewEntry :: Entry -> View Msg
 viewEntry Entry{..} =
-    liKeyed_
-        (toKey eid)
+    li_
         [ class_ $
             S.intercalate " " $
                 ["completed" | completed] <> ["editing" | editing]
+        , key_ eid
         ]
         [ div_
             [class_ "view"]

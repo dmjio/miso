@@ -26,12 +26,8 @@ module Miso.Html.Types
   , text
   , textRaw
   , rawHtml
-  , prop
-  , style_
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (ToJSON(..))
-import           Data.Map.Strict (Map)
 import           Language.Javascript.JSaddle (Object)
 -----------------------------------------------------------------------------
 import           Miso.String hiding (reverse)
@@ -46,49 +42,30 @@ import           Miso.Types
 rawHtml
   :: MisoString
   -> View action
-rawHtml = TextRaw
+rawHtml = VTextRaw
 -----------------------------------------------------------------------------
--- | Create a new @Miso.Html.Types.Node@.
+-- | Create a new @Miso.Html.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
 -- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
 node :: NS
      -> MisoString
-     -> Maybe Key
      -> [Attribute action]
      -> [View action]
      -> View action
-node = Node
+node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
 text :: MisoString -> View action
-text = Text
+text = VText
 -----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
 textRaw :: MisoString -> View action
-textRaw = TextRaw
+textRaw = VTextRaw
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript `Object`.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
------------------------------------------------------------------------------
--- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM node associated with the vnode
--- to @v@.
-prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = Property k (toJSON v)
------------------------------------------------------------------------------
--- | @style_ attrs@ is an attribute that will set the @style@
--- attribute of the associated DOM node to @attrs@.
---
--- @style@ attributes not contained in @attrs@ will be deleted.
---
--- > import qualified Data.Map as M
--- > div_ [ style_  $ M.singleton "background" "red" ] [ ]
---
--- <https://developer.mozilla.org/en-US/docs/Web/CSS>
---
-style_ :: Map MisoString MisoString -> Attribute action
-style_ = Styles
 -----------------------------------------------------------------------------

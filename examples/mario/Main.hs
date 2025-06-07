@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,13 +5,12 @@
 
 module Main where
 
-import Control.Monad.State (modify, get)
 import Data.Bool
 import Data.Function
-import qualified Data.Map as M
 
 import Miso
 import Miso.String
+import qualified Miso.Style as CSS
 
 data Action
   = GetArrows !Arrows
@@ -31,7 +29,7 @@ main :: IO ()
 main = run $ do
     time <- now
     let m = mario{time = time}
-    startApp (defaultApp m updateMario display)
+    startComponent (defaultComponent m updateMario display)
       { subs =
           [ arrowsSub GetArrows
           , windowCoordsSub WindowCoords
@@ -71,7 +69,7 @@ mario =
         , window = (0, 0)
         }
 
-updateMario :: Action -> Effect Model Action ()
+updateMario :: Action -> Effect Model Action
 updateMario Start = get >>= step
 updateMario (GetArrows arrs) = do
   modify newModel
@@ -92,7 +90,7 @@ updateMario (WindowCoords coords) = do
     where
       newModel m = m { window = coords }
 
-step :: Model -> Effect Model Action ()
+step :: Model -> Effect Model Action
 step m@Model{..} = k <# Time <$> now
   where
     k =
@@ -141,12 +139,11 @@ display m@Model{..} = marioImage
             , width_ $ ms w
             ]
             [ nodeHtml "style" [] ["@keyframes play { 100% { background-position: -296px; } }"]
-            , div_ [style_ (marioStyle m groundY)] []
+            , div_ [CSS.style_ (marioStyle m groundY)] []
             ]
 
-marioStyle :: Model -> Double -> M.Map MisoString MisoString
+marioStyle :: Model -> Double -> [CSS.Style]
 marioStyle Model{..} gy =
-    M.fromList
         [ ("transform", matrix dir x $ abs (y + gy))
         , ("display", "block")
         , ("width", "37px")

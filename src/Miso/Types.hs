@@ -1,13 +1,14 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE TypeApplications          #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE DeriveFunctor             #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE DataKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -19,70 +20,76 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
-    App              (..)
+    Component        (..)
+  , SomeComponent    (..)
+  , Dynamic
   , View             (..)
   , Key              (..)
   , Attribute        (..)
   , NS               (..)
   , CSS              (..)
   , LogLevel         (..)
-  , Component        (..)
-  , SomeComponent    (..)
+  , MountPoint
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
-  -- ** Functions
-  , defaultApp
-  , component
-  , embed
-  , embedKeyed
+  -- ** Smart Constructors
+  , defaultComponent
+  -- ** Components
+  , component_
+  -- ** Utils
   , getMountPoint
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value)
+import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
+import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
+import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString, ms)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data App effect model action a = App
+data Component (name :: Symbol) model action = Component
   { model :: model
   -- ^ initial model
-  , update :: action -> effect model action a
+  , update :: action -> Effect model action
   -- ^ Function to update model, optionally providing effects.
-  --   See the @Transition@ monad for succinctly expressing model transitions.
   , view :: model -> View action
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
-  , events :: M.Map MisoString Bool
+  , events :: Events
   -- ^ List of delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
   -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
   -- These styles are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
+  --
+  -- @since 1.9.0.0
   , initialAction :: Maybe action
-  -- ^ Initial action that is run after the application has loaded, optional since *1.9*
-  , mountPoint :: Maybe MisoString
+  -- ^ Initial action that is run after the application has loaded, optional
+  --
+  -- @since 1.9.0.0
+  , mountPoint :: Maybe MountPoint
   -- ^ Id of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
-  , translate :: effect model action a -> Effect model action a
-  -- ^ natural transformation to allow users to provide their own
-  -- custom Monad stack.
   }
+-----------------------------------------------------------------------------
+-- | @mountPoint@ for @Component@, e.g "body"
+type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to <head> before the first draw
 --
@@ -99,13 +106,13 @@ data CSS
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
--- | Smart constructor for @App@ with sane defaults.
-defaultApp
+-- | Smart constructor for @Component@ with sane defaults.
+defaultComponent
   :: model
-  -> (action -> Effect model action a)
+  -> (action -> Effect model action)
   -> (model -> View action)
-  -> App Effect model action a
-defaultApp m u v = App
+  -> Component name model action
+defaultComponent m u v = Component
   { model = m
   , update = u
   , view = v
@@ -115,13 +122,13 @@ defaultApp m u v = App
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
-  , translate = id
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  | DebugPrerender
+  -- ^ No debug logging, the default value used in @defaultComponent@
+  | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.
   | DebugEvents
@@ -129,57 +136,42 @@ data LogLevel
   -- handler that raised it. Also will warn if an event handler is
   -- being used, yet it's not being listened for by the event
   -- delegator mount point.
+  | DebugNotify
+  -- ^ Will warn if a @Component@ can't be found when using @notify@ or @notify'@
   | DebugAll
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View action
-  = Node NS MisoString (Maybe Key) [Attribute action] [View action]
-  | Text MisoString
-  | TextRaw MisoString
-  | Embed [Attribute action] SomeComponent
+  = VNode NS MisoString [Attribute action] [View action]
+  | VText MisoString
+  | VTextRaw MisoString
+  | VComp MisoString [Attribute action] SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @Component@ in @App@
+-- | Existential wrapper used to allow the nesting of @Component@ in @Component@
 data SomeComponent
-   = forall effect model action a . Eq model
-  => SomeComponent (Component effect model action a)
+   = forall name model action . Eq model
+  => SomeComponent (Component name model action)
 -----------------------------------------------------------------------------
--- | Used with @component@ to parameterize @App@ by @name@
-data Component effect model action a
-  = Component
-  { componentKey :: Maybe Key
-  , componentName :: MisoString
-  , componentApp :: App effect model action a
-  }
+-- | Used in the @view@ function to embed an @Component@ into another @Component@
+-- Use this function if you'd like send messages to this @Component@ at @name@ via
+-- @notify@ or to read the state of this @Component@ via @sample@.
+component_
+  :: forall name model action a . (Eq model, KnownSymbol name)
+  => Component name model action
+  -> [Attribute a]
+  -> View a
+component_ app attrs = VComp (ms name) attrs (SomeComponent app)
+  where
+    name = symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | Smart constructor for parameterizing @App@ by @name@
--- Needed when calling @embed@ and @embedWith@
-component
-  :: MisoString  
-  -> App effect model action a
-  -> Component effect model action a
-component = Component Nothing
------------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@
-embed
-  :: Eq model
-  => Component effect model action a
-  -> [Attribute b]
-  -> View b
-embed comp attrs = Embed attrs (SomeComponent comp)
------------------------------------------------------------------------------
--- | Used in the @view@ function to @embed@ @Component@s in @App@, with @Key@
-embedKeyed
-  :: Eq model
-  => Component effect model action a
-  -> Key
-  -> [Attribute b]
-  -> View b
-embedKeyed comp key attrs
-  = Embed attrs
-  $ SomeComponent comp { componentKey = Just key }
+-- | Type synonym for Dynamically constructed @Component@
+-- @
+-- sampleComponent :: Component Dynamic Model Action
+-- @
+type Dynamic = ""
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -195,13 +187,9 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component effect model action a) where
-  type ToViewAction (Component effect model action a) = action
-  toView (Component _ _ app) = toView app
------------------------------------------------------------------------------
-instance ToView (App effect model action a) where
-  type ToViewAction (App effect model action a) = action
-  toView App {..} = toView (view model)
+instance ToView (Component name model action) where
+  type ToViewAction (Component name model action) = action
+  toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
@@ -222,6 +210,7 @@ instance ToJSVal NS where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
+  deriving (Show, Eq, IsString, ToJSON)
 -----------------------------------------------------------------------------
 -- | ToJSVal instance for Key
 instance ToJSVal Key where
@@ -274,5 +263,5 @@ data Attribute action
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
 instance IsString (View a) where
-  fromString = Text . fromString
+  fromString = VText . fromString
 -----------------------------------------------------------------------------

@@ -11,8 +11,19 @@ self: super: {
     name = "coverage";
     src = ../coverage;
     buildCommand = ''
-      mkdir -p $out/report
-      cp -rv $src $out/report
+      mkdir -p $out
+      cp -v $src/* $out
+    '';
+  };
+
+  # dmj: Ensure you call 'nix-shell --run 'cabal haddock-project'' first
+  # this happens in CI
+  haddocks = self.stdenv.mkDerivation {
+    name = "haddocks";
+    src = ../haddocks;
+    buildCommand = ''
+      mkdir -p $out
+      cp -rv $src/* $out
     '';
   };
 

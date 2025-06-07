@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,16 +18,17 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Data.Aeson
-import qualified Data.Map as M
 import           Data.Maybe
 import           GHC.Generics
 import           Language.Javascript.JSaddle (JSM)
 import           Data.Proxy
 import           Servant.API
+import           Servant.Client.JS (ClientEnv (..), ClientError, parseBaseUrl, client, runClientM)
 ----------------------------------------------------------------------------
 import           Miso hiding (defaultOptions)
 import           Miso.String
 import           Miso.Lens
+import qualified Miso.Style as CSS
 ----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -34,7 +36,7 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
-main = run $ startApp app
+main = run $ startComponent app
   { styles =
     [ Href "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"
     , Href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
@@ -57,13 +59,8 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
--- | WASM support
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
-----------------------------------------------------------------------------
-app :: App Effect Model Action ()
-app = defaultApp emptyModel updateModel viewModel
+app :: Component name Model Action
+app = defaultComponent emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 emptyModel :: Model
 emptyModel = Model Nothing
@@ -73,19 +70,21 @@ type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
 -- | Uses servant to reify type-safe calls to the Fetch API
 getGithubAPI
-  :: (GitHub -> JSM ())
-  -- ^ Successful callback
-  -> (MisoString -> JSM ())
-  -- ^ Errorful callback
-  -> JSM ()
-getGithubAPI = fetch (Proxy @GithubAPI) "https://api.github.com"
+  :: JSM (Either ClientError GitHub)
+getGithubAPI = do
+    baseUrl <- parseBaseUrl "https://api.github.com"
+    runClientM c (ClientEnv baseUrl)
+  where
+    c = Servant.Client.JS.client (Proxy @GithubAPI)
 ----------------------------------------------------------------------------
-updateModel :: Action -> Effect Model Action ()
-updateModel FetchGitHub = withSink $ \snk -> getGithubAPI (snk . SetGitHub) (snk . ErrorHandler)
+updateModel :: Action -> Effect Model Action
+updateModel FetchGitHub = io $ getGithubAPI <&> \case
+  Right r -> SetGitHub r
+  Left e  -> ErrorHandler $ ms (show e)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =
-  io (consoleError msg)
+  io_ (consoleError msg)
 ----------------------------------------------------------------------------
 -- | View function, with routing
 viewModel :: Model -> View Action
@@ -93,9 +92,9 @@ viewModel m = view
   where
     view =
       div_
-      [ style_ $ M.fromList
-        [ (pack "text-align", pack "center")
-        , (pack "margin", pack "200px")
+      [ CSS.style_
+        [ CSS.textAlign "center"
+        , CSS.margin "200px"
         ]
       ]
       [ h1_

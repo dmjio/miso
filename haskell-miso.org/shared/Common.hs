@@ -10,13 +10,13 @@ module Common where
 
 import           Control.Monad.State
 import           Data.Bool
-import qualified Data.Map.Strict as M
 import           Data.Proxy
 import           Servant.API
 import           Servant.Links
 
 import           Miso
 import           Miso.String
+import qualified Miso.Style as CSS
 
 {- | We can pretty much share everything
 
@@ -61,7 +61,7 @@ type ClientRoutes = Routes (View Action)
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = App Effect Model Action ()
+type HaskellMisoComponent = Component "app" Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -100,8 +100,8 @@ haskellMisoComponent uri
   , logLevel = DebugAll
   }
   
-app :: URI -> App Effect Model Action ()
-app currentUri = defaultApp emptyModel updateModel viewModel
+app :: URI -> Component name Model Action
+app currentUri = defaultComponent emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
     viewModel m =
@@ -109,13 +109,13 @@ app currentUri = defaultApp emptyModel updateModel viewModel
           Left _ -> the404 m
           Right v -> v
 
-updateModel :: Action -> Effect Model Action ()
+updateModel :: Action -> Effect Model Action
 updateModel = \case
   HandleURI u ->
     modify $ \m -> m { uri = u }
   ChangeURI u -> do
     modify $ \m -> m { navMenuOpen = False }
-    io (pushURI u)
+    io_ (pushURI u)
   ToggleNavMenu -> do
     m@Model{..} <- get
     put m { navMenuOpen = not navMenuOpen }
@@ -138,11 +138,10 @@ community = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , style_ $
-                    M.fromList
-                        [ (pack "font-size", pack "82px")
-                        , (pack "font-weight", pack "100")
-                        ]
+                , CSS.style_
+                    [ CSS.fontSize "82px"
+                    , CSS.fontWeight "100"
+                    ]
                 ]
                 [text "community"]
             , h2_
@@ -187,11 +186,10 @@ docs = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , style_ $
-                    M.fromList
-                        [ (pack "font-size", pack "82px")
-                        , (pack "font-weight", pack "100")
-                        ]
+                , CSS.style_
+                    [ CSS.fontSize "82px"
+                    , CSS.fontWeight "100"
+                    ]
                 ]
                 [text "docs"]
             , h2_
@@ -211,7 +209,7 @@ docs = template v
             ]
 
 misoSrc :: MisoString
-misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png"
+misoSrc = pack "static/miso.png"
 
 examples :: Model -> View Action
 examples = template v
@@ -230,11 +228,10 @@ examples = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , style_ $
-                    M.fromList
-                        [ (pack "font-size", pack "82px")
-                        , (pack "font-weight", pack "100")
-                        ]
+                , CSS.style_
+                    [ CSS.fontSize "82px"
+                    , CSS.fontWeight "100"
+                    ]
                 ]
                 [text "examples"]
             , h2_
@@ -282,11 +279,10 @@ home = template v
                 ]
             , h1_
                 [ class_ "title animated pulse"
-                , style_ $
-                    M.fromList
-                        [ (pack "font-size", pack "82px")
-                        , (pack "font-weight", pack "100")
-                        ]
+                , CSS.style_
+                    [ CSS.fontSize "82px"
+                    , CSS.fontWeight "100"
+                    ]
                 ]
                 [text "miso"]
             , h2_
@@ -464,11 +460,10 @@ the404 = template v
                 ]
             , h1_
                 [ class_ "title"
-                , style_ $
-                    M.fromList
-                        [ (pack "font-size", pack "82px")
-                        , (pack "font-weight", pack "100")
-                        ]
+                , CSS.style_
+                    [ CSS.fontSize "82px"
+                    , CSS.fontWeight "100"
+                    ]
                 ]
                 [text "404"]
             , h2_
@@ -602,7 +597,7 @@ onPreventClick action =
         defaultOptions{preventDefault = True}
         "click"
         emptyDecoder
-        (\() -> action)
+        (\() -> const action)
 
 -- | Footer
 footer :: View action
@@ -619,13 +614,13 @@ footer =
                     , text " by "
                     , a_
                         [ href_ "https://github.com/dmjio/miso"
-                        , style_ $ M.singleton "color" "#363636"
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text "dmjio"]
                     , text ". BSD3"
                     , a_
                         [ href_ "https://opensource.org/licenses/BSD-3-Clause"
-                        , style_ $ M.singleton "color" "#363636"
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text " licensed."]
                     ]
@@ -634,7 +629,7 @@ footer =
                     [ text "The source code for this website is located "
                     , a_
                         [ href_ "https://github.com/dmjio/miso/tree/master/haskell-miso.org"
-                        , style_ $ M.singleton "color" "#363636"
+                        , CSS.style_ [ CSS.color (CSS.hex "363636") ]
                         ]
                         [text " here."]
                     ]
@@ -687,7 +682,7 @@ newNav navMenuOpen' =
                         [ span_
                             [ class_ "icon"
                             , name_ "github"
-                            , style_ $ M.singleton (pack "color") (pack "#333")
+                            , CSS.style_ [ CSS.color (CSS.hex "333") ]
                             ]
                             [ i_ [class_ "fa fa-github"] []
                             ]
@@ -701,7 +696,7 @@ newNav navMenuOpen' =
                         [ span_
                             [ class_ "icon"
                             , name_ "twitter"
-                            , style_ $ M.singleton (pack "color") (pack "#55acee")
+                            , CSS.style_ [ CSS.color (CSS.hex "55acee") ]
                             ]
                             [ i_ [class_ "fa fa-twitter"] []
                             ]

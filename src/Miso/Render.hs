@@ -42,13 +42,9 @@ instance Accept HTML where
     "text" M.// "html" M./: ("charset", "utf-8") NE.:|
       ["text" M.// "html"]
 ----------------------------------------------------------------------------
--- | Class for rendering HTML 
+-- | Class for rendering HTML
 class ToHtml a where
   toHtml :: a -> L.ByteString
-----------------------------------------------------------------------------
--- | Render a @Component@ to a @L.ByteString@
-instance ToHtml (Component effect model action a) where
-  toHtml = renderComponent
 ----------------------------------------------------------------------------
 -- | Render a @View@ to a @L.ByteString@
 instance ToHtml (View a) where
@@ -65,9 +61,6 @@ instance ToHtml a => MimeRender HTML a where
 renderView :: View a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
-renderComponent :: Component effect model action a -> L.ByteString
-renderComponent (Component _ _ App {..}) = renderView (view model)
-----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
 intercalate _ [] = ""
 intercalate _ [x] = x
@@ -79,18 +72,18 @@ intercalate sep (x:xs) =
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: View a -> Builder
-renderBuilder (Text "")    = fromMisoString " "
-renderBuilder (Text s)     = fromMisoString s
-renderBuilder (TextRaw "") = fromMisoString " "
-renderBuilder (TextRaw s)  = fromMisoString s
-renderBuilder (Node _ "doctype" _ [] []) = "<!doctype html>"
-renderBuilder (Node _ tag _ attrs children) =
-  mconcat $
+renderBuilder (VText "")    = fromMisoString " "
+renderBuilder (VText s)     = fromMisoString s
+renderBuilder (VTextRaw "") = fromMisoString " "
+renderBuilder (VTextRaw s)  = fromMisoString s
+renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
+renderBuilder (VNode _ tag attrs children) =
+  mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
             | not (Prelude.null attrs)
-            ] 
+            ]
   , ">"
   , mconcat
     [ mconcat
@@ -100,7 +93,7 @@ renderBuilder (Node _ tag _ attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (Embed attributes (SomeComponent (Component _ mount App {..}))) =
+renderBuilder (VComp mount attributes (SomeComponent Component {..})) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
   , fromMisoString mount
@@ -141,8 +134,8 @@ renderAttrs (Styles styles) =
 -- this means we must collapse adjacent text nodes during hydration.
 collapseSiblingTextNodes :: [View a] -> [View a]
 collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (Text x : Text y : xs) =
-  collapseSiblingTextNodes (Text (x <> y) : xs)
+collapseSiblingTextNodes (VText x : VText y : xs) =
+  collapseSiblingTextNodes (VText (x <> y) : xs)
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 ----------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE CPP #-}
@@ -18,6 +19,7 @@ module Miso.FFI.Internal
    , syncCallback1
    , asyncCallback
    , asyncCallback1
+   , asyncCallback2
    , ghcjsPure
    , syncPoint
    , addEventListener
@@ -55,6 +57,10 @@ module Miso.FFI.Internal
    , addStyle
    , addStyleSheet
    , fetchJSON
+   , shouldSync
+   , setComponent
+   , Image (..)
+   , newImage
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -62,8 +68,9 @@ import           Control.Monad (void, forM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
+import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
-#ifdef GHCJS_OLD
+#ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
 import           Language.Javascript.JSaddle hiding (Success)
@@ -92,6 +99,14 @@ asyncCallback1 f = asyncFunction handle
   where
     handle _ _ []    = error "asyncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
+-----------------------------------------------------------------------------
+-- | Creates an asynchronous callback function with a single argument
+asyncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
+asyncCallback2 f = asyncFunction handle
+  where
+    handle _ _ []    = error "asyncCallback2: no args, impossible"
+    handle _ _ [_]   = error "asyncCallback2: 1 arg, impossible"
+    handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 syncCallback1 f = function handle
@@ -377,12 +392,20 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 setBodyComponent :: MisoString -> JSM ()
 setBodyComponent name = do
   component <- toJSVal name
+  node <- jsg "document" ! "body"
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "setBodyComponent" $ [component]
+  void $ moduleMiso # "setComponent" $ [node, component]
+-----------------------------------------------------------------------------
+-- | Sets @data-component-id@ on the node given by second argument to a value given by the first argument
+setComponent :: MisoString -> JSVal -> JSM ()
+setComponent name node = do
+  component <- toJSVal name
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "setComponent" $ [node, component]
 -----------------------------------------------------------------------------
 -- | Appends a 'style_' element containing CSS to 'head_'
 --
--- > addCssStyle "body { background-color: green; }"
+-- > addStyle "body { background-color: green; }"
 --
 -- > <head><style>body { background-color: green; }</style></head>
 --
@@ -394,8 +417,6 @@ addStyle css = do
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'link_' element to 'head_'
 -- The 'link_' tag will contain a URL to a CSS file.
---
--- *<link href="https://domain.com/style.css" rel="stylesheet" />*
 --
 -- > addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
 --
@@ -445,13 +466,36 @@ fetchJSON url method maybeBody headers successful errorful = do
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
   let jsonHeaders =
-        [ (ms "Content-Type", ms "application/json")
-        , (ms "Accept", ms "application/json")
-        ]
+        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
+        <>
+        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
     forM_ (headers <> jsonHeaders) $ \(k,v) -> do
       set k v o
     pure o
   void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+-----------------------------------------------------------------------------
+-- | shouldSync
+--
+-- Used to set whether or not the current VNode should enter the 'syncChildren'
+-- function during diffing. The criteria for entrance is that all children
+-- have a populated 'key' node. We can determine this property more efficiently
+-- at tree construction time rather than dynamic detection during diffing.
+--
+shouldSync :: JSVal -> JSM Bool
+shouldSync vnode = do
+  moduleMiso <- jsg "miso"
+  fromJSValUnchecked =<< do
+    moduleMiso # "shouldSync" $ [vnode]
+-----------------------------------------------------------------------------
+newtype Image = Image JSVal
+  deriving (ToJSVal)
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a 'Image' w/ 'src' attribute.
+newImage :: MisoString -> JSM Image
+newImage url = do
+  img <- new (jsg "Image") ([] :: [MisoString])
+  img <# "src" $ url
+  pure (Image img)
 -----------------------------------------------------------------------------
