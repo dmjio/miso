@@ -26,7 +26,7 @@ describe ('Event tests', () => {
     var result = null;
     var events = {
       click: {
-        runEvent: (e : Event) => {
+        runEvent: (e : Event, o: Node) => {
           result = eventJSON('', e);
           count++;
         },

@@ -126,7 +126,7 @@ function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
       const eventObj = vtree['events'][event.type],
         options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
-      eventObj['runEvent'](event);
+      eventObj['runEvent'](event, vtree['domRef']);
       if (options['stopPropagation']) {
         event.stopPropagation();
         break;

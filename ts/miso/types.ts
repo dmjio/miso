@@ -57,7 +57,7 @@ type VTree = VComp | VNode | VText;
 
 type EventObject = {
   options: Options;
-  runEvent: (e: Event) => void;
+  runEvent: (e: Event, node : DOMRef) => void;
 };
 
 type Options = {
@@ -101,8 +101,7 @@ type Context = {
   lastChild : (e) => Element;
   parentNode : (e) => Element;
   requestAnimationFrame : (callback: ((timestamp: number) => void)) => void;
-  // stopPropagation : () => void;
-  // preventDefault : () => void;
+  flush : () => void;
 };
 
 export {
