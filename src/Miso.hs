@@ -18,7 +18,7 @@ module Miso
     miso
   , (🍜)
   , startComponent
-  , render
+  , renderComponent
     -- ** Sink
   , withSink
   , Sink
@@ -135,9 +135,9 @@ startComponent vcomp = withJS (initComponent vcomp)
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-render :: Eq model => Maybe MisoString -> Component name model action -> JSM ()
-render Nothing component = startComponent component
-render (Just renderer) vcomp = withJS $ do
+renderComponent :: Eq model => Maybe MisoString -> Component name model action -> JSM ()
+renderComponent Nothing component = startComponent component
+renderComponent (Just renderer) vcomp = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp
 ----------------------------------------------------------------------------
