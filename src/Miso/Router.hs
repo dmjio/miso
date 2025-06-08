@@ -37,7 +37,7 @@ import           Network.URI
 import           Servant.API
 import           Web.HttpApiData
 -----------------------------------------------------------------------------
-import           Miso.Html hiding (text)
+import           Miso.Types hiding (model)
 -----------------------------------------------------------------------------
 -- | Router terminator.
 -- The @HasRouter@ instance for @View@ finalizes the router.
@@ -166,7 +166,7 @@ routeLoc loc r = case r of
   RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
     Nothing -> routeLoc loc (f Nothing)
     Just Nothing -> Left Fail
-    Just (Just text) -> case parseQueryParamMaybe (decodeUtf8 text) of
+    Just (Just txt) -> case parseQueryParamMaybe (decodeUtf8 txt) of
       Nothing -> Left Fail
       Just x -> routeLoc loc (f (Just x))
   RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x)) $ do
