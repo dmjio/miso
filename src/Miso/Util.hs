@@ -23,8 +23,6 @@ import           Data.Maybe (isJust, fromMaybe)
 import           Control.Applicative (Alternative, many, empty, (<|>), optional)
 import           Data.Foldable (toList)
 -----------------------------------------------------------------------------
-import           Miso.Html (View)
------------------------------------------------------------------------------
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
 -- below.
@@ -40,7 +38,7 @@ withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
 -- | Hides the @View@s if the condition is False. Shows them when the condition
 -- is True.
-conditionalViews :: Bool -> [View action] -> [View action]
+conditionalViews :: Bool -> [view] -> [view]
 conditionalViews condition views =
     if condition
     then views

@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "include": ["**/*.spec.ts"],
+    "compilerOptions": {
+        "outDir": "./out-tsc/spec",
+        "types": ["@types/bun"]
+    },
+    
+}

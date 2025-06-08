@@ -1,5 +1,6 @@
-import { callFocus, callBlur, setComponent } from '../miso/util';
+import { callFocus, callBlur } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+import { context } from '../miso/context/dom'
 
 /* silence */
 beforeAll(() => {
@@ -18,8 +19,8 @@ afterEach(() => {
 describe ('Utils tests', () => {
 
   test('Should set body[data-component-id] via setComponent()', () => {
-    setComponent(document.body, 'component-one');
-    expect(document.body.getAttribute('data-component-id')).toEqual(
+    context.setComponentId('component-one');
+    expect(context.getAttribute(document.body, 'data-component-id')).toEqual(
       'component-one',
     );
   });

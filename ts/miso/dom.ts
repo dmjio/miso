@@ -1,32 +1,32 @@
-import { VNode, DOMRef, VComp, VTree, Props, CSS } from './types';
+import { Context, VNode, DOMRef, VComp, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
-export function diff(currentObj: VTree, newObj: VTree, parent: Element): void {
+export function diff(currentObj: VTree, newObj: VTree, parent: Element, context: Context): void {
   if (!currentObj && !newObj) return;
-  else if (!currentObj && newObj) create(newObj, parent);
-  else if (!newObj) destroy(currentObj, parent);
+  else if (!currentObj && newObj) create(newObj, parent, context);
+  else if (!newObj) destroy(currentObj, parent, context);
   else {
     if (currentObj['type'] === newObj['type']) {
-      diffNodes(currentObj, newObj, parent);
+        diffNodes(currentObj, newObj, parent, context);
     } else {
-      replace(currentObj, newObj, parent);
+        replace(currentObj, newObj, parent, context);
     }
   }
 }
 // replace everything function
-function replace(c: VTree, n: VTree, parent: Element): void {
-  // step1 : prepare to delete, pre-unmount call things
+function replace(c: VTree, n: VTree, parent: Element, context : Context): void {
+  // step1 : prepare to delete, unmount things
   callBeforeDestroyedRecursive(c);
   // ^ this will unmount sub components before we replace the child
   // and will recursively call hooks on nodes
   // step2 : create new things, replace old things with new things
   if (n['type'] === 'vtext') {
-    n['domRef'] = document.createTextNode(n['text']);
-    parent.replaceChild(n['domRef'], c['domRef']);
+    n['domRef'] = context['createTextNode'](n['text']);
+    context['replaceChild'](parent, n['domRef'], c['domRef']);
   } else {
-    createElement(n, (ref: Element) => {
-      parent.replaceChild(ref, c['domRef']);
+    createElement(n, context, (newChild: Element) => {
+      context['replaceChild'](parent, newChild, c['domRef']);
     });
   }
   // step 3: call destroyed hooks, call created hooks
@@ -34,19 +34,21 @@ function replace(c: VTree, n: VTree, parent: Element): void {
 }
 
 // destroy vtext, vnode, vcomp
-function destroy(obj: VTree, parent: Element): void {
+function destroy(obj: VTree, parent: Element, context: Context): void {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
   callBeforeDestroyedRecursive(obj);
   // step 2: destroy
-  parent.removeChild(obj['domRef']);
+  context['removeChild'](parent, obj['domRef']);
   // step 3: invoke post-hooks for vnode and vcomp
   callDestroyedRecursive(obj);
 }
 
-function diffNodes(c: VTree, n: VTree, parent: Element): void {
+function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void {
   // bail out on easy vtext case
   if (c['type'] === 'vtext') {
-    if (c['text'] !== n['text']) c['domRef'].textContent = n['text'];
+    if (c['text'] !== n['text']) {
+      context['setTextContent'](c['domRef'], n['text']);
+    }
     n['domRef'] = c['domRef'];
     return;
   }
@@ -68,10 +70,10 @@ function diffNodes(c: VTree, n: VTree, parent: Element): void {
   ) {
     n['domRef'] = c['domRef'];
     // dmj: we will diff properties on 'vcomp' as well
-    populate(c, n);
+    populate(c, n, context);
   } else {
     // dmj: we replace when things just don't line up during the diff
-    replace(c, n, parent);
+    replace(c, n, parent, context);
   }
 }
 // ** recursive calls to hooks
@@ -102,28 +104,28 @@ function callBeforeDestroyedRecursive(obj: VTree): void {
 }
 
 // ** </> recursive calls to hooks
-export function callCreated(obj: VTree): void {
+export function callCreated(obj: VTree, context: Context): void {
   if (obj['onCreated']) obj['onCreated']();
-  if (obj['type'] === 'vcomp') mountComponent(obj);
+  if (obj['type'] === 'vcomp') mountComponent(obj, context);
 }
 
 export function callBeforeCreated(obj: VTree): void {
   if (obj['onBeforeCreated']) obj['onBeforeCreated']();
 }
 
-export function populate(c: VTree, n: VTree): void {
+export function populate(c: VTree, n: VTree, context: Context): void {
   if (n['type'] !== 'vtext') {
     if (!c) c = vnode({});
-    diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg');
-    diffCss(c['css'], n['css'], n['domRef']);
+    diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg', context);
+    diffCss(c['css'], n['css'], n['domRef'], context);
     if (n['type'] === 'vnode') {
-      diffChildren(c as VNode, n as VNode, n['domRef']);
+      diffChildren(c as VNode, n as VNode, n['domRef'], context);
     }
     drawCanvas(n);
   }
 }
 
-function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean): void {
+function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, context: Context): void {
   var newProp;
   /* Is current prop in new prop list? */
   for (const c in cProps) {
@@ -132,23 +134,23 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean):
     if (newProp === undefined) {
       /* current key is not in node, remove it from DOM, if SVG, remove attribute */
       if (isSvg || !(c in node)) {
-        node.removeAttribute(cProps[c]);
+        context['removeAttribute'](node, cProps[c]);
       } else {
-        node[c] = '';
+        context['setAttribute'](node, c, '');
       }
     } else {
       /* Already on DOM from previous diff, continue */
       if (newProp === cProps[c] && c !== 'checked' && c !== 'value') continue;
       if (isSvg) {
         if (c === 'href') {
-          node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
+          context['setAttributeNS'](node, 'http://www.w3.org/1999/xlink', 'href', newProp);
         } else {
-          node.setAttribute(c, newProp);
+          context['setAttribute'](node, c, newProp);
         }
       } else if (c in node && !(c === 'list' || c === 'form')) {
-        node[c] = newProp;
+          node[c] = newProp;
       } else {
-        node.setAttribute(c, newProp);
+          context['setAttribute'](node, c, newProp);
       }
     }
   }
@@ -159,40 +161,25 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean):
     /* Only add new properties, skip (continue) if they already exist in current property map */
     if (isSvg) {
       if (n === 'href') {
-        node.setAttributeNS('http://www.w3.org/1999/xlink', 'href', newProp);
+        context['setAttributeNS'](node, 'http://www.w3.org/1999/xlink', 'href', newProp);
       } else {
-        node.setAttribute(n, newProp);
+        context['setAttribute'](node, n, newProp);
       }
     } else if (n in node && !(n === 'list' || n === 'form')) {
       node[n] = nProps[n];
     } else {
-      node.setAttribute(n, newProp);
+      context['setAttribute'](node, n, newProp);
     }
   }
 }
 
-function diffCss(cCss: CSS, nCss: CSS, node: DOMRef): void {
-  var result: string;
-  /* is current attribute in new attribute list? */
-  for (const c in cCss) {
-    result = nCss[c];
-    if (!result) {
-      /* current key is not in node */
-      node.style[c] = '';
-    } else if (result !== cCss[c]) {
-      node.style[c] = result;
-    }
-  }
-  /* add remaining */
-  for (const n in nCss) {
-    if (cCss && cCss[n]) continue;
-    node.style[n] = nCss[n];
-  }
+function diffCss(cCss: CSS, nCss: CSS, node: DOMRef, context: Context): void {
+  context['setStyle'](cCss, nCss, node);
 }
 
-function diffChildren(c: VNode, n: VNode, parent: Element): void {
-  if (c.shouldSync && n.shouldSync) {
-    syncChildren(c.children, n.children, parent);
+function diffChildren(c: VNode, n: VNode, parent: Element, context: Context): void {
+  if (c['shouldSync'] && n['shouldSync']) {
+    syncChildren(c.children, n.children, parent, context);
   } else {
     const longest: number =
       n.children.length > c.children.length
@@ -200,26 +187,27 @@ function diffChildren(c: VNode, n: VNode, parent: Element): void {
         : c.children.length;
 
     for (let i = 0; i < longest; i++)
-      diff(c.children[i], n.children[i], parent);
+      diff(c.children[i], n.children[i], parent, context);
   }
 }
 
-function populateDomRef(obj: VTree): void {
+function populateDomRef(obj: VTree, context: Context): void {
   if (obj['ns'] === 'svg') {
-    obj['domRef'] = document.createElementNS('http://www.w3.org/2000/svg', obj['tag']);
+    (obj['domRef'] as Element) = context['createElementNS']('http://www.w3.org/2000/svg', obj['tag']);
   } else if (obj['ns'] === 'mathml') {
-    obj['domRef'] = document.createElementNS('http://www.w3.org/1998/Math/MathML', obj['tag']);
+    (obj['domRef'] as Element)= context['createElementNS']('http://www.w3.org/1998/Math/MathML', obj['tag']);
   } else {
-    obj['domRef'] = document.createElement(obj['tag']);
+    /* calling createElement on doucment */
+    (obj['domRef'] as Element) = context['createElement'](obj['tag']);
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement(obj: VTree, cb: (e: Node) => void): void {
+function createElement(obj: VTree, context: Context, attach: (e: Node) => void): void {
   callBeforeCreated(obj);
-  populateDomRef(obj);
-  cb(obj['domRef']);
-  populate(null, obj);
-  callCreated(obj);
+  populateDomRef(obj, context);
+  attach(obj['domRef']);
+  populate(null, obj, context);
+  callCreated(obj, context);
 }
 
 /* draw the canvas if you need to */
@@ -237,9 +225,9 @@ function unmountComponent(obj: VTree): void {
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
-function mountComponent(obj: VTree): void {
-  const componentId = obj['data-component-id'],
-    nodeList = document.querySelectorAll("[data-component-id='" + componentId + "']");
+function mountComponent(obj: VTree, context: Context): void {
+  const componentId = obj['data-component-id'];
+  const nodeList = context['querySelectorAll']("[data-component-id='" + componentId + "']");
   // dmj: bail out if duplicate mounting detected
   if (nodeList.length > 0) {
     console.error('AlreadyMountedException: Component "' + componentId + "' is already mounted");
@@ -247,7 +235,7 @@ function mountComponent(obj: VTree): void {
   }
   // dmj, the component placeholder div[id=name] is already on the dom and vdom
   // Now we gen the component and append it to the vdom and real dom
-  (obj['domRef'] as Element).setAttribute('data-component-id', componentId);
+  context['setAttribute'] (obj['domRef'] as Element, 'data-component-id', componentId);
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
   if (obj['onBeforeMounted']) obj['onBeforeMounted']();
   // Call 'onBeforeMounted' before calling 'mount'
@@ -255,23 +243,23 @@ function mountComponent(obj: VTree): void {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
-    obj['domRef'].appendChild(component['domRef']);
-    if (obj['onMounted']) obj['onMounted'](componentId);
+    context['appendChild'](obj['domRef'], component['domRef']);
+    if (obj['onMounted']) obj['onMounted']();
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
-function create(obj: VTree, parent: Element): void {
+function create(obj: VTree, parent: Element, context: Context): void {
   if (obj['type'] === 'vtext') {
-    obj['domRef'] = document.createTextNode(obj['text']);
-    parent.appendChild(obj['domRef']);
+    obj['domRef'] = context['createTextNode'](obj['text']);
+    context['appendChild'](parent, obj['domRef']);
   } else {
-    createElement(obj, (e: Element) => {
-      parent.appendChild(e);
+    createElement(obj, context, (child: Element) => {
+      context['appendChild'](parent, child);
     });
   }
 }
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void {
+function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element, context: Context): void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,
@@ -301,11 +289,11 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
                -> [ a b c ] <- new children
                */
     if (oldFirstIndex > oldLastIndex) {
-      diff(null, nFirst, parent);
+      diff(null, nFirst, parent, context);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
          Otherwise, it will insert node['domRef'] before oLast['domRef'].
       */
-      parent.insertBefore(nFirst['domRef'], oFirst ? oFirst['domRef'] : null);
+      context['insertBefore'](parent, nFirst['domRef'], oFirst ? oFirst['domRef'] : null);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } /* No more new nodes, delete all remaining nodes in old list
@@ -315,7 +303,7 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
     else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        parent.removeChild(os[oldLastIndex--]['domRef']);
+        context['removeChild'](parent, os[oldLastIndex--]['domRef']);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
@@ -327,20 +315,20 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
          -> newFirstIndex -> [ a b c ] <- newLastIndex
          check if nFirst and oFirst align, if so, check nLast and oLast
       */
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
+      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
     }
     else if (oLast['key'] === nLast['key']) {
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+        diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } /* flip-flop case, nodes have been swapped, in some way or another
                both could have been swapped.
                -> [ a b c ] <- old children
                -> [ c b a ] <- new children
       */
      else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
-      swapDOMRefs(oLast['domRef'], oFirst['domRef'], parent);
+      context['swapDOMRefs'](oLast['domRef'], oFirst['domRef'], parent);
       swap<VTree>(os, oldFirstIndex, oldLastIndex);
-      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+      diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
+      diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } /* Or just one could be swapped (d's align here)
         This is top left and bottom right match case.
         We move d to end of list, mutate old vdom to reflect the change
@@ -353,10 +341,10 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         and now we happy path */
     else if (oFirst['key'] === nLast['key']) {
       /* insertAfter */
-      parent.insertBefore(oFirst['domRef'], oLast['domRef'].nextSibling);
+      context['insertBefore'](parent, oFirst['domRef'], oLast['domRef'].nextSibling);
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
-      diff(os[oldLastIndex--], ns[newLastIndex--], parent);
+      diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } /* This is top right and bottom lefts match case.
          We move d to end of list, mutate old vdom to reflect the change
          -> [ b a d ] <- old children
@@ -367,10 +355,10 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
          and now we happy path */
     else if (oLast['key'] === nFirst['key']) {
       /* insertAfter */
-      parent.insertBefore(oLast['domRef'], oFirst['domRef']);
+      context['insertBefore'](parent, oLast['domRef'], oFirst['domRef']);
       /* swap positions in old vdom */
       os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
-      diff(os[oldFirstIndex++], nFirst, parent);
+      diff(os[oldFirstIndex++], nFirst, parent, context);
       newFirstIndex++;
     } /* The 'you're screwed' case, nothing aligns, pull the ripcord,
         do something more fancy. This can happen when the list is sorted, for example.
@@ -406,9 +394,9 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         /* Move item to correct position */
         os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
         /* optionally perform `diff` here */
-        diff(os[oldFirstIndex++], nFirst, parent);
+        diff(os[oldFirstIndex++], nFirst, parent, context);
         /* Swap DOM references */
-        parent.insertBefore(node['domRef'], os[oldFirstIndex]['domRef']);
+        context['insertBefore'](parent, node['domRef'], os[oldFirstIndex]['domRef']);
         /* increment counters */
         newFirstIndex++;
       } /* If new key was *not* found in the old map this means it must now be created, example below
@@ -422,8 +410,8 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
         -> [ b e a j   ] <- new children
              ^
         */ else {
-        createElement(nFirst, (e: Element) => {
-          parent.insertBefore(e, oFirst['domRef']);
+        createElement(nFirst, context, (e: Element) => {
+          context['insertBefore'](parent, e, oFirst['domRef']);
         });
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
@@ -431,12 +419,6 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element): void
       }
     }
   }
-}
-
-function swapDOMRefs(a: Node, b: Node, p: Node): void {
-  const tmp = a.nextSibling;
-  p.insertBefore(a, b);
-  p.insertBefore(b, tmp);
 }
 
 function swap<T>(os: Array<T>, l: number, r: number): void {

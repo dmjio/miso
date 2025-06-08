@@ -18,6 +18,7 @@ module Miso
     miso
   , (🍜)
   , startComponent
+  , renderComponent
     -- ** Sink
   , withSink
   , Sink
@@ -47,6 +48,8 @@ module Miso
     -- * Html
   , module Miso.Html
   , module Miso.Render
+    -- * Property
+  , module Miso.Property
     -- * Router
   , module Miso.Router
     -- * Run
@@ -76,12 +79,11 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
-import           Data.IORef (newIORef)
+import           Data.IORef (newIORef, IORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)
 import           Language.Javascript.JSaddle (eval)
-import           Miso.String (MisoString)
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Diff
@@ -98,6 +100,7 @@ import           Miso.Render
 import           Miso.Router
 import           Miso.Run
 import           Miso.Storage
+import           Miso.String (MisoString)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
@@ -113,7 +116,7 @@ miso f = withJS $ do
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    FFI.setBodyComponent name
+    FFI.setComponentId name
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
@@ -126,12 +129,29 @@ miso f = withJS $ do
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
 startComponent :: Eq model => Component name model action -> JSM ()
-startComponent app@Component {..} = withJS $
-  initialize app $ \snk -> do
+startComponent vcomp = withJS (initComponent vcomp)
+----------------------------------------------------------------------------
+-- | Runs a miso application, but with a custom rendering engine.
+-- The @MisoString@ specified here is the variable name of a globally-scoped
+-- JS object that implements the context interface per 'ts/miso/context/dom.ts'
+-- This is necessary for native support.
+renderComponent :: Eq model => Maybe MisoString -> Component name model action -> JSM ()
+renderComponent Nothing component = startComponent component
+renderComponent (Just renderer) vcomp = withJS $ do
+  FFI.setDrawingContext renderer
+  initComponent vcomp
+----------------------------------------------------------------------------
+-- | Internal helper function to support both 'render' and 'startComponent'
+initComponent
+  :: Eq model
+  => Component name model action
+  -> JSM (IORef VTree)
+initComponent vcomp@Component{..} = do
+  initialize vcomp $ \snk -> do
     renderStyles styles
     vtree <- runView Draw (view model) snk logLevel events
     let name = getMountPoint mountPoint
-    FFI.setBodyComponent name
+    FFI.setComponentId name
     mount <- mountElement name
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)

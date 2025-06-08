@@ -195,9 +195,9 @@ module Miso.Svg.Property
   , writingMode_
   ) where
 -----------------------------------------------------------------------------
-import Miso.Html.Types ( Attribute )
 import Miso.Property ( textProp )
 import Miso.String ( MisoString )
+import Miso.Types ( Attribute )
 -----------------------------------------------------------------------------
 attr :: MisoString -> MisoString -> Attribute action
 attr = textProp

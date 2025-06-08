@@ -1,4 +1,4 @@
-import { VTree, EventCapture, EventObject, Options } from './types';
+import { Context, VTree, EventCapture, EventObject, Options } from './types';
 
 /* event delegation algorithm */
 export function delegate(
@@ -6,13 +6,15 @@ export function delegate(
   events: Array<EventCapture>,
   getVTree: (vtree: VTree) => void,
   debug: boolean,
+  context: Context,
 ): void {
+
   for (const event of events) {
-    mount.addEventListener(
+   context.addEventListener (
+      mount,
       event['name'],
       function (e: Event) {
-        listener(e, mount, getVTree, debug);
-        e.stopPropagation();
+        listener(e, mount, getVTree, debug, context);
       },
       event['capture'],
     );
@@ -24,43 +26,58 @@ export function undelegate(
   events: Array<EventCapture>,
   getVTree: (vtree: VTree) => void,
   debug: boolean,
+  context: Context,
 ): void {
   for (const event of events) {
     mount.removeEventListener(
       event['name'],
       function (e: Event) {
-        listener(e, mount, getVTree, debug);
+        listener(e, mount, getVTree, debug, context);
       },
       event['capture'],
     );
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener(e: Event, mount: HTMLElement, getVTree: (VTree) => void, debug: boolean): void {
-  getVTree(function (obj: VTree) {
-    if (e.target) {
-      delegateEvent(e, obj, buildTargetToElement(mount, e.target as ParentNode), [], debug);
-    }
+function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => void, debug: boolean, context: Context): void {
+  getVTree(function (vtree: VTree) {
+      if (Array.isArray(e)) {
+          for (const key of e) {
+              dispatch(key, vtree, mount, debug, context);
+          }
+      } else {
+          dispatch (e, vtree, mount, debug, context);
+      }
   });
 }
+
+function dispatch (ev, vtree, mount, debug, context) {
+  var target = context['getTarget'](ev);
+  if (target) {
+     var stack = buildTargetToElement(mount, target, context);
+     delegateEvent(ev, vtree, stack, [], debug, context);
+   }
+}
+
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement(element: HTMLElement, target: ParentNode): Array<HTMLElement> {
+function buildTargetToElement(element: HTMLElement, target: ParentNode, context: Context): Array<HTMLElement> {
   var stack = [];
-  while (element !== target) {
+  while (!context['isEqual'](element, target)) {
     stack.unshift(target);
-    target = target.parentNode;
+    target = context['parentNode'](target);
   }
   return stack;
 }
 /* Finds event in virtual dom via pointer equality
-       Accumulate parent stack as well for propagation up the vtree
-     */
+   Accumulate parent stack as well for propagation up the vtree
+*/
 function delegateEvent(
   event: Event,
   obj: VTree,
   stack: Array<HTMLElement>,
   parentStack: Array<VTree>,
   debug: boolean,
+  context: Context,
 ): void {
   /* base case, not found */
   if (!stack.length) {
@@ -72,12 +89,14 @@ function delegateEvent(
       );
     }
     return;
-  } else if (stack.length > 1) { /* stack not length 1, recurse */
+  } /* stack not length 1, recurse */
+  else if (stack.length > 1) {
     parentStack.unshift(obj);
-    for (const child of obj['children']) {
+    for (var c in obj['children']) {
+      var child = obj['children'][c];
       if (child['type'] === 'vcomp') continue;
-      if (child['domRef'] === stack[1]) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug);
+      if (context['isEqual'](child['domRef'], stack[1])) {
+        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
       }
     }
@@ -107,7 +126,7 @@ function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
       const eventObj = vtree['events'][event.type],
         options = eventObj['options'];
       if (options['preventDefault']) event.preventDefault();
-      eventObj['runEvent'](event);
+      eventObj['runEvent'](event, vtree['domRef']);
       if (options['stopPropagation']) {
         event.stopPropagation();
         break;

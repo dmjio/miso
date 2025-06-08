@@ -28,12 +28,15 @@ diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
 diff current new mountEl =
   case (current, new) of
     (Nothing, Nothing) -> pure ()
-    (Just (VTree current'), Just (VTree new')) ->
+    (Just (VTree current'), Just (VTree new')) -> do
       FFI.diff current' new' mountEl
+      FFI.flush
     (Nothing, Just (VTree new')) -> do
       FFI.diff (Object jsNull) new' mountEl
-    (Just (VTree current'), Nothing) ->
+      FFI.flush
+    (Just (VTree current'), Nothing) -> do
       FFI.diff current' (Object jsNull) mountEl
+      FFI.flush
 -----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body
 mountElement :: MisoString -> JSM JSVal

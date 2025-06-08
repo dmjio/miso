@@ -1,5 +1,5 @@
 import { callCreated, populate } from './dom';
-import { VTree, VComp, VNode, VText, DOMRef } from './types';
+import { Context, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
@@ -16,17 +16,19 @@ function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
 
 /* function to determine if <script> tags are present in `body` top-level
    if so we work around them */
-function preamble(mountPoint: DOMRef | Text): Node {
+function preamble(mountPoint: DOMRef | Text, context : Context): Node {
+  /* this needs to be abstracted out for native as well ... at some point */
   var mountChildIdx = 0,
     node: ChildNode;
+  var root = context['getRoot']();
   if (!mountPoint) {
-    if (document.body.childNodes.length > 0) {
-      node = document.body.firstChild;
+    if (root.childNodes.length > 0) {
+        node = root.firstChild;
     } else {
-      node = document.body.appendChild(document.createElement('div'));
+      node = root.appendChild(context['createElement']('div'));
     }
   } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(document.createElement('div'));
+    node = mountPoint.appendChild(context['createElement']('div'));
   } else {
     while (
       mountPoint.childNodes[mountChildIdx] &&
@@ -36,7 +38,7 @@ function preamble(mountPoint: DOMRef | Text): Node {
       mountChildIdx++;
     }
     if (!mountPoint.childNodes[mountChildIdx]) {
-      node = document.body.appendChild(document.createElement('div'));
+      node = root.appendChild(context['createElement']('div'));
     } else {
       node = mountPoint.childNodes[mountChildIdx];
     }
@@ -44,26 +46,26 @@ function preamble(mountPoint: DOMRef | Text): Node {
   return node;
 }
 
-export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree): boolean {
+export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree, context: Context): boolean {
   // If script tags are rendered first in body, skip them.
-  const node: Node = preamble(mountPoint);
+  const node: Node = preamble(mountPoint, context);
 
   // begin walking the DOM, report the result
-  if (!walk(logLevel, vtree, node)) {
+  if (!walk(logLevel, vtree, node, context)) {
     // If we failed to prerender because the structures were different, fallback to drawing
     if (logLevel) {
       console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
     }
 
     // Remove all children before rebuilding DOM
-    while (node.firstChild) node.removeChild(node.lastChild);
+    while (context['firstChild'](node)) context['removeChild'](node, context['lastChild'](node));
     (vtree['domRef'] as Node) = node;
 
-    populate(null, vtree);
+    populate(null, vtree, context);
     return false;
   } else {
     if (logLevel) {
-      if (!integrityCheck(vtree)) {
+      if (!integrityCheck(vtree, context)) {
         console.warn('[DEBUG_HYDRATE] Integrity check completed with errors');
       } else {
         console.info('[DEBUG_HYDRATE] Successfully prerendered page');
@@ -94,39 +96,39 @@ function parseColor(input: string): number[] {
         return +x;
       });
 }
-export function integrityCheck(vtree: VTree): boolean {
-  return check(true, vtree);
+export function integrityCheck(vtree: VTree, context: Context): boolean {
+  return check(true, vtree, context);
 }
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-function check(result: boolean, vtree: VTree): boolean {
+function check(result: boolean, vtree: VTree, context: Context): boolean {
   // text nodes must be the same
   if (vtree['type'] == 'vtext') {
-    if (vtree['domRef'].nodeType !== 3) {
+    if (context['getTag'](vtree['domRef']) !== '#text') {
       console.warn('VText domRef not a TEXT_NODE', vtree);
       result = false;
-    } else if (vtree['text'] !== vtree['domRef'].textContent) {
+    } else if (vtree['text'] !== context['getTextContent'](vtree['domRef'])) {
       console.warn('VText node content differs', vtree);
       result = false;
     }
   } // if vnode / vcomp, must be the same
   else {
     // tags must be identical
-    if (vtree['tag'].toUpperCase() !== vtree['domRef'].tagName) {
+    if (vtree['tag'].toUpperCase() !== context['getTag'](vtree['domRef']).toUpperCase()) {
       console.warn(
         'Integrity check failed, tags differ',
         vtree['tag'].toUpperCase(),
-        vtree['domRef'].tagName,
+        context['getTag'](vtree['domRef']),
       );
       result = false;
     }
     // Child lengths must be identical
-    if ('children' in vtree && vtree['children'].length !== vtree['domRef'].childNodes.length) {
+   if ('children' in vtree && vtree['children'].length !== context['children'](vtree['domRef']).length) {
       console.warn(
         'Integrity check failed, children lengths differ',
         vtree,
         vtree.children,
-        vtree['domRef'].childNodes,
+        context['children'](vtree['domRef'])
       );
       result = false;
     }
@@ -134,7 +136,7 @@ function check(result: boolean, vtree: VTree): boolean {
     for (const key in vtree['props']) {
       if (key === 'href' || key === 'src') {
         const absolute = window.location.origin + '/' + vtree['props'][key],
-          url = vtree['domRef'][key],
+          url = context['getAttribute'](vtree['domRef'], key),
           relative = vtree['props'][key];
         if (
           absolute !== url &&
@@ -142,30 +144,21 @@ function check(result: boolean, vtree: VTree): boolean {
           relative + '/' !== url &&
           absolute + '/' !== url
         ) {
-          console.warn('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+          console.warn('Property ' + key + ' differs', vtree['props'][key], context['getAttribute'](vtree['domRef'],key));
           result = false;
         }
       } else if (key === 'height' || key === 'width') {
-        if (parseFloat(vtree['props'][key]) !== parseFloat(vtree['domRef'][key])) {
-          console.warn('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+        if (parseFloat(vtree['props'][key]) !== parseFloat(context['getAttribute'](vtree['domRef'], key))) {
+          console.warn('Property ' + key + ' differs', vtree['props'][key], context['getAttribute'](vtree['domRef'],key));
           result = false;
         }
       } else if (key === 'class' || key === 'className') {
-        if (vtree['props'][key] !== vtree['domRef'].className) {
-          console.warn('Property class differs', vtree['props'][key], vtree['domRef'].className);
+        if (vtree['props'][key] !== context['getAttribute'](vtree['domRef'], 'class')) {
+          console.warn('Property class differs', vtree['props'][key], context['getAttribute'](vtree['domRef'], 'class'));
           result = false;
         }
-      } else if (!vtree['domRef'][key]) {
-        if (vtree['props'][key] !== vtree['domRef'].getAttribute(key)) {
-          console.warn(
-            'Property ' + key + ' differs',
-            vtree['props'][key],
-            vtree['domRef'].getAttribute(key),
-          );
-          result = false;
-        }
-      } else if (vtree['props'][key] !== vtree['domRef'][key]) {
-        console.warn('Property ' + key + ' differs', vtree['props'][key], vtree['domRef'][key]);
+      } else if (vtree['props'][key] !== context['getAttribute'](vtree['domRef'], key)) {
+        console.warn('Property ' + key + ' differs', vtree['props'][key], context['getAttribute'](vtree['domRef'], key));
         result = false;
       }
     }
@@ -173,27 +166,27 @@ function check(result: boolean, vtree: VTree): boolean {
     for (const key in vtree['css']) {
       if (key === 'color') {
         if (
-          parseColor(vtree['domRef'].style[key]).toString() !==
-          parseColor(vtree['css'][key]).toString()
+          parseColor(context['getStyle'](vtree['domRef'], key)).toString() !==
+            parseColor(vtree['css'][key]).toString()
         ) {
-          console.warn('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+          console.warn('Style ' + key + ' differs', vtree['css'][key], context['getStyle'](vtree['domRef'], key));
           result = false;
         }
-      } else if (vtree['css'][key] !== vtree['domRef'].style[key]) {
-        console.warn('Style ' + key + ' differs', vtree['css'][key], vtree['domRef'].style[key]);
+      } else if (vtree['css'][key] !== context['getStyle'](vtree['domRef'], key)) {
+        console.warn('Style ' + key + ' differs', vtree['css'][key], context['getStyle'](vtree['domRef'], key));
         result = false;
       }
     }
     // recursive call for `vnode` / `vcomp`
     for (const child of vtree['children']) {
-       const value = check(result, child);
+       const value = check(result, child, context);
        result = result && value;
     }
   }
   return result;
 }
 
-function walk(logLevel: boolean, vtree: VTree, node: Node): boolean {
+function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
@@ -206,7 +199,7 @@ function walk(logLevel: boolean, vtree: VTree, node: Node): boolean {
       (vtree as VNode)['domRef'] = node as DOMRef;
       vtree['children'] = collapseSiblingTextNodes(vtree['children']);
       // Fire onCreated events as though the elements had just been created.
-      callCreated(vtree);
+      callCreated(vtree, context);
 
       for (var i = 0; i < vtree['children'].length; i++) {
         const vdomChild = vtree['children'][i];
@@ -222,7 +215,7 @@ function walk(logLevel: boolean, vtree: VTree, node: Node): boolean {
               return false;
             }
             if (vdomChild['text'] === domChild.textContent) {
-              vdomChild['domRef'] = node.childNodes[i] as Text;
+              vdomChild['domRef'] = context['children'](node)[i] as Text;
             } else {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;
@@ -231,13 +224,13 @@ function walk(logLevel: boolean, vtree: VTree, node: Node): boolean {
           case 'vcomp':
             vdomChild['mount']((component: VComp) => {
               vdomChild['children'].push(component);
-              walk(logLevel, vdomChild, node.childNodes[i]);
+              walk(logLevel, vdomChild, node.childNodes[i], context);
             });
             break;
           default:
             if (domChild.nodeType !== 1) return false;
             vdomChild['domRef'] = node.childNodes[i] as DOMRef;
-            walk(logLevel, vdomChild, vdomChild['domRef']);
+            walk(logLevel, vdomChild, vdomChild['domRef'], context);
         }
       }
   }
