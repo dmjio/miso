@@ -20,7 +20,7 @@ module Miso.Util
   ) where
 -----------------------------------------------------------------------------
 import           Data.Maybe (isJust, fromMaybe)
-import           Control.Applicative (Alternative, many, empty, (<|>), optional, liftA2)
+import           Control.Applicative (Alternative, many, empty, (<|>), optional)
 import           Data.Foldable (toList)
 -----------------------------------------------------------------------------
 import           Miso.Html (View)
@@ -65,5 +65,5 @@ sepBy :: Alternative m => m sep -> m a -> m [a]
 sepBy sep p = sepBy1 sep p <|> pure []
 ----------------------------------------------------------------------------
 between :: Applicative f => f a -> f b -> f c -> f (b, c)
-between c l r = liftA2 (,) l (c *> r)
+between c l r = (,) <$> l <*> (c *> r)
 ----------------------------------------------------------------------------
