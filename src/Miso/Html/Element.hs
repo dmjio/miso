@@ -141,7 +141,7 @@ module Miso.Html.Element
     , template_
     ) where
 -----------------------------------------------------------------------------
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Low-level helper used to construct 'HTML' 'node' in 'View'.

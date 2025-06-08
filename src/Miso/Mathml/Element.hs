@@ -44,7 +44,7 @@ module Miso.Mathml.Element
   , semantics_
   ) where
 -----------------------------------------------------------------------------
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Low-level helper used to construct 'MATHML' 'node' in 'View'.

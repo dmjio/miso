@@ -162,7 +162,7 @@ import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.Style (Color, renderColor)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------

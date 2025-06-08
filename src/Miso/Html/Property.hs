@@ -109,7 +109,7 @@ module Miso.Html.Property
    , data_
    ) where
 -----------------------------------------------------------------------------
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.Property
 import           Miso.String (MisoString, intercalate)
 -----------------------------------------------------------------------------

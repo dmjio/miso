@@ -40,7 +40,7 @@ module Miso.Svg.Event
 -----------------------------------------------------------------------------
 import Miso.Event (on, emptyDecoder)
 import Miso.Html.Event (onClick)
-import Miso.Html.Types (Attribute)
+import Miso.Types (Attribute)
 -----------------------------------------------------------------------------
 -- | onBegin event
 onBegin :: action -> Attribute action

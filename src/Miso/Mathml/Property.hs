@@ -59,7 +59,7 @@ module Miso.Mathml.Property
   , xmlns_
   ) where
 
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.Property
 import           Miso.String (MisoString)
 

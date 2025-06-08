@@ -1,5 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -19,7 +19,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
-import           Miso.Html.Types (VTree(..))
+import           Miso.Types (VTree(..))
 import           Miso.String (MisoString)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------

@@ -85,7 +85,7 @@ module Miso.Svg.Element
   , view_
   ) where
 -----------------------------------------------------------------------------
-import           Miso.Html.Types
+import           Miso.Types
 import           Miso.String        (MisoString)
 -----------------------------------------------------------------------------
 -- | Used to construct a @VNode@ with namespace *"svg"*
