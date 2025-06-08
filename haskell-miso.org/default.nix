@@ -2,7 +2,7 @@
 with (import ../default.nix {});
 let
   sources = import ../nix/source.nix pkgs;
-  inherit (pkgs) runCommand closurecompiler;
+  inherit (pkgs) runCommand;
   ghc = legacyPkgs.haskell.packages.ghc865;
   ghcjs = legacyPkgs.haskell.packages.ghcjs;
   client = ghcjs.callCabal2nix "haskell-miso" (sources.haskell-miso) {};
