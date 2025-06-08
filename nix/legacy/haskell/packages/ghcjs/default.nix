@@ -33,12 +33,7 @@ self: super:
       mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
       cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
-      ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
-         --jscomp_off=checkVars \
-         --externs=$out/bin/todo-mvc.jsexe/all.js.externs \
-         $out/bin/todo-mvc.jsexe/all.js > temp.js
-      mv temp.js $out/bin/todo-mvc.jsexe/all.js
-      '';
+    '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
   miso = self.callCabal2nix "miso" source.miso {};
