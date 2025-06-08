@@ -102,6 +102,7 @@ type Context = {
   parentNode : (e) => Element;
   requestAnimationFrame : (callback: ((timestamp: number) => void)) => void;
   flush : () => void;
+  getRoot : () => Element;
 };
 
 export {

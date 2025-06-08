@@ -107,6 +107,9 @@ const context : Context = {
   'flush' : (): void => {
     return;
   },
+  'getRoot' : () => {
+    return document.body
+  },
 };
 
 export {

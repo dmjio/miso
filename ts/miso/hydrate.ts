@@ -20,14 +20,15 @@ function preamble(mountPoint: DOMRef | Text, context : Context): Node {
   /* this needs to be abstracted out for native as well ... at some point */
   var mountChildIdx = 0,
     node: ChildNode;
+  var root = context['getRoot']();
   if (!mountPoint) {
-    if (document.body.childNodes.length > 0) {
-      node = document.body.firstChild;
+    if (root.childNodes.length > 0) {
+        node = root.firstChild;
     } else {
-      node = document.body.appendChild(context['createElement']('div'));
+      node = root.appendChild(context['createElement']('div'));
     }
   } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(document.createElement('div'));
+    node = mountPoint.appendChild(context['createElement']('div'));
   } else {
     while (
       mountPoint.childNodes[mountChildIdx] &&
@@ -37,7 +38,7 @@ function preamble(mountPoint: DOMRef | Text, context : Context): Node {
       mountChildIdx++;
     }
     if (!mountPoint.childNodes[mountChildIdx]) {
-      node = document.body.appendChild(document.createElement('div'));
+      node = root.appendChild(context['createElement']('div'));
     } else {
       node = mountPoint.childNodes[mountChildIdx];
     }

@@ -498,20 +498,21 @@ function collapseSiblingTextNodes(vs) {
 }
 function preamble(mountPoint, context) {
   var mountChildIdx = 0, node;
+  var root = context["getRoot"]();
   if (!mountPoint) {
-    if (document.body.childNodes.length > 0) {
-      node = document.body.firstChild;
+    if (root.childNodes.length > 0) {
+      node = root.firstChild;
     } else {
-      node = document.body.appendChild(context["createElement"]("div"));
+      node = root.appendChild(context["createElement"]("div"));
     }
   } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(document.createElement("div"));
+    node = mountPoint.appendChild(context["createElement"]("div"));
   } else {
     while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === 3 || mountPoint.childNodes[mountChildIdx].localName === "script")) {
       mountChildIdx++;
     }
     if (!mountPoint.childNodes[mountChildIdx]) {
-      node = document.body.appendChild(document.createElement("div"));
+      node = root.appendChild(context["createElement"]("div"));
     } else {
       node = mountPoint.childNodes[mountChildIdx];
     }
@@ -772,6 +773,9 @@ var context = {
   },
   flush: () => {
     return;
+  },
+  getRoot: () => {
+    return document.body;
   }
 };
 
