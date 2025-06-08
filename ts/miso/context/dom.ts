@@ -26,7 +26,7 @@ const context : Context = {
     return parent.replaceChild (n, old);
   },
   'removeChild' : (parent, child) => {
-    parent.removeChild (child);
+    return parent.removeChild (child);
   },
   'createElement' : (tag :string) => {
     return document.createElement(tag);
@@ -60,6 +60,7 @@ const context : Context = {
        if (cCss && cCss[n]) continue;
        node.style[n] = nCss[n];
      }
+    return;
   },
   'getStyle' : (node, key) => {
     return node.style[key];
@@ -98,10 +99,13 @@ const context : Context = {
     return e.target;
   },
   'setComponentId' : (componentId: string): void => {
-    document.body.setAttribute('data-component-id', componentId);
+    return document.body.setAttribute('data-component-id', componentId);
   },
   'requestAnimationFrame' : (callback: (timestamp: number) => void): void => {
-     window.requestAnimationFrame (callback);
+     return window.requestAnimationFrame (callback);
+  },
+  'flush' : (): void => {
+    return;
   },
 };
 

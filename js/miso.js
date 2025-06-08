@@ -692,7 +692,7 @@ var context = {
     return parent.replaceChild(n, old);
   },
   removeChild: (parent, child) => {
-    parent.removeChild(child);
+    return parent.removeChild(child);
   },
   createElement: (tag) => {
     return document.createElement(tag);
@@ -724,6 +724,7 @@ var context = {
         continue;
       node.style[n] = nCss[n];
     }
+    return;
   },
   getStyle: (node, key) => {
     return node.style[key];
@@ -764,10 +765,13 @@ var context = {
     return e.target;
   },
   setComponentId: (componentId) => {
-    document.body.setAttribute("data-component-id", componentId);
+    return document.body.setAttribute("data-component-id", componentId);
   },
   requestAnimationFrame: (callback) => {
-    window.requestAnimationFrame(callback);
+    return window.requestAnimationFrame(callback);
+  },
+  flush: () => {
+    return;
   }
 };
 
@@ -786,6 +790,3 @@ globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["setComponent"] = setComponent;
 globalThis["miso"]["context"] = context;
-globalThis["miso"]["flush"] = function(e) {
-  return;
-};

@@ -30,4 +30,3 @@ globalThis['miso']['shouldSync'] = shouldSync;
 globalThis['miso']['integrityCheck'] = integrityCheck;
 globalThis['miso']['setComponent'] = setComponent;
 globalThis['miso']['context'] = context;
-globalThis['miso']['flush'] = function (e) { return; }

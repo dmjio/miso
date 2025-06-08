@@ -505,8 +505,8 @@ shouldSync vnode = do
 -----------------------------------------------------------------------------
 flush :: JSM ()
 flush = do
-  moduleMiso <- jsg "miso"
-  void $ moduleMiso # "flush" $ ([] :: [JSVal])
+  context <- jsg "miso" ! "context"
+  void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
 requestAnimationFrame :: JSM () -> JSM ()
 requestAnimationFrame f = do
