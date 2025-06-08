@@ -84,7 +84,6 @@ import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)
 import           Language.Javascript.JSaddle (eval)
-import           Miso.String (MisoString)
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Diff
@@ -101,6 +100,7 @@ import           Miso.Render
 import           Miso.Router
 import           Miso.Run
 import           Miso.Storage
+import           Miso.String (MisoString)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
