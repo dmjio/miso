@@ -33,7 +33,7 @@ globalThis['miso']['context'] = context;
 globalThis['miso']['setDrawingContext'] = function (name) {
     const ctx = globalThis[name];
     if (!ctx) {
-      console.warn('Custom rendering engine is not defined');
+      console.warn('Custom rendering engine is not defined', name, globalThis[name]);
     } else {
       globalThis['miso']['context'] = ctx;
     }
