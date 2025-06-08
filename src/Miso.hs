@@ -18,6 +18,7 @@ module Miso
     miso
   , (🍜)
   , startComponent
+  , render
     -- ** Sink
   , withSink
   , Sink
@@ -78,7 +79,7 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
-import           Data.IORef (newIORef)
+import           Data.IORef (newIORef, IORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 import           Data.FileEmbed (embedStringFile)
@@ -128,8 +129,25 @@ miso f = withJS $ do
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
 startComponent :: Eq model => Component name model action -> JSM ()
-startComponent app@Component {..} = withJS $
-  initialize app $ \snk -> do
+startComponent vcomp = withJS (initComponent vcomp)
+----------------------------------------------------------------------------
+-- | Runs a miso application, but with a custom rendering engine.
+-- The @MisoString@ specified here is the variable name of a globally-scoped
+-- JS object that implements the context interface per 'ts/miso/context/dom.ts'
+-- This is necessary for native support.
+render :: Eq model => Maybe MisoString -> Component name model action -> JSM ()
+render Nothing component = startComponent component
+render (Just renderer) vcomp = withJS $ do
+  FFI.setDrawingContext renderer
+  initComponent vcomp
+----------------------------------------------------------------------------
+-- | Internal helper function to support both 'render' and 'startComponent'
+initComponent
+  :: Eq model
+  => Component name model action
+  -> JSM (IORef VTree)
+initComponent vcomp@Component{..} = do
+  initialize vcomp $ \snk -> do
     renderStyles styles
     vtree <- runView Draw (view model) snk logLevel events
     let name = getMountPoint mountPoint

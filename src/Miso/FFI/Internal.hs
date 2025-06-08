@@ -62,6 +62,7 @@ module Miso.FFI.Internal
    , setComponent
    , flush
    , requestAnimationFrame
+   , setDrawingContext
    , Image (..)
    , newImage
    ) where
@@ -523,4 +524,11 @@ newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
   img <# "src" $ url
   pure (Image img)
+-----------------------------------------------------------------------------
+-- | Used to select a drawing context. Users can override the default DOM renderer
+-- by implementing their own Context, and exporting it to the global scope. This
+-- opens the door to different rendering engines, ala miso-native.
+setDrawingContext :: MisoString -> JSM ()
+setDrawingContext rendererName =
+  void $ jsg "miso" # "setDrawingContext" $ [rendererName]
 -----------------------------------------------------------------------------

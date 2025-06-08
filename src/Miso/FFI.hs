@@ -26,6 +26,7 @@ module Miso.FFI
   , syncCallback1
   , asyncCallback
   , flush
+  , setDrawingContext
   -- ** Image
   , Image (..)
   , newImage
