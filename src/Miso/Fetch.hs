@@ -1,16 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -29,5 +17,6 @@
 module Miso.Fetch
   ( fetchJSON
   ) where
-
+----------------------------------------------------------------------------
 import           Miso.FFI.Internal (fetchJSON)
+----------------------------------------------------------------------------
