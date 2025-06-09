@@ -20,10 +20,7 @@ module Main where
 import           Data.Aeson
 import           Data.Maybe
 import           GHC.Generics
-import           Language.Javascript.JSaddle (JSM)
-import           Data.Proxy
 import           Servant.API
-import           Servant.Client.JS (ClientEnv (..), ClientError, parseBaseUrl, client, runClientM)
 ----------------------------------------------------------------------------
 import           Miso hiding (defaultOptions)
 import           Miso.String
@@ -68,19 +65,12 @@ emptyModel = Model Nothing
 -- | GitHub API method
 type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
--- | Uses servant to reify type-safe calls to the Fetch API
-getGithubAPI
-  :: JSM (Either ClientError GitHub)
-getGithubAPI = do
-    baseUrl <- parseBaseUrl "https://api.github.com"
-    runClientM c (ClientEnv baseUrl)
-  where
-    c = Servant.Client.JS.client (Proxy @GithubAPI)
-----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
-updateModel FetchGitHub = io $ getGithubAPI <&> \case
-  Right r -> SetGitHub r
-  Left e  -> ErrorHandler $ ms (show e)
+updateModel FetchGitHub =
+  withSink $ \sink ->
+    fetchJSON "https://api.github.com" "GET" Nothing []
+      (sink . SetGitHub)
+      (sink . ErrorHandler)
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =
