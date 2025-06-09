@@ -100,11 +100,11 @@ initialize Component {..} getView = do
       when (oldName /= newName && oldModel /= newModel) $ do
         newVTree <- runView Draw (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
-        FFI.requestAnimationFrame $ do
-          diff (Just oldVTree) (Just newVTree) componentMount
-          liftIO $ do
-            atomicWriteIORef componentVTree newVTree
-            atomicWriteIORef componentModel newModel
+        void waitForAnimationFrame
+        diff (Just oldVTree) (Just newVTree) componentMount
+        liftIO $ do
+          atomicWriteIORef componentVTree newVTree
+          atomicWriteIORef componentModel newModel
       syncPoint
       eventLoop newModel
   _ <- FFI.forkJSM (eventLoop model)
