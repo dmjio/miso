@@ -295,12 +295,6 @@ if arch(wasm32)
   -- Required for TemplateHaskell. When using wasm32-wasi-cabal from
   -- ghc-wasm-meta, this is superseded by the global cabal.config.
   shared: True
-
-  -- https://github.com/haskellari/splitmix/pull/73
-  source-repository-package
-    type: git
-    location: https://github.com/amesgen/splitmix
-    tag: cea9e31bdd849eb0c17611bb99e33d590e126164
 ```
 
 Call `wasm32-wasi-cabal build --allow-newer` and a `WASM` payload should be created in `dist-newstyle/` directory.
