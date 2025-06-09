@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
@@ -129,26 +130,36 @@ miso f = withJS $ do
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
 startComponent :: Eq model => Component name model action -> JSM ()
-startComponent vcomp = withJS (initComponent vcomp)
+startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (renderStyles styles)
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-renderComponent :: Eq model => Maybe MisoString -> Component name model action -> JSM ()
-renderComponent Nothing component = startComponent component
-renderComponent (Just renderer) vcomp = withJS $ do
+renderComponent
+  :: Eq model
+  => Maybe MisoString
+  -- ^ Name of the JS object that contains the drawing context
+  -> Component name model action
+  -- ^ Component application
+  -> JSM ()
+  -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
+  -> JSM ()
+renderComponent Nothing component _ = startComponent component
+renderComponent (Just renderer) vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
-  initComponent vcomp
+  initComponent vcomp hooks
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
   :: Eq model
   => Component name model action
+  -- ^ Component application
+  -> JSM ()
+  -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (IORef VTree)
-initComponent vcomp@Component{..} = do
-  initialize vcomp $ \snk -> do
-    renderStyles styles
+initComponent vcomp@Component{..} hooks = do
+  initialize vcomp $ \snk -> hooks >> do
     vtree <- runView Draw (view model) snk logLevel events
     let name = getMountPoint mountPoint
     FFI.setComponentId name
