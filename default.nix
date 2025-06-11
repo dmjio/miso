@@ -46,6 +46,7 @@ with pkgs.haskell.lib;
   inherit (pkgs)
     wasmExamples
     svgWasm
+    simpleWasm
     componentsWasm
     threejsWasm
     canvas2DWasm

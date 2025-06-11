@@ -57,6 +57,13 @@ self: super:
        scripts = "";
     };
 
+  simpleWasm =
+    self.wasmPkgExample {
+       name = "simple";
+       title = "Simple WASM Example";
+       scripts = "";
+    };
+
   componentsWasm =
     self.wasmPkgExample {
        name = "components";
