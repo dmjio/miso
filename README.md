@@ -330,6 +330,9 @@ But, we're not done yet. In order to view this in the browser there are still a 
 
 To start, we recommend creating an `app.wasmexe` folder to store the additional artifacts required.
 
+> [!TIP]
+> We recommend using an up-to-date `node` version (currently tested with `v24.2.0`) to ensure `post-link.mjs` works properly.
+
 ```bash
 # Creates the directory for hosting
 $ mkdir -v app.wasmexe
