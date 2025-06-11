@@ -183,7 +183,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
       if (isSvg || !(c in node)) {
         context["removeAttribute"](node, cProps[c]);
       } else {
-        context["setAttribute"](node, c, "");
+        node[c] = "";
       }
     } else {
       if (newProp === cProps[c] && c !== "checked" && c !== "value")

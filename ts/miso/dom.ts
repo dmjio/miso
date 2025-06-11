@@ -136,7 +136,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
       if (isSvg || !(c in node)) {
         context['removeAttribute'](node, cProps[c]);
       } else {
-        context['setAttribute'](node, c, '');
+        node[c] = '';
       }
     } else {
       /* Already on DOM from previous diff, continue */
