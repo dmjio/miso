@@ -1,49 +1,43 @@
+-----------------------------------------------------------------------------
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-
--- | Haskell module declaration
+-----------------------------------------------------------------------------
 module Main where
-
--- Miso framework import
+-----------------------------------------------------------------------------
 import           Prelude hiding (unlines)
-
+-----------------------------------------------------------------------------
 import           Miso
 import           Miso.Lens
 import           Miso.String
-
--- | Type synonym for an application model
+-----------------------------------------------------------------------------
 newtype Model = Model { _value :: Int }
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 instance ToMisoString Model where
   toMisoString (Model v) = toMisoString v
-
+-----------------------------------------------------------------------------
 value :: Lens Model Int
 value = lens _value $ \m v -> m { _value = v }
-
--- | Sum type for application events
+-----------------------------------------------------------------------------
 data Action
   = AddOne PointerEvent
   | SubtractOne PointerEvent
   | SayHelloWorld
   deriving (Show, Eq)
-
+-----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
-
--- | Entry point for a miso application
+-----------------------------------------------------------------------------
 main :: IO ()
 main = run $ startComponent app
   { events = pointerEvents
   , styles = [ Style css ]
   }
-
--- | Component definition (uses 'defaultComponent' smart constructor)
+-----------------------------------------------------------------------------
 app :: Component name Model Action
 app = defaultComponent (Model 0) updateModel viewModel
-
--- | UpdateModels model, optionally introduces side effects
+-----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
 updateModel (AddOne event) = do
   value += 1
@@ -53,8 +47,7 @@ updateModel (SubtractOne event) = do
   io_ $ consoleLog (ms (show event))
 updateModel SayHelloWorld =
   io_ (consoleLog "Hello World!")
-
--- | Constructs a virtual DOM from a model
+-----------------------------------------------------------------------------
 viewModel :: Model -> View Action
 viewModel x = div_
   [ class_ "counter-container" ]
@@ -81,7 +74,7 @@ viewModel x = div_
       ] [text "-"]
     ]
   ]
-
+-----------------------------------------------------------------------------
 css :: MisoString
 css = unlines
   [ ":root {"
@@ -172,4 +165,4 @@ css = unlines
   , "  }"
   , "}"
   ]
-
+-----------------------------------------------------------------------------
