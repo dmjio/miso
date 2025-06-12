@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE CPP               #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.WebSocket
@@ -60,22 +60,22 @@ websocketSub
   -> (WebSocket m -> action)
   -> Sub action
 websocketSub (URL u) (Protocols ps) f sink = do
-  socket <- createWebSocket u ps
-  liftIO (writeIORef websocket (Just socket))
+  Socket socket <- createWebSocket u ps
+  liftIO (writeIORef websocket (Just (Socket socket)))
   void . FFI.forkJSM $ handleReconnect
-  addEventListener socket "open" $ \_ -> do
+  FFI.addEventListener socket "open" $ \_ -> do
     liftIO (writeIORef closedCode Nothing)
     sink (f WebSocketOpen)
-  addEventListener socket "message" $ \v -> do
+  FFI.addEventListener socket "message" $ \v -> do
     d <- FFI.jsonParse =<< v ! ("data" :: MisoString)
     sink $ f (WebSocketMessage d)
-  addEventListener socket "close" $ \e -> do
+  FFI.addEventListener socket "close" $ \e -> do
     code <- codeToCloseCode <$> getCode e
     liftIO (writeIORef closedCode (Just code))
     reason <- getReason e
     clean <- wasClean e
     sink $ f (WebSocketClose code clean reason)
-  addEventListener socket "error" $ \v -> do
+  FFI.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
     d' <- v ! ("data" :: MisoString)
 #ifndef ghcjs_HOST_OS
@@ -231,10 +231,6 @@ createSocket url protocols = Socket <$> new (jsg ("WebSocket" :: JSString)) (url
 -----------------------------------------------------------------------------
 socketState :: Socket -> JSM Int
 socketState (Socket s) = fromJSValUnchecked =<< s ! ("readyState" :: JSString)
------------------------------------------------------------------------------
-addEventListener :: Socket -> MisoString -> (JSVal -> JSM ()) -> JSM ()
-addEventListener (Socket s) name cb = do
-  FFI.addEventListener s name cb
 -----------------------------------------------------------------------------
 wasClean :: JSVal -> JSM WasClean
 wasClean v = WasClean <$> (fromJSValUnchecked =<< v ! ("wasClean" :: JSString))
