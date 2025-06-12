@@ -239,12 +239,12 @@ function mountComponent(obj: VTree, context: Context): void {
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
   if (obj['onBeforeMounted']) obj['onBeforeMounted']();
   // Call 'onBeforeMounted' before calling 'mount'
-  obj['mount']((component: VComp) => {
+  obj['mount']((component: VNode) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
     context['appendChild'](obj['domRef'], component['domRef']);
-    if (obj['onMounted']) obj['onMounted']();
+    if (obj['onMounted']) obj['onMounted'](componentId);
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)

@@ -270,7 +270,7 @@ function mountComponent(obj, context) {
     obj["children"].push(component);
     context["appendChild"](obj["domRef"], component["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"]();
+      obj["onMounted"](componentId);
   });
 }
 function create(obj, parent, context) {
