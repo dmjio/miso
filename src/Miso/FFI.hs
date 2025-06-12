@@ -22,11 +22,14 @@ module Miso.FFI
   , reload
   , addStyle
   , addStyleSheet
+  , addEventListener
   , syncCallback
   , syncCallback1
   , asyncCallback
   , flush
   , setDrawingContext
+  , jsonStringify
+  , jsonParse
   -- ** Image
   , Image (..)
   , newImage
