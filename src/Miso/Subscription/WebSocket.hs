@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE CPP               #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.WebSocket
