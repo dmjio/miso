@@ -67,4 +67,12 @@ in
     rev = "1da7afa";
     hash = "sha256-bAfIlnd3PRn9wqGn38R3+6ok1dxRR3Jeb+UUIYJZ7/M=";
   };
+  microhs = fetchFromGitHub {
+    owner = "augustss";
+    repo = "microhs";
+    rev = "db0d3d12b0ee814441c6045bd680cc7d92a41375";
+    sha256 = "sha256-raTlZBQ5seYo/ez0Cg++nbQSLIKvSLLSqcCSL0svrLE=";
+    fetchSubmodules = true;
+  };
+
 }
