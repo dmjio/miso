@@ -138,7 +138,7 @@ function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
        on an Event that is stripped of impure references.
     */
-export function eventJSON(at: string | Array<string>, obj: Event): Object[] {
+export function eventJSON(at: string | Array<string>, obj: any): Object[] {
   /* If at is of type [[MisoString]] */
   if (typeof at[0] === 'object') {
     var ret = [];
