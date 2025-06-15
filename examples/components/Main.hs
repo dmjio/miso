@@ -110,6 +110,9 @@ viewModel1 x =
 data LoggerSub = LoggerSub
   deriving (Eq, Ord)
 
+instance ToMisoString LoggerSub where
+  toMisoString LoggerSub = "LoggerSub"
+
 -- | Updates model, optionally introduces side effects
 updateModel1 :: MainAction -> Effect MainModel MainAction
 updateModel1 StartLogger = startSub LoggerSub (loggerSub "main-app")
