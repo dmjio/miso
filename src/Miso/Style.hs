@@ -86,6 +86,7 @@ module Miso.Style
   , color
   , columnGap
   , cssVariable
+  , cursor
   , direction
   , display
   , filter
@@ -914,6 +915,12 @@ fontStyle x = "font-style" =: x
 --
 fontWeight :: MisoString -> Style
 fontWeight x = "font-weight" =: x
+-----------------------------------------------------------------------------
+--
+-- > style_ [ cursor =: "pointer" ]
+--
+cursor :: MisoString -> Style
+cursor x = "cursor" =: x
 -----------------------------------------------------------------------------
 --
 -- > style_ [ gap =: "value" ]
