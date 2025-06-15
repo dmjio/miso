@@ -16,6 +16,7 @@ module Miso.Style.Color
   , rgba
   , hsl
   , hex
+  , var
     -- *** Render
   , renderColor
     -- *** Colors
@@ -178,6 +179,7 @@ data Color
   = RGBA Int Int Int Double
   | HSL Int Int Int
   | Hex MisoString
+  | VarColor MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 renderColor :: Color -> MisoString
@@ -197,6 +199,10 @@ renderColor (HSL h s l) = "hsl(" <> values <> ")"
       , MS.ms l
       ]
 renderColor (Hex s) = "#" <> s
+renderColor (VarColor n) = "var(--" <> n <> ")"
+-----------------------------------------------------------------------------
+var :: MisoString -> Color
+var = VarColor
 -----------------------------------------------------------------------------
 rgba :: Int -> Int -> Int -> Double -> Color
 rgba = RGBA
