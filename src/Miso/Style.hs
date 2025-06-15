@@ -295,6 +295,7 @@ data Styles
   = Styles (MisoString, [Style])
   | KeyFrame MisoString [(MisoString, [Style])]
   | Media MisoString [(MisoString, [Style])]
+  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
 -- @
@@ -347,6 +348,7 @@ selector_ k v = Styles (k,v)
 --    ]
 -- @
 newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
+  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
