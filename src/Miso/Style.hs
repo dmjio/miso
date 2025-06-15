@@ -215,8 +215,10 @@ module Miso.Style
   , em
   , s
   , ms
-  -- *** Animations
-  , keyframes
+  -- *** Animation
+  , keyframes_
+  -- *** Media Queries
+  , media_
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map as M
@@ -292,6 +294,7 @@ type Style = (MisoString, MisoString)
 data Styles
   = Styles (MisoString, [Style])
   | KeyFrame MisoString [(MisoString, [Style])]
+  | Media MisoString [(MisoString, [Style])]
 -----------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
 -- @
@@ -307,36 +310,42 @@ selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
 -- | Type for a CSS style on native.
 -- Internally it maps From CSS selectors to 'Styles'.
---
 -- @
 -- testSheet :: StyleSheet
 -- testSheet =
---   sheet_
---   [ selector ".name"
---       [ backgroundColor red
---       , alignContent "top"
---       ]
---   , selector "#container"
---       [ backgroundColor blue
---       , alignContent "center"
---       ]
---   , keyframes "slide-in"
---     [ "from" =:
---       [ transform "translateX(0%)"
---       ]
---     , "to" =:
---       [ transform "translateX(100%)"
---       , backgroundColor red
---       , backgroundSize "10px"
---       , backgroundRepeat "true"
---       ]
---     , pct 10 =:
---       [ "foo" =: "bar"
---       ]
---     ]
---   ]
+--    sheet_
+--    [ selector_ ".name"
+--        [ backgroundColor red
+--        , alignContent "top"
+--        ]
+--    , selector_ "#container"
+--        [ backgroundColor blue
+--        , alignContent "center"
+--        ]
+--    , keyframes_ "slide-in"
+--      [ "from" =:
+--        [ transform "translateX(0%)"
+--        ]
+--      , "to" =:
+--        [ transform "translateX(100%)"
+--        , backgroundColor red
+--        , backgroundSize "10px"
+--        , backgroundRepeat "true"
+--        ]
+--      , pct 10 =:
+--        [ "foo" =: "bar"
+--        ]
+--      ]
+--    , media_ "screen and (min-width: 480px)"
+--      [ "header" =:
+--        [ height "auto"
+--        ]
+--      , "ul" =:
+--        [ display "block"
+--        ]
+--      ]
+--    ]
 -- @
---
 newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
 -----------------------------------------------------------------------------
 sheet_ :: [Styles] -> StyleSheet
@@ -386,6 +395,17 @@ renderStyles indent (KeyFrame name frames) = MS.intercalate " "
     [ renderStyles (indent + 2) (Styles frame)
     | frame <- frames
     ]
+  , "}\n"
+  ]
+renderStyles indent (Media name frames) = MS.intercalate " "
+  [ "@media"
+  , name
+  , "{\n"
+  , MS.intercalate "\n  "
+    [ renderStyles (indent + 2) (Styles frame)
+    | frame <- frames
+    ]
+  , "}\n"
   ]
 -----------------------------------------------------------------------------
 renderStyleSheet :: StyleSheet -> MisoString
@@ -413,8 +433,23 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
 --  ]
 -- @
 --
-keyframes :: MisoString -> [(MisoString, [Style])] -> Styles
-keyframes = KeyFrame
+keyframes_ :: MisoString -> [(MisoString, [Style])] -> Styles
+keyframes_ = KeyFrame
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/@media
+-- @
+-- media_ "screen and (min-width: 480px)"
+--   [ "header" =:
+--       [ height "auto"
+--       ]
+--   , "ul" =:
+--       [ display "block"
+--       ]
+--   ]
+-- @
+--
+media_ :: MisoString -> [(MisoString, [Style])] -> Styles
+media_ = Media
 -----------------------------------------------------------------------------
 --
 -- > style_ [ alignContent =: "value" ]
