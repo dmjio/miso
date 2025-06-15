@@ -18,6 +18,7 @@ module Miso.Style
   , style_
   , styleInline_
   , sheet_
+  , selector_
   , (=:)
     -- *** Render
   , renderStyleSheet
@@ -214,9 +215,10 @@ module Miso.Style
   , em
   , s
   , ms
+  -- *** Animations
+  , keyframes
   ) where
 -----------------------------------------------------------------------------
-import           Data.Map (Map)
 import qualified Data.Map as M
 import           Miso.String (MisoString)
 import qualified Miso.String as MS
@@ -228,46 +230,46 @@ import qualified Miso.Types as MT
 import           Prelude hiding (filter, rem)
 -----------------------------------------------------------------------------
 pt :: Double -> MisoString
-pt x = ms x <> "pt"
+pt x = MS.ms x <> "pt"
 -----------------------------------------------------------------------------
 px :: Double -> MisoString
-px x = ms x <> "px"
+px x = MS.ms x <> "px"
 -----------------------------------------------------------------------------
 deg :: Double -> MisoString
-deg x = ms x <> "deg"
+deg x = MS.ms x <> "deg"
 -----------------------------------------------------------------------------
 turn :: Double -> MisoString
-turn x = ms x <> "turn"
+turn x = MS.ms x <> "turn"
 -----------------------------------------------------------------------------
 rad :: Double -> MisoString
-rad x = ms x <> "rad"
+rad x = MS.ms x <> "rad"
 -----------------------------------------------------------------------------
 rpx :: Double -> MisoString
-rpx x = ms x <> "rpx"
+rpx x = MS.ms x <> "rpx"
 -----------------------------------------------------------------------------
 rem :: Double -> MisoString
-rem x = ms x <> "rem"
+rem x = MS.ms x <> "rem"
 -----------------------------------------------------------------------------
 em :: Double -> MisoString
-em x = ms x <> "em"
+em x = MS.ms x <> "em"
 -----------------------------------------------------------------------------
 vh :: Double -> MisoString
-vh x = ms x <> "vh"
+vh x = MS.ms x <> "vh"
 -----------------------------------------------------------------------------
 vw :: Double -> MisoString
-vw x = ms x <> "vw"
+vw x = MS.ms x <> "vw"
 -----------------------------------------------------------------------------
 s :: Double -> MisoString
-s x = ms x <> "s"
+s x = MS.ms x <> "s"
 -----------------------------------------------------------------------------
 ms :: Double -> MisoString
-ms x = ms x <> "ms"
+ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
 pct :: Double -> MisoString
-pct x = ms x <> "%"
+pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
 ppx :: Double -> MisoString
-ppx x = ms x <> "ppx"
+ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
 -- | Smart constructor for Attributes. This function is helpful when
 -- constructing 'Style'.
@@ -287,7 +289,21 @@ type Style = (MisoString, MisoString)
 -----------------------------------------------------------------------------
 -- | Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
 -- It maps CSS properties to their values.
-type Styles = Map MisoString MisoString
+data Styles
+  = Styles (MisoString, [Style])
+  | KeyFrame MisoString [(MisoString, [Style])]
+-----------------------------------------------------------------------------
+-- | Used when constructing a 'StyleSheet'
+-- @
+-- sheet_
+--   [ selector_ ".name"
+--     [ backgroundColor red
+--     , alignContent "top"
+--     ]
+--   ]
+-- @
+selector_ :: MisoString -> [Style] -> Styles
+selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
 -- | Type for a CSS style on native.
 -- Internally it maps From CSS selectors to 'Styles'.
@@ -296,23 +312,35 @@ type Styles = Map MisoString MisoString
 -- testSheet :: StyleSheet
 -- testSheet =
 --   sheet_
---   [ ".name" =:
---       style_
---       [ backgroundColor "red"
+--   [ selector ".name"
+--       [ backgroundColor red
 --       , alignContent "top"
 --       ]
---   , "#container" =:
---       style_
---       [ backgroundColor "blue"
+--   , selector "#container"
+--       [ backgroundColor blue
 --       , alignContent "center"
 --       ]
+--   , keyframes "slide-in"
+--     [ "from" =:
+--       [ transform "translateX(0%)"
+--       ]
+--     , "to" =:
+--       [ transform "translateX(100%)"
+--       , backgroundColor red
+--       , backgroundSize "10px"
+--       , backgroundRepeat "true"
+--       ]
+--     , pct 10 =:
+--       [ "foo" =: "bar"
+--       ]
+--     ]
 --   ]
 -- @
 --
-newtype StyleSheet = StyleSheet { getStyleSheet :: Map MisoString Styles }
+newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
 -----------------------------------------------------------------------------
-sheet_ :: [(MisoString, Styles)] -> StyleSheet
-sheet_ = StyleSheet . M.fromList
+sheet_ :: [Styles] -> StyleSheet
+sheet_ = StyleSheet
 -----------------------------------------------------------------------------
 -- | @style_@ is an attribute that will set the @style@
 -- attribute of the associated DOM node to @attrs@.
@@ -336,22 +364,57 @@ styleInline_ ::  MisoString -> Attribute action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
 -- | Renders a 'Styles' to a 'MisoString'
-renderStyles :: Styles -> MisoString
-renderStyles m = MS.unlines
-  [ mconcat [ indent, k, ":", v, ";" ]
-  | let indent = "  "
-  , (k,v) <- M.toList m
+renderStyles :: Int -> Styles -> MisoString
+renderStyles indent (Styles (sel,styles)) = MS.unlines
+  [ sel <> " {" <> MS.replicate indent " "
+  , MS.intercalate "\n"
+        [ mconcat
+          [ MS.replicate (indent + 2) " " <> k
+          , " : "
+          , v
+          , ";"
+          ]
+        | (k,v) <- styles
+        ]
+  , MS.replicate indent " " <> "}"
+  ]
+renderStyles indent (KeyFrame name frames) = MS.intercalate " "
+  [ "@keyframes"
+  , name
+  , "{\n"
+  , MS.intercalate "\n  "
+    [ renderStyles (indent + 2) (Styles frame)
+    | frame <- frames
+    ]
   ]
 -----------------------------------------------------------------------------
 renderStyleSheet :: StyleSheet -> MisoString
-renderStyleSheet styleSheet = mconcat
-  [ MS.unlines
-    [ selector
-    , "{"
-    , renderStyles styles <> "}"
-    ]
-  | (selector, styles) <- M.toList (getStyleSheet styleSheet)
+renderStyleSheet styleSheet = MS.intercalate "\n"
+  [ renderStyles 0 styles
+  | styles <- getStyleSheet styleSheet
   ]
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes
+-- @
+-- testKeyFrame :: Styles
+-- testKeyFrame = keyframes "slide-in"
+--   [ "from" =:
+--       [ transform "translateX(0%)"
+--       ]
+--   , "to" =:
+--       [ transform "translateX(100%)"
+--       , backgroundColor red
+--       , backgroundSize "10px"
+--       , backgroundRepeat "true"
+--       ]
+--   , pct 10 =:
+--     [ "foo" =: "bar"
+--     ]
+--  ]
+-- @
+--
+keyframes :: MisoString -> [(MisoString, [Style])] -> Styles
+keyframes = KeyFrame
 -----------------------------------------------------------------------------
 --
 -- > style_ [ alignContent =: "value" ]
