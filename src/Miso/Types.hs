@@ -63,7 +63,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString, ms)
-import           Miso.Style (StyleSheet)
+import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
 data Component (name :: Symbol) model action = Component

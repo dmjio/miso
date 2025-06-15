@@ -11,10 +11,8 @@
 -----------------------------------------------------------------------------
 module Miso.Style
   ( -- *** Types
-    Style
-  , Styles
-  , StyleSheet
-    -- *** Smart Constructor
+    module Miso.Style.Types
+  -- *** Smart Constructor
   , style_
   , styleInline_
   , sheet_
@@ -226,6 +224,7 @@ import qualified Data.Map as M
 import           Miso.String (MisoString)
 import qualified Miso.String as MS
 import           Miso.Style.Color
+import           Miso.Style.Types
 import           Miso.Property
 import           Miso.Types (Attribute)
 import qualified Miso.Types as MT
@@ -286,18 +285,6 @@ ppx x = MS.ms x <> "ppx"
 (=:) :: k -> v -> (k, v)
 k =: v = (k,v)
 -----------------------------------------------------------------------------
--- | Type for a CSS 'Style'
---
-type Style = (MisoString, MisoString)
------------------------------------------------------------------------------
--- | Type for a @Map@ of CSS 'Style'. Used with @StyleSheet@.
--- It maps CSS properties to their values.
-data Styles
-  = Styles (MisoString, [Style])
-  | KeyFrame MisoString [(MisoString, [Style])]
-  | Media MisoString [(MisoString, [Style])]
-  deriving (Eq, Show)
------------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
 -- @
 -- sheet_
@@ -309,47 +296,6 @@ data Styles
 -- @
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
------------------------------------------------------------------------------
--- | Type for a CSS style on native.
--- Internally it maps From CSS selectors to 'Styles'.
--- @
--- testSheet :: StyleSheet
--- testSheet =
---    sheet_
---    [ selector_ ".name"
---        [ backgroundColor red
---        , alignContent "top"
---        ]
---    , selector_ "#container"
---        [ backgroundColor blue
---        , alignContent "center"
---        ]
---    , keyframes_ "slide-in"
---      [ "from" =:
---        [ transform "translateX(0%)"
---        ]
---      , "to" =:
---        [ transform "translateX(100%)"
---        , backgroundColor red
---        , backgroundSize "10px"
---        , backgroundRepeat "true"
---        ]
---      , pct 10 =:
---        [ "foo" =: "bar"
---        ]
---      ]
---    , media_ "screen and (min-width: 480px)"
---      [ "header" =:
---        [ height "auto"
---        ]
---      , "ul" =:
---        [ display "block"
---        ]
---      ]
---    ]
--- @
-newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
-  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet

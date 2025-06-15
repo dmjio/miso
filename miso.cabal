@@ -161,6 +161,7 @@ library
     Miso.String
     Miso.Style
     Miso.Style.Color
+    Miso.Style.Types
     Miso.Types
     Miso.Util
     Miso.Util.Lexer
