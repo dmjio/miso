@@ -174,7 +174,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
 }
 
 function diffCss(cCss: CSS, nCss: CSS, node: DOMRef, context: Context): void {
-  context['setStyle'](cCss, nCss, node);
+  context['setInlineStyle'](cCss, nCss, node);
 }
 
 function diffChildren(c: VNode, n: VNode, parent: Element, context: Context): void {

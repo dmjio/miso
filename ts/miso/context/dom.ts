@@ -43,7 +43,7 @@ const context : Context = {
   'querySelectorAll': (sel: string) => {
     return document.querySelectorAll(sel);
   },
-  'setStyle' : (cCss, nCss, node) => {
+  'setInlineStyle' : (cCss, nCss, node) => {
      var result: string;
      /* is current attribute in new attribute list? */
      for (const key in cCss) {
@@ -62,7 +62,7 @@ const context : Context = {
      }
     return;
   },
-  'getStyle' : (node, key) => {
+  'getInlineStyle' : (node, key) => {
     return node.style[key];
   },
   'setAttribute' : (node, key, value) => {
