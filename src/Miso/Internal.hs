@@ -65,6 +65,7 @@ import           Miso.Exception (MisoException(..), exception)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
+import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
 import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
@@ -455,6 +456,7 @@ renderStyles styles =
   forM_ styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
+    Sheet sheet -> FFI.addStyle (renderStyleSheet sheet)
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.

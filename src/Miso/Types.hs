@@ -63,6 +63,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString, ms)
+import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
 data Component (name :: Symbol) model action = Component
@@ -106,6 +107,8 @@ data CSS
   -- ^ 'Href' is a URL meant to link to hosted CSS
   | Style MisoString
   -- ^ 'Style' is meant to be raw CSS in a 'style_' tag
+  | Sheet StyleSheet
+  -- ^ 'Sheet' is meant to be CSS built with 'Miso.Style'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
