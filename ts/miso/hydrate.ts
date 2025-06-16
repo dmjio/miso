@@ -166,14 +166,14 @@ function check(result: boolean, vtree: VTree, context: Context): boolean {
     for (const key in vtree['css']) {
       if (key === 'color') {
         if (
-          parseColor(context['getStyle'](vtree['domRef'], key)).toString() !==
+          parseColor(context['getInlineStyle'](vtree['domRef'], key)).toString() !==
             parseColor(vtree['css'][key]).toString()
         ) {
-          console.warn('Style ' + key + ' differs', vtree['css'][key], context['getStyle'](vtree['domRef'], key));
+          console.warn('Style ' + key + ' differs', vtree['css'][key], context['getInlineStyle'](vtree['domRef'], key));
           result = false;
         }
-      } else if (vtree['css'][key] !== context['getStyle'](vtree['domRef'], key)) {
-        console.warn('Style ' + key + ' differs', vtree['css'][key], context['getStyle'](vtree['domRef'], key));
+      } else if (vtree['css'][key] !== context['getInlineStyle'](vtree['domRef'], key)) {
+        console.warn('Style ' + key + ' differs', vtree['css'][key], context['getInlineStyle'](vtree['domRef'], key));
         result = false;
       }
     }
