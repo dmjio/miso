@@ -286,6 +286,7 @@ ppx x = MS.ms x <> "ppx"
 k =: v = (k,v)
 -----------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
+--
 -- @
 -- sheet_
 --   [ selector_ ".name"
@@ -294,6 +295,7 @@ k =: v = (k,v)
 --     ]
 --   ]
 -- @
+--
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
@@ -364,6 +366,7 @@ renderStyleSheet styleSheet = MS.intercalate "\n"
   ]
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/@keyframes
+--
 -- @
 -- testKeyFrame :: Styles
 -- testKeyFrame = keyframes "slide-in"
@@ -386,6 +389,7 @@ keyframes_ :: MisoString -> [(MisoString, [Style])] -> Styles
 keyframes_ = KeyFrame
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/@media
+--
 -- @
 -- media_ "screen and (min-width: 480px)"
 --   [ "header" =:

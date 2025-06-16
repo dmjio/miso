@@ -16,8 +16,8 @@ module Miso.Style.Types
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Type for a CSS style on native.
--- Internally it maps From CSS selectors to 'Styles'.
+-- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to 'Styles'.
+--
 -- @
 -- testSheet :: StyleSheet
 -- testSheet =
@@ -54,6 +54,7 @@ import Miso.String (MisoString)
 --      ]
 --    ]
 -- @
+--
 newtype StyleSheet = StyleSheet { getStyleSheet :: [Styles] }
   deriving (Eq, Show)
 -----------------------------------------------------------------------------
