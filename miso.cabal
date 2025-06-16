@@ -146,6 +146,7 @@ library
     Miso.Render
     Miso.Router
     Miso.Run
+    Miso.State
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard

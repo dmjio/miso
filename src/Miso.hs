@@ -68,18 +68,11 @@ module Miso
     -- * FFI
   , module Miso.FFI
     -- * State management
-  , ask
-  , modify
-  , modify'
-  , get
-  , gets
-  , put
-  , tell
+  , module Miso.State
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
 import           Data.IORef (newIORef, IORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
@@ -100,6 +93,7 @@ import           Miso.Property
 import           Miso.Render
 import           Miso.Router
 import           Miso.Run
+import           Miso.State
 import           Miso.Storage
 import           Miso.String (MisoString)
 import           Miso.Subscription
