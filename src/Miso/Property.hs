@@ -22,12 +22,13 @@ module Miso.Property
   , intProp
   , integerProp
   , doubleProp
+  , objectProp
   , prop
   , keyProp
   , key_
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (ToJSON(..))
+import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.String (MisoString)
@@ -45,9 +46,13 @@ boolProp = prop
 stringProp ::  MisoString -> String -> Attribute action
 stringProp = prop
 -----------------------------------------------------------------------------
--- | Set field to `Text` value
+-- | Set field to `MisoString` value
 textProp ::  MisoString -> MisoString -> Attribute action
 textProp = prop
+-----------------------------------------------------------------------------
+-- | Set field to `Object` value
+objectProp ::  MisoString -> Object -> Attribute action
+objectProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to `Int` value
 intProp ::  MisoString -> Int -> Attribute action
