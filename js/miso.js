@@ -181,7 +181,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
     newProp = nProps[c];
     if (newProp === undefined) {
       if (isSvg || !(c in node)) {
-        context["removeAttribute"](node, cProps[c]);
+        context["removeAttribute"](node, c);
       } else {
         context["setAttribute"](node, c, "");
       }
@@ -219,7 +219,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
   }
 }
 function diffCss(cCss, nCss, node, context) {
-  context["setStyle"](cCss, nCss, node);
+  context["setInlineStyle"](cCss, nCss, node);
 }
 function diffChildren(c, n, parent, context) {
   if (c["shouldSync"] && n["shouldSync"]) {
@@ -604,12 +604,12 @@ function check(result, vtree, context) {
     }
     for (const key in vtree["css"]) {
       if (key === "color") {
-        if (parseColor(context["getStyle"](vtree["domRef"], key)).toString() !== parseColor(vtree["css"][key]).toString()) {
-          console.warn("Style " + key + " differs", vtree["css"][key], context["getStyle"](vtree["domRef"], key));
+        if (parseColor(context["getInlineStyle"](vtree["domRef"], key)).toString() !== parseColor(vtree["css"][key]).toString()) {
+          console.warn("Style " + key + " differs", vtree["css"][key], context["getInlineStyle"](vtree["domRef"], key));
           result = false;
         }
-      } else if (vtree["css"][key] !== context["getStyle"](vtree["domRef"], key)) {
-        console.warn("Style " + key + " differs", vtree["css"][key], context["getStyle"](vtree["domRef"], key));
+      } else if (vtree["css"][key] !== context["getInlineStyle"](vtree["domRef"], key)) {
+        console.warn("Style " + key + " differs", vtree["css"][key], context["getInlineStyle"](vtree["domRef"], key));
         result = false;
       }
     }
@@ -710,7 +710,7 @@ var context = {
   querySelectorAll: (sel) => {
     return document.querySelectorAll(sel);
   },
-  setStyle: (cCss, nCss, node) => {
+  setInlineStyle: (cCss, nCss, node) => {
     var result;
     for (const key in cCss) {
       result = nCss[key];
@@ -727,7 +727,7 @@ var context = {
     }
     return;
   },
-  getStyle: (node, key) => {
+  getInlineStyle: (node, key) => {
     return node.style[key];
   },
   setAttribute: (node, key, value) => {
