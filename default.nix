@@ -106,6 +106,12 @@ with pkgs.haskell.lib;
   inherit (pkgs)
     bun;
 
+  # MicroHs-Miso
+  inherit (pkgs)
+    microhs
+    microhs-env
+    microhs-wrapper;
+
   # nurl
   # $ nurl https://github.com/nix-community/nurl
   #
