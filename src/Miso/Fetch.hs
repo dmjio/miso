@@ -24,6 +24,26 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink)
 import           Miso.String (MisoString)
 ----------------------------------------------------------------------------
+-- | See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
+--
+-- @
+--
+-- data Action
+--  = FetchGitHub
+--  | SetGitHub GitHub
+--  | ErrorHandler MisoString
+--  deriving (Show, Eq)
+--
+-- updateModel :: Action -> Effect Model Action
+-- updateModel FetchGitHub =
+--   fetch "https://api.github.com" "GET" Nothing [] SetGitHub ErrorHandler
+-- updateModel (SetGitHub apiInfo) =
+--   info ?= apiInfo
+-- updateModel (ErrorHandler msg) =
+--  io_ (consoleError msg)
+--
+-- @
+--
 fetch
   :: FromJSON result
   => MisoString
