@@ -181,7 +181,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
     newProp = nProps[c];
     if (newProp === undefined) {
       if (isSvg || !(c in node)) {
-        context["removeAttribute"](node, cProps[c]);
+        context["removeAttribute"](node, c);
       } else {
         context["setAttribute"](node, c, "");
       }

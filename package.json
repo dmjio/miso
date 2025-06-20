@@ -13,7 +13,7 @@
     "pretty": "prettier --write ts/miso/*.ts ts/*.ts",
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
     "prod": "bun build --outfile=js/miso.prod.js ./ts/index.ts --target=browser --minify",
-    "js": "bun run build && bun run prod",
+    "js": "bun run build && bun run prod"
   },
   "type": "module",
   "module": "ts/miso.ts",
