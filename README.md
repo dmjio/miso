@@ -591,7 +591,7 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 If you want to interact with an HTTP API, we recommend one of the following approaches:
 
-  1. For a simple JSON-based API, you can use Miso's `fetchJSON` function.
+  1. For a simple JSON-based API, you can use Miso's `fetch` function.
 
   2. In more complex cases, you can define a [Servant](https://www.servant.dev/) API and automatically obtain client functions via `servant-client-js` (or any other `servant-client-core`-based backend).
 
