@@ -20,9 +20,6 @@
   <a href="https://actions-badge.atrox.dev/dmjio/miso/goto?ref=master">
     <img alt="Build Status" src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fdmjio%2Fmiso%2Fbadge%3Fref%3Dmaster&style=flat-square" />
   </a>
-  <a href="https://discord.gg/QVDtfYNSxq">
-    <img alt="Discord" src="https://img.shields.io/discord/1302720467232096358?style=flat-square&label=discord&logoColor=7289da">
-  </a>
   <a href="http://hackage.haskell.org/package/miso">
     <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
   </a>
@@ -57,6 +54,7 @@
 - [Nix](#nix)
   - [Pinning nixpkgs](#pinning-nixpkgs)
   - [Binary cache](#binary-cache)
+- [Community](#community)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
@@ -680,6 +678,13 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 ```bash
 $ cachix use haskell-miso-cachix
 ```
+
+## Community 🫶
+
+- [Matrix](https://matrix.to/#/#haskell-miso:matrix.org)
+- [Discord](https://discord.gg/QVDtfYNSxq)
+- [Slack](https://haskell-miso.slack.com/join/shared_invite_confirmed/zt-37vusrcdw-HH6~hY0DGT7MLCjNWZvLDQ#/email-invite/credentials)
+- [IRC](https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1)
 
 ## Maintainers
 
