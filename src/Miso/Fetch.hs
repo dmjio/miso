@@ -15,8 +15,31 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Fetch
-  ( fetchJSON
+  ( fetch
   ) where
 ----------------------------------------------------------------------------
-import           Miso.FFI.Internal (fetchJSON)
+import           Data.Aeson (FromJSON)
+----------------------------------------------------------------------------
+import qualified Miso.FFI.Internal as FFI
+import           Miso.Effect (Effect, withSink)
+import           Miso.String (MisoString)
+----------------------------------------------------------------------------
+fetch
+  :: FromJSON result
+  => MisoString
+  -- ^ url
+  -> MisoString
+  -- ^ method
+  -> Maybe MisoString
+  -- ^ body
+  -> [(MisoString,MisoString)]
+  -- ^ headers
+  -> (result -> action)
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect model action
+fetch url method body headers successful errorful =
+  withSink $ \sink ->
+    FFI.fetch url method body headers (sink . successful) (sink . errorful)
 ----------------------------------------------------------------------------

@@ -67,10 +67,7 @@ type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
 updateModel FetchGitHub =
-  withSink $ \sink ->
-    fetchJSON "https://api.github.com" "GET" Nothing []
-      (sink . SetGitHub)
-      (sink . ErrorHandler)
+  fetch "https://api.github.com" "GET" Nothing [] SetGitHub ErrorHandler
 updateModel (SetGitHub apiInfo) =
   info ?= apiInfo
 updateModel (ErrorHandler msg) =

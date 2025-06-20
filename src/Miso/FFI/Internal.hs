@@ -57,7 +57,7 @@ module Miso.FFI.Internal
    , setComponentId
    , addStyle
    , addStyleSheet
-   , fetchJSON
+   , fetch
    , shouldSync
    , setComponent
    , flush
@@ -451,7 +451,7 @@ addStyleSheet url = do
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
-fetchJSON
+fetch
   :: FromJSON action
   => MisoString
   -- ^ url
@@ -466,7 +466,7 @@ fetchJSON
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> JSM ()
-fetchJSON url method maybeBody headers successful errorful = do
+fetch url method maybeBody headers successful errorful = do
   successful_ <- toJSVal =<< do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
