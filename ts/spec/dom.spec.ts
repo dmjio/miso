@@ -264,22 +264,22 @@ describe('DOM tests', () => {
     // populate DOM
     var currentNode = vnode({
       props: {
-        lol: 'lol',
+        lol: 'lol2',
       },
     });
     diff(null, currentNode, document.body, context);
-    expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
+    expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
   });
 
   test('Should change a custom attribute on a DOM node', () => {
     // populate DOM
     var currentNode = vnode({
       props: {
-        lol: 'lol',
+        lol: 'lol2',
       },
     });
     diff(null, currentNode, document.body, context);
-    expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
+    expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
 
     var newNode = vnode({
       props: {
@@ -295,11 +295,11 @@ describe('DOM tests', () => {
     // populate DOM
     var currentNode = vnode({
       props: {
-        lol: 'lol',
+        lol: 'lol2',
       },
     });
     diff(null, currentNode, document.body, context);
-    expect(currentNode.domRef.getAttribute('lol')).toBe('lol');
+    expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
 
     // test property change
     var newNode = vnode({});
