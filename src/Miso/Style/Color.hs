@@ -14,6 +14,7 @@ module Miso.Style.Color
     Color (RGBA, HSL, Hex)
     -- *** Smart constructor
   , rgba
+  , rgb
   , hsl
   , hex
   , var
@@ -177,6 +178,7 @@ import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
 data Color
   = RGBA Int Int Int Double
+  | RGB Int Int Int
   | HSL Int Int Int
   | Hex MisoString
   | VarColor MisoString
@@ -190,6 +192,13 @@ renderColor (RGBA r g b a) = "rgba(" <> values <> ")"
       , MS.ms g
       , MS.ms b
       , MS.ms a
+      ]
+renderColor (RGB r g b) = "rgb(" <> values <> ")"
+  where
+    values = MS.intercalate ","
+      [ MS.ms r
+      , MS.ms g
+      , MS.ms b
       ]
 renderColor (HSL h s l) = "hsl(" <> values <> ")"
   where
@@ -206,6 +215,9 @@ var = VarColor
 -----------------------------------------------------------------------------
 rgba :: Int -> Int -> Int -> Double -> Color
 rgba = RGBA
+-----------------------------------------------------------------------------
+rgb :: Int -> Int -> Int -> Color
+rgb = RGB
 -----------------------------------------------------------------------------
 hsl :: Int -> Int -> Int -> Color
 hsl = HSL
