@@ -11,11 +11,12 @@
 -----------------------------------------------------------------------------
 module Miso.Style.Color
   ( -- *** Types
-    Color (RGBA, HSL, Hex)
+    Color (RGB, RGBA, HSL, HSLA, Hex)
     -- *** Smart constructor
   , rgba
   , rgb
   , hsl
+  , hsla
   , hex
   , var
     -- *** Render
@@ -180,6 +181,7 @@ data Color
   = RGBA Int Int Int Double
   | RGB Int Int Int
   | HSL Int Int Int
+  | HSLA Int Int Int Double
   | Hex MisoString
   | VarColor MisoString
   deriving (Show, Eq)
@@ -199,6 +201,14 @@ renderColor (RGB r g b) = "rgb(" <> values <> ")"
       [ MS.ms r
       , MS.ms g
       , MS.ms b
+      ]
+renderColor (HSLA h s l a) = "hsla(" <> values <> ")"
+  where
+    values = MS.intercalate ","
+      [ MS.ms h
+      , MS.ms s
+      , MS.ms l
+      , MS.ms a
       ]
 renderColor (HSL h s l) = "hsl(" <> values <> ")"
   where
@@ -221,6 +231,9 @@ rgb = RGB
 -----------------------------------------------------------------------------
 hsl :: Int -> Int -> Int -> Color
 hsl = HSL
+-----------------------------------------------------------------------------
+hsla :: Int -> Int -> Int -> Double -> Color
+hsla = HSLA
 -----------------------------------------------------------------------------
 hex :: MisoString -> Color
 hex = Hex
