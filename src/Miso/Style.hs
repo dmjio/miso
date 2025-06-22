@@ -267,6 +267,7 @@ s x = MS.ms x <> "s"
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
 pct :: Double -> MisoString
 pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
@@ -359,6 +360,8 @@ renderStyles indent (Media name frames) = MS.intercalate " "
   , "}\n"
   ]
 -----------------------------------------------------------------------------
+-- | Render 'StyleSheet' as 'MisoString'
+--
 renderStyleSheet :: StyleSheet -> MisoString
 renderStyleSheet styleSheet = MS.intercalate "\n"
   [ renderStyles 0 styles
@@ -404,1058 +407,883 @@ keyframes_ = KeyFrame
 media_ :: MisoString -> [(MisoString, [Style])] -> Styles
 media_ = Media
 -----------------------------------------------------------------------------
---
--- > style_ [ alignContent =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-content
 --
 alignContent :: MisoString -> Style
 alignContent x = "align-content" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ alignItems =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
 --
 alignItems :: MisoString -> Style
 alignItems x = "align-items" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ alignSelf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/align-self
 --
 alignSelf :: MisoString -> Style
 alignSelf x = "align-self" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationDelay =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-delay
 --
 animationDelay :: MisoString -> Style
 animationDelay x = "animation-delay" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationDirection =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-direction
 --
 animationDirection :: MisoString -> Style
 animationDirection x = "animation-direction" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationDuration =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-duration
 --
 animationDuration :: MisoString -> Style
 animationDuration x = "animation-duration" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationFillMode =: "value" ]
+-- | https://animation-mozilla.org/en-US/docs/Web/CSS/align-content/animation-fill-mode
 --
 animationFillMode :: MisoString -> Style
 animationFillMode x = "animation-fill-mode" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationIterationCount =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-iteration-count
 --
 animationIterationCount :: MisoString -> Style
 animationIterationCount x = "animation-iteration-count" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animation =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation
 --
 animation :: MisoString -> Style
 animation x = "animation" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationName =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-name
 --
 animationName :: MisoString -> Style
 animationName x = "animation-name" =: x
 -----------------------------------------------------------------------------
---
+-- |  https://developer.mozilla.org/en-US/docs/Web/CSS/animation-play-state
 -- > style_ [ animationPlayState =: "value" ]
 --
 animationPlayState :: MisoString -> Style
 animationPlayState x = "animation-play-state" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ animationTimingFunction =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/animation-timing-function
 --
 animationTimingFunction :: MisoString -> Style
 animationTimingFunction x = "animation-timing-function" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ aspectRatio =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/aspect-ratio
 --
 aspectRatio :: MisoString -> Style
 aspectRatio x = "aspect-ratio" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundClip =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-clip
 --
 backgroundClip :: MisoString -> Style
 backgroundClip x = "background-clip" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-color
 --
 backgroundColor :: Color -> Style
 backgroundColor x = "background-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundImage =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-image
 --
 backgroundImage :: MisoString -> Style
 backgroundImage x = "background-image" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ background =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background
 --
 background :: MisoString -> Style
 background x = "background" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundOrigin =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-origin
 --
 backgroundOrigin :: MisoString -> Style
 backgroundOrigin x = "background-origin" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundPosition =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-position
 --
 backgroundPosition :: MisoString -> Style
 backgroundPosition x = "background-position" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundRepeat =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-repeat
 --
 backgroundRepeat :: MisoString -> Style
 backgroundRepeat x = "background-repeat" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ backgroundSize =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/background-size
 --
 backgroundSize :: MisoString -> Style
 backgroundSize x = "background-size" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottomColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-color
 --
 borderBottomColor :: Color -> Style
 borderBottomColor x = "border-bottom-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottomLeftRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-left-radius
 --
 borderBottomLeftRadius :: MisoString -> Style
 borderBottomLeftRadius x = "border-bottom-left-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottom =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom
 --
 borderBottom :: MisoString -> Style
 borderBottom x = "border-bottom" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottomRightRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-right-radius
 --
 borderBottomRightRadius :: MisoString -> Style
 borderBottomRightRadius x = "border-bottom-right-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottomStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-style
 --
 borderBottomStyle :: MisoString -> Style
 borderBottomStyle x = "border-bottom-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderBottomWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-bottom-width
 --
 borderBottomWidth :: MisoString -> Style
 borderBottomWidth x = "border-bottom-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-color
 --
 borderColor :: Color -> Style
 borderColor x = "border-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderEndEndRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-end-radius
 --
 borderEndEndRadius :: MisoString -> Style
 borderEndEndRadius x = "border-end-end-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderEndStartRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-end-start-radius
 --
 borderEndStartRadius :: MisoString -> Style
 borderEndStartRadius x = "border-end-start-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineEndColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-end-color
 --
 borderInlineEndColor :: Color -> Style
 borderInlineEndColor x = "border-inline-end-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineEndStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-end-style
 --
 borderInlineEndStyle :: MisoString -> Style
 borderInlineEndStyle x = "border-inline-end-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineEndWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-end-width
 --
 borderInlineEndWidth :: MisoString -> Style
 borderInlineEndWidth x = "border-inline-end-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineStartColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-start-color
 --
 borderInlineStartColor :: Color -> Style
 borderInlineStartColor x = "border-inline-start-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineStartStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-start-style
 --
 borderInlineStartStyle :: MisoString -> Style
 borderInlineStartStyle x = "border-inline-start-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderInlineStartWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-inline-start-width
 --
 borderInlineStartWidth :: MisoString -> Style
 borderInlineStartWidth x = "border-inline-start-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderLeftColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-color
 --
 borderLeftColor :: Color -> Style
 borderLeftColor x = "border-left-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderLeft =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-left
 --
 borderLeft :: MisoString -> Style
 borderLeft x = "border-left" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderLeftStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-style
 --
 borderLeftStyle :: MisoString -> Style
 borderLeftStyle x = "border-left-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderLeftWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-left-width
 --
 borderLeftWidth :: MisoString -> Style
 borderLeftWidth x = "border-left-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ border =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border
 --
 border :: MisoString -> Style
 border x = "border" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-radius
 --
 borderRadius :: MisoString -> Style
 borderRadius x = "border-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderRightColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-color
 --
 borderRightColor :: Color -> Style
 borderRightColor x = "border-right-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderRight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-right
 --
 borderRight :: MisoString -> Style
 borderRight x = "border-right" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderRightStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-style
 --
 borderRightStyle :: MisoString -> Style
 borderRightStyle x = "border-right-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderRightWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-right-width
 --
 borderRightWidth :: MisoString -> Style
 borderRightWidth x = "border-right-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderStartEndRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-start-end-radius
 --
 borderStartEndRadius :: MisoString -> Style
 borderStartEndRadius x = "border-start-end-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderStartStartRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-start-start-radius
 --
 borderStartStartRadius :: MisoString -> Style
 borderStartStartRadius x = "border-start-start-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-style
 --
 borderStyle :: MisoString -> Style
 borderStyle x = "border-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTopColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-color
 --
 borderTopColor :: Color -> Style
 borderTopColor x = "border-top-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTopLeftRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-left-radius
 --
 borderTopLeftRadius :: MisoString -> Style
 borderTopLeftRadius x = "border-top-left-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTop =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top
 --
 borderTop :: MisoString -> Style
 borderTop x = "border-top" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTopRightRadius =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-right-radius
 --
 borderTopRightRadius :: MisoString -> Style
 borderTopRightRadius x = "border-top-right-radius" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTopStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-style
 --
 borderTopStyle :: MisoString -> Style
 borderTopStyle x = "border-top-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderTopWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-top-width
 --
 borderTopWidth :: MisoString -> Style
 borderTopWidth x = "border-top-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ borderWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-width
 --
 borderWidth :: MisoString -> Style
 borderWidth x = "border-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ bottom =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/bottom
 --
 bottom :: MisoString -> Style
 bottom x = "bottom" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ boxShadow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/box-shadow
 --
 boxShadow :: MisoString -> Style
 boxShadow x = "box-shadow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ boxSizing =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing
 --
 boxSizing :: MisoString -> Style
 boxSizing x = "box-sizing" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ clipPath =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path
 --
 clipPath :: MisoString -> Style
 clipPath x = "clip-path" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ color =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/color
 --
 color :: Color -> Style
 color x = "color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ columnGap =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/column-gap
 --
 columnGap :: MisoString -> Style
 columnGap x = "column-gap" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ cssVariable =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/css-variable
 --
 cssVariable :: MisoString -> Style
 cssVariable x = "css-variable" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ direction =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/direction
 --
 direction :: MisoString -> Style
 direction x = "direction" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ display =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/display
 --
 display :: MisoString -> Style
 display x = "display" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ filter =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/filter
 --
 filter :: MisoString -> Style
 filter x = "filter" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexBasis =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-basis
 --
 flexBasis :: MisoString -> Style
 flexBasis x = "flex-basis" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexDirection =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-direction
 --
 flexDirection :: MisoString -> Style
 flexDirection x = "flex-direction" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexFlow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-flow
 --
 flexFlow :: MisoString -> Style
 flexFlow x = "flex-flow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexGrow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-grow
 --
 flexGrow :: MisoString -> Style
 flexGrow x = "flex-grow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flex =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex
 --
 flex :: MisoString -> Style
 flex x = "flex" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexShrink =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink
 --
 flexShrink :: MisoString -> Style
 flexShrink x = "flex-shrink" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ flexWrap =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/flex-wrap
 --
 flexWrap :: MisoString -> Style
 flexWrap x = "flex-wrap" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ fontFamily =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
 --
 fontFamily :: MisoString -> Style
 fontFamily x = "font-family" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ fontSize =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-size
 --
 fontSize :: MisoString -> Style
 fontSize x = "font-size" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ fontStyle =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-style
 --
 fontStyle :: MisoString -> Style
 fontStyle x = "font-style" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ fontWeight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight
 --
 fontWeight :: MisoString -> Style
 fontWeight x = "font-weight" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ cursor =: "pointer" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/cursor
 --
 cursor :: MisoString -> Style
 cursor x = "cursor" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gap =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/gap
 --
 gap :: MisoString -> Style
 gap x = "gap" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridAutoColumns =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-columns
 --
 gridAutoColumns :: MisoString -> Style
 gridAutoColumns x = "grid-auto-columns" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridAutoFlow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-flow
 --
 gridAutoFlow :: MisoString -> Style
 gridAutoFlow x = "grid-auto-flow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridAutoRows =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-auto-rows
 --
 gridAutoRows :: MisoString -> Style
 gridAutoRows x = "grid-auto-rows" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridColumnEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column-end
 --
 gridColumnEnd :: MisoString -> Style
 gridColumnEnd x = "grid-column-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridColumnSpan =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column-span
 --
 gridColumnSpan :: MisoString -> Style
 gridColumnSpan x = "grid-column-span" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridColumnStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-column-start
 --
 gridColumnStart :: MisoString -> Style
 gridColumnStart x = "grid-column-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridRowEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row-end
 --
 gridRowEnd :: MisoString -> Style
 gridRowEnd x = "grid-row-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridRowSpan =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row-span
 --
 gridRowSpan :: MisoString -> Style
 gridRowSpan x = "grid-row-span" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridRowStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row-start
 --
 gridRowStart :: MisoString -> Style
 gridRowStart x = "grid-row-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridTemplateColumns =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns
 --
 gridTemplateColumns :: MisoString -> Style
 gridTemplateColumns x = "grid-template-columns" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ gridTemplateRows =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-rows
 --
 gridTemplateRows :: MisoString -> Style
 gridTemplateRows x = "grid-template-rows" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ height =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/height
 --
 height :: MisoString -> Style
 height x = "height" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ imageRendering =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/image-rendering
 --
 imageRendering :: MisoString -> Style
 imageRendering x = "image-rendering" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ insetInlineEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/inset-inline-end
 --
 insetInlineEnd :: MisoString -> Style
 insetInlineEnd x = "inset-inline-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ insetInlineStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/inset-inline-start
 --
 insetInlineStart :: MisoString -> Style
 insetInlineStart x = "inset-inline-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ justifyContent =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/justify-content
 --
 justifyContent :: MisoString -> Style
 justifyContent x = "justify-content" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ justifyItems =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/justify-items
 --
 justifyItems :: MisoString -> Style
 justifyItems x = "justify-items" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ justifySelf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/justify-self
 --
 justifySelf :: MisoString -> Style
 justifySelf x = "justify-self" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ left =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/left
 --
 left :: MisoString -> Style
 left x = "left" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ letterSpacing =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/letter-spacing
 --
 letterSpacing :: MisoString -> Style
 letterSpacing x = "letter-spacing" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearCrossGravity =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-cross-gravity
 --
 linearCrossGravity :: MisoString -> Style
 linearCrossGravity x = "linear-cross-gravity" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearDirection =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-direction
 --
 linearDirection :: MisoString -> Style
 linearDirection x = "linear-direction" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearGravity =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-gravity
 --
 linearGravity :: MisoString -> Style
 linearGravity x = "linear-gravity" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearLayoutGravity =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-layout-gravity
 --
 linearLayoutGravity :: MisoString -> Style
 linearLayoutGravity x = "linear-layout-gravity" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearWeight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-weight
 --
 linearWeight :: MisoString -> Style
 linearWeight x = "linear-weight" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ linearWeightSum =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/linear-weight-sum
 --
 linearWeightSum :: MisoString -> Style
 linearWeightSum x = "linear-weight-sum" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ lineHeight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/line-height
 --
 lineHeight :: MisoString -> Style
 lineHeight x = "line-height" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginBottom =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-bottom
 --
 marginBottom :: MisoString -> Style
 marginBottom x = "margin-bottom" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginInlineEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-inline-end
 --
 marginInlineEnd :: MisoString -> Style
 marginInlineEnd x = "margin-inline-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginInlineStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-inline-start
 --
 marginInlineStart :: MisoString -> Style
 marginInlineStart x = "margin-inline-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginLeft =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-left
 --
 marginLeft :: MisoString -> Style
 marginLeft x = "margin-left" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ margin =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin
 --
 margin :: MisoString -> Style
 margin x = "margin" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginRight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-right
 --
 marginRight :: MisoString -> Style
 marginRight x = "margin-right" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ marginTop =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/margin-top
 --
 marginTop :: MisoString -> Style
 marginTop x = "margin-top" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ maskImage =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/mask-image
 --
 maskImage :: MisoString -> Style
 maskImage x = "mask-image" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ mask =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/mask
 --
 mask :: MisoString -> Style
 mask x = "mask" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ maxHeight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/max-height
 --
 maxHeight :: MisoString -> Style
 maxHeight x = "max-height" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ maxWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/max-width
 --
 maxWidth :: MisoString -> Style
 maxWidth x = "max-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ minHeight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/min-height
 --
 minHeight :: MisoString -> Style
 minHeight x = "min-height" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ minWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/min-width
 --
 minWidth :: MisoString -> Style
 minWidth x = "min-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ opacity =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/opacity
 --
 opacity :: MisoString -> Style
 opacity x = "opacity" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ order =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/order
 --
 order :: MisoString -> Style
 order x = "order" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ overflow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/overflow
 --
 overflow :: MisoString -> Style
 overflow x = "overflow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ overflowX =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-x
 --
 overflowX :: MisoString -> Style
 overflowX x = "overflow-x" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ overflowY =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-y
 --
 overflowY :: MisoString -> Style
 overflowY x = "overflow-y" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingBottom =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-bottom
 --
 paddingBottom :: MisoString -> Style
 paddingBottom x = "padding-bottom" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingInlineEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-inline-end
 --
 paddingInlineEnd :: MisoString -> Style
 paddingInlineEnd x = "padding-inline-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingInlineStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-inline-start
 --
 paddingInlineStart :: MisoString -> Style
 paddingInlineStart x = "padding-inline-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingLeft =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-left
 --
 paddingLeft :: MisoString -> Style
 paddingLeft x = "padding-left" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ padding =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding
 --
 padding :: MisoString -> Style
 padding x = "padding" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingRight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-right
 --
 paddingRight :: MisoString -> Style
 paddingRight x = "padding-right" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ paddingTop =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/padding-top
 --
 paddingTop :: MisoString -> Style
 paddingTop x = "padding-top" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ perspective =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/perspective
 --
 perspective :: MisoString -> Style
 perspective x = "perspective" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ position =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/position
 --
 position :: MisoString -> Style
 position x = "position" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignBottom =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-bottom
 --
 relativeAlignBottom :: MisoString -> Style
 relativeAlignBottom x = "relative-align-bottom" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignInlineEnd =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-inline-end
 --
 relativeAlignInlineEnd :: MisoString -> Style
 relativeAlignInlineEnd x = "relative-align-inline-end" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignInlineStart =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-inline-start
 --
 relativeAlignInlineStart :: MisoString -> Style
 relativeAlignInlineStart x = "relative-align-inline-start" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignLeft =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-left
 --
 relativeAlignLeft :: MisoString -> Style
 relativeAlignLeft x = "relative-align-left" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignRight =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-right
 --
 relativeAlignRight :: MisoString -> Style
 relativeAlignRight x = "relative-align-right" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeAlignTop =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-align-top
 --
 relativeAlignTop :: MisoString -> Style
 relativeAlignTop x = "relative-align-top" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeBottomOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-bottom-of
 --
 relativeBottomOf :: MisoString -> Style
 relativeBottomOf x = "relative-bottom-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeCenter =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-center
 --
 relativeCenter :: MisoString -> Style
 relativeCenter x = "relative-center" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeId =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-id
 --
 relativeId :: MisoString -> Style
 relativeId x = "relative-id" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeInlineEndOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-inline-end-of
 --
 relativeInlineEndOf :: MisoString -> Style
 relativeInlineEndOf x = "relative-inline-end-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeInlineStartOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-inline-start-of
 --
 relativeInlineStartOf :: MisoString -> Style
 relativeInlineStartOf x = "relative-inline-start-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeLayoutOnce =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-layout-once
 --
 relativeLayoutOnce :: MisoString -> Style
 relativeLayoutOnce x = "relative-layout-once" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeLeftOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-left-of
 --
 relativeLeftOf :: MisoString -> Style
 relativeLeftOf x = "relative-left-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeRightOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-right-of
 --
 relativeRightOf :: MisoString -> Style
 relativeRightOf x = "relative-right-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ relativeTopOf =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/relative-top-of
 --
 relativeTopOf :: MisoString -> Style
 relativeTopOf x = "relative-top-of" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ right =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/right
 --
 right :: MisoString -> Style
 right x = "right" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ rowGap =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/row-gap
 --
 rowGap :: MisoString -> Style
 rowGap x = "row-gap" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textAlign =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-align
 --
 textAlign :: MisoString -> Style
 textAlign x = "text-align" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textDecoration =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-decoration
 --
 textDecoration :: MisoString -> Style
 textDecoration x = "text-decoration" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textIndent =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-indent
 --
 textIndent :: MisoString -> Style
 textIndent x = "text-indent" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textOverflow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-overflow
 --
 textOverflow :: MisoString -> Style
 textOverflow x = "text-overflow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textShadow =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-shadow
 --
 textShadow :: MisoString -> Style
 textShadow x = "text-shadow" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textStrokeColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-stroke-color
 --
 textStrokeColor :: Color -> Style
 textStrokeColor x = "text-stroke-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ textStroke =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-stroke
 --
 textStroke :: MisoString -> Style
 textStroke x = "text-stroke" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ textStrokeWidth =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-stroke-width
 --
 textStrokeWidth :: MisoString -> Style
 textStrokeWidth x = "text-stroke-width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ top =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/top
 --
 top :: MisoString -> Style
 top x = "top" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transform =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform
 --
 transform :: MisoString -> Style
 transform x = "transform" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transformOrigin =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-origin
 --
 transformOrigin :: MisoString -> Style
 transformOrigin x = "transform-origin" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transitionDelay =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-delay
 --
 transitionDelay :: MisoString -> Style
 transitionDelay x = "transition-delay" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transitionDuration =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-duration
 --
 transitionDuration :: MisoString -> Style
 transitionDuration x = "transition-duration" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transition =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition
 --
 transition :: MisoString -> Style
 transition x = "transition" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transitionProperty =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-property
 --
 transitionProperty :: MisoString -> Style
 transitionProperty x = "transition-property" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ transitionTimingFunction =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transition-timing-function
 --
 transitionTimingFunction :: MisoString -> Style
 transitionTimingFunction x = "transition-timing-function" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ verticalAlign =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/vertical-align
 --
 verticalAlign :: MisoString -> Style
 verticalAlign x = "vertical-align" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ visibility =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/visibility
 --
 visibility :: MisoString -> Style
 visibility x = "visibility" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ whiteSpace =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/white-space
 --
 whiteSpace :: MisoString -> Style
 whiteSpace x = "white-space" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ width =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/width
 --
 width :: MisoString -> Style
 width x = "width" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ wordBreak =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/word-break
 --
 wordBreak :: MisoString -> Style
 wordBreak x = "word-break" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ xAutoFontSize =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/xAutoFontSize
 --
 xAutoFontSize :: MisoString -> Style
 xAutoFontSize x = "-x-auto-font-size" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ xAutoFontSizePresetSizes =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/xAutoFontSizePresetSizes
 --
 xAutoFontSizePresetSizes :: MisoString -> Style
 xAutoFontSizePresetSizes x = "-x-auto-font-size-preset-sizes" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ xHandleColor =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/xHandleColor
 --
 xHandleColor :: Color -> Style
 xHandleColor x = "-x-handle-color" =: renderColor x
 -----------------------------------------------------------------------------
---
--- > style_ [ xHandleSize =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/xHandleSize
 --
 xHandleSize :: MisoString -> Style
 xHandleSize x = "-x-handle-size" =: x
 -----------------------------------------------------------------------------
---
--- > style_ [ zIndex =: "value" ]
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
 --
 zIndex :: MisoString -> Style
 zIndex x = "z-index" =: x
