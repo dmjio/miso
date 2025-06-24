@@ -37,28 +37,28 @@
 
 ## Table of Contents
 - [Quick Start](#quick-start)
-- [Setup](#setup)
-- [Hot Reload](#hot-reload)
+- [Setup](#setup-%EF%B8%8F)
+- [Hot Reload](#hot-reload-)
 - [Compilation](#compilation)
-- [WebAssembly](#web-assembly)
+- [WebAssembly](#-web-assembly)
 - [JavaScript](#JavaScript)
 - [Haddocks](#haddocks)
 - [Architecture](#architecture)
-- [Internals](#internals)
+- [Internals](#internals-%EF%B8%8F)
 - [Examples](#examples)
 - [Building examples](#building-examples)
-- [HTTP](#interacting-with-http-apis)
-- [Coverage](#coverage)
-- [Isomorphic](#isomorphic)
-- [Benchmarks](#benchmarks)
-- [Nix](#nix)
-  - [Pinning nixpkgs](#pinning-nixpkgs)
+- [HTTP](#interacting-with-http-apis-)
+- [Coverage](#coverage-)
+- [Isomorphic](#isomorphic-%EF%B8%8F)
+- [Benchmarks](#benchmarks-%EF%B8%8F)
+- [Nix](#nix-)
+  - [Pinning nixpkgs](#pinning-nixpkgs-)
   - [Binary cache](#binary-cache)
-- [Community](#community)
+- [Community](#community-)
 - [Maintainers](#maintainers)
 - [Contributing](#contributing)
-- [Contributors](#contributors)
-- [Partnerships](#partnerships)
+- [Contributors](#contributors-)
+- [Partnerships](#partnerships-)
 - [Backers](#backers)
 - [Organizations](#organizations)
 - [License](#license)
@@ -191,7 +191,7 @@ viewModel x = div_ []
 
 Now that your project files are populated, development can begin.
 
-## Hot Reload
+## Hot Reload 🔥
 
 With `GHC` and `cabal` on `$PATH`, call `cabal repl`
 
