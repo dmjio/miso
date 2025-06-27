@@ -76,8 +76,12 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef, IORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
+#ifdef WASM
+import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
+#else
 import           Data.FileEmbed (embedStringFile)
 import           Language.Javascript.JSaddle (eval)
+#endif
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Diff
@@ -162,15 +166,20 @@ initComponent vcomp@Component{..} hooks = do
     viewRef <- liftIO (newIORef vtree)
     pure (name, mount, viewRef)
 -----------------------------------------------------------------------------
+#ifdef PRODUCTION
+#define MISO_JS_PATH "js/miso.prod.js"
+#else
+#define MISO_JS_PATH "js/miso.js"
+#endif
 -- | Used when compiling with jsaddle to make miso's JavaScript present in
 -- the execution context.
 withJS :: JSM a -> JSM ()
 withJS action = void $ do
 #ifndef GHCJS_BOTH
-#ifdef PRODUCTION
-  _ <- eval ($(embedStringFile "js/miso.prod.js") :: MisoString)
+#ifdef WASM
+  $(JSaddle.Wasm.TH.evalFile MISO_JS_PATH)
 #else
-  _ <- eval ($(embedStringFile "js/miso.js") :: MisoString)
+  _ <- eval ($(embedStringFile MISO_JS_PATH) :: MisoString)
 #endif
 #endif
   action
