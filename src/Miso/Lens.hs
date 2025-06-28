@@ -575,7 +575,7 @@ infix 4 ?=
 --
 -- update :: Action -> Effect Model Action
 -- update (IncrementBy x) = value += x
---
+-- @
 infix 4 +=
 (+=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
 (+=) _lens f = modify (\r -> r & _lens +~ f)
