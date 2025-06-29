@@ -88,7 +88,10 @@ data Msg
     deriving (Show)
 
 main :: IO ()
-main = run $ startComponent app
+main = run (startComponent app)
+
+app :: Component "todo-mvc" Model Msg
+app = (defaultComponent emptyModel updateModel viewModel)
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =
@@ -96,9 +99,6 @@ main = run $ startComponent app
       , Href "https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
       ]
   }
-
-app :: Component name Model Msg
-app = defaultComponent emptyModel updateModel viewModel
 
 updateModel :: Msg -> Effect Model Msg
 updateModel NoOp = pure ()
