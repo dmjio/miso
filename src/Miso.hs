@@ -79,7 +79,7 @@ import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef, IORef)
 import           Data.Proxy (Proxy(Proxy))
-import           GHC.TypeLits (KnownSymbol(..), symbolVal)
+import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 #ifdef WASM
