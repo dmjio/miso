@@ -1,4 +1,6 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE CPP              #-}
 
 module Main where
 
@@ -11,4 +13,4 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run (miso haskellMisoComponent)
+main = run (miso @"haskell-miso" haskellMisoComponent)

@@ -1,6 +1,8 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Main where
 
@@ -18,7 +20,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startComponent app
+main = run $ startComponent @"app" app
   { events = M.insert "pointermove" False pointerEvents
   , subs = [ mouseSub HandlePointer ]
   }

@@ -1,6 +1,7 @@
 ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
@@ -35,7 +36,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `defaultApp` takes as arguments the initial model, update function, view function
-app :: Component name Model Action
+app :: Component "app" Model Action
 app = defaultComponent emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
