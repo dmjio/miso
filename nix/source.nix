@@ -69,10 +69,9 @@ in
   };
   microhs = fetchFromGitHub {
     owner = "augustss";
-    repo = "microhs";
-    rev = "db0d3d12b0ee814441c6045bd680cc7d92a41375";
-    sha256 = "sha256-raTlZBQ5seYo/ez0Cg++nbQSLIKvSLLSqcCSL0svrLE=";
+    repo = "MicroHs";
+    rev = "0fc720779cfcae7b7ef1aa001a9859b7247eb211";
+    hash = "sha256-cnz0rG3fkwjjIGLtyUCuGYSXYXCDS0T4qbVmGvCjwmg=";
     fetchSubmodules = true;
   };
-
 }
