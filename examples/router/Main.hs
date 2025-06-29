@@ -32,7 +32,7 @@ data Action
 -- | Main entry point
 main :: IO ()
 main = run $
-  miso $ \u ->
+  miso @"app" $ \u ->
     (defaultComponent (Model u) updateModel viewModel)
        { subs = [uriSub HandleURI]
        }

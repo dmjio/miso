@@ -1,8 +1,12 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
@@ -74,6 +78,8 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef, IORef)
+import           Data.Proxy (Proxy(Proxy))
+import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 #ifdef WASM
@@ -99,7 +105,7 @@ import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
@@ -108,26 +114,28 @@ import           Miso.Util
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> Component name model action) -> JSM ()
+miso
+  :: forall name model action . (KnownSymbol name, Eq model)
+  => (URI -> Component name model action) -> JSM ()
 miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
-    let name = getMountPoint mountPoint
-    FFI.setComponentId name
+    let componentName = ms $ symbolVal (Proxy @name)
+    FFI.setComponentId componentName
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (name, mount, viewRef)
+    pure (componentName, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> Component name model action) -> JSM ()
+(🍜) :: (KnownSymbol name, Eq model) => (URI -> Component name model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startComponent :: Eq model => Component name model action -> JSM ()
+startComponent :: (KnownSymbol name, Eq model) => Component name model action -> JSM ()
 startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (renderStyles styles)
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
@@ -135,7 +143,7 @@ startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (render
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
 renderComponent
-  :: Eq model
+  :: (KnownSymbol name, Eq model)
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> Component name model action
@@ -150,7 +158,7 @@ renderComponent (Just renderer) vcomp hooks = withJS $ do
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
-  :: Eq model
+  :: forall name model action . (KnownSymbol name, Eq model)
   => Component name model action
   -- ^ Component application
   -> JSM ()
@@ -159,12 +167,12 @@ initComponent
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> hooks >> do
     vtree <- runView Draw (view model) snk logLevel events
-    let name = getMountPoint mountPoint
-    FFI.setComponentId name
-    mount <- mountElement name
+    let componentName = ms $ symbolVal (Proxy @name)
+    FFI.setComponentId componentName
+    mount <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
-    pure (name, mount, viewRef)
+    pure (componentName, mount, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

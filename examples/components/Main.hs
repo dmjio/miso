@@ -41,9 +41,6 @@ type MainModel = Bool
 
 main :: IO ()
 main = run $ startComponent app
-  { logLevel = DebugHydrate
-  , subs = []
-  }
 
 secs :: Int -> Int
 secs = (* 1000000)
@@ -55,7 +52,10 @@ loggerSub msg = \_ ->
     consoleLog msg
 
 app :: Component "app" MainModel MainAction
-app = defaultComponent False updateModel1 viewModel1
+app = (defaultComponent False updateModel1 viewModel1)
+  { logLevel = DebugHydrate
+  , subs = []
+  } 
 
 counterComponent2 :: Component "app-2" Model Action
 counterComponent2 = (defaultComponent 0 updateModel2 viewModel2)

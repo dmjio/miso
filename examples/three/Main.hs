@@ -1,9 +1,10 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE CPP                        #-}
 module Main where
 
 import           Control.Monad
@@ -70,7 +71,7 @@ main = run $ do
   stats <- newStats
   ref <- liftIO $ newIORef $ Context (pure ()) (pure ()) stats
   m <- now
-  startComponent (defaultComponent m (updateModel ref) viewModel)
+  startComponent @"app" (defaultComponent m (updateModel ref) viewModel)
     { initialAction = Just Init
     }
 

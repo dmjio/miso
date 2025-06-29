@@ -1,7 +1,8 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Main
@@ -49,12 +50,7 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | Main entry point
 main :: IO ()
-main = run $ startComponent app
-  { styles =
-    [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
-    , Style css
-    ]
-  }
+main = run (startComponent app)
 ----------------------------------------------------------------------------
 -- | Custom styling
 css :: MisoString
@@ -77,8 +73,13 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: Component name Model Action
-app = defaultComponent (Model mempty) updateModel viewModel
+app :: Component "app" Model Action
+app = (defaultComponent (Model mempty) updateModel viewModel)
+  { styles =
+      [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
+      , Style css
+      ]
+  }
 ----------------------------------------------------------------------------
 -- | Update function
 updateModel :: Action -> Effect Model Action
