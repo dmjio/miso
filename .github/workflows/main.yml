@@ -90,9 +90,6 @@ jobs:
 #     - name: (x86) Miso sample app jsaddle (GHC 9.12.2)
 #       run: nix-build -A sample-app
 
-     - name: (WASM) Miso examples
-       run: nix-build -A wasmExamples && ./result/bin/build.sh
-
      - name: (x86) Example.hs (MicroHS 0.12.4.0)
        run: cd micro/ && nix-shell --run 'mhs -temscripten Example -oout.js && qjs out.js'
 
