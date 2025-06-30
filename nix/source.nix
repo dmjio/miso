@@ -72,6 +72,5 @@ in
     repo = "MicroHs";
     rev = "0fc720779cfcae7b7ef1aa001a9859b7247eb211";
     hash = "sha256-cnz0rG3fkwjjIGLtyUCuGYSXYXCDS0T4qbVmGvCjwmg=";
-    fetchSubmodules = true;
   };
 }
