@@ -32,6 +32,8 @@ module Miso.FFI
   , setDrawingContext
   , jsonStringify
   , jsonParse
+  , windowInnerWidth
+  , windowInnerHeight
   -- ** Image
   , Image (..)
   , newImage
