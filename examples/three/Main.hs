@@ -8,6 +8,7 @@ module Main where
 
 import           Control.Monad
 import           Control.Monad.IO.Class (liftIO)
+import           Data.Function
 import           Data.IORef
 import           Language.Javascript.JSaddle
 
@@ -15,15 +16,49 @@ import           Miso hiding ((<#))
 import           Miso.String
 import           Miso.Style ((=:))
 import qualified Miso.Style as CSS
+import qualified Miso.Canvas as Canvas
+
+import           THREE.Internal (Three, (.=), x, y, z, (!.), (+=))
+import qualified THREE.Scene
+import qualified THREE.PerspectiveCamera
+import qualified THREE.WebGLRenderer
+import qualified THREE.Mesh
+import qualified THREE.Object3D
+import qualified THREE.MeshBasicMaterial
+import qualified THREE.BoxGeometry
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
+three_ :: View Action
+three_ = Canvas.canvas [ id_ "canvas" ] (asyncCallback draw)
+
+draw :: Three ()
+draw = do
+  width <- windowInnerWidth
+  height <- windowInnerHeight
+  let value = realToFrac (width `div` height)
+  scene <- THREE.Scene.new
+  camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
+  renderer <- THREE.WebGLRenderer.new
+  renderer & THREE.WebGLRenderer.setSize (width, height, True)
+  geometry <- THREE.BoxGeometry.new (10,10,10,Nothing,Nothing,Nothing)
+  material <- THREE.MeshBasicMaterial.new Nothing
+  material & THREE.MeshBasicMaterial.color .= "#000fff"
+  cube <- THREE.Mesh.new (geometry,material)
+  _  <- scene & THREE.Object3D.add cube
+  camera & THREE.Object3D.position !. z .= 300
+  renderer & THREE.WebGLRenderer.render (scene, camera)
+  cube & THREE.Object3D.rotation !. x += 0.1
+  cube & THREE.Object3D.rotation !. y += 0.1
+
+
 data Action
   = GetTime
   | Init
   | SetTime !Double
+  deriving (Show, Eq)
 
 withStats :: Stats -> JSM () -> JSM ()
 withStats stats action = do
@@ -43,7 +78,7 @@ initContext ref = do
     scene <- newScene
     camera <- newCamera
     renderer <- newRenderer canvas
-    setSize renderer
+    -- setSize renderer
     cube <-
         join $
             newMesh
@@ -138,9 +173,9 @@ newtype BoxGeometry = BoxGeometry { unBoxGeometry :: JSVal }
   deriving (MakeObject)
 
 newBoxGeometry :: Double -> Double -> Double -> JSM BoxGeometry
-newBoxGeometry x y z = do
+newBoxGeometry x y z_ = do
   boxGeometry <- jsg ("THREE" :: MisoString) ! ("BoxGeometry" :: MisoString)
-  BoxGeometry <$> new boxGeometry [x,y,z]
+  BoxGeometry <$> new boxGeometry [x,y,z_]
 
 newtype Camera = Camera { unCamera :: JSVal }
   deriving (MakeObject)
@@ -188,11 +223,11 @@ addStatsToDOM e stats = do
   child <- stats ! ("domElement" :: MisoString)
   void $ e # ("appendChild" :: MisoString) $ [child]
 
-setSize :: Renderer -> JSM ()
-setSize e = do
-  w <- jsg ("window" :: MisoString) ! ("innerWidth" :: MisoString)
-  h <- jsg ("window" :: MisoString) ! ("innerHeight" :: MisoString)
-  void $ e # ("setSize" :: MisoString) $ [w,h]
+-- setSize :: Renderer -> JSM ()
+-- setSize e = do
+--   w <- jsg ("window" :: MisoString) ! ("innerWidth" :: MisoString)
+--   h <- jsg ("window" :: MisoString) ! ("innerHeight" :: MisoString)
+--   void $ e # ("setSize" :: MisoString) $ [w,h]
 
 addToScene :: Scene -> Mesh -> JSM ()
 addToScene x y = do

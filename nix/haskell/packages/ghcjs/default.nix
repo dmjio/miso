@@ -15,6 +15,7 @@ self: super:
   servant-client-core = doJailbreak super.servant-client-core;
   servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
   miso-flatris = self.callCabal2nix "flatris" source.miso-flatris {};
+  three = self.callCabal2nix "three" source.three {};
   miso-plane-core = self.callCabal2nix "miso-plane" source.miso-plane {};
   miso-plane = pkgs.runCommand "miso-plane" {} ''
     mkdir -p $out

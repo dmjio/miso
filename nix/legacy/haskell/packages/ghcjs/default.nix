@@ -12,6 +12,7 @@ self: super:
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
   miso-flatris = self.callCabal2nix "flatris" source.miso-flatris {};
+  three = self.callCabal2nix "three" source.three {};
   miso-plane =
     let
       miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
