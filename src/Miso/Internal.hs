@@ -200,27 +200,29 @@ subscribe topicName toAction = do
 --
 -- Check if the Topic exists
 --
---  [ true ] - If it exists then write the message to the topic
+--  [true] - If it exists then write the message to the topic
 --
---  [ false ] - If it doesn't exist, create it.
+--  [false] - If it doesn't exist, create it.
 --
 -- N.B. Components can be both publishers and subscribers to their own topics.
 -----------------------------------------------------------------------------
 -- | Unsubscribe to a 'Topic'
 unsubscribe :: TopicName -> Effect model action
-unsubscribe topicName = do
-  vcompId <- ask
-  io_ $ do
-    let key = (vcompId, topicName)
-    subscribersMap <- liftIO (readIORef subscribers)
-    case M.lookup key subscribersMap of
-      Just threadId -> do
-        liftIO $ do
-          killThread threadId
-          atomicModifyIORef' subscribers $ \m ->
-            (M.delete key m, ())
-      Nothing -> do
-        FFI.consoleWarn ("Not subscribed to: " <> topicName)
+unsubscribe topicName = ask >>= io_ . unsubscribe_ topicName
+-----------------------------------------------------------------------------
+-- | Internal unsubscribe used in component unmounting
+unsubscribe_ :: TopicName -> ComponentId -> JSM ()
+unsubscribe_ topicName vcompId = do
+  let key = (vcompId, topicName)
+  subscribersMap <- liftIO (readIORef subscribers)
+  case M.lookup key subscribersMap of
+    Just threadId -> do
+      liftIO $ do
+        killThread threadId
+        atomicModifyIORef' subscribers $ \m ->
+          (M.delete key m, ())
+    Nothing ->
+      pure ()
 -----------------------------------------------------------------------------
 -- | Publish to a 'Topic'
 publish :: ToJSON value => TopicName -> value -> Effect model action
@@ -332,8 +334,14 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
+  killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (M.delete componentId m, ())
+-----------------------------------------------------------------------------
+killSubscribers :: ComponentId -> JSM ()
+killSubscribers componentId = do
+  topics_ <- M.keys <$> liftIO (readIORef topics)
+  forM_ topics_ (\topic -> unsubscribe_ topic componentId)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -349,11 +357,8 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp name attrs (SomeComponent app)) snk _ _ = do
-  compName <-
-    if null name
-    then liftIO freshComponentId
-    else pure name
+runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
+  compName <- liftIO freshComponentId
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent hydrate compName app)

@@ -151,7 +151,7 @@ data View action
   = VNode NS MisoString [Attribute action] [View action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp MisoString [Attribute action] SomeComponent
+  | VComp [Attribute action] SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
@@ -165,7 +165,7 @@ component_
   => Component model action
   -> [Attribute a]
   -> View a
-component_ app attrs = VComp mempty attrs (SomeComponent app)
+component_ app attrs = VComp attrs (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
