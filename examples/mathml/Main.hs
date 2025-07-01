@@ -1,6 +1,4 @@
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
@@ -13,7 +11,7 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startComponent @"app" (defaultComponent Main.Empty updateModel viewModel)
+main = run $ startComponent (defaultComponent Main.Empty updateModel viewModel)
 
 data Model = Empty
   deriving (Eq)

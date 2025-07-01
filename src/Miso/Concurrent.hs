@@ -10,12 +10,21 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Concurrent
-  ( Waiter (..)
+  ( -- * Syncrhonization primitives
+    Waiter (..)
   , waiter
+  , Topic
+  , newTopic
+  , copyTopic
+  , writeTopic
+  , readTopic
   ) where
 -----------------------------------------------------------------------------
 import Control.Concurrent
+import Control.Concurrent.STM
+import Data.Aeson
 -----------------------------------------------------------------------------
+-- | Synchronization primitive for event loop
 data Waiter
   = Waiter
   { wait :: IO ()
@@ -34,4 +43,19 @@ waiter = do
         _ <- tryPutMVar mvar ()
         pure ()
     }
+-----------------------------------------------------------------------------
+-- | Publish / Subscribe concurrency primitive
+type Topic = TChan Value
+-----------------------------------------------------------------------------
+newTopic :: IO Topic
+newTopic = newBroadcastTChanIO
+-----------------------------------------------------------------------------
+copyTopic :: Topic -> IO Topic
+copyTopic topic = atomically (dupTChan topic)
+-----------------------------------------------------------------------------
+writeTopic :: Topic -> Value -> IO ()
+writeTopic topic value = atomically (writeTChan topic value)
+-----------------------------------------------------------------------------
+readTopic :: Topic -> IO Value
+readTopic topic = atomically (readTChan topic)
 -----------------------------------------------------------------------------

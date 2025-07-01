@@ -129,7 +129,6 @@ This file contains a simple `miso` counter application.
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
@@ -163,7 +162,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `defaultComponent` takes as arguments the initial model, update function, view function
-component :: Component "app" Model Action
+component :: Component Model Action
 component = defaultComponent emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state

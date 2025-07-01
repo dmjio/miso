@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
@@ -34,7 +33,7 @@ main =
     sun <- newImage (baseUrl <> "canvas_sun.png")
     moon <- newImage (baseUrl <> "canvas_moon.png")
     earth <- newImage (baseUrl <> "canvas_earth.png")
-    startComponent @"app" (app sun moon earth) { initialAction = Just GetTime }
+    startComponent (app sun moon earth) { initialAction = Just GetTime }
   where
     app sun moon earth = defaultComponent (0.0, 0.0) updateModel (view_ sun moon earth)
     view_ sun moon earth m =

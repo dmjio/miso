@@ -3,7 +3,6 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE CPP                        #-}
 module Main where
 
@@ -71,7 +70,7 @@ main = run $ do
   stats <- newStats
   ref <- liftIO $ newIORef $ Context (pure ()) (pure ()) stats
   m <- now
-  startComponent @"app" (defaultComponent m (updateModel ref) viewModel)
+  startComponent (defaultComponent m (updateModel ref) viewModel)
     { initialAction = Just Init
     }
 

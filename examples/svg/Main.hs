@@ -1,7 +1,4 @@
 {-# LANGUAGE CPP               #-}
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE TypeApplications  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -20,13 +17,13 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startComponent @"app" app
+main = run $ startComponent app
   { events = M.insert "pointermove" False pointerEvents
   , subs = [ mouseSub HandlePointer ]
   }
 
 -- | Component definition (uses 'defaultComponent' smart constructor)
-app :: Component name Model Action
+app :: Component Model Action
 app = defaultComponent emptyModel updateModel viewModel
 
 emptyModel :: Model

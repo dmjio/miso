@@ -73,7 +73,7 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: Component "app" Model Action
+app :: Component Model Action
 app = (defaultComponent (Model mempty) updateModel viewModel)
   { styles =
       [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"

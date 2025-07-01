@@ -51,7 +51,7 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
-app :: Component "app" Model Action
+app :: Component Model Action
 app = (defaultComponent emptyModel updateModel viewModel)
   { styles =
     [ Href "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"

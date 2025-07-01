@@ -22,7 +22,6 @@ module Miso.Types
   ( -- ** Types
     Component        (..)
   , SomeComponent    (..)
-  , Dynamic
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -54,19 +53,17 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
-import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString, ms)
+import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component (name :: Symbol) model action = Component
+data Component model action = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -120,7 +117,7 @@ defaultComponent
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> Component name model action
+  -> Component model action
 defaultComponent m u v = Component
   { model = m
   , update = u
@@ -161,26 +158,18 @@ data View action
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
 data SomeComponent
-   = forall name model action . Eq model
-  => SomeComponent (Component name model action)
+   = forall model action . Eq model
+  => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
 -- Use this function if you'd like send messages to this @Component@ at @name@ via
 -- @notify@ or to read the state of this @Component@ via @sample@.
 component_
-  :: forall name model action a . (Eq model, KnownSymbol name)
-  => Component name model action
+  :: forall model action a . Eq model
+  => Component model action
   -> [Attribute a]
   -> View a
-component_ app attrs = VComp (ms name) attrs (SomeComponent app)
-  where
-    name = symbolVal (Proxy @name)
------------------------------------------------------------------------------
--- | Type synonym for Dynamically constructed @Component@
--- @
--- sampleComponent :: Component Dynamic Model Action
--- @
-type Dynamic = ""
+component_ app attrs = VComp mempty attrs (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -196,8 +185,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component name model action) where
-  type ToViewAction (Component name model action) = action
+instance ToView (Component model action) where
+  type ToViewAction (Component model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

@@ -1,12 +1,8 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
-{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
-{-# LANGUAGE KindSignatures            #-}
-{-# LANGUAGE TypeApplications          #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
@@ -27,13 +23,11 @@ module Miso
     -- ** Sink
   , withSink
   , Sink
-    -- ** Sampling
-  , sample
-  , sample'
-    -- ** Message Passing
-  , notify
-  , notify'
-    -- ** Subscription
+    -- ** Publishers / Subscribers
+  , subscribe
+  , unsubscribe
+  , publish
+    -- ** Subscriptions
   , startSub
   , stopSub
   , Sub
@@ -78,8 +72,6 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef, IORef)
-import           Data.Proxy (Proxy(Proxy))
-import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 #ifdef WASM
@@ -105,7 +97,7 @@ import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage
-import           Miso.String (MisoString, ms)
+import           Miso.String (MisoString)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
@@ -114,28 +106,30 @@ import           Miso.Util
 -- Assumes the pre-rendered DOM is already present.
 -- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso
-  :: forall name model action . (KnownSymbol name, Eq model)
-  => (URI -> Component name model action) -> JSM ()
+miso :: Eq model => (URI -> Component model action) -> JSM ()
 miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
-    let componentName = ms $ symbolVal (Proxy @name)
-    FFI.setComponentId componentName
+    componentId <- liftIO freshComponentId
+    FFI.setComponentId componentId
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (componentName, mount, viewRef)
+    pure (componentId, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: (KnownSymbol name, Eq model) => (URI -> Component name model action) -> JSM ()
+(🍜) :: Eq model => (URI -> Component model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
 -- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startComponent :: (KnownSymbol name, Eq model) => Component name model action -> JSM ()
+startComponent
+  :: Eq model
+  => Component model action
+  -- ^ Component application
+  -> JSM ()
 startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (renderStyles styles)
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
@@ -143,10 +137,10 @@ startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (render
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
 renderComponent
-  :: (KnownSymbol name, Eq model)
+  :: Eq model
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> Component name model action
+  -> Component model action
   -- ^ Component application
   -> JSM ()
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
@@ -158,8 +152,8 @@ renderComponent (Just renderer) vcomp hooks = withJS $ do
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
-  :: forall name model action . (KnownSymbol name, Eq model)
-  => Component name model action
+  :: Eq model
+  => Component model action
   -- ^ Component application
   -> JSM ()
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
@@ -167,12 +161,12 @@ initComponent
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> hooks >> do
     vtree <- runView Draw (view model) snk logLevel events
-    let componentName = ms $ symbolVal (Proxy @name)
-    FFI.setComponentId componentName
+    componentId <- liftIO freshComponentId
+    FFI.setComponentId componentId
     mount <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
-    pure (componentName, mount, viewRef)
+    pure (componentId, mount, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
