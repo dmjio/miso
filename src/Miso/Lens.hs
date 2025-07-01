@@ -135,6 +135,7 @@ module Miso.Lens
   , (<>~)
   , _1
   , _2
+  , _id
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.State (MonadState, modify, gets)
@@ -168,7 +169,7 @@ type Lens' record field = Lens record field
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
-  id = Lens (\x -> x) (\x _ -> x)
+  id = Lens Prelude.id (flip const)
   Lens g1 s1 . Lens g2 s2 = Lens
     { _get = g1 <<< g2
     , _set = \r f -> s2 r (s1 (g2 r) f)
@@ -654,6 +655,15 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 -- @
 _2 :: Lens (a,b) b
 _2 = lens snd $ \(a,_) x -> (a,x)
+---------------------------------------------------------------------------------
+-- | @Lens@ that operates on itself 
+--
+-- @
+-- update AddOne = do
+--   _id += 1
+-- @
+_id :: Lens a a
+_id = Control.Category.id
 ---------------------------------------------------------------------------------
 -- | Smart constructor @lens@ function. Used to easily construct a @Lens@
 --

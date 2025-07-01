@@ -7,4 +7,4 @@ import Common (sse)
 import Miso (miso, run)
 
 main :: IO ()
-main = run (miso @"sse" sse)
+main = run (miso sse)

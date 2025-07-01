@@ -21,7 +21,7 @@ import           Language.Javascript.JSaddle ((!), (!!), (#), JSVal, (<#))
 import qualified Language.Javascript.JSaddle as J
 import           Prelude hiding ((!!), null, unlines)
 ----------------------------------------------------------------------------
-import           Miso (Component(styles), View,Effect, defaultComponent, run, CSS(..), startComponent, io, io_)
+import           Miso (Component(styles), View,Effect, component, run, CSS(..), startComponent, io, io_)
 import qualified Miso as M
 import           Miso.Lens ((.=), Lens, lens)
 import           Miso.String (MisoString, unlines, null)
@@ -73,8 +73,8 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: Component "app" Model Action
-app = (defaultComponent (Model mempty) updateModel viewModel)
+app :: Component Model Action
+app = (component (Model mempty) updateModel viewModel)
   { styles =
       [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
       , Style css

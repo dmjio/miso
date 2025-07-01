@@ -1,13 +1,7 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Main where
 
@@ -90,8 +84,8 @@ data Msg
 main :: IO ()
 main = run (startComponent app)
 
-app :: Component "todo-mvc" Model Msg
-app = (defaultComponent emptyModel updateModel viewModel)
+app :: Component Model Msg
+app = (component emptyModel updateModel viewModel)
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =

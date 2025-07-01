@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 module Main where
@@ -34,8 +33,8 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = run $ startComponent app
 -----------------------------------------------------------------------------
-app :: Component "app" Model Action
-app = (defaultComponent (Model 0) updateModel viewModel)
+app :: Component Model Action
+app = (component (Model 0) updateModel viewModel)
   { events = pointerEvents
   , styles = [ Sheet sheet ]
   }
