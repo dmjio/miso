@@ -58,7 +58,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> Component name Model Action
+sse :: URI -> Component Model Action
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
