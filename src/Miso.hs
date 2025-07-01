@@ -104,7 +104,6 @@ import           Miso.Util
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
--- Note: Uses 'mountPoint' as the 'Component' name.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 miso :: Eq model => (URI -> Component model action) -> JSM ()
 miso f = withJS $ do

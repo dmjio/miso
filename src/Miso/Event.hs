@@ -106,10 +106,6 @@ onMounted action =
 -- element is created. It returns the /component-id/ from the component.
 -- Returning /component-id/ is useful when creating 'Component' dynamically.
 --
--- This way the parent can maintain a 'Map' of the child 'Component' IDs. When
--- the parent 'Component' wants to send a child 'Component' a message it can use
--- @notify'@.
---
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
 onMountedWith :: (MisoString -> action) -> Attribute action
@@ -159,12 +155,6 @@ onUnmounted action =
 -----------------------------------------------------------------------------
 -- | @onUnmounted action@ is an event that gets called after the DOM element
 -- is removed from the DOM. It returns the /component-id/ after the unmount call.
--- Returning /component-id/ is useful when dynamically created @Component@ need
--- to notify their parents about their own destruction.
---
--- This way the parent can maintain a @Map@ of the child @Component@ IDs. When
--- the parent @Component@ wants to send a child @Component@ a message it can use
--- @notify'@.
 --
 -- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
 --

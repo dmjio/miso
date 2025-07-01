@@ -142,8 +142,6 @@ data LogLevel
   -- handler that raised it. Also will warn if an event handler is
   -- being used, yet it's not being listened for by the event
   -- delegator mount point.
-  | DebugNotify
-  -- ^ Will warn if a @Component@ can't be found when using @notify@ or @notify'@
   | DebugAll
   -- ^ Logs on all of the above
   deriving (Show, Eq)
@@ -162,8 +160,6 @@ data SomeComponent
   => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
--- Use this function if you'd like send messages to this @Component@ at @name@ via
--- @notify@ or to read the state of this @Component@ via @sample@.
 component_
   :: forall model action a . Eq model
   => Component model action
