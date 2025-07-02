@@ -31,6 +31,7 @@ module Miso.Internal
   , subscribe
   , unsubscribe
   , publish
+  , TopicName
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (forM, forM_, when, void, forever)
@@ -141,7 +142,45 @@ subscribers :: IORef (Map (ComponentId, TopicName) ThreadId)
 {-# NOINLINE subscribers #-}
 subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Subscribes to a 'Topic', provides callback function that writes to 'Component' sink
+-- | Subscribes to a 'TopicName', provides callback function that writes to 'Component' sink
+--
+-- If a 'TopicName' does not exist when calling 'subscribe' it is generated dynamically.
+-- Each subscriber decodes the received 'Value' using it's own 'FromJSON' instance. This provides
+-- for loose-coupling between 'Component'. As long as the underlying 'Value' are identical
+-- 'Component' can use their own types without serialization issues. 'TopicName' should
+-- have their own JSON API specification when being distributed.
+--
+-- @
+--
+-- clientComponent :: MisoString -> Component Int Action
+-- clientComponent name = defaultComponent 0 update_ $ \m ->
+--   div_
+--   []
+--   [ br_ []
+--   , text (name <> " : " <> ms (m ^. _id))
+--   , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
+--   , button_ [ onClick Subscribe ] [ "subscribe" ]
+--   ] where
+--       update_ :: Action -> Effect Int Action
+--       update_ = \case
+--         AddOne -> do
+--           _id += 1
+--         SubtractOne ->
+--           _id -= 1
+--         Unsubscribe ->
+--           unsubscribe "command"
+--         Subscribe ->
+--           subscribe "command" Notification
+--         Notification (Success Increment) -> do
+--           update_ AddOne
+--         Notification (Success Decrement) -> do
+--           update_ SubtractOne
+--         Notification (Error msg) ->
+--           io_ $ consoleError ("Decode failure: " <> ms msg)
+--         _ -> pure ()
+--
+-- @
+--
 subscribe
   :: FromJSON message
   => TopicName
@@ -207,10 +246,15 @@ subscribe topicName toAction = do
 -- N.B. Components can be both publishers and subscribers to their own topics.
 -----------------------------------------------------------------------------
 -- | Unsubscribe to a 'Topic'
+--
+-- Unsubscribes a 'Component' from receiving messages from 'TopicName'.
+--
+-- See 'subscribe' for use
+--
 unsubscribe :: TopicName -> Effect model action
 unsubscribe topicName = ask >>= io_ . unsubscribe_ topicName
 -----------------------------------------------------------------------------
--- | Internal unsubscribe used in component unmounting
+-- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
 unsubscribe_ :: TopicName -> ComponentId -> JSM ()
 unsubscribe_ topicName vcompId = do
   let key = (vcompId, topicName)
@@ -225,6 +269,40 @@ unsubscribe_ topicName vcompId = do
       pure ()
 -----------------------------------------------------------------------------
 -- | Publish to a 'Topic'
+--
+-- 'TopicName' are generated dynamically if they do not exist. When using 'publish'
+-- all subscribers are immediately notified of a new message. A message is saved as a 'Value'
+-- The underlying 'ToJSON' instance is used to construct this 'Value'.
+--
+-- We recommend documenting a public API for a JSON object when distributing 'Component'
+-- downstream to end users for consumption (be it inside a single cabal project or across multiple
+-- cabal projects).
+--
+-- @
+--
+-- server :: Component () Action
+-- server = defaultComponent () update_ $ \() ->
+--   div_
+--   []
+--   [ "Server component"
+--   , button_ [ onClick AddOne ] [ "+" ]
+--   , button_ [ onClick SubtractOne ] [ "-" ]
+--   , component_ (client_ "client 1")
+--     [ onMountedWith Mount
+--     ]
+--   , component_ (client_ "client 2")
+--     [ onMountedWith Mount
+--     ]
+--   ] where
+--       update_ :: Action -> Effect () Action
+--       update_ = \case
+--         AddOne ->
+--           publish "command" Increment
+--         SubtractOne ->
+--           publish "command" Decrement
+--
+-- @
+--
 publish :: ToJSON value => TopicName -> value -> Effect model action
 publish topicName value = io_ $ do
   result <- M.lookup topicName <$> liftIO (readIORef topics)

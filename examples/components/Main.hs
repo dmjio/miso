@@ -90,13 +90,11 @@ clientComponent name = defaultComponent 0 update_ $ \m ->
         Subscribe -> do
           io_ (consoleLog "subscribing...")
           subscribe "command" Notification
-        Notification (Success Increment) -> do
-          io_ $ consoleLog "inside of success increment"
+        Notification (Success Increment) ->
           update_ AddOne
-        Notification (Success Decrement) -> do
-          io_ $ consoleLog "inside of success decrement"
+        Notification (Success Decrement) ->
           update_ SubtractOne
-        Notification msg ->
-          io_ $ consoleError ("Decode failure: " <> ms (show msg))
+        Notification (Error msg) ->
+          io_ $ consoleError ("Decode failure: " <> ms msg)
         _ -> pure ()
 -----------------------------------------------------------------------------
