@@ -24,6 +24,8 @@ module Miso
   , withSink
   , Sink
     -- ** Publishers / Subscribers
+  , TopicName
+  , mkTopic
   , subscribe
   , unsubscribe
   , publish

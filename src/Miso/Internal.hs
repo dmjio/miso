@@ -32,6 +32,7 @@ module Miso.Internal
   , unsubscribe
   , publish
   , TopicName
+  , mkTopic
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (forM, forM_, when, void, forever)
@@ -132,13 +133,15 @@ data ComponentState model action
   , componentActions    :: IORef (Seq action)
   }
 -----------------------------------------------------------------------------
-type TopicName = MisoString
+newtype TopicName a = TopicName MisoString
+mkTopic :: MisoString -> TopicName a
+mkTopic = TopicName
 -----------------------------------------------------------------------------
-topics :: IORef (Map TopicName Topic)
+topics :: IORef (Map MisoString Topic)
 {-# NOINLINE topics #-}
 topics = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
-subscribers :: IORef (Map (ComponentId, TopicName) ThreadId)
+subscribers :: IORef (Map (ComponentId, MisoString) ThreadId)
 {-# NOINLINE subscribers #-}
 subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
@@ -183,10 +186,10 @@ subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 --
 subscribe
   :: FromJSON message
-  => TopicName
+  => TopicName message
   -> (Result message -> action)
   -> Effect model action
-subscribe topicName toAction = do
+subscribe (TopicName topicName) toAction = do
   vcompId <- ask
   io_ $ do
     subscribersMap <- liftIO (readIORef subscribers)
@@ -251,12 +254,12 @@ subscribe topicName toAction = do
 --
 -- See 'subscribe' for use
 --
-unsubscribe :: TopicName -> Effect model action
+unsubscribe :: TopicName a -> Effect model action
 unsubscribe topicName = ask >>= io_ . unsubscribe_ topicName
 -----------------------------------------------------------------------------
 -- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
-unsubscribe_ :: TopicName -> ComponentId -> JSM ()
-unsubscribe_ topicName vcompId = do
+unsubscribe_ :: TopicName a -> ComponentId -> JSM ()
+unsubscribe_ (TopicName topicName) vcompId = do
   let key = (vcompId, topicName)
   subscribersMap <- liftIO (readIORef subscribers)
   case M.lookup key subscribersMap of
@@ -303,8 +306,8 @@ unsubscribe_ topicName vcompId = do
 --
 -- @
 --
-publish :: ToJSON value => TopicName -> value -> Effect model action
-publish topicName value = io_ $ do
+publish :: ToJSON value => TopicName value -> value -> Effect model action
+publish (TopicName topicName) value = io_ $ do
   result <- M.lookup topicName <$> liftIO (readIORef topics)
   case result of
     Just topic -> do
@@ -419,7 +422,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId = do
   topics_ <- M.keys <$> liftIO (readIORef topics)
-  forM_ topics_ (\topic -> unsubscribe_ topic componentId)
+  forM_ topics_ (\topic -> unsubscribe_ (TopicName topic) componentId)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --

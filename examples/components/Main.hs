@@ -60,9 +60,9 @@ server = component () update_ $ \() ->
       update_ :: Action -> Effect () Action
       update_ = \case
         AddOne ->
-          publish "command" Increment
+          publish topic Increment
         SubtractOne ->
-          publish "command" Decrement
+          publish topic Decrement
         Mount compId ->
           io_ $ consoleLog ("Mounted component: " <> compId)
         _ -> pure ()
@@ -86,10 +86,10 @@ clientComponent name = component 0 update_ $ \m ->
         SubtractOne ->
           _id -= 1
         Unsubscribe ->
-          unsubscribe "command"
+          unsubscribe topic
         Subscribe -> do
           io_ (consoleLog "subscribing...")
-          subscribe "command" Notification
+          subscribe topic Notification
         Notification (Success Increment) ->
           update_ AddOne
         Notification (Success Decrement) ->
@@ -97,4 +97,7 @@ clientComponent name = component 0 update_ $ \m ->
         Notification (Error msg) ->
           io_ $ consoleError ("Decode failure: " <> ms msg)
         _ -> pure ()
+
+topic :: TopicName Message
+topic = mkTopic "command"
 -----------------------------------------------------------------------------
