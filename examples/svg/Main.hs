@@ -22,9 +22,9 @@ main = run $ startComponent app
   , subs = [ mouseSub HandlePointer ]
   }
 
--- | Component definition (uses 'defaultComponent' smart constructor)
+-- | Component definition (uses 'component' smart constructor)
 app :: Component Model Action
-app = defaultComponent emptyModel updateModel viewModel
+app = component emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model (0, 0)

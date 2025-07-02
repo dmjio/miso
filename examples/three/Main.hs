@@ -70,7 +70,7 @@ main = run $ do
   stats <- newStats
   ref <- liftIO $ newIORef $ Context (pure ()) (pure ()) stats
   m <- now
-  startComponent (defaultComponent m (updateModel ref) viewModel)
+  startComponent (component m (updateModel ref) viewModel)
     { initialAction = Just Init
     }
 

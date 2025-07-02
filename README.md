@@ -161,9 +161,9 @@ main = run (startComponent component)
 foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
--- | `defaultComponent` takes as arguments the initial model, update function, view function
+-- | `component` takes as arguments the initial model, update function, view function
 component :: Component Model Action
-component = defaultComponent emptyModel updateModel viewModel
+component = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model

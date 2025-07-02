@@ -44,7 +44,7 @@ main = run (startComponent server)
 -- Notice the server has no 'model' (e.g. `()`)
 --
 server :: Component () Action
-server = defaultComponent () update_ $ \() ->
+server = component () update_ $ \() ->
   div_
   []
   [ "Server component"
@@ -71,7 +71,7 @@ client_ :: MisoString -> Component Int Action
 client_ name = (clientComponent name) { initialAction = Just Subscribe }
 -----------------------------------------------------------------------------
 clientComponent :: MisoString -> Component Int Action
-clientComponent name = defaultComponent 0 update_ $ \m ->
+clientComponent name = component 0 update_ $ \m ->
   div_
   []
   [ br_ []

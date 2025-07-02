@@ -153,7 +153,7 @@ subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 -- @
 --
 -- clientComponent :: MisoString -> Component Int Action
--- clientComponent name = defaultComponent 0 update_ $ \m ->
+-- clientComponent name = component 0 update_ $ \m ->
 --   div_
 --   []
 --   [ br_ []
@@ -281,7 +281,7 @@ unsubscribe_ topicName vcompId = do
 -- @
 --
 -- server :: Component () Action
--- server = defaultComponent () update_ $ \() ->
+-- server = component () update_ $ \() ->
 --   div_
 --   []
 --   [ "Server component"

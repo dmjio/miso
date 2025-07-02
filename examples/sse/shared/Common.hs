@@ -66,7 +66,7 @@ sse currentURI
           ]
         }
   where
-    app = defaultComponent (Model currentURI "No event received") updateModel viewModel
+    app = component (Model currentURI "No event received") updateModel viewModel
     viewModel m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r

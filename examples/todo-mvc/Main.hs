@@ -85,7 +85,7 @@ main :: IO ()
 main = run (startComponent app)
 
 app :: Component Model Msg
-app = (defaultComponent emptyModel updateModel viewModel)
+app = (component emptyModel updateModel viewModel)
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =

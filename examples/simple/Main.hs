@@ -34,7 +34,7 @@ main :: IO ()
 main = run $ startComponent app
 -----------------------------------------------------------------------------
 app :: Component Model Action
-app = (defaultComponent (Model 0) updateModel viewModel)
+app = (component (Model 0) updateModel viewModel)
   { events = pointerEvents
   , styles = [ Sheet sheet ]
   }

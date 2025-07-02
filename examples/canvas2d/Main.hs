@@ -35,7 +35,7 @@ main =
     earth <- newImage (baseUrl <> "canvas_earth.png")
     startComponent (app sun moon earth) { initialAction = Just GetTime }
   where
-    app sun moon earth = defaultComponent (0.0, 0.0) updateModel (view_ sun moon earth)
+    app sun moon earth = component (0.0, 0.0) updateModel (view_ sun moon earth)
     view_ sun moon earth m =
       div_
       [ id_ "canvas grid" ]

@@ -34,7 +34,7 @@ module Miso.Types
   , ToView           (..)
   , ToKey            (..)
   -- ** Smart Constructors
-  , defaultComponent
+  , component
   -- ** Components
   , component_
   -- ** Utils
@@ -113,12 +113,12 @@ getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
 -- | Smart constructor for @Component@ with sane defaults.
-defaultComponent
+component
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
   -> Component model action
-defaultComponent m u v = Component
+component m u v = Component
   { model = m
   , update = u
   , view = v
@@ -133,7 +133,7 @@ defaultComponent m u v = Component
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  -- ^ No debug logging, the default value used in @defaultComponent@
+  -- ^ No debug logging, the default value used in @component@
   | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.

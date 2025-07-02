@@ -29,7 +29,7 @@ main :: IO ()
 main = run (startComponent app)
 
 app :: Component Model Action
-app = (defaultComponent emptyModel updateModel appView)
+app = (component emptyModel updateModel appView)
   { events = defaultEvents <> keyboardEvents
   , subs =
     [ websocketSub url protocols HandleWebSocket
