@@ -38,7 +38,8 @@ module Miso.Internal
 import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
-import           Data.Aeson (FromJSON, ToJSON, Result, fromJSON, toJSON)
+import           Data.Aeson (FromJSON, ToJSON, fromJSON, toJSON)
+import qualified Data.Aeson as Aeson
 import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
@@ -134,8 +135,7 @@ data ComponentState model action
   }
 -----------------------------------------------------------------------------
 newtype TopicName a = TopicName MisoString
-mkTopic :: MisoString -> TopicName a
-mkTopic = TopicName
+  deriving (Eq, Show, Ord)
 -----------------------------------------------------------------------------
 topics :: IORef (Map MisoString Topic)
 {-# NOINLINE topics #-}
@@ -187,7 +187,7 @@ subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 subscribe
   :: FromJSON message
   => TopicName message
-  -> (Result message -> action)
+  -> (message -> action)
   -> Effect model action
 subscribe (TopicName topicName) toAction = do
   vcompId <- ask
@@ -200,12 +200,7 @@ subscribe (TopicName topicName) toAction = do
       Nothing -> do
         M.lookup topicName <$> liftIO (readIORef topics) >>= \case
           Nothing -> do
-            -- no topic exists, create a new one, register it and subscribe
-            topic <- liftIO $ do
-              topic <- newTopic
-              atomicModifyIORef' topics $ \m -> (M.insert topicName topic m, ())
-              pure topic
-            subscribeTopic key topic vcompId
+            FFI.consoleLog "topic doesn't exist..."
           Just topic -> do
             subscribeTopic key topic vcompId
   where
@@ -215,7 +210,9 @@ subscribe (TopicName topicName) toAction = do
         ComponentState {..} <- (M.! vcompId) <$> liftIO (readIORef components)
         forever $ do
           message <- liftIO (readTopic clonedTopic)
-          componentSink $ toAction (fromJSON message)
+          case fromJSON message of
+            Aeson.Success r -> componentSink $ toAction r
+            Aeson.Error r -> FFI.consoleError ("Decode failure: " <> ms (show r))
       liftIO $ atomicModifyIORef' subscribers $ \m ->
         (M.insert key threadId m, ())
 -----------------------------------------------------------------------------
@@ -312,9 +309,18 @@ publish (TopicName topicName) value = io_ $ do
   case result of
     Just topic -> do
       liftIO $ writeTopic topic (toJSON value)
-    Nothing -> liftIO $ do
-      topic <- newTopic
-      void $ atomicModifyIORef' topics $ \m -> (M.insert topicName topic m, ())
+    Nothing -> do
+      -- TODO this shouldn't happen since topics are never unregistered
+      -- i.e. `topics` only ever grows (is this a good thing?)
+      -- see also `subscribe`
+      FFI.consoleLog "topic doesn't exist..."
+mkTopic :: MisoString -> IO (TopicName a)
+mkTopic topicName = do
+  topic <- newTopic
+  -- TODO what if the name already exists?
+  -- actually, we should really just generate a unique ID instead, like we do for components
+  void $ atomicModifyIORef' topics $ \m -> (M.insert topicName topic m, ())
+  pure $ TopicName topicName
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}

@@ -14,6 +14,7 @@ import           Data.Aeson
 import           Miso
 import           Miso.String
 import           Miso.Lens
+import System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -25,7 +26,7 @@ data Action
   | Mount MisoString
   | Subscribe
   | Unsubscribe
-  | Notification (Result Message)
+  | Notification Message
   deriving (Show, Eq, Generic)
 -----------------------------------------------------------------------------
 data Message
@@ -35,6 +36,14 @@ data Message
 -----------------------------------------------------------------------------
 main :: IO ()
 main = run (startComponent server)
+
+-- TODO we need to be able to perform side effects when creating a component
+{-# NOINLINE serverInitialModel #-}
+serverInitialModel :: TopicName Message
+serverInitialModel =
+  unsafePerformIO $ do
+    putStrLn "unsafe IO being performed!"
+    mkTopic "command"
 -----------------------------------------------------------------------------
 -- | Demonstrates a simple server / client, pub / sub setup for 'Component'
 -- In this contrived example, the server component holds the
@@ -43,35 +52,37 @@ main = run (startComponent server)
 --
 -- Notice the server has no 'model' (e.g. `()`)
 --
-server :: Component () Action
-server = component () update_ $ \() ->
+server :: Component (TopicName Message) Action
+server = component serverInitialModel update_ $ \topic ->
   div_
   []
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_ (client_ "client 1")
+  , component_ (client_ topic "client 1")
     [ onMountedWith Mount
     ]
-  , component_ (client_ "client 2")
+  , component_ (client_ topic "client 2")
     [ onMountedWith Mount
     ]
   ] where
-      update_ :: Action -> Effect () Action
+      update_ :: Action -> Effect (TopicName Message) Action
       update_ = \case
-        AddOne ->
+        AddOne -> do
+          topic <- get
           publish topic Increment
-        SubtractOne ->
+        SubtractOne -> do
+          topic <- get
           publish topic Decrement
         Mount compId ->
           io_ $ consoleLog ("Mounted component: " <> compId)
         _ -> pure ()
 -----------------------------------------------------------------------------
-client_ :: MisoString -> Component Int Action
-client_ name = (clientComponent name) { initialAction = Just Subscribe }
+client_ :: TopicName Message -> MisoString -> Component Int Action
+client_ topic name = (clientComponent topic name) { initialAction = Just Subscribe }
 -----------------------------------------------------------------------------
-clientComponent :: MisoString -> Component Int Action
-clientComponent name = component 0 update_ $ \m ->
+clientComponent :: TopicName Message -> MisoString -> Component Int Action
+clientComponent topic name = component 0 update_ $ \m ->
   div_
   []
   [ br_ []
@@ -90,14 +101,12 @@ clientComponent name = component 0 update_ $ \m ->
         Subscribe -> do
           io_ (consoleLog "subscribing...")
           subscribe topic Notification
-        Notification (Success Increment) ->
+        Notification Increment -> do
+          io_ $ consoleLog "inside of increment"
           update_ AddOne
-        Notification (Success Decrement) ->
+        Notification Decrement -> do
+          io_ $ consoleLog "inside of decrement"
           update_ SubtractOne
-        Notification (Error msg) ->
-          io_ $ consoleError ("Decode failure: " <> ms msg)
         _ -> pure ()
 
-topic :: TopicName Message
-topic = mkTopic "command"
 -----------------------------------------------------------------------------
