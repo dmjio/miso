@@ -93,10 +93,10 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp mount attributes (SomeComponent Component {..})) =
+renderBuilder (VComp attributes (SomeComponent Component {..})) =
   mconcat
   [ stringUtf8 "<div data-component-id=\""
-  , fromMisoString mount
+  , fromMisoString ""
   , "\" "
   , intercalate " " (renderAttrs <$> attributes)
   , ">"

@@ -22,7 +22,6 @@ module Miso.Types
   ( -- ** Types
     Component        (..)
   , SomeComponent    (..)
-  , Dynamic
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -35,7 +34,7 @@ module Miso.Types
   , ToView           (..)
   , ToKey            (..)
   -- ** Smart Constructors
-  , defaultComponent
+  , component
   -- ** Components
   , component_
   -- ** Utils
@@ -54,19 +53,17 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Data.Proxy (Proxy(Proxy))
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
 import           Prelude hiding (null)
-import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString, ms)
+import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component (name :: Symbol) model action = Component
+data Component model action = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -116,12 +113,12 @@ getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
 -- | Smart constructor for @Component@ with sane defaults.
-defaultComponent
+component
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> Component name model action
-defaultComponent m u v = Component
+  -> Component model action
+component m u v = Component
   { model = m
   , update = u
   , view = v
@@ -136,7 +133,7 @@ defaultComponent m u v = Component
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  -- ^ No debug logging, the default value used in @defaultComponent@
+  -- ^ No debug logging, the default value used in @component@
   | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.
@@ -145,8 +142,6 @@ data LogLevel
   -- handler that raised it. Also will warn if an event handler is
   -- being used, yet it's not being listened for by the event
   -- delegator mount point.
-  | DebugNotify
-  -- ^ Will warn if a @Component@ can't be found when using @notify@ or @notify'@
   | DebugAll
   -- ^ Logs on all of the above
   deriving (Show, Eq)
@@ -156,31 +151,21 @@ data View action
   = VNode NS MisoString [Attribute action] [View action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp MisoString [Attribute action] SomeComponent
+  | VComp [Attribute action] SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
 data SomeComponent
-   = forall name model action . Eq model
-  => SomeComponent (Component name model action)
+   = forall model action . Eq model
+  => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
--- Use this function if you'd like send messages to this @Component@ at @name@ via
--- @notify@ or to read the state of this @Component@ via @sample@.
 component_
-  :: forall name model action a . (Eq model, KnownSymbol name)
-  => Component name model action
+  :: forall model action a . Eq model
+  => Component model action
   -> [Attribute a]
   -> View a
-component_ app attrs = VComp (ms name) attrs (SomeComponent app)
-  where
-    name = symbolVal (Proxy @name)
------------------------------------------------------------------------------
--- | Type synonym for Dynamically constructed @Component@
--- @
--- sampleComponent :: Component Dynamic Model Action
--- @
-type Dynamic = ""
+component_ app attrs = VComp attrs (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -196,8 +181,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component name model action) where
-  type ToViewAction (Component name model action) = action
+instance ToView (Component model action) where
+  type ToViewAction (Component model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.

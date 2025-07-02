@@ -1,13 +1,14 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE LambdaCase          #-}
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Internal
@@ -20,23 +21,25 @@
 module Miso.Internal
   ( -- * Internal functions
     initialize
-  , componentMap
-  , notify
-  , notify'
+  , freshComponentId
   , runView
-  , sample
-  , sample'
   , renderStyles
   , Hydrate(..)
   -- * Subscription
   , startSub
   , stopSub
+  -- * Pub / Sub
+  , subscribe
+  , unsubscribe
+  , publish
+  , Topic (..)
+  , topic
   ) where
 -----------------------------------------------------------------------------
-import           Control.Exception (throwIO)
-import           Control.Monad (forM, forM_, when, void)
+import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
+import           Data.Aeson (FromJSON, ToJSON, Result, fromJSON, toJSON)
 import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
@@ -45,23 +48,21 @@ import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
 #ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle hiding (Sync)
+import           Language.Javascript.JSaddle hiding (Sync, Result)
 #else
 import           Language.Javascript.JSaddle
 #endif
-import           GHC.TypeLits (KnownSymbol, symbolVal)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
-import           Data.Proxy (Proxy(..))
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 -----------------------------------------------------------------------------
-import           Miso.Concurrent (Waiter(..), waiter)
+import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
-import           Miso.Exception (MisoException(..), exception)
+import           Miso.Exception (exception)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
@@ -73,7 +74,7 @@ import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
   :: Eq model
-  => Component name model action
+  => Component model action
   -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
@@ -84,7 +85,7 @@ initialize Component {..} getView = do
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
-  (componentName, componentMount, componentVTree) <- getView componentSink
+  (componentId, componentMount, componentVTree) <- getView componentSink
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -95,7 +96,7 @@ initialize Component {..} getView = do
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update Async componentName componentSink (toList as) oldModel
+      newModel <- foldEffects update Async componentId componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -124,7 +125,7 @@ data Hydrate
 -- | @Component@ state, data associated with the lifetime of a @Component@
 data ComponentState model action
   = ComponentState
-  { componentName       :: MisoString
+  { componentId         :: ComponentId
   , componentSubThreads :: IORef (Map MisoString ThreadId)
   , componentMount      :: JSVal
   , componentVTree      :: IORef VTree
@@ -132,6 +133,248 @@ data ComponentState model action
   , componentModel      :: IORef model
   , componentActions    :: IORef (Seq action)
   }
+-----------------------------------------------------------------------------
+-- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
+-- communication between 'Component'. 'Component' can 'subscribe' to or 'publish' to any 'Topic',
+-- within the same 'Component' or across 'Component'.
+--
+-- This requires creating a custom 'ToJSON' / 'FromJSON'. Any other 'Component'
+-- can 'publish' or 'subscribe' to this @Topic message@. It is a way to provide
+-- loosely-coupled communication between 'Components'.
+--
+-- See 'publish', 'subscribe', 'unsubscribe' for more details.
+--
+-- When distributing 'Component' for third-party use, it is recommended to export
+-- the 'Topic', where 'message' is the JSON protocol.
+--
+--
+-- @since 1.9.0.0
+newtype Topic a = Topic MisoString
+  deriving (Ord, Eq, Show, ToMisoString)
+-----------------------------------------------------------------------------
+-- | Smart constructor for creating a @Topic message@ to write to
+--
+-- @
+--
+-- data Message
+--   = Increment
+--   | Decrement
+--   deriving (Show, Eq, Generic, ToJSON, FromJSON)
+--
+-- arithmetic :: Topic Message
+-- arithmetic = topic "arithmetic"
+--
+-- data Action
+--   = Notification (Result Message)
+--   | Subscribe
+--   | Unsubscribe
+--
+-- update_ :: Action -> Effect Int Action
+-- update_ = \case
+--   Unsubscribe ->
+--     unsubscribe arithmetic
+--   Subscribe ->
+--     subscribe arithmetic Notification
+--   Notification (Success Increment) ->
+--     update_ AddOne
+--   Notification (Success Decrement) ->
+--     update_ SubtractOne
+--   Notification (Error msg) ->
+--     io_ $ consoleError ("Decode failure: " <> ms msg)
+--
+-- @
+--
+-- @since 1.9.0.0
+topic :: MisoString -> Topic a
+topic = Topic
+-----------------------------------------------------------------------------
+mailboxes :: IORef (Map (Topic a) Mailbox)
+{-# NOINLINE mailboxes #-}
+mailboxes = unsafePerformIO $ liftIO (newIORef mempty)
+-----------------------------------------------------------------------------
+subscribers :: IORef (Map (ComponentId, Topic a) ThreadId)
+{-# NOINLINE subscribers #-}
+subscribers = unsafePerformIO $ liftIO (newIORef mempty)
+-----------------------------------------------------------------------------
+-- | Subscribes to a 'Topic', provides callback function that writes to 'Component' 'Sink'
+--
+-- If a @Topic message@ does not exist when calling 'subscribe' it is generated dynamically.
+-- Each subscriber decodes the received 'Value' using it's own 'FromJSON' instance. This provides
+-- for loose-coupling between 'Component'. As long as the underlying 'Value' are identical
+-- 'Component' can use their own types without serialization issues. @Topic message@ should
+-- have their own JSON API specification when being distributed.
+--
+-- @
+--
+-- arithmetic :: Topic Message
+-- arithmetic = topic "arithmetic"
+--
+-- clientComponent :: MisoString -> Component Int Action
+-- clientComponent name = component 0 update_ $ \m ->
+--   div_
+--   []
+--   [ br_ []
+--   , text (name <> " : " <> ms (m ^. _id))
+--   , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
+--   , button_ [ onClick Subscribe ] [ "subscribe" ]
+--   ] where
+--       update_ :: Action -> Effect Int Action
+--       update_ = \case
+--         AddOne -> do
+--           _id += 1
+--         SubtractOne ->
+--           _id -= 1
+--         Unsubscribe ->
+--           unsubscribe arithmetic
+--         Subscribe ->
+--           subscribe arithmetic Notification
+--         Notification (Success Increment) -> do
+--           update_ AddOne
+--         Notification (Success Decrement) -> do
+--           update_ SubtractOne
+--         Notification (Error msg) ->
+--           io_ $ consoleError ("Decode failure: " <> ms msg)
+--         _ -> pure ()
+--
+-- @
+--
+-- @since 1.9.0.0
+subscribe
+  :: FromJSON message
+  => Topic message
+  -> (Result message -> action)
+  -> Effect model action
+subscribe topicName toAction = do
+  vcompId <- ask
+  io_ $ do
+    subscribersMap <- liftIO (readIORef subscribers)
+    let key = (vcompId, topicName)
+    case M.lookup key subscribersMap of
+      Just _ ->
+        FFI.consoleWarn ("Already subscribed to: " <> ms topicName)
+      Nothing -> do
+        M.lookup topicName <$> liftIO (readIORef mailboxes) >>= \case
+          Nothing -> do
+            -- no mailbox exists, create a new one, register it and subscribe
+            mailbox <- liftIO $ do
+              mailbox <- newMailbox
+              atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
+              pure mailbox
+            subscribeToMailbox key mailbox vcompId
+          Just mailbox -> do
+            subscribeToMailbox key mailbox vcompId
+  where
+    subscribeToMailbox key mailbox vcompId = do
+      threadId <- FFI.forkJSM $ do
+        clonedMailbox <- liftIO (copyMailbox mailbox)
+        ComponentState {..} <- (M.! vcompId) <$> liftIO (readIORef components)
+        forever $ do
+          message <- liftIO (readMail clonedMailbox)
+          componentSink $ toAction (fromJSON message)
+      liftIO $ atomicModifyIORef' subscribers $ \m ->
+        (M.insert key threadId m, ())
+-----------------------------------------------------------------------------
+-- Pub / Sub implementation
+--
+-- (Subscribe)
+--
+-- Check if you're already subscribed to this topic.
+--
+--  [true]  - If you're already subscribed, then it's a no-op (warn)
+--
+--  [false] - If you're not subscribed then fork a new thread that holds the duplicated topic
+--            and blocks on the read end of the duplicated topic, sink messages into component sink
+--
+-- (Unsubscribe)
+--
+-- Check if you're already subscribed to this topic
+--
+--  [true] - Kill the thread, delete the subscriber entry
+--
+--  [false] - If you're not subscribed, then it's a no-op (warn)
+--
+-- (Publish)
+--
+-- Check if the Topic exists
+--
+--  [true] - If it exists then write the message to the topic
+--
+--  [false] - If it doesn't exist, create it.
+--
+-- N.B. Components can be both publishers and subscribers to their own topics.
+-----------------------------------------------------------------------------
+-- | Unsubscribe to a 'Topic'
+--
+-- Unsubscribes a 'Component' from receiving messages from @Topic message@
+--
+-- See 'subscribe' for more use.
+--
+-- @since 1.9.0.0
+unsubscribe :: Topic message -> Effect model action
+unsubscribe topicName = ask >>= io_ . unsubscribe_ topicName
+-----------------------------------------------------------------------------
+-- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
+unsubscribe_ :: Topic message -> ComponentId -> JSM ()
+unsubscribe_ topicName vcompId = do
+  let key = (vcompId, topicName)
+  subscribersMap <- liftIO (readIORef subscribers)
+  case M.lookup key subscribersMap of
+    Just threadId -> do
+      liftIO $ do
+        killThread threadId
+        atomicModifyIORef' subscribers $ \m ->
+          (M.delete key m, ())
+    Nothing ->
+      pure ()
+-----------------------------------------------------------------------------
+-- | Publish to a @Topic message@
+--
+-- @Topic message@ are generated dynamically if they do not exist. When using 'publish'
+-- all subscribers are immediately notified of a new message. A message is distributed as a 'Value'
+-- The underlying 'ToJSON' instance is used to construct this 'Value'.
+--
+-- We recommend documenting a public API for the JSON protocol message when distributing a 'Component'
+-- downstream to end users for consumption (be it inside a single cabal project or across multiple
+-- cabal projects).
+--
+-- @
+--
+-- arithmetic :: Topic Message
+-- arithmetic = topic "arithmetic"
+--
+-- server :: Component () Action
+-- server = component () update_ $ \() ->
+--   div_
+--   []
+--   [ "Server component"
+--   , button_ [ onClick AddOne ] [ "+" ]
+--   , button_ [ onClick SubtractOne ] [ "-" ]
+--   , component_ (client_ "client 1")
+--     [ onMountedWith Mount
+--     ]
+--   , component_ (client_ "client 2")
+--     [ onMountedWith Mount
+--     ]
+--   ] where
+--       update_ :: Action -> Effect () Action
+--       update_ = \case
+--         AddOne ->
+--           publish arithmetic Increment
+--         SubtractOne ->
+--           publish arithemtic Decrement
+--
+-- @
+--
+-- @since 1.9.0.0
+publish :: ToJSON message => Topic message -> message -> Effect model action
+publish topicName value = io_ $ do
+  result <- M.lookup topicName <$> liftIO (readIORef mailboxes)
+  case result of
+    Just mailbox ->
+      liftIO $ sendMail mailbox (toJSON value)
+    Nothing -> liftIO $ do
+      mailbox <- newMailbox
+      void $ atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}
@@ -146,7 +389,9 @@ componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
-freshComponentId :: IO MisoString
+type ComponentId = MisoString
+-----------------------------------------------------------------------------
+freshComponentId :: IO ComponentId
 freshComponentId = do
   x <- atomicModifyIORef' componentIds $ \y -> (y + 1, y)
   pure ("miso-component-id-" <> ms x)
@@ -155,88 +400,9 @@ freshComponentId = do
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-componentMap :: IORef (Map MisoString (ComponentState model action))
-{-# NOINLINE componentMap #-}
-componentMap = unsafePerformIO (newIORef mempty)
------------------------------------------------------------------------------
--- | Read-only access to another @Component@'s @model@.
--- This function is safe to use when a child @Component@ wishes access
--- a parent @Components@ @model@ state. Under this circumstance the parent
--- will always be mounted and available.
---
--- Otherwise, if a sibling or parent @Component@'s @model@ state is attempted
--- to be accessed. Then we throw a @NotMountedException@, in the case the
--- @Component@ being accessed is not available.
-sample
-  :: forall name model action . KnownSymbol name
-  => Component name model action
-  -> JSM model
-sample _ = do
-  componentStateMap <- liftIO (readIORef componentMap)
-  liftIO (case M.lookup name componentStateMap of
-    Nothing -> throwIO (NotMountedException name)
-    Just ComponentState {..} -> readIORef componentModel)
-  where
-    name = ms $ symbolVal (Proxy @name)
------------------------------------------------------------------------------
--- | Like @sample@ except used for @Component Dynamic model action@ where the component-id has been retrieved via @ask@ and generated using @onMountedWith@.
---
--- We use the @Component Dynamic model action@ argument to ensure the 'model'
--- sampled unifies with what @sample'@ returns.
---
-sample'
-  :: MisoString
-  -> Component Dynamic model action
-  -> JSM model
-sample' name _ = do
-  componentStateMap <- liftIO (readIORef componentMap)
-  liftIO (case M.lookup name componentStateMap of
-    Nothing -> throwIO (NotMountedException name)
-    Just ComponentState {..} -> readIORef componentModel)
------------------------------------------------------------------------------
--- | Used for bidirectional communication between components.
--- Specify the mounted @Component@ you'd like to target.
---
--- This function is used to send messages to @Component@ that are mounted on
--- other parts of the DOM tree.
---
-notify
-  :: forall name model action . KnownSymbol name
-  => Component name model action
-  -> action
-  -> JSM ()
-notify Component {..} action = do
-  componentStateMap <- liftIO (readIORef componentMap)
-  case M.lookup name componentStateMap of
-    Nothing -> do
-      when (logLevel `elem` [DebugNotify, DebugAll]) $ do
-        FFI.consoleWarn $
-          "[DEBUG_NOTIFY] Could not find component named: " <> name
-    Just ComponentState {..} ->
-      componentSink action
-  where
-    name = ms $ symbolVal (Proxy @name)
------------------------------------------------------------------------------
--- | Like @notify@ except used for dynamic @Component@ where the /component-id/
--- has been retrieved via @ask@ and generated from @onMountedWith@.
---
--- We use the @Component Dynamic model action@ argument to ensure the 'action'
--- being used unified with what the component expects.
---
-notify'
-  :: MisoString
-  -> Component Dynamic model action
-  -> action
-  -> JSM ()
-notify' name Component {..} action = do
-  componentStateMap <- liftIO (readIORef componentMap)
-  case M.lookup name componentStateMap of
-    Nothing ->
-      when (logLevel `elem` [DebugNotify, DebugAll]) $ do
-        FFI.consoleWarn $
-          "[DEBUG_NOTIFY'] Could not find component named: " <> name
-    Just ComponentState {..} ->
-      componentSink action
+components :: IORef (Map MisoString (ComponentState model action))
+{-# NOINLINE components #-}
+components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
 -- | Data type to indicate if effects should be handled asynchronously
 -- or synchronously.
@@ -274,7 +440,7 @@ foldEffects update synchronicity name snk (e:es) o =
 drawComponent
   :: Hydrate
   -> MisoString
-  -> Component name model action
+  -> Component model action
   -> Sink action
   -> JSM (MisoString, JSVal, IORef VTree)
 drawComponent hydrate name Component {..} snk = do
@@ -286,7 +452,7 @@ drawComponent hydrate name Component {..} snk = do
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
-  :: Component name model action
+  :: Component model action
   -> ComponentState model action
   -> JSM ()
 drain app@Component{..} cs@ComponentState {..} = do
@@ -295,22 +461,28 @@ drain app@Component{..} cs@ComponentState {..} = do
     where
       go as = do
         x <- liftIO (readIORef componentModel)
-        y <- foldEffects update Sync componentName componentSink (toList as) x
+        y <- foldEffects update Sync componentId componentSink (toList as) x
         liftIO (atomicWriteIORef componentModel y)
         drain app cs
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> Component name model action
+  -> Component model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
+  killSubscribers componentId
   drain app cs
-  liftIO $ atomicModifyIORef' componentMap $ \m -> (M.delete componentName m, ())
+  liftIO $ atomicModifyIORef' components $ \m -> (M.delete componentId m, ())
+-----------------------------------------------------------------------------
+killSubscribers :: ComponentId -> JSM ()
+killSubscribers componentId =
+  mapM_ (flip unsubscribe_ componentId) =<<
+    M.keys <$> liftIO (readIORef mailboxes)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -326,11 +498,8 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp name attrs (SomeComponent app)) snk _ _ = do
-  compName <-
-    if null name
-    then liftIO freshComponentId
-    else pure name
+runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
+  compName <- liftIO freshComponentId
   mountCallback <- do
     FFI.syncCallback1 $ \continuation -> do
       vtreeRef <- initialize app (drawComponent hydrate compName app)
@@ -338,7 +507,7 @@ runView hydrate (VComp name attrs (SomeComponent app)) snk _ _ = do
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback $ do
-      M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+      M.lookup compName <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
@@ -447,8 +616,8 @@ parseView html = reverse (go (parseTree html) [])
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
-  $ modifyIORef' componentMap
-  $ M.insert (componentName componentState) componentState
+  $ modifyIORef' components
+  $ M.insert (componentId componentState) componentState
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 renderStyles :: [CSS] -> JSM ()
@@ -469,11 +638,13 @@ renderStyles styles =
 -- update Action =
 --   startSub LoggerSub $ \sink -> forever (threadDelay (secs 1) >> consoleLog "test")
 -- @
+--
+-- @since 1.9.0.0
 startSub :: ToMisoString subKey => subKey -> Sub action -> Effect model action
 startSub subKey sub = do
   compName <- ask
   io_
-    (M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+    (M.lookup compName <$> liftIO (readIORef components) >>= \case
       Nothing -> pure ()
       Just compState@ComponentState {..} -> do
         mtid <- liftIO (M.lookup (ms subKey) <$> readIORef componentSubThreads)
@@ -502,11 +673,13 @@ startSub subKey sub = do
 -- update Action = do
 --   stopSub LoggerSub
 -- @
+--
+-- @since 1.9.0.0
 stopSub :: ToMisoString subKey => subKey -> Effect model action
 stopSub subKey = do
   compName <- ask
   io_
-    (M.lookup compName <$> liftIO (readIORef componentMap) >>= \case
+    (M.lookup compName <$> liftIO (readIORef components) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do

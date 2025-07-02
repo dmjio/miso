@@ -58,7 +58,7 @@ the404 =
 goHome :: URI
 goHome = allLinks' linkURI (Proxy :: Proxy ClientRoutes)
 
-sse :: URI -> Component name Model Action
+sse :: URI -> Component Model Action
 sse currentURI
   = app { subs =
           [ sseSub "/sse" handleSseMsg
@@ -66,7 +66,7 @@ sse currentURI
           ]
         }
   where
-    app = defaultComponent (Model currentURI "No event received") updateModel viewModel
+    app = component (Model currentURI "No event received") updateModel viewModel
     viewModel m
         | Right r <- route (Proxy :: Proxy ClientRoutes) home modelUri m =
             r
