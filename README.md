@@ -681,6 +681,7 @@ $ cachix use haskell-miso-cachix
 
 ## Community 🫶
 
+- [Github](https://github.com/haskell-miso)
 - [Matrix](https://matrix.to/#/#haskell-miso:matrix.org)
 - [Discord](https://discord.gg/QVDtfYNSxq)
 - [Slack](https://haskell-miso.slack.com/join/shared_invite_confirmed/zt-37vusrcdw-HH6~hY0DGT7MLCjNWZvLDQ#/email-invite/credentials)
