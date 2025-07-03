@@ -540,8 +540,8 @@ For real-world examples of Haskell `miso` applications, see below.
 | **Router**      | A client-side routing example          | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)      | [Demo](https://router.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
 | **Canvas 2D**   | A 2D Canvas rendering example          | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)    | [Demo](https://canvas.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
 | **Space Invaders**   | A Space-Invaders-like game       | [Source](https://gitlab.com/juliendehos/miso-invaders)    | [Demo](https://juliendehos.gitlab.io/miso-invaders/)      | [@juliendehos](https://github.com/juliendehos)   |
-| **Audio**   | Audio examples       | [Source](https://github.com/juliendehos/miso-audio-test)    | [Demo](https://juliendehos.github.io/miso-audio-test/)      | [@juliendehos](https://github.com/juliendehos)   |
-| **Video**   | Video examples       | [Source](https://github.com/juliendehos/miso-video-test)    | [Demo](https://juliendehos.github.io/miso-video-test/)      | [@juliendehos](https://github.com/juliendehos)   |
+| **Audio**   | Audio examples       | [Source](https://github.com/haskell-miso/miso-audio)    | [Demo](https://haskell-miso.github.io/miso-audio/)      | [@juliendehos](https://github.com/juliendehos)   |
+| **Video**   | Video examples       | [Source](https://github.com/haskell-miso/miso-video)    | [Demo](https://haskell-miso.github.io/miso-video/)      | [@juliendehos](https://github.com/juliendehos)   |
 
 ## Building examples
 
