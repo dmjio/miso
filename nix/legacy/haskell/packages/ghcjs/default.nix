@@ -11,7 +11,7 @@ self: super:
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
-  flatris = self.callCabal2nix "flatris" source.flatris {};
+  miso-flatris = self.callCabal2nix "flatris" source.miso-flatris {};
   miso-plane =
     let
       miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
@@ -23,8 +23,8 @@ self: super:
          rm $out/index.html
          cp -v ${source.miso-plane}/public/index.html $out
       '';
-  hs2048 = import source.hs2048 { inherit pkgs; inherit (self) miso; };
-  snake = self.callCabal2nix "miso-snake" source.snake {};
+  miso-2048 = import source.miso-2048 { inherit pkgs; inherit (self) miso; };
+  miso-snake = self.callCabal2nix "miso-snake" source.miso-snake {};
   mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
   doctest = null;
   miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {

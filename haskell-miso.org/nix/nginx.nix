@@ -59,7 +59,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${more-examples.flatris}/bin/app.jsexe";
+            root = "${more-examples.miso-flatris}/bin/app.jsexe";
            };
          };
        };
@@ -77,7 +77,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = more-examples.hs2048;
+            root = more-examples.miso-2048;
            };
          };
        };
@@ -95,7 +95,7 @@ with (import ../../default.nix {});
           enableACME = true;
           locations = {
           "/" = {
-            root = "${more-examples.snake}/bin/app.jsexe";
+            root = "${more-examples.miso-snake}/bin/app.jsexe";
            };
          };
        };
