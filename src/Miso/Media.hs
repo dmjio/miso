@@ -131,7 +131,7 @@ duration :: Media -> JSM Double
 duration (Media m) = fromJSValUnchecked =<< m ! ("duration" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_ended.asp
-ended :: Media -> JSM Double
+ended :: Media -> JSM Bool
 ended (Media m) = fromJSValUnchecked =<< m ! ("ended" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_loop.asp
