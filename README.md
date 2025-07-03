@@ -706,7 +706,7 @@ See [CONTRIBUTING](https://github.com/dmjio/miso/blob/master/CONTRIBUTING.md) fo
 
 ## Partnerships 🤝
 
-If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:code@dmj.io">code@dmj.io</a></p>
+If you'd like to support this project financially, be it through requesting feature development, or a corporate partnership, please drop us a line and we will be in touch shortly. <p><a href="mailto:support@haskell-miso.org">support@haskell-miso.org</a></p>
 
 ## Backers
 
