@@ -545,8 +545,8 @@ lineTo :: Coord -> Canvas ()
 lineTo = LineTo
 -----------------------------------------------------------------------------
 -- | [ctx.fill()](https://www.w3schools.com/tags/canvas_fill.asp)
-fill :: Canvas ()
-fill = Fill
+fill :: () -> Canvas ()
+fill () = Fill
 -----------------------------------------------------------------------------
 -- | [ctx.rect(x,y,width,height)](https://www.w3schools.com/tags/canvas_rect.asp)
 rect :: (Double, Double, Double, Double) -> Canvas ()
