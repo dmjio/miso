@@ -94,7 +94,8 @@ data Component model action = Component
   -- ^ Used to decide if we should 'diff' the model before diffing the virtual DOM
   -- By default this is 'True', it is recommended to set this to 'False' when developing
   -- full-screen 'canvas' applications. If 'False', model diffing is bypassed
-  -- and the 'Component' will not block on an empty event queue.
+  -- and the 'Component' will not block on an empty event queue. This means
+  -- 'requestAnimationFrame` is called in a tight loop.
   --
   -- @since 1.9.0.0
   }

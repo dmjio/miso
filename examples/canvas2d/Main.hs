@@ -20,10 +20,6 @@ foreign export javascript "hs_start" main :: IO ()
 -----------------------------------------------------------------------------
 type Model = (Double, Double)
 -----------------------------------------------------------------------------
-data Action
-  = GetTime
-  | SetTime Model
------------------------------------------------------------------------------
 baseUrl :: MisoString
 baseUrl = "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/"
 -----------------------------------------------------------------------------
@@ -33,9 +29,11 @@ main =
     sun <- newImage (baseUrl <> "canvas_sun.png")
     moon <- newImage (baseUrl <> "canvas_moon.png")
     earth <- newImage (baseUrl <> "canvas_earth.png")
-    startComponent (app sun moon earth) { initialAction = Just GetTime }
+    startComponent (app sun moon earth)
+      { modelCheck = False
+      }
   where
-    app sun moon earth = component (0.0, 0.0) updateModel (view_ sun moon earth)
+    app sun moon earth = component (0.0, 0.0) (\() -> pure ()) (view_ sun moon earth)
     view_ sun moon earth m =
       div_
       [ id_ "canvas grid" ]
@@ -80,12 +78,4 @@ newTime = do
   Just millis <- fromJSVal millis'
   Just seconds <- fromJSVal seconds'
   pure (millis, seconds)
------------------------------------------------------------------------------
-updateModel
-  :: Action
-  -> Effect Model Action
-updateModel GetTime =
-  io (SetTime <$> newTime)
-updateModel (SetTime m) =
-  m <# pure GetTime
 -----------------------------------------------------------------------------
