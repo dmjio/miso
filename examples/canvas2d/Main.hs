@@ -5,14 +5,14 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import Control.Monad (replicateM_)
-import Language.Javascript.JSaddle (JSM, (#), fromJSVal, new, jsg)
+import           Control.Monad               (replicateM_)
+import           Language.Javascript.JSaddle (JSM, liftJSM)
 -----------------------------------------------------------------------------
-import Miso
-import Miso.Canvas
+import           Miso
+import           Miso.Canvas
 import qualified Miso.Canvas as Canvas
-import Miso.String
-import Miso.Style
+import           Miso.String
+import           Miso.Style
 -----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -28,27 +28,36 @@ baseUrl :: MisoString
 baseUrl = "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/Web/API/Canvas_API/Tutorial/Basic_animations/"
 -----------------------------------------------------------------------------
 main :: IO ()
-main =
-  run $ do
-    sun <- newImage (baseUrl <> "canvas_sun.png")
-    moon <- newImage (baseUrl <> "canvas_moon.png")
-    earth <- newImage (baseUrl <> "canvas_earth.png")
-    startComponent (app sun moon earth) { initialAction = Just GetTime }
+main = run (startComponent app)
   where
-    app sun moon earth = component (0.0, 0.0) updateModel (view_ sun moon earth)
-    view_ sun moon earth m =
+    app :: Component (Double, Double) Action
+    app = component (0.0, 0.0) updateModel view_
+
+    view_  m =
       div_
-      [ id_ "canvas grid" ]
-      [ Canvas.canvas_
-        [ id_ "canvas"
-        , width_ "300"
+      [ id_ "Canvas grid" ]
+      [ Canvas.canvas
+        [ width_ "300"
         , height_ "300"
-        ] (canvasDraw sun moon earth m n)
-      | n <- [ 1 :: Int .. 4 ]
+        ]
+        initCanvas
+        (canvasDraw m n)
+      | n <- [ 1 :: Int .. 1 ]
       ]
 -----------------------------------------------------------------------------
-canvasDraw :: Image -> Image -> Image -> (Double, Double) -> Int -> Canvas ()
-canvasDraw sun moon earth (millis', secs') n = do
+initCanvas :: DOMRef -> Canvas (Image, Image, Image)
+initCanvas _ = liftJSM $ do
+  sun <- newImage (baseUrl <> "canvas_sun.png")
+  moon <- newImage (baseUrl <> "canvas_moon.png")
+  earth <- newImage (baseUrl <> "canvas_earth.png")
+  pure (sun, moon, earth)
+-----------------------------------------------------------------------------
+canvasDraw
+  :: (Double, Double)
+  -> Int
+  -> (Image, Image, Image)
+  -> Canvas ()
+canvasDraw (millis', secs') n (sun, moon, earth) = do
    let
      secs = secs' + fromIntegral n
      millis = millis' + fromIntegral n
@@ -74,12 +83,8 @@ canvasDraw sun moon earth (millis', secs') n = do
 -----------------------------------------------------------------------------
 newTime :: JSM (Double, Double)
 newTime = do
-  date <- new (jsg @MisoString "Date") ([] :: [MisoString])
-  millis' <- date # ("getMilliseconds" :: MisoString) $ ([] :: [MisoString])
-  seconds' <- date # ("getSeconds" :: MisoString) $ ([] :: [MisoString])
-  Just millis <- fromJSVal millis'
-  Just seconds <- fromJSVal seconds'
-  pure (millis, seconds)
+  date <- newDate
+  (,) <$> getMilliseconds date <*> getSeconds date
 -----------------------------------------------------------------------------
 updateModel
   :: Action

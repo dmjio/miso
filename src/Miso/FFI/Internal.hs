@@ -1,8 +1,9 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE ViewPatterns               #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -65,6 +66,10 @@ module Miso.FFI.Internal
    , setDrawingContext
    , Image (..)
    , newImage
+   , Date (..)
+   , newDate
+   , getMilliseconds
+   , getSeconds
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -516,7 +521,10 @@ requestAnimationFrame f = do
   void $ context # "requestAnimationFrame" $ [cb]
 -----------------------------------------------------------------------------
 newtype Image = Image JSVal
-  deriving (ToJSVal)
+  deriving (ToJSVal, MakeObject)
+-----------------------------------------------------------------------------
+instance FromJSVal Image where
+  fromJSVal = pure . pure . Image
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a 'Image' w/ 'src' attribute.
 newImage :: MisoString -> JSM Image
@@ -531,4 +539,20 @@ newImage url = do
 setDrawingContext :: MisoString -> JSM ()
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
+-----------------------------------------------------------------------------
+newtype Date = Date JSVal
+  deriving (ToJSVal, MakeObject)
+-----------------------------------------------------------------------------
+newDate :: JSM Date
+newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
+-----------------------------------------------------------------------------
+getMilliseconds :: Date -> JSM Double
+getMilliseconds date =
+  fromJSValUnchecked =<< do
+    date # "getMilliseconds" $ ([] :: [MisoString])
+-----------------------------------------------------------------------------
+getSeconds :: Date -> JSM Double
+getSeconds date =
+  fromJSValUnchecked =<< do
+    date # "getSeconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------

@@ -35,7 +35,6 @@ module Miso.Canvas
   , Coord
    -- * Property
   , canvas
-  , canvas_
     -- * API
   , globalCompositeOperation
   , clearRect
@@ -99,8 +98,8 @@ import           Control.Monad.IO.Class (MonadIO(liftIO))
 import           Control.Monad (void, liftM, ap, liftM2)
 import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
-                                             , (<#), toJSVal, (!)
-                                             , liftJSM, Function
+                                             , (<#), toJSVal, (!), fromJSValUnchecked
+                                             , liftJSM, FromJSVal, Object (..)
                                              , ToJSVal, MakeObject, (<##)
 #ifndef GHCJS_BOTH
                                              , MonadJSM(..)
@@ -117,28 +116,36 @@ import           Miso.String (MisoString)
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall action
-   . [ Attribute action ]
-  -> JSM Function -- ^ Callback to render graphics using this canvas' context
+  :: forall action canvasState
+   . (FromJSVal canvasState, ToJSVal canvasState)
+  => [ Attribute action ]
+  -> (DOMRef -> Canvas canvasState)
+  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -> (canvasState -> Canvas ())
+  -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View action
-canvas attributes callback = node HTML "canvas" attrs []
+canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
-    attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
-      flip (FFI.set "draw") obj =<< toJSVal =<< callback
------------------------------------------------------------------------------
--- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas),
--- includes a 'Canvas' DSL.
--- Specialized to ["2d"](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext#2d) canvas.
-canvas_
-  :: [ Attribute action ]
-  -> Canvas a
-  -> View action
-canvas_ attributes canvas' =
-  canvas attributes $
-    FFI.syncCallback1 $ \domRef -> do
-      ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
-      void (interpret ctx canvas')
+    attrs = initCallback : drawCallack : attributes
+
+    initCallback :: Attribute action
+    initCallback = Event $ \_ obj _ _ -> do
+      flip (FFI.set "onCreated") obj =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+          initialState <- interpret ctx (initialize domRef)
+          FFI.set "state" initialState (Object domRef)
+
+    drawCallack :: Attribute action
+    drawCallack = Event $ \_ obj _ _ -> do
+      flip (FFI.set "draw") obj =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          FFI.consoleLog "in draw.."
+          jval <- domRef ! ("state" :: MisoString)
+          initialState <- fromJSValUnchecked jval
+          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+          interpret ctx (draw initialState)
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
 -----------------------------------------------------------------------------
