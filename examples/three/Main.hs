@@ -1,14 +1,10 @@
-{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
-{-# LANGUAGE DerivingStrategies         #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE CPP               #-}
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
