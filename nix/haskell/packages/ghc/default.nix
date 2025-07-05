@@ -12,6 +12,7 @@ self: super:
   miso-from-html = self.callCabal2nix "miso-from-html" source.miso-from-html {};
 
   /* examples */
+  three = self.callCabal2nix "three" source.three {};
   miso-examples = self.callCabal2nix "miso-examples" source.examples {};
   sample-app = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};

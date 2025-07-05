@@ -22,6 +22,7 @@ module Miso.Event
    , onUnmountedWith
    , onBeforeUnmounted
    , onCreated
+   , onCreatedWith
    , onBeforeCreated
    , onDestroyed
    , onBeforeDestroyed
@@ -132,6 +133,15 @@ onCreated :: action -> Attribute action
 onCreated action =
   Event $ \sink object _ _ -> do
     callback <- FFI.syncCallback (sink action)
+    FFI.set "onCreated" callback object
+-----------------------------------------------------------------------------
+-- | @onCreatedWith action@ is an event that gets called after the actual DOM
+-- element is created, passes in the DOM reference as an argument.
+--
+onCreatedWith :: (JSVal -> action) -> Attribute action
+onCreatedWith action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
