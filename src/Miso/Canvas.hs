@@ -100,8 +100,10 @@ import           Control.Monad (void, liftM, ap, liftM2)
 import           Data.Kind (Type)
 import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
                                              , (<#), toJSVal, (!)
-                                             , liftJSM, Function
-                                             , ToJSVal, MakeObject, (<##)
+                                             , liftJSM
+                                             , MakeObject, (<##)
+                                             , ToJSVal, FromJSVal
+                                             , fromJSValUnchecked
 #ifndef GHCJS_BOTH
                                              , MonadJSM(..)
 #endif
@@ -117,15 +119,29 @@ import           Miso.String (MisoString)
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall action
-   . [ Attribute action ]
-  -> JSM Function -- ^ Callback to render graphics using this canvas' context
+  :: forall action canvasState
+   . (FromJSVal canvasState, ToJSVal canvasState)
+  => [ Attribute action ]
+  -> (DOMRef -> JSM canvasState)
+  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -> (canvasState -> JSM ())
+  -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View action
-canvas attributes callback = node HTML "canvas" attrs []
+canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
-    attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
-      flip (FFI.set "draw") obj =<< toJSVal =<< callback
+    attrs = initCallback : drawCallack : attributes
+
+    initCallback :: Attribute action
+    initCallback = Event $ \_ obj _ _ -> do
+      domRef <- obj ! ("domRef" :: MisoString)
+      initialState <- initialize domRef
+      FFI.set "initialState" initialState obj
+
+    drawCallack :: Attribute action
+    drawCallack = Event $ \_ obj _ _ -> do
+      initialState <- fromJSValUnchecked =<< obj ! ("initialState" :: MisoString)
+      flip (FFI.set "draw") obj =<< FFI.syncCallback (draw initialState)
 -----------------------------------------------------------------------------
 -- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas),
 -- includes a 'Canvas' DSL.
@@ -135,10 +151,9 @@ canvas_
   -> Canvas a
   -> View action
 canvas_ attributes canvas' =
-  canvas attributes $
-    FFI.syncCallback1 $ \domRef -> do
-      ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
-      void (interpret ctx canvas')
+  canvas attributes pure $ \domRef -> do
+    ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+    void (interpret ctx canvas')
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
 -----------------------------------------------------------------------------

@@ -29,6 +29,7 @@ module Miso.Types
   , CSS              (..)
   , LogLevel         (..)
   , VTree            (..)
+  , DOMRef
   , MountPoint
   -- ** Classes
   , ToView           (..)
@@ -53,7 +54,7 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM, JSVal)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
@@ -91,6 +92,9 @@ data Component model action = Component
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   }
+-----------------------------------------------------------------------------
+-- | Convenience type for representing a DOM reference
+type DOMRef = JSVal
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
 type MountPoint = MisoString
