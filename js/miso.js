@@ -155,7 +155,7 @@ function callBeforeDestroyedRecursive(obj) {
 }
 function callCreated(obj, context) {
   if (obj["onCreated"])
-    obj["onCreated"]();
+    obj["onCreated"](obj["domRef"]);
   if (obj["type"] === "vcomp")
     mountComponent(obj, context);
 }
@@ -242,9 +242,9 @@ function populateDomRef(obj, context) {
 function createElement(obj, context, attach) {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
+  callCreated(obj, context);
   attach(obj["domRef"]);
   populate(null, obj, context);
-  callCreated(obj, context);
 }
 function drawCanvas(obj) {
   if (obj["tag"] === "canvas" && "draw" in obj) {

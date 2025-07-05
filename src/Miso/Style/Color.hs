@@ -175,6 +175,7 @@ module Miso.Style.Color
 import           Miso.String (MisoString)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
 data Color
@@ -185,6 +186,12 @@ data Color
   | Hex MisoString
   | VarColor MisoString
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance MakeArgs Color where
+  makeArgs color = (:[]) <$> toJSVal color
+-----------------------------------------------------------------------------
+instance ToJSVal Color where
+  toJSVal = toJSVal . renderColor
 -----------------------------------------------------------------------------
 renderColor :: Color -> MisoString
 renderColor (RGBA r g b a) = "rgba(" <> values <> ")"

@@ -37,6 +37,11 @@ module Miso.FFI
   -- ** Image
   , Image (..)
   , newImage
+  -- ** Date
+  , Date (..)
+  , newDate
+  , getSeconds
+  , getMilliseconds
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
