@@ -154,7 +154,7 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startComponent component)
+main = run (startComponent app)
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
@@ -162,8 +162,8 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-component :: Component Model Action
-component = component emptyModel updateModel viewModel
+app :: Component Model Action
+app = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
