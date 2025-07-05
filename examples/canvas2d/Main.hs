@@ -31,7 +31,7 @@ main :: IO ()
 main = run (startComponent app)
   where
     app :: Component (Double, Double) Action
-    app = component (0.0, 0.0) updateModel view_
+    app = (component (0.0, 0.0) updateModel view_) { initialAction = Just GetTime }
 
     view_  m =
       div_
