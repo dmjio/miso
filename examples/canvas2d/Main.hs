@@ -42,7 +42,7 @@ main = run (startComponent app)
         ]
         initCanvas
         (canvasDraw m n)
-      | n <- [ 1 :: Int .. 1 ]
+      | n <- [ 1 :: Int .. 8 ]
       ]
 -----------------------------------------------------------------------------
 initCanvas :: DOMRef -> Canvas (Image, Image, Image)
