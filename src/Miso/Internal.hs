@@ -94,12 +94,14 @@ initialize Component {..} getView = do
       (M.insert subKey threadId m, ())
   componentModel <- liftIO (newIORef model)
   let
-    eventLoop !oldModel = liftIO wait >> do
+    eventLoop !oldModel =
+      liftIO (when modelCheck wait)
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       newModel <- foldEffects update Async componentId componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
-      when (oldName /= newName && oldModel /= newModel) $ do
+      let shouldDraw = if modelCheck then oldName /= newName && oldModel /= newModel else True
+      when shouldDraw $ do
         newVTree <- runView Draw (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame

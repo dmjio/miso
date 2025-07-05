@@ -86,10 +86,17 @@ data Component model action = Component
   --
   -- @since 1.9.0.0
   , mountPoint :: Maybe MountPoint
-  -- ^ Id of the root element for DOM diff.
+  -- ^ Id of the root element for DOM 'diff'.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
+  , modelCheck :: Bool
+  -- ^ Used to decide if we should 'diff' the model before diffing the virtual DOM
+  -- By default this is 'True', it is recommended to set this to 'False' when developing
+  -- full-screen 'canvas' applications. If 'False', model diffing is bypassed
+  -- and the 'Component' will not block on an empty event queue.
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -128,6 +135,7 @@ component m u v = Component
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
+  , modelCheck = True
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
