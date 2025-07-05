@@ -94,7 +94,7 @@ initialize Component {..} getView = do
       (M.insert subKey threadId m, ())
   componentModel <- liftIO (newIORef model)
   let
-    eventLoop !oldModel =
+    eventLoop !oldModel = do
       liftIO (when modelCheck wait)
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       newModel <- foldEffects update Async componentId componentSink (toList as) oldModel
