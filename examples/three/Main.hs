@@ -86,7 +86,6 @@ app = component 0 update_ $ \_ -> div_
 -----------------------------------------------------------------------------
 initContext :: DOMRef -> Three Context
 initContext canvasRef = do
-  liftIO (consoleLog "init context")
   width <- windowInnerWidth
   height <- windowInnerHeight
   let value = realToFrac (width `div` height)
@@ -105,7 +104,6 @@ initContext canvasRef = do
 -----------------------------------------------------------------------------
 draw :: Context -> Three ()
 draw Context {..} = do
-  liftIO (consoleLog "init context")
   cube & THREE.Object3D.rotation !. x += 0.1
   cube & THREE.Object3D.rotation !. y += 0.1
   renderer & THREE.WebGLRenderer.render (scene, camera)
