@@ -20,9 +20,9 @@ type VComp = {
   'data-component-id': string;
   children: Array<VTree>;
   onBeforeMounted: () => void;
-  onMounted: (componentId: string) => void;
+  onMounted: (domRef: DOMRef) => void;
   onBeforeUnmounted: () => void;
-  onUnmounted: (componentId: string) => void;
+  onUnmounted: (domRef: DOMRef) => void;
   mount: (f: (component: VTree) => void) => void;
   unmount: (e: Element) => void;
 };
