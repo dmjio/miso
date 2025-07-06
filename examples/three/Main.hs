@@ -92,7 +92,8 @@ initContext canvasRef = do
   let value = realToFrac (width `div` height)
   scene <- THREE.Scene.new
   camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
-  renderer <- THREE.WebGLRenderer.new (Just (Object canvasRef))
+  renderer <- THREE.WebGLRenderer.new (Just canvasRef)
+  -- renderer & THREE.WebGLRenderer.domElement .= canvasRef
   renderer & THREE.WebGLRenderer.setSize (width, height, True)
   geometry <- THREE.BoxGeometry.new (10,10,10)
   material <- THREE.MeshBasicMaterial.new Nothing
