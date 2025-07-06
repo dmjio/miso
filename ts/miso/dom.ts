@@ -219,7 +219,7 @@ function drawCanvas (obj: VTree) {
 
 // unmount components
 function unmountComponent(obj: VTree): void {
-  if ('onUnmounted' in obj) obj['onUnmounted'](obj['data-component-id']);
+  if ('onUnmounted' in obj) obj['onUnmounted'](obj['domRef']);
   obj['unmount']();
 }
 
@@ -244,7 +244,7 @@ function mountComponent(obj: VTree, context: Context): void {
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(component);
     context['appendChild'](obj['domRef'], component['domRef']);
-    if (obj['onMounted']) obj['onMounted'](componentId);
+    if (obj['onMounted']) obj['onMounted'](obj['domRef']);
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)

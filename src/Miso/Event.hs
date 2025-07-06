@@ -22,6 +22,7 @@ module Miso.Event
    , onUnmountedWith
    , onBeforeUnmounted
    , onCreated
+   , onCreatedWith
    , onBeforeCreated
    , onDestroyed
    , onBeforeDestroyed
@@ -30,7 +31,7 @@ module Miso.Event
    , module Miso.Event.Types
    ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (when, forM_)
+import           Control.Monad (when)
 import qualified Data.Map.Strict as M
 import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
@@ -38,7 +39,7 @@ import           Language.Javascript.JSaddle
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types ( Attribute (Event), LogLevel(..) )
+import           Miso.Types ( Attribute (Event), LogLevel(..), DOMRef )
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
@@ -48,7 +49,7 @@ import           Miso.String (MisoString, unpack)
 --
 on :: MisoString
    -> Decoder r
-   -> (r -> JSVal -> action)
+   -> (r -> DOMRef -> action)
    -> Attribute action
 on = onWithOptions defaultOptions
 -----------------------------------------------------------------------------
@@ -66,7 +67,7 @@ onWithOptions
   :: Options
   -> MisoString
   -> Decoder r
-  -> (r -> JSVal -> action)
+  -> (r -> DOMRef -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
   Event $ \sink n logLevel events ->
@@ -108,12 +109,10 @@ onMounted action =
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
-onMountedWith :: (MisoString -> action) -> Attribute action
+onMountedWith :: (DOMRef -> action) -> Attribute action
 onMountedWith action =
   Event $ \sink object _ _ -> do
-    callback <- FFI.syncCallback1 $ \jval -> do
-      maybeName <- fromJSVal jval
-      forM_ maybeName (sink . action)
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeMounted action@ is an event that gets called before the actual DOM
@@ -132,6 +131,14 @@ onCreated :: action -> Attribute action
 onCreated action =
   Event $ \sink object _ _ -> do
     callback <- FFI.syncCallback (sink action)
+    FFI.set "onCreated" callback object
+-----------------------------------------------------------------------------
+-- | Like @onCreated action@ but passes along the `DOMRef`
+--
+onCreatedWith :: (DOMRef -> action) -> Attribute action
+onCreatedWith action =
+  Event $ \sink object _ _ -> do
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
@@ -158,12 +165,10 @@ onUnmounted action =
 --
 -- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
 --
-onUnmountedWith :: (MisoString -> action) -> Attribute action
+onUnmountedWith :: (DOMRef -> action) -> Attribute action
 onUnmountedWith action =
   Event $ \sink object _ _ -> do
-    callback <- FFI.syncCallback1 $ \jval -> do
-      maybeName <- fromJSVal jval
-      forM_ maybeName (sink . action)
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
