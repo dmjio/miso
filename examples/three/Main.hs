@@ -57,7 +57,7 @@ data Context
   } deriving (Generic, ToJSVal, FromJSVal)
 -----------------------------------------------------------------------------
 main :: IO ()
-main = run (startComponent app)
+main = run $ startComponent app { initialAction = Just Init }
 -----------------------------------------------------------------------------
 app :: Component Double Action
 app = component 0 update_ $ \_ -> div_
