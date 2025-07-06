@@ -22,11 +22,10 @@ foreign export javascript "hs_start" main :: IO ()
 data Action
   = AddOne
   | SubtractOne
-  | Mount MisoString
+  | Mount DOMRef
   | Subscribe
   | Unsubscribe
   | Notification (Result Message)
-  deriving (Show, Eq, Generic)
 -----------------------------------------------------------------------------
 data Message
   = Increment
@@ -66,8 +65,8 @@ server = component () update_ $ \() ->
           publish arithmetic Increment
         SubtractOne ->
           publish arithmetic Decrement
-        Mount compId ->
-          io_ $ consoleLog ("Mounted component: " <> compId)
+        Mount domRef ->
+          io_ (consoleLog' domRef)
         _ -> pure ()
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action

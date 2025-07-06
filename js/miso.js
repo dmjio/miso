@@ -253,7 +253,7 @@ function drawCanvas(obj) {
 }
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
-    obj["onUnmounted"](obj["data-component-id"]);
+    obj["onUnmounted"](obj["domRef"]);
   obj["unmount"]();
 }
 function mountComponent(obj, context) {
@@ -270,7 +270,7 @@ function mountComponent(obj, context) {
     obj["children"].push(component);
     context["appendChild"](obj["domRef"], component["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"](componentId);
+      obj["onMounted"](obj["domRef"]);
   });
 }
 function create(obj, parent, context) {
