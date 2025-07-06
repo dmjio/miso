@@ -118,7 +118,6 @@ library
   default-language:
     Haskell2010
   other-modules:
-    Miso.Concurrent
     Miso.Delegate
     Miso.Diff
     Miso.FFI.Internal
@@ -126,6 +125,7 @@ library
   exposed-modules:
     Miso
     Miso.Canvas
+    Miso.Concurrent
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
