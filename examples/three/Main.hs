@@ -45,6 +45,7 @@ foreign export javascript "hs_start" main :: IO ()
 data Action
   = GetTime
   | SetTime !Double
+  | Init
 -----------------------------------------------------------------------------
 data Context
   = Context
@@ -55,34 +56,35 @@ data Context
   } deriving (Generic, ToJSVal, FromJSVal)
 -----------------------------------------------------------------------------
 main :: IO ()
-main = do
-  initialize
-  run (startComponent app)
+main = run (startComponent app)
 -----------------------------------------------------------------------------
 app :: Component Double Action
 app = component 0 update_ $ \_ -> div_
   []
   [ div_
     [ id_ "stats"
-    , CSS.style_ [ "position" =: "absolute" ]
+    , CSS.style_
+      [ "position" =: "absolute"
+      ]
     ]
     []
   , Canvas.canvas_
     [ width_ "400"
     , height_ "300"
     ]
-    initialize
+    initContext
     draw
   ] where
       update_ = \case
         GetTime ->
           io (SetTime <$> now)
-        SetTime time -> do
-          put time
-          issue GetTime
+        SetTime time ->
+          pure GetTime #> time
+        Init ->
+          io (GetTime <$ initialize)
 -----------------------------------------------------------------------------
-initialize :: DOMRef -> Three Context
-initialize canvasRef = do
+initContext :: DOMRef -> Three Context
+initContext canvasRef = do
   width <- windowInnerWidth
   height <- windowInnerHeight
   let value = realToFrac (width `div` height)
@@ -103,12 +105,4 @@ draw Context {..} = do
   cube & THREE.Object3D.rotation !. x += 0.1
   cube & THREE.Object3D.rotation !. y += 0.1
   renderer & THREE.WebGLRenderer.render (scene, camera)
------------------------------------------------------------------------------
-updateModel
-  :: Action
-  -> Effect Double Action
-updateModel GetTime =
-  io (SetTime <$> now)
-updateModel (SetTime m) =
-  pure GetTime #> m
 -----------------------------------------------------------------------------

@@ -70,8 +70,8 @@ in
   three = fetchFromGitHub {
     owner = "three-hs";
     repo = "three.hs";
-    rev = "813bff0744c846a1bba1b7d330192cb7a56ba2fc";
-    hash = "sha256-ZE5KFMub5xfK2H9bwAwvSv7rA1I6fuA3pFo5WoBoOA8=";
+    rev = "6787b15915dd8c3bf10e9af98742671e467cbb02";
+    hash = "sha256-wHLbuu0IZ3U2j1ghETaZtNQTgucSt5uD+8udjAnMhug=";
   };
-  # three = ../../three; 
+  # three = ../../three;
 }
