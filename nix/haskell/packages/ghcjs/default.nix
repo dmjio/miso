@@ -43,4 +43,11 @@ self: super:
     cp -fv ${source.examples}/three/index.html $out/bin/threejs.jsexe/index.html
     chmod +w $out/bin/todo-mvc.jsexe
   '';
+
+  /* cruft */
+  crypton = dontCheck super.crypton;
+  cryptonite = dontCheck super.cryptonite;
+  monad-logger = doJailbreak super.monad-logger;
+  string-interpolate = doJailbreak super.string-interpolate;
+  servant-server = doJailbreak super.servant-server;
 }

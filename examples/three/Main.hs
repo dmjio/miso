@@ -20,6 +20,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import Control.Monad.IO.Class (liftIO)
 import           GHC.Generics (Generic)
 import           Data.Function
 import           Language.Javascript.JSaddle hiding (new)
@@ -85,6 +86,7 @@ app = component 0 update_ $ \_ -> div_
 -----------------------------------------------------------------------------
 initContext :: DOMRef -> Three Context
 initContext canvasRef = do
+  liftIO (consoleLog "init context")
   width <- windowInnerWidth
   height <- windowInnerHeight
   let value = realToFrac (width `div` height)
@@ -92,7 +94,7 @@ initContext canvasRef = do
   camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
   renderer <- THREE.WebGLRenderer.new (Just (Object canvasRef))
   renderer & THREE.WebGLRenderer.setSize (width, height, True)
-  geometry <- THREE.BoxGeometry.new (10,10,10,Nothing,Nothing,Nothing)
+  geometry <- THREE.BoxGeometry.new (10,10,10)
   material <- THREE.MeshBasicMaterial.new Nothing
   material & THREE.MeshBasicMaterial.color .= "#000fff"
   cube <- THREE.Mesh.new (geometry,material)
@@ -102,6 +104,7 @@ initContext canvasRef = do
 -----------------------------------------------------------------------------
 draw :: Context -> Three ()
 draw Context {..} = do
+  liftIO (consoleLog "init context")
   cube & THREE.Object3D.rotation !. x += 0.1
   cube & THREE.Object3D.rotation !. y += 0.1
   renderer & THREE.WebGLRenderer.render (scene, camera)

@@ -5,6 +5,12 @@ packages:
 
 index-state: 2025-06-27T20:43:14Z
 
+with-compiler:
+    javascript-unknown-ghcjs-ghc
+
+with-hc-pkg:
+    javascript-unknown-ghcjs-ghc-pkg
+
 allow-newer:
   all:base
 
@@ -25,4 +31,4 @@ if arch(wasm32)
 source-repository-package
   type: git
   location: https://github.com/three-hs/three.hs.git
-  tag: 2089096aa404f01a7e813da7711d564629902ac0
+  tag: f833aeec6954b338db086dae068a8b290d1684f3
