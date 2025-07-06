@@ -8,6 +8,7 @@ self: super:
 {
   inherit (pkgs.haskell.packages.ghc865) hpack;
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
+  three = self.callCabal2nix "three" source.three {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};

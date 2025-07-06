@@ -119,6 +119,7 @@ executable threejs
     base < 5,
     containers,
     jsaddle,
+    three,
     miso
 
 executable file-reader

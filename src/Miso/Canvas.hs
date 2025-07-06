@@ -37,6 +37,7 @@ module Miso.Canvas
   , Coord
    -- * Property
   , canvas
+  , canvas_
     -- * API
   , globalCompositeOperation
   , clearRect
@@ -557,4 +558,35 @@ save = call "save"
 -- | [ctx.restore()](https://www.w3schools.com/tags/canvas_restore.asp)
 restore :: () -> Canvas ()
 restore = call "restore"
+-----------------------------------------------------------------------------
+-- | Another variant of canvas, this is not specialize to 'ReaderT'. This is
+-- useful when building applications w/ three.js, or other libraries where
+-- explicit context is not necessary.
+canvas_
+  :: forall action canvasState
+   . (FromJSVal canvasState, ToJSVal canvasState)
+  => [ Attribute action ]
+  -> (DOMRef -> JSM canvasState)
+  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -> (canvasState -> JSM ())
+  -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
+  -> View action
+canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
+  where
+    attrs :: [ Attribute action ]
+    attrs = initCallback : drawCallack : attributes
+
+    initCallback :: Attribute action
+    initCallback = Event $ \_ o _ _ -> do
+      flip (FFI.set "onCreated") o =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          initialState <- initialize_ domRef
+          FFI.set "state" initialState (Object domRef)
+
+    drawCallack :: Attribute action
+    drawCallack = Event $ \_ o _ _ -> do
+      flip (FFI.set "draw") o =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
+          draw_ state
 -----------------------------------------------------------------------------

@@ -192,4 +192,5 @@ library
     tagsoup       < 0.15,
     text          < 2.2,
     transformers  < 0.7,
-    stm >= 2.4 && < 2.6
+    stm >= 2.4 && < 2.6,
+    three

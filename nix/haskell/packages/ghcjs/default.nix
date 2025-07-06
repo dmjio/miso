@@ -11,6 +11,7 @@ self: super:
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
+  three = self.callCabal2nix "three" source.three {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   servant-client-core = doJailbreak super.servant-client-core;
   servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
