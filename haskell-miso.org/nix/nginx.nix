@@ -81,15 +81,6 @@ with (import ../../default.nix {});
            };
          };
        };
-       "threejs.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = "${miso-examples}/bin/threejs.jsexe";
-           };
-         };
-       };
        "snake.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;

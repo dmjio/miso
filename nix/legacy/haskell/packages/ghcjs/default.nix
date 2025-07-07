@@ -30,9 +30,7 @@ self: super:
   miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
-      mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
-      cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
     '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};
