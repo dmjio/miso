@@ -166,10 +166,10 @@ data SomeComponent
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
 component_
   :: forall model action a . Eq model
-  => Component model action
-  -> [Attribute a]
+  => [Attribute a]
+  -> Component model action
   -> View a
-component_ app attrs = VComp attrs (SomeComponent app)
+component_ attrs app = VComp attrs (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
