@@ -20,6 +20,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Control.Monad (void)
 import           GHC.Generics (Generic)
 import           Data.Function
 import           Language.Javascript.JSaddle hiding (new)
@@ -29,23 +30,21 @@ import qualified Miso.Canvas as Canvas
 import           Miso.Style ((=:))
 import qualified Miso.Style as CSS
 -----------------------------------------------------------------------------
-import           THREE.Internal (Three, (.=), x, y, z, (!.), (+=), initialize)
-import qualified THREE.Scene
-import qualified THREE.PerspectiveCamera
-import qualified THREE.WebGLRenderer
-import qualified THREE.Mesh
-import qualified THREE.Object3D
-import qualified THREE.MeshBasicMaterial
 import qualified THREE.BoxGeometry
+import           THREE.Internal (Three, (.=), x, y, z, (!.), (+=), (^.), (!..))
+import qualified THREE.Light
+import qualified THREE.Mesh
+import qualified THREE.MeshBasicMaterial
+import qualified THREE.Object3D
+import qualified THREE.PerspectiveCamera
+import qualified THREE.PointLight
+import qualified THREE.Scene
+import qualified THREE.Vector3
+import qualified THREE.WebGLRenderer
 -----------------------------------------------------------------------------
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
------------------------------------------------------------------------------
-data Action
-  = GetTime
-  | SetTime !Double
-  | Init
 -----------------------------------------------------------------------------
 data Context
   = Context
@@ -55,8 +54,12 @@ data Context
   , renderer :: THREE.WebGLRenderer.WebGLRenderer
   } deriving (Generic, ToJSVal, FromJSVal)
 -----------------------------------------------------------------------------
+data Action
+  = GetTime
+  | SetTime !Double
+-----------------------------------------------------------------------------
 main :: IO ()
-main = run $ startComponent app { initialAction = Just Init }
+main = run $ startComponent app { initialAction = Just GetTime }
 -----------------------------------------------------------------------------
 app :: Component Double Action
 app = component 0 update_ $ \_ -> div_
@@ -80,15 +83,17 @@ app = component 0 update_ $ \_ -> div_
           io (SetTime <$> now)
         SetTime time ->
           pure GetTime #> time
-        Init ->
-          io (GetTime <$ initialize)
 -----------------------------------------------------------------------------
 initContext :: DOMRef -> Three Context
 initContext canvasRef = do
   width <- windowInnerWidth
   height <- windowInnerHeight
   let value = realToFrac (width `div` height)
+  light <- THREE.PointLight.new
+  light & THREE.Light.intensity .= 300
+  light ^. THREE.Object3D.position !.. THREE.Vector3.setXYZ 8 8 8
   scene <- THREE.Scene.new
+  void $ scene & THREE.Object3D.add light
   camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
   renderer <- THREE.WebGLRenderer.new (Just canvasRef)
   renderer & THREE.WebGLRenderer.setSize (width, height, True)

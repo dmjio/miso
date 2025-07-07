@@ -2,7 +2,7 @@
 
 with (import ./default.nix {});
 
-if pkg == "ghcjs"
+if pkg == "ghcjs9122"
 then miso-ghcjs-9122.env.overrideAttrs (drv: {
   shellHook = ''
     export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
@@ -13,4 +13,7 @@ then miso-ghcjs-9122.env.overrideAttrs (drv: {
     export EM_CACHE=~/.emscripten_cache
   '';
 })
+else
+if pkg == "ghcjs"
+then miso-ghcjs.env
 else miso-ghc-9122.env

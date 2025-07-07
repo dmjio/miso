@@ -76,8 +76,18 @@ self: super:
        name = "threejs";
        title = "Three.js WASM Example";
        scripts = ''
-         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.js" defer></script>
-         <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.js" defer></script>
+           <script type="importmap">
+             {
+               "imports": {
+                 "three": "https://cdn.jsdelivr.net/npm/three@v0.178.0/build/three.module.js",
+                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.178.0/examples/jsm/"
+               }
+             }
+             </script>
+             <script  type="module" >
+               import * as THREE from 'three';
+               window.THREE = THREE;
+             </script>
        '';
     };
 
