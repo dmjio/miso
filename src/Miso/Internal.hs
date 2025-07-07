@@ -36,6 +36,7 @@ module Miso.Internal
   , topic
   ) where
 -----------------------------------------------------------------------------
+import           Control.Exception (SomeException)
 import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
@@ -62,7 +63,6 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
-import           Miso.Exception (exception)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
@@ -75,7 +75,7 @@ import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
 initialize
   :: Eq model
   => Component model action
-  -> (Sink action -> JSM (MisoString, JSVal, IORef VTree))
+  -> (Sink action -> JSM (DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (IORef VTree)
 initialize Component {..} getView = do
@@ -85,7 +85,8 @@ initialize Component {..} getView = do
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
-  (componentId, componentMount, componentVTree) <- getView componentSink
+  componentId <- liftIO freshComponentId
+  (componentMount, componentVTree) <- getView componentSink
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -420,35 +421,37 @@ syncWith Async x = void (FFI.forkJSM x)
 foldEffects
   :: (action -> Effect model action)
   -> Synchronicity
-  -> MisoString
+  -> ComponentId
   -> Sink action
   -> [action]
   -> model
   -> JSM model
 foldEffects _ _ _ _ [] m = pure m
-foldEffects update synchronicity name snk (e:es) o =
-  case runEffect (update e) name o of
+foldEffects update synchronicity componentId snk (e:es) o =
+  case runEffect (update e) componentId o of
     (n, subs) -> do
       forM_ subs $ \sub -> do
         syncWith synchronicity $
           sub snk `catch` (void . exception)
-      foldEffects update synchronicity name snk es n
+      foldEffects update synchronicity componentId snk es n
+  where
+    exception :: SomeException -> JSM ()
+    exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 --------------------------------------------------
 -- | Internally used for runView and startComponent
 -- Initial draw helper
 -- If hydrateing, bypass diff and continue copying
 drawComponent
   :: Hydrate
-  -> MisoString
+  -> DOMRef
   -> Component model action
   -> Sink action
-  -> JSM (MisoString, JSVal, IORef VTree)
-drawComponent hydrate name Component {..} snk = do
+  -> JSM (JSVal, IORef VTree)
+drawComponent hydrate mountElement Component {..} snk = do
   vtree <- runView hydrate (view model) snk logLevel events
-  mountElement <- FFI.getComponent name
   when (hydrate == Draw) (diff Nothing (Just vtree) mountElement)
   ref <- liftIO (newIORef vtree)
-  pure (name, mountElement, ref)
+  pure (mountElement, ref)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
@@ -499,22 +502,22 @@ runView
   -> Events
   -> JSM VTree
 runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
-  compName <- liftIO freshComponentId
+  componentId <- liftIO freshComponentId
   mountCallback <- do
-    FFI.syncCallback1 $ \continuation -> do
-      vtreeRef <- initialize app (drawComponent hydrate compName app)
+    FFI.syncCallback2 $ \domRef continuation -> do
+      vtreeRef <- initialize app (drawComponent hydrate domRef app)
       VTree vtree <- liftIO (readIORef vtreeRef)
       void $ call continuation global [vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback $ do
-      M.lookup compName <$> liftIO (readIORef components) >>= \case
+      M.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML "div"
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  FFI.set "data-component-id" compName vcomp
+  FFI.set "component-id" componentId vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)

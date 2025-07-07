@@ -18,6 +18,7 @@ module Miso.FFI.Internal
    , forkJSM
    , syncCallback
    , syncCallback1
+   , syncCallback2
    , asyncCallback
    , asyncCallback1
    , asyncCallback2
@@ -54,13 +55,10 @@ module Miso.FFI.Internal
    , scrollIntoView
    , alert
    , reload
-   , getComponent
-   , setComponentId
    , addStyle
    , addStyleSheet
    , fetch
    , shouldSync
-   , setComponent
    , flush
    , requestAnimationFrame
    , setDrawingContext
@@ -109,7 +107,7 @@ asyncCallback1 f = asyncFunction handle
     handle _ _ []    = error "asyncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
 -----------------------------------------------------------------------------
--- | Creates an asynchronous callback function with a single argument
+-- | Creates an asynchronous callback function with two arguments
 asyncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
 asyncCallback2 f = asyncFunction handle
   where
@@ -117,11 +115,20 @@ asyncCallback2 f = asyncFunction handle
     handle _ _ [_]   = error "asyncCallback2: 1 arg, impossible"
     handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
+-- | Creates a synchronous callback function with one argument
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
 syncCallback1 f = function handle
   where
     handle _ _ []    = error "syncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
+-----------------------------------------------------------------------------
+-- | Creates a synchronous callback function with two arguments
+syncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
+syncCallback2 f = function handle
+  where
+    handle _ _ []    = error "syncCallback2: no args, impossible"
+    handle _ _ [_]   = error "syncCallback2: 1 arg, impossible"
+    handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
@@ -265,15 +272,6 @@ eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
--- | Retrieves the component id
-getComponent :: MisoString -> JSM JSVal
-getComponent name = nodeList !! 0
-  where
-    nodeList
-      = jsg "document"
-      # "querySelectorAll"
-      $ [ "[data-component-id='" <> fromMisoString name <> "']" ]
------------------------------------------------------------------------------
 -- | Retrieves a reference to document body.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
@@ -410,19 +408,6 @@ alert a = () <$ jsg1 "alert" a
 -- | Calls the @location.reload()@ function.
 reload :: JSM ()
 reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
------------------------------------------------------------------------------
--- | Sets the body with data-component-id
-setComponentId :: MisoString -> JSM ()
-setComponentId componentId = do
-  moduleMiso <- jsg "miso" ! "context"
-  void $ moduleMiso # "setComponentId" $ [componentId]
------------------------------------------------------------------------------
--- | Sets @data-component-id@ on the node given by second argument to a value given by the first argument
-setComponent :: MisoString -> JSVal -> JSM ()
-setComponent name node = do
-  component <- toJSVal name
-  moduleMiso <- jsg "miso"
-  void $ moduleMiso # "setComponent" $ [node, component]
 -----------------------------------------------------------------------------
 -- | Appends a 'style_' element containing CSS to 'head_'
 --

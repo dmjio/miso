@@ -25,7 +25,7 @@ describe ('Component tests', () => {
     var build = (name, children) => {
         return vcomp ({
           children: children,
-          'data-component-id': name,
+          'component-id': name,
           unmount: () => {
             unmounts.push(name);
           }
@@ -37,35 +37,15 @@ describe ('Component tests', () => {
     diff(tree, null, document.body, context);
     expect(unmounts).toEqual(['one', 'two', 'three']);
   });
-  test('Should detect duplicate component mounting', () => {
-    var mountCount = 0;
-    var newComp1 = vcomp({
-      mount: () => {
-        mountCount++;
-      },
-      'data-component-id': 'vcomp-foo',
-    });
-    diff(null, newComp1, document.body, context);
-    var newComp2 = vcomp({
-      mount: () => {
-        mountCount++;
-      },
-      'data-component-id': 'vcomp-foo',
-    });
-    var newNode = vnode({ children: [newComp2] });
-    diff(null, newNode, document.body, context);
-    expect(mountCount).toBe(1);
-  });
-
   test('Should mount and unmount a component', () => {
     var mountCount = 0;
     var unmountCount = 0;
     var newNode = vcomp({
-      mount: (cb) => {
+      mount: (domRef, callback) => {
         mountCount++;
         var node = vcomp({});
         diff(null, node, document.body, context);
-        cb(node);
+        callback(node);
       },
       unmount: () => {
         unmountCount++;
@@ -91,7 +71,7 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      'data-component-id': 'vcomp-foo',
+      'component-id': 'vcomp-foo',
       css: { 'background-color': 'red' },
     });
     diff(null, compNode1, document.body, context);
@@ -107,7 +87,7 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      'data-component-id': 'vcomp-foo',
+      'component-id': 'vcomp-foo',
       css: { 'background-color': 'green' },
     });
     diff(compNode1, compNode2, document.body, context);
@@ -116,8 +96,10 @@ describe ('Component tests', () => {
 
   test('Should replace Component with Component', () => {
     // populate DOM
-    var comp1 = vcomp({ key : 'a' });
+    var comp1 = vcomp({ key : 'a', tag: 'a' });
+    // dmj: tag always 'div' for component, this is just for a test to ensure swap property
     diff(null, comp1, document.body, context);
+    expect(document.body.firstChild.tagName).toBe('A');
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
@@ -125,7 +107,7 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var comp2 = vcomp({
-     'data-component-id': 'vcomp-id',
+     'component-id': 'vcomp-id',
       key : 'b',
       mount: () => {
         mountCount++;
@@ -134,16 +116,16 @@ describe ('Component tests', () => {
     diff(comp1, comp2, document.body, context);
 
     // Node is removed from DOM, Component is on the DOM
-    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
-      'vcomp-id',
-    );
+    expect(document.body.childNodes.length).toBe(1);
+    expect(document.body.firstChild.tagName).toBe('DIV');
     expect(mountCount).toBe(1);
   });
 
   test('Should replace Node with Component', () => {
     // populate DOM
-    var node = vnode({});
+    var node = vnode({ tag: 'a' });
     diff(null, node, document.body, context);
+    expect(document.body.firstChild.tagName).toBe('A');
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
@@ -151,7 +133,7 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var compNode = vcomp({
-     'data-component-id': 'vcomp-id',
+     'component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
       },
@@ -159,10 +141,8 @@ describe ('Component tests', () => {
     diff(node, compNode, document.body, context);
 
     // Node is removed from DOM, Component is on the DOM
-    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
-      'vcomp-id',
-    );
     expect(mountCount).toBe(1);
+    expect(document.body.firstChild.tagName).toBe('DIV');
   });
 
   test('Should replace Text with Component', () => {
@@ -172,12 +152,11 @@ describe ('Component tests', () => {
 
     // Test node was populated
     expect(node.domRef.textContent).toBe('foo');
-    expect(document.body.childNodes.length).toBe(1);
-
+    expect(document.body.firstChild.nodeType).toBe(Node.TEXT_NODE);
     // Replace node
     var mountCount = 0;
     var compNode = vcomp({
-      'data-component-id': 'vcomp-id',
+      'component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
       },
@@ -185,10 +164,8 @@ describe ('Component tests', () => {
     diff(node, compNode, document.body, context);
 
     // Node is removed from DOM, Component is on the DOM
-    expect((document.body.childNodes[0] as Element).getAttribute('data-component-id')).toBe(
-      'vcomp-id',
-    );
     expect(mountCount).toBe(1);
+    expect(document.body.firstChild.nodeType).toBe(Node.ELEMENT_NODE);
   });
   test('Should replace Component with TextNode', () => {
     var mountCount = 0, unmountCount = 0;

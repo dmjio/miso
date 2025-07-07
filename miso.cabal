@@ -130,7 +130,6 @@ library
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
-    Miso.Exception
     Miso.Fetch
     Miso.FFI
     Miso.Html
