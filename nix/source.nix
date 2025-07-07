@@ -34,8 +34,8 @@ in
   jsaddle = fetchFromGitHub {
     owner = "ghcjs";
     repo = "jsaddle";
-    rev = "0d5e427cb99391179b143dc93dfbac9c1019237b";
-    sha256 = "sha256-jyJ7bdz0gNLOSzRxOWcv7eWGIwo3N/O4PcY7HyNF8Fo=";
+    rev = "2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
+    hash = "sha256-xJ3BLiFtQmH92Y0jqIgdzJqidQHm3M1ZKHRAUEgNZF0=";
   };
   servant-client-js = fetchFromGitHub {
     owner = "amesgen";
