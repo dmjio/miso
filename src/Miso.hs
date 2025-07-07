@@ -55,8 +55,6 @@ module Miso
   , module Miso.Router
     -- * Run
   , module Miso.Run
-    -- * Exception
-  , module Miso.Exception
     -- * Subscriptions
   , module Miso.Subscription
     -- * Storage
@@ -87,7 +85,6 @@ import           Language.Javascript.JSaddle (eval)
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
-import           Miso.Exception
 import           Miso.Fetch
 import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
@@ -113,12 +110,10 @@ miso f = withJS $ do
   initialize app $ \snk -> do
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
-    componentId <- liftIO freshComponentId
-    FFI.setComponentId componentId
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (componentId, mount, viewRef)
+    pure (mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
 (🍜) :: Eq model => (URI -> Component model action) -> JSM ()
@@ -162,12 +157,10 @@ initComponent
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> hooks >> do
     vtree <- runView Draw (view model) snk logLevel events
-    componentId <- liftIO freshComponentId
-    FFI.setComponentId componentId
     mount <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
-    pure (componentId, mount, viewRef)
+    pure (mount, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

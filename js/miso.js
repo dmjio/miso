@@ -16,9 +16,6 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
-function setComponent(node, componentId) {
-  node.setAttribute("data-component-id", componentId);
-}
 function fetchJSON(url, method, body, headers, successful, errorful) {
   var options = { method, headers };
   if (body) {
@@ -116,8 +113,8 @@ function diffNodes(c, n, parent, context) {
     return;
   }
   var componentIdCheck = function(n2, c2) {
-    if (n2["type"] === "vcomp" && !n2["data-component-id"].startsWith("miso-component-id")) {
-      return n2["data-component-id"] === c2["data-component-id"];
+    if (n2["type"] === "vcomp" && !n2["component-id"].startsWith("miso-component-id")) {
+      return n2["component-id"] === c2["component-id"];
     }
     return true;
   };
@@ -257,16 +254,9 @@ function unmountComponent(obj) {
   obj["unmount"]();
 }
 function mountComponent(obj, context) {
-  const componentId = obj["data-component-id"];
-  const nodeList = context["querySelectorAll"]("[data-component-id='" + componentId + "']");
-  if (nodeList.length > 0) {
-    console.error('AlreadyMountedException: Component "' + componentId + "' is already mounted");
-    return;
-  }
-  context["setAttribute"](obj["domRef"], "data-component-id", componentId);
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
-  obj["mount"]((component) => {
+  obj["mount"](obj["domRef"], (component) => {
     obj["children"].push(component);
     context["appendChild"](obj["domRef"], component["domRef"]);
     if (obj["onMounted"])
@@ -765,9 +755,6 @@ var context = {
   getTarget: (e) => {
     return e.target;
   },
-  setComponentId: (componentId) => {
-    return document.body.setAttribute("data-component-id", componentId);
-  },
   requestAnimationFrame: (callback) => {
     return window.requestAnimationFrame(callback);
   },
@@ -792,7 +779,6 @@ globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["setComponent"] = setComponent;
 globalThis["miso"]["context"] = context;
 globalThis["miso"]["setDrawingContext"] = function(name) {
   const ctx = globalThis[name];

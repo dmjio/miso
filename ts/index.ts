@@ -10,7 +10,6 @@ import {
   undelegate,
   shouldSync,
   integrityCheck,
-  setComponent,
 } from './miso';
 
 import { context } from './miso/context/dom';
@@ -28,7 +27,6 @@ globalThis['miso']['fetchJSON'] = fetchJSON;
 globalThis['miso']['undelegate'] = undelegate;
 globalThis['miso']['shouldSync'] = shouldSync;
 globalThis['miso']['integrityCheck'] = integrityCheck;
-globalThis['miso']['setComponent'] = setComponent;
 globalThis['miso']['context'] = context;
 globalThis['miso']['setDrawingContext'] = function (name) {
     const ctx = globalThis[name];

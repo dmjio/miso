@@ -76,7 +76,7 @@ function mkVNode() : VNode {
 function mkVComp() : VComp {
   return union(mkVNode() as any, {
     type : 'vcomp',
-    'data-component-id': '',
+    'component-id': '',
     mount: () => {},
     unmount: () => {},
     onUnmounted: () => {},

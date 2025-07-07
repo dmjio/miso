@@ -98,9 +98,6 @@ const context : Context = {
   'getTarget' : (e : Event) => {
     return e.target;
   },
-  'setComponentId' : (componentId: string): void => {
-    return document.body.setAttribute('data-component-id', componentId);
-  },
   'requestAnimationFrame' : (callback: (timestamp: number) => void): void => {
      return window.requestAnimationFrame (callback);
   },

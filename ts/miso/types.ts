@@ -91,7 +91,6 @@ type Context = {
   getTextContent : (node) => string;
   isEqual : (n1, n2) => boolean;
   getTarget : (e: Event) => EventTarget;
-  setComponentId : (componentId: string) => void;
   children : (e: Node) => NodeListOf<ChildNode>;
   getInlineStyle : (e, string) => string;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : DOMRef) => void;

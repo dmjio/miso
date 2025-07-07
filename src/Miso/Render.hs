@@ -95,9 +95,7 @@ renderBuilder (VNode _ tag attrs children) =
   ]
 renderBuilder (VComp attributes (SomeComponent Component {..})) =
   mconcat
-  [ stringUtf8 "<div data-component-id=\""
-  , fromMisoString ""
-  , "\" "
+  [ stringUtf8 "<div "
   , intercalate " " (renderAttrs <$> attributes)
   , ">"
   , renderBuilder (view model)
