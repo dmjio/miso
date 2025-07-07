@@ -383,7 +383,11 @@ function buildTargetToElement(element, target, context) {
   var stack = [];
   while (!context["isEqual"](element, target)) {
     stack.unshift(target);
-    target = context["parentNode"](target);
+    if (target && target.parentNode) {
+      target = context["parentNode"](target);
+    } else {
+      return stack;
+    }
   }
   return stack;
 }
