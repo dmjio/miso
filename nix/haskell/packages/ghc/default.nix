@@ -13,7 +13,6 @@ self: super:
 
   /* examples */
   miso-examples = self.callCabal2nix "miso-examples" source.examples {};
-  three = self.callCabal2nix "three" source.three {};
   sample-app = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp =

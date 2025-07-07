@@ -67,10 +67,4 @@ in
     rev = "46e61b0c43c2c9b61aa388418770172cdd8af8b4";
     hash = "sha256-HihtEbAnyMfNzSvJkjZeAbY/b/fm66wc4G0YuOJYfEA=";
   };
-  three = fetchFromGitHub {
-    owner = "three-hs";
-    repo = "three.hs";
-    rev = "0cd90cb9e32f4102b50fbf9579b9a5fe4e96e863";
-    hash = "sha256-vqDGsYr/HblNMUBnnhMG3/dPQjNM0roG9hbCG0C/KTQ=";
-  };
 }

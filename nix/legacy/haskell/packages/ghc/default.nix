@@ -6,7 +6,6 @@ with pkgs.haskell.lib;
 self: super:
 {
   miso = self.callCabal2nix "miso" source.miso {};
-  three = self.callCabal2nix "three" source.three {};
   miso-examples = self.callCabal2nix "miso-examples" source.examples {};
   miso-from-html = self.callCabal2nix "miso-from-html" source.miso-from-html {};
   sample-app = self.callCabal2nix "app" source.sample-app {};

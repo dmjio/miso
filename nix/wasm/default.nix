@@ -71,26 +71,6 @@ self: super:
        scripts = "";
     };
 
-  threejsWasm =
-    self.wasmPkgExample {
-       name = "threejs";
-       title = "Three.js WASM Example";
-       scripts = ''
-           <script type="importmap">
-             {
-               "imports": {
-                 "three": "https://cdn.jsdelivr.net/npm/three@v0.178.0/build/three.module.js",
-                 "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.178.0/examples/jsm/"
-               }
-             }
-             </script>
-             <script  type="module" >
-               import * as THREE from 'three';
-               window.THREE = THREE;
-             </script>
-       '';
-    };
-
   canvas2DWasm =
     self.wasmPkgExample {
        name = "canvas2d";
