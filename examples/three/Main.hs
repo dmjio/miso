@@ -20,7 +20,6 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
-import Control.Monad.IO.Class (liftIO)
 import           GHC.Generics (Generic)
 import           Data.Function
 import           Language.Javascript.JSaddle hiding (new)
@@ -92,7 +91,6 @@ initContext canvasRef = do
   scene <- THREE.Scene.new
   camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
   renderer <- THREE.WebGLRenderer.new (Just canvasRef)
-  -- renderer & THREE.WebGLRenderer.domElement .= canvasRef
   renderer & THREE.WebGLRenderer.setSize (width, height, True)
   geometry <- THREE.BoxGeometry.new (10,10,10)
   material <- THREE.MeshBasicMaterial.new Nothing

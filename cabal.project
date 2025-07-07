@@ -5,12 +5,6 @@ packages:
 
 index-state: 2025-06-27T20:43:14Z
 
-with-compiler:
-    javascript-unknown-ghcjs-ghc
-
-with-hc-pkg:
-    javascript-unknown-ghcjs-ghc-pkg
-
 allow-newer:
   all:base
 
