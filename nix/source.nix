@@ -37,11 +37,11 @@ in
     rev = "2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
     hash = "sha256-xJ3BLiFtQmH92Y0jqIgdzJqidQHm3M1ZKHRAUEgNZF0=";
   };
-  servant-client-js = fetchFromGitHub {
-    owner = "amesgen";
-    repo = "servant-client-js";
-    rev = "3ff9ad6906ebeeae52a7eaa31f7026790a59769a";
-    hash = "sha256-7x2bxbm2cyuzhotXtdQ0jwfc0aMzjQ/fxDfHjmVvivQ=";
+  servant = fetchFromGitHub {
+    owner = "haskell-servant";
+    repo = "servant";
+    rev = "e07e92abd62641fc0f199a33e5131de273140cb0";
+    hash = "sha256-zWlU6/7MU0J/amOSZHEgVltMN9K4luNK1JV6irM9ozM=";
   };
   miso-flatris = fetchFromGitHub {
     owner = "haskell-miso";

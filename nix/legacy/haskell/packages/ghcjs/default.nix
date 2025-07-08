@@ -10,7 +10,7 @@ self: super:
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
-  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
+  # servant = self.callCabal2nix "servant" "${source.servant}/servant" {};
   miso-flatris = self.callCabal2nix "flatris" source.miso-flatris {};
   miso-plane =
     let
