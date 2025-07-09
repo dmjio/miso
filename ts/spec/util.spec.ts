@@ -38,7 +38,9 @@ describe ('Utils tests', () => {
     grandparent.appendChild(parent);
     const child = document.createElement('div');
     parent.appendChild(child);
-    const vcomp = { 'domRef' : child };
+    let vcomp = { 'domRef' : child };
+    expect(getParentComponentId(vcomp)).toBe('grandparent');
+    vcomp.domRef = parent;
     expect(getParentComponentId(vcomp)).toBe('grandparent');
     expect(getParentComponentId(grandparent)).toBe(null);
   });
