@@ -31,7 +31,7 @@ describe ('Utils tests', () => {
     expect(document.activeElement).toEqual(document.body);
   });
 
-  test('Should call getParentComponentId', () => {
+  test('Should get parentComponentId', () => {
     const grandparent = document.createElement('div');
     grandparent['component-id'] = 'grandparent';
     const parent = document.createElement('div');
@@ -40,6 +40,7 @@ describe ('Utils tests', () => {
     parent.appendChild(child);
     const vcomp = { 'domRef' : child };
     expect(getParentComponentId(vcomp)).toBe('grandparent');
+    expect(getParentComponentId(grandparent)).toBe(null);
   });
 
 });
