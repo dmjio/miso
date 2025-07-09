@@ -68,6 +68,8 @@ module Miso.FFI.Internal
    , newDate
    , getMilliseconds
    , getSeconds
+   , getParentComponentId
+   , getComponentId
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -540,4 +542,12 @@ getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
     date # "getSeconds" $ ([] :: [MisoString])
+-----------------------------------------------------------------------------
+getParentComponentId :: JSVal -> JSM (Maybe Int)
+getParentComponentId domRef =
+  fromJSVal =<< do
+    jsg "miso" # "getParentComponentId" $ [domRef]
+-----------------------------------------------------------------------------
+getComponentId :: JSVal -> JSM Int
+getComponentId domRef = fromJSValUnchecked =<< domRef ! "component-id"
 -----------------------------------------------------------------------------

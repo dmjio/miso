@@ -41,6 +41,20 @@ function shouldSync(node) {
   }
   return enterSync;
 }
+function getParentComponentId(vcomp) {
+  var climb = function(node) {
+    let parentComponentId = null;
+    while (node && node.parentNode) {
+      if ("component-id" in node.parentNode) {
+        parentComponentId = node.parentNode["component-id"];
+        break;
+      }
+      node = node.parentNode;
+    }
+    return parentComponentId;
+  };
+  return climb(vcomp["domRef"]);
+}
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -112,13 +126,7 @@ function diffNodes(c, n, parent, context) {
     n["domRef"] = c["domRef"];
     return;
   }
-  var componentIdCheck = function(n2, c2) {
-    if (n2["type"] === "vcomp" && !n2["component-id"].startsWith("miso-component-id")) {
-      return n2["component-id"] === c2["component-id"];
-    }
-    return true;
-  };
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
+  if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
     n["domRef"] = c["domRef"];
     populate(c, n, context);
   } else {
@@ -256,9 +264,10 @@ function unmountComponent(obj) {
 function mountComponent(obj, context) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
-  obj["mount"](obj["domRef"], (component) => {
-    obj["children"].push(component);
-    context["appendChild"](obj["domRef"], component["domRef"]);
+  obj["mount"](obj["domRef"], (componentId, componentTree) => {
+    obj["domRef"]["component-id"] = componentId;
+    obj["children"].push(componentTree);
+    context["appendChild"](obj["domRef"], componentTree["domRef"]);
     if (obj["onMounted"])
       obj["onMounted"](obj["domRef"]);
   });
@@ -644,7 +653,7 @@ function walk(logLevel, vtree, node, context) {
             }
             break;
           case "vcomp":
-            vdomChild["mount"]((component) => {
+            vdomChild["mount"](vdomChild["domRef"], (componentId, component) => {
               vdomChild["children"].push(component);
               walk(logLevel, vdomChild, node.childNodes[i], context);
             });
@@ -781,6 +790,7 @@ globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
+globalThis["miso"]["getParentComponentId"] = getParentComponentId;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["context"] = context;

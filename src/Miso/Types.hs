@@ -54,11 +54,11 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM, JSVal)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
-import           Miso.Effect (Effect, Sub, Sink)
+import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
@@ -92,9 +92,6 @@ data Component model action = Component
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   }
------------------------------------------------------------------------------
--- | Type to represent a DOM reference
-type DOMRef = JSVal
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
 type MountPoint = MisoString
@@ -267,7 +264,11 @@ instance IsString (View a) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
+-----------------------------------------------------------------------------  
+instance ToJSVal VTree where
+  toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
+
 -- | Create a new @Miso.Types.TextRaw@.
 --
 -- @expandable@

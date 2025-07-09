@@ -1,5 +1,5 @@
 import { callCreated, populate } from './dom';
-import { Context, VTree, VComp, VNode, VText, DOMRef } from './types';
+import { Context, VTree, VComp, VNode, VText, DOMRef, ComponentId } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
@@ -222,7 +222,7 @@ function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): bo
             }
             break;
           case 'vcomp':
-            vdomChild['mount']((component: VComp) => {
+            vdomChild['mount'](vdomChild['domRef'], (componentId: ComponentId, component: VComp) => {
               vdomChild['children'].push(component);
               walk(logLevel, vdomChild, node.childNodes[i], context);
             });

@@ -20,12 +20,14 @@ afterEach(() => {
 
 /* tests */
 describe ('Component tests', () => {
-  test('Should unmount recursively in order', () => {
-    var unmounts = [];
+    test('Should unmount recursively in order', () => {
+    var unmounts = [], mounts = [];
     var build = (name, children) => {
         return vcomp ({
           children: children,
-          'component-id': name,
+          mount: () => {
+            
+          },
           unmount: () => {
             unmounts.push(name);
           }
@@ -71,7 +73,6 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      'component-id': 'vcomp-foo',
       css: { 'background-color': 'red' },
     });
     diff(null, compNode1, document.body, context);
@@ -87,16 +88,25 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      'component-id': 'vcomp-foo',
       css: { 'background-color': 'green' },
     });
     diff(compNode1, compNode2, document.body, context);
     expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
-  test('Should replace Component with Component', () => {
+  test('Should replace Component with new Component (new because different key)', () => {
     // populate DOM
-    var comp1 = vcomp({ key : 'a', tag: 'a' });
+    var unmountCount = 0, mountCount = 0;
+    var comp1 = vcomp({
+          key : 'a'
+        , tag: 'a'
+        , unmount: () => {
+            unmountCount++
+          }
+        , mount: () => {
+            mountCount++;
+        },
+    });
     // dmj: tag always 'div' for component, this is just for a test to ensure swap property
     diff(null, comp1, document.body, context);
     expect(document.body.firstChild.tagName).toBe('A');
@@ -105,9 +115,7 @@ describe ('Component tests', () => {
     expect(document.body.childNodes.length).toBe(1);
 
     // Replace node
-    var mountCount = 0;
     var comp2 = vcomp({
-     'component-id': 'vcomp-id',
       key : 'b',
       mount: () => {
         mountCount++;
@@ -118,7 +126,40 @@ describe ('Component tests', () => {
     // Node is removed from DOM, Component is on the DOM
     expect(document.body.childNodes.length).toBe(1);
     expect(document.body.firstChild.tagName).toBe('DIV');
-    expect(mountCount).toBe(1);
+    /* both mount of new+old component and unmount of old component are called */
+    expect(unmountCount).toBe(1);
+    expect(mountCount).toBe(2);
+  });
+
+  test('Should not replace Component when key are identical, when diffing Component', () => {
+    // populate DOM
+    var unmountCount = 0
+      var comp1 = vcomp({
+          key : 'a'
+        , unmount: () => {
+            unmountCount++
+          }
+    });
+    // dmj: tag always 'div' for component, this is just for a test to ensure swap property
+    diff(null, comp1, document.body, context);
+
+    // Test node was populated
+    expect(document.body.childNodes.length).toBe(1);
+
+    // Replace node
+    var mountCount = 0;
+    var comp2 = vcomp({
+      key : 'a',
+      mount: () => {
+        mountCount++;
+      },
+    });
+    diff(comp1, comp2, document.body, context);
+
+    // Node is removed from DOM, Component is on the DOM
+    expect(document.body.firstChild.tagName).toBe('DIV');
+    expect(unmountCount).toBe(0);
+    expect(mountCount).toBe(0);
   });
 
   test('Should replace Node with Component', () => {
@@ -133,7 +174,6 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var compNode = vcomp({
-     'component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
       },
@@ -156,7 +196,6 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var compNode = vcomp({
-      'component-id': 'vcomp-id',
       mount: () => {
         mountCount++;
       },
