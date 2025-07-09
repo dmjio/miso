@@ -1,4 +1,4 @@
-import { callFocus, callBlur } from '../miso/util';
+import { callFocus, callBlur, getParentComponentId } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -29,6 +29,17 @@ describe ('Utils tests', () => {
     callBlur('foo', 0); /* found case */
     callBlur('foo', 1); /* found case */
     expect(document.activeElement).toEqual(document.body);
+  });
+
+  test('Should call getParentComponentId', () => {
+    const grandparent = document.createElement('div');
+    grandparent['component-id'] = 'grandparent';
+    const parent = document.createElement('div');
+    grandparent.appendChild(parent);
+    const child = document.createElement('div');
+    parent.appendChild(child);
+    const vcomp = { 'domRef' : child };
+    expect(getParentComponentId(vcomp)).toBe('grandparent');
   });
 
 });
