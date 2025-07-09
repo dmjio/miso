@@ -59,13 +59,30 @@
 
         # Miso's packages
         packages = rec {
-          default = miso;
-          inherit (pkgs)
-            miso
-            miso-examples
-            miso-ghc
-            miso-from-html
+          # Default package is vanilla GHC 9.12.2 miso
+          default = miso-ghc-9122;
+
+          # GHCJS miso, miso-examples
+          miso-ghcjs-9122 =
+            pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
+          miso-examples-ghcjs-9122 =
+            pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-examples;
+
+          # GHC
+          miso-ghc-9122 =
+            pkgs.haskell.packages.ghc9122.miso;
+
+          miso-examples-ghc-9122 =
+            pkgs.haskell.packages.ghc9122.miso;
+
+          # Util
+          inherit (pkgs.haskell.packages.ghc9122)
+            miso-from-html;
+
+          # Misc.
+          inherit (pkgs.haskell.packages.ghc9122)
             more-examples;
+
         };
 
         # Miso's dev shells
