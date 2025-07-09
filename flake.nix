@@ -23,6 +23,9 @@
     nixpkgs.url =
       "github:nixos/nixpkgs?rev=9e2e8a7878573d312db421d69e071690ec34e98c";
 
+    # Some light utils
+    flake-utils.url = "github:numtide/flake-utils";
+
     # Miso uses this for FFI
     jsaddle.url =
       "github:ghcjs/jsaddle?rev=2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
@@ -35,71 +38,115 @@
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
 
+    # dmj: (leave commented for now, we might cache our own copy of ghc-wasm if we need to)
+    #
+    # ghc-wasm-meta.inputs.nixpkgs.follows =
+    #   "nixpkgs";
+
   };
 
-  # Miso's flake outputs
-  outputs = { self, nixpkgs, ... } @ inputs : {
+  outputs = { self, nixpkgs, flake-utils, ... } @ inputs:
 
-     # Miso's overlays
-    overlays =
-      [ (import ./nix/overlay.nix)
-      ];
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+         # Miso's overlays
+        overlays =
+          [ (import ./nix/overlay.nix)
+          ];
 
-     # Packages
-      packages = with nixpkgs.legacyPackages; {
+        # Miso's packages
+        packages = rec {
+          default = miso;
+          inherit (pkgs)
+            miso
+            miso-examples
+            miso-ghc
+            miso-from-html
+            more-examples;
+        };
 
-       # Linux x86_64 is the default, for now
-       default = self.packages.x86_64-linux;
+        # Miso's dev shells
+        devShells = rec {
 
-       ### x86
-       x86_64-linux = with x86_64-linux.haskell.packages.ghc9122; {
-         default = miso;
-         inherit miso miso-examples;
-       };
-       x86_64-darwin = with x86_64-darwin.haskell.packages.ghc9122; {
-         default = miso;
-         inherit miso miso-examples;
-       };
+          # Default GHC shell
+          default =
+            pkgs.mkShell {
+              name = "The miso ${system} GHC 9.12.2 shell";
+              shellHook = ''
+                function build () {
+                   cabal build $1
+                }
+                function clean () {
+                   cabal clean
+                }
+                function update () {
+                   cabal update
+                }
+              '';
+              buildInputs = with pkgs.haskell.packages.ghc9122; [
+                pkgs.ghciwatch
+                ghcid
+                miso
+                miso-from-html
+                pkgs.http-server
+                pkgs.cabal-install
+                ghc
+                pkgs.bun
+              ];
+            };
 
-       ### ARM
-       aarch64-linux = with aarch64-linux.haskell.packages.ghc9122; {
-         default = miso;
-         inherit miso miso-examples;
-       };
-       aarch64_64-darwin = with aarch64_64-darwin.haskell.packages.ghc9122; {
-         default = miso;
-         inherit miso miso-examples;
-       };
+          # WASM shell
+          wasm =
+            pkgs.mkShell {
+              name = "The miso ${system} GHC WASM 9.12.2 shell";
+              packages = [
+                 inputs.ghc-wasm-meta.packages.${system}.all_9_12
+                 pkgs.gnumake
+                 pkgs.http-server
+                 pkgs.cabal-install
+               ];
+              shellHook = ''
+                function build () {
+                   wasm32-wasi-cabal build $1 \
+                     --with-compiler=wasm32-wasi-ghc \
+                     --with-hc-pkg=wasm32-wasi-ghc-pkg
+                }
+                function clean () {
+                   wasm32-wasi-cabal clean
+                }
+                function update () {
+                   wasm32-wasi-cabal update
+                }
+              '';
+            };
 
-     };
-
-     # Miso development Shells
-     devShells = with nixpkgs.legacyPackages; {
-
-       # The default shell is for Linux x86_64 and includes GHC, ghcid, ghciwatch
-       default = self.devShells.x86_64-linux;
-
-       # Linux
-       x86_64-linux.default =
-         pkgs.mkShell {
-           name = "The miso linux x86 ghc9122 shell";
-           shellHook = ''
-             echo test
-           '';
-
-         };
-
-       # Darwin
-       x86_64-darwin.default =
-         pkgs.mkShell {
-           name = "The miso linux x86 ghc9122 shell";
-           shellHook = ''
-             echo test
-           '';
-           buildInputs = with pkgs; [
-             pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso
-           ];
-         };
-     };
-   };
+          # GHCJS shell
+          ghcjs =
+            pkgs.mkShell {
+              name = "The miso ${system} GHC JS 9.12.2 shell";
+              shellHook = ''
+                function build () {
+                   cabal build $1 \
+                     --with-compiler=javascript-unknown-ghcjs-ghc \
+                     --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
+                }
+                function clean () {
+                   cabal clean
+                }
+                function update () {
+                   cabal update
+                }
+              '';
+              packages = [
+                 pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
+                 pkgs.gnumake
+                 pkgs.http-server
+                 pkgs.cabal-install
+              ];
+            };
+        };
+      });
 }
