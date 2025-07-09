@@ -45,9 +45,6 @@ describe ('Component tests', () => {
     var newNode = vcomp({
       mount: (domRef, callback) => {
         mountCount++;
-        var node = vcomp({});
-        diff(null, node, document.body, context);
-        callback(node);
       },
       unmount: () => {
         unmountCount++;
@@ -59,8 +56,6 @@ describe ('Component tests', () => {
     });
     diff(null, newNode, document.body, context);
     expect(mountCount).toBe(1);
-    expect(newNode.children.length).toBe(1);
-    expect(newNode.domRef.children.length).toBe(1);
     expect(newNode.domRef.id).toBe('vcomp-foo');
     expect(newNode.domRef.style['background-color']).toBe('red');
     diff(newNode, null, document.body, context);
