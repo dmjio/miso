@@ -1,5 +1,6 @@
 { lib, fetchFromGitHub, fetchgit, fetchzip, ... }:
 with lib;
+with (builtins.fromJSON (builtins.readFile ../flake.lock));
 let
   make-src-filter = src: with lib;
     cleanSourceWith {
@@ -18,30 +19,33 @@ let
          (type == "directory" && baseName != "examples") ||
          (type == "directory" && baseName != "dist"));
     };
+
+  # fetch from flake
+  fetchFromFlake = args:
+    fetchFromGitHub {
+      inherit (args.locked) owner repo rev;
+      hash = args.locked.narHash;
+    };
+
 in
 {
+  # local sources
   sse              = make-src-filter ../examples/sse;
   miso             = make-src-filter ../.;
   examples         = make-src-filter ../examples;
   sample-app       = make-src-filter ../sample-app;
   haskell-miso     = make-src-filter ../haskell-miso.org;
+
+  # flake sources
+  jsaddle = fetchFromFlake (nodes.jsaddle);
+  servant = fetchFromFlake (nodes.servant);
+
+  # unflakified sources
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-from-html";
     rev = "8c7635889ca0a5aaac36a8b21db7f5e5ec0ae4c9";
     sha256 = "0s6kzqxbshsnqbqfj7rblqkrr5mzkjxknb6k8m8z4h10mcv1zh7j";
-  };
-  jsaddle = fetchFromGitHub {
-    owner = "ghcjs";
-    repo = "jsaddle";
-    rev = "2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
-    hash = "sha256-xJ3BLiFtQmH92Y0jqIgdzJqidQHm3M1ZKHRAUEgNZF0=";
-  };
-  servant = fetchFromGitHub {
-    owner = "haskell-servant";
-    repo = "servant";
-    rev = "e07e92abd62641fc0f199a33e5131de273140cb0";
-    hash = "sha256-zWlU6/7MU0J/amOSZHEgVltMN9K4luNK1JV6irM9ozM=";
   };
   miso-flatris = fetchFromGitHub {
     owner = "haskell-miso";
