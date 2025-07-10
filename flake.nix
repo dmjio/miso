@@ -127,9 +127,7 @@
                ];
               shellHook = ''
                 function build () {
-                   wasm32-wasi-cabal build $1 \
-                     --with-compiler=wasm32-wasi-ghc \
-                     --with-hc-pkg=wasm32-wasi-ghc-pkg
+                   wasm32-wasi-cabal build
                 }
                 function clean () {
                    wasm32-wasi-cabal clean
