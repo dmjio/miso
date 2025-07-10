@@ -127,9 +127,7 @@
                ];
               shellHook = ''
                 function build () {
-                   wasm32-wasi-cabal build $1 \
-                     --with-compiler=wasm32-wasi-ghc \
-                     --with-hc-pkg=wasm32-wasi-ghc-pkg
+                   wasm32-wasi-cabal build $1
                 }
                 function clean () {
                    wasm32-wasi-cabal clean
@@ -164,6 +162,32 @@
                  pkgs.cabal-install
               ];
             };
+
+          # GHCJS shell for building iOS / Android apps targeting LynxJS.org
+          native =
+            pkgs.mkShell {
+              name = "The miso-native ${system} GHC JS 9.12.2 shell";
+              shellHook = ''
+                function build () {
+                   cabal build $1 \
+                     --with-compiler=javascript-unknown-ghcjs-ghc \
+                     --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
+                }
+                function clean () {
+                   cabal clean
+                }
+                function update () {
+                   cabal update
+                }
+              '';
+              packages = [
+                 pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
+                 pkgs.gnumake
+                 pkgs.http-server
+                 pkgs.cabal-install
+              ];
+            };
+
         };
       });
 }

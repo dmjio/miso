@@ -1,0 +1,107 @@
+diff --git a/rts/js/arith.js b/rts/js/arith.js
+index aa2e15ca05..ba983ea419 100644
+--- a/rts/js/arith.js
++++ b/rts/js/arith.js
+@@ -11,15 +11,15 @@ function h$logArith() { h$log.apply(h$log,arguments); }
+ #define UN(x) ((x)>>>0)
+ #define W32(x) (BigInt(x))
+ #define I32(x) (BigInt(x))
+-#define W64(h,l) ((BigInt(h) << BigInt(32)) | BigInt(l>>>0))
+-#define W64h(x) (Number(x >> BigInt(32)) >>> 0)
+-#define W64l(x) (Number(BigInt.asUintN(32, x)) >>> 0)
+-#define I64(h,l) ((BigInt(h) << BigInt(32)) | BigInt(l>>>0))
+-#define I64h(x) (Number(x >> BigInt(32))|0)
+-#define I64l(x) (Number(BigInt.asUintN(32,x)) >>> 0)
++#define W64(h,l) (JSBI.bitwiseOr(JSBI.leftShift(BigInt(h),BigInt(32)),BigInt(l>>>0)))
++#define W64h(x) (JSBI.toNumber(JSBI.signedRightShift(x, BigInt(32))) >>> 0)
++#define W64l(x) (JSBI.toNumber(JSBI.asUintN(32, x)) >>> 0)
++#define I64(h,l) (JSBI.bitwiseOr(JSBI.leftShift(BigInt(h), BigInt(32)), BigInt(l>>>0)))
++#define I64h(x) (JSBI.toNumber(JSBI.signedRightShift(x,BigInt(32))) | 0)
++#define I64l(x) (JSBI.toNumber(JSBI.asUintN(32,x)) >>> 0)
+ #define RETURN_I64(x) RETURN_UBX_TUP2(I64h(x), I64l(x))
+ #define RETURN_W64(x) RETURN_UBX_TUP2(W64h(x), W64l(x))
+-#define RETURN_W32(x) return Number(x)
++#define RETURN_W32(x) return JSBI.toNumber(x)
+ 
+ 
+ // N.B. 64-bit numbers are represented by two JS numbers,
+@@ -30,7 +30,7 @@ function h$logArith() { h$log.apply(h$log,arguments); }
+ function h$hs_quotWord64(h1,l1,h2,l2) {
+   var a = W64(h1,l1);
+   var b = W64(h2,l2);
+-  var r = BigInt.asUintN(64, a / b);
++  var r = JSBI.asUintN(64, JSBI.divide(a,b));
+   TRACE_ARITH("Word64: " + a + " / " + b + " ==> " + r)
+   RETURN_W64(r);
+ }
+@@ -38,7 +38,7 @@ function h$hs_quotWord64(h1,l1,h2,l2) {
+ function h$hs_remWord64(h1,l1,h2,l2) {
+   var a = W64(h1,l1);
+   var b = W64(h2,l2);
+-  var r = BigInt.asUintN(64, a % b);
++  var r = JSBI.asUintN(64, JSBI.remainder(a,b));
+   TRACE_ARITH("Word64: " + a + " % " + b + " ==> " + r)
+   RETURN_W64(r);
+ }
+@@ -86,7 +86,7 @@ function h$hs_timesInt64(h1,l1,h2,l2) {
+ function h$hs_quotInt64(h1,l1,h2,l2) {
+   var a = I64(h1,l1);
+   var b = I64(h2,l2);
+-  var r = BigInt.asIntN(64, a / b);
++  var r = JSBI.asIntN(64, JSBI.divide(a,b));
+   TRACE_ARITH("Int64: " + a + " / " + b + " ==> " + r)
+   RETURN_I64(r);
+ }
+@@ -94,7 +94,7 @@ function h$hs_quotInt64(h1,l1,h2,l2) {
+ function h$hs_remInt64(h1,l1,h2,l2) {
+   var a = I64(h1,l1);
+   var b = I64(h2,l2);
+-  var r = BigInt.asIntN(64, a % b);
++  var r = JSBI.asIntN(64, JSBI.remainder(a,b));
+   TRACE_ARITH("Int64: " + a + " % " + b + " ==> " + r)
+   RETURN_I64(r);
+ }
+@@ -289,7 +289,7 @@ function h$mul2Word32(l1,l2) {
+ function h$quotWord32(n,d) {
+   var a = W32(n);
+   var b = W32(d);
+-  var r = BigInt.asUintN(32, a / b);
++  var r = JSBI.asUintN(32, JSBI.divide(a,b));
+   TRACE_ARITH("Word32: " + a + " / " + b + " ==> " + r)
+   RETURN_W32(r);
+ }
+@@ -297,7 +297,7 @@ function h$quotWord32(n,d) {
+ function h$remWord32(n,d) {
+   var a = W32(n);
+   var b = W32(d);
+-  var r = BigInt.asUintN(32, a % b);
++  var r = JSBI.asUintN(32, JSBI.remainder(a,b));
+   TRACE_ARITH("Word32: " + a + " % " + b + " ==> " + r)
+   RETURN_W32(r);
+ }
+@@ -305,19 +305,19 @@ function h$remWord32(n,d) {
+ function h$quotRemWord32(n,d) {
+   var a = W32(n);
+   var b = W32(d);
+-  var q = BigInt.asUintN(32, a / b);
+-  var r = BigInt.asUintN(32, a % b);
++  var q = JSBI.asUintN(32, JSBI.divide(a,b));
++  var r = JSBI.asUintN(32, JSBI.remainder(a,b));
+   TRACE_ARITH("Word32: " + a + " `quotRem` " + b + " ==> (" + q + ", " + r + ")")
+-  RETURN_UBX_TUP2(Number(q),Number(r));
++  RETURN_UBX_TUP2(JSBI.toNumber(q),JSBI.toNumber(r));
+ }
+ 
+ function h$quotRem2Word32(nh,nl,d) {
+   var a = W64(nh,nl);
+   var b = W32(d);
+-  var q = BigInt.asUintN(32, a / b);
+-  var r = BigInt.asUintN(32, a % b);
++  var q = JSBI.asUintN(32, JSBI.divide(a,b));
++  var r = JSBI.asUintN(32, JSBI.remainder(a,b));
+   TRACE_ARITH("Word32: " + a + " `quotRem2` " + b + " ==> (" + q + ", " + r + ")")
+-  RETURN_UBX_TUP2(Number(q),Number(r));
++  RETURN_UBX_TUP2(JSBI.toNumber(q),JSBI.toNumber(r));
+ }
+ 
+ function h$wordAdd2(l1,l2) {
