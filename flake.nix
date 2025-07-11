@@ -89,7 +89,11 @@
 
           # Default GHC shell
           default =
-            pkgs.haskell.packages.ghc9122.miso.env;
+            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
+              buildInputs = drv.buildInputs ++
+                [ pkgs.just
+                ];
+            });
 
           # WASM shell
           wasm =
