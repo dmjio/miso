@@ -295,7 +295,7 @@ home = template v
                     ]
                     [ strong_ [] [text "Haskell"]
                     ]
-                , text " front-end web framework"
+                , text " front-end web and mobile framework"
                 ]
             ]
 
@@ -976,7 +976,7 @@ newNav navMenuOpen' =
                                         , textProp (pack "data-social-action_") (pack "tweet")
                                         , textProp (pack "data-social-target") (pack "http://bulma.io")
                                         , target_ "_blank"
-                                        , href_ "https://twitter.com/intent/tweet?text=Miso: a tasty Haskell front-end framework&url=https://haskell-miso.org&via=dmjio"
+                                        , href_ "https://twitter.com/intent/tweet?text=Miso: a tasty Haskell front-end web and mobile framework&url=https://haskell-miso.org&via=dmjio"
                                         ]
                                         [ span_
                                             [class_ "icon"]
