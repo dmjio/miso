@@ -49,14 +49,13 @@
 
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = import nixpkgs {
+          inherit system;
+          # Miso's overlays
+          overlays = [ (import ./nix/overlay.nix) ];
+        };
       in
       {
-         # Miso's overlays
-        overlays =
-          [ (import ./nix/overlay.nix)
-          ];
-
         # Miso's packages
         packages = rec {
           # Default package is vanilla GHC 9.12.2 miso
