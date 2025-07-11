@@ -188,7 +188,7 @@ library
     jsaddle       < 0.10,
     mtl           < 2.4,
     network-uri   < 2.7,
-    servant       < 0.21,
+    servant       > 0.15 && < 0.21,
     tagsoup       < 0.15,
     text          < 2.2,
     transformers  < 0.7,
