@@ -28,7 +28,7 @@
   </a>
 </p>
 
-**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events ([SSE](https://html.spec.whatwg.org/multipage/server-sent-events.html)), [Websockets](https://websockets.spec.whatwg.org/), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
+**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web and [mobile](https://github.com/dmjio/miso-native) applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events ([SSE](https://html.spec.whatwg.org/multipage/server-sent-events.html)), [Websockets](https://websockets.spec.whatwg.org/), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
 **Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
@@ -50,6 +50,7 @@
 - [HTTP](#interacting-with-http-apis-)
 - [Coverage](#coverage-)
 - [Isomorphic](#isomorphic-%EF%B8%8F)
+- [Native](#native)
 - [Benchmarks](#benchmarks-%EF%B8%8F)
 - [Nix](#nix-)
   - [Pinning nixpkgs](#pinning-nixpkgs-)
@@ -644,6 +645,12 @@ All files           |   92.37 |   85.48 |
 ## Isomorphic ☯️
 
 [Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
+
+> [!NOTE]
+> The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
+
+## Native📱
+Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-native) repository for more information.
 
 > [!NOTE]
 > The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
