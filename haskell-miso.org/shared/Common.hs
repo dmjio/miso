@@ -295,7 +295,7 @@ home = template v
                     ]
                     [ strong_ [] [text "Haskell"]
                     ]
-                , text " front-end web and mobile framework"
+                , text " web (and mobile) framework"
                 ]
             ]
 
