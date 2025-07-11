@@ -652,9 +652,6 @@ All files           |   92.37 |   85.48 |
 ## Native📱
 Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-native) repository for more information.
 
-> [!NOTE]
-> The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
-
 ## Benchmarks 🏎️
 
 [According to benchmarks](https://krausest.github.io/js-framework-benchmark/current.html), `miso` is among the fastest functional programming web frameworks, second only to [Elm](http://elm-lang.org).
