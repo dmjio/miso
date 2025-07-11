@@ -89,28 +89,7 @@
 
           # Default GHC shell
           default =
-            pkgs.mkShell {
-              name = "The miso ${system} GHC 9.12.2 shell";
-              shellHook = ''
-                function build () {
-                   cabal build $1
-                }
-                function clean () {
-                   cabal clean
-                }
-                function update () {
-                   cabal update
-                }
-              '';
-              buildInputs = with pkgs.haskell.packages.ghc9122; [
-                ghcid
-                miso-from-html
-                pkgs.http-server
-                pkgs.cabal-install
-                ghc
-                pkgs.bun
-              ];
-            };
+            pkgs.haskell.packages.ghc9122.miso.env;
 
           # WASM shell
           wasm =
