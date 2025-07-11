@@ -20,6 +20,8 @@ self: super:
 
   /* cruft */
   crypton = dontCheck super.crypton;
+  ghcid = doJailbreak super.ghcid;
+  brick = doJailbreak super.brick;
   cryptonite = dontCheck super.cryptonite;
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;

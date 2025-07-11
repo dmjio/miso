@@ -103,9 +103,7 @@
                 }
               '';
               buildInputs = with pkgs.haskell.packages.ghc9122; [
-                pkgs.ghciwatch
                 ghcid
-                miso
                 miso-from-html
                 pkgs.http-server
                 pkgs.cabal-install

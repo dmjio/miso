@@ -1,10 +1,5 @@
 self: super: {
 
-  # ghci watcher
-  ghciwatch =
-    (builtins.getFlake "github:MercuryTechnologies/ghciwatch")
-      .outputs.packages."${super.system}".ghciwatch;
-
   # dmj: ensure you call 'bun run test' first
   # js nix packaging is more trouble than its worth right now
   coverage = self.stdenv.mkDerivation {
