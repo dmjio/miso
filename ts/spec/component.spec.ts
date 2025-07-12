@@ -21,8 +21,8 @@ afterEach(() => {
 /* tests */
 describe ('Component tests', () => {
     test('Should unmount recursively in order', () => {
-    var unmounts = [], mounts = [];
-    var build = (name, children) => {
+    let unmounts = [];
+    const build = (name, children) => {
         return vcomp ({
           children: children,
           mount: () => {
