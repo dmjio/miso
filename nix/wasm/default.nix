@@ -71,16 +71,6 @@ self: super:
        scripts = "";
     };
 
-  threejsWasm =
-    self.wasmPkgExample {
-       name = "threejs";
-       title = "Three.js WASM Example";
-       scripts = ''
-         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.js" defer></script>
-         <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.js" defer></script>
-       '';
-    };
-
   canvas2DWasm =
     self.wasmPkgExample {
        name = "canvas2d";
@@ -99,7 +89,6 @@ self: super:
   # to populate examples
   wasmExamples = self.writeScriptBin "build.sh" ''
     nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal update
-    nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal clean
     nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal build miso examples
   '';
 

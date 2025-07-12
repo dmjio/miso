@@ -16,7 +16,7 @@ module Miso.Media
   , NetworkState (..)
   , ReadyState   (..)
   -- *** Constructors
-  , new
+  , newAudio
   -- *** Methods
   , canPlayType
   , load
@@ -76,10 +76,10 @@ data ReadyState
   | HAVE_ENOUGH_DATA
   deriving (Show, Eq, Enum)
 -----------------------------------------------------------------------------
--- | Smart constructor for @Media@ with 'src' element
-new :: MisoString -> JSM Media
-new url = do
-  a <- JS.new (jsg ("Media" :: MisoString)) ([] :: [MisoString])
+-- | Smart constructor for an audio @Media@ with 'src' element
+newAudio :: MisoString -> JSM Media
+newAudio url = do
+  a <- JS.new (jsg ("Audio" :: MisoString)) ([] :: [MisoString])
   o <- makeObject a
   set ("src" :: MisoString) url o
   pure (Media a)
@@ -131,7 +131,7 @@ duration :: Media -> JSM Double
 duration (Media m) = fromJSValUnchecked =<< m ! ("duration" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_ended.asp
-ended :: Media -> JSM Double
+ended :: Media -> JSM Bool
 ended (Media m) = fromJSValUnchecked =<< m ! ("ended" :: MisoString)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_prop_loop.asp

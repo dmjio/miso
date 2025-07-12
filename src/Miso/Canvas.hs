@@ -2,7 +2,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
@@ -20,7 +22,7 @@
 ----------------------------------------------------------------------------
 module Miso.Canvas
   ( -- * Types
-    Canvas             (..)
+    Canvas
   , Pattern            (..)
   , Gradient           (..)
   , ImageData          (..)
@@ -95,16 +97,11 @@ module Miso.Canvas
   , color
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Control.Monad (void, liftM, ap, liftM2)
-import           Data.Kind (Type)
-import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal
-                                             , (<#), toJSVal, (!)
-                                             , liftJSM, Function
+import           Control.Monad.Reader (ReaderT, runReaderT, ask)
+import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal, MakeArgs (..)
+                                             , (<#), toJSVal, (!), fromJSValUnchecked
+                                             , liftJSM, FromJSVal, Object (..)
                                              , ToJSVal, MakeObject, (<##)
-#ifndef GHCJS_BOTH
-                                             , MonadJSM(..)
-#endif
                                              )
 -----------------------------------------------------------------------------
 import qualified Miso.FFI as FFI
@@ -113,34 +110,84 @@ import           Miso.Types
 import           Miso.Style (Color, renderColor)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
+-- useful when building applications w/ three.js, or other libraries where
+-- explicit context is not necessary.
+canvas_
+  :: forall action canvasState
+   . (FromJSVal canvasState, ToJSVal canvasState)
+  => [ Attribute action ]
+  -> (DOMRef -> JSM canvasState)
+  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -> (canvasState -> JSM ())
+  -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
+  -> View action
+canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
+  where
+    attrs :: [ Attribute action ]
+    attrs = initCallback : drawCallack : attributes
+
+    initCallback :: Attribute action
+    initCallback = Event $ \_ (VTree vtree) _ _ -> do
+      flip (FFI.set "onCreated") vtree =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          initialState <- initialize_ domRef
+          FFI.set "state" initialState (Object domRef)
+
+    drawCallack :: Attribute action
+    drawCallack = Event $ \_ (VTree vtree) _ _ -> do
+      flip (FFI.set "draw") vtree =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
+          draw_ state
+-----------------------------------------------------------------------------
 -- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas).
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall action
-   . [ Attribute action ]
-  -> JSM Function -- ^ Callback to render graphics using this canvas' context
+  :: forall action canvasState
+   . (FromJSVal canvasState, ToJSVal canvasState)
+  => [ Attribute action ]
+  -> (DOMRef -> Canvas canvasState)
+  -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
+  -> (canvasState -> Canvas ())
+  -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View action
-canvas attributes callback = node HTML "canvas" attrs []
+canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
-    attrs = flip (:) attributes $ Event $ \_ obj _ _ ->
-      flip (FFI.set "draw") obj =<< toJSVal =<< callback
------------------------------------------------------------------------------
--- | Element for drawing on a [\<canvas\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/canvas),
--- includes a 'Canvas' DSL.
--- Specialized to ["2d"](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext#2d) canvas.
-canvas_
-  :: [ Attribute action ]
-  -> Canvas a
-  -> View action
-canvas_ attributes canvas' =
-  canvas attributes $
-    FFI.syncCallback1 $ \domRef -> do
-      ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
-      void (interpret ctx canvas')
+    attrs = initCallback : drawCallack : attributes
+
+    initCallback :: Attribute action
+    initCallback = Event $ \_ (VTree vtree) _ _ -> do
+      flip (FFI.set "onCreated") vtree =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+          initialState <- runReaderT (initialize domRef) ctx
+          FFI.set "state" initialState (Object domRef)
+
+    drawCallack :: Attribute action
+    drawCallack = Event $ \_ (VTree vtree) _ _ -> do
+      flip (FFI.set "draw") vtree =<< do
+        FFI.syncCallback1 $ \domRef -> do
+          jval <- domRef ! ("state" :: MisoString)
+          initialState <- fromJSValUnchecked jval
+          ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
+          runReaderT (draw initialState) ctx
 -----------------------------------------------------------------------------
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
+-----------------------------------------------------------------------------
+instance ToJSVal PatternType where
+  toJSVal = toJSVal . renderPattern
+-----------------------------------------------------------------------------
+instance FromJSVal PatternType where
+  fromJSVal pat =
+    fromJSValUnchecked @MisoString pat >>= \case
+      "repeat" -> pure (Just Repeat)
+      "repeat-x" -> pure (Just RepeatX)
+      "repeat-y" -> pure (Just RepeatY)
+      "no-repeat" -> pure (Just NoRepeat)
+      _ -> pure Nothing
 -----------------------------------------------------------------------------
 data StyleArg
   = ColorArg Color
@@ -161,6 +208,12 @@ renderStyleArg (ColorArg c)    = toJSVal (renderColor c)
 renderStyleArg (GradientArg g) = toJSVal g
 renderStyleArg (PatternArg p)  = toJSVal p
 -----------------------------------------------------------------------------
+instance MakeArgs StyleArg where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal StyleArg where
+  toJSVal = toJSVal . renderStyleArg
+-----------------------------------------------------------------------------
 renderPattern :: PatternType -> MisoString
 renderPattern Repeat   = "repeat"
 renderPattern RepeatX  = "repeat-x"
@@ -173,6 +226,12 @@ data LineCapType
   | LineCapSquare
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+instance MakeArgs LineCapType where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal LineCapType where
+  toJSVal = toJSVal . renderLineCapType
+-----------------------------------------------------------------------------
 renderLineCapType :: LineCapType -> MisoString
 renderLineCapType LineCapButt = "butt"
 renderLineCapType LineCapRound = "round"
@@ -181,6 +240,12 @@ renderLineCapType LineCapSquare = "square"
 data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+instance MakeArgs LineJoinType where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal LineJoinType where
+  toJSVal = toJSVal . renderLineJoinType
+-----------------------------------------------------------------------------
 renderLineJoinType :: LineJoinType -> MisoString
 renderLineJoinType LineJoinBevel = "bevel"
 renderLineJoinType LineJoinRound = "round"
@@ -188,6 +253,12 @@ renderLineJoinType LineJoinMiter = "miter"
 -----------------------------------------------------------------------------
 data DirectionType = LTR | RTL | Inherit
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance MakeArgs DirectionType where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal DirectionType where
+  toJSVal = toJSVal . renderDirectionType
 -----------------------------------------------------------------------------
 renderDirectionType :: DirectionType -> MisoString
 renderDirectionType LTR = "ltr"
@@ -201,6 +272,12 @@ data TextAlignType
   | TextAlignRight
   | TextAlignStart
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance MakeArgs TextAlignType where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal TextAlignType where
+  toJSVal = toJSVal . renderTextAlignType
 -----------------------------------------------------------------------------
 renderTextAlignType :: TextAlignType -> MisoString
 renderTextAlignType TextAlignCenter = "center"
@@ -217,6 +294,12 @@ data TextBaselineType
   | TextBaselineIdeographic
   | TextBaselineBottom
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance MakeArgs TextBaselineType where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal TextBaselineType where
+  toJSVal = toJSVal . renderTextBaselineType
 -----------------------------------------------------------------------------
 renderTextBaselineType :: TextBaselineType -> MisoString
 renderTextBaselineType TextBaselineAlphabetic = "alphabetic"
@@ -240,6 +323,12 @@ data CompositeOperation
   | Xor
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+instance MakeArgs CompositeOperation where
+  makeArgs arg = (:[]) <$> toJSVal arg
+-----------------------------------------------------------------------------
+instance ToJSVal CompositeOperation where
+  toJSVal = toJSVal . renderCompositeOperation
+-----------------------------------------------------------------------------
 renderCompositeOperation :: CompositeOperation -> MisoString
 renderCompositeOperation SourceOver      = "source-over"
 renderCompositeOperation SourceAtop      = "source-atop"
@@ -255,470 +344,249 @@ renderCompositeOperation Xor             = "xor"
 -----------------------------------------------------------------------------
 newtype Pattern = Pattern JSVal deriving (ToJSVal)
 -----------------------------------------------------------------------------
+instance FromJSVal Pattern where
+  fromJSVal = pure . pure . Pattern
+-----------------------------------------------------------------------------
 newtype Gradient = Gradient JSVal deriving (ToJSVal)
+-----------------------------------------------------------------------------
+instance FromJSVal Gradient where
+  fromJSVal = pure . pure . Gradient
 -----------------------------------------------------------------------------
 newtype ImageData = ImageData JSVal deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
+instance MakeArgs ImageData where
+  makeArgs args = (:[]) <$> toJSVal args
+-----------------------------------------------------------------------------
+instance FromJSVal ImageData where
+  fromJSVal = pure . pure . ImageData
+-----------------------------------------------------------------------------
 type Coord = (Double, Double)
 -----------------------------------------------------------------------------
+type Context = JSVal
+-----------------------------------------------------------------------------
+call :: (FromJSVal a, MakeArgs args) => MisoString -> args -> Canvas a
+call name arg = do
+  ctx <- ask
+  liftJSM $ fromJSValUnchecked =<< do
+    ctx # name $ arg
+-----------------------------------------------------------------------------
+set :: MakeArgs args => MisoString -> args -> Canvas ()
+set name arg = do
+  ctx <- ask
+  liftJSM (ctx <# name $ makeArgs arg)
+-----------------------------------------------------------------------------
 -- | DSL for expressing operations on 'canvas_'
-data Canvas :: Type -> Type where
-  Bind :: Canvas a -> (a -> Canvas b) -> Canvas b
-  Pure :: a -> Canvas a
-  LiftIO :: IO a -> Canvas a
-  LiftJSM :: JSM a -> Canvas a
-  IsPointInPath :: Coord -> Canvas Bool
-  MeasureText :: MisoString -> Canvas Double
-  ClearRect :: (Double, Double, Double, Double) -> Canvas ()
-  FillRect :: (Double, Double, Double, Double) -> Canvas ()
-  StrokeRect :: (Double, Double, Double, Double) -> Canvas ()
-  BeginPath :: Canvas ()
-  ClosePath :: Canvas ()
-  MoveTo :: (Double, Double) -> Canvas ()
-  LineTo :: (Double, Double) -> Canvas ()
-  Fill :: Canvas ()
-  Rect :: (Double, Double, Double, Double) -> Canvas ()
-  Stroke :: Canvas ()
-  BezierCurveTo :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-  Arc :: (Double, Double, Double, Double, Double) -> Canvas ()
-  ArcTo :: (Double, Double, Double, Double, Double) -> Canvas ()
-  QuadraticCurveTo :: (Double, Double, Double, Double) -> Canvas ()
-  Direction :: DirectionType -> Canvas ()
-  FillText :: (MisoString, Double, Double) -> Canvas ()
-  Font :: MisoString -> Canvas ()
-  StrokeText :: (MisoString, Double, Double) -> Canvas ()
-  TextAlign :: TextAlignType -> Canvas ()
-  TextBaseline :: TextBaselineType -> Canvas ()
-  AddColorStop :: Gradient -> Double -> Color -> Canvas ()
-  CreateLinearGradient :: (Double, Double, Double, Double) -> Canvas Gradient
-  CreatePattern :: Image -> PatternType -> Canvas Pattern
-  CreateRadialGradient :: (Double, Double, Double, Double, Double, Double) -> Canvas Gradient
-  FillStyle :: StyleArg -> Canvas ()
-  LineCap :: LineCapType -> Canvas ()
-  LineJoin :: LineJoinType -> Canvas ()
-  LineWidth :: Double -> Canvas ()
-  MiterLimit :: Double -> Canvas ()
-  ShadowBlur :: Double -> Canvas ()
-  ShadowColor :: Color -> Canvas ()
-  ShadowOffsetX :: Double -> Canvas ()
-  ShadowOffsetY :: Double -> Canvas ()
-  StrokeStyle :: StyleArg -> Canvas ()
-  Scale :: (Double, Double) -> Canvas ()
-  Rotate :: Double -> Canvas ()
-  Translate :: Coord -> Canvas ()
-  Transform :: (Double,Double,Double,Double,Double,Double) -> Canvas ()
-  SetTransform :: (Double,Double,Double,Double,Double,Double) -> Canvas ()
-  DrawImage :: (Image,Double,Double) -> Canvas ()
-  DrawImage' :: (Image, Double, Double, Double, Double) -> Canvas ()
-  CreateImageData :: (Double, Double) -> Canvas ImageData
-  GetImageData :: (Double, Double, Double, Double) -> Canvas ImageData
-  SetImageData :: ImageData -> Int -> Double -> Canvas ()
-  ImageDataHeight :: ImageData -> Canvas Double
-  ImageDataWidth :: ImageData -> Canvas Double
-  PutImageData :: (ImageData, Double, Double) -> Canvas ()
-  GlobalAlpha :: Double -> Canvas ()
-  GlobalCompositeOperation :: CompositeOperation -> Canvas ()
-  Clip :: Canvas ()
-  Save :: Canvas ()
-  Restore :: Canvas ()
------------------------------------------------------------------------------
-instance MonadIO Canvas where
-  liftIO = LiftIO
------------------------------------------------------------------------------
-#ifndef GHCJS_BOTH
-instance MonadJSM Canvas where
-  liftJSM' = LiftJSM
-#endif
------------------------------------------------------------------------------
-instance Monad Canvas where
-  (>>=) = Bind
-  return = pure
------------------------------------------------------------------------------
-instance Applicative Canvas where
-  (<*>) = ap
-  pure = Pure
------------------------------------------------------------------------------
-instance Functor Canvas where
-  fmap = liftM
------------------------------------------------------------------------------
-instance Semigroup a => Semigroup (Canvas a) where
-  (<>) = liftM2 (<>)
------------------------------------------------------------------------------
-instance Monoid a => Monoid (Canvas a) where
-#if !(MIN_VERSION_base(4,11,0))
-  mappend = liftM2 mappend
-#endif
-  mempty  = return mempty
------------------------------------------------------------------------------
--- | Interprets 'Canvas' DSL inside of the "draw" synchronous callback.
-interpret :: JSVal -> Canvas a -> JSM a
-interpret ctx (Bind m f) =
-  interpret ctx =<< f <$> interpret ctx m
-interpret _ (LiftIO io) =
-  liftIO io
-interpret _ (LiftJSM jsm) =
-  liftJSM jsm
-interpret _ (Pure m) =
-  pure m
-interpret ctx (ClearRect (x,y,h,w)) =
-  void $ ctx # ("clearRect" :: MisoString) $ [ x, y, h, w ]
-interpret ctx (FillRect (x,y,h,w)) =
-  void $ ctx # ("fillRect" :: MisoString) $ [ x, y, h, w ]
-interpret ctx (StrokeRect (x,y,h,w)) =
-  void $ ctx # ("strokeRect" :: MisoString) $ [ x, y, h, w ]
-interpret ctx BeginPath =
-  void $ ctx # ("beginPath" :: MisoString) $ ([] :: [MisoString])
-interpret ctx ClosePath =
-  void $ ctx # ("closePath" :: MisoString) $ ([] :: [MisoString])
-interpret ctx Clip =
-  void $ ctx # ("clip" :: MisoString) $ ([] :: [MisoString])
-interpret ctx Save =
-  void $ ctx # ("save" :: MisoString) $ ([] :: [MisoString])
-interpret ctx Restore =
-  void $ ctx # ("restore" :: MisoString) $ ([] :: [MisoString])
-interpret ctx (MoveTo (x,y)) =
-  void $ ctx # ("moveTo" :: MisoString) $ [x,y]
-interpret ctx (LineTo (x,y)) =
-  void $ ctx # ("lineTo" :: MisoString) $ [x,y]
-interpret ctx Stroke =
-  void $ ctx # ("stroke" :: MisoString) $ ([] :: [MisoString])
-interpret ctx Fill =
-  void $ ctx # ("fill" :: MisoString) $ ([] :: [MisoString])
-interpret ctx (Rect (x,y,h,w)) =
-  void $ ctx # ("rect" :: MisoString) $ [x,y,h,w]
-interpret ctx (BezierCurveTo (a,b,c,d,e,f)) =
-  void $ ctx # ("bezierCurveTo" :: MisoString) $ [a,b,c,d,e,f]
-interpret ctx (Arc (a,b,c,d,e)) =
-  void $ ctx # ("arc" :: MisoString) $ [a,b,c,d,e]
-interpret ctx (ArcTo (a,b,c,d,e)) =
-  void $ ctx # ("arcTo" :: MisoString) $ [a,b,c,d,e]
-interpret ctx (QuadraticCurveTo (a,b,c,d)) =
-  void $ ctx # ("quadraticCurveTo" :: MisoString) $ [a,b,c,d]
-interpret ctx (IsPointInPath (x,y)) = do
-  Just result <- fromJSVal =<< do
-    ctx # ("isPointInPath" :: MisoString) $ [x,y]
-  pure result
-interpret ctx (Direction d) =
-  void $ (ctx <# ("direction" :: MisoString)) (renderDirectionType d)
-interpret ctx (TextAlign t) =
-  void $ (ctx <# ("textAlign" :: MisoString)) (renderTextAlignType t)
-interpret ctx (TextBaseline t) =
-  void $ (ctx <# ("textBaseline" :: MisoString)) (renderTextBaselineType t)
-interpret ctx (Font f) =
-  void $ (ctx <# ("font" :: MisoString)) f
-interpret ctx (FillStyle style) =
-  void $ (ctx <# ("fillStyle" :: MisoString)) =<< renderStyleArg style
-interpret ctx (GlobalCompositeOperation s) =
-  void $ (ctx <# ("globalCompositeOperation" :: MisoString)) (renderCompositeOperation s)
-interpret ctx (FillText (txt', x' , y')) = do
-  txt <- toJSVal txt'
-  x <- toJSVal x'
-  y <- toJSVal y'
-  void $ (ctx # ("fillText" :: MisoString)) [txt, x, y]
-interpret ctx (StrokeText (txt', x', y')) = do
-  txt <- toJSVal txt'
-  x <- toJSVal x'
-  y <- toJSVal y'
-  void $ (ctx # ("strokeText" :: MisoString)) [txt, x, y]
-interpret ctx (MeasureText txt) = do
-  o <- ctx # ("measureText" :: MisoString) $ [txt]
-  Just w <- fromJSVal =<< o ! ("width" :: MisoString)
-  pure w
-interpret ctx (Translate (x,y)) =
-  void $ ctx # ("translate" :: MisoString) $ [ x, y ]
-interpret _ (AddColorStop (Gradient grd) x' color') = do
-  x <- toJSVal x'
-  c <- toJSVal (renderColor color')
-  void $ grd # ("addColorStop" :: MisoString) $ [ x, c ]
-interpret ctx (CreateLinearGradient (w,x,y,z)) =
-  Gradient <$> do
-    ctx # ("createLinearGradient" :: MisoString) $
-      [w,x,y,z]
-interpret ctx (CreatePattern image patternType) = do
-  img <- toJSVal image
-  pt <- toJSVal (renderPattern patternType)
-  Pattern <$> do
-    ctx # ("createPattern" :: MisoString) $
-      [ img, pt ]
-interpret ctx (CreateRadialGradient (w,x,y,z,k,j)) =
-  Gradient <$> do
-    ctx # ("createRadialGradient" :: MisoString) $
-      [w,x,y,z,k,j]
-interpret ctx (LineCap typ) = do
-  t <- toJSVal (renderLineCapType typ)
-  void $ do
-    ctx <# ("lineCap" :: MisoString) $ t
-interpret ctx (LineJoin ljt') = do
-  ljt <- toJSVal (renderLineJoinType ljt')
-  void $ do ctx <# ("lineJoin" :: MisoString) $ ljt
-interpret ctx (LineWidth w) =
-  void $ do ctx <# ("lineWidth" :: MisoString) $ w
-interpret ctx (MiterLimit w) =
-  void $ do ctx <# ("miterLimit" :: MisoString) $ w
-interpret ctx (ShadowBlur w) =
-  void $ do ctx <# ("shadowBlur" :: MisoString) $ w
-interpret ctx (ShadowColor c) =
-  void $ do ctx <# ("shadowColor" :: MisoString) $ renderColor c
-interpret ctx (ShadowOffsetX x) =
-  void $ do ctx <# ("shadowOffsetX" :: MisoString) $ x
-interpret ctx (ShadowOffsetY y) =
-  void $ do ctx <# ("shadowOffsetY" :: MisoString) $ y
-interpret ctx (StrokeStyle s) =
-  (ctx <# ("strokeStyle" :: MisoString)) =<< renderStyleArg s
-interpret ctx (Scale (w,h)) = do
-  void $ ctx # ("scale" :: MisoString) $ [w,h]
-interpret ctx (Rotate x) =
-  void $ ctx # ("rotate" :: MisoString) $ [x]
-interpret ctx (Transform (a,b,c,d,e,f)) =
-  void $ ctx # ("transform" :: MisoString) $ [a,b,c,d,e,f]
-interpret ctx (SetTransform (a,b,c,d,e,f)) =
-  void $ ctx # ("setTransform" :: MisoString) $ [a,b,c,d,e,f]
-interpret ctx (DrawImage (img', x',y')) = do
-  img <- toJSVal img'
-  x <- toJSVal x'
-  y <- toJSVal y'
-  void $ ctx # ("drawImage" :: MisoString) $ [img,x,y]
-interpret ctx (DrawImage' (img', w',x',y',z')) = do
-  img <- toJSVal img'
-  w <- toJSVal w'
-  x <- toJSVal x'
-  y <- toJSVal y'
-  z <- toJSVal z'
-  void $ ctx # ("drawImage" :: MisoString) $ [img,w,x,y,z]
-interpret ctx (CreateImageData (x,y)) =
-  ImageData <$> do
-    ctx # ("createImageData" :: MisoString) $
-      [x,y]
-interpret ctx (GetImageData (w,x,y,z)) =
-  ImageData <$> do
-    ctx # ("getImageData" :: MisoString) $
-      [w,x,y,z]
-interpret ctx (PutImageData (imgData, x',y')) = do
-  img <- toJSVal imgData
-  x <- toJSVal x'
-  y <- toJSVal y'
-  void $
-    ctx # ("putImageData" :: MisoString) $
-      [img,x,y]
-interpret _ (SetImageData imgData index value) = do
-  o <- imgData ! ("data" :: MisoString)
-  (o <## index) value
-interpret _ (ImageDataHeight imgData) = do
-  Just h <- fromJSVal =<< imgData ! ("height" :: MisoString)
-  pure h
-interpret _ (ImageDataWidth imgData) = do
-  Just w <- fromJSVal =<< imgData ! ("width" :: MisoString)
-  pure w
-interpret ctx (GlobalAlpha alpha) =
-  ctx <# ("globalAlpha" :: MisoString) $ alpha
+type Canvas a = ReaderT Context JSM a
 -----------------------------------------------------------------------------
 -- | [ctx.globalCompositeOperation = "source-over"](https://www.w3schools.com/tags/canvas_globalcompositeoperation.asp)
 globalCompositeOperation :: CompositeOperation -> Canvas ()
-globalCompositeOperation = GlobalCompositeOperation
+globalCompositeOperation = set "globalCompositeOperation"
 -----------------------------------------------------------------------------
 -- | [ctx.clearRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_clearrect.asp)
 clearRect :: (Double, Double, Double, Double) -> Canvas ()
-clearRect = ClearRect
+clearRect = call "clearRect"
 -----------------------------------------------------------------------------
 -- | [ctx.fillRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_fillrect.asp)
 fillRect :: (Double, Double, Double, Double) -> Canvas ()
-fillRect = FillRect
+fillRect = call "fillRect"
 -----------------------------------------------------------------------------
 -- | [ctx.strokeRect(x,y,width,height)](https://www.w3schools.com/tags/canvas_strokerect.asp)
 strokeRect :: (Double, Double, Double, Double) -> Canvas ()
-strokeRect = StrokeRect
+strokeRect = call "strokeRect"
 -----------------------------------------------------------------------------
 -- | [ctx.beginPath()](https://www.w3schools.com/tags/canvas_beginpath.asp)
 beginPath :: () -> Canvas ()
-beginPath () = BeginPath
+beginPath = call "beginPath"
 -----------------------------------------------------------------------------
 -- | [ctx.closePath()](https://www.w3schools.com/tags/canvas_closepath.asp)
-closePath :: Canvas ()
-closePath = ClosePath
+closePath :: () -> Canvas ()
+closePath = call "closePath"
 -----------------------------------------------------------------------------
 -- | [ctx.moveTo(x,y)](https://www.w3schools.com/tags/canvas_moveto.asp)
 moveTo :: Coord -> Canvas ()
-moveTo = MoveTo
+moveTo = call "moveTo"
 -----------------------------------------------------------------------------
 -- | [ctx.lineTo(x,y)](https://www.w3schools.com/tags/canvas_lineto.asp)
 lineTo :: Coord -> Canvas ()
-lineTo = LineTo
+lineTo = call "lineTo"
 -----------------------------------------------------------------------------
 -- | [ctx.fill()](https://www.w3schools.com/tags/canvas_fill.asp)
-fill :: Canvas ()
-fill = Fill
+fill :: () -> Canvas ()
+fill = call "fill"
 -----------------------------------------------------------------------------
 -- | [ctx.rect(x,y,width,height)](https://www.w3schools.com/tags/canvas_rect.asp)
 rect :: (Double, Double, Double, Double) -> Canvas ()
-rect = Rect
+rect = call "rect"
 -----------------------------------------------------------------------------
 -- | [ctx.stroke()](https://www.w3schools.com/tags/canvas_stroke.asp)
 stroke :: () -> Canvas ()
-stroke () = Stroke
+stroke = call "stroke"
 -----------------------------------------------------------------------------
 -- | [ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y)](https://www.w3schools.com/tags/canvas_beziercurveto.asp)
 bezierCurveTo :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-bezierCurveTo = BezierCurveTo
+bezierCurveTo = call "bezierCurveTo"
 -----------------------------------------------------------------------------
 -- | [context.arc(x, y, r, sAngle, eAngle, counterclockwise)](https://www.w3schools.com/tags/canvas_arc.asp)
 arc :: (Double, Double, Double, Double, Double) -> Canvas ()
-arc = Arc
+arc = call "arc"
 -----------------------------------------------------------------------------
 -- | [context.arcTo(x1, y1, x2, y2, r)](https://www.w3schools.com/tags/canvas_arcto.asp)
 arcTo :: (Double, Double, Double, Double, Double) -> Canvas ()
-arcTo = ArcTo
+arcTo = call "arcTo"
 -----------------------------------------------------------------------------
 -- | [context.quadraticCurveTo(cpx,cpy,x,y)](https://www.w3schools.com/tags/canvas_quadraticcurveto.asp)
 quadraticCurveTo :: (Double, Double, Double, Double) -> Canvas ()
-quadraticCurveTo = QuadraticCurveTo
+quadraticCurveTo = call "quadraticCurveTo"
 -----------------------------------------------------------------------------
 -- | [context.direction = "ltr"](https://www.w3schools.com/tags/canvas_direction.asp)
 direction :: DirectionType -> Canvas ()
-direction = Direction
+direction = set "direction"
 -----------------------------------------------------------------------------
 -- | [context.fillText(text,x,y)](https://www.w3schools.com/tags/canvas_filltext.asp)
 fillText :: (MisoString, Double, Double) -> Canvas ()
-fillText = FillText
+fillText = call "fillText"
 -----------------------------------------------------------------------------
 -- | [context.font = "italic small-caps bold 12px arial"](https://www.w3schools.com/tags/canvas_font.asp)
 font :: MisoString -> Canvas ()
-font = Font
+font = set "font"
 -----------------------------------------------------------------------------
 -- | [ctx.strokeText()](https://www.w3schools.com/tags/canvas_stroketext.asp)
 strokeText :: (MisoString, Double, Double) -> Canvas ()
-strokeText = StrokeText
+strokeText = call "strokeText"
 -----------------------------------------------------------------------------
 -- | [ctx.textAlign = "start"](https://www.w3schools.com/tags/canvas_textalign.asp)
 textAlign :: TextAlignType -> Canvas ()
-textAlign = TextAlign
+textAlign = set "textAlign"
 -----------------------------------------------------------------------------
 -- | [ctx.textBaseline = "top"](https://www.w3schools.com/tags/canvas_textBaseLine.asp)
 textBaseline :: TextBaselineType -> Canvas ()
-textBaseline = TextBaseline
+textBaseline = set "textBaseline"
 -----------------------------------------------------------------------------
 -- | [gradient.addColorStop(stop,color)](https://www.w3schools.com/tags/canvas_addcolorstop.asp)
-addColorStop :: Gradient -> Double -> Color -> Canvas ()
-addColorStop = AddColorStop
+addColorStop :: (Gradient, Double, Color) -> Canvas ()
+addColorStop = call "addColorStop"
 -----------------------------------------------------------------------------
 -- | [ctx.createLinearGradient(x0,y0,x1,y1)](https://www.w3schools.com/tags/canvas_createlineargradient.asp)
 createLinearGradient :: (Double, Double, Double, Double) -> Canvas Gradient
-createLinearGradient = CreateLinearGradient
+createLinearGradient = call "createLinearGradient"
 -----------------------------------------------------------------------------
 -- | [ctx.createPattern(image, "repeat")](https://www.w3schools.com/tags/canvas_createpattern.asp)
-createPattern :: Image -> PatternType -> Canvas Pattern
-createPattern = CreatePattern
+createPattern :: (Image, PatternType) -> Canvas Pattern
+createPattern = call "createPattern"
 -----------------------------------------------------------------------------
 -- | [ctx.createRadialGradient(x0,y0,r0,x1,y1,r1)](https://www.w3schools.com/tags/canvas_createradialgradient.asp)
 createRadialGradient :: (Double,Double,Double,Double,Double,Double) -> Canvas Gradient
-createRadialGradient = CreateRadialGradient
+createRadialGradient = call "createRadialGradient"
 -----------------------------------------------------------------------------
 -- | [ctx.fillStyle = "red"](https://www.w3schools.com/tags/canvas_fillstyle.asp)
 fillStyle :: StyleArg -> Canvas ()
-fillStyle = FillStyle
+fillStyle = set "fillStyle"
 -----------------------------------------------------------------------------
 -- | [ctx.lineCap = "butt"](https://www.w3schools.com/tags/canvas_lineCap.asp)
 lineCap :: LineCapType -> Canvas ()
-lineCap = LineCap
+lineCap = set "lineCap"
 -----------------------------------------------------------------------------
 -- | [ctx.lineJoin = "bevel"](https://www.w3schools.com/tags/canvas_lineJoin.asp)
 lineJoin :: LineJoinType -> Canvas ()
-lineJoin = LineJoin
+lineJoin = set "lineJoin"
 -----------------------------------------------------------------------------
 -- | [ctx.lineWidth = 10](https://www.w3schools.com/tags/canvas_lineWidth.asp)
 lineWidth :: Double -> Canvas ()
-lineWidth = LineWidth
+lineWidth = set "lineWidth"
 -----------------------------------------------------------------------------
 -- | [ctx.miterLimit = 10](https://www.w3schools.com/tags/canvas_miterLimit.asp)
 miterLimit :: Double -> Canvas ()
-miterLimit = MiterLimit
+miterLimit = set "miterLimit"
 -----------------------------------------------------------------------------
 -- | [ctx.shadowBlur = 10](https://www.w3schools.com/tags/canvas_shadowBlur.asp)
 shadowBlur :: Double -> Canvas ()
-shadowBlur = ShadowBlur
+shadowBlur = set "shadowBlur"
 -----------------------------------------------------------------------------
 -- | [ctx.shadowColor = "red"](https://www.w3schools.com/tags/canvas_shadowColor.asp)
 shadowColor :: Color -> Canvas ()
-shadowColor = ShadowColor
+shadowColor = set "shadowColor"
 -----------------------------------------------------------------------------
 -- | [ctx.shadowOffsetX = 20](https://www.w3schools.com/tags/canvas_shadowOffsetX.asp)
 shadowOffsetX :: Double -> Canvas ()
-shadowOffsetX = ShadowOffsetX
+shadowOffsetX = set "shadowOffsetX"
 -----------------------------------------------------------------------------
 -- | [ctx.shadowOffsetY = 20](https://www.w3schools.com/tags/canvas_shadowOffsetY.asp)
 shadowOffsetY :: Double -> Canvas ()
-shadowOffsetY = ShadowOffsetY
+shadowOffsetY = set "shadowOffsetY"
 -----------------------------------------------------------------------------
 -- | [ctx.strokeStyle = "red"](https://www.w3schools.com/tags/canvas_strokeStyle.asp)
 strokeStyle :: StyleArg -> Canvas ()
-strokeStyle = StrokeStyle
+strokeStyle = set "strokeStyle"
 -----------------------------------------------------------------------------
 -- | [ctx.scale(width,height)](https://www.w3schools.com/tags/canvas_scale.asp)
 scale :: (Double, Double) -> Canvas ()
-scale = Scale
+scale = call "scale"
 -----------------------------------------------------------------------------
 -- | [ctx.rotate(angle)](https://www.w3schools.com/tags/canvas_rotate.asp)
 rotate :: Double -> Canvas ()
-rotate = Rotate
+rotate = call "rotate"
 -----------------------------------------------------------------------------
 -- | [ctx.translate(angle)](https://www.w3schools.com/tags/canvas_translate.asp)
 translate :: Coord -> Canvas ()
-translate = Translate
+translate = call "translate"
 -----------------------------------------------------------------------------
 -- | [ctx.transform(a,b,c,d,e,f)](https://www.w3schools.com/tags/canvas_transform.asp)
 transform :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
-transform = Transform
+transform = call "transform"
 -----------------------------------------------------------------------------
 -- | [ctx.setTransform(a,b,c,d,e,f)](https://www.w3schools.com/tags/canvas_setTransform.asp)
-setTransform
-  :: (Double, Double, Double, Double, Double, Double)
-  -> Canvas ()
-setTransform = SetTransform
------------------------------------------------------------------------------
+setTransform :: (Double, Double, Double, Double, Double, Double) -> Canvas ()
+setTransform = call "setTransform"
+----------------------------------------------------------------------------
 -- | [ctx.drawImage(image,x,y)](https://www.w3schools.com/tags/canvas_drawImage.asp)
 drawImage :: (Image, Double, Double) -> Canvas ()
-drawImage = DrawImage
+drawImage = call "drawImage"
 -----------------------------------------------------------------------------
 -- | [ctx.drawImage(image,x,y)](https://www.w3schools.com/tags/canvas_drawImage.asp)
 drawImage' :: (Image, Double, Double, Double, Double) -> Canvas ()
-drawImage' = DrawImage'
+drawImage' = call "drawImage"
 -----------------------------------------------------------------------------
 -- | [ctx.createImageData(width,height)](https://www.w3schools.com/tags/canvas_createImageData.asp)
 createImageData :: (Double, Double) -> Canvas ImageData
-createImageData = CreateImageData
+createImageData = call "createImageData"
 -----------------------------------------------------------------------------
 -- | [ctx.getImageData(w,x,y,z)](https://www.w3schools.com/tags/canvas_getImageData.asp)
 getImageData :: (Double, Double, Double, Double) -> Canvas ImageData
-getImageData = GetImageData
+getImageData = call "getImageData"
 -----------------------------------------------------------------------------
 -- | [imageData.data[index] = 255](https://www.w3schools.com/tags/canvas_imagedata_data.asp)
-setImageData :: ImageData -> Int -> Double -> Canvas ()
-setImageData = SetImageData
+setImageData :: (ImageData, Int, Double) -> Canvas ()
+setImageData (imgData, index, value) = liftJSM $ do
+   o <- imgData ! ("data" :: MisoString)
+   (o <## index) value
 -----------------------------------------------------------------------------
 -- | [imageData.height](https://www.w3schools.com/tags/canvas_imagedata_height.asp)
 height :: ImageData -> Canvas Double
-height = ImageDataHeight
+height (ImageData imgData) = liftJSM $ do
+  fromJSValUnchecked =<< imgData ! ("height" :: MisoString)
 -----------------------------------------------------------------------------
 -- | [imageData.width](https://www.w3schools.com/tags/canvas_imagedata_width.asp)
 width :: ImageData -> Canvas Double
-width = ImageDataWidth
+width (ImageData imgData) = liftJSM $ do
+  fromJSValUnchecked =<< imgData ! ("width" :: MisoString)
 -----------------------------------------------------------------------------
 -- | [ctx.putImageData(imageData,x,y)](https://www.w3schools.com/tags/canvas_putImageData.asp)
 putImageData :: (ImageData, Double, Double) -> Canvas ()
-putImageData = PutImageData
+putImageData = call "putImageData"
 -----------------------------------------------------------------------------
 -- | [ctx.globalAlpha = 0.2](https://www.w3schools.com/tags/canvas_globalAlpha.asp)
 globalAlpha :: Double -> Canvas ()
-globalAlpha = GlobalAlpha
+globalAlpha = set "globalAlpha"
 -----------------------------------------------------------------------------
 -- | [ctx.clip()](https://www.w3schools.com/tags/canvas_clip.asp)
 clip :: () -> Canvas ()
-clip () = Clip
+clip = call "clip"
 -----------------------------------------------------------------------------
 -- | [ctx.save()](https://www.w3schools.com/tags/canvas_save.asp)
 save :: () -> Canvas ()
-save () = Save
+save = call "save"
 -----------------------------------------------------------------------------
 -- | [ctx.restore()](https://www.w3schools.com/tags/canvas_restore.asp)
 restore :: () -> Canvas ()
-restore () = Restore
+restore = call "restore"
 -----------------------------------------------------------------------------

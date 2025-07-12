@@ -15,13 +15,13 @@ self: super:
   miso-examples = self.callCabal2nix "miso-examples" source.examples {};
   sample-app = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
-  jsaddle-warp =
-    dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
-  servant-client-core = doJailbreak super.servant-client-core;
-  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
+  jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+  servant = self.callCabal2nix "servant" "${source.servant}/servant" {};
 
   /* cruft */
   crypton = dontCheck super.crypton;
+  ghcid = doJailbreak super.ghcid;
+  brick = doJailbreak super.brick;
   cryptonite = dontCheck super.cryptonite;
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;

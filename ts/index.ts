@@ -9,8 +9,8 @@ import {
   fetchJSON,
   undelegate,
   shouldSync,
+  getParentComponentId,
   integrityCheck,
-  setComponent,
 } from './miso';
 
 import { context } from './miso/context/dom';
@@ -26,9 +26,9 @@ globalThis['miso']['callFocus'] = callFocus;
 globalThis['miso']['eventJSON'] = eventJSON;
 globalThis['miso']['fetchJSON'] = fetchJSON;
 globalThis['miso']['undelegate'] = undelegate;
+globalThis['miso']['getParentComponentId'] = getParentComponentId;
 globalThis['miso']['shouldSync'] = shouldSync;
 globalThis['miso']['integrityCheck'] = integrityCheck;
-globalThis['miso']['setComponent'] = setComponent;
 globalThis['miso']['context'] = context;
 globalThis['miso']['setDrawingContext'] = function (name) {
     const ctx = globalThis[name];

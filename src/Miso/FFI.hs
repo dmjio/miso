@@ -32,9 +32,19 @@ module Miso.FFI
   , setDrawingContext
   , jsonStringify
   , jsonParse
+  , windowInnerWidth
+  , windowInnerHeight
   -- ** Image
   , Image (..)
   , newImage
+  -- ** Date
+  , Date (..)
+  , newDate
+  , getSeconds
+  , getMilliseconds
+  -- ** Component
+  , getParentComponentId
+  , getComponentId
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

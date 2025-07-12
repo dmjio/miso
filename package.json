@@ -1,7 +1,7 @@
 {
   "name": "haskell-miso",
   "version": "1.9.0",
-  "description": "miso: A tasty Haskell front-end web framework",
+  "description": "miso: A tasty Haskell front-end web and mobile framework",
   "scripts": {
     "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete",
     "lint": "eslint --fix ts/*.ts",

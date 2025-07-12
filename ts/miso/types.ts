@@ -8,6 +8,8 @@ type NS = 'text' | 'html' | 'svg' | 'mathml';
 
 type DOMRef = HTMLElement | SVGElement | MathMLElement;
 
+type ComponentId = number;
+
 type VComp = {
   type: 'vcomp';
   domRef: HTMLElement;
@@ -17,14 +19,13 @@ type VComp = {
   props: Props;
   css: CSS;
   events: Events;
-  'data-component-id': string;
   children: Array<VTree>;
   onBeforeMounted: () => void;
-  onMounted: (componentId: string) => void;
+  onMounted: (domRef: DOMRef) => void;
   onBeforeUnmounted: () => void;
-  onUnmounted: (componentId: string) => void;
-  mount: (f: (component: VTree) => void) => void;
-  unmount: (e: Element) => void;
+  onUnmounted: (domRef: DOMRef) => void;
+  mount: (domRef: DOMRef, callback: ((componentId : ComponentId, component: VTree) => void)) => void;
+  unmount: (e: DOMRef) => void;
 };
 
 type VNode = {
@@ -91,7 +92,6 @@ type Context = {
   getTextContent : (node) => string;
   isEqual : (n1, n2) => boolean;
   getTarget : (e: Event) => EventTarget;
-  setComponentId : (componentId: string) => void;
   children : (e: Node) => NodeListOf<ChildNode>;
   getInlineStyle : (e, string) => string;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : DOMRef) => void;
@@ -119,4 +119,5 @@ export {
   NS,
   DOMRef,
   Context,
+  ComponentId,
 };

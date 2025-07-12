@@ -1,13 +1,12 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP                   #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE ExtendedDefaultRules  #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Main where
 
@@ -27,7 +26,10 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 
 main :: IO ()
-main = run $ startComponent app
+main = run (startComponent app)
+
+app :: Component Model Action
+app = (component emptyModel updateModel appView)
   { events = defaultEvents <> keyboardEvents
   , subs =
     [ websocketSub url protocols HandleWebSocket
@@ -36,8 +38,6 @@ main = run $ startComponent app
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-app :: Component name Model Action
-app = defaultComponent emptyModel updateModel appView
 
 emptyModel :: Model
 emptyModel = Model (Message "") mempty

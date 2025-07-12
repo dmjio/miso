@@ -1,7 +1,7 @@
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE MultiWayIf        #-}
+{-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -29,7 +29,7 @@ main :: IO ()
 main = run $ do
     time <- now
     let m = mario{time = time}
-    startComponent (defaultComponent m updateMario display)
+    startComponent (component m updateMario display)
       { subs =
           [ arrowsSub GetArrows
           , windowCoordsSub WindowCoords

@@ -1,6 +1,5 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeFamilies #-}
 
 module Main where
 
@@ -23,9 +22,9 @@ main = run $ startComponent app
   , subs = [ mouseSub HandlePointer ]
   }
 
--- | Component definition (uses 'defaultComponent' smart constructor)
-app :: Component name Model Action
-app = defaultComponent emptyModel updateModel viewModel
+-- | Component definition (uses 'component' smart constructor)
+app :: Component Model Action
+app = component emptyModel updateModel viewModel
 
 emptyModel :: Model
 emptyModel = Model (0, 0)

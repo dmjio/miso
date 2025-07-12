@@ -13,7 +13,7 @@ build-type:          Simple
 extra-source-files:  README.md
 synopsis:            A tasty Haskell front-end web framework
 description:
-            Miso is a small, production-ready, component-oriented, isomorphic Haskell front-end framework featuring a virtual-dom, recursive diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm and React. Miso is pure by default, but side effects can be introduced into the system via the Effect data type. Miso makes heavy use of the GHC FFI and therefore has minimal dependencies.
+            Miso is a small, production-ready, component-oriented, isomorphic Haskell front-end web and mobile framework featuring a virtual-dom, recursive diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm and React. Miso is pure by default, but side effects can be introduced into the system via the Effect data type. Miso makes heavy use of the GHC FFI and therefore has minimal dependencies.
 
 extra-source-files:
   README.md
@@ -118,7 +118,6 @@ library
   default-language:
     Haskell2010
   other-modules:
-    Miso.Concurrent
     Miso.Delegate
     Miso.Diff
     Miso.FFI.Internal
@@ -126,11 +125,11 @@ library
   exposed-modules:
     Miso
     Miso.Canvas
+    Miso.Concurrent
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
-    Miso.Exception
     Miso.Fetch
     Miso.FFI
     Miso.Html
@@ -189,7 +188,8 @@ library
     jsaddle       < 0.10,
     mtl           < 2.4,
     network-uri   < 2.7,
-    servant       < 0.21,
+    servant       > 0.15 && < 0.21,
     tagsoup       < 0.15,
     text          < 2.2,
     transformers  < 0.7,
+    stm >= 2.4 && < 2.6

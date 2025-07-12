@@ -16,9 +16,6 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
-function setComponent(node, componentId) {
-  node.setAttribute("data-component-id", componentId);
-}
 function fetchJSON(url, method, body, headers, successful, errorful) {
   var options = { method, headers };
   if (body) {
@@ -43,6 +40,20 @@ function shouldSync(node) {
     }
   }
   return enterSync;
+}
+function getParentComponentId(vcomp) {
+  var climb = function(node) {
+    let parentComponentId = null;
+    while (node && node.parentNode) {
+      if ("component-id" in node.parentNode) {
+        parentComponentId = node.parentNode["component-id"];
+        break;
+      }
+      node = node.parentNode;
+    }
+    return parentComponentId;
+  };
+  return climb(vcomp["domRef"]);
 }
 
 // ts/miso/smart.ts
@@ -115,13 +126,7 @@ function diffNodes(c, n, parent, context) {
     n["domRef"] = c["domRef"];
     return;
   }
-  var componentIdCheck = function(n2, c2) {
-    if (n2["type"] === "vcomp" && !n2["data-component-id"].startsWith("miso-component-id")) {
-      return n2["data-component-id"] === c2["data-component-id"];
-    }
-    return true;
-  };
-  if (c["tag"] === n["tag"] && n["key"] === c["key"] && n["type"] === c["type"] && componentIdCheck(n, c)) {
+  if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
     n["domRef"] = c["domRef"];
     populate(c, n, context);
   } else {
@@ -155,7 +160,7 @@ function callBeforeDestroyedRecursive(obj) {
 }
 function callCreated(obj, context) {
   if (obj["onCreated"])
-    obj["onCreated"]();
+    obj["onCreated"](obj["domRef"]);
   if (obj["type"] === "vcomp")
     mountComponent(obj, context);
 }
@@ -242,9 +247,9 @@ function populateDomRef(obj, context) {
 function createElement(obj, context, attach) {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
+  callCreated(obj, context);
   attach(obj["domRef"]);
   populate(null, obj, context);
-  callCreated(obj, context);
 }
 function drawCanvas(obj) {
   if (obj["tag"] === "canvas" && "draw" in obj) {
@@ -253,24 +258,18 @@ function drawCanvas(obj) {
 }
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
-    obj["onUnmounted"](obj["data-component-id"]);
+    obj["onUnmounted"](obj["domRef"]);
   obj["unmount"]();
 }
 function mountComponent(obj, context) {
-  const componentId = obj["data-component-id"];
-  const nodeList = context["querySelectorAll"]("[data-component-id='" + componentId + "']");
-  if (nodeList.length > 0) {
-    console.error('AlreadyMountedException: Component "' + componentId + "' is already mounted");
-    return;
-  }
-  context["setAttribute"](obj["domRef"], "data-component-id", componentId);
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
-  obj["mount"]((component) => {
-    obj["children"].push(component);
-    context["appendChild"](obj["domRef"], component["domRef"]);
+  obj["mount"](obj["domRef"], (componentId, componentTree) => {
+    obj["domRef"]["component-id"] = componentId;
+    obj["children"].push(componentTree);
+    context["appendChild"](obj["domRef"], componentTree["domRef"]);
     if (obj["onMounted"])
-      obj["onMounted"](componentId);
+      obj["onMounted"](obj["domRef"]);
   });
 }
 function create(obj, parent, context) {
@@ -393,7 +392,11 @@ function buildTargetToElement(element, target, context) {
   var stack = [];
   while (!context["isEqual"](element, target)) {
     stack.unshift(target);
-    target = context["parentNode"](target);
+    if (target && target.parentNode) {
+      target = context["parentNode"](target);
+    } else {
+      return stack;
+    }
   }
   return stack;
 }
@@ -650,7 +653,7 @@ function walk(logLevel, vtree, node, context) {
             }
             break;
           case "vcomp":
-            vdomChild["mount"]((component) => {
+            vdomChild["mount"](vdomChild["domRef"], (componentId, component) => {
               vdomChild["children"].push(component);
               walk(logLevel, vdomChild, node.childNodes[i], context);
             });
@@ -765,9 +768,6 @@ var context = {
   getTarget: (e) => {
     return e.target;
   },
-  setComponentId: (componentId) => {
-    return document.body.setAttribute("data-component-id", componentId);
-  },
   requestAnimationFrame: (callback) => {
     return window.requestAnimationFrame(callback);
   },
@@ -790,9 +790,9 @@ globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
+globalThis["miso"]["getParentComponentId"] = getParentComponentId;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["setComponent"] = setComponent;
 globalThis["miso"]["context"] = context;
 globalThis["miso"]["setDrawingContext"] = function(name) {
   const ctx = globalThis[name];

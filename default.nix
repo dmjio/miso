@@ -48,7 +48,6 @@ with pkgs.haskell.lib;
     svgWasm
     simpleWasm
     componentsWasm
-    threejsWasm
     canvas2DWasm
     todoWasm;
 

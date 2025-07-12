@@ -10,8 +10,8 @@ self: super:
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
-  servant-client-js = self.callCabal2nix "servant-client-js" source.servant-client-js {};
-  flatris = self.callCabal2nix "flatris" source.flatris {};
+  # servant = self.callCabal2nix "servant" "${source.servant}/servant" {};
+  miso-flatris = self.callCabal2nix "flatris" source.miso-flatris {};
   miso-plane =
     let
       miso-plane = self.callCabal2nix "miso-plane" source.miso-plane {};
@@ -23,16 +23,14 @@ self: super:
          rm $out/index.html
          cp -v ${source.miso-plane}/public/index.html $out
       '';
-  hs2048 = import source.hs2048 { inherit pkgs; inherit (self) miso; };
-  snake = self.callCabal2nix "miso-snake" source.snake {};
+  miso-2048 = import source.miso-2048 { inherit pkgs; inherit (self) miso; };
+  miso-snake = self.callCabal2nix "miso-snake" source.miso-snake {};
   mkDerivation = args: super.mkDerivation (args // { doCheck = false; });
   doctest = null;
   miso-examples = (self.callCabal2nix "miso-examples" source.examples {}).overrideDerivation (drv: {
     postInstall = ''
       mkdir -p $out/bin/mario.jsexe/imgs
-      mkdir -p $out/bin/threejs.jsexe
       cp -r ${drv.src}/mario/imgs $out/bin/mario.jsexe/
-      cp -fv ${drv.src}/three/index.html $out/bin/threejs.jsexe/
     '';
   });
   miso-prod = self.callCabal2nixWithOptions "miso" source.miso "-fproduction" {};

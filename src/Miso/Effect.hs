@@ -24,6 +24,7 @@ module Miso.Effect
     Effect
   , Sub
   , Sink
+  , DOMRef
     -- *** Combinators
   , (<#)
   , (#>)
@@ -49,13 +50,13 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS )
+import           Language.Javascript.JSaddle (JSVal)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
 #endif
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (JSM)
-import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
 --
@@ -77,6 +78,7 @@ infixr 0 #>
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
+-- @since 1.9.0.0
 batch :: [JSM action] -> Effect model action
 batch actions = sequence_
   [ tell [ \f -> f =<< action ]
@@ -84,6 +86,7 @@ batch actions = sequence_
   ]
 -----------------------------------------------------------------------------
 -- | Like @batch@ but action are discarded
+-- @since 1.9.0.0
 batch_ :: [JSM ()] -> Effect model action
 batch_ actions = sequence_
   [ tell [ const action ]
@@ -123,7 +126,10 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect model action = RWS ComponentName [Sink action -> JSM ()] model ()
+type Effect model action = RWS DOMRef [Sink action -> JSM ()] model ()
+-----------------------------------------------------------------------------
+-- | Type to represent a DOM reference
+type DOMRef = JSVal
 -----------------------------------------------------------------------------
 -- | @MonadFail@ instance for @EffectCore@
 #if __GLASGOW_HASKELL__ <= 881
@@ -131,13 +137,10 @@ instance Fail.MonadFail Identity where
   fail = error
 #endif
 -----------------------------------------------------------------------------
--- | The name of a @Component@
-type ComponentName = MisoString
------------------------------------------------------------------------------
 -- | Internal function used to unwrap an @EffectCore@
 runEffect
     :: Effect model action
-    -> MisoString
+    -> DOMRef
     -> model
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS
@@ -151,6 +154,8 @@ mapSub f sub = \g -> sub (g . f)
 --
 -- Note that multiple 'IO' action can be scheduled using
 -- 'Control.Monad.Writer.Class.tell' from the @mtl@ library.
+--
+-- @since 1.9.0.0
 io :: JSM action -> Effect model action
 io action = withSink (action >>=)
 -----------------------------------------------------------------------------
@@ -159,6 +164,8 @@ io action = withSink (action >>=)
 --
 -- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
+--
+-- @since 1.9.0.0
 io_ :: JSM () -> Effect model action
 io_ action = withSink (\_ -> action)
 -----------------------------------------------------------------------------
@@ -166,6 +173,7 @@ io_ action = withSink (\_ -> action)
 --
 -- This is handy for scheduling @IO@ computations that return a @Maybe@ value
 --
+-- @since 1.9.0.0
 for :: Foldable f => JSM (f action) -> Effect model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
@@ -180,6 +188,7 @@ for actions = withSink $ \sink -> actions >>= flip for_ sink
 --
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
+-- @since 1.9.0.0
 withSink :: (Sink action -> JSM ()) -> Effect model action
 withSink f = tell [ f ]
 -----------------------------------------------------------------------------

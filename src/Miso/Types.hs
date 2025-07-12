@@ -21,8 +21,8 @@
 module Miso.Types
   ( -- ** Types
     Component        (..)
+  , ComponentId
   , SomeComponent    (..)
-  , Dynamic
   , View             (..)
   , Key              (..)
   , Attribute        (..)
@@ -31,11 +31,12 @@ module Miso.Types
   , LogLevel         (..)
   , VTree            (..)
   , MountPoint
+  , DOMRef
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
   -- ** Smart Constructors
-  , defaultComponent
+  , component
   -- ** Components
   , component_
   -- ** Utils
@@ -54,19 +55,19 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Data.Proxy (Proxy(Proxy))
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object, JSM)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding (null)
-import           GHC.TypeLits (KnownSymbol, symbolVal, Symbol)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
-import           Miso.Effect (Effect, Sub, Sink)
+import           Miso.Concurrent (Mail)
+import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString, ms)
+import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component (name :: Symbol) model action = Component
+data Component model action
+  = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -93,10 +94,17 @@ data Component (name :: Symbol) model action = Component
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
+  , mailbox :: Mail -> Maybe action
+  -- ^ Used to receive mail from other 'Component'
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
 type MountPoint = MisoString
+-----------------------------------------------------------------------------
+-- | ID for 'Component'
+type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to <head> before the first draw
 --
@@ -116,12 +124,12 @@ getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
 -- | Smart constructor for @Component@ with sane defaults.
-defaultComponent
+component
   :: model
   -> (action -> Effect model action)
   -> (model -> View action)
-  -> Component name model action
-defaultComponent m u v = Component
+  -> Component model action
+component m u v = Component
   { model = m
   , update = u
   , view = v
@@ -131,12 +139,13 @@ defaultComponent m u v = Component
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
+  , mailbox = const Nothing
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  -- ^ No debug logging, the default value used in @defaultComponent@
+  -- ^ No debug logging, the default value used in @component@
   | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.
@@ -145,8 +154,6 @@ data LogLevel
   -- handler that raised it. Also will warn if an event handler is
   -- being used, yet it's not being listened for by the event
   -- delegator mount point.
-  | DebugNotify
-  -- ^ Will warn if a @Component@ can't be found when using @notify@ or @notify'@
   | DebugAll
   -- ^ Logs on all of the above
   deriving (Show, Eq)
@@ -156,31 +163,21 @@ data View action
   = VNode NS MisoString [Attribute action] [View action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp MisoString [Attribute action] SomeComponent
+  | VComp [Attribute action] SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
 data SomeComponent
-   = forall name model action . Eq model
-  => SomeComponent (Component name model action)
+   = forall model action . Eq model
+  => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
--- Use this function if you'd like send messages to this @Component@ at @name@ via
--- @notify@ or to read the state of this @Component@ via @sample@.
 component_
-  :: forall name model action a . (Eq model, KnownSymbol name)
-  => Component name model action
-  -> [Attribute a]
+  :: forall model action a . Eq model
+  => [Attribute a]
+  -> Component model action
   -> View a
-component_ app attrs = VComp (ms name) attrs (SomeComponent app)
-  where
-    name = symbolVal (Proxy @name)
------------------------------------------------------------------------------
--- | Type synonym for Dynamically constructed @Component@
--- @
--- sampleComponent :: Component Dynamic Model Action
--- @
-type Dynamic = ""
+component_ attrs app = VComp attrs (SomeComponent app)
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
@@ -196,8 +193,8 @@ instance ToView (View action) where
   type ToViewAction (View action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView (Component name model action) where
-  type ToViewAction (Component name model action) = action
+instance ToView (Component model action) where
+  type ToViewAction (Component model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
@@ -266,7 +263,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- vnode the attribute is attached to.
 data Attribute action
   = Property MisoString Value
-  | Event (Sink action -> Object -> LogLevel -> Events -> JSM ())
+  | Event (Sink action -> VTree -> LogLevel -> Events -> JSM ())
   | Styles (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
@@ -278,6 +275,9 @@ instance IsString (View a) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
+-----------------------------------------------------------------------------  
+instance ToJSVal VTree where
+  toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Types.TextRaw@.
 --

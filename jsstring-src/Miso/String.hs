@@ -1,6 +1,7 @@
-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 {-# LANGUAGE CPP                  #-}
 {-# LANGUAGE FlexibleInstances    #-}
+-----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 -- |
@@ -37,11 +38,15 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as T
 import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
+import           Language.Javascript.JSaddle (MakeArgs (..), toJSVal)
 import           Prelude                 hiding (foldr)
 import           Text.StringLike         (StringLike(..))
 ----------------------------------------------------------------------------
 -- | String type swappable based on compiler
 type MisoString = JS.JSString
+----------------------------------------------------------------------------
+instance MakeArgs JS.JSString where
+  makeArgs arg = (:[]) <$> toJSVal arg
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
 -- | `ToJSON` for `MisoString`

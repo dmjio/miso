@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 module Main where
@@ -32,12 +32,12 @@ foreign export javascript "hs_start" main :: IO ()
 -----------------------------------------------------------------------------
 main :: IO ()
 main = run $ startComponent app
+-----------------------------------------------------------------------------
+app :: Component Model Action
+app = (component (Model 0) updateModel viewModel)
   { events = pointerEvents
   , styles = [ Sheet sheet ]
   }
------------------------------------------------------------------------------
-app :: Component name Model Action
-app = defaultComponent (Model 0) updateModel viewModel
 -----------------------------------------------------------------------------
 updateModel :: Action -> Effect Model Action
 updateModel (AddOne event) = do

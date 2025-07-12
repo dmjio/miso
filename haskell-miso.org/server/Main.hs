@@ -97,7 +97,7 @@ misoManifest =
         , start_url = "."
         , display = "standalone"
         , theme_color = "#00d1b2"
-        , description = "A tasty Haskell front-end web framework"
+        , description = "A tasty Haskell front-end web and mobile framework"
         }
 
 handle404 :: Application

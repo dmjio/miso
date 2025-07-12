@@ -1,6 +1,5 @@
-import { callFocus, callBlur } from '../miso/util';
+import { callFocus, callBlur, getParentComponentId } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { context } from '../miso/context/dom'
 
 /* silence */
 beforeAll(() => {
@@ -18,13 +17,6 @@ afterEach(() => {
 /* tests */
 describe ('Utils tests', () => {
 
-  test('Should set body[data-component-id] via setComponent()', () => {
-    context.setComponentId('component-one');
-    expect(context.getAttribute(document.body, 'data-component-id')).toEqual(
-      'component-one',
-    );
-  });
-
   test('Should call callFocus() and callBlur()', () => {
     var child = document.createElement('input');
     child['id'] = 'foo';
@@ -37,6 +29,20 @@ describe ('Utils tests', () => {
     callBlur('foo', 0); /* found case */
     callBlur('foo', 1); /* found case */
     expect(document.activeElement).toEqual(document.body);
+  });
+
+  test('Should get parentComponentId', () => {
+    const grandparent = document.createElement('div');
+    grandparent['component-id'] = 'grandparent';
+    const parent = document.createElement('div');
+    grandparent.appendChild(parent);
+    const child = document.createElement('div');
+    parent.appendChild(child);
+    let vcomp = { 'domRef' : child };
+    expect(getParentComponentId(vcomp)).toBe('grandparent');
+    vcomp.domRef = parent;
+    expect(getParentComponentId(vcomp)).toBe('grandparent');
+    expect(getParentComponentId(grandparent)).toBe(null);
   });
 
 });
