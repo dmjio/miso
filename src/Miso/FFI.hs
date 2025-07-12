@@ -42,6 +42,8 @@ module Miso.FFI
   , newDate
   , getSeconds
   , getMilliseconds
+  -- * Component
+  , getParentComponentId
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

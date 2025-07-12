@@ -34,6 +34,10 @@ module Miso.Internal
   , publish
   , Topic (..)
   , topic
+  -- * Component
+  , getComponentId
+  , getParentComponentId
+  , ComponentState
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -45,6 +49,8 @@ import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import           Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IM
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
@@ -69,7 +75,7 @@ import           Miso.Types
 import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
+import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -77,7 +83,7 @@ initialize
   => Component model action
   -> (Sink action -> JSM (DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
-  -> JSM (IORef VTree)
+  -> JSM (ComponentState model action)
 initialize Component {..} getView = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
@@ -97,7 +103,7 @@ initialize Component {..} getView = do
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update Async componentId componentSink (toList as) oldModel
+      newModel <- foldEffects update Async componentMount componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -111,10 +117,11 @@ initialize Component {..} getView = do
       syncPoint
       eventLoop newModel
   _ <- FFI.forkJSM (eventLoop model)
-  registerComponent ComponentState {..}
+  let vcomp = ComponentState {..}
+  registerComponent vcomp
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
-  pure componentVTree
+  pure vcomp
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -246,8 +253,9 @@ subscribe
   -> (Result message -> action)
   -> Effect model action
 subscribe topicName toAction = do
-  vcompId <- ask
+  domRef <- ask
   io_ $ do
+    vcompId <- FFI.getComponentId domRef
     subscribersMap <- liftIO (readIORef subscribers)
     let key = (vcompId, topicName)
     case M.lookup key subscribersMap of
@@ -268,7 +276,7 @@ subscribe topicName toAction = do
     subscribeToMailbox key mailbox vcompId = do
       threadId <- FFI.forkJSM $ do
         clonedMailbox <- liftIO (copyMailbox mailbox)
-        ComponentState {..} <- (M.! vcompId) <$> liftIO (readIORef components)
+        ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
         forever $ do
           message <- liftIO (readMail clonedMailbox)
           componentSink $ toAction (fromJSON message)
@@ -312,7 +320,9 @@ subscribe topicName toAction = do
 --
 -- @since 1.9.0.0
 unsubscribe :: Topic message -> Effect model action
-unsubscribe topicName = ask >>= io_ . unsubscribe_ topicName
+unsubscribe topicName = do
+  domRef <- ask
+  io_ (unsubscribe_ topicName =<< FFI.getComponentId domRef)
 -----------------------------------------------------------------------------
 -- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
 unsubscribe_ :: Topic message -> ComponentId -> JSM ()
@@ -390,18 +400,16 @@ componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
-type ComponentId = MisoString
+type ComponentId = Int
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
-freshComponentId = do
-  x <- atomicModifyIORef' componentIds $ \y -> (y + 1, y)
-  pure ("miso-component-id-" <> ms x)
+freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -----------------------------------------------------------------------------
 -- | componentMap
 --
 -- This is a global @Component@ @Map@ that holds the state of all currently
 -- mounted @Component@s
-components :: IORef (Map MisoString (ComponentState model action))
+components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
@@ -421,19 +429,19 @@ syncWith Async x = void (FFI.forkJSM x)
 foldEffects
   :: (action -> Effect model action)
   -> Synchronicity
-  -> ComponentId
+  -> DOMRef
   -> Sink action
   -> [action]
   -> model
   -> JSM model
 foldEffects _ _ _ _ [] m = pure m
-foldEffects update synchronicity componentId snk (e:es) o =
-  case runEffect (update e) componentId o of
+foldEffects update synchronicity domRef snk (e:es) o =
+  case runEffect (update e) domRef o of
     (n, subs) -> do
       forM_ subs $ \sub -> do
         syncWith synchronicity $
           sub snk `catch` (void . exception)
-      foldEffects update synchronicity componentId snk es n
+      foldEffects update synchronicity domRef snk es n
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
@@ -464,7 +472,7 @@ drain app@Component{..} cs@ComponentState {..} = do
     where
       go as = do
         x <- liftIO (readIORef componentModel)
-        y <- foldEffects update Sync componentId componentSink (toList as) x
+        y <- foldEffects update Sync componentMount componentSink (toList as) x
         liftIO (atomicWriteIORef componentModel y)
         drain app cs
 -----------------------------------------------------------------------------
@@ -480,7 +488,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
   killSubscribers componentId
   drain app cs
-  liftIO $ atomicModifyIORef' components $ \m -> (M.delete componentId m, ())
+  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId =
@@ -502,22 +510,22 @@ runView
   -> Events
   -> JSM VTree
 runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
-  componentId <- liftIO freshComponentId
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      vtreeRef <- initialize app (drawComponent hydrate domRef app)
-      VTree vtree <- liftIO (readIORef vtreeRef)
-      void $ call continuation global [vtree]
+      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
+      vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+      vcompId <- toJSVal componentId
+      void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback $ do
-      M.lookup componentId <$> liftIO (readIORef components) >>= \case
+    FFI.syncCallback1 $ \domRef -> do
+      componentId <- liftJSM (FFI.getComponentId domRef)
+      IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
   vcomp <- createNode "vcomp" HTML "div"
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  FFI.set "component-id" componentId vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
@@ -620,7 +628,7 @@ parseView html = reverse (go (parseTree html) [])
 registerComponent :: MonadIO m => ComponentState model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' components
-  $ M.insert (componentId componentState) componentState
+  $ IM.insert (componentId componentState) componentState
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 renderStyles :: [CSS] -> JSM ()
@@ -645,9 +653,10 @@ renderStyles styles =
 -- @since 1.9.0.0
 startSub :: ToMisoString subKey => subKey -> Sub action -> Effect model action
 startSub subKey sub = do
-  compName <- ask
-  io_
-    (M.lookup compName <$> liftIO (readIORef components) >>= \case
+  domRef <- ask
+  io_ $ do
+    vcompId <- FFI.getComponentId domRef
+    (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing -> pure ()
       Just compState@ComponentState {..} -> do
         mtid <- liftIO (M.lookup (ms subKey) <$> readIORef componentSubThreads)
@@ -680,9 +689,10 @@ startSub subKey sub = do
 -- @since 1.9.0.0
 stopSub :: ToMisoString subKey => subKey -> Effect model action
 stopSub subKey = do
-  compName <- ask
-  io_
-    (M.lookup compName <$> liftIO (readIORef components) >>= \case
+  domRef <- ask
+  io_ $ do
+    vcompId <- FFI.getComponentId domRef
+    (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do
@@ -691,4 +701,32 @@ stopSub subKey = do
           liftIO $ do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid)
+-----------------------------------------------------------------------------
+-- | Used to acquire the 'ComponentId' of the current 'Component'
+getComponentId
+  :: (ComponentId -> action)
+  -> Effect model action 
+getComponentId callback = do
+  domRef <- ask
+  withSink $ \sink -> do
+    componentId <- FFI.getComponentId domRef
+    sink (callback componentId)
+-----------------------------------------------------------------------------
+-- | Used to acquire the parent 'ComponentId' of the current 'Component'
+-- This is commonly used in situations to send messages or receive messages
+-- between components.
+getParentComponentId
+  :: (ComponentId -> action)
+  -- ^ Successful callback (with parent ComponentId)
+  -> action
+  -- ^ Errorful callback (without ComponentId)
+  -> Effect model action 
+getParentComponentId successful errorful = do
+  domRef <- ask
+  withSink $ \sink -> do
+    FFI.getParentComponentId domRef >>= \case
+      Nothing ->
+        sink errorful
+      Just parentComponentId ->
+        sink (successful parentComponentId)
 -----------------------------------------------------------------------------

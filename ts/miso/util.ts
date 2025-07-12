@@ -1,4 +1,4 @@
-import { VNode } from './types';
+import { VNode, VComp } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -65,4 +65,29 @@ export function shouldSync (
         }
     }
     return enterSync;
+}
+
+/*
+   'getParentComponentId'
+   dmj: Used to fetch the parent's component-id
+
+   Climbs up the tree, finds the immediate component ancestor (parent) and returns its component-id
+   This should be called on the DOMRef of a VComp, otherwise it will return the current component-id.
+
+*/
+export function getParentComponentId (
+  vcomp: VComp
+): number {
+    var climb = function (node : ParentNode) {
+      let parentComponentId = null;
+      while (node && node.parentNode) {
+          if ('component-id' in node.parentNode) {
+              parentComponentId = node.parentNode['component-id'];
+              break;
+          }
+          node = node.parentNode;
+      }
+      return parentComponentId;
+    }
+    return climb (vcomp['domRef']);
 }
