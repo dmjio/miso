@@ -663,7 +663,7 @@ All files           |   92.37 |   85.48 |
 > The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Native📱
-Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-native) repository for more information.
+Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-lynx) repository for more information.
 
 ## Benchmarks 🏎️
 
