@@ -30,7 +30,11 @@ module Miso
   , publish
   , Topic
   , topic
-    -- ** Subscriptions
+  -- ** Component
+  , mail
+  , getComponentId
+  , getParentComponentId
+  -- ** Subscriptions
   , startSub
   , stopSub
   , Sub
@@ -87,7 +91,7 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
-import           Miso.FFI
+import           Miso.FFI hiding (getComponentId, getParentComponentId)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Internal

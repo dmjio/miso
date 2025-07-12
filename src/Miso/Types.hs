@@ -58,13 +58,15 @@ import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
+import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component model action = Component
+data Component model action
+  = Component
   { model :: model
   -- ^ initial model
   , update :: action -> Effect model action
@@ -91,6 +93,10 @@ data Component model action = Component
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
+  , mailbox :: Mail -> Maybe action
+  -- ^ Used to receive mail from other 'Component'
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -129,6 +135,7 @@ component m u v = Component
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing
+  , mailbox = const Nothing
   }
 -----------------------------------------------------------------------------
 -- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)

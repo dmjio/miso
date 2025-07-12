@@ -12,6 +12,7 @@ import           GHC.Generics
 import           Data.Aeson
 -----------------------------------------------------------------------------
 import           Miso
+import qualified Miso.FFI as FFI
 import           Miso.String
 import           Miso.Lens
 -----------------------------------------------------------------------------
@@ -25,6 +26,9 @@ data Action
   | Mount DOMRef
   | Subscribe
   | Unsubscribe
+  | Welcomed
+  | Oops
+  | GetComponentId Int
   | Notification (Result Message)
 -----------------------------------------------------------------------------
 data Message
@@ -52,10 +56,10 @@ server = component () update_ $ \() ->
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_ 
+  , component_
     [ onMountedWith Mount
     ] (client_ "client 1")
-  , component_ 
+  , component_
     [ onMountedWith Mount
     ] (client_ "client 2")
   ] where
@@ -65,12 +69,22 @@ server = component () update_ $ \() ->
           publish arithmetic Increment
         SubtractOne ->
           publish arithmetic Decrement
-        Mount domRef ->
-          io_ (consoleLog' domRef)
+        GetComponentId vcompId ->
+          mail vcompId ("welcome: " <> ms vcompId)
+        Mount domRef -> do
+          io_ (consoleLog "im in mount")
+          io (GetComponentId <$> FFI.getComponentId domRef)
         _ -> pure ()
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action
-client_ name = (clientComponent name) { initialAction = Just Subscribe }
+client_ name = (clientComponent name)
+  { initialAction = Just Subscribe
+  , mailbox = receiveMail
+  }
+-----------------------------------------------------------------------------
+receiveMail :: Value -> Maybe Action
+receiveMail (String "welcome!") = Just Welcomed
+receiveMail _ = Just Oops
 -----------------------------------------------------------------------------
 clientComponent :: MisoString -> Component Int Action
 clientComponent name = component 0 update_ $ \m ->
@@ -98,5 +112,12 @@ clientComponent name = component 0 update_ $ \m ->
           update_ SubtractOne
         Notification (Error msg) ->
           io_ $ consoleError ("Decode failure: " <> ms msg)
-        _ -> pure ()
+        Welcomed -> do
+          io_ $ consoleLog "I was just welcomed by my parent"
+        Oops -> do
+          io_ $ consoleLog "oops in decode"
+        Mount _ ->
+          io_ $ consoleLog "in mount"
+        _ ->
+          pure ()
 -----------------------------------------------------------------------------
