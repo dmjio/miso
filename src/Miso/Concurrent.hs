@@ -17,6 +17,7 @@ module Miso.Concurrent
   , Mail
   , newMailbox
   , copyMailbox
+  , cloneMailbox
   , sendMail
   , readMail
   ) where
@@ -76,6 +77,11 @@ newMailbox = newBroadcastTChanIO
 -- | Duplicates a 'Mailbox', all new 'Mail' is sent to all duplicated 'Mailbox'
 copyMailbox :: Mailbox -> IO Mailbox
 copyMailbox mailbox = atomically (dupTChan mailbox)
+-----------------------------------------------------------------------------
+-- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'
+-- Messages in original 'Mailbox' are retained (unlike `copyMailbox`).
+cloneMailbox :: Mailbox -> IO Mailbox
+cloneMailbox mailbox = atomically (cloneTChan mailbox)
 -----------------------------------------------------------------------------
 -- | Sends mail to a mailbox, all duplicated 'Mailbox' receive the same message.
 sendMail :: Mailbox -> Mail -> IO ()

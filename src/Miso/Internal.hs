@@ -68,7 +68,7 @@ import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 -----------------------------------------------------------------------------
-import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
+import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox, cloneMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
 import qualified Miso.FFI.Internal as FFI
@@ -122,7 +122,7 @@ initialize Component {..} getView = do
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
-      message <- liftIO (readMail =<< copyMailbox componentMailbox)
+      message <- liftIO (readMail =<< cloneMailbox componentMailbox)
       mapM_ componentSink (mailbox message)
   let vcomp = ComponentState {..}
   registerComponent vcomp
