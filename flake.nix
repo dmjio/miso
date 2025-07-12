@@ -123,6 +123,12 @@
             pkgs.mkShell {
               name = "The miso ${system} GHC JS 9.12.2 shell";
               shellHook = ''
+                export CC=${pkgs.emscripten}/bin/emcc
+                mkdir -p ~/.emscripten_cache
+                chmod u+rwX -R ~/.emscripten_cache
+                cp -r ${pkgs.emscripten}/share/emscripten/cache ~/.emscripten_cache
+                export EM_CACHE=~/.emscripten_cache
+
                 function build () {
                    cabal build $1 \
                      --with-compiler=javascript-unknown-ghcjs-ghc \
@@ -135,11 +141,12 @@
                    cabal update
                 }
               '';
-              packages = [
-                 pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
-                 pkgs.gnumake
-                 pkgs.http-server
-                 pkgs.cabal-install
+              packages = with pkgs; [
+                 pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
+                 gnumake
+                 http-server
+                 cabal-install
+                 nodejs
               ];
             };
 
