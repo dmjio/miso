@@ -5,7 +5,6 @@ with (import ./default.nix {});
 if pkg == "ghcjs9122"
 then miso-ghcjs-9122.env.overrideAttrs (drv: {
   shellHook = ''
-    export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
     export CC=${pkgs.emscripten}/bin/emcc
     mkdir -p ~/.emscripten_cache
     chmod u+rwX -R ~/.emscripten_cache
