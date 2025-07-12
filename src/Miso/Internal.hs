@@ -38,6 +38,8 @@ module Miso.Internal
   , getComponentId
   , getParentComponentId
   , ComponentState
+  -- * Mailbox
+  , mail
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -117,6 +119,11 @@ initialize Component {..} getView = do
       syncPoint
       eventLoop newModel
   _ <- FFI.forkJSM (eventLoop model)
+  componentMailbox <- liftIO newMailbox
+  componentMailboxThreadId <- do
+    FFI.forkJSM . forever $ do
+      message <- liftIO (readMail =<< copyMailbox componentMailbox)
+      mapM_ componentSink (mailbox message)
   let vcomp = ComponentState {..}
   registerComponent vcomp
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
@@ -133,13 +140,15 @@ data Hydrate
 -- | @Component@ state, data associated with the lifetime of a @Component@
 data ComponentState model action
   = ComponentState
-  { componentId         :: ComponentId
-  , componentSubThreads :: IORef (Map MisoString ThreadId)
-  , componentMount      :: JSVal
-  , componentVTree      :: IORef VTree
-  , componentSink       :: action -> JSM ()
-  , componentModel      :: IORef model
-  , componentActions    :: IORef (Seq action)
+  { componentId              :: ComponentId
+  , componentSubThreads      :: IORef (Map MisoString ThreadId)
+  , componentMount           :: JSVal
+  , componentVTree           :: IORef VTree
+  , componentSink            :: action -> JSM ()
+  , componentModel           :: IORef model
+  , componentActions         :: IORef (Seq action)
+  , componentMailbox         :: Mailbox
+  , componentMailboxThreadId :: ThreadId
   }
 -----------------------------------------------------------------------------
 -- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
@@ -400,8 +409,6 @@ componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
-type ComponentId = Int
------------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -----------------------------------------------------------------------------
@@ -485,6 +492,7 @@ unmount
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
+  liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
   killSubscribers componentId
   drain app cs
@@ -593,7 +601,8 @@ setAttrs vnode attrs snk logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode
       FFI.set k value (Object o)
-    Event attr -> attr snk vnode logLevel events
+    Event callback ->
+      callback snk (VTree vnode) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do
@@ -729,4 +738,24 @@ getParentComponentId successful errorful = do
         sink errorful
       Just parentComponentId ->
         sink (successful parentComponentId)
+-----------------------------------------------------------------------------
+-- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
+--
+-- @
+-- mail componentId ("test message" :: MisoString) :: Effect model action
+-- @
+-- 
+-- @since 1.9.0.0
+mail
+  :: ToJSON message
+  => ComponentId
+  -> message
+  -> Effect model action
+mail vcompId message = io_ $
+  IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+    Nothing ->
+      -- dmj: TODO add DebugMail here
+      pure ()
+    Just ComponentState {..} ->
+      liftIO $ sendMail componentMailbox (toJSON message)
 -----------------------------------------------------------------------------

@@ -118,7 +118,7 @@
               '';
             };
 
-          # GHCJS shell
+          # GHCJS9122 shell
           ghcjs =
             pkgs.mkShell {
               name = "The miso ${system} GHC JS 9.12.2 shell";
@@ -147,6 +147,7 @@
                  http-server
                  cabal-install
                  nodejs
+                 emscripten
               ];
             };
 
@@ -172,6 +173,7 @@
                  pkgs.gnumake
                  pkgs.http-server
                  pkgs.cabal-install
+                 pkgs.emscripten
               ];
             };
 

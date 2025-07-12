@@ -22,9 +22,12 @@ foreign export javascript "hs_start" main :: IO ()
 data Action
   = AddOne
   | SubtractOne
-  | Mount DOMRef
+  | Mount ComponentId
   | Subscribe
   | Unsubscribe
+  | Welcomed
+  | Oops
+  | GetComponentId Int
   | Notification (Result Message)
 -----------------------------------------------------------------------------
 data Message
@@ -52,10 +55,10 @@ server = component () update_ $ \() ->
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_ 
+  , component_
     [ onMountedWith Mount
     ] (client_ "client 1")
-  , component_ 
+  , component_
     [ onMountedWith Mount
     ] (client_ "client 2")
   ] where
@@ -65,12 +68,19 @@ server = component () update_ $ \() ->
           publish arithmetic Increment
         SubtractOne ->
           publish arithmetic Decrement
-        Mount domRef ->
-          io_ (consoleLog' domRef)
+        Mount childId ->
+          mail @MisoString childId "welcome"
         _ -> pure ()
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action
-client_ name = (clientComponent name) { initialAction = Just Subscribe }
+client_ name = (clientComponent name)
+  { initialAction = Just Subscribe
+  , mailbox = receiveMail
+  }
+-----------------------------------------------------------------------------
+receiveMail :: Value -> Maybe Action
+receiveMail (String "welcome") = Just Welcomed
+receiveMail _ = Just Oops
 -----------------------------------------------------------------------------
 clientComponent :: MisoString -> Component Int Action
 clientComponent name = component 0 update_ $ \m ->
@@ -89,8 +99,7 @@ clientComponent name = component 0 update_ $ \m ->
           _id -= 1
         Unsubscribe ->
           unsubscribe arithmetic
-        Subscribe -> do
-          io_ (consoleLog "subscribing...")
+        Subscribe ->
           subscribe arithmetic Notification
         Notification (Success Increment) ->
           update_ AddOne
@@ -98,5 +107,10 @@ clientComponent name = component 0 update_ $ \m ->
           update_ SubtractOne
         Notification (Error msg) ->
           io_ $ consoleError ("Decode failure: " <> ms msg)
-        _ -> pure ()
+        Welcomed ->
+          io_ (consoleLog "I was just welcomed by my parent")
+        Oops ->
+          io_ (consoleLog "oops, bad mail decoding")
+        _ ->
+          pure ()
 -----------------------------------------------------------------------------
