@@ -43,7 +43,7 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (Event), LogLevel(..), DOMRef, VTree(..), ComponentId)
-import           Miso.String (MisoString, unpack, ms)
+import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
