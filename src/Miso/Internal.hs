@@ -37,6 +37,7 @@ module Miso.Internal
   -- * Component
   , getComponentId
   , getParentComponentId
+  , ComponentState
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -82,7 +83,7 @@ initialize
   => Component model action
   -> (Sink action -> JSM (DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
-  -> JSM (IORef VTree)
+  -> JSM (ComponentState model action)
 initialize Component {..} getView = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
@@ -116,10 +117,11 @@ initialize Component {..} getView = do
       syncPoint
       eventLoop newModel
   _ <- FFI.forkJSM (eventLoop model)
-  registerComponent ComponentState {..}
+  let vcomp = ComponentState {..}
+  registerComponent vcomp
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
-  pure componentVTree
+  pure vcomp
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -510,10 +512,10 @@ runView
 runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      componentId <- toJSVal =<< liftIO freshComponentId
-      vtreeRef <- initialize app (drawComponent hydrate domRef app)
-      vtree <- toJSVal =<< liftIO (readIORef vtreeRef)
-      void $ call continuation global [componentId, vtree]
+      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
+      vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+      vcompId <- toJSVal componentId
+      void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback1 $ \domRef -> do
       componentId <- fromJSValUnchecked =<< getProp "component-id" (Object domRef)

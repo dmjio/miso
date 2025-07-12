@@ -72,7 +72,7 @@ module Miso
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef (newIORef, IORef)
+import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 #ifdef WASM
@@ -154,7 +154,7 @@ initComponent
   -- ^ Component application
   -> JSM ()
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
-  -> JSM (IORef VTree)
+  -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> hooks >> do
     vtree <- runView Draw (view model) snk logLevel events
