@@ -518,7 +518,7 @@ runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
       void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback1 $ \domRef -> do
-      componentId <- fromJSValUnchecked =<< getProp "component-id" (Object domRef)
+      componentId <- liftJSM (FFI.getComponentId domRef)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
