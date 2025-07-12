@@ -12,7 +12,6 @@ import           GHC.Generics
 import           Data.Aeson
 -----------------------------------------------------------------------------
 import           Miso
-import qualified Miso.FFI as FFI
 import           Miso.String
 import           Miso.Lens
 -----------------------------------------------------------------------------
@@ -23,7 +22,7 @@ foreign export javascript "hs_start" main :: IO ()
 data Action
   = AddOne
   | SubtractOne
-  | Mount DOMRef
+  | Mount ComponentId
   | Subscribe
   | Unsubscribe
   | Welcomed
@@ -69,11 +68,8 @@ server = component () update_ $ \() ->
           publish arithmetic Increment
         SubtractOne ->
           publish arithmetic Decrement
-        GetComponentId vcompId ->
-          mail vcompId ("welcome: " <> ms vcompId)
-        Mount domRef -> do
-          io_ (consoleLog "im in mount")
-          io (GetComponentId <$> FFI.getComponentId domRef)
+        Mount childId ->
+          mail @MisoString childId "welcome"
         _ -> pure ()
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action
@@ -83,7 +79,7 @@ client_ name = (clientComponent name)
   }
 -----------------------------------------------------------------------------
 receiveMail :: Value -> Maybe Action
-receiveMail (String "welcome!") = Just Welcomed
+receiveMail (String "welcome") = Just Welcomed
 receiveMail _ = Just Oops
 -----------------------------------------------------------------------------
 clientComponent :: MisoString -> Component Int Action
@@ -103,8 +99,7 @@ clientComponent name = component 0 update_ $ \m ->
           _id -= 1
         Unsubscribe ->
           unsubscribe arithmetic
-        Subscribe -> do
-          io_ (consoleLog "subscribing...")
+        Subscribe ->
           subscribe arithmetic Notification
         Notification (Success Increment) ->
           update_ AddOne
@@ -112,12 +107,10 @@ clientComponent name = component 0 update_ $ \m ->
           update_ SubtractOne
         Notification (Error msg) ->
           io_ $ consoleError ("Decode failure: " <> ms msg)
-        Welcomed -> do
-          io_ $ consoleLog "I was just welcomed by my parent"
-        Oops -> do
-          io_ $ consoleLog "oops in decode"
-        Mount _ ->
-          io_ $ consoleLog "in mount"
+        Welcomed ->
+          io_ (consoleLog "I was just welcomed by my parent")
+        Oops ->
+          io_ (consoleLog "oops, bad mail decoding")
         _ ->
           pure ()
 -----------------------------------------------------------------------------

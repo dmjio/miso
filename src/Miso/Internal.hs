@@ -122,8 +122,8 @@ initialize Component {..} getView = do
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
-      mapM_ componentSink =<<
-        mailbox <$> liftIO (readMail componentMailbox)
+      message <- liftIO (readMail =<< copyMailbox componentMailbox)
+      mapM_ componentSink (mailbox message)
   let vcomp = ComponentState {..}
   registerComponent vcomp
   delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
@@ -409,8 +409,6 @@ componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 0)
 -----------------------------------------------------------------------------
-type ComponentId = Int
------------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -----------------------------------------------------------------------------
@@ -603,7 +601,8 @@ setAttrs vnode attrs snk logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode
       FFI.set k value (Object o)
-    Event attr -> attr snk vnode logLevel events
+    Event callback ->
+      callback snk (VTree vnode) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do
@@ -752,9 +751,10 @@ mail
   => ComponentId
   -> message
   -> Effect model action
-mail vcompId message = io_ $ do
+mail vcompId message = io_ $
   IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
     Nothing ->
+      -- dmj: TODO add DebugMail here
       pure ()
     Just ComponentState {..} ->
       liftIO $ sendMail componentMailbox (toJSON message)

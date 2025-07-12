@@ -21,6 +21,7 @@
 module Miso.Types
   ( -- ** Types
     Component        (..)
+  , ComponentId
   , SomeComponent    (..)
   , View             (..)
   , Key              (..)
@@ -101,6 +102,9 @@ data Component model action
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
 type MountPoint = MisoString
+-----------------------------------------------------------------------------
+-- | ID for 'Component'
+type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to <head> before the first draw
 --
@@ -259,7 +263,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- vnode the attribute is attached to.
 data Attribute action
   = Property MisoString Value
-  | Event (Sink action -> Object -> LogLevel -> Events -> JSM ())
+  | Event (Sink action -> VTree -> LogLevel -> Events -> JSM ())
   | Styles (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
@@ -275,7 +279,6 @@ newtype VTree = VTree { getTree :: Object }
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
-
 -- | Create a new @Miso.Types.TextRaw@.
 --
 -- @expandable@
