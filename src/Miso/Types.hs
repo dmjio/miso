@@ -87,8 +87,8 @@ data Component model action
   --
   -- @since 1.9.0.0
   , scripts :: [JS]
-  -- ^ List of JavaScript styles expressed as either a URL ('Href') or as 'Style' text.
-  -- These styles are appended dynamically to the <head> section of your HTML page
+  -- ^ List of JavaScript <scripts> expressed as either a URL ('Src') or raw JS text.
+  -- These scripts are appended dynamically to the <head> section of your HTML page
   -- before the initial draw on <body> occurs.
   --
   -- @since 1.9.0.0
@@ -137,9 +137,9 @@ data CSS
 --
 data JS
   = Src MisoString
-  -- ^ 'src' is a URL meant to link to hosted CSS
+  -- ^ 'src' is a URL meant to link to hosted JS
   | Script MisoString
-  -- ^ 'script' is meant to be raw CSS in a 'style_' tag
+  -- ^ 'script' is meant to be raw JS in a 'script' tag
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
