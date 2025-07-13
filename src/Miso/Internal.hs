@@ -24,6 +24,7 @@ module Miso.Internal
   , freshComponentId
   , runView
   , renderStyles
+  , renderScripts
   , Hydrate(..)
   -- * Subscription
   , startSub
@@ -639,13 +640,28 @@ registerComponent componentState = liftIO
   $ modifyIORef' components
   $ IM.insert (componentId componentState) componentState
 -----------------------------------------------------------------------------
--- | Registers components in the global state
+-- | Renders styles
+--
+-- Meant for development purposes
+-- Appends CSS to <head>
+--
 renderStyles :: [CSS] -> JSM ()
 renderStyles styles =
   forM_ styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
     Sheet sheet -> FFI.addStyle (renderStyleSheet sheet)
+-----------------------------------------------------------------------------
+-- | Renders scripts
+--
+-- Meant for development purposes
+-- Appends JS to <head>
+--
+renderScripts :: [JS] -> JSM ()
+renderScripts scripts =
+  forM_ scripts $ \case
+    Src src -> FFI.addSrc src
+    Script script -> FFI.addScript script
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
