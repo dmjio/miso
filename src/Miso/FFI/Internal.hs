@@ -15,7 +15,9 @@
 ----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( JSM
+   -- * Concurrency
    , forkJSM
+   -- * Callbacks
    , syncCallback
    , syncCallback1
    , syncCallback2
@@ -23,51 +25,73 @@ module Miso.FFI.Internal
    , asyncCallback1
    , asyncCallback2
    , ghcjsPure
+   -- * JSAddle
    , syncPoint
+   -- * Events
    , addEventListener
+   , eventPreventDefault
+   , eventStopPropagation
+   -- * Window
    , windowAddEventListener
    , windowInnerHeight
    , windowInnerWidth
-   , eventPreventDefault
-   , eventStopPropagation
+   -- * Performance
    , now
+   -- * Console
    , consoleWarn
    , consoleLog
    , consoleError
    , consoleLog'
+   -- * JSON
    , jsonStringify
    , jsonParse
    , eventJSON
+   -- * Object
    , set
+   -- * DOM
    , getBody
    , getDocument
    , getContext
    , getElementById
    , diff
+   -- * Conversions
    , integralToJSString
    , realFloatToJSString
    , jsStringToDouble
+   -- * Events
    , delegateEvent
    , undelegateEvent
+   -- * Isomorphic
    , hydrate
+   -- * Misc.
    , focus
    , blur
    , scrollIntoView
    , alert
    , reload
+   -- * CSS
    , addStyle
    , addStyleSheet
+   -- * JS
+   , addSrc
+   , addScript
+   -- * XHR
    , fetch
    , shouldSync
-   , flush
+   -- * Drawing
    , requestAnimationFrame
    , setDrawingContext
+   , flush
+   -- * Image
    , Image (..)
    , newImage
+   -- * Date
    , Date (..)
    , newDate
+   -- * Utils
    , getMilliseconds
    , getSeconds
+   -- * Component
    , getParentComponentId
    , getComponentId
    ) where
@@ -422,6 +446,26 @@ addStyle css = do
   style <- jsg "document" # "createElement" $ ["style"]
   (style <# "innerHTML") css
   void $ jsg "document" ! "head" # "appendChild" $ [style]
+-----------------------------------------------------------------------------
+-- | Appends a 'script_' element containing JS to 'head_'
+--
+-- > addScript "function () { alert('hi'); }"
+--
+addScript :: MisoString -> JSM ()
+addScript css = do
+  script <- jsg "document" # "createElement" $ ["script"]
+  (script <# "innerHTML") css
+  void $ jsg "document" ! "head" # "appendChild" $ [script]
+-----------------------------------------------------------------------------
+-- | Appends a \<script\> element to 'head_'
+--
+-- > addSrc "https://example.com/script.js"
+--
+addSrc :: MisoString -> JSM ()
+addSrc url = do
+  link <- jsg "document" # "createElement" $ ["script"]
+  _ <- link # "setAttribute" $ ["src", fromMisoString url]
+  void $ jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'link_' element to 'head_'
 -- The 'link_' tag will contain a URL to a CSS file.

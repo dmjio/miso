@@ -28,6 +28,7 @@ module Miso.Types
   , Attribute        (..)
   , NS               (..)
   , CSS              (..)
+  , JS               (..)
   , LogLevel         (..)
   , VTree            (..)
   , MountPoint
@@ -85,6 +86,12 @@ data Component model action
   -- before the initial draw on <body> occurs.
   --
   -- @since 1.9.0.0
+  , scripts :: [JS]
+  -- ^ List of JavaScript styles expressed as either a URL ('Href') or as 'Style' text.
+  -- These styles are appended dynamically to the <head> section of your HTML page
+  -- before the initial draw on <body> occurs.
+  --
+  -- @since 1.9.0.0
   , initialAction :: Maybe action
   -- ^ Initial action that is run after the application has loaded, optional
   --
@@ -119,6 +126,22 @@ data CSS
   -- ^ 'Sheet' is meant to be CSS built with 'Miso.Style'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Allow users to express JS and append it to <head> before the first draw
+--
+-- This is meant to be useful in development only.
+--
+-- @
+--   Src "http://example.com/script.js
+--   Script "http://example.com/script.js
+-- @
+--
+data JS
+  = Src MisoString
+  -- ^ 'src' is a URL meant to link to hosted CSS
+  | Script MisoString
+  -- ^ 'script' is meant to be raw CSS in a 'style_' tag
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
@@ -136,6 +159,7 @@ component m u v = Component
   , subs = []
   , events = defaultEvents
   , styles = []
+  , scripts = []
   , mountPoint = Nothing
   , logLevel = Off
   , initialAction = Nothing

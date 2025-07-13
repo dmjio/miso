@@ -114,6 +114,7 @@ miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
     renderStyles styles
+    renderScripts scripts
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
@@ -131,7 +132,10 @@ startComponent
   => Component model action
   -- ^ Component application
   -> JSM ()
-startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (renderStyles styles)
+startComponent vcomp@Component { styles, scripts } =
+  withJS $ initComponent vcomp $ do
+    renderStyles styles
+    renderScripts scripts
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
