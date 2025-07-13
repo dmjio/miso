@@ -69,10 +69,10 @@ export function shouldSync (
 
 /*
    'getParentComponentId'
-   dmj: Used to fetch the parent's component-id
+   dmj: Used to fetch the parent's componentId
 
-   Climbs up the tree, finds the immediate component ancestor (parent) and returns its component-id
-   This should be called on the DOMRef of a VComp, otherwise it will return the current component-id.
+   Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
+   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
 
 */
 export function getParentComponentId (
@@ -81,8 +81,8 @@ export function getParentComponentId (
     var climb = function (node : ParentNode) {
       let parentComponentId = null;
       while (node && node.parentNode) {
-          if ('component-id' in node.parentNode) {
-              parentComponentId = node.parentNode['component-id'];
+          if ('componentId' in node.parentNode) {
+              parentComponentId = node.parentNode['componentId'];
               break;
           }
           node = node.parentNode;

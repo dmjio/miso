@@ -45,8 +45,8 @@ function getParentComponentId(vcomp) {
   var climb = function(node) {
     let parentComponentId = null;
     while (node && node.parentNode) {
-      if ("component-id" in node.parentNode) {
-        parentComponentId = node.parentNode["component-id"];
+      if ("componentId" in node.parentNode) {
+        parentComponentId = node.parentNode["componentId"];
         break;
       }
       node = node.parentNode;
@@ -265,7 +265,7 @@ function mountComponent(obj, context) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
   obj["mount"](obj["domRef"], (componentId, componentTree) => {
-    obj["domRef"]["component-id"] = componentId;
+    obj["domRef"]["componentId"] = componentId;
     obj["children"].push(componentTree);
     context["appendChild"](obj["domRef"], componentTree["domRef"]);
     if (obj["onMounted"])

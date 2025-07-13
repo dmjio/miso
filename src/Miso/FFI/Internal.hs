@@ -553,5 +553,5 @@ getParentComponentId domRef =
 -- N.B. you * must * call this on the DOMRef, otherwise, problems.
 -- For use in `onMounted`, etc.
 getComponentId :: JSVal -> JSM Int
-getComponentId vtree = fromJSValUnchecked =<< vtree ! "component-id"
+getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------

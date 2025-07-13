@@ -33,7 +33,7 @@ describe ('Utils tests', () => {
 
   test('Should get parentComponentId', () => {
     const grandparent = document.createElement('div');
-    grandparent['component-id'] = 'grandparent';
+    grandparent['componentId'] = 'grandparent';
     const parent = document.createElement('div');
     grandparent.appendChild(parent);
     const child = document.createElement('div');

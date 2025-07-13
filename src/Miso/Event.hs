@@ -109,8 +109,8 @@ onMounted action =
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onMountedWith action@ is an event that gets called after the actual DOM
--- element is created. It returns the /component-id/ from the component.
--- Returning /component-id/ is useful when creating 'Component' dynamically.
+-- element is created. It returns the /componentId/ from the component.
+-- Returning /componentId/ is useful when creating 'Component' dynamically.
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -127,8 +127,8 @@ onMountedWith action =
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onMountedWith action@ is an event that gets called after the actual DOM
--- element is created. It returns the /component-id/ from the component.
--- Returning /component-id/ is useful when creating 'Component' dynamically.
+-- element is created. It returns the /componentId/ from the component.
+-- Returning /componentId/ is useful when creating 'Component' dynamically.
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -207,7 +207,7 @@ onUnmounted action =
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM. It returns the /component-id/ after the unmount call.
+-- is removed from the DOM. It returns the /componentId/ after the unmount call.
 --
 -- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -220,7 +220,7 @@ onUnmountedWith_ action =
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM. It returns the /component-id/ after the unmount call.
+-- is removed from the DOM. It returns the /componentId/ after the unmount call.
 --
 -- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
 --
