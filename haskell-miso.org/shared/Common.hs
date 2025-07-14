@@ -418,7 +418,7 @@ middle =
                             ]
                         , p_
                             [ class_ "subtitle" ]
-                            [ text "JavaScript, Web Assembly, iOS, Android"
+                            [ text "iOS, Android"
                             ]
                         ]
                     ]
