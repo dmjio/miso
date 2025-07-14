@@ -67,7 +67,7 @@
 
 # History 📜
 
-**miso** is a play on the words ***micro*** and ***isomorphic***.
+> **miso** is a play on the words ***micro*** and ***isomorphic***.
 
 [miso](https://haskell-miso.org) began in 2016 as research in:
   - Expressing the [Elm architecture](https://elm-lang.org) in [GHCJS](https://github.com/ghcjs/ghcjs) as an [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language).
