@@ -17,6 +17,7 @@
 module Miso.Html.Property
   ( -- *** Combinators
      class_
+   , classes_
    , classList_
    , id_
    , title_
@@ -120,6 +121,13 @@ import           Miso.String (MisoString, intercalate)
 classList_ ::  [(MisoString, Bool)] -> Attribute action
 classList_ xs =
   textProp "class" $ intercalate (" " :: MisoString) [ t | (t, True) <- xs ]
+-----------------------------------------------------------------------------
+-- | Define multiple classes
+--
+-- > div_ [ classes_ [ "red", "warning" ] ] []
+--
+classes_ ::  [MisoString] -> Attribute action
+classes_ xs = classList_ [ (x, True) | x <- xs ]
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title>
 title_ ::  MisoString -> Attribute action
