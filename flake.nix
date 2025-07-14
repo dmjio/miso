@@ -78,10 +78,6 @@
           inherit (pkgs.haskell.packages.ghc9122)
             miso-from-html;
 
-          # Misc.
-          inherit (pkgs.haskell.packages.ghc9122)
-            more-examples;
-
         };
 
         # Miso's dev shells
