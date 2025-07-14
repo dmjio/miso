@@ -343,7 +343,7 @@ middle =
                             ]
                         , p_
                             [class_ "subtitle"]
-                            [ text "Virtual DOM diffing algorithm"
+                            [ text "Virtual DOM"
                             ]
                         ]
                     , a_
@@ -362,7 +362,7 @@ middle =
                             ]
                         , p_
                             [class_ "subtitle"]
-                            [text "Seamless web experience"]
+                            [text "Seamless experience"]
                         ]
                     , a_
                         [ class_ "column has-text-centered"
@@ -380,7 +380,7 @@ middle =
                             ]
                         , p_
                             [class_ "subtitle"]
-                            [ text "Type-safe and polymorphic, GHC Haskell"
+                            [ text "Multi-threaded apps"
                             ]
                         ]
                     , a_
@@ -399,7 +399,7 @@ middle =
                             ]
                         , p_
                             [class_ "subtitle"]
-                            [ text "via the GHC FFI"
+                            [ text "via the FFI"
                             ]
                         ]
                     , a_
@@ -414,11 +414,11 @@ middle =
                             ]
                         , p_
                             [class_ "title is-4"]
-                            [ strong_ [] [text "Cross-platform"]
+                            [ strong_ [] [text "Cross Platform"]
                             ]
                         , p_
                             [ class_ "subtitle" ]
-                            [ text "Target iOS and Android via LynxJS"
+                            [ text "JavaScript, Web Assembly, iOS, Android"
                             ]
                         ]
                     ]
