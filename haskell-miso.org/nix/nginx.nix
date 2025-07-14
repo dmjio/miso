@@ -54,42 +54,6 @@ with (import ../../default.nix {});
            };
          };
        };
-       "flatris.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = "${more-examples.miso-flatris}/bin/app.jsexe";
-           };
-         };
-       };
-       "miso-plane.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = more-examples.miso-plane;
-           };
-         };
-       };
-       "2048.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = more-examples.miso-2048;
-           };
-         };
-       };
-       "snake.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = "${more-examples.miso-snake}/bin/app.jsexe";
-           };
-         };
-       };
        "router.haskell-miso.org" = {
           forceSSL = true;
           enableACME = true;

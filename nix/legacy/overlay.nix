@@ -82,7 +82,4 @@ options: self: super: {
     nix shell github:nixos/nixpkgs/8ad5e8132c5dcf977e308e7bf5517cc6cc0bf7d8#nix -c \
       nixops deploy -j1 -d haskell-miso --option substituters "https://cache.nixos.org/"
   '';
-  more-examples = with super.haskell.lib; {
-    inherit (self.haskell.packages.ghcjs) miso-flatris miso-2048 miso-snake miso-plane;
-  };
 }
