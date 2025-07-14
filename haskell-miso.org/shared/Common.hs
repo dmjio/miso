@@ -402,6 +402,25 @@ middle =
                             [ text "via the GHC FFI"
                             ]
                         ]
+                    , a_
+                        [ class_ "column has-text-centered"
+                        , href_ "https://github.com/haskell-miso/miso-lynx"
+                        , rel_ "noopener"
+                        , target_ "_blank"
+                        ]
+                        [ span_
+                            [class_ "icon is-large"]
+                            [ i_ [class_ "fa fa-mobile"] []
+                            ]
+                        , p_
+                            [class_ "title is-4"]
+                            [ strong_ [] [text "Cross-platform"]
+                            ]
+                        , p_
+                            [ class_ "subtitle" ]
+                            [ text "Target iOS and Android via LynxJS"
+                            ]
+                        ]
                     ]
                 ]
             ]
