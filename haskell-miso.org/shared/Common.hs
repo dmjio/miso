@@ -250,13 +250,13 @@ examples = template v
                 , text " / "
                 , a_
                     [ target_ "_blank"
-                    , href_ "http://flatris.haskell-miso.org/"
+                    , href_ "https://haskell-miso.github.io/miso-flatris/"
                     ]
                     [text "Flatris"]
                 , text " / "
                 , a_
                     [ target_ "_blank"
-                    , href_ "http://2048.haskell-miso.org/"
+                    , href_ "https://haskell-miso.github.io/miso-2048/"
                     ]
                     [text "2048"]
                 ]
