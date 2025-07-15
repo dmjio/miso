@@ -188,6 +188,25 @@ data Color
   | VarColor MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | This instance exists to make it easy to define hex colors.
+--
+-- Use this instance at your own risk, no other members are supported and
+-- will produce runtime failures. But it is quite convenient not to have to
+-- use 'hex'.
+--
+-- @
+-- grey :: Color
+-- grey = 0xcccccc
+-- @
+--
+instance Num Color where
+  fromInteger = hex . fromIntegral
+  (+)    = error "(+) on Color"
+  (*)    = error "(*) on Color"
+  abs    = error "abs on Color"
+  signum = error "signum on Color"
+  negate = error "negate on Color"
+-----------------------------------------------------------------------------
 instance MakeArgs Color where
   makeArgs color = (:[]) <$> toJSVal color
 -----------------------------------------------------------------------------
