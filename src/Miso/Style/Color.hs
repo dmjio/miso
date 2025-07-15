@@ -1,5 +1,12 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE OverloadedLabels      #-}
+-----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Style.Color
@@ -175,6 +182,9 @@ module Miso.Style.Color
 import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+import           Data.Proxy
+import           GHC.TypeLits
+import           GHC.OverloadedLabels
 import           Numeric (showHex)
 import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
 import           Prelude hiding (tan)
@@ -190,22 +200,18 @@ data Color
 -----------------------------------------------------------------------------
 -- | This instance exists to make it easy to define hex colors.
 --
--- Use this instance at your own risk, no other members are supported and
--- will produce runtime failures. But it is quite convenient not to have to
--- use 'hex'.
---
 -- @
 -- grey :: Color
--- grey = 0xcccccc
+-- grey = #cccccc
 -- @
 --
-instance Num Color where
-  fromInteger = hex . fromIntegral
-  (+)    = error "(+) on Color"
-  (*)    = error "(*) on Color"
-  abs    = error "abs on Color"
-  signum = error "signum on Color"
-  negate = error "negate on Color"
+instance KnownSymbol color => IsLabel color Color where
+  fromLabel = Hex (ms color)
+    where
+      color = symbolVal (Proxy @color)
+-----------------------------------------------------------------------------
+instance KnownSymbol hex => IsLabel hex MisoString where
+  fromLabel = ms (symbolVal (Proxy @hex))
 -----------------------------------------------------------------------------
 instance MakeArgs Color where
   makeArgs color = (:[]) <$> toJSVal color
