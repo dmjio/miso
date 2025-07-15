@@ -172,9 +172,10 @@ module Miso.Style.Color
   , yellowgreen
   ) where
 -----------------------------------------------------------------------------
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+import           Numeric (showHex)
 import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
@@ -242,8 +243,13 @@ hsl = HSL
 hsla :: Int -> Int -> Int -> Double -> Color
 hsla = HSLA
 -----------------------------------------------------------------------------
-hex :: MisoString -> Color
-hex = Hex
+-- | Smart constructor for color in hexadecimal
+--
+-- > div [ style_ [ backgroundColor (hex 0xAABBCC) ] ] [ ]
+-- > -- "#aabbcc"
+--
+hex :: Int -> Color
+hex = Hex . ms . flip showHex ""
 -----------------------------------------------------------------------------
 transparent :: Color
 transparent = rgba 0 0 0 0
