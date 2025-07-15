@@ -147,6 +147,13 @@ community = template v
             , h2_
                 [class_ "subtitle animated pulse"]
                 [ a_
+                    [ href_ "https://github.com/haskell-miso"
+                    , target_ "_blank"
+                    ]
+                    [ text "GitHub"
+                    ]
+                , text " / "
+                , a_
                     [ href_ "https://matrix.to/#/#haskell-miso:matrix.org"
                     , target_ "_blank"
                     ]
