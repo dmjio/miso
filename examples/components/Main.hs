@@ -55,21 +55,17 @@ server = component () update_ $ \() ->
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_
-    [ onMountedWith Mount
-    ] (client_ "client 1")
-  , component_
-    [ onMountedWith Mount
-    ] (client_ "client 2")
+  , component_ (client_ "client 1")
+  , component_ (client_ "client 2")
   ] where
       update_ :: Action -> Effect () Action
       update_ = \case
-        AddOne ->
+        AddOne -> do
+          io_ (consoleLog "clicked add one")
           publish arithmetic Increment
-        SubtractOne ->
+        SubtractOne -> do
+          io_ (consoleLog "clicked subtract one")
           publish arithmetic Decrement
-        Mount childId ->
-          mail @MisoString childId "welcome"
         _ -> pure ()
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action
@@ -85,7 +81,8 @@ receiveMail _ = Just Oops
 clientComponent :: MisoString -> Component Int Action
 clientComponent name = component 0 update_ $ \m ->
   div_
-  []
+  [ onMountedWith Mount
+  ]
   [ br_ []
   , text (name <> " : " <> ms (m ^. _id))
   , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
@@ -111,6 +108,9 @@ clientComponent name = component 0 update_ $ \m ->
           io_ (consoleLog "I was just welcomed by my parent")
         Oops ->
           io_ (consoleLog "oops, bad mail decoding")
-        _ ->
-          pure ()
+        Mount cid -> do
+          io_ (consoleLog ("Got component id from mounting: " <> ms cid))
+          update_ Subscribe
+        GetComponentId componentId ->
+          io_ (consoleLog ("Got component id: " <> ms componentId))
 -----------------------------------------------------------------------------

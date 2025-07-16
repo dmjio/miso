@@ -127,8 +127,10 @@ function diffNodes(c, n, parent, context) {
     return;
   }
   if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
-    n["domRef"] = c["domRef"];
-    populate(c, n, context);
+    if (n["type"] !== "vcomp") {
+      n["domRef"] = c["domRef"];
+      populate(c, n, context);
+    }
   } else {
     replace(c, n, parent, context);
   }
@@ -162,7 +164,7 @@ function callCreated(obj, context) {
   if (obj["onCreated"])
     obj["onCreated"](obj["domRef"]);
   if (obj["type"] === "vcomp")
-    mountComponent(obj, context);
+    mountComponent(obj);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
@@ -261,13 +263,14 @@ function unmountComponent(obj) {
     obj["onUnmounted"](obj["domRef"]);
   obj["unmount"]();
 }
-function mountComponent(obj, context) {
+function mountComponent(obj) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
   obj["mount"](obj["domRef"], (componentId, componentTree) => {
+    obj = componentTree;
+    obj["type"] = "vcomp";
     obj["domRef"]["componentId"] = componentId;
-    obj["children"].push(componentTree);
-    context["appendChild"](obj["domRef"], componentTree["domRef"]);
+    obj["componentId"] = componentId;
     if (obj["onMounted"])
       obj["onMounted"](obj["domRef"]);
   });
@@ -410,8 +413,6 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
     parentStack.unshift(obj);
     for (var c in obj["children"]) {
       var child = obj["children"][c];
-      if (child["type"] === "vcomp")
-        continue;
       if (context["isEqual"](child["domRef"], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;

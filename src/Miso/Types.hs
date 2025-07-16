@@ -56,12 +56,12 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM, JSVal)
 import           Prelude hiding (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Mail)
-import           Miso.Effect (Effect, Sub, Sink, DOMRef)
+import           Miso.Effect (Effect, Sub, Sink)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
@@ -146,6 +146,9 @@ data JS
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
+-- | Type for DOM reference
+type DOMRef = JSVal
+-----------------------------------------------------------------------------
 -- | Smart constructor for @Component@ with sane defaults.
 component
   :: model
@@ -182,12 +185,15 @@ data LogLevel
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Synonym for '.tagType'
+type Tag = MisoString
+-----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View action
-  = VNode NS MisoString [Attribute action] [View action]
+  = VNode NS Tag [Attribute action] [View action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp [Attribute action] SomeComponent
+  | VComp SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
@@ -198,10 +204,9 @@ data SomeComponent
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
 component_
   :: forall model action a . Eq model
-  => [Attribute a]
-  -> Component model action
+  => Component model action
   -> View a
-component_ attrs app = VComp attrs (SomeComponent app)
+component_ = VComp . SomeComponent
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
