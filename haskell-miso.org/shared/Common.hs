@@ -241,32 +241,41 @@ examples = template v
                     ]
                 ]
                 [text "examples"]
-            , h2_
-                [class_ "subtitle animated pulse"]
-                [ a_
-                    [ target_ "_blank"
-                    , href_ "http://todo-mvc.haskell-miso.org/"
-                    ]
-                    [text "TodoMVC"]
-                , text " / "
-                , a_
-                    [ target_ "_blank"
-                    , href_ "http://mario.haskell-miso.org/"
-                    ]
-                    [text "Mario"]
-                , text " / "
-                , a_
-                    [ target_ "_blank"
-                    , href_ "https://haskell-miso.github.io/miso-flatris/"
-                    ]
-                    [text "Flatris"]
-                , text " / "
-                , a_
-                    [ target_ "_blank"
-                    , href_ "https://haskell-miso.github.io/miso-2048/"
-                    ]
-                    [text "2048"]
+            , a_
+              [ class_ "subtitle animated pulse"
+              ]
+              [ a_
+                [ target_ "_blank"
+                , href_ "https://haskell-miso.github.io/three-miso/"
                 ]
+                [ text "three.js"
+                ]
+              , text " / "
+              , a_
+                [ target_ "_blank"
+                , href_ "http://todo-mvc.haskell-miso.org/"
+                ]
+                [ text "TodoMVC"
+                ]
+              , text " / "
+              , a_
+                [ target_ "_blank"
+                , href_ "http://mario.haskell-miso.org/"
+                ]
+                [text "Mario"]
+              , text " / "
+              , a_
+                [ target_ "_blank"
+                , href_ "https://haskell-miso.github.io/miso-flatris/"
+                ]
+                [text "Flatris"]
+              , text " / "
+              , a_
+                [ target_ "_blank"
+                , href_ "https://haskell-miso.github.io/miso-2048/"
+                ]
+                [text "2048"]
+              ]
             ]
 
 home :: Model -> View Action
