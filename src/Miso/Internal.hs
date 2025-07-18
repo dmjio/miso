@@ -513,23 +513,24 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp (SomeComponent app)) _ _ _ = do
-  unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
-      IM.lookup componentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> pure ()
-        Just componentState ->
-          unmount app componentState
+runView hydrate (VComp (SomeComponent comp)) _ _ _ = do
   mountCallback <- do
-    FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
-      vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+    FFI.syncCallback1 $ \currentVTree -> do
+      domRef <- currentVTree ! ("domRef" :: MisoString)
+      ComponentState {..} <- initialize comp (drawComponent hydrate domRef comp)
+      newVTree <- toJSVal =<< liftIO (readIORef componentVTree)
+      FFI.setVTree currentVTree newVTree
       vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object vtree)
-      FFI.set "type" ("vcomp" :: MisoString) (Object vtree)
-      FFI.set "unmount" unmountCallback (Object vtree)
-      void $ call continuation global [vcompId, vtree]
+      FFI.set "componentId" vcompId (Object currentVTree)
+      FFI.set "componentId" vcompId (Object domRef)
+      FFI.set "type" ("vcomp" :: MisoString) (Object currentVTree)
+      flip (FFI.set "unmount") (Object currentVTree) =<< do
+        toJSVal =<< do
+          FFI.syncCallback $ do
+            IM.lookup componentId <$> liftIO (readIORef components) >>= \case
+              Nothing -> pure ()
+              Just componentState ->
+                unmount comp componentState
   vcomp <- createNode "vcomp" HTML "div"
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback

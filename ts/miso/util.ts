@@ -1,4 +1,4 @@
-import { VNode, VComp } from './types';
+import { VNode, VComp, VTree } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -90,4 +90,9 @@ export function getParentComponentId (
       return parentComponentId;
     }
     return climb (vcomp['domRef']);
+}
+
+export function setVTree (currentTree : VTree, newTree : VTree) : void {
+  currentTree = newTree;
+  return;
 }

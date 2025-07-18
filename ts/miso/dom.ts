@@ -228,24 +228,15 @@ function drawCanvas (obj: VTree) {
 // unmount components
 function unmountComponent(obj: VTree): void {
   if ('onUnmounted' in obj) obj['onUnmounted'](obj['domRef']);
-  obj['unmount'](obj['domRef']);
+  if ('unmount' in obj) obj['unmount']();
 }
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent(obj: VComp): void {
   if (obj['onBeforeMounted']) obj['onBeforeMounted']();
-  // Call 'onBeforeMounted' before calling 'mount'
-  obj['mount'](obj['domRef'], (componentId: ComponentId, componentTree: VComp) => {
-    // The Component mount
-
-    // mount() gives us the VTree from the Haskell side, so we just replace ourself
-    obj = componentTree;
-    obj['type'] = 'vcomp';
-    obj['domRef']['componentId'] = componentId;
-    obj['componentId'] = componentId;
-    if (obj['onMounted']) obj['onMounted'](obj['domRef']);
-  });
+  obj['mount'](obj);
+  if (obj['onMounted']) obj['onMounted'](obj['domRef']);
 }
 // creates nodes on virtual dom (vtext, vcomp, vnode)
 function create(obj: VTree, parent: Element, context: Context): void {

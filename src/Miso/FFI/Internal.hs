@@ -48,6 +48,7 @@ module Miso.FFI.Internal
    , eventJSON
    -- * Object
    , set
+   , setVTree
    -- * DOM
    , getBody
    , getDocument
@@ -598,4 +599,8 @@ getParentComponentId domRef =
 -- For use in `onMounted`, etc.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
+-----------------------------------------------------------------------------
+-- | Climb the tree, get the parent.
+setVTree :: JSVal -> JSVal -> JSM ()
+setVTree c n = void $ jsg "miso" # "setVTree" $ [c,n]
 -----------------------------------------------------------------------------

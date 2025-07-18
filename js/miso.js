@@ -55,6 +55,10 @@ function getParentComponentId(vcomp) {
   };
   return climb(vcomp["domRef"]);
 }
+function setVTree(currentTree, newTree) {
+  currentTree = newTree;
+  return;
+}
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -261,19 +265,15 @@ function drawCanvas(obj) {
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
     obj["onUnmounted"](obj["domRef"]);
-  obj["unmount"](obj["domRef"]);
+  if ("unmount" in obj)
+    obj["unmount"]();
 }
 function mountComponent(obj) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
-  obj["mount"](obj["domRef"], (componentId, componentTree) => {
-    obj = componentTree;
-    obj["type"] = "vcomp";
-    obj["domRef"]["componentId"] = componentId;
-    obj["componentId"] = componentId;
-    if (obj["onMounted"])
-      obj["onMounted"](obj["domRef"]);
-  });
+  obj["mount"](obj);
+  if (obj["onMounted"])
+    obj["onMounted"](obj["domRef"]);
 }
 function create(obj, parent, context) {
   if (obj["type"] === "vtext") {
@@ -792,6 +792,7 @@ globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["getParentComponentId"] = getParentComponentId;
+globalThis["miso"]["setVTree"] = setVTree;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["context"] = context;

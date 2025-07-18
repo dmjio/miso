@@ -9,7 +9,7 @@
 module Main where
 -----------------------------------------------------------------------------
 import           GHC.Generics
-import           Data.Aeson
+import           Data.Aeson hiding ((.=))
 -----------------------------------------------------------------------------
 import           Miso
 import           Miso.String
@@ -27,6 +27,7 @@ data Action
   | Unsubscribe
   | Welcomed
   | Oops
+  | Swap
   | GetComponentId Int
   | Notification (Result Message)
 -----------------------------------------------------------------------------
@@ -48,25 +49,19 @@ arithmetic = topic "arithmetic"
 --
 -- Notice the server has no 'model' (e.g. `()`)
 --
-server :: Component () Action
-server = component () update_ $ \() ->
-  div_
-  []
-  [ "Server component"
-  , button_ [ onClick AddOne ] [ "+" ]
-  , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_ (client_ "client 1")
-  , component_ (client_ "client 2")
-  ] where
-      update_ :: Action -> Effect () Action
-      update_ = \case
-        AddOne -> do
-          io_ (consoleLog "clicked add one")
-          publish arithmetic Increment
-        SubtractOne -> do
-          io_ (consoleLog "clicked subtract one")
-          publish arithmetic Decrement
-        _ -> pure ()
+server :: Component Bool Action
+server = component True update_ $ \conditional ->
+      div_ []
+       [ button_
+         [ onClick Swap ]
+         [ "click me"
+         ]
+      , if conditional
+        then "Server component"
+        else component_ (client_ "client 1")
+      ]
+  where
+     update_ = \Swap -> _id %= not
 -----------------------------------------------------------------------------
 client_ :: MisoString -> Component Int Action
 client_ name = (clientComponent name)
@@ -79,38 +74,39 @@ receiveMail (String "welcome") = Just Welcomed
 receiveMail _ = Just Oops
 -----------------------------------------------------------------------------
 clientComponent :: MisoString -> Component Int Action
-clientComponent name = component 0 update_ $ \m ->
+clientComponent name = component 0 (\_ -> pure ()) $ \m ->
   div_
   [ onMountedWith Mount
   ]
   [ br_ []
   , text (name <> " : " <> ms (m ^. _id))
-  , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
-  , button_ [ onClick Subscribe ] [ "subscribe" ]
-  ] where
-      update_ :: Action -> Effect Int Action
-      update_ = \case
-        AddOne -> do
-          _id += 1
-        SubtractOne ->
-          _id -= 1
-        Unsubscribe ->
-          unsubscribe arithmetic
-        Subscribe ->
-          subscribe arithmetic Notification
-        Notification (Success Increment) ->
-          update_ AddOne
-        Notification (Success Decrement) ->
-          update_ SubtractOne
-        Notification (Error msg) ->
-          io_ $ consoleError ("Decode failure: " <> ms msg)
-        Welcomed ->
-          io_ (consoleLog "I was just welcomed by my parent")
-        Oops ->
-          io_ (consoleLog "oops, bad mail decoding")
-        Mount cid -> do
-          io_ (consoleLog ("Got component id from mounting: " <> ms cid))
-          update_ Subscribe
-        GetComponentId componentId ->
-          io_ (consoleLog ("Got component id: " <> ms componentId))
------------------------------------------------------------------------------
+  ]
+  -- , button_ [ onClick Unsubscribe ] [ "unsubscribe" ]
+  -- , button_ [ onClick Subscribe ] [ "subscribe" ]
+  -- ] where
+  --     update_ :: Action -> Effect Int Action
+  --     update_ = \case
+  --       AddOne -> do
+  --         _id += 1
+  --       SubtractOne ->
+  --         _id -= 1
+  --       Unsubscribe ->
+  --         unsubscribe arithmetic
+  --       Subscribe ->
+  --         subscribe arithmetic Notification
+  --       Notification (Success Increment) ->
+  --         update_ AddOne
+  --       Notification (Success Decrement) ->
+  --         update_ SubtractOne
+  --       Notification (Error msg) ->
+  --         io_ $ consoleError ("Decode failure: " <> ms msg)
+  --       Welcomed ->
+  --         io_ (consoleLog "I was just welcomed by my parent")
+  --       Oops ->
+  --         io_ (consoleLog "oops, bad mail decoding")
+  --       Mount cid -> do
+  --         io_ (consoleLog ("Got component id from mounting: " <> ms cid))
+  --         update_ Subscribe
+  --       GetComponentId componentId ->
+  --         io_ (consoleLog ("Got component id: " <> ms componentId))
+-- -----------------------------------------------------------------------------
