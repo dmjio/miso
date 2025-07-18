@@ -519,7 +519,7 @@ runView hydrate (VComp (SomeComponent comp)) _ _ _ = do
       domRef <- currentVTree ! ("domRef" :: MisoString)
       ComponentState {..} <- initialize comp (drawComponent hydrate domRef comp)
       newVTree <- toJSVal =<< liftIO (readIORef componentVTree)
-      FFI.setVTree currentVTree newVTree
+      void (FFI.setVTree currentVTree newVTree)
       vcompId <- toJSVal componentId
       FFI.set "componentId" vcompId (Object currentVTree)
       FFI.set "componentId" vcompId (Object domRef)

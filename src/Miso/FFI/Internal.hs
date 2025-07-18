@@ -601,6 +601,6 @@ getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
 -- | Climb the tree, get the parent.
-setVTree :: JSVal -> JSVal -> JSM ()
-setVTree c n = void $ jsg "miso" # "setVTree" $ [c,n]
+setVTree :: JSVal -> JSVal -> JSM JSVal
+setVTree c n = jsg "miso" # "setVTree" $ [c,n]
 -----------------------------------------------------------------------------

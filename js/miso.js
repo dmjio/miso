@@ -57,7 +57,7 @@ function getParentComponentId(vcomp) {
 }
 function setVTree(currentTree, newTree) {
   currentTree = newTree;
-  return;
+  return currentTree;
 }
 
 // ts/miso/smart.ts

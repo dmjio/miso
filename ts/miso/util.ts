@@ -92,7 +92,7 @@ export function getParentComponentId (
     return climb (vcomp['domRef']);
 }
 
-export function setVTree (currentTree : VTree, newTree : VTree) : void {
+export function setVTree (currentTree : VTree, newTree : VTree) : VTree {
   currentTree = newTree;
-  return;
+  return currentTree;
 }
