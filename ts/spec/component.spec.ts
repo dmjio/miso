@@ -43,21 +43,15 @@ describe ('Component tests', () => {
     var mountCount = 0;
     var unmountCount = 0;
     var newNode = vcomp({
-      mount: (domRef, callback) => {
+      mount: (vtree) => {
         mountCount++;
       },
       unmount: () => {
         unmountCount++;
       },
-      props: { id: 'vcomp-foo' },
-      css: {
-        'background-color': 'red',
-      },
     });
     diff(null, newNode, document.body, context);
     expect(mountCount).toBe(1);
-    expect(newNode.domRef.id).toBe('vcomp-foo');
-    expect(newNode.domRef.style['background-color']).toBe('red');
     diff(newNode, null, document.body, context);
     expect(unmountCount).toBe(1);
   });
@@ -68,25 +62,21 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      css: { 'background-color': 'red' },
     });
     diff(null, compNode1, document.body, context);
     expect(mountCount).toBe(1);
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
-    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('red');
 
     // Replace node
     mountCount = 0;
     var compNode2 = vcomp({
       mount: () => {
         mountCount++;
-      },
-      css: { 'background-color': 'green' },
+      }
     });
     diff(compNode1, compNode2, document.body, context);
-    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
   test('Should replace Component with new Component (new because different key)', () => {
