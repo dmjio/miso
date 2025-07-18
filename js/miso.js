@@ -261,7 +261,7 @@ function drawCanvas(obj) {
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
     obj["onUnmounted"](obj["domRef"]);
-  obj["unmount"]();
+  obj["unmount"](obj["domRef"]);
 }
 function mountComponent(obj) {
   if (obj["onBeforeMounted"])
