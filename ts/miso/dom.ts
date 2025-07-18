@@ -63,6 +63,33 @@ function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void 
      `key_` is overloaded to operate on child lists (`syncChildren` operations)
      and also as a stable name identifier in Component diffing.
 
+     This key must live on the parent.
+
+     -- example
+     sampleComponent :: Component Bool Action
+     sampleComponent = component True update_ $ \conditional ->
+       div_
+       []
+       [ button_
+         [ onClick Swap ]
+         [ "click me"
+         ]
+      , if conditional
+        then div_
+             [ key_ ("key1" :: MisoString)
+             ]
+             [ component_ (client_ "component 1")
+             ]
+        else div_
+             [ key_ ("key2" :: MisoString)
+             ]
+             [ component_ (client_ "component 2")
+             ]
+      ]
+  where
+     update_ Swap = _id %= not
+     update_ _ = pure ()
+
    */
 
   if (
@@ -70,8 +97,8 @@ function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void 
     n['key'] === c['key'] &&
     n['type'] === c['type']
   ) {
+      n['domRef'] = c['domRef'];
       if (n['type'] !== 'vcomp') {
-        n['domRef'] = c['domRef'];
         populate(c, n, context);
       }
   } else {

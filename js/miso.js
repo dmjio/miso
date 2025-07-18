@@ -131,8 +131,8 @@ function diffNodes(c, n, parent, context) {
     return;
   }
   if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
+    n["domRef"] = c["domRef"];
     if (n["type"] !== "vcomp") {
-      n["domRef"] = c["domRef"];
       populate(c, n, context);
     }
   } else {
