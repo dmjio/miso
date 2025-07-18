@@ -1,4 +1,4 @@
-import { Context, VNode, VComp, ComponentId, DOMRef, VTree, Props, CSS } from './types';
+import { Context, VNode, VComp, DOMRef, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
@@ -52,33 +52,28 @@ function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void 
     n['domRef'] = c['domRef'];
     return;
   }
+
+  /* dmj:
+
+     This is the edge case where users might be confused as to why their Component
+     aren't being replaced. This requires a key_ identifier (i.e. `StableName` in Haskell
+     nomenclature) placed by *the user* in order to differentiate if a Component
+     should be replaced or not.
+
+     `key_` is overloaded to operate on child lists (`syncChildren` operations)
+     and also as a stable name identifier in Component diffing.
+
+   */
+
   if (
     n['tag'] === c['tag'] &&
     n['key'] === c['key'] &&
     n['type'] === c['type']
   ) {
       if (n['type'] !== 'vcomp') {
-
-          /* dmj:
-
-             If both 'n' and 'c' are components with identical keys, don't call `mount()` on `n`.
-             Just assign it 'c'.
-
-             This is the edge case where users might be confused as to why their Component
-             aren't being replaced. This requires a key_ identifier (i.e. `StableName` in Haskell
-             nomenclature) placed by *the user* in order to differentiate if a Component
-             should be replaced or not.
-
-             `key_` is overloaded to operate on child lists (`syncChildren` operations)
-             and also as a stable name identifier in Component diffing.
-
-           */
-
         n['domRef'] = c['domRef'];
         populate(c, n, context);
-
       }
-
   } else {
     // dmj: we replace when things just don't line up during the diff
     replace(c, n, parent, context);

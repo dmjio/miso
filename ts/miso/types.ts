@@ -24,8 +24,8 @@ type VComp = {
   onMounted: (domRef: DOMRef) => void;
   onBeforeUnmounted: () => void;
   onUnmounted: (domRef: DOMRef) => void;
-  mount: (domRef: DOMRef, callback: ((componentId : ComponentId, component: VTree) => void)) => void;
-  unmount: (e: DOMRef) => void;
+  mount: (object: VTree) => void;
+  unmount: () => void;
 };
 
 type VNode = {

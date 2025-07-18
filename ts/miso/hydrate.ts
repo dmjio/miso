@@ -222,15 +222,14 @@ function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): bo
             }
             break;
           case 'vcomp':
-            vdomChild['mount'](vdomChild['domRef'], (componentId: ComponentId, component: VComp) => {
-              vdomChild['children'].push(component);
-              walk(logLevel, vdomChild, node.childNodes[i], context);
-            });
+            vdomChild['mount'](vdomChild);
+            walk(logLevel, vdomChild, node.childNodes[i], context);
             break;
           default:
             if (domChild.nodeType !== 1) return false;
             vdomChild['domRef'] = node.childNodes[i] as DOMRef;
             walk(logLevel, vdomChild, vdomChild['domRef'], context);
+            break;
         }
       }
   }
