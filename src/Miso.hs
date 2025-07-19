@@ -115,7 +115,7 @@ miso f = withJS $ do
   initialize vcomp $ \snk -> do
     renderScripts scripts
     renderStyles styles
-    VTree (Object vtree) <- runView Hydrate (component_ vcomp) snk logLevel events
+    VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
@@ -165,7 +165,7 @@ initComponent
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> hooks >> do
-    vtree <- runView Draw (component_ vcomp) snk logLevel events
+    vtree <- runView Draw (view model) snk logLevel events
     mount <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
