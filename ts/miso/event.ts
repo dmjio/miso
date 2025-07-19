@@ -98,7 +98,8 @@ function delegateEvent(
     parentStack.unshift(obj);
     for (var c in obj['children']) {
       var child = obj['children'][c];
-      if (child['type'] === 'vcomp') continue;
+      // dmj: allows event propagation
+      // if (child['type'] === 'vcomp') continue;
       if (context['isEqual'](child['domRef'], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;

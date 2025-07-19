@@ -93,14 +93,8 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp attributes (SomeComponent Component {..})) =
-  mconcat
-  [ stringUtf8 "<div "
-  , intercalate " " (renderAttrs <$> attributes)
-  , ">"
-  , renderBuilder (view model)
-  , "</div>"
-  ]
+renderBuilder (VComp (SomeComponent Component {..})) =
+  renderBuilder (view model)
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =

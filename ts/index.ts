@@ -8,6 +8,7 @@ import {
   eventJSON,
   fetchJSON,
   undelegate,
+  setVTree,
   shouldSync,
   getParentComponentId,
   integrityCheck,
@@ -27,6 +28,7 @@ globalThis['miso']['eventJSON'] = eventJSON;
 globalThis['miso']['fetchJSON'] = fetchJSON;
 globalThis['miso']['undelegate'] = undelegate;
 globalThis['miso']['getParentComponentId'] = getParentComponentId;
+globalThis['miso']['setVTree'] = setVTree;
 globalThis['miso']['shouldSync'] = shouldSync;
 globalThis['miso']['integrityCheck'] = integrityCheck;
 globalThis['miso']['context'] = context;

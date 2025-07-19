@@ -24,7 +24,6 @@ module Miso.Effect
     Effect
   , Sub
   , Sink
-  , DOMRef
     -- *** Combinators
   , (<#)
   , (#>)
@@ -50,7 +49,6 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS )
-import           Language.Javascript.JSaddle (JSVal)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
@@ -126,10 +124,9 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect model action = RWS DOMRef [Sink action -> JSM ()] model ()
+type Effect model action = RWS ComponentId [Sink action -> JSM ()] model ()
 -----------------------------------------------------------------------------
--- | Type to represent a DOM reference
-type DOMRef = JSVal
+type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | @MonadFail@ instance for @EffectCore@
 #if __GLASGOW_HASKELL__ <= 881
@@ -140,7 +137,7 @@ instance Fail.MonadFail Identity where
 -- | Internal function used to unwrap an @EffectCore@
 runEffect
     :: Effect model action
-    -> DOMRef
+    -> ComponentId
     -> model
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS

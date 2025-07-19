@@ -111,8 +111,8 @@ import           Miso.Util
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 miso :: Eq model => (URI -> Component model action) -> JSM ()
 miso f = withJS $ do
-  app@Component {..} <- f <$> getURI
-  initialize app $ \snk -> do
+  vcomp@Component {..} <- f <$> getURI
+  initialize vcomp $ \snk -> do
     renderScripts scripts
     renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events

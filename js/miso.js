@@ -55,6 +55,10 @@ function getParentComponentId(vcomp) {
   };
   return climb(vcomp["domRef"]);
 }
+function setVTree(currentTree, newTree) {
+  currentTree = newTree;
+  return currentTree;
+}
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -128,7 +132,9 @@ function diffNodes(c, n, parent, context) {
   }
   if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
     n["domRef"] = c["domRef"];
-    populate(c, n, context);
+    if (n["type"] !== "vcomp") {
+      populate(c, n, context);
+    }
   } else {
     replace(c, n, parent, context);
   }
@@ -162,7 +168,7 @@ function callCreated(obj, context) {
   if (obj["onCreated"])
     obj["onCreated"](obj["domRef"]);
   if (obj["type"] === "vcomp")
-    mountComponent(obj, context);
+    mountComponent(obj);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
@@ -259,18 +265,15 @@ function drawCanvas(obj) {
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
     obj["onUnmounted"](obj["domRef"]);
-  obj["unmount"]();
+  if ("unmount" in obj)
+    obj["unmount"]();
 }
-function mountComponent(obj, context) {
+function mountComponent(obj) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
-  obj["mount"](obj["domRef"], (componentId, componentTree) => {
-    obj["domRef"]["componentId"] = componentId;
-    obj["children"].push(componentTree);
-    context["appendChild"](obj["domRef"], componentTree["domRef"]);
-    if (obj["onMounted"])
-      obj["onMounted"](obj["domRef"]);
-  });
+  obj["mount"](obj);
+  if (obj["onMounted"])
+    obj["onMounted"](obj["domRef"]);
 }
 function create(obj, parent, context) {
   if (obj["type"] === "vtext") {
@@ -410,8 +413,6 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
     parentStack.unshift(obj);
     for (var c in obj["children"]) {
       var child = obj["children"][c];
-      if (child["type"] === "vcomp")
-        continue;
       if (context["isEqual"](child["domRef"], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
@@ -653,16 +654,15 @@ function walk(logLevel, vtree, node, context) {
             }
             break;
           case "vcomp":
-            vdomChild["mount"](vdomChild["domRef"], (componentId, component) => {
-              vdomChild["children"].push(component);
-              walk(logLevel, vdomChild, node.childNodes[i], context);
-            });
+            vdomChild["mount"](vdomChild);
+            walk(logLevel, vdomChild, node.childNodes[i], context);
             break;
           default:
             if (domChild.nodeType !== 1)
               return false;
             vdomChild["domRef"] = node.childNodes[i];
             walk(logLevel, vdomChild, vdomChild["domRef"], context);
+            break;
         }
       }
   }
@@ -791,6 +791,7 @@ globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["getParentComponentId"] = getParentComponentId;
+globalThis["miso"]["setVTree"] = setVTree;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
 globalThis["miso"]["context"] = context;
