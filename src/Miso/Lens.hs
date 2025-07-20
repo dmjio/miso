@@ -131,6 +131,7 @@ module Miso.Lens
   , (<<%=)
   , assign
   , use
+  , view
   , (?=)
   , (<>~)
   , _1
@@ -138,6 +139,7 @@ module Miso.Lens
   , _id
   ) where
 ----------------------------------------------------------------------------
+import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
@@ -471,6 +473,28 @@ l <<.= b = do
   old <- use l
   l .= b
   return old
+----------------------------------------------------------------------------
+-- | Retrieves the field associated with a record in @MonadReader@ using a @Lens@.
+--
+-- @
+-- import Miso.String (ms)
+--
+-- newtype Model = Model { _value :: Int }
+--   deriving (Show, Eq)
+--
+-- data Action = PrintInt
+--
+-- value :: Lens Model Int
+-- value = lens _value $ \\p x -> p { _value = x }
+--
+-- update :: Action -> Effect Model Action
+-- update PrintInt = do
+--   Model x <- view value
+--   io_ $ consoleLog (ms x) -- prints model value
+-- @
+----------------------------------------------------------------------------
+view :: MonadReader record m => Lens record field -> m field
+view lens_ = asks (^. lens_)
 ----------------------------------------------------------------------------
 -- | Modifies the field of a record in @MonadState@ using a @Lens@.
 -- Returns the /previous/ value, before modification.
