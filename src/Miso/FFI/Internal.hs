@@ -441,31 +441,31 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 --
 -- > <head><style>body { background-color: green; }</style></head>
 --
-addStyle :: MisoString -> JSM ()
+addStyle :: MisoString -> JSM JSVal
 addStyle css = do
   style <- jsg "document" # "createElement" $ ["style"]
   (style <# "innerHTML") css
-  void $ jsg "document" ! "head" # "appendChild" $ [style]
+  jsg "document" ! "head" # "appendChild" $ [style]
 -----------------------------------------------------------------------------
 -- | Appends a 'script_' element containing JS to 'head_'
 --
 -- > addScript "function () { alert('hi'); }"
 --
-addScript :: MisoString -> JSM ()
+addScript :: MisoString -> JSM JSVal
 addScript css = do
   script <- jsg "document" # "createElement" $ ["script"]
   (script <# "innerHTML") css
-  void $ jsg "document" ! "head" # "appendChild" $ [script]
+  jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
 -- | Appends a \<script\> element to 'head_'
 --
 -- > addSrc "https://example.com/script.js"
 --
-addSrc :: MisoString -> JSM ()
+addSrc :: MisoString -> JSM JSVal
 addSrc url = do
   link <- jsg "document" # "createElement" $ ["script"]
   _ <- link # "setAttribute" $ ["src", fromMisoString url]
-  void $ jsg "document" ! "head" # "appendChild" $ [link]
+  jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'link_' element to 'head_'
 -- The 'link_' tag will contain a URL to a CSS file.
@@ -474,12 +474,12 @@ addSrc url = do
 --
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
-addStyleSheet :: MisoString -> JSM ()
+addStyleSheet :: MisoString -> JSM JSVal
 addStyleSheet url = do
   link <- jsg "document" # "createElement" $ ["link"]
   _ <- link # "setAttribute" $ ["rel","stylesheet"]
   _ <- link # "setAttribute" $ ["href", fromMisoString url]
-  void $ jsg "document" ! "head" # "appendChild" $ [link]
+  jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --

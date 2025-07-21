@@ -76,8 +76,8 @@ module Miso
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef (newIORef)
-import           Language.Javascript.JSaddle (Object(Object), JSM)
+import           Data.IORef (newIORef, IORef)
+import           Language.Javascript.JSaddle (Object(Object), JSM, JSVal)
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
@@ -113,13 +113,12 @@ miso :: Eq model => (URI -> Component model action) -> JSM ()
 miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
-    renderScripts scripts
-    renderStyles styles
+    refs <- liftIO . newIORef =<< (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (mount, viewRef)
+    pure (refs, mount, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
 (🍜) :: Eq model => (URI -> Component model action) -> JSM ()
@@ -134,8 +133,8 @@ startComponent
   -> JSM ()
 startComponent vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
-    renderScripts scripts
-    renderStyles styles
+    liftIO . newIORef =<< do
+      (++) <$> renderScripts scripts <*> renderStyles styles
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
@@ -147,7 +146,7 @@ renderComponent
   -- ^ Name of the JS object that contains the drawing context
   -> Component model action
   -- ^ Component application
-  -> JSM ()
+  -> JSM (IORef [JSVal])
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
 renderComponent Nothing vcomp _ = startComponent vcomp
@@ -160,16 +159,17 @@ initComponent
   :: Eq model
   => Component model action
   -- ^ Component application
-  -> JSM ()
+  -> JSM (IORef [JSVal])
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
-  initialize vcomp $ \snk -> hooks >> do
+  initialize vcomp $ \snk -> do
+    refs <- hooks
     vtree <- runView Draw (view model) snk logLevel events
     mount <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount
     viewRef <- liftIO (newIORef vtree)
-    pure (mount, viewRef)
+    pure (refs, mount, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

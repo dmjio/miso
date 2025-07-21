@@ -84,7 +84,7 @@ import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink)
 initialize
   :: Eq model
   => Component model action
-  -> (Sink action -> JSM (DOMRef, IORef VTree))
+  -> (Sink action -> JSM (IORef [DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
 initialize Component {..} getView = do
@@ -95,7 +95,7 @@ initialize Component {..} getView = do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
   componentId <- liftIO freshComponentId
-  (componentMount, componentVTree) <- getView componentSink
+  (componentScripts, componentMount, componentVTree) <- getView componentSink
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -150,6 +150,7 @@ data ComponentState model action
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentMailboxThreadId :: ThreadId
+  , componentScripts         :: IORef [DOMRef]
   }
 -----------------------------------------------------------------------------
 -- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
@@ -462,12 +463,14 @@ drawComponent
   -> DOMRef
   -> Component model action
   -> Sink action
-  -> JSM (JSVal, IORef VTree)
+  -> JSM (IORef [DOMRef], JSVal, IORef VTree)
 drawComponent hydrate mountElement Component {..} snk = do
+  refs <- liftIO . newIORef =<< do
+    (++) <$> renderScripts scripts <*> renderStyles styles
   vtree <- runView hydrate (view model) snk logLevel events
   when (hydrate == Draw) (diff Nothing (Just vtree) mountElement)
   ref <- liftIO (newIORef vtree)
-  pure (mountElement, ref)
+  pure (refs, mountElement, ref)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
@@ -477,12 +480,24 @@ drain
 drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
   if S.null actions then pure () else go actions
-    where
-      go as = do
-        x <- liftIO (readIORef componentModel)
-        y <- foldEffects update Sync componentMount componentSink (toList as) x
-        liftIO (atomicWriteIORef componentModel y)
-        drain app cs
+  unloadScripts cs
+      where
+        go as = do
+          x <- liftIO (readIORef componentModel)
+          y <- foldEffects update Sync componentMount componentSink (toList as) x
+          liftIO (atomicWriteIORef componentModel y)
+          drain app cs
+-----------------------------------------------------------------------------
+-- | Post unmount call to drop the <style> and <script> in <head>
+unloadScripts :: ComponentState model action -> JSM ()
+unloadScripts ComponentState {..} = do
+  refs <- liftIO (readIORef componentScripts)
+  forM_ refs $ \domRef ->
+    -- dmj: abstract this out into context
+    jsg @MisoString "document"
+      ! ("head" :: MisoString)
+      # ("removeChild" :: MisoString)
+      $ [domRef]
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a @Component@
 unmount
@@ -498,6 +513,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
+  unloadScripts cs
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId =
@@ -645,9 +661,9 @@ registerComponent componentState = liftIO
 -- Meant for development purposes
 -- Appends CSS to <head>
 --
-renderStyles :: [CSS] -> JSM ()
+renderStyles :: [CSS] -> JSM [JSVal]
 renderStyles styles =
-  forM_ styles $ \case
+  forM styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
     Sheet sheet -> FFI.addStyle (renderStyleSheet sheet)
@@ -657,9 +673,9 @@ renderStyles styles =
 -- Meant for development purposes
 -- Appends JS to <head>
 --
-renderScripts :: [JS] -> JSM ()
+renderScripts :: [JS] -> JSM [JSVal]
 renderScripts scripts =
-  forM_ scripts $ \case
+  forM scripts $ \case
     Src src -> FFI.addSrc src
     Script script -> FFI.addScript script
 -----------------------------------------------------------------------------
