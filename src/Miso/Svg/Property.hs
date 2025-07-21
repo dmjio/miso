@@ -47,7 +47,6 @@ module Miso.Svg.Property
   , gradientTransform_
   , gradientUnits_
   , height_
-  , href_
   , id_
   , in_'
   , in2_
@@ -337,12 +336,6 @@ gradientUnits_ = attr "gradientUnits"
 -- | [height](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/height) attribute
 height_ ::  MisoString -> Attribute action
 height_ = attr "height"
------------------------------------------------------------------------------
--- | [href](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/href) attribute
---
--- @since 1.9.0.0
-href_ ::  MisoString -> Attribute action
-href_ = attr "href"
 -----------------------------------------------------------------------------
 -- | [id](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/id) attribute
 id_ ::  MisoString -> Attribute action

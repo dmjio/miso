@@ -223,7 +223,3 @@ voffset_ = textProp "voffset"
 width_ :: MisoString -> Attribute action
 width_ = textProp "width"
 -----------------------------------------------------------------------------
--- | @since 1.9.0.0
-xmlns_ :: MisoString -> Attribute action
-xmlns_ = textProp "xmlns"
------------------------------------------------------------------------------
