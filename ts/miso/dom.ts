@@ -217,7 +217,7 @@ function drawCanvas (obj: VTree) {
 // unmount components
 function unmountComponent(obj: VTree): void {
   if ('onUnmounted' in obj) obj['onUnmounted'](obj['domRef']);
-  obj['unmount']();
+  obj['unmount'](obj['domRef']);
 }
 
 // mounts vcomp by calling into Haskell side.
