@@ -84,7 +84,7 @@ import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink)
 initialize
   :: Eq model
   => Component model action
-  -> (Sink action -> JSM (IORef [DOMRef], DOMRef, IORef VTree))
+  -> (Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
 initialize Component {..} getView = do
@@ -150,7 +150,7 @@ data ComponentState model action
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentMailboxThreadId :: ThreadId
-  , componentScripts         :: IORef [DOMRef]
+  , componentScripts         :: [DOMRef]
   }
 -----------------------------------------------------------------------------
 -- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
@@ -463,10 +463,9 @@ drawComponent
   -> DOMRef
   -> Component model action
   -> Sink action
-  -> JSM (IORef [DOMRef], JSVal, IORef VTree)
+  -> JSM ([DOMRef], JSVal, IORef VTree)
 drawComponent hydrate mountElement Component {..} snk = do
-  refs <- liftIO . newIORef =<< do
-    (++) <$> renderScripts scripts <*> renderStyles styles
+  refs <- (++) <$> renderScripts scripts <*> renderStyles styles
   vtree <- runView hydrate (view model) snk logLevel events
   when (hydrate == Draw) (diff Nothing (Just vtree) mountElement)
   ref <- liftIO (newIORef vtree)
@@ -491,8 +490,7 @@ drain app@Component{..} cs@ComponentState {..} = do
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState model action -> JSM ()
 unloadScripts ComponentState {..} = do
-  refs <- liftIO (readIORef componentScripts)
-  forM_ refs $ \domRef ->
+  forM_ componentScripts $ \domRef ->
     -- dmj: abstract this out into context
     jsg @MisoString "document"
       ! ("head" :: MisoString)

@@ -76,7 +76,7 @@ module Miso
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef (newIORef, IORef)
+import           Data.IORef (newIORef)
 import           Language.Javascript.JSaddle (Object(Object), JSM, JSVal)
 #ifndef GHCJS_BOTH
 #ifdef WASM
@@ -113,7 +113,7 @@ miso :: Eq model => (URI -> Component model action) -> JSM ()
 miso f = withJS $ do
   app@Component {..} <- f <$> getURI
   initialize app $ \snk -> do
-    refs <- liftIO . newIORef =<< (++) <$> renderScripts scripts <*> renderStyles styles
+    refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
@@ -133,8 +133,8 @@ startComponent
   -> JSM ()
 startComponent vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
-    liftIO . newIORef =<< do
-      (++) <$> renderScripts scripts <*> renderStyles styles
+     (++) <$> renderScripts scripts
+          <*> renderStyles styles
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
@@ -146,7 +146,7 @@ renderComponent
   -- ^ Name of the JS object that contains the drawing context
   -> Component model action
   -- ^ Component application
-  -> JSM (IORef [JSVal])
+  -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
 renderComponent Nothing vcomp _ = startComponent vcomp
@@ -159,7 +159,7 @@ initComponent
   :: Eq model
   => Component model action
   -- ^ Component application
-  -> JSM (IORef [JSVal])
+  -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
