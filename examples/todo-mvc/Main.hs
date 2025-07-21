@@ -84,17 +84,18 @@ data Msg
 main :: IO ()
 main = run (startComponent app)
 
-app :: Component Model Msg
-app = (component emptyModel updateModel viewModel)
+app :: Component parent Model Msg
+app = (component emptyModel viewModel)
   { events = defaultEvents <> keyboardEvents
   , initialAction = Just FocusOnInput
   , styles =
       [ Href "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
       , Href "https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
       ]
+  , update = updateModel
   }
 
-updateModel :: Msg -> Effect Model Msg
+updateModel :: Msg -> Effect parent Model Msg
 updateModel NoOp = pure ()
 updateModel FocusOnInput =
   io_ (focus "input-box")
@@ -154,7 +155,7 @@ filterMap xs predicate f = go' xs
         | predicate y = f y : go' ys
         | otherwise = y : go' ys
 
-viewModel :: Model -> View Msg
+viewModel :: Model -> View parent Msg
 viewModel m@Model{..} =
     div_
         [ class_ "todomvc-wrapper"
@@ -168,7 +169,7 @@ viewModel m@Model{..} =
         , infoFooter
         ]
 
-viewEntries :: MisoString -> [Entry] -> View Msg
+viewEntries :: MisoString -> [Entry] -> View parent Msg
 viewEntries visibility entries =
     section_
         [ class_ "main"
@@ -198,10 +199,10 @@ viewEntries visibility entries =
             "Active" -> not completed
             _ -> True
 
-viewKeyedEntry :: Entry -> View Msg
+viewKeyedEntry :: Entry -> View parent Msg
 viewKeyedEntry = viewEntry
 
-viewEntry :: Entry -> View Msg
+viewEntry :: Entry -> View parent Msg
 viewEntry Entry{..} =
     li_
         [ class_ $
@@ -237,7 +238,7 @@ viewEntry Entry{..} =
             ]
         ]
 
-viewControls :: Model -> MisoString -> [Entry] -> View Msg
+viewControls :: Model -> MisoString -> [Entry] -> View parent Msg
 viewControls model visibility entries =
     footer_
         [ class_ "footer"
@@ -251,7 +252,7 @@ viewControls model visibility entries =
     entriesCompleted = length . filter completed $ entries
     entriesLeft = length entries - entriesCompleted
 
-viewControlsCount :: Int -> View Msg
+viewControlsCount :: Int -> View parent Msg
 viewControlsCount entriesLeft =
     span_
         [class_ "todo-count"]
@@ -261,7 +262,7 @@ viewControlsCount entriesLeft =
   where
     item_ = S.pack $ bool " items" " item" (entriesLeft == 1)
 
-viewControlsFilters :: MisoString -> View Msg
+viewControlsFilters :: MisoString -> View parent Msg
 viewControlsFilters visibility =
     ul_
         [class_ "filters"]
@@ -272,7 +273,7 @@ viewControlsFilters visibility =
         , visibilitySwap "#/completed" "Completed" visibility
         ]
 
-visibilitySwap :: MisoString -> MisoString -> MisoString -> View Msg
+visibilitySwap :: MisoString -> MisoString -> MisoString -> View parent Msg
 visibilitySwap uri visibility actualVisibility =
     li_
         []
@@ -284,7 +285,7 @@ visibilitySwap uri visibility actualVisibility =
             [text visibility]
         ]
 
-viewControlsClear :: Model -> Int -> View Msg
+viewControlsClear :: Model -> Int -> View parent Msg
 viewControlsClear _ entriesCompleted =
     button_
         [ class_ "clear-completed"
@@ -293,7 +294,7 @@ viewControlsClear _ entriesCompleted =
         ]
         [text $ "Clear completed (" <> S.ms entriesCompleted <> ")"]
 
-viewInput :: Model -> MisoString -> View Msg
+viewInput :: Model -> MisoString -> View parent Msg
 viewInput _ task =
     header_
         [class_ "header"]
@@ -314,7 +315,7 @@ onEnter :: Msg -> Attribute Msg
 onEnter action =
     onKeyDown $ bool NoOp action . (== KeyCode 13)
 
-infoFooter :: View Msg
+infoFooter :: View parent Msg
 infoFooter =
     footer_
         [class_ "info"]

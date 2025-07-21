@@ -30,8 +30,11 @@ baseUrl = "https://7b40c187-5088-4a99-9118-37d20a2f875e.mdnplay.dev/en-US/docs/W
 main :: IO ()
 main = run (startComponent app)
   where
-    app :: Component (Double, Double) Action
-    app = (component (0.0, 0.0) updateModel view_) { initialAction = Just GetTime }
+    app :: Component parent (Double, Double) Action
+    app = (component (0.0, 0.0) view_)
+      { initialAction = Just GetTime
+      , update = updateModel
+      }
 
     view_  m =
       div_
@@ -88,7 +91,7 @@ newTime = do
 -----------------------------------------------------------------------------
 updateModel
   :: Action
-  -> Effect Model Action
+  -> Effect parent Model Action
 updateModel GetTime =
   io (SetTime <$> newTime)
 updateModel (SetTime m) =

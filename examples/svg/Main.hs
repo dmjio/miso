@@ -6,9 +6,9 @@ module Main where
 import           Control.Monad.State
 import qualified Data.Map as M
 
-import           Miso hiding (update)
+import           Miso
 import           Miso.String (ms)
-import           Miso.Svg hiding (height_, id_, style_, width_)
+import           Miso.Svg hiding (height_, id_, style_, width_, text_)
 import qualified Miso.Style as CSS
 import           Miso.Style ((=:))
 
@@ -23,13 +23,15 @@ main = run $ startComponent app
   }
 
 -- | Component definition (uses 'component' smart constructor)
-app :: Component Model Action
-app = component emptyModel updateModel viewModel
+app :: Component parent Model Action
+app = (component emptyModel viewModel)
+  { update = updateModel
+  }
 
 emptyModel :: Model
 emptyModel = Model (0, 0)
 
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel (HandlePointer pointer) = modify update
   where
     update m = m { mouseCoords = client pointer }
@@ -42,7 +44,7 @@ newtype Model
   { mouseCoords :: (Double, Double)
   } deriving (Show, Eq)
 
-viewModel :: Model -> View Action
+viewModel :: Model -> View model Action
 viewModel (Model (x, y)) =
     div_
         []

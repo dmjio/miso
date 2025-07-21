@@ -11,7 +11,9 @@ foreign export javascript "hs_start" main :: IO ()
 
 -- | Entry point for a miso application
 main :: IO ()
-main = run $ startComponent (component Main.Empty updateModel viewModel)
+main = run $ startComponent (component Main.Empty viewModel)
+  { update = updateModel
+  }
 
 data Model = Empty
   deriving (Eq)
@@ -20,7 +22,7 @@ updateModel :: Applicative f => p -> f ()
 updateModel _ = pure ()
 
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View ()
+viewModel :: Model -> View model ()
 viewModel _ =
     math_
         [display_ "block"]

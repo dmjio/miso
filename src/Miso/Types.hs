@@ -209,8 +209,8 @@ component_
 component_ attrs = VComp attrs . SomeComponent @model
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
-instance HasLink (View a) where
-  type MkLink (View a) b = b
+instance HasLink (View m a) where
+  type MkLink (View m a) b = b
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
