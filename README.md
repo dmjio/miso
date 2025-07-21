@@ -41,7 +41,8 @@
 
 ## Table of Contents
 - [History](#history-)
-- [Quick Start](#quick-start)
+- [Quick Start](#quick-start-%EF%B8%8F)
+- [Getting Started](#getting-started)
 - [Setup](#setup-%EF%B8%8F)
 - [Hot Reload](#hot-reload-)
 - [Compilation](#compilation)
@@ -75,13 +76,21 @@
 
 [miso](https://haskell-miso.org) began in 2016 as research in:
   - Expressing the [Elm architecture](https://elm-lang.org) in [GHCJS](https://github.com/ghcjs/ghcjs) as an [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language).
-  - Implementing modern JavaScript frontend techniques (e.g. [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
+  - Implementing modern JavaScript frontend techniques as found in [react](https://react.dev) (e.g. [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
 
 Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) between modern JavaScript frameworks (such as [React](https://reactjs.org), [Vue.js](https://vuejs.org), etc.) and functional programming in [Haskell](https://haskell.org).
 
 It has since grown to encompass more features from the JavaScript community like [Components](https://www.w3schools.com/react/react_components.asp) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). It also [now supports native development to iOS / Android](https://github.com/haskell-miso/miso-lynx) via [LynxJS](https://lynxjs.org) and additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
 
-## Quick start
+## Quick start ⚡
+
+> [!TIP]
+> We have a [template repository](https://github.com/haskell-miso/miso-sampler) that includes a sample application and build scripts for all platforms.
+
+The fastest way to get started is to clone and build the [miso sampler](https://github.com/haskell-miso/miso-sampler) repository 🍔 This has build scripts for Web Assembly, JS and vanilla [GHC](https://haskell.org/ghc). This requires [Nix Flakes](https://wiki.nixos.org/wiki/Flakes) usage. See also the section on using [miso's binary cache](#binary-cache).
+
+## Getting started
+
 To start developing applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/). This can be done via [GHCup](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
 
 > [!TIP]
