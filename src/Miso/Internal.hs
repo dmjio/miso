@@ -564,10 +564,10 @@ runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
   FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
-      procreate parent = do
+      procreate parent_ = do
         kidsViews <- forM kids $ \kid -> do
           VTree child <- runView hydrate kid snk logLevel events
-          FFI.set "parent" parent child
+          FFI.set "parent" parent_ child
           toJSVal child
         ghcjsPure (JSArray.fromList kidsViews)
 runView _ (VText t) _ _ _ = do
@@ -580,8 +580,8 @@ runView hydrate (VTextRaw str) snk logLevel events =
   case parseView str of
     [] ->
       runView hydrate (VText (" " :: MisoString)) snk logLevel events
-    [parent] ->
-      runView hydrate parent snk logLevel events
+    [parent_] ->
+      runView hydrate parent_ snk logLevel events
     kids -> do
       runView hydrate (VNode HTML "div" mempty kids) snk logLevel events
 -----------------------------------------------------------------------------

@@ -56,7 +56,6 @@ module Miso.Mathml.Property
   , symmetric_
   , voffset_
   , width_
-  , xmlns_
   ) where
 
 import           Miso.Types
