@@ -75,7 +75,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-  , update :: action -> Effect model action
+  , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
   -- ^ Function to draw `View`

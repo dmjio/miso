@@ -39,8 +39,9 @@ module Miso.Internal
   , getComponentId
   , getParentComponentId
   , ComponentState
-  -- * Mailbox
+  -- * Communication
   , mail
+  , parent
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -151,8 +152,8 @@ data ComponentState model action
   , componentModel           :: IORef model
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
-  , componentMailboxThreadId :: ThreadId
   , componentScripts         :: [DOMRef]
+  , componentMailboxThreadId :: ThreadId
   }
 -----------------------------------------------------------------------------
 -- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
@@ -264,7 +265,7 @@ subscribe
   :: FromJSON message
   => Topic message
   -> (Result message -> action)
-  -> Effect model action
+  -> Effect parent model action
 subscribe topicName toAction = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -332,7 +333,7 @@ subscribe topicName toAction = do
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
-unsubscribe :: Topic message -> Effect model action
+unsubscribe :: Topic message -> Effect parent model action
 unsubscribe topicName = do
   ComponentInfo {..} <- ask
   io_ (unsubscribe_ topicName _componentId)
@@ -390,7 +391,7 @@ unsubscribe_ topicName vcompId = do
 -- @
 --
 -- @since 1.9.0.0
-publish :: ToJSON message => Topic message -> message -> Effect model action
+publish :: ToJSON message => Topic message -> message -> Effect parent model action
 publish topicName value = io_ $ do
   result <- M.lookup topicName <$> liftIO (readIORef mailboxes)
   case result of
@@ -438,7 +439,7 @@ syncWith Async x = void (FFI.forkJSM x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
-  :: (action -> Effect model action)
+  :: (action -> Effect parent model action)
   -> Synchronicity
   -> ComponentInfo
   -> Sink action
@@ -694,7 +695,7 @@ renderScripts scripts =
 -- @
 --
 -- @since 1.9.0.0
-startSub :: ToMisoString subKey => subKey -> Sub action -> Effect model action
+startSub :: ToMisoString subKey => subKey -> Sub action -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -732,7 +733,7 @@ startSub subKey sub = do
 -- @
 --
 -- @since 1.9.0.0
-stopSub :: ToMisoString subKey => subKey -> Effect model action
+stopSub :: ToMisoString subKey => subKey -> Effect parent model action
 stopSub subKey = do
   domRef <- asks _componentDOMRef
   io_ $ do
@@ -750,7 +751,7 @@ stopSub subKey = do
 -- | Used to acquire the 'ComponentId' of the current 'Component'
 getComponentId
   :: (ComponentId -> action)
-  -> Effect model action 
+  -> Effect parent model action
 getComponentId callback = do
   domRef <- asks _componentDOMRef
   withSink $ \sink -> do
@@ -765,7 +766,7 @@ getParentComponentId
   -- ^ Successful callback (with parent ComponentId)
   -> action
   -- ^ Errorful callback (without ComponentId)
-  -> Effect model action 
+  -> Effect parent model action
 getParentComponentId successful errorful = do
   domRef <- asks _componentDOMRef
   withSink $ \sink -> do
@@ -778,15 +779,15 @@ getParentComponentId successful errorful = do
 -- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
 --
 -- @
--- mail componentId ("test message" :: MisoString) :: Effect model action
+-- mail componentId ("test message" :: MisoString) :: Effect parent model action
 -- @
--- 
+--
 -- @since 1.9.0.0
 mail
   :: ToJSON message
   => ComponentId
   -> message
-  -> Effect model action
+  -> Effect parent model action
 mail vcompId message = io_ $
   IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
     Nothing ->
@@ -794,4 +795,21 @@ mail vcompId message = io_ $
       pure ()
     Just ComponentState {..} ->
       liftIO $ sendMail componentMailbox (toJSON message)
+-----------------------------------------------------------------------------
+-- | Fetches the parent `model` from the child.
+parent
+  :: forall parent model action
+   . (parent -> action)
+  -> action
+  -> Effect parent model action
+parent successful errorful =
+  asks _parentComponentId >>= \case
+    Nothing ->
+      withSink $ \sink -> sink errorful
+    Just (parentId :: ComponentId) -> withSink $ \sink ->
+      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+        Nothing -> sink errorful
+        Just ComponentState {..} -> do
+          model <- liftIO (readIORef componentModel)
+          sink (successful model)
 -----------------------------------------------------------------------------
