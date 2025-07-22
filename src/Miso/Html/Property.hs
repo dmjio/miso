@@ -17,6 +17,7 @@
 module Miso.Html.Property
   ( -- *** Combinators
      class_
+   , className
    , classes_
    , classList_
    , id_
@@ -486,6 +487,11 @@ autofocus_ = boolProp "autofocus"
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 class_ ::  MisoString -> Attribute action
 class_ = textProp "class"
+-----------------------------------------------------------------------------
+-- | Set "className" property
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
+className ::  MisoString -> Attribute action
+className = class_
 -----------------------------------------------------------------------------
 -- | Set "data-*" property
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
