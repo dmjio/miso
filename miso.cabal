@@ -121,7 +121,7 @@ library
     Miso.Delegate
     Miso.Diff
     Miso.FFI.Internal
-    Miso.Internal
+    Miso.Runtime
   exposed-modules:
     Miso
     Miso.Canvas

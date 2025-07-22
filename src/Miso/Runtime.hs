@@ -11,14 +11,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Internal
+-- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Internal
+module Miso.Runtime
   ( -- * Internal functions
     initialize
   , freshComponentId
