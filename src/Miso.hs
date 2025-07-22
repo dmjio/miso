@@ -22,10 +22,9 @@ module Miso
   -- ** App
   , App
   , startApp
+  , renderApp
   -- ** Component
   , Component
-  , startComponent
-  , renderComponent
     -- ** Sink
   , withSink
   , Sink
@@ -131,16 +130,7 @@ miso f = withJS $ do
 ----------------------------------------------------------------------------
 -- | Runs a miso application
 startApp :: Eq model => App model action -> JSM ()
-startApp = startComponent
-----------------------------------------------------------------------------
--- | Runs a miso application
---
-startComponent
-  :: Eq model
-  => Component parent model action
-  -- ^ Component application
-  -> JSM ()
-startComponent vcomp@Component { styles, scripts } =
+startApp vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
      (++) <$> renderScripts scripts
           <*> renderStyles styles
@@ -149,17 +139,17 @@ startComponent vcomp@Component { styles, scripts } =
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-renderComponent
+renderApp
   :: Eq model
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> Component parent model action
+  -> App model action
   -- ^ Component application
   -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
-renderComponent Nothing vcomp _ = startComponent vcomp
-renderComponent (Just renderer) vcomp hooks = withJS $ do
+renderApp Nothing vcomp _ = startApp vcomp
+renderApp (Just renderer) vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------

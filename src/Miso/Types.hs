@@ -35,6 +35,7 @@ module Miso.Types
   , VTree            (..)
   , MountPoint
   , DOMRef
+  , ROOT
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -169,7 +170,14 @@ component m v = Component
   , mailbox = const Nothing
   }
 -----------------------------------------------------------------------------
-type App model action = Component () model action
+-- | A top-level 'Component' can have no 'parent'
+--
+-- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
+-- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
+--
+data ROOT
+-----------------------------------------------------------------------------
+type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
 -- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
