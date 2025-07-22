@@ -94,7 +94,7 @@ import           Miso.Fetch
 import           Miso.FFI hiding (getComponentId, getParentComponentId)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
-import           Miso.Internal
+import           Miso.Runtime
 import           Miso.Property
 import           Miso.Render
 import           Miso.Router
