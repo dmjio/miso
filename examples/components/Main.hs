@@ -55,10 +55,10 @@ server = component () update_ $ \() ->
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , mount_
+  , mount
     (p_ [ onMountedWith Mount ])
     (client_ "client 1")
-  , mount_
+  , mount
     (p_ [ onMountedWith Mount ])
     (client_ "client 2")
   ] where

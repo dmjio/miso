@@ -38,8 +38,8 @@ module Miso.Types
   , ToKey            (..)
   -- ** Smart Constructors
   , component
-  -- ** Components
-  , mount_
+  -- ** Component
+  , mount
   -- ** Utils
   , getMountPoint
   -- *** Combinators
@@ -199,7 +199,7 @@ data SomeComponent
 --
 -- @
 --   mount_ (p_ [ key_ "component-1" ]) $ component $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m)
+--     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- Warning this *is* a partial function. Do not attempt to mount on a
@@ -211,12 +211,12 @@ data SomeComponent
 -- See usage above. In general, it's wise to only mount on `VNode`.
 --
 -- @since 1.9.0.0
-mount_
+mount
   :: forall model action a . Eq model
   => ([Miso.Types.View action] -> Miso.Types.View a)
   -> Component model action
   -> View a
-mount_ mkNode vcomp =
+mount mkNode vcomp =
   case mkNode [] of
     VNode ns tag attrs _ ->
       VComp ns tag attrs
