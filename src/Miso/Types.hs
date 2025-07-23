@@ -40,7 +40,7 @@ module Miso.Types
   , component
   -- ** Component
   , mount
-  , (@->)
+  , (+>)
   -- ** Utils
   , getMountPoint
   -- *** Combinators
@@ -227,13 +227,13 @@ mount mkNode vcomp =
     _ ->
       error "Cannot mount on a Text node"
 -----------------------------------------------------------------------------
-(@->)
+(+>)
   :: forall model action a . Eq model
   => ([Miso.Types.View action] -> Miso.Types.View a)
   -> Component model action
   -> View a
-infixr 0 @->
-(@->) = mount
+infixr 0 +>
+(+>) = mount
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where
