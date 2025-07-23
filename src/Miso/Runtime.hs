@@ -532,7 +532,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
+runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
       ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
@@ -546,7 +546,7 @@ runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
-  vcomp <- createNode "vcomp" HTML "div"
+  vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback

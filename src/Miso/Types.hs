@@ -39,7 +39,7 @@ module Miso.Types
   -- ** Smart Constructors
   , component
   -- ** Components
-  , component_
+  , mount_
   -- ** Utils
   , getMountPoint
   -- *** Combinators
@@ -187,7 +187,7 @@ data View action
   = VNode NS MisoString [Attribute action] [View action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp [Attribute action] SomeComponent
+  | VComp NS MisoString [Attribute action] SomeComponent
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
@@ -195,13 +195,36 @@ data SomeComponent
    = forall model action . Eq model
   => SomeComponent (Component model action)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to embed an @Component@ into another @Component@
-component_
+-- | Used in the @view@ function to mount a 'Component' on any 'VNode'
+--
+-- @
+--   mount_ (p_ [ key_ "component-1" ]) $ component $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m)
+-- @
+--
+-- Warning this *is* a partial function. Do not attempt to mount on a
+-- Text node. This function will ignore the children given and mount the
+-- new 'Component' on top of them. Attempts to mount a 'Component' ontop of an
+-- existing 'Component' always prioritize the component specified in the lowest
+-- level.
+--
+-- See usage above. In general, it's wise to only mount on `VNode`.
+--
+-- @since 1.9.0.0
+mount_
   :: forall model action a . Eq model
-  => [Attribute a]
+  => ([Miso.Types.View action] -> Miso.Types.View a)
   -> Component model action
   -> View a
-component_ attrs app = VComp attrs (SomeComponent app)
+mount_ mkNode vcomp =
+  case mkNode [] of
+    VNode ns tag attrs _ ->
+      VComp ns tag attrs
+        (SomeComponent vcomp)
+    VComp ns tag attrs vcomp_ ->
+      VComp ns tag attrs vcomp_
+    _ ->
+      error "Cannot mount on a Text node"
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View a) where

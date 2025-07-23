@@ -55,12 +55,12 @@ server = component () update_ $ \() ->
   [ "Server component"
   , button_ [ onClick AddOne ] [ "+" ]
   , button_ [ onClick SubtractOne ] [ "-" ]
-  , component_
-    [ onMountedWith Mount
-    ] (client_ "client 1")
-  , component_
-    [ onMountedWith Mount
-    ] (client_ "client 2")
+  , mount_
+    (p_ [ onMountedWith Mount ])
+    (client_ "client 1")
+  , mount_
+    (p_ [ onMountedWith Mount ])
+    (client_ "client 2")
   ] where
       update_ :: Action -> Effect () Action
       update_ = \case

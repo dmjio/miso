@@ -26,6 +26,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
 import qualified Network.HTTP.Media as M
 import           Servant.API (Accept (..), MimeRender (..))
+import           Unsafe.Coerce (unsafeCoerce)
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
 import           Miso.Types
@@ -93,14 +94,11 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp attributes (SomeComponent Component {..})) =
-  mconcat
-  [ stringUtf8 "<div "
-  , intercalate " " (renderAttrs <$> attributes)
-  , ">"
-  , renderBuilder (view model)
-  , "</div>"
-  ]
+renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
+  renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
+  -- dmj: Just trust me bro moment.
+  -- This is fine to do because we don't need the polymorphism here
+  -- when monomorphizing to Builder. Release the skolems.
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =
