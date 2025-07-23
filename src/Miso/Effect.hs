@@ -36,6 +36,7 @@ module Miso.Effect
   , issue
   , withSink
   , mapSub
+  , noop
   -- * Internal
   , runEffect
   -- * Deprecated
@@ -231,4 +232,11 @@ batchEff :: model -> [JSM action] -> Effect model action
 batchEff model actions = do
   put model
   batch actions
+-----------------------------------------------------------------------------
+-- | Helper for 'Component' construction, when you want to ignore the 'update'
+-- function temporarily, or permanently.
+--
+-- @since 1.9.0.0
+noop :: action -> Effect model action
+noop = const (pure ())
 -----------------------------------------------------------------------------
