@@ -17,6 +17,7 @@
 module Miso.Html.Property
   ( -- *** Combinators
      class_
+   , className
    , classes_
    , classList_
    , id_
@@ -109,10 +110,11 @@ module Miso.Html.Property
    , language_
    , scoped_
    , data_
-   , xmlns_
-   , aria_
+   , autocorrect_
    , spellcheck_
    , role_
+   , xmlns_
+   , aria_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -189,6 +191,18 @@ role_ = textProp "role"
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autosave>
 autosave_ ::  MisoString -> Attribute action
 autosave_          = textProp "autosave"
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocorrect>
+autocorrect_ ::  Bool -> Attribute action
+autocorrect_ b = textProp "autocomplete" (if b then "on" else "off")
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck>
+spellcheck_ ::  Bool -> Attribute action
+spellcheck_ b = textProp "autocomplete" (if b then "on" else "off")
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/role>
+role_ ::  MisoString -> Attribute action
+role_ = textProp "role"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/disabled>
 disabled_ ::  Bool -> Attribute action
@@ -503,6 +517,11 @@ autofocus_ = boolProp "autofocus"
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 class_ ::  MisoString -> Attribute action
 class_ = textProp "class"
+-----------------------------------------------------------------------------
+-- | Set "className" property
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
+className ::  MisoString -> Attribute action
+className = class_
 -----------------------------------------------------------------------------
 -- | Set "data-*" property
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*

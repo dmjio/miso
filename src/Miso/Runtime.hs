@@ -11,14 +11,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Internal
+-- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Internal
+module Miso.Runtime
   ( -- * Internal functions
     initialize
   , freshComponentId
@@ -536,7 +536,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
+runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
       ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
@@ -549,8 +549,9 @@ runView hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
       componentId <- liftJSM (FFI.getComponentId domRef)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
-        Just componentState -> unmount mountCallback app componentState
-  vcomp <- createNode "vcomp" HTML "div"
+        Just componentState ->
+          unmount mountCallback app componentState
+  vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback

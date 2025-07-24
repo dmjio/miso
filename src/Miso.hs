@@ -98,7 +98,7 @@ import           Miso.Fetch
 import           Miso.FFI hiding (getComponentId, getParentComponentId)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
-import           Miso.Internal
+import           Miso.Runtime
 import           Miso.Property
 import           Miso.Render
 import           Miso.Router
@@ -119,10 +119,10 @@ miso f = withJS $ do
   initialize vcomp $ \snk -> do
     refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
-    mount <- FFI.getBody
-    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
+    mount_ <- FFI.getBody
+    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount_ vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (refs, mount, viewRef)
+    pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
 (🍜) :: Eq model => (URI -> Component parent model action) -> JSM ()
@@ -165,10 +165,10 @@ initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> do
     refs <- hooks
     vtree <- runView Draw (view model) snk logLevel events
-    mount <- mountElement (getMountPoint mountPoint)
-    diff Nothing (Just vtree) mount
+    mount_ <- mountElement (getMountPoint mountPoint)
+    diff Nothing (Just vtree) mount_
     viewRef <- liftIO (newIORef vtree)
-    pure (refs, mount, viewRef)
+    pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
