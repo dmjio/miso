@@ -154,11 +154,12 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for @Component@ with sane defaults.
 component
   :: model
+  -> (action -> Effect parent model action)
   -> (model -> View model action)
   -> Component parent model action
-component m v = Component
+component m u v = Component
   { model = m
-  , update = \_ -> pure ()
+  , update = u
   , view = v
   , subs = []
   , events = defaultEvents
@@ -210,11 +211,11 @@ data SomeComponent parent
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to embed an @Component@ into another @Component@
 component_
-  :: forall model newModel action a . (Eq model, Eq newModel)
+  :: forall parent model action a . (Eq model)
   => [Attribute a]
-  -> Component model newModel action
-  -> View model a
-component_ attrs = VComp attrs . SomeComponent @model
+  -> Component parent model action
+  -> View parent a
+component_ attrs = VComp attrs . SomeComponent @parent
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
 instance HasLink (View m a) where

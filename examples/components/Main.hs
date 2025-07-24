@@ -25,7 +25,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 -----------------------------------------------------------------------------
 main :: IO ()
-main = run $ startComponent test
+main = run $ startApp test
   { styles =
     [ Href "https://cdn.jsdelivr.net/npm/basecoat-css@0.2.8/dist/basecoat.cdn.min.css"
     ]
@@ -41,10 +41,8 @@ data Action = Tog
 app :: App Bool Action
 app = vcomp { update = update_ }
   where
-    update_ Tog = do
-      _id %= not
-      io_ (consoleLog "toggling")
-    vcomp = component False $ \condition ->
+    update_ Tog = _id %= not
+    vcomp = component False noop $ \condition ->
        div_
        []
        [ button_
@@ -54,7 +52,7 @@ app = vcomp { update = update_ }
          ]
        , if condition
          then
-           component_ [ ] $ component 0 $ \m ->
+           component_ [] $ component (0 :: Double) noop $ \m ->
              div_
              []
              [ text $ "hey im: " <> ms m
@@ -63,8 +61,11 @@ app = vcomp { update = update_ }
            "hey"
        ]
 -----------------------------------------------------------------------------
+noop :: action -> Effect parent model action
+noop = const (pure ())
+-----------------------------------------------------------------------------
 test :: Component parent () action
-test = component () $ \_ ->
+test = component () noop $ \_ ->
   div_
   []
   [ alert_
@@ -80,8 +81,8 @@ test = component () $ \_ ->
   , popover
   ]
 -----------------------------------------------------------------------------
-alert_ :: Eq model => View model action
-alert_ = component_ [] $ component () $ \() ->
+alert_ :: View model action
+alert_ = component_ [] $ component () noop $ \() ->
   div_
   [ class_ "alert"
   ]
@@ -116,10 +117,12 @@ data AlertDialog
   | Toggle
 -----------------------------------------------------------------------------
 alertDialog_
-  :: Eq model
-  => View model action
-alertDialog_ = component_ [] vcomp { update = update_ }
+  :: View model action
+alertDialog_ = component_ [] vcomp
   where
+    update_
+      :: AlertDialog
+      -> Effect parent model AlertDialog
     update_ (ShowModal domRef) = io_ $ do
       dialogRef <- domRef ! ("nextSibling" :: MisoString)
       void $ dialogRef # ("showModal" :: MisoString) $ ()
@@ -130,7 +133,9 @@ alertDialog_ = component_ [] vcomp { update = update_ }
         $ ["alert-dialog" :: MisoString]
       void $ dialog # ("close" :: MisoString) $ ()
 
-    vcomp = component () $ \() ->
+    update_ _ = pure ()
+
+    vcomp = component () update_ $ \() ->
       div_
       [
       ]
