@@ -10,7 +10,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Concurrent
-  ( -- * Syncrhonization primitives
+  ( -- * Synchronization primitives
     Waiter (..)
   , waiter
   , Mailbox
