@@ -60,12 +60,6 @@ jobs:
      - name: (JS) Haskell-miso.org client (GHCJS 8.6)
        run: nix-build -A haskell-miso-client
 
-     - name: (x86) sse.haskell-miso.org server (GHC 8.6.5)
-       run: nix-build -A sse-server
-
-     - name: (JS) sse.haskell-miso.org client (GHCJS 8.6)
-       run: nix-build -A sse-client
-
      - name: (x86) Miso examples (GHC 8.6.5)
        run: nix-build -A miso-examples-ghc
 

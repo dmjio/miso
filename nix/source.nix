@@ -30,7 +30,6 @@ let
 in
 {
   # local sources
-  sse              = make-src-filter ../examples/sse;
   miso             = make-src-filter ../.;
   examples         = make-src-filter ../examples;
   sample-app       = make-src-filter ../sample-app;

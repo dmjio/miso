@@ -9,7 +9,6 @@ let
       imports =
         [ ./machine.nix
           ./nginx.nix
-          ../../examples/sse/nix/machine.nix
         ];
       security.acme = {
         inherit email;

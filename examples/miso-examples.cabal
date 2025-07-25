@@ -262,3 +262,25 @@ executable svg
     aeson,
     miso,
     mtl
+
+executable sse
+  import:
+    common-options
+  main-is:
+    Main.hs
+  ghcjs-options:
+    -dedupe
+  cpp-options:
+    -DGHCJS_BROWSER
+  hs-source-dirs:
+    sse
+  build-depends:
+    aeson,
+    base < 5,
+    containers,
+    network-uri,
+    miso,
+    mtl,
+    servant
+  default-language:
+    Haskell2010
