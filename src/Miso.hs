@@ -19,6 +19,8 @@ module Miso
     -- ** Entry
     miso
   , (🍜)
+  , App
+  , startApp
   , startComponent
   , renderComponent
     -- ** Sink
@@ -120,8 +122,15 @@ miso f = withJS $ do
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
+-- | Type synonym 'App' to 'Component', for legacy `miso` compat.
+type App model action = Component model action
+-----------------------------------------------------------------------------
+-- | Synonym 'startApp' to 'startComponent'.
+startApp :: Eq model => App model action -> JSM ()
+startApp = startComponent
+-----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> Component model action) -> JSM ()
+(🍜) :: Eq model => (URI -> App model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
