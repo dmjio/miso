@@ -214,7 +214,7 @@ data SomeComponent
 -- @since 1.9.0.0
 mount
   :: forall model action a . Eq model
-  => ([Miso.Types.View action] -> Miso.Types.View a)
+  => ([View a] -> View a)
   -> Component model action
   -> View a
 mount mkNode vcomp =
@@ -229,7 +229,7 @@ mount mkNode vcomp =
 -----------------------------------------------------------------------------
 (+>)
   :: forall model action a . Eq model
-  => ([Miso.Types.View action] -> Miso.Types.View a)
+  => ([View a] -> View a)
   -> Component model action
   -> View a
 infixr 0 +>
