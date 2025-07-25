@@ -57,12 +57,6 @@ with pkgs.haskell.lib;
     ghc-wasm-meta
     hello-world-web-wasm;
 
-  # sse
-  inherit (import ./examples/sse {})
-    sse-runner
-    sse-client
-    sse-server;
-
   # website
   inherit (import ./haskell-miso.org {})
     haskell-miso-dev
