@@ -16,11 +16,15 @@
 ----------------------------------------------------------------------------
 module Miso
   ( -- * API
-    -- ** Entry
+    -- ** Miso
     miso
   , (🍜)
-  , startComponent
-  , renderComponent
+  -- ** App
+  , App
+  , startApp
+  , renderApp
+  -- ** Component
+  , Component
     -- ** Sink
   , withSink
   , Sink
@@ -32,6 +36,7 @@ module Miso
   , topic
   -- ** Component
   , mail
+  , parent
   , getComponentId
   , getParentComponentId
   -- ** Subscriptions
@@ -109,10 +114,10 @@ import           Miso.Util
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> Component model action) -> JSM ()
+miso :: Eq model => (URI -> Component parent model action) -> JSM ()
 miso f = withJS $ do
-  app@Component {..} <- f <$> getURI
-  initialize app $ \snk -> do
+  vcomp@Component {..} <- f <$> getURI
+  initialize vcomp $ \snk -> do
     refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount_ <- FFI.getBody
@@ -121,17 +126,12 @@ miso f = withJS $ do
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> Component model action) -> JSM ()
+(🍜) :: Eq model => (URI -> Component parent model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
--- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startComponent
-  :: Eq model
-  => Component model action
-  -- ^ Component application
-  -> JSM ()
-startComponent vcomp@Component { styles, scripts } =
+startApp :: Eq model => App model action -> JSM ()
+startApp vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
      (++) <$> renderScripts scripts
           <*> renderStyles styles
@@ -140,24 +140,24 @@ startComponent vcomp@Component { styles, scripts } =
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-renderComponent
+renderApp
   :: Eq model
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> Component model action
+  -> App model action
   -- ^ Component application
   -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
-renderComponent Nothing vcomp _ = startComponent vcomp
-renderComponent (Just renderer) vcomp hooks = withJS $ do
+renderApp Nothing vcomp _ = startApp vcomp
+renderApp (Just renderer) vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
   :: Eq model
-  => Component model action
+  => Component parent model action
   -- ^ Component application
   -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.

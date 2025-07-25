@@ -51,12 +51,13 @@ data Action
   | ErrorHandler MisoString
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
-app :: Component Model Action
-app = (component emptyModel updateModel viewModel)
+app :: App Model Action
+app = (component emptyModel viewModel)
   { styles =
     [ Href "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"
     , Href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
     ]
+  , update = updateModel
   }
 ----------------------------------------------------------------------------
 emptyModel :: Model
@@ -65,7 +66,7 @@ emptyModel = Model Nothing
 -- | GitHub API method
 type GithubAPI = Get '[JSON] GitHub
 ----------------------------------------------------------------------------
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel FetchGitHub =
   fetch "https://api.github.com" "GET" Nothing [] SetGitHub ErrorHandler
 updateModel (SetGitHub apiInfo) =
@@ -74,10 +75,10 @@ updateModel (ErrorHandler msg) =
   io_ (consoleError msg)
 ----------------------------------------------------------------------------
 -- | View function, with routing
-viewModel :: Model -> View Action
-viewModel m = view
+viewModel :: Model -> View Model Action
+viewModel m = view_
   where
-    view =
+    view_ =
       div_
       [ CSS.style_
         [ CSS.textAlign "center"
@@ -126,7 +127,7 @@ viewModel m = view
             ]
       ]
 
-    tr :: MisoString -> View action
+    tr :: MisoString -> View model action
     tr x = tr_ [] [ td_ [] [ text x ] ]
 
     attrs :: [Attribute Action]

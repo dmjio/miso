@@ -73,16 +73,17 @@ css = unlines
   ]
 ----------------------------------------------------------------------------
 -- | Miso application
-app :: Component Model Action
-app = (component (Model mempty) updateModel viewModel)
+app :: Component parent Model Action
+app = (component (Model mempty) viewModel)
   { styles =
       [ Href "https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css"
       , Style css
       ]
+  , update = updateModel
   }
 ----------------------------------------------------------------------------
 -- | Update function
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel (ReadFile fileReaderInput) = io $ do
   file <- fileReaderInput ! ("files" :: String) !! 0
   reader <- J.new (J.jsg ("FileReader" :: String)) ([] :: [JSVal])

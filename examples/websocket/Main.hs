@@ -28,21 +28,21 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = run (startComponent app)
 
-app :: Component Model Action
-app = (component emptyModel updateModel appView)
+app :: Component parent Model Action
+app = (component emptyModel appView)
   { events = defaultEvents <> keyboardEvents
   , subs =
     [ websocketSub url protocols HandleWebSocket
     ]
+  , update = updateModel
   } where
       url = URL "wss://echo.websocket.org"
       protocols = Protocols []
 
-
 emptyModel :: Model
 emptyModel = Model (Message "") mempty
 
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel (HandleWebSocket (WebSocketMessage (Message m))) =
   modify $ \model -> model { received = m }
 updateModel (SendMessage msg) =
@@ -68,7 +68,7 @@ data Model = Model
   , received :: MisoString
   } deriving (Show, Eq)
 
-appView :: Model -> View Action
+appView :: Model -> View Model Action
 appView Model{..} =
     div_
         [ CSS.style_ [ CSS.textAlign "center" ] ]
