@@ -36,6 +36,7 @@ module Miso
   , topic
   -- ** Component
   , mail
+  , parent
   , getComponentId
   , getParentComponentId
   -- ** Subscriptions

@@ -799,18 +799,42 @@ mail vcompId message = io_ $
 -----------------------------------------------------------------------------
 -- | Fetches the parent `model` from the child.
 parent
-  :: forall parent model action
-   . (parent -> action)
+  :: (parent -> action)
   -> action
   -> Effect parent model action
 parent successful errorful =
   asks _parentComponentId >>= \case
     Nothing ->
       withSink $ \sink -> sink errorful
-    Just (parentId :: ComponentId) -> withSink $ \sink ->
+    Just parentId -> withSink $ \sink ->
       IM.lookup parentId <$> liftIO (readIORef components) >>= \case
         Nothing -> sink errorful
         Just ComponentState {..} -> do
           model <- liftIO (readIORef componentModel)
           sink (successful model)
+-----------------------------------------------------------------------------
+-- data Test parent model action
+-- -----------------------------------------------------------------------------
+-- data Action
+--   = Foo
+--   | Bar String
+-- -----------------------------------------------------------------------------
+-- test' :: Effect Int model Action
+-- test' = parent Bar Foo
+-- -----------------------------------------------------------------------------
+-- parent'
+--   :: (parent -> action)
+--   -> action
+--   -> Test parent model action
+-- parent' = undefined
+-----------------------------------------------------------------------------
+-- src/Miso/Runtime.hs:823:17: error: [GHC-83865] …
+--     • Couldn't match type ‘[Char]’ with ‘Int’
+--       Expected: Int -> Action
+--         Actual: String -> Action
+--     • In the first argument of ‘parent'’, namely ‘Bar’
+--       In the expression: parent' Bar Foo
+--       In an equation for ‘test'’: test' = parent' Bar Foo
+--     |
+-- Compilation failed.
 -----------------------------------------------------------------------------

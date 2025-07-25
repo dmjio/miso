@@ -262,6 +262,6 @@ batchEff model actions = do
 -- function temporarily, or permanently.
 --
 -- @since 1.9.0.0
-noop :: action -> Effect model action
+noop :: action -> Effect parent model action
 noop = const (pure ())
 -----------------------------------------------------------------------------

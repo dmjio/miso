@@ -110,7 +110,6 @@ module Miso.Html.Property
    , language_
    , scoped_
    , data_
-   , autocorrect_
    , spellcheck_
    , role_
    , xmlns_
@@ -191,18 +190,6 @@ role_ = textProp "role"
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autosave>
 autosave_ ::  MisoString -> Attribute action
 autosave_          = textProp "autosave"
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autocorrect>
-autocorrect_ ::  Bool -> Attribute action
-autocorrect_ b = textProp "autocomplete" (if b then "on" else "off")
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck>
-spellcheck_ ::  Bool -> Attribute action
-spellcheck_ b = textProp "autocomplete" (if b then "on" else "off")
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/role>
-role_ ::  MisoString -> Attribute action
-role_ = textProp "role"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/disabled>
 disabled_ ::  Bool -> Attribute action

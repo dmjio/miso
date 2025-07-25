@@ -228,10 +228,10 @@ data SomeComponent parent
 --
 -- @since 1.9.0.0
 mount
-  :: forall model action a . Eq model
-  => ([Miso.Types.View action] -> Miso.Types.View a)
-  -> Component model action
-  -> View a
+  :: forall parent model action a . Eq model
+  => ([View parent a] -> View parent a)
+  -> Component parent model action
+  -> View parent a
 mount mkNode vcomp =
   case mkNode [] of
     VNode ns tag attrs _ ->
@@ -243,10 +243,10 @@ mount mkNode vcomp =
       error "Cannot mount on a Text node"
 -----------------------------------------------------------------------------
 (+>)
-  :: forall model action a . Eq model
-  => ([Miso.Types.View action] -> Miso.Types.View a)
-  -> Component model action
-  -> View a
+  :: forall parent model action a . Eq model
+  => ([View parent a] -> View parent a)
+  -> Component parent model action
+  -> View parent a
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
