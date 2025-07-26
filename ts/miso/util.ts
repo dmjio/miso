@@ -91,3 +91,23 @@ export function getParentComponentId (
     }
     return climb (vcomp['domRef']);
 }
+
+/*
+   'getChildrenComponentId'
+   dmj: Used to fetch the parent's componentId
+
+   Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
+   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
+
+*/
+export function getChildrenComponentId (
+  vcomp: VComp
+): Array<int> {
+    var componentIds : Array<int> = [];
+    for (const child of vcomp.children) {
+        if (child['type'] === 'vcomp') {
+          componentIds.push(child['componentId']);
+        }
+    }
+    return componentIds;
+}

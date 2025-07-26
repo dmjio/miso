@@ -41,11 +41,12 @@ module Miso.Runtime
   , ComponentState
   -- * Mailbox
   , mail
+  , notify
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
 import           Control.Monad (forM, forM_, when, void, forever)
-import           Control.Monad.Reader (ask)
+import           Control.Monad.Reader (asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result, fromJSON, toJSON)
 import           Data.Foldable (toList)
@@ -78,7 +79,7 @@ import           Miso.Types
 import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink)
+import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink, ComponentInfo(..), mkComponentInfo)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -96,6 +97,7 @@ initialize Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   (componentScripts, componentMount, componentVTree) <- getView componentSink
+  componentParentId <- FFI.getParentComponentId componentMount
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -105,8 +107,9 @@ initialize Component {..} getView = do
   componentModel <- liftIO (newIORef model)
   let
     eventLoop !oldModel = liftIO wait >> do
+      let info = mkComponentInfo componentId componentParentId componentMount
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update Async componentMount componentSink (toList as) oldModel
+      newModel <- foldEffects update Async info componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
@@ -142,6 +145,7 @@ data Hydrate
 data ComponentState model action
   = ComponentState
   { componentId              :: ComponentId
+  , componentParentId        :: Maybe ComponentId
   , componentSubThreads      :: IORef (Map MisoString ThreadId)
   , componentMount           :: JSVal
   , componentVTree           :: IORef VTree
@@ -264,7 +268,7 @@ subscribe
   -> (Result message -> action)
   -> Effect model action
 subscribe topicName toAction = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   io_ $ do
     vcompId <- FFI.getComponentId domRef
     subscribersMap <- liftIO (readIORef subscribers)
@@ -332,7 +336,7 @@ subscribe topicName toAction = do
 -- @since 1.9.0.0
 unsubscribe :: Topic message -> Effect model action
 unsubscribe topicName = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   io_ (unsubscribe_ topicName =<< FFI.getComponentId domRef)
 -----------------------------------------------------------------------------
 -- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
@@ -438,19 +442,19 @@ syncWith Async x = void (FFI.forkJSM x)
 foldEffects
   :: (action -> Effect model action)
   -> Synchronicity
-  -> DOMRef
+  -> ComponentInfo
   -> Sink action
   -> [action]
   -> model
   -> JSM model
 foldEffects _ _ _ _ [] m = pure m
-foldEffects update synchronicity domRef snk (e:es) o =
-  case runEffect (update e) domRef o of
+foldEffects update synchronicity info snk (e:es) o =
+  case runEffect (update e) info o of
     (n, subs) -> do
       forM_ subs $ \sub -> do
         syncWith synchronicity $
           sub snk `catch` (void . exception)
-      foldEffects update synchronicity domRef snk es n
+      foldEffects update synchronicity info snk es n
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
@@ -482,8 +486,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go as = do
+          let info = mkComponentInfo componentId componentParentId componentMount
           x <- liftIO (readIORef componentModel)
-          y <- foldEffects update Sync componentMount componentSink (toList as) x
+          y <- foldEffects update Sync info componentSink (toList as) x
           liftIO (atomicWriteIORef componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
@@ -692,7 +697,7 @@ renderScripts scripts =
 -- @since 1.9.0.0
 startSub :: ToMisoString subKey => subKey -> Sub action -> Effect model action
 startSub subKey sub = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   io_ $ do
     vcompId <- FFI.getComponentId domRef
     (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
@@ -728,7 +733,7 @@ startSub subKey sub = do
 -- @since 1.9.0.0
 stopSub :: ToMisoString subKey => subKey -> Effect model action
 stopSub subKey = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   io_ $ do
     vcompId <- FFI.getComponentId domRef
     (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
@@ -746,7 +751,7 @@ getComponentId
   :: (ComponentId -> action)
   -> Effect model action 
 getComponentId callback = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   withSink $ \sink -> do
     componentId <- FFI.getComponentId domRef
     sink (callback componentId)
@@ -761,13 +766,32 @@ getParentComponentId
   -- ^ Errorful callback (without ComponentId)
   -> Effect model action 
 getParentComponentId successful errorful = do
-  domRef <- ask
+  domRef <- asks _componentDOMRef
   withSink $ \sink -> do
     FFI.getParentComponentId domRef >>= \case
       Nothing ->
         sink errorful
       Just parentComponentId ->
         sink (successful parentComponentId)
+-----------------------------------------------------------------------------
+-- | Sends a message to all immediate children of a `Component`.
+notify
+  :: ToJSON message
+  -- ^ Successful callback (with parent ComponentId)
+  => message
+  -- ^ Errorful callback (without ComponentId)
+  -> Effect model action 
+notify message = do
+  domRef <- asks _componentDOMRef
+  io_ $ do
+    componentIds_ <- FFI.getChildrenComponentId domRef
+    forM_ componentIds_ $ \componentId_ ->
+      IM.lookup componentId_ <$> liftIO (readIORef components) >>= \case
+        Nothing ->
+          -- dmj: TODO add DebugNotify here
+          pure ()
+        Just ComponentState {..} ->
+          liftIO $ sendMail componentMailbox (toJSON message)
 -----------------------------------------------------------------------------
 -- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
 --

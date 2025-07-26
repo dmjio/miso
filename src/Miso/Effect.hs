@@ -25,6 +25,9 @@ module Miso.Effect
   , Sub
   , Sink
   , DOMRef
+  , ComponentInfo (..)
+  -- *** Smart constructors
+  , mkComponentInfo
     -- *** Combinators
   , (<#)
   , (#>)
@@ -127,7 +130,7 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect model action = RWS DOMRef [Sink action -> JSM ()] model ()
+type Effect model action = RWS ComponentInfo [Sink action -> JSM ()] model ()
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
@@ -141,7 +144,7 @@ instance Fail.MonadFail Identity where
 -- | Internal function used to unwrap an @EffectCore@
 runEffect
     :: Effect model action
-    -> DOMRef
+    -> ComponentInfo
     -> model
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS
@@ -239,4 +242,28 @@ batchEff model actions = do
 -- @since 1.9.0.0
 noop :: action -> Effect model action
 noop = const (pure ())
+-----------------------------------------------------------------------------
+mkComponentInfo
+  :: ComponentId
+  -- ^ Component ID
+  -> Maybe ComponentId
+  -- ^ Parent ID
+  -> DOMRef
+  -- ^ DOM Reference
+  -> ComponentInfo
+mkComponentInfo = ComponentInfo
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-- | This is the 'Reader r' in 'Effect'. Accessible via 'ask'.
+--
+-- The 'Sink' callback is used to dispatch actions which are then fed
+-- back into the 'Miso.Types.update' function.
+data ComponentInfo
+  = ComponentInfo
+  { _componentId :: ComponentId
+  , _parentComponentId :: Maybe ComponentId
+  , _componentDOMRef :: DOMRef
+  }
+-----------------------------------------------------------------------------
+type ComponentId = Int
 -----------------------------------------------------------------------------

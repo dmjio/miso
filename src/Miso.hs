@@ -36,6 +36,7 @@ module Miso
   , mail
   , getComponentId
   , getParentComponentId
+  , getChildrenComponentId
   -- ** Subscriptions
   , startSub
   , stopSub
@@ -93,7 +94,7 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
-import           Miso.FFI hiding (getComponentId, getParentComponentId)
+import           Miso.FFI hiding (getComponentId, getParentComponentId, getChildrenComponentId)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Runtime

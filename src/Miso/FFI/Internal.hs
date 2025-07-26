@@ -94,6 +94,7 @@ module Miso.FFI.Internal
    -- * Component
    , getParentComponentId
    , getComponentId
+   , getChildrenComponentId
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -598,4 +599,12 @@ getParentComponentId domRef =
 -- For use in `onMounted`, etc.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
+-----------------------------------------------------------------------------
+-- | Get access to the 'ComponentId'
+-- N.B. you * must * call this on the DOMRef, otherwise, problems.
+-- For use in `onMounted`, etc.
+getChildrenComponentId :: JSVal -> JSM [Int]
+getChildrenComponentId domRef = do
+  fromJSValUnchecked =<< do
+    jsg "miso" # "getChildrenComponentId" $ [domRef]
 -----------------------------------------------------------------------------
