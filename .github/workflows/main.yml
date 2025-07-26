@@ -60,32 +60,11 @@ jobs:
      - name: (JS) Haskell-miso.org client (GHCJS 8.6)
        run: nix-build -A haskell-miso-client
 
-     - name: (x86) sse.haskell-miso.org server (GHC 8.6.5)
-       run: nix-build -A sse-server
-
-     - name: (JS) sse.haskell-miso.org client (GHCJS 8.6)
-       run: nix-build -A sse-client
-
-     - name: (x86) Miso examples (GHC 8.6.5)
-       run: nix-build -A miso-examples-ghc
-
-     - name: (x86) Miso examples (GHC 9.12.2)
-       run: nix-build -A miso-examples-ghc-9122
-
-     - name: (JS) Miso examples (GHCJS 9.12.2)
-       run: nix-build -A miso-examples-ghcjs-9122
-
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
 
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
-
-     - name: (x86) Nix garbage collect
-       run: nix-collect-garbage -d
-
-     - name: (WASM) Miso examples (GHC 9.12.2)
-       run: nix-build -A wasmExamples && ./result/bin/build.sh
 
      - name: (x86) NixOS test runner for haskell-miso.org (GHC 8.6.5)
        run: nix-build -A haskell-miso-org-test

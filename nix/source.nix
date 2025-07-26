@@ -16,7 +16,6 @@ let
          (hasSuffix ".js" baseName) ||
          (baseName == "README.md") ||
          (baseName == "LICENSE") ||
-         (type == "directory" && baseName != "examples") ||
          (type == "directory" && baseName != "dist"));
     };
 
@@ -30,9 +29,7 @@ let
 in
 {
   # local sources
-  sse              = make-src-filter ../examples/sse;
   miso             = make-src-filter ../.;
-  examples         = make-src-filter ../examples;
   sample-app       = make-src-filter ../sample-app;
   haskell-miso     = make-src-filter ../haskell-miso.org;
 
