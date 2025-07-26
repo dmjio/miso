@@ -676,6 +676,7 @@ renderScripts scripts =
   forM scripts $ \case
     Src src -> FFI.addSrc src
     Script script -> FFI.addScript script
+    ImportMap importMap -> FFI.addScriptImportMap importMap
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
