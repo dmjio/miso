@@ -1,6 +1,5 @@
 packages:
   .
-  examples/
   sample-app/
 
 index-state: 2025-06-27T20:43:14Z

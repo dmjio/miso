@@ -66,8 +66,6 @@ type Mail = Value
 -- * Amazon SNS
 -- * Google Pub/Sub
 --
--- See 'examples/components/Main.hs' for example usage.
---
 type Mailbox = TChan Mail
 -----------------------------------------------------------------------------
 -- | Constructs a new 'Mailbox'
