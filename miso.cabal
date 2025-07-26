@@ -37,7 +37,7 @@ common cpp
       -DWASM
   else
     cpp-options:
-      -DNATIVE
+      -DVANILLA
   if flag(production)
     cpp-options:
       -DPRODUCTION
