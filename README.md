@@ -576,45 +576,12 @@ For real-world examples of Haskell `miso` applications, see below.
 
 ## Building examples
 
-The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
+The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager.
 
 > [!TIP]
 > Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily `cachix use haskell-miso-cachix`
 
-
-```
-$ git clone https://github.com/dmjio/miso
-$ cd miso
-$ nix-build -A miso-examples
-```
-
-This will compile all the examples to JavaScript into a folder named `result`.
-
-```
-➜ tree -d ./result/bin
-./result/bin
-|-- canvas2d.jsexe
-|-- file-reader.jsexe
-|-- mario.jsexe
-|   `-- imgs
-|-- mathml.jsexe
-|-- router.jsexe
-|-- simple.jsexe
-|-- svg.jsexe
-|-- tests.jsexe
-|-- threejs.jsexe
-|-- todo-mvc.jsexe
-|-- websocket.jsexe
-`-- fetch.jsexe
-```
-
-> [!NOTE]
-> To see examples, we recommend hosting them with a web server (we use [http-server](https://github.com/http-party/http-server))
-
-```
-cd result/bin/todo-mvc.jsexe && http-sever
-Serving HTTP on 0.0.0.0 port 8000 ...
-```
+See the [@HaskellMiso](https://github.com/haskell-miso) organization for all examples, and how to build then.
 
 ## Interacting with HTTP APIs 🔌
 

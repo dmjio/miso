@@ -61,17 +61,12 @@
           # Default package is vanilla GHC 9.12.2 miso
           default = miso-ghc-9122;
 
-          # GHCJS miso, miso-examples
+          # GHCJS miso
           miso-ghcjs-9122 =
             pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
-          miso-examples-ghcjs-9122 =
-            pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-examples;
 
           # GHC
           miso-ghc-9122 =
-            pkgs.haskell.packages.ghc9122.miso;
-
-          miso-examples-ghc-9122 =
             pkgs.haskell.packages.ghc9122.miso;
 
           # Util

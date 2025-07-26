@@ -17,7 +17,6 @@
 -- Portability :  non-portable
 --
 -- [Canvas Example](https://canvas.haskell-miso.org)
--- [Canvas Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
 --
 ----------------------------------------------------------------------------
 module Miso.Canvas
