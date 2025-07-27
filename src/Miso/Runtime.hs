@@ -47,7 +47,7 @@ import           Control.Exception (SomeException)
 import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class
-import           Data.Aeson (FromJSON, ToJSON, Result, fromJSON, toJSON)
+import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
 import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
@@ -58,7 +58,7 @@ import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import qualified JavaScript.Array as JSArray
 #ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle hiding (Sync, Result)
+import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
 #else
 import           Language.Javascript.JSaddle
 #endif
@@ -261,9 +261,10 @@ subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 subscribe
   :: FromJSON message
   => Topic message
-  -> (Result message -> action)
+  -> (message -> action)
+  -> (MisoString -> action)
   -> Effect model action
-subscribe topicName toAction = do
+subscribe topicName successful errorful = do
   domRef <- ask
   io_ $ do
     vcompId <- FFI.getComponentId domRef
@@ -289,8 +290,11 @@ subscribe topicName toAction = do
         clonedMailbox <- liftIO (copyMailbox mailbox)
         ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
         forever $ do
-          message <- liftIO (readMail clonedMailbox)
-          componentSink $ toAction (fromJSON message)
+          fromJSON <$> liftIO (readMail clonedMailbox) >>= \case
+            Success msg ->
+              componentSink (successful msg)
+            Error msg ->
+              componentSink (errorful (ms msg))
       liftIO $ atomicModifyIORef' subscribers $ \m ->
         (M.insert key threadId m, ())
 -----------------------------------------------------------------------------
