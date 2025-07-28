@@ -38,65 +38,11 @@ self: super:
       '';
     };
 
-  hello-world-web-wasm =
-    self.wasmWebBuilder
-      { name = "hello-world";
-        title = "Hello world Example";
-        src = self.wasmHelloWorld;
-        scripts = "";
-      };
-
-  # nix-build -A wasmExamples
-  #   && ./result/bin/build.sh
-  #   && nix-build -A svgWasm
-  #   && http-server ./result/svg.wasmexe
-  svgWasm =
-    self.wasmPkgExample {
-       name = "svg";
-       title = "SVG WASM Example";
-       scripts = "";
-    };
-
-  simpleWasm =
-    self.wasmPkgExample {
-       name = "simple";
-       title = "Simple WASM Example";
-       scripts = "";
-    };
-
-  componentsWasm =
-    self.wasmPkgExample {
-       name = "components";
-       title = "Components WASM Example";
-       scripts = "";
-    };
-
-  canvas2DWasm =
-    self.wasmPkgExample {
-       name = "canvas2d";
-       title = "Canvas 2D WASM Example";
-       scripts = "";
-    };
-
-  todoWasm =
-    self.wasmPkgExample {
-       name = "todo-mvc";
-       title = "Todo-mvc WASM Example";
-       scripts = "";
-    };
-
-  # call nix-build -A wasmExamples && ./result/bin/build.sh
-  # to populate examples
-  wasmExamples = self.writeScriptBin "build.sh" ''
-    nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal update
-    nix shell '${self.wasm-flake}' --command wasm32-wasi-cabal build miso examples
-  '';
-
   # Used for packaging up cabal-built wasm packages
   # since GHC WASM isn't in nixpkgs yet (pending LLVM patches)
   # we must build the executables first w/ cabal and then package them up w/nix
   # Call "nix shell 'gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org' \
-  #            --command wasm32-wasi-cabal build miso-examples --allow-newer"
+  #            --command wasm32-wasi-cabal build sample-app --allow-newer"
   wasmPkgExample = args: with args;
     super.stdenv.mkDerivation {
       inherit (args) name;
@@ -116,11 +62,6 @@ self: super:
          cat ${self.wasmIndexHtml title name scripts} > $out/${name}.jsexe/index.html
       '';
     };
-
-  wasmHelloWorld = super.writeTextFile {
-    name = "Main.hs";
-    text = builtins.readFile ../../examples/wasm-hello-world/Main.hs;
-  };
 
   wasmIndexHtml = title: name: scripts:
     super.writeTextFile {

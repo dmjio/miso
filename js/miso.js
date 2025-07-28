@@ -41,7 +41,7 @@ function shouldSync(node) {
   }
   return enterSync;
 }
-function getParentComponentId(vcomp) {
+function getParentComponentId(vcompNode) {
   var climb = function(node) {
     let parentComponentId = null;
     while (node && node.parentNode) {
@@ -53,7 +53,7 @@ function getParentComponentId(vcomp) {
     }
     return parentComponentId;
   };
-  return climb(vcomp["domRef"]);
+  return climb(vcompNode);
 }
 
 // ts/miso/smart.ts
@@ -265,7 +265,6 @@ function mountComponent(obj, context) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
   obj["mount"](obj["domRef"], (componentId, componentTree) => {
-    obj["domRef"]["componentId"] = componentId;
     obj["children"].push(componentTree);
     context["appendChild"](obj["domRef"], componentTree["domRef"]);
     if (obj["onMounted"])

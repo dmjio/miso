@@ -10,7 +10,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Concurrent
-  ( -- * Syncrhonization primitives
+  ( -- * Synchronization primitives
     Waiter (..)
   , waiter
   , Mailbox
@@ -65,8 +65,6 @@ type Mail = Value
 --
 -- * Amazon SNS
 -- * Google Pub/Sub
---
--- See 'examples/components/Main.hs' for example usage.
 --
 type Mailbox = TChan Mail
 -----------------------------------------------------------------------------

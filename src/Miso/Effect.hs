@@ -64,21 +64,18 @@ import           Miso.FFI.Internal (JSM)
 mkComponentInfo
   :: ComponentId
   -- ^ Component ID
-  -> Maybe ComponentId
-  -- ^ Parent ID
   -> DOMRef
   -- ^ DOM Reference
-  -> ComponentInfo
+  -> ComponentInfo props
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
 -- | This is the 'Reader r' in 'Effect'. Accessible via 'ask'.
 --
 -- The 'Sink' callback is used to dispatch actions which are then fed
 -- back into the 'Miso.Types.update' function.
-data ComponentInfo
+data ComponentInfo props
   = ComponentInfo
   { _componentId :: ComponentId
-  , _parentComponentId :: Maybe ComponentId
   , _componentDOMRef :: DOMRef
   }
 -----------------------------------------------------------------------------
@@ -152,7 +149,7 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect parent model action = RWS ComponentInfo [Sink action -> JSM ()] model ()
+type Effect parent model action = RWS (ComponentInfo parent) [Sink action -> JSM ()] model ()
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
@@ -165,8 +162,8 @@ instance Fail.MonadFail Identity where
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an @EffectCore@
 runEffect
-    :: Effect parent model action
-    -> ComponentInfo
+    :: Effect props model action
+    -> ComponentInfo props
     -> model
     -> (model, [Sink action -> JSM ()])
 runEffect = execRWS

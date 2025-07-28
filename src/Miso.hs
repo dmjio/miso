@@ -25,6 +25,7 @@ module Miso
   , renderApp
   -- ** Component
   , Component
+  , startComponent
     -- ** Sink
   , withSink
   , Sink
@@ -114,7 +115,7 @@ import           Miso.Util
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> Component parent model action) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp@Component {..} <- f <$> getURI
   initialize vcomp $ \snk -> do
@@ -125,13 +126,17 @@ miso f = withJS $ do
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
+-- | Synonym 'startApp' to 'startComponent'.
+startApp :: Eq model => App model action -> JSM ()
+startApp = startComponent
+-----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> Component parent model action) -> JSM ()
+(🍜) :: Eq model => (URI -> App model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
-startApp :: Eq model => App model action -> JSM ()
-startApp vcomp@Component { styles, scripts } =
+startComponent :: Eq model => Component ROOT model action -> JSM ()
+startComponent vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
      (++) <$> renderScripts scripts
           <*> renderStyles styles

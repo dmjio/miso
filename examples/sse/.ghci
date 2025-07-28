@@ -1,4 +1,0 @@
-:set prompt ">>> "
-:set prompt2 "... "
-:set -isrc -ishared
-:set -Wall

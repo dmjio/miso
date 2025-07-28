@@ -253,14 +253,14 @@ examples = template v
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "http://todo-mvc.haskell-miso.org/"
+                , href_ "https://haskell-miso.github.io/miso-todomvc/"
                 ]
                 [ text "TodoMVC"
                 ]
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "http://mario.haskell-miso.org/"
+                , href_ "https://haskell-miso.github.io/miso-mario/"
                 ]
                 [text "Mario"]
               , text " / "

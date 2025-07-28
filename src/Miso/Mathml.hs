@@ -20,7 +20,7 @@
 --         ]
 -- @
 --
--- More complex example in [examples/mathml](https://github.com/dmjio/miso/blob/master/examples/mathml/Main.hs).
+-- More complex example in [mathml](https://github.com/haskell-miso/miso-mathml).
 --
 ----------------------------------------------------------------------------
 module Miso.Mathml

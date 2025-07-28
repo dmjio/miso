@@ -76,7 +76,7 @@ export function shouldSync (
 
 */
 export function getParentComponentId (
-  vcomp: VComp
+  vcompNode: ParentNode
 ): number {
     var climb = function (node : ParentNode) {
       let parentComponentId = null;
@@ -89,5 +89,5 @@ export function getParentComponentId (
       }
       return parentComponentId;
     }
-    return climb (vcomp['domRef']);
+    return climb (vcompNode);
 }
