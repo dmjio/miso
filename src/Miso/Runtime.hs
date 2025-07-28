@@ -95,7 +95,8 @@ initialize Component {..} getView = do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
   componentId <- liftIO freshComponentId
-  (componentScripts, componentMount, componentVTree) <- getView componentSink
+  (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
+  componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -106,14 +107,14 @@ initialize Component {..} getView = do
   let
     eventLoop !oldModel = liftIO wait >> do
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update Async componentMount componentSink (toList as) oldModel
+      newModel <- foldEffects update Async componentDOMRef componentSink (toList as) oldModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ newModel `seq` makeStableName newModel
       when (oldName /= newName && oldModel /= newModel) $ do
         newVTree <- runView Draw (view newModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
-        diff (Just oldVTree) (Just newVTree) componentMount
+        diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomicWriteIORef componentModel newModel
@@ -127,7 +128,7 @@ initialize Component {..} getView = do
       mapM_ componentSink (mailbox message)
   let vcomp = ComponentState {..}
   registerComponent vcomp
-  delegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
   pure vcomp
 -----------------------------------------------------------------------------
@@ -143,7 +144,7 @@ data ComponentState model action
   = ComponentState
   { componentId              :: ComponentId
   , componentSubThreads      :: IORef (Map MisoString ThreadId)
-  , componentMount           :: JSVal
+  , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
   , componentModel           :: IORef model
@@ -487,7 +488,7 @@ drain app@Component{..} cs@ComponentState {..} = do
       where
         go as = do
           x <- liftIO (readIORef componentModel)
-          y <- foldEffects update Sync componentMount componentSink (toList as) x
+          y <- foldEffects update Sync componentDOMRef componentSink (toList as) x
           liftIO (atomicWriteIORef componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
@@ -508,7 +509,7 @@ unmount
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
-  undelegator componentMount componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  undelegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
