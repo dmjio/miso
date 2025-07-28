@@ -132,8 +132,9 @@ data CSS
 -- This is meant to be useful in development only.
 --
 -- @
---   Src "http://example.com/script.js
---   Script "http://example.com/script.js
+--   Src "http://example.com/script.js"
+--   Script "http://example.com/script.js"
+--   ImportMap [ "key" =: "value" ]
 -- @
 --
 data JS
@@ -141,6 +142,8 @@ data JS
   -- ^ 'src' is a URL meant to link to hosted JS
   | Script MisoString
   -- ^ 'script' is meant to be raw JS in a 'script' tag
+  | ImportMap [(MisoString,MisoString)]
+  -- ^ 'script' is meant to be an import map in a 'script' tag
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point

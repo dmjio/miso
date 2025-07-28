@@ -679,8 +679,17 @@ renderStyles styles =
 renderScripts :: [JS] -> JSM [JSVal]
 renderScripts scripts =
   forM scripts $ \case
-    Src src -> FFI.addSrc src
-    Script script -> FFI.addScript script
+    Src src ->
+      FFI.addSrc src
+    Script script ->
+      FFI.addScript script
+    ImportMap importMap -> do
+      o <- create
+      forM_ importMap $ \(k,v) ->
+        FFI.set k v o
+      FFI.addScriptImportMap
+        =<< fromJSValUnchecked
+        =<< (jsg @MisoString "JSON" # ("stringify" :: MisoString) $ [o])
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
