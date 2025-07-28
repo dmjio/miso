@@ -132,8 +132,9 @@ data CSS
 -- This is meant to be useful in development only.
 --
 -- @
---   Src "http://example.com/script.js
---   Script "http://example.com/script.js
+--   Src "http://example.com/script.js"
+--   Script "http://example.com/script.js"
+--   ImportMap [ "key" =: "value" ]
 -- @
 --
 data JS
