@@ -111,10 +111,10 @@ import           Miso.Util
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> Component model action) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
-  app@Component {..} <- f <$> getURI
-  initialize app $ \snk -> do
+  vcomp@Component {..} <- f <$> getURI
+  initialize vcomp $ \snk -> do
     refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount_ <- FFI.getBody

@@ -229,7 +229,6 @@ function mountComponent(obj: VComp, context: Context): void {
   obj['mount'](obj['domRef'], (componentId: ComponentId, componentTree: VNode) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
-    obj['domRef']['componentId'] = componentId;
     obj['children'].push(componentTree);
     context['appendChild'](obj['domRef'], componentTree['domRef']);
     if (obj['onMounted']) obj['onMounted'](obj['domRef']);
