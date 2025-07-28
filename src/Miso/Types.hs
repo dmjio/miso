@@ -73,11 +73,11 @@ import           Miso.Style.Types (StyleSheet)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component parent model action
+data Component props model action
   = Component
   { model :: model
   -- ^ initial model
-  , update :: action -> Effect parent model action
+  , update :: action -> Effect props model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
   -- ^ Function to draw `View`
@@ -155,9 +155,9 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for @Component@ with sane defaults.
 component
   :: model
-  -> (action -> Effect parent model action)
+  -> (action -> Effect props model action)
   -> (model -> View model action)
-  -> Component parent model action
+  -> Component props model action
 component m u v = Component
   { model = m
   , update = u
@@ -172,7 +172,7 @@ component m u v = Component
   , mailbox = const Nothing
   }
 -----------------------------------------------------------------------------
--- | A top-level 'Component' can have no 'parent'
+-- | A top-level 'Component' can have no 'props'
 --
 -- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
 -- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
@@ -207,9 +207,9 @@ data View model action
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
-data SomeComponent parent
+data SomeComponent props
    = forall model action . Eq model
-  => SomeComponent (Component parent model action)
+  => SomeComponent (Component props model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to mount a 'Component' on any 'VNode'
 --
@@ -256,16 +256,16 @@ instance HasLink (View m a) where
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView parent a where
+class ToView props a where
   type ToViewAction a :: Type
-  toView :: a -> View parent (ToViewAction a)
+  toView :: a -> View props (ToViewAction a)
 -----------------------------------------------------------------------------
 instance ToView model (View model action) where
   type ToViewAction (View model action) = action
   toView = id
 -----------------------------------------------------------------------------
-instance ToView model (Component parent model action) where
-  type ToViewAction (Component parent model action) = action
+instance ToView model (Component props model action) where
+  type ToViewAction (Component props model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
@@ -339,7 +339,7 @@ data Attribute action
   deriving Functor
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
-instance IsString (View parent a) where
+instance IsString (View props a) where
   fromString = VText . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript `Object`.
@@ -358,7 +358,7 @@ instance ToJSVal VTree where
 -- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
 rawHtml
   :: MisoString
-  -> View parent action
+  -> View props action
 rawHtml = VTextRaw
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Types.VNode@.
@@ -369,19 +369,19 @@ rawHtml = VTextRaw
 node :: NS
      -> MisoString
      -> [Attribute action]
-     -> [View parent action]
-     -> View parent action
+     -> [View props action]
+     -> View props action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text :: MisoString -> View parent action
+text :: MisoString -> View props action
 text = VText
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text_ :: [MisoString] -> View parent action
+text_ :: [MisoString] -> View props action
 text_ = VText . MS.concat
 -----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
-textRaw :: MisoString -> View parent action
+textRaw :: MisoString -> View props action
 textRaw = VTextRaw
 -----------------------------------------------------------------------------

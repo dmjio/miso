@@ -38,8 +38,6 @@ module Miso
   -- ** Component
   , mail
   , parent
-  , getComponentId
-  , getParentComponentId
   -- ** Subscriptions
   , startSub
   , stopSub
@@ -151,7 +149,7 @@ renderApp
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
-  -> JSM [JSVal]
+  -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
 renderApp Nothing vcomp _ = startApp vcomp
@@ -162,7 +160,7 @@ renderApp (Just renderer) vcomp hooks = withJS $ do
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
   :: Eq model
-  => Component parent model action
+  => Component ROOT model action
   -- ^ Component application
   -> JSM [JSVal]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.

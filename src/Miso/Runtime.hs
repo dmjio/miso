@@ -36,8 +36,6 @@ module Miso.Runtime
   , Topic (..)
   , topic
   -- * Component
-  , getComponentId
-  , getParentComponentId
   , ComponentState
   -- * Communication
   , mail
@@ -84,7 +82,7 @@ import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, i
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
   :: Eq model
-  => Component parent model action
+  => Component props model action
   -> (Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
@@ -338,7 +336,7 @@ subscribe topicName successful errorful = do
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
-unsubscribe :: Topic message -> Effect parent model action
+unsubscribe :: Topic message -> Effect props model action
 unsubscribe topicName = do
   ComponentInfo {..} <- ask
   io_ (unsubscribe_ topicName _componentId)
@@ -396,7 +394,7 @@ unsubscribe_ topicName vcompId = do
 -- @
 --
 -- @since 1.9.0.0
-publish :: ToJSON message => Topic message -> message -> Effect parent model action
+publish :: ToJSON message => Topic message -> message -> Effect props model action
 publish topicName value = io_ $ do
   result <- M.lookup topicName <$> liftIO (readIORef mailboxes)
   case result of
@@ -469,7 +467,7 @@ foldEffects update synchronicity info snk (e:es) o =
 drawComponent
   :: Hydrate
   -> DOMRef
-  -> Component parent model action
+  -> Component props model action
   -> Sink action
   -> JSM ([DOMRef], JSVal, IORef VTree)
 drawComponent hydrate mountElement Component {..} snk = do
@@ -481,7 +479,7 @@ drawComponent hydrate mountElement Component {..} snk = do
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
-  :: Component parent model action
+  :: Component props model action
   -> ComponentState model action
   -> JSM ()
 drain app@Component{..} cs@ComponentState {..} = do
@@ -509,7 +507,7 @@ unloadScripts ComponentState {..} = do
 -- | Helper function for cleanly destroying a @Component@
 unmount
   :: Function
-  -> Component parent model action
+  -> Component props model action
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
@@ -565,16 +563,15 @@ runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
 runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
-  vchildren <- ghcjsPure . jsval =<< procreate vnode
+  vchildren <- ghcjsPure . jsval =<< procreate
   FFI.set "children" vchildren vnode
   sync <- FFI.shouldSync =<< toJSVal vnode
   FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
-      procreate parent_ = do
+      procreate = do
         kidsViews <- forM kids $ \kid -> do
           VTree child <- runView hydrate kid snk logLevel events
-          FFI.set "parent" parent_ child
           toJSVal child
         ghcjsPure (JSArray.fromList kidsViews)
 runView _ (VText t) _ _ _ = do
@@ -701,7 +698,7 @@ renderScripts scripts =
 -- @
 --
 -- @since 1.9.0.0
-startSub :: ToMisoString subKey => subKey -> Sub action -> Effect parent model action
+startSub :: ToMisoString subKey => subKey -> Sub action -> Effect props model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
@@ -739,7 +736,7 @@ startSub subKey sub = do
 -- @
 --
 -- @since 1.9.0.0
-stopSub :: ToMisoString subKey => subKey -> Effect parent model action
+stopSub :: ToMisoString subKey => subKey -> Effect props model action
 stopSub subKey = do
   domRef <- asks _componentDOMRef
   io_ $ do
@@ -754,38 +751,10 @@ stopSub subKey = do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid)
 -----------------------------------------------------------------------------
--- | Used to acquire the 'ComponentId' of the current 'Component'
-getComponentId
-  :: (ComponentId -> action)
-  -> Effect parent model action
-getComponentId callback = do
-  domRef <- asks _componentDOMRef
-  withSink $ \sink -> do
-    componentId <- FFI.getComponentId domRef
-    sink (callback componentId)
------------------------------------------------------------------------------
--- | Used to acquire the parent 'ComponentId' of the current 'Component'
--- This is commonly used in situations to send messages or receive messages
--- between components.
-getParentComponentId
-  :: (ComponentId -> action)
-  -- ^ Successful callback (with parent ComponentId)
-  -> action
-  -- ^ Errorful callback (without ComponentId)
-  -> Effect parent model action
-getParentComponentId successful errorful = do
-  domRef <- asks _componentDOMRef
-  withSink $ \sink -> do
-    FFI.getParentComponentId domRef >>= \case
-      Nothing ->
-        sink errorful
-      Just parentComponentId ->
-        sink (successful parentComponentId)
------------------------------------------------------------------------------
 -- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
 --
 -- @
--- mail componentId ("test message" :: MisoString) :: Effect parent model action
+-- mail componentId ("test message" :: MisoString) :: Effect props model action
 -- @
 --
 -- @since 1.9.0.0
@@ -793,7 +762,7 @@ mail
   :: ToJSON message
   => ComponentId
   -> message
-  -> Effect parent model action
+  -> Effect props model action
 mail vcompId message = io_ $
   IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
     Nothing ->
