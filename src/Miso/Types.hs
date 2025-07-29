@@ -36,6 +36,7 @@ module Miso.Types
   , MountPoint
   , DOMRef
   , ROOT
+  , Transition
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -182,7 +183,11 @@ component m u v = Component
 --
 data ROOT
 -----------------------------------------------------------------------------
+-- | For top-level `Component`, `ROOT` must always be specified for props.
 type App model action = Component ROOT model action
+-----------------------------------------------------------------------------
+-- | When `Component` are not in use, also for pre-1.9 `miso` applications.
+type Transition model action = Effect ROOT model action
 -----------------------------------------------------------------------------
 -- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
@@ -259,16 +264,16 @@ instance HasLink (View m a) where
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView props a where
-  type ToViewAction a :: Type
-  toView :: a -> View props (ToViewAction a)
+class ToView model a where
+  type ToViewAction model a :: Type
+  toView :: a -> View model (ToViewAction model a)
 -----------------------------------------------------------------------------
 instance ToView model (View model action) where
-  type ToViewAction (View model action) = action
+  type ToViewAction model (View model action) = action
   toView = id
 -----------------------------------------------------------------------------
 instance ToView model (Component props model action) where
-  type ToViewAction (Component props model action) = action
+  type ToViewAction model (Component props model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
