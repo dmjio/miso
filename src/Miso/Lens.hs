@@ -137,6 +137,7 @@ module Miso.Lens
   , _1
   , _2
   , _id
+  , this
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.Reader (MonadReader, asks)
@@ -680,7 +681,7 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 _2 :: Lens (a,b) b
 _2 = lens snd $ \(a,_) x -> (a,x)
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on itself 
+-- | @Lens@ that operates on itself
 --
 -- @
 -- update AddOne = do
@@ -688,6 +689,15 @@ _2 = lens snd $ \(a,_) x -> (a,x)
 -- @
 _id :: Lens a a
 _id = Control.Category.id
+---------------------------------------------------------------------------------
+-- | @Lens@ that operates on itself
+--
+-- @
+-- update AddOne = do
+--   this += 1
+-- @
+this :: Lens a a
+this = _id
 ---------------------------------------------------------------------------------
 -- | Smart constructor @lens@ function. Used to easily construct a @Lens@
 --
