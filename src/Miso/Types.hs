@@ -64,6 +64,7 @@ import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding (null)
+import           Data.Coerce (coerce)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Mail)
@@ -264,16 +265,16 @@ instance HasLink (View m a) where
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView model a where
-  type ToViewAction model a :: Type
-  toView :: a -> View model (ToViewAction model a)
+class ToView a where
+  type ToViewAction a :: Type
+  toView :: a -> View model (ToViewAction a)
 -----------------------------------------------------------------------------
-instance ToView model (View model action) where
-  type ToViewAction model (View model action) = action
-  toView = id
+instance ToView (View model action) where
+  type ToViewAction (View model action) = action
+  toView = coerce
 -----------------------------------------------------------------------------
-instance ToView model (Component props model action) where
-  type ToViewAction model (Component props model action) = action
+instance ToView (Component props model action) where
+  type ToViewAction (Component props model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
