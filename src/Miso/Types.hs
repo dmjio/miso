@@ -214,7 +214,7 @@ data SomeComponent props
 -- | Used in the @view@ function to mount a 'Component' on any 'VNode'
 --
 -- @
---   mount_ (p_ [ key_ "component-1" ]) $ component $ \\m ->
+--   mount (p_ [ key_ "component-1" ]) $ component $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
