@@ -75,6 +75,7 @@ module Miso.FFI.Internal
    -- * JS
    , addSrc
    , addScript
+   , addScriptImportMap
    -- * XHR
    , fetch
    , shouldSync
@@ -452,9 +453,20 @@ addStyle css = do
 -- > addScript "function () { alert('hi'); }"
 --
 addScript :: MisoString -> JSM JSVal
-addScript css = do
+addScript js_ = do
   script <- jsg "document" # "createElement" $ ["script"]
-  (script <# "innerHTML") css
+  (script <# "innerHTML") js_
+  jsg "document" ! "head" # "appendChild" $ [script]
+-----------------------------------------------------------------------------
+-- | Appends a 'script_' element containing a JS import map.
+--
+-- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
+--
+addScriptImportMap :: MisoString -> JSM JSVal
+addScriptImportMap impMap = do
+  script <- jsg "document" # "createElement" $ ["script"]
+  (script <# "type") "importmap"
+  (script <# "innerHTML") impMap
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
 -- | Appends a \<script\> element to 'head_'

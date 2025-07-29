@@ -17,7 +17,6 @@ module Miso.Style
   , styleInline_
   , sheet_
   , selector_
-  , (=:)
     -- *** Render
   , renderStyleSheet
     -- *** Combinators
@@ -228,6 +227,7 @@ import           Miso.Style.Types
 import           Miso.Property
 import           Miso.Types (Attribute)
 import qualified Miso.Types as MT
+import           Miso.Util ((=:))
 -----------------------------------------------------------------------------
 import           Prelude hiding (filter, rem)
 -----------------------------------------------------------------------------
@@ -273,18 +273,6 @@ pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
------------------------------------------------------------------------------
--- | Smart constructor for Attributes. This function is helpful when
--- constructing 'Style'.
---
--- Example shown below.
---
--- @
--- div_ [ style_  [ "background" =: "red" ] ] []
--- @
---
-(=:) :: k -> v -> (k, v)
-k =: v = (k,v)
 -----------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
 --

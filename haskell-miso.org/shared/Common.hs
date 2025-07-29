@@ -246,33 +246,33 @@ examples = template v
               ]
               [ a_
                 [ target_ "_blank"
-                , href_ "https://haskell-miso.github.io/three-miso/"
+                , href_ "https://threejs.haskell-miso.org"
                 ]
                 [ text "three.js"
                 ]
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "https://haskell-miso.github.io/miso-todomvc/"
+                , href_ "https://todo-mvc.haskell-miso.org"
                 ]
                 [ text "TodoMVC"
                 ]
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "https://haskell-miso.github.io/miso-mario/"
+                , href_ "https://mario.haskell-miso.org/"
                 ]
                 [text "Mario"]
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "https://haskell-miso.github.io/miso-flatris/"
+                , href_ "https://flatris.haskell-miso.org/"
                 ]
                 [text "Flatris"]
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "https://haskell-miso.github.io/miso-2048/"
+                , href_ "https://2048.haskell-miso.org/"
                 ]
                 [text "2048"]
               ]
