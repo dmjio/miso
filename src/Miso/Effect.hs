@@ -79,6 +79,7 @@ infixr 0 #>
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
+--
 -- @since 1.9.0.0
 batch :: [JSM action] -> Effect model action
 batch actions = sequence_
@@ -87,6 +88,7 @@ batch actions = sequence_
   ]
 -----------------------------------------------------------------------------
 -- | Like @batch@ but action are discarded
+--
 -- @since 1.9.0.0
 batch_ :: [JSM ()] -> Effect model action
 batch_ actions = sequence_
