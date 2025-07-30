@@ -23,6 +23,7 @@ module Miso.Types
   ( -- ** Types
     App
   , Component        (..)
+  , Prop             (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -42,6 +43,7 @@ module Miso.Types
   , ToKey            (..)
   -- ** Smart Constructors
   , component
+  , prop
   -- ** Component
   , mount
   , (+>)
@@ -55,21 +57,22 @@ module Miso.Types
   , rawHtml
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
-import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
-import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
-import           Prelude hiding (null)
-import           Data.Coerce (coerce)
+import           Prelude hiding              (null)
+import           Unsafe.Coerce (unsafeCoerce)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
+import           Miso.Event.Types (Events, defaultEvents)
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
-import           Miso.Event.Types
+import           Miso.Lens (Lens)
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
 import qualified Miso.String as MS
@@ -113,6 +116,7 @@ data Component props model action
   -- ^ Used to receive mail from other 'Component'
   --
   -- @since 1.9.0.0
+  , props :: [ Prop props model ]
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -175,6 +179,7 @@ component m u v = Component
   , logLevel = Off
   , initialAction = Nothing
   , mailbox = const Nothing
+  , props = []
   }
 -----------------------------------------------------------------------------
 -- | A top-level 'Component' can have no 'props'
@@ -271,7 +276,7 @@ class ToView a where
 -----------------------------------------------------------------------------
 instance ToView (View model action) where
   type ToViewAction (View model action) = action
-  toView = coerce
+  toView = unsafeCoerce
 -----------------------------------------------------------------------------
 instance ToView (Component props model action) where
   type ToViewAction (Component props model action) = action
@@ -393,4 +398,31 @@ text_ = VText . MS.concat
 -- | `TextRaw` creation. Don't use directly
 textRaw :: MisoString -> View props action
 textRaw = VTextRaw
+-----------------------------------------------------------------------------
+-- | Type used for React-like "props" functionality. This is used to
+-- to bind parent model changes to the child model.
+--
+-- > https://react.dev/learn/passing-props-to-a-component
+--
+-- @
+--
+-- main :: IO ()
+-- main = run app { props = [ ] }
+--
+-- @
+--
+-- @since 1.9.0.0
+data Prop props model
+  = forall type_
+  . Prop (props -> type_) (Lens model type_)
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Prop'.
+--
+-- @since 1.9.0.0
+prop
+  :: forall props type_ model
+   . (props -> type_)
+  -> Lens model type_
+  -> Prop props model
+prop = Prop
 -----------------------------------------------------------------------------
