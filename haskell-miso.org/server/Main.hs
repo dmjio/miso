@@ -12,6 +12,7 @@ module Main where
 
 import Common (
     Page (..),
+    Model,
     ServerRoutes,
     haskellMisoComponent,
     uri404,
