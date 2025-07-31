@@ -108,7 +108,7 @@ childComponent = (component (ChildModel 0) noop view_)
 childComponent2 :: Component ChildModel Int action
 childComponent2 = (component 0 noop view_)
   { props =
-    [ prop getCounter this
+    [ getCounter --> _id
     ]
   } where
       view_ x =

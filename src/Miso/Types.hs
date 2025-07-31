@@ -44,6 +44,7 @@ module Miso.Types
   -- ** Smart Constructors
   , component
   , prop
+  , (-->)
   -- ** Component
   , mount
   , (+>)
@@ -425,4 +426,10 @@ prop
   -> Lens model type_
   -> Prop props model
 prop = Prop
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Prop'.
+--
+-- @since 1.9.0.0
+(-->) :: (props -> type_) -> Lens model type_ -> Prop props model
+(-->) = prop
 -----------------------------------------------------------------------------
