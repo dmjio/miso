@@ -322,7 +322,7 @@ template content Model{..} =
         [ a_
             [ class_ "github-fork-ribbon left-top fixed"
             , href_ "http://github.com/dmjio/miso"
-            , prop "data-ribbon" ("Fork me on GitHub" :: MisoString)
+            , textProp "data-ribbon" ("Fork me on GitHub" :: MisoString)
             , target_ "blank"
             , rel_ "noopener"
             , title_ "Fork me on GitHub"

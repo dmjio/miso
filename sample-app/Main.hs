@@ -51,10 +51,10 @@ emptyModel = Model 0
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Model Action
 updateModel = \case
-  AddOne        -> do
+  AddOne -> do
     counter += 1
     io_ (consoleLog "I clicked something")
-  SubtractOne   -> do
+  SubtractOne -> do
     counter -= 1
     io_ (consoleLog "I clicked decrement")
   SayHelloWorld -> io_ $ do
