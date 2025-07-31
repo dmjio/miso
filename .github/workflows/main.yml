@@ -72,9 +72,6 @@ jobs:
      - name: (x86) Nix garbage collect
        run: nix-collect-garbage -d
 
-     - name: Miso Haddocks
-       run: nix-shell --run 'cabal update && cabal haddock-project'
-
      - name: (x86) Nginx example hosting check
        run: nix-build -A nginx-nixos-test --dry-run
 
@@ -103,9 +100,6 @@ jobs:
 
      - name: Build
        run: nix-build -A miso-ghcjs
-
-     - name: Miso Haddocks
-       run: nix-shell --run 'cabal update && cabal haddock-project'
 
      - name: Miso.ts test coverage
        run: bun run test
