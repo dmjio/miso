@@ -81,8 +81,8 @@
           # Default GHC shell
           default =
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
-              buildInputs = drv.buildInputs ++
-                [ pkgs.just
+              buildInputs = with pkgs; drv.buildInputs ++
+                [ just bun
                 ];
             });
 
