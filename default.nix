@@ -48,10 +48,6 @@ with pkgs.haskell.lib;
     haskell-miso-server
     haskell-miso-runner;
 
-  # code coverage
-  inherit (pkgs)
-    coverage;
-
   # ci
   inherit (legacyPkgs)
     deploy

@@ -18,15 +18,6 @@ with (import ../../default.nix {});
            };
          };
        };
-       "coverage.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = coverage;
-           };
-         };
-       };
      };
    };
 }

@@ -1,16 +1,5 @@
 self: super: {
 
-  # dmj: ensure you call 'bun run test' first
-  # js nix packaging is more trouble than its worth right now
-  coverage = self.stdenv.mkDerivation {
-    name = "coverage";
-    src = ../coverage;
-    buildCommand = ''
-      mkdir -p $out
-      cp -v $src/* $out
-    '';
-  };
-
   # haskell stuff
   haskell = super.haskell // {
     packages = super.haskell.packages // {
