@@ -122,7 +122,9 @@ pointerDecoder = Decoder {..}
         <*> o .: "isPrimary"
         <*> pair o "clientX" "clientY"
         <*> pair o "screenX" "screenY"
+        <*> pair o "offsetX" "offsetY"
         <*> pair o "pageX" "pageY"
         <*> pair o "tiltX" "tiltY"
         <*> o .: "pressure"
+        <*> o .: "button"
 -----------------------------------------------------------------------------

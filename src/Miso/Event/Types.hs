@@ -72,11 +72,15 @@ data PointerEvent
   -- ^ clientX, clientY
   , screen :: (Double, Double)
   -- ^ screenX, screenY
+  , offset :: (Double, Double)
+  -- ^ offsetX, offsetY
   , page :: (Double,Double)
   -- ^ pageX, pageY
   , tilt :: (Double,Double)
   -- ^ tiltX, tiltY
   , pressure :: Double
+  , button :: Int
+  -- ^ https://w3c.github.io/pointerevents/#the-button-property
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Pointer type
