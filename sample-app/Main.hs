@@ -63,7 +63,7 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel _ = div_ []
+viewModel (Model _) = div_ []
   [ button_
     [ onClick AddOne ]
     [ text "+" ]

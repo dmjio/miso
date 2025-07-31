@@ -71,7 +71,6 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 import           Text.HTML.TagSoup (Tag(..))
 import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
-import           Unsafe.Coerce (unsafeCoerce)
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
@@ -109,34 +108,32 @@ initialize Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModel_ <- liftIO (newIORef model)
+  componentModelCurrent <- liftIO (newIORef model)
+  componentModelNew <- liftIO (newIORef model)
   let
-    eventLoop !oldModel = liftIO wait >> do
-      FFI.consoleLog "im inside diff now"
+    eventLoop = liftIO wait >> do
+      oldModel <- liftIO (readIORef componentModelCurrent)
+      newModel <- liftIO (readIORef componentModelNew)
       let
         info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      newModel <- foldEffects update Async info componentSink (toList as) oldModel
-      FFI.consoleLog ("old model: " <> ms (unsafeCoerce oldModel :: Int))
-      FFI.consoleLog ("new model: " <> ms (unsafeCoerce newModel :: Int))
+      updatedModel <- foldEffects update Async info componentSink (toList as) newModel
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
-      newName <- liftIO $ newModel `seq` makeStableName newModel
-      FFI.consoleLog "about to call draw"
-      when (oldName /= newName && oldModel /= newModel) $ do
-        FFI.consoleLog "im drawing now"
-        newVTree <- runView Draw (view newModel) componentSink logLevel events
+      newName <- liftIO $ updatedModel `seq` makeStableName updatedModel
+      when (oldName /= newName && oldModel /= updatedModel) $ do
+        newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
-          atomicWriteIORef componentModel_ newModel
+          atomicWriteIORef componentModelCurrent updatedModel
+          atomicWriteIORef componentModelNew updatedModel
           sendMail componentNotify_ Null
-        FFI.consoleLog "sending null message to children"
-        -- ^ dmj: child wake-up call for prop synch
+          -- dmj: child wake-up call for prop synch
       syncPoint
-      eventLoop newModel
-  _ <- FFI.forkJSM (eventLoop model)
+      eventLoop
+  _ <- FFI.forkJSM eventLoop
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
@@ -144,10 +141,9 @@ initialize Component {..} getView = do
       mapM_ componentSink (mailbox message)
   componentParentNotifyThreadId <-
     subscribeToParentDiffs componentDOMRef
-      componentModel_ props serve
+      componentModelNew props serve
   let vcomp = ComponentState
-        { componentModel = componentModel_
-        , componentNotify = componentNotify_
+        { componentNotify = componentNotify_
         , ..
         }
   registerComponent vcomp
@@ -163,7 +159,6 @@ subscribeToParentDiffs
   -> IO ()
   -> JSM ThreadId
 subscribeToParentDiffs componentDOMRef componentModel_ props serve = FFI.forkJSM $ do
-  FFI.consoleLog "subscribing to parent diffs..."
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   FFI.getParentComponentId componentDOMRef >>= \case
@@ -178,30 +173,22 @@ subscribeToParentDiffs componentDOMRef componentModel_ props serve = FFI.forkJSM
         Just parentComponentState -> do
           forever $ do
             Null <- liftIO $ readMail =<< copyMailbox (componentNotify parentComponentState)
-            FFI.consoleLog "got mail!"
             forM_ props $ \prop_ ->
               bindProp prop_ parentComponentState componentModel_
-            unless (List.null props) $ do
-              FFI.consoleLog "calling serve on child..."
-              liftIO serve
+            liftIO (unless (List.null props) serve)
 -----------------------------------------------------------------------------
 bindProp
   :: forall props model action
    . Prop props model
   -> ComponentState props action
+  -- ^ Parent model
   -> IORef model
+  -- ^ Child new model
   -> JSM ()
 bindProp (Prop getter childLens) ComponentState {..} modelRef = do
-  (FFI.consoleLog "im inside bindProp")
-  parentModel <- liftIO (readIORef componentModel)
-  FFI.consoleLog $ "i got parent model at: " <> ms (show (unsafeCoerce parentModel :: Int))
-  oldV <- liftIO (readIORef modelRef)
-  FFI.consoleLog $ "i got old model at: " <> ms (show (unsafeCoerce oldV :: Int))
+  parentModel <- liftIO (readIORef componentModelNew)
   let newChild m = m & childLens .~ getter parentModel
   liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
-  newV <- liftIO (readIORef modelRef)
-  FFI.consoleLog $ "i updated model to now be: " <> ms (show (unsafeCoerce newV :: Int))
-  (FFI.consoleLog "i updated child")
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -218,7 +205,8 @@ data ComponentState model action
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
-  , componentModel           :: IORef model
+  , componentModelCurrent    :: IORef model
+  , componentModelNew        :: IORef model
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
@@ -563,9 +551,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go info as = do
-          x <- liftIO (readIORef componentModel)
+          x <- liftIO (readIORef componentModelCurrent)
           y <- foldEffects update Sync info componentSink (toList as) x
-          liftIO (atomicWriteIORef componentModel y)
+          liftIO (atomicWriteIORef componentModelCurrent y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
@@ -589,6 +577,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
+  liftIO (killThread componentParentNotifyThreadId)
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
@@ -871,6 +860,6 @@ parent successful errorful = do
         IM.lookup parentId <$> liftIO (readIORef components) >>= \case
           Nothing -> sink errorful
           Just ComponentState {..} -> do
-            model <- liftIO (readIORef componentModel)
+            model <- liftIO (readIORef componentModelCurrent)
             sink (successful model)
 -----------------------------------------------------------------------------
