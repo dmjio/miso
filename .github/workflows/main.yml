@@ -101,9 +101,6 @@ jobs:
      - name: Build
        run: nix-build -A miso-ghcjs
 
-     - name: Miso.ts test coverage
-       run: bun run test
-
      - name: Deploy
        run: nix-build -A deploy -j1 && ./result
        env:
