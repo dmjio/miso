@@ -157,25 +157,28 @@ subscribeToParentDiffs
   -> IORef model
   -> [ Prop type_ model ]
   -> IO ()
-  -> JSM ThreadId
-subscribeToParentDiffs componentDOMRef componentModel_ props serve = FFI.forkJSM $ do
-  -- Get parent's componentNotify, subscribe to it, on notification
-  -- update the current Component model using the user-specified lenses
-  FFI.getParentComponentId componentDOMRef >>= \case
-    Nothing ->
-      -- dmj: impossible case, parent always mounted
-      pure ()
-    Just parentId -> do
-      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> do
-          -- dmj: another impossible case, parent always mounted
-          pure ()
-        Just parentComponentState -> do
-          forever $ do
-            Null <- liftIO $ readMail =<< copyMailbox (componentNotify parentComponentState)
-            forM_ props $ \prop_ ->
-              bindProp prop_ parentComponentState componentModel_
-            liftIO (unless (List.null props) serve)
+  -> JSM (Maybe ThreadId)
+subscribeToParentDiffs _ _ [] _ = pure Nothing
+subscribeToParentDiffs componentDOMRef componentModel_ props serve =
+  fmap Just $ FFI.forkJSM $ do
+    -- Get parent's componentNotify, subscribe to it, on notification
+    -- update the current Component model using the user-specified lenses
+    FFI.getParentComponentId componentDOMRef >>= \case
+      Nothing ->
+        -- dmj: impossible case, parent always mounted
+        pure ()
+      Just parentId -> do
+        IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+          Nothing -> do
+            -- dmj: another impossible case, parent always mounted
+            pure ()
+          Just parentComponentState -> do
+            forever $ do
+              Null <- liftIO $ readMail =<<
+                copyMailbox (componentNotify parentComponentState)
+              forM_ props $ \prop_ ->
+                bindProp prop_ parentComponentState componentModel_
+              liftIO (unless (List.null props) serve)
 -----------------------------------------------------------------------------
 bindProp
   :: forall props model action
@@ -213,7 +216,7 @@ data ComponentState model action
   , componentMailboxThreadId :: ThreadId
   , componentNotify          :: Mailbox
     -- ^ What the current component writes to, to notify its children it has a dirty model
-  , componentParentNotifyThreadId  :: ThreadId
+  , componentParentNotifyThreadId  :: Maybe ThreadId
     -- ^ What the current component listens on to invoke model synchronization
   }
 -----------------------------------------------------------------------------
@@ -577,7 +580,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
-  liftIO (killThread componentParentNotifyThreadId)
+  liftIO (mapM_ killThread componentParentNotifyThreadId)
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
