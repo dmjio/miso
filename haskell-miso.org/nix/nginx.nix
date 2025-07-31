@@ -27,15 +27,6 @@ with (import ../../default.nix {});
            };
          };
        };
-       "haddocks.haskell-miso.org" = {
-          forceSSL = true;
-          enableACME = true;
-          locations = {
-          "/" = {
-            root = haddocks;
-           };
-         };
-       };
      };
    };
 }

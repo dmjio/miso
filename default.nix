@@ -52,10 +52,6 @@ with pkgs.haskell.lib;
   inherit (pkgs)
     coverage;
 
-  # haddocks
-  inherit (pkgs)
-    haddocks;
-
   # ci
   inherit (legacyPkgs)
     deploy
