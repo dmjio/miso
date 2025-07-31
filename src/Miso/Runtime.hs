@@ -45,11 +45,10 @@ module Miso.Runtime
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
-import           Control.Monad (forM, forM_, when, void, forever, unless)
+import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
-import qualified Data.List as List
 import           Data.Foldable (toList)
 import           Data.Function ((&))
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
@@ -133,7 +132,6 @@ initialize Component {..} getView = do
           -- dmj: child wake-up call for prop synch
       syncPoint
       eventLoop
-  _ <- FFI.forkJSM eventLoop
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
@@ -150,6 +148,7 @@ initialize Component {..} getView = do
   delegator componentDOMRef componentVTree events $
     logLevel `elem` [DebugEvents, DebugAll]
   forM_ initialAction componentSink
+  _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
 subscribeToParentDiffs
@@ -159,26 +158,30 @@ subscribeToParentDiffs
   -> IO ()
   -> JSM (Maybe ThreadId)
 subscribeToParentDiffs _ _ [] _ = pure Nothing
-subscribeToParentDiffs componentDOMRef componentModel_ props serve =
-  fmap Just $ FFI.forkJSM $ do
-    -- Get parent's componentNotify, subscribe to it, on notification
-    -- update the current Component model using the user-specified lenses
-    FFI.getParentComponentId componentDOMRef >>= \case
-      Nothing ->
-        -- dmj: impossible case, parent always mounted
-        pure ()
-      Just parentId -> do
-        IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-          Nothing -> do
-            -- dmj: another impossible case, parent always mounted
-            pure ()
-          Just parentComponentState -> do
-            forever $ do
-              Null <- liftIO $ readMail =<<
-                copyMailbox (componentNotify parentComponentState)
-              forM_ props $ \prop_ ->
-                bindProp prop_ parentComponentState componentModel_
-              liftIO (unless (List.null props) serve)
+subscribeToParentDiffs componentDOMRef componentModel_ props serve = do
+  -- Get parent's componentNotify, subscribe to it, on notification
+  -- update the current Component model using the user-specified lenses
+  FFI.getParentComponentId componentDOMRef >>= \case
+    Nothing ->
+      -- dmj: impossible case, parent always mounted
+      pure Nothing
+    Just parentId -> do
+      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+        Nothing -> do
+          -- dmj: another impossible case, parent always mounted
+          pure Nothing
+        Just parentComponentState -> do
+          bindProps parentComponentState
+          -- dmj: ^ assume parent state on initialization
+          fmap Just $ FFI.forkJSM $ forever $ do
+            Null <- liftIO $ readMail =<<
+              copyMailbox (componentNotify parentComponentState)
+            bindProps parentComponentState
+  where
+    bindProps parentComponentState = do
+      forM_ props $ \prop_ ->
+        bindProp prop_ parentComponentState componentModel_
+      liftIO serve
 -----------------------------------------------------------------------------
 bindProp
   :: forall props model action

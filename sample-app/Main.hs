@@ -16,19 +16,24 @@ import Miso.String
 import Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state
-newtype Model
+data Model
   = Model
   { _counter :: Int
+  , _condition :: Bool
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
+----------------------------------------------------------------------------
+condition :: Lens Model Bool
+condition = lens _condition $ \record field -> record { _condition = field }
 ----------------------------------------------------------------------------
 -- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
   | SayHelloWorld
+  | Toggle
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
@@ -46,29 +51,31 @@ app = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
-emptyModel = Model 0
+emptyModel = Model 0 False
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Model Action
 updateModel = \case
-  AddOne -> do
-    counter += 1
-    io_ (consoleLog "I clicked something")
-  SubtractOne -> do
-    counter -= 1
-    io_ (consoleLog "I clicked decrement")
+  AddOne -> counter += 1
+  SubtractOne -> counter -= 1
   SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
+  Toggle ->
+    condition %= not
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel (Model _) = div_ []
+viewModel (Model x condition_) = div_ []
   [ button_
     [ onClick AddOne ]
     [ text "+" ]
-  , div_
-    [ key_ @MisoString "component-1" ] +> childComponent
+  , button_
+    [ onClick Toggle ]
+    [ text "Toggle components" ]
+  , if condition_
+      then div_  [ key_ @MisoString "component-1" ] +> childComponent
+      else "foo"
   , button_
     [ onClick SubtractOne ]
     [ text "-" ]
@@ -76,6 +83,7 @@ viewModel (Model _) = div_ []
   , button_
     [ onClick SayHelloWorld ]
     [ text "Alert Hello World!" ]
+  , text (ms x)
   ]
 ----------------------------------------------------------------------------
 class ChildParams component where
@@ -90,10 +98,30 @@ childComponent = (component (ChildModel 0) noop view_)
     [ prop getCounter childModel
     ]
   } where
-      view_ (ChildModel x) = text (ms x)
+      view_ (ChildModel x) =
+        div_
+        []
+        [ text (ms x)
+        , div_ [ key_ @MisoString "foobah" ] +> childComponent2
+        ]
+----------------------------------------------------------------------------
+childComponent2 :: Component ChildModel Int action
+childComponent2 = (component 0 noop view_)
+  { props =
+    [ prop getCounter this
+    ]
+  } where
+      view_ x =
+        div_
+        []
+        [ text (ms x)
+        ]
 ----------------------------------------------------------------------------
 instance ChildParams Model where
-  getCounter (Model x) = x
+  getCounter (Model x _) = x
+----------------------------------------------------------------------------
+instance ChildParams ChildModel where
+  getCounter (ChildModel x) = x
 ----------------------------------------------------------------------------
 newtype ChildModel = ChildModel { _childModel :: Int }
   deriving (Eq, Show)
