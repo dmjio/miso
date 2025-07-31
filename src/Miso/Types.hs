@@ -66,7 +66,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding              (null)
-import           Unsafe.Coerce (unsafeCoerce)
+import           Data.Coerce (coerce)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Event.Types (Events, defaultEvents)
@@ -270,16 +270,16 @@ instance HasLink (View m a) where
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView a where
-  type ToViewAction a :: Type
-  toView :: a -> View model (ToViewAction a)
+class ToView m a where
+  type ToViewAction m a :: Type
+  toView :: a -> View m (ToViewAction m a)
 -----------------------------------------------------------------------------
-instance ToView (View model action) where
-  type ToViewAction (View model action) = action
-  toView = unsafeCoerce
+instance ToView model (View model action) where
+  type ToViewAction model (View model action) = action
+  toView = coerce
 -----------------------------------------------------------------------------
-instance ToView (Component props model action) where
-  type ToViewAction (Component props model action) = action
+instance ToView model (Component props model action) where
+  type ToViewAction model (Component props model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
