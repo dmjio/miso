@@ -86,6 +86,13 @@
                 ];
             });
 
+          # Shell for JavaScript / TypeScript development
+          typescript =
+            pkgs.mkShell {
+              name = "The miso ${system} JavaScript / TypeScript shell";
+              packages = with pkgs; [ bun ];
+            };
+
           # WASM shell
           wasm =
             pkgs.mkShell {
