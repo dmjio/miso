@@ -8,7 +8,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI
-  ( -- * Functions
+  ( -- ** Functions
     set
   , now
   , consoleLog
