@@ -253,7 +253,7 @@ examples = template v
               , text " / "
               , a_
                 [ target_ "_blank"
-                , href_ "https://todo-mvc.haskell-miso.org"
+                , href_ "https://todomvc.haskell-miso.org"
                 ]
                 [ text "TodoMVC"
                 ]
