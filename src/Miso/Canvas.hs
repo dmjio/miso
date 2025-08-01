@@ -113,14 +113,14 @@ import           Miso.String (MisoString)
 -- useful when building applications w/ three.js, or other libraries where
 -- explicit context is not necessary.
 canvas_
-  :: forall action canvasState
+  :: forall model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute action ]
   -> (DOMRef -> JSM canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> JSM ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View action
+  -> View model action
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
@@ -144,14 +144,14 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall action canvasState
+  :: forall model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute action ]
   -> (DOMRef -> Canvas canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> Canvas ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View action
+  -> View model action
 canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]

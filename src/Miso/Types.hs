@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -20,7 +21,9 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
-    Component        (..)
+    App
+  , Component        (..)
+  , Prop             (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -33,11 +36,15 @@ module Miso.Types
   , VTree            (..)
   , MountPoint
   , DOMRef
+  , ROOT
+  , Transition
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
   -- ** Smart Constructors
   , component
+  , prop
+  , (-->)
   -- ** Component
   , mount
   , (+>)
@@ -46,37 +53,41 @@ module Miso.Types
   -- *** Combinators
   , node
   , text
+  , text_
   , textRaw
   , rawHtml
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
-import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
-import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
-import           Prelude hiding (null)
+import           Prelude hiding              (null)
+import           Data.Coerce (coerce)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
+import           Miso.Event.Types (Events, defaultEvents)
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
-import           Miso.Event.Types
+import           Miso.Lens (Lens)
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
+import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component model action
+data Component props model action
   = Component
   { model :: model
   -- ^ initial model
-  , update :: action -> Effect model action
+  , update :: action -> Effect props model action
   -- ^ Function to update model, optionally providing effects.
-  , view :: model -> View action
+  , view :: model -> View model action
   -- ^ Function to draw `View`
-  , subs :: [ Sub action ]
+  , subs :: [Sub action]
   -- ^ List of subscriptions to run during application lifetime
   , events :: Events
   -- ^ List of delegated events that the body element will listen for.
@@ -106,6 +117,7 @@ data Component model action
   -- ^ Used to receive mail from other 'Component'
   --
   -- @since 1.9.0.0
+  , props :: [ Prop props model ]
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -153,9 +165,9 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for @Component@ with sane defaults.
 component
   :: model
-  -> (action -> Effect model action)
-  -> (model -> View action)
-  -> Component model action
+  -> (action -> Effect props model action)
+  -> (model -> View model action)
+  -> Component props model action
 component m u v = Component
   { model = m
   , update = u
@@ -168,9 +180,23 @@ component m u v = Component
   , logLevel = Off
   , initialAction = Nothing
   , mailbox = const Nothing
+  , props = []
   }
 -----------------------------------------------------------------------------
--- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
+-- | A top-level 'Component' can have no 'props'
+--
+-- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
+-- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
+--
+data ROOT
+-----------------------------------------------------------------------------
+-- | For top-level `Component`, `ROOT` must always be specified for props.
+type App model action = Component ROOT model action
+-----------------------------------------------------------------------------
+-- | When `Component` are not in use, also for pre-1.9 `miso` applications.
+type Transition model action = Effect ROOT model action
+-----------------------------------------------------------------------------
+-- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
   -- ^ No debug logging, the default value used in @component@
@@ -187,22 +213,23 @@ data LogLevel
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
-data View action
-  = VNode NS MisoString [Attribute action] [View action]
+-----------------------------------------------------------------------------
+data View model action
+  = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp NS MisoString [Attribute action] SomeComponent
+  | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
-data SomeComponent
+data SomeComponent props
    = forall model action . Eq model
-  => SomeComponent (Component model action)
+  => SomeComponent (Component props model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to mount a 'Component' on any 'VNode'
 --
 -- @
---   mount_ (p_ [ key_ "component-1" ]) $ component $ \\m ->
+--   mount (p_ [ key_ "component-1" ]) $ component $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
@@ -216,10 +243,10 @@ data SomeComponent
 --
 -- @since 1.9.0.0
 mount
-  :: forall model action a . Eq model
-  => ([View a] -> View a)
-  -> Component model action
-  -> View a
+  :: forall props model action a . Eq model
+  => ([View props a] -> View props a)
+  -> Component props model action
+  -> View props a
 mount mkNode vcomp =
   case mkNode [] of
     VNode ns tag attrs _ ->
@@ -231,44 +258,44 @@ mount mkNode vcomp =
       error "Cannot mount on a Text node"
 -----------------------------------------------------------------------------
 (+>)
-  :: forall model action a . Eq model
-  => ([View a] -> View a)
-  -> Component model action
-  -> View a
+  :: forall props model action a . Eq model
+  => ([View props a] -> View props a)
+  -> Component props model action
+  -> View props a
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
-instance HasLink (View a) where
-  type MkLink (View a) b = b
+instance HasLink (View m a) where
+  type MkLink (View m a) b = b
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView a where
-  type ToViewAction a :: Type
-  toView :: a -> View (ToViewAction a)
+class ToView m a where
+  type ToViewAction m a :: Type
+  toView :: a -> View m (ToViewAction m a)
 -----------------------------------------------------------------------------
-instance ToView (View action) where
-  type ToViewAction (View action) = action
-  toView = id
+instance ToView model (View model action) where
+  type ToViewAction model (View model action) = action
+  toView = coerce
 -----------------------------------------------------------------------------
-instance ToView (Component model action) where
-  type ToViewAction (Component model action) = action
+instance ToView model (Component props model action) where
+  type ToViewAction model (Component props model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
-  = HTML -- ^ HTML Namespace
-  | SVG  -- ^ SVG Namespace
-  | MATHML  -- ^ MATHML Namespace
+  = HTML   -- ^ HTML Namespace
+  | SVG    -- ^ SVG Namespace
+  | MATHML -- ^ MATHML Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
-  toJSVal SVG  = toJSVal ("svg" :: JSString)
-  toJSVal HTML = toJSVal ("html" :: JSString)
+  toJSVal SVG    = toJSVal ("svg" :: JSString)
+  toJSVal HTML   = toJSVal ("html" :: JSString)
   toJSVal MATHML = toJSVal ("mathml" :: JSString)
 -----------------------------------------------------------------------------
--- | A unique key for a dom node.
+-- | A unique key for a DOM node.
 --
 -- This key is only used to speed up diffing the children of a DOM
 -- node, the actual content is not important. The keys of the children
@@ -327,14 +354,14 @@ data Attribute action
   deriving Functor
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
-instance IsString (View a) where
+instance IsString (View props a) where
   fromString = VText . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript `Object`.
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
------------------------------------------------------------------------------  
+-----------------------------------------------------------------------------
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
@@ -346,7 +373,7 @@ instance ToJSVal VTree where
 -- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
 rawHtml
   :: MisoString
-  -> View action
+  -> View props action
 rawHtml = VTextRaw
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Types.VNode@.
@@ -357,15 +384,52 @@ rawHtml = VTextRaw
 node :: NS
      -> MisoString
      -> [Attribute action]
-     -> [View action]
-     -> View action
+     -> [View props action]
+     -> View props action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text :: MisoString -> View action
+text :: MisoString -> View props action
 text = VText
 -----------------------------------------------------------------------------
+-- | Create a new @Text@ with the given content.
+text_ :: [MisoString] -> View props action
+text_ = VText . MS.concat
+-----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
-textRaw :: MisoString -> View action
+textRaw :: MisoString -> View props action
 textRaw = VTextRaw
+-----------------------------------------------------------------------------
+-- | Type used for React-like "props" functionality. This is used to
+-- to bind parent model changes to the child model.
+--
+-- > https://react.dev/learn/passing-props-to-a-component
+--
+-- @
+--
+-- main :: IO ()
+-- main = run app { props = [ ] }
+--
+-- @
+--
+-- @since 1.9.0.0
+data Prop props model
+  = forall type_
+  . Prop (props -> type_) (Lens model type_)
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Prop'.
+--
+-- @since 1.9.0.0
+prop
+  :: forall props type_ model
+   . (props -> type_)
+  -> Lens model type_
+  -> Prop props model
+prop = Prop
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Prop'.
+--
+-- @since 1.9.0.0
+(-->) :: (props -> type_) -> Lens model type_ -> Prop props model
+(-->) = prop
 -----------------------------------------------------------------------------
