@@ -36,8 +36,6 @@ module Miso.Runtime
   , Topic (..)
   , topic
   -- * Component
-  , getComponentId
-  , getParentComponentId
   , ComponentState
   -- * Mailbox
   , mail
@@ -78,7 +76,7 @@ import           Miso.Types
 import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, withSink)
+import           Miso.Effect (Sub, Sink, Effect, runEffect, io_)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -754,34 +752,6 @@ stopSub subKey = do
           liftIO $ do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid)
------------------------------------------------------------------------------
--- | Used to acquire the 'ComponentId' of the current 'Component'
-getComponentId
-  :: (ComponentId -> action)
-  -> Effect model action 
-getComponentId callback = do
-  domRef <- ask
-  withSink $ \sink -> do
-    componentId <- FFI.getComponentId domRef
-    sink (callback componentId)
------------------------------------------------------------------------------
--- | Used to acquire the parent 'ComponentId' of the current 'Component'
--- This is commonly used in situations to send messages or receive messages
--- between components.
-getParentComponentId
-  :: (ComponentId -> action)
-  -- ^ Successful callback (with parent ComponentId)
-  -> action
-  -- ^ Errorful callback (without ComponentId)
-  -> Effect model action 
-getParentComponentId successful errorful = do
-  domRef <- ask
-  withSink $ \sink -> do
-    FFI.getParentComponentId domRef >>= \case
-      Nothing ->
-        sink errorful
-      Just parentComponentId ->
-        sink (successful parentComponentId)
 -----------------------------------------------------------------------------
 -- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
 --
