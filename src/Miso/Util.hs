@@ -18,11 +18,14 @@ module Miso.Util
   , sepBy
   , between
   , (=:)
+  , compose
   ) where
 -----------------------------------------------------------------------------
+import           Control.Category
 import           Data.Maybe (isJust, fromMaybe)
 import           Control.Applicative (Alternative, many, empty, (<|>), optional)
 import           Data.Foldable (toList)
+import           Prelude hiding ((.))
 -----------------------------------------------------------------------------
 -- | Generic @map@ function, useful for creating @View@s from the elements of
 -- some @Foldable@. Particularly handy for @Maybe@, as shown in the example
@@ -70,4 +73,7 @@ between c l r = (,) <$> l <*> (c *> r)
 --
 (=:) :: k -> v -> (k, v)
 k =: v = (k,v)
+----------------------------------------------------------------------------
+compose :: Category cat => cat b c -> cat a b -> cat a c
+compose = (.)
 ----------------------------------------------------------------------------

@@ -138,6 +138,8 @@ module Miso.Lens
   , _2
   , _id
   , this
+  -- *** Re-exports
+  , compose
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.Reader (MonadReader, asks)
@@ -147,6 +149,8 @@ import Control.Arrow ((<<<))
 import Data.Function ((&))
 import Data.Functor((<&>))
 import Prelude hiding ((.))
+----------------------------------------------------------------------------
+import Miso.Util (compose)
 ----------------------------------------------------------------------------
 -- | A @Lens@ is a generalized getter and setter.
 --

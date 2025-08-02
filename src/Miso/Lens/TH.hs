@@ -9,11 +9,14 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Lens.TH (makeLenses, makeClassy) where
+module Miso.Lens.TH (makeLenses, makeClassy, compose, this) where
 -----------------------------------------------------------------------------
 import Data.Char
 import Data.Maybe
 import Language.Haskell.TH
+-----------------------------------------------------------------------------
+import Miso.Util (compose)
+import Miso.Lens (this)
 -----------------------------------------------------------------------------
 makeLenses :: Name -> Q [Dec]
 makeLenses name = do
@@ -118,7 +121,7 @@ makeClassy name = do
     mkLensType varType x =
       AppT (AppT (ConT (mkName "Lens")) varType) x
     wrapMkLens n =
-      AppE (AppE (mkLens n) (VarE (mkName "."))) (VarE (mkName baseNameLower))
+      AppE (AppE (VarE (mkName "compose")) (mkLens n)) (VarE (mkName baseNameLower))
     mkLens n
       = AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
       $ LamE [ VarP recName, VarP fieldName ]
