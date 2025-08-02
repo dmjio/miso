@@ -98,11 +98,10 @@ module Miso.FFI.Internal
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void, forM_)
+import           Control.Monad (void, forM_, (<=<))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
-import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
@@ -505,7 +504,7 @@ fetch
   -- ^ url
   -> MisoString
   -- ^ method
-  -> Maybe MisoString
+  -> Maybe JSVal
   -- ^ body
   -> [(MisoString,MisoString)]
   -- ^ headers
@@ -519,26 +518,27 @@ fetch url method maybeBody headers successful errorful = do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
         Error string ->
-          error ("fetchJSON: " <> string <> ": decode failure")
+          errorful $ ms ("fetch: " <> string <> ": decode failure")
         Success result -> do
           successful result
-  errorful_ <- toJSVal =<< do
-    asyncCallback1 $ \jval ->
-       errorful =<< fromJSValUnchecked jval
+  errorful_ <- toJSVal =<<
+    asyncCallback1 (errorful <=< fromJSValUnchecked)
   moduleMiso <- jsg "miso"
   url_ <- toJSVal url
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
-  let jsonHeaders =
-        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
-        <>
-        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
-    forM_ (headers <> jsonHeaders) $ \(k,v) -> do
-      set k v o
+    forM_ headers $ \(k,v) -> set k v o
     pure o
-  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+  void $ moduleMiso # "fetchJSON" $
+    [ url_
+    , method_
+    , body_
+    , headers_
+    , successful_
+    , errorful_
+    ]
 -----------------------------------------------------------------------------
 -- | shouldSync
 --
