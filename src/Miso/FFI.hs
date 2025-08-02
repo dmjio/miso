@@ -45,6 +45,8 @@ module Miso.FFI
   -- ** Component
   , getParentComponentId
   , getComponentId
+  -- ** DOM
+  , nextSibling
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

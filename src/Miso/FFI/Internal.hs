@@ -54,6 +54,7 @@ module Miso.FFI.Internal
    , getContext
    , getElementById
    , diff
+   , nextSibling
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -610,4 +611,7 @@ getParentComponentId domRef =
 -- For use in `onMounted`, etc.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
+-----------------------------------------------------------------------------
+nextSibling :: JSVal -> JSM JSVal
+nextSibling domRef = domRef ! "nextSibling"
 -----------------------------------------------------------------------------
