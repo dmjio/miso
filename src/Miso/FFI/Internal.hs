@@ -96,6 +96,7 @@ module Miso.FFI.Internal
    -- * Component
    , getParentComponentId
    , getComponentId
+   , click
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -614,4 +615,11 @@ getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
 nextSibling :: JSVal -> JSM JSVal
 nextSibling domRef = domRef ! "nextSibling"
+-----------------------------------------------------------------------------
+-- | Simulates a click event
+--
+-- > button & click ()
+--
+click :: () -> JSVal -> JSM ()
+click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
