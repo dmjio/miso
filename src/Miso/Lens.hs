@@ -146,6 +146,7 @@ import Control.Category (Category (..))
 import Control.Arrow ((<<<))
 import Data.Function ((&))
 import Data.Functor((<&>))
+import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 -- | A @Lens@ is a generalized getter and setter.
 --
