@@ -23,6 +23,8 @@ module Miso.Fetch
   , accept
   , contentType
   , applicationJSON
+    -- ** Types
+  , Body
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON)
@@ -59,7 +61,7 @@ fetch
   -- ^ url
   -> MisoString
   -- ^ method
-  -> Maybe JSVal
+  -> Maybe Body
   -- ^ body
   -> [(MisoString, MisoString)]
   -- ^ headers
@@ -73,6 +75,8 @@ fetch url method body headers successful errorful =
     FFI.fetch url method body headers
       (sink . successful)
       (sink . errorful)
+----------------------------------------------------------------------------
+type Body = JSVal
 ----------------------------------------------------------------------------
 accept :: MisoString
 accept = "Accept"
