@@ -96,6 +96,8 @@ module Miso.FFI.Internal
    -- * Component
    , getParentComponentId
    , getComponentId
+   -- * Input
+   , files
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -612,6 +614,26 @@ getParentComponentId domRef =
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
+-- | Fetch sibling DOM node
+--
+-- @since 1.9.0.0
 nextSibling :: JSVal -> JSM JSVal
 nextSibling domRef = domRef ! "nextSibling"
+-----------------------------------------------------------------------------
+-- | When working with /<input>/ of type="file", this is useful for
+-- extracting out the selected files.
+--
+-- @
+--   update (InputClicked inputElement) = withSink $ \sink -> do
+--      files_ <- files inputElement
+--      forM_ files_ $ \file -> sink (Upload file)
+--   update (Upload file) = do
+--      fetch "https://localhost:8080/upload" "POST" (Just File) []
+--        Successful Errorful
+--
+-- @
+--
+-- @since 1.9.0.0
+files :: JSVal -> JSM [JSVal]
+files domRef = fromJSValUnchecked =<< domRef ! "files"
 -----------------------------------------------------------------------------
