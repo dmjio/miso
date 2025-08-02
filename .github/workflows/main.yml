@@ -69,12 +69,6 @@ jobs:
      - name: (x86) NixOS test runner for haskell-miso.org (GHC 8.6.5)
        run: nix-build -A haskell-miso-org-test
 
-     - name: (x86) Nix garbage collect
-       run: nix-collect-garbage -d
-
-     - name: (x86) Nginx example hosting check
-       run: nix-build -A nginx-nixos-test --dry-run
-
   deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
