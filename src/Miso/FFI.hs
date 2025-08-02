@@ -49,6 +49,7 @@ module Miso.FFI
   , nextSibling
   -- ** Element
   , click
+  , files
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
