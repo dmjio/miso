@@ -96,8 +96,9 @@ module Miso.FFI.Internal
    -- * Component
    , getParentComponentId
    , getComponentId
-   -- * Input
+   -- * Element
    , files
+   , click
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -628,12 +629,19 @@ nextSibling domRef = domRef ! "nextSibling"
 --      files_ <- files inputElement
 --      forM_ files_ $ \file -> sink (Upload file)
 --   update (Upload file) = do
---      fetch "https://localhost:8080/upload" "POST" (Just File) []
+--      fetch "https://localhost:8080/upload" "POST" (Just file) []
 --        Successful Errorful
---
 -- @
 --
 -- @since 1.9.0.0
 files :: JSVal -> JSM [JSVal]
 files domRef = fromJSValUnchecked =<< domRef ! "files"
+-----------------------------------------------------------------------------
+-- | Simulates a click event
+--
+-- > button & click ()
+--
+-- @since 1.9.0.0
+click :: () -> JSVal -> JSM ()
+click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------

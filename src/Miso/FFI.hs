@@ -47,6 +47,8 @@ module Miso.FFI
   , getComponentId
   -- ** DOM
   , nextSibling
+  -- ** Element
+  , click
   , files
   ) where
 -----------------------------------------------------------------------------
