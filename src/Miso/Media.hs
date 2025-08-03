@@ -231,7 +231,7 @@ getUserMedia
   -- ^ Successful callback
   -> (JSVal -> action)
   -- ^ Errorful callback
-  -> Effect model action
+  -> Effect parent model action
 getUserMedia UserMedia {..} successful errorful =
   withSink $ \sink ->
     FFI.getUserMedia audio video
