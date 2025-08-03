@@ -12,7 +12,6 @@ module Miso.FFI
     set
   , now
   , consoleLog
-  , consoleLog'
   , consoleError
   , consoleWarn
   , getElementById
