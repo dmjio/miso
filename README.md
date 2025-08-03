@@ -189,7 +189,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-app :: Component Model Action
+app :: App Model Action
 app = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
@@ -206,7 +206,7 @@ updateModel = \case
     alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Action
+viewModel :: Model -> View Model Action
 viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
   , text $ ms (x ^. counter)
