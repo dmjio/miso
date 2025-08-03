@@ -251,7 +251,7 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 consoleLog :: ToJSVal jsval => jsval -> JSM ()
 consoleLog jsval = do
   v <- toJSVal jsval
-  _ <- jsg "console" # "log" $ [toJSString v]
+  _ <- jsg "console" # "log" $ [v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Outputs a warning message to the web console
