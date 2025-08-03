@@ -109,7 +109,7 @@ app currentUri = component emptyModel updateModel viewModel
           Left _ -> the404 m
           Right v -> v
 
-updateModel :: Action -> Effect props Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel = \case
   HandleURI u ->
     modify $ \m -> m { uri = u }
@@ -121,7 +121,7 @@ updateModel = \case
     put m { navMenuOpen = not navMenuOpen }
 
 -- | Views
-community :: Model -> View props Action
+community :: Model -> View model Action
 community = template v
   where
     v =
@@ -176,7 +176,7 @@ community = template v
                 ]
             ]
 
-docs :: Model -> View props Action
+docs :: Model -> View model Action
 docs = template v
   where
     v =
@@ -218,7 +218,7 @@ docs = template v
 misoSrc :: MisoString
 misoSrc = pack "static/miso.png"
 
-examples :: Model -> View props Action
+examples :: Model -> View model Action
 examples = template v
   where
     v =
@@ -278,7 +278,7 @@ examples = template v
               ]
             ]
 
-home :: Model -> View props Action
+home :: Model -> View model Action
 home = template v
   where
     v =
@@ -315,7 +315,7 @@ home = template v
                 ]
             ]
 
-template :: View props Action -> Model -> View props Action
+template :: View model Action -> Model -> View model Action
 template content Model{..} =
     div_
         []
@@ -333,7 +333,7 @@ template content Model{..} =
         , footer
         ]
 
-middle :: View props action
+middle :: View model action
 middle =
     section_
         [class_ "hero"]
@@ -442,7 +442,7 @@ middle =
             ]
         ]
 
-cols :: View props action
+cols :: View model action
 cols =
     section_
         []
@@ -478,7 +478,7 @@ cols =
             ]
         ]
 
-the404 :: Model -> View props Action
+the404 :: Model -> View model Action
 the404 = template v
   where
     v =
@@ -509,7 +509,7 @@ the404 = template v
             ]
 
 -- | Github stars
-starMiso :: View props action
+starMiso :: View model action
 starMiso =
     a_
         [ class_ (pack "github-button")
@@ -521,7 +521,7 @@ starMiso =
         ]
         [text "Star"]
 
-forkMiso :: View props action
+forkMiso :: View model action
 forkMiso =
     a_
         [ class_ (pack "github-button")
@@ -534,7 +534,7 @@ forkMiso =
         [text "Fork"]
 
 -- | Hero
-hero :: View props Action -> URI -> Bool -> View props Action
+hero :: View model Action -> URI -> Bool -> View model Action
 hero content uri' navMenuOpen' =
     section_
         [class_ "hero is-medium is-primary is-bold has-text-centered"]
@@ -635,7 +635,7 @@ onPreventClick action =
         (\() -> const action)
 
 -- | Footer
-footer :: View props action
+footer :: View model action
 footer =
     footer_
         [class_ "footer"]
@@ -694,7 +694,7 @@ footer =
             ]
         ]
 
-newNav :: Bool -> View props Action
+newNav :: Bool -> View model Action
 newNav navMenuOpen' =
     div_
         [class_ "container"]

@@ -117,6 +117,7 @@ initialize Component {..} getView = do
         info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) newModel
+      let info = ComponentInfo componentId componentDOMRef
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       when (oldName /= newName && oldModel /= updatedModel) $ do
@@ -559,9 +560,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   if S.null actions then pure () else go info actions
   unloadScripts cs
       where
-        go info as = do
+        go info actions = do
           x <- liftIO (readIORef componentModelCurrent)
-          y <- foldEffects update Sync info componentSink (toList as) x
+          y <- foldEffects update Sync info componentSink (toList actions) x
           liftIO (atomicWriteIORef componentModelCurrent y)
           drain app cs
 -----------------------------------------------------------------------------
@@ -854,9 +855,9 @@ mail vcompId message = io_ $
 --
 -- @since 1.9.0.0
 parent
-  :: (props -> action)
+  :: (parent -> action)
   -> action
-  -> Effect props model action
+  -> Effect parent model action
 parent successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do

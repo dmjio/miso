@@ -63,11 +63,11 @@ import qualified Data.Text as T
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
+import           Data.Coerce (coerce)
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding              (null)
-import           Data.Coerce (coerce)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Event.Types (Events, defaultEvents)
@@ -117,7 +117,7 @@ data Component parent model action
   -- ^ Used to receive mail from other 'Component'
   --
   -- @since 1.9.0.0
-  , props :: [ Prop props model ]
+  , props :: [ Prop parent model ]
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -183,14 +183,14 @@ component m u v = Component
   , props = []
   }
 -----------------------------------------------------------------------------
--- | A top-level 'Component' can have no 'props'
+-- | A top-level 'Component' can have no 'parent'
 --
 -- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
 -- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
 --
 data ROOT
 -----------------------------------------------------------------------------
--- | For top-level `Component`, `ROOT` must always be specified for props.
+-- | For top-level `Component`, `ROOT` must always be specified for parent.
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
 -- | When `Component` are not in use, also for pre-1.9 `miso` applications.
@@ -279,8 +279,8 @@ instance ToView model (View model action) where
   type ToViewAction model (View model action) = action
   toView = coerce
 -----------------------------------------------------------------------------
-instance ToView model (Component props model action) where
-  type ToViewAction model (Component props model action) = action
+instance ToView model (Component parent model action) where
+  type ToViewAction model (Component parent model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
