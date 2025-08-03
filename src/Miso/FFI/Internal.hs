@@ -41,7 +41,6 @@ module Miso.FFI.Internal
    , consoleWarn
    , consoleLog
    , consoleError
-   , consoleLog'
    -- * JSON
    , jsonStringify
    , jsonParse
