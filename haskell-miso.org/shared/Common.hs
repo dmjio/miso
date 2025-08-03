@@ -1,10 +1,12 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Common where
 
@@ -55,13 +57,13 @@ type Routes a =
         :<|> The404 a
 
 -- | Client routing
-type ClientRoutes = Routes (View Action)
+type ClientRoutes = Routes (View Model Action)
 
 -- | Server routing
 type ServerRoutes = Routes (Get '[HTML] Page)
 
 -- | Component synonym
-type HaskellMisoComponent = Component Model Action
+type HaskellMisoComponent = App Model Action
 
 -- | Links
 uriHome, uriExamples, uriDocs, uriCommunity, uri404 :: URI
@@ -76,11 +78,11 @@ newtype Page = Page HaskellMisoComponent
 
 -- | Client Handlers
 clientHandlers ::
-    (Model -> View Action)
-        :<|> (Model -> View Action)
-        :<|> (Model -> View Action)
-        :<|> (Model -> View Action)
-        :<|> (Model -> View Action)
+    (Model -> View Model Action)
+        :<|> (Model -> View Model Action)
+        :<|> (Model -> View Model Action)
+        :<|> (Model -> View Model Action)
+        :<|> (Model -> View Model Action)
 clientHandlers =
     examples
         :<|> docs
@@ -91,16 +93,14 @@ clientHandlers =
 secs :: Int -> Int
 secs = (*1000000)
 
-haskellMisoComponent ::
-    URI ->
-    HaskellMisoComponent
+haskellMisoComponent :: URI -> HaskellMisoComponent
 haskellMisoComponent uri
   = (app uri)
   { subs = [ uriSub HandleURI ]
   , logLevel = DebugAll
   }
   
-app :: URI -> Component Model Action
+app :: URI -> App Model Action
 app currentUri = component emptyModel updateModel viewModel
   where
     emptyModel = Model currentUri False
@@ -109,7 +109,7 @@ app currentUri = component emptyModel updateModel viewModel
           Left _ -> the404 m
           Right v -> v
 
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel = \case
   HandleURI u ->
     modify $ \m -> m { uri = u }
@@ -121,7 +121,7 @@ updateModel = \case
     put m { navMenuOpen = not navMenuOpen }
 
 -- | Views
-community :: Model -> View Action
+community :: Model -> View model Action
 community = template v
   where
     v =
@@ -176,7 +176,7 @@ community = template v
                 ]
             ]
 
-docs :: Model -> View Action
+docs :: Model -> View model Action
 docs = template v
   where
     v =
@@ -218,7 +218,7 @@ docs = template v
 misoSrc :: MisoString
 misoSrc = pack "static/miso.png"
 
-examples :: Model -> View Action
+examples :: Model -> View model Action
 examples = template v
   where
     v =
@@ -278,7 +278,7 @@ examples = template v
               ]
             ]
 
-home :: Model -> View Action
+home :: Model -> View model Action
 home = template v
   where
     v =
@@ -315,14 +315,14 @@ home = template v
                 ]
             ]
 
-template :: View Action -> Model -> View Action
+template :: View model Action -> Model -> View model Action
 template content Model{..} =
     div_
         []
         [ a_
             [ class_ "github-fork-ribbon left-top fixed"
             , href_ "http://github.com/dmjio/miso"
-            , prop "data-ribbon" ("Fork me on GitHub" :: MisoString)
+            , textProp "data-ribbon" ("Fork me on GitHub" :: MisoString)
             , target_ "blank"
             , rel_ "noopener"
             , title_ "Fork me on GitHub"
@@ -333,7 +333,7 @@ template content Model{..} =
         , footer
         ]
 
-middle :: View action
+middle :: View model action
 middle =
     section_
         [class_ "hero"]
@@ -442,7 +442,7 @@ middle =
             ]
         ]
 
-cols :: View action
+cols :: View model action
 cols =
     section_
         []
@@ -478,7 +478,7 @@ cols =
             ]
         ]
 
-the404 :: Model -> View Action
+the404 :: Model -> View model Action
 the404 = template v
   where
     v =
@@ -509,7 +509,7 @@ the404 = template v
             ]
 
 -- | Github stars
-starMiso :: View action
+starMiso :: View model action
 starMiso =
     a_
         [ class_ (pack "github-button")
@@ -521,7 +521,7 @@ starMiso =
         ]
         [text "Star"]
 
-forkMiso :: View action
+forkMiso :: View model action
 forkMiso =
     a_
         [ class_ (pack "github-button")
@@ -534,7 +534,7 @@ forkMiso =
         [text "Fork"]
 
 -- | Hero
-hero :: View Action -> URI -> Bool -> View Action
+hero :: View model Action -> URI -> Bool -> View model Action
 hero content uri' navMenuOpen' =
     section_
         [class_ "hero is-medium is-primary is-bold has-text-centered"]
@@ -635,7 +635,7 @@ onPreventClick action =
         (\() -> const action)
 
 -- | Footer
-footer :: View action
+footer :: View model action
 footer =
     footer_
         [class_ "footer"]
@@ -694,7 +694,7 @@ footer =
             ]
         ]
 
-newNav :: Bool -> View Action
+newNav :: Bool -> View model Action
 newNav navMenuOpen' =
     div_
         [class_ "container"]

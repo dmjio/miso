@@ -16,13 +16,16 @@
 ----------------------------------------------------------------------------
 module Miso
   ( -- * API
-    -- ** Entry
+    -- ** Miso
     miso
   , (🍜)
+  -- ** App
   , App
   , startApp
+  , renderApp
+  -- ** Component
+  , Component
   , startComponent
-  , renderComponent
     -- ** Sink
   , withSink
   , Sink
@@ -34,6 +37,7 @@ module Miso
   , topic
   -- ** Component
   , mail
+  , parent
   -- ** Subscriptions
   , startSub
   , stopSub
@@ -120,9 +124,6 @@ miso f = withJS $ do
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
--- | Type synonym 'App' to 'Component', for legacy `miso` compat.
-type App model action = Component model action
------------------------------------------------------------------------------
 -- | Synonym 'startApp' to 'startComponent'.
 startApp :: Eq model => App model action -> JSM ()
 startApp = startComponent
@@ -132,12 +133,7 @@ startApp = startComponent
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
--- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startComponent
-  :: Eq model
-  => Component model action
-  -- ^ Component application
-  -> JSM ()
+startComponent :: Eq model => Component ROOT model action -> JSM ()
 startComponent vcomp@Component { styles, scripts } =
   withJS $ initComponent vcomp $ do
      (++) <$> renderScripts scripts
@@ -147,24 +143,24 @@ startComponent vcomp@Component { styles, scripts } =
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-renderComponent
+renderApp
   :: Eq model
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> Component model action
+  -> App model action
   -- ^ Component application
   -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
-renderComponent Nothing vcomp _ = startComponent vcomp
-renderComponent (Just renderer) vcomp hooks = withJS $ do
+renderApp Nothing vcomp _ = startApp vcomp
+renderApp (Just renderer) vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
   :: Eq model
-  => Component model action
+  => Component ROOT model action
   -- ^ Component application
   -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.

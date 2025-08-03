@@ -1,4 +1,4 @@
-import { VNode, VComp } from './types';
+import { VNode } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -76,7 +76,7 @@ export function shouldSync (
 
 */
 export function getParentComponentId (
-  vcomp: VComp
+  vcompNode: ParentNode
 ): number {
     var climb = function (node : ParentNode) {
       let parentComponentId = null;
@@ -89,5 +89,5 @@ export function getParentComponentId (
       }
       return parentComponentId;
     }
-    return climb (vcomp['domRef']);
+    return climb (vcompNode);
 }
