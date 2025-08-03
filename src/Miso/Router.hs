@@ -127,8 +127,8 @@ instance (HasRouter sublayout, KnownSymbol path)
     (mkRouter (Proxy :: Proxy sublayout) a page)
 -----------------------------------------------------------------------------
 -- | View
-instance HasRouter (View a) where
-  type RouteT (View a) x = x
+instance HasRouter (View m a) where
+  type RouteT (View m a) x = x
   mkRouter _ _ a = RPage a
 -----------------------------------------------------------------------------
 -- | Verb

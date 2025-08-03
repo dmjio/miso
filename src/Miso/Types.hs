@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -20,7 +21,8 @@
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
-    Component        (..)
+    App
+  , Component        (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -33,6 +35,8 @@ module Miso.Types
   , VTree            (..)
   , MountPoint
   , DOMRef
+  , ROOT
+  , Transition
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)
@@ -46,6 +50,7 @@ module Miso.Types
   -- *** Combinators
   , node
   , text
+  , text_
   , textRaw
   , rawHtml
   ) where
@@ -53,6 +58,7 @@ module Miso.Types
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
+import           Data.Coerce (coerce)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
@@ -66,15 +72,16 @@ import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Event.Types
 import           Miso.String (MisoString, toMisoString)
 import           Miso.Style.Types (StyleSheet)
+import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Application entry point
-data Component model action
+data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-  , update :: action -> Effect model action
+  , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
-  , view :: model -> View action
+  , view :: model -> View model action
   -- ^ Function to draw `View`
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
@@ -153,9 +160,9 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for @Component@ with sane defaults.
 component
   :: model
-  -> (action -> Effect model action)
-  -> (model -> View action)
-  -> Component model action
+  -> (action -> Effect parent model action)
+  -> (model -> View model action)
+  -> Component parent model action
 component m u v = Component
   { model = m
   , update = u
@@ -170,7 +177,20 @@ component m u v = Component
   , mailbox = const Nothing
   }
 -----------------------------------------------------------------------------
--- | Optional Logging for debugging miso internals (useful to see if prerendering is successful)
+-- | A top-level 'Component' can have no 'parent'
+--
+-- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
+-- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
+--
+data ROOT
+-----------------------------------------------------------------------------
+-- | For top-level `Component`, `ROOT` must always be specified for parent.
+type App model action = Component ROOT model action
+-----------------------------------------------------------------------------
+-- | When `Component` are not in use, also for pre-1.9 `miso` applications.
+type Transition model action = Effect ROOT model action
+-----------------------------------------------------------------------------
+-- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
   -- ^ No debug logging, the default value used in @component@
@@ -187,22 +207,23 @@ data LogLevel
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
-data View action
-  = VNode NS MisoString [Attribute action] [View action]
+-----------------------------------------------------------------------------
+data View model action
+  = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
   | VTextRaw MisoString
-  | VComp NS MisoString [Attribute action] SomeComponent
+  | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of @Component@ in @Component@
-data SomeComponent
+data SomeComponent parent
    = forall model action . Eq model
-  => SomeComponent (Component model action)
+  => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
 -- | Used in the @view@ function to mount a 'Component' on any 'VNode'
 --
 -- @
---   mount_ (p_ [ key_ "component-1" ]) $ component $ \\m ->
+--   mount (p_ [ key_ "component-1" ]) $ component $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
@@ -216,10 +237,10 @@ data SomeComponent
 --
 -- @since 1.9.0.0
 mount
-  :: forall model action a . Eq model
-  => ([View a] -> View a)
-  -> Component model action
-  -> View a
+  :: forall parent model action a . Eq model
+  => ([View parent a] -> View parent a)
+  -> Component parent model action
+  -> View parent a
 mount mkNode vcomp =
   case mkNode [] of
     VNode ns tag attrs _ ->
@@ -228,47 +249,47 @@ mount mkNode vcomp =
     VComp ns tag attrs vcomp_ ->
       VComp ns tag attrs vcomp_
     _ ->
-      error "Cannot mount on a Text node"
+      error "Impossible: cannot mount on a Text node"
 -----------------------------------------------------------------------------
 (+>)
-  :: forall model action a . Eq model
-  => ([View a] -> View a)
-  -> Component model action
-  -> View a
+  :: forall parent model action a . Eq model
+  => ([View parent a] -> View parent a)
+  -> Component parent model action
+  -> View parent a
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
 -- | For constructing type-safe links
-instance HasLink (View a) where
-  type MkLink (View a) b = b
+instance HasLink (View m a) where
+  type MkLink (View m a) b = b
   toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
-class ToView a where
-  type ToViewAction a :: Type
-  toView :: a -> View (ToViewAction a)
+class ToView m a where
+  type ToViewAction m a :: Type
+  toView :: a -> View m (ToViewAction m a)
 -----------------------------------------------------------------------------
-instance ToView (View action) where
-  type ToViewAction (View action) = action
-  toView = id
+instance ToView model (View model action) where
+  type ToViewAction model (View model action) = action
+  toView = coerce
 -----------------------------------------------------------------------------
-instance ToView (Component model action) where
-  type ToViewAction (Component model action) = action
+instance ToView model (Component parent model action) where
+  type ToViewAction model (Component parent model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
-  = HTML -- ^ HTML Namespace
-  | SVG  -- ^ SVG Namespace
-  | MATHML  -- ^ MATHML Namespace
+  = HTML   -- ^ HTML Namespace
+  | SVG    -- ^ SVG Namespace
+  | MATHML -- ^ MATHML Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
-  toJSVal SVG  = toJSVal ("svg" :: JSString)
-  toJSVal HTML = toJSVal ("html" :: JSString)
+  toJSVal SVG    = toJSVal ("svg" :: JSString)
+  toJSVal HTML   = toJSVal ("html" :: JSString)
   toJSVal MATHML = toJSVal ("mathml" :: JSString)
 -----------------------------------------------------------------------------
--- | A unique key for a dom node.
+-- | A unique key for a DOM node.
 --
 -- This key is only used to speed up diffing the children of a DOM
 -- node, the actual content is not important. The keys of the children
@@ -327,7 +348,7 @@ data Attribute action
   deriving Functor
 -----------------------------------------------------------------------------
 -- | @IsString@ instance
-instance IsString (View a) where
+instance IsString (View model action) where
   fromString = VText . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript `Object`.
@@ -346,7 +367,7 @@ instance ToJSVal VTree where
 -- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
 rawHtml
   :: MisoString
-  -> View action
+  -> View parent action
 rawHtml = VTextRaw
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Types.VNode@.
@@ -357,15 +378,19 @@ rawHtml = VTextRaw
 node :: NS
      -> MisoString
      -> [Attribute action]
-     -> [View action]
-     -> View action
+     -> [View parent action]
+     -> View parent action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text :: MisoString -> View action
+text :: MisoString -> View parent action
 text = VText
 -----------------------------------------------------------------------------
+-- | Create a new @Text@ with the given content.
+text_ :: [MisoString] -> View parent action
+text_ = VText . MS.concat
+-----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
-textRaw :: MisoString -> View action
+textRaw :: MisoString -> View parent action
 textRaw = VTextRaw
 -----------------------------------------------------------------------------

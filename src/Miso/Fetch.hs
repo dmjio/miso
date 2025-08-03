@@ -69,7 +69,7 @@ fetch
   -- ^ successful callback
   -> (MisoString -> action)
   -- ^ errorful callback
-  -> Effect model action
+  -> Effect parent model action
 fetch url method body headers successful errorful =
   withSink $ \sink ->
     FFI.fetch url method body headers

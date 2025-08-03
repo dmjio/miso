@@ -12,6 +12,7 @@ module Main where
 
 import Common (
     Page (..),
+    Model,
     ServerRoutes,
     haskellMisoComponent,
     uri404,
@@ -156,7 +157,7 @@ instance ToHtml Page where
                     , jsRef "https://buttons.github.io/buttons.js"
                     , script_ [] analytics
                     , jsRef "static/all.js"
-                    , body_ [] [toView x]
+                    , body_ [] [toView @Model x]
                     ]
                 ]
             ]
