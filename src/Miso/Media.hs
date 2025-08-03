@@ -27,6 +27,7 @@ module Miso.Media
   , play
   , pause
   , getUserMedia
+  , srcObject
   -- *** Properties
   , autoplay
   , controls
@@ -60,7 +61,7 @@ import qualified Language.Javascript.JSaddle as JS
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI
 import           Miso.Event
-import           Miso.Effect
+import           Miso.Effect hiding ((<#))
 import           Miso.String
 -----------------------------------------------------------------------------
 newtype Media = Media JSVal
@@ -214,6 +215,10 @@ userMedia :: UserMedia
 userMedia = UserMedia True True
 -----------------------------------------------------------------------------
 type Stream = JSVal
+-----------------------------------------------------------------------------
+-- | Sets the `srcObject` on audio or video elements.
+srcObject :: Stream -> Media -> JSM ()
+srcObject stream (Media media) = media <# ("srcObject" :: MisoString) $ stream
 -----------------------------------------------------------------------------
 -- | Get access to user's media devices.
 --
