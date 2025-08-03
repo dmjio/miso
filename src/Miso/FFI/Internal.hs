@@ -55,6 +55,7 @@ module Miso.FFI.Internal
    , getElementById
    , diff
    , nextSibling
+   , previousSibling
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -99,6 +100,8 @@ module Miso.FFI.Internal
    -- * Element
    , files
    , click
+   -- * Media
+   , getUserMedia
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -615,11 +618,17 @@ getParentComponentId domRef =
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
--- | Fetch sibling DOM node
+-- | Fetch next sibling DOM node
 --
 -- @since 1.9.0.0
 nextSibling :: JSVal -> JSM JSVal
 nextSibling domRef = domRef ! "nextSibling"
+-----------------------------------------------------------------------------
+-- | Fetch previous sibling DOM node
+--
+-- @since 1.9.0.0
+previousSibling :: JSVal -> JSM JSVal
+previousSibling domRef = domRef ! "previousSibling"
 -----------------------------------------------------------------------------
 -- | When working with /<input>/ of type="file", this is useful for
 -- extracting out the selected files.
@@ -644,4 +653,29 @@ files domRef = fromJSValUnchecked =<< domRef ! "files"
 -- @since 1.9.0.0
 click :: () -> JSVal -> JSM ()
 click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
+-----------------------------------------------------------------------------
+-- | Get Camera on user's device
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
+--
+getUserMedia
+  :: Bool
+  -- ^ video
+  -> Bool
+  -- ^ audio
+  -> (JSVal -> JSM ())
+  -- ^ successful
+  -> (JSVal -> JSM ())
+  -- ^ errorful
+  -> JSM ()
+getUserMedia video audio successful errorful = do
+  params <- create
+  set (ms "video") video params
+  set (ms "audio") audio params
+  devices <- jsg "navigator" ! "mediaDevices"
+  promise <- devices # "getUserMedia" $ [params]
+  successfulCallback <- asyncCallback1 successful
+  void $ promise # "then" $ [successfulCallback]
+  errorfulCallback <- asyncCallback1 errorful
+  void $ promise # "catch" $ [errorfulCallback]
 -----------------------------------------------------------------------------

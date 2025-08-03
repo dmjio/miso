@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -15,13 +16,17 @@ module Miso.Media
     Media        (..)
   , NetworkState (..)
   , ReadyState   (..)
+  , UserMedia    (..)
+  , Stream
   -- *** Constructors
   , newAudio
+  , userMedia
   -- *** Methods
   , canPlayType
   , load
   , play
   , pause
+  , getUserMedia
   -- *** Properties
   , autoplay
   , controls
@@ -52,8 +57,10 @@ import           Control.Monad
 import           Language.Javascript.JSaddle hiding (new)
 import qualified Language.Javascript.JSaddle as JS 
 -----------------------------------------------------------------------------
+import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI
 import           Miso.Event
+import           Miso.Effect
 import           Miso.String
 -----------------------------------------------------------------------------
 newtype Media = Media JSVal
@@ -195,4 +202,34 @@ videoWidth (Media m) = fromJSValUnchecked =<< m ! ("videoWidth" :: MisoString)
 -- | https://www.w3schools.com/tags/av_prop_volume.asp
 volume :: Media -> JSM Double
 volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
+-----------------------------------------------------------------------------
+-- | Type for dealing with 'navigator.mediaDevices.getUserMedia'
+data UserMedia
+  = UserMedia
+  { audio, video :: Bool
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Default 'UserMedia'
+userMedia :: UserMedia
+userMedia = UserMedia True True
+-----------------------------------------------------------------------------
+type Stream = JSVal
+-----------------------------------------------------------------------------
+-- | Get access to user's media devices.
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
+--
+getUserMedia
+  :: UserMedia
+  -- ^ Options
+  -> (Stream -> action)
+  -- ^ Successful callback
+  -> (JSVal -> action)
+  -- ^ Errorful callback
+  -> Effect model action
+getUserMedia UserMedia {..} successful errorful =
+  withSink $ \sink ->
+    FFI.getUserMedia audio video
+      (sink . successful)
+      (sink . errorful)
 -----------------------------------------------------------------------------
