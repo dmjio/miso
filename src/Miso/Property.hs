@@ -23,14 +23,13 @@ module Miso.Property
   , integerProp
   , doubleProp
   , objectProp
-  , prop
   , keyProp
   , key_
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
-import           Miso.Types
+import           Miso.Types hiding (prop)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM 
