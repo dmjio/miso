@@ -77,7 +77,7 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef)
-import           Language.Javascript.JSaddle (Object(Object), JSM, JSVal)
+import           Language.Javascript.JSaddle (Object(Object), JSM)
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
@@ -153,7 +153,7 @@ renderComponent
   -- ^ Name of the JS object that contains the drawing context
   -> Component model action
   -- ^ Component application
-  -> JSM [JSVal]
+  -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
 renderComponent Nothing vcomp _ = startComponent vcomp
@@ -166,7 +166,7 @@ initComponent
   :: Eq model
   => Component model action
   -- ^ Component application
-  -> JSM [JSVal]
+  -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do

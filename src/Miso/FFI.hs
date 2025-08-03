@@ -47,10 +47,15 @@ module Miso.FFI
   , getComponentId
   -- ** DOM
   , nextSibling
+  , previousSibling
   -- ** Element
   , click
   , files
+  -- ** Re-exports
+  , JSVal
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
+-----------------------------------------------------------------------------
+import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------
