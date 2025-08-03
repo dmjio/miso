@@ -248,8 +248,9 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
 --
 -- Console logging of JavaScript strings.
-consoleLog :: MisoString -> JSM ()
-consoleLog v = do
+consoleLog :: ToJSVal jsval => jsval -> JSM ()
+consoleLog jsval = do
+  v <- toJSVal jsval
   _ <- jsg "console" # "log" $ [toJSString v]
   pure ()
 -----------------------------------------------------------------------------
@@ -271,12 +272,6 @@ consoleWarn v = do
 consoleError :: MisoString -> JSM ()
 consoleError v = do
   _ <- jsg "console" # "error" $ [toJSString v]
-  pure ()
------------------------------------------------------------------------------
--- | Console-logging of JSVal
-consoleLog' :: JSVal -> JSM ()
-consoleLog' v = do
-  _ <- jsg "console" # "log" $ [v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Encodes a Haskell object as a JSON string by way of a JavaScript object
