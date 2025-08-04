@@ -54,51 +54,8 @@ jobs:
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
 
-     - name: (x86) Haskell-miso.org server (GHC 8.6.5)
-       run: nix-build -A haskell-miso-server
-
-     - name: (JS) Haskell-miso.org client (GHCJS 8.6)
-       run: nix-build -A haskell-miso-client
-
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
 
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
-
-     - name: (x86) NixOS test runner for haskell-miso.org (GHC 8.6.5)
-       run: nix-build -A haskell-miso-org-test
-
-  deploy:
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
-    steps:
-     - uses: DeterminateSystems/nix-installer-action@v12
-     - uses: actions/checkout@v3.5.3
-     - uses: cachix/install-nix-action@v25
-       with:
-         nix_path: nixpkgs=channel:nixpkgs-unstable
-     - uses: cachix/cachix-action@v16
-       with:
-         name: haskell-miso-cachix
-         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-
-     - name: Nix channel update
-       run: nix-channel --update
-
-     - name: Bun install
-       run: nix-env -iA bun -f . && bun install
-
-     - name: Bun build
-       run: bun run build
-
-     - name: Build
-       run: nix-build -A miso-ghcjs
-
-     - name: Deploy
-       run: nix-build -A deploy -j1 && ./result
-       env:
-         AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-         AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-         DEPLOY: '${{ secrets.DEPLOY }}'
-         EMAIL: '${{ secrets.EMAIL }}'
