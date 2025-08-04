@@ -31,7 +31,6 @@ in
   # local sources
   miso             = make-src-filter ../.;
   sample-app       = make-src-filter ../sample-app;
-  haskell-miso     = make-src-filter ../haskell-miso.org;
 
   # flake sources
   jsaddle = fetchFromFlake (nodes.jsaddle);
