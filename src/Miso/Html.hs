@@ -47,7 +47,7 @@ module Miso.Html
    , module Miso.Html.Event
    ) where
 -----------------------------------------------------------------------------
-import Miso.Html.Element hiding (data_, title_) -- conflicts with helpers from Miso.Html.Property
+import Miso.Html.Element hiding (data_)
 import Miso.Html.Event
-import Miso.Html.Property
+import Miso.Html.Property hiding (title_)
 -----------------------------------------------------------------------------
