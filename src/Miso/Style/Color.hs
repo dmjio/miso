@@ -211,7 +211,7 @@ instance KnownSymbol color => IsLabel color Color where
       color = symbolVal (Proxy @color)
 -----------------------------------------------------------------------------
 instance KnownSymbol hex => IsLabel hex MisoString where
-  fromLabel = ms (symbolVal (Proxy @hex))
+  fromLabel = ms ("#" <> symbolVal (Proxy @hex))
 -----------------------------------------------------------------------------
 instance MakeArgs Color where
   makeArgs color = (:[]) <$> toJSVal color
