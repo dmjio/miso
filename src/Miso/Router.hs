@@ -200,7 +200,7 @@ runRoute
 runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
 -----------------------------------------------------------------------------
 -- | Executes router
--- This is most likely the function you want to use. See haskell-miso.org/shared/Common.hs for usage.
+-- This is most likely the function you want to use. See <https://gitub.com/haskell-miso.org/shared/Common.hs> for usage.
 route
   :: HasRouter layout
   => Proxy layout

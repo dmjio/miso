@@ -41,19 +41,6 @@ with pkgs.haskell.lib;
     wasm-ghc
     ghc-wasm-meta;
 
-  # website
-  inherit (import ./haskell-miso.org {})
-    haskell-miso-dev
-    haskell-miso-client
-    haskell-miso-server
-    haskell-miso-runner;
-
-  # ci
-  inherit (legacyPkgs)
-    deploy
-    nixops
-    haskell-miso-org-test;
-
   # ghciwatch
   inherit (pkgs)
     ghciwatch;

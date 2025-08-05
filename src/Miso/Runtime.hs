@@ -117,7 +117,6 @@ initialize Component {..} getView = do
         info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) newModel
-      let info = ComponentInfo componentId componentDOMRef
       oldName <- liftIO $ oldModel `seq` makeStableName oldModel
       newName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       when (oldName /= newName && oldModel /= updatedModel) $ do
