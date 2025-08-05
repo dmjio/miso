@@ -371,7 +371,7 @@ instance IsString (View model action) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
------------------------------------------------------------------------------  
+-----------------------------------------------------------------------------
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
@@ -413,19 +413,31 @@ textRaw = VTextRaw
 -- | Type used for React-like "props" functionality. This is used to
 -- to bind parent model changes to the child model, or vice versa.
 --
+-- The difference between miso and React here is that miso is
+-- synchronizing model states of Components declaratively (outside of the
+-- view). In React "props" are used in the view code.
+--
 -- > https://react.dev/learn/passing-props-to-a-component
+--
+-- This can be thought of as establishing an "edge" in the 'Component' graph,
+-- whereby events cause model change synchronization to "ripple" or "pulsate"
+-- through the views. The "reactivity" of the graph is constructed manually
+-- by the end-user, using the edge primitives `-->`, `<--`, `<-->`.
+--
+-- This can also be thought of as a "Wire" (from `netwire`) for reactive
+-- variable synchronization, except done at the granularity specified by the `Lens`.
 --
 -- @
 --
 -- main :: IO ()
--- main = run app { bindings = [ foo --> bar ] }
+-- main = run app { bindings = [ parentLens --> childLens ] }
 --
 -- @
 --
 -- @since 1.9.0.0
 data Binding parent model = forall a . Binding Direction (Lens parent a) (Lens model a)
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Prop'.
+-- | Smart constructor for 'Binding'
 --
 -- @since 1.9.0.0
 bind
@@ -445,19 +457,19 @@ data Direction
 getDirection :: Binding parent model -> Direction
 getDirection (Binding dir _ _) = dir
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Binding'
+-- | Smart constructor for a 'Binding', unidirectionally binds parent to child
 --
 -- @since 1.9.0.0
 (-->) :: Lens parent a -> Lens model a -> Binding parent model
 (-->) = bind ParentToChild
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Binding'
+-- | Smart constructor for a 'Binding', unidirectionally binds child to parent
 --
 -- @since 1.9.0.0
 (<--) :: Lens parent a -> Lens model a -> Binding parent model
 (<--) = bind ChildToParent
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Binding'
+-- | Smart constructor for a 'Binding', bidirectionlly binds child to parent
 --
 -- @since 1.9.0.0
 (<-->) :: Lens parent a -> Lens model a -> Binding parent model

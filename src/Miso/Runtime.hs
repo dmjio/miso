@@ -176,14 +176,6 @@ initialize Component {..} getView = do
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
--- | dmj: we only want to call this if props have been defined
--- filter this function on 'ChildToParent'
---
--- What we do here is fork a thread on current ComponentDiffs
--- Then iterate on props, see if there is a ChildToParent, if so
--- then we grab the parent, read the child from the lens, set it on the parent
--- then we call 'serve' on the parent
---
 synchronizeChildToParent
   :: DOMRef
   -> IORef model
@@ -216,8 +208,19 @@ synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindin
         bindChildToParent binding parentComponentState componentModelNew
       liftIO (componentServe parentComponentState)
 -----------------------------------------------------------------------------
--- | dmj: we only want to call this if props have been defined
--- filter this function on 'ParentToChild'
+bindChildToParent
+  :: forall parent model action
+   . Binding parent model
+  -> ComponentState parent action
+  -- ^ Parent model
+  -> IORef model
+  -- ^ Child new model
+  -> JSM ()
+bindChildToParent (Binding _ parent_ child_) ComponentState {..} childRef = do
+  childModel <- liftIO (readIORef childRef)
+  let newParent m = m & parent_ .~ (childModel ^. child_)
+  liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
+-----------------------------------------------------------------------------
 synchronizeParentToChild
   :: DOMRef
   -> IORef model
@@ -248,19 +251,6 @@ synchronizeParentToChild componentDOMRef componentModel_ bindings serve = do
       forM_ bindings $ \binding ->
         bindParentToChild binding parentComponentState componentModel_
       liftIO serve
------------------------------------------------------------------------------
-bindChildToParent
-  :: forall parent model action
-   . Binding parent model
-  -> ComponentState parent action
-  -- ^ Parent model
-  -> IORef model
-  -- ^ Child new model
-  -> JSM ()
-bindChildToParent (Binding _ parent_ child_) ComponentState {..} childRef = do
-  childModel <- liftIO (readIORef childRef)
-  let newParent m = m & parent_ .~ (childModel ^. child_)
-  liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
@@ -664,8 +654,7 @@ unmount
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
-  undelegator componentDOMRef componentVTree events
-    (logLevel `elem` [DebugEvents, DebugAll])
+  undelegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
