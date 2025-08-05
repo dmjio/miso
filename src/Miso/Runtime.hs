@@ -98,7 +98,7 @@ initialize Component {..} getView = do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
   componentId <- liftIO freshComponentId
-  componentNotify_ <- liftIO newMailbox
+  componentDiffs <- liftIO newMailbox
   (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentSubThreads <- liftIO (newIORef M.empty)
@@ -111,15 +111,15 @@ initialize Component {..} getView = do
   componentModelNew <- liftIO (newIORef model)
   let
     eventLoop = liftIO wait >> do
-      oldModel <- liftIO (readIORef componentModelCurrent)
+      currentModel <- liftIO (readIORef componentModelCurrent)
       newModel <- liftIO (readIORef componentModelNew)
       let
         info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) newModel
-      oldName <- liftIO $ oldModel `seq` makeStableName oldModel
-      newName <- liftIO $ updatedModel `seq` makeStableName updatedModel
-      when (oldName /= newName && oldModel /= updatedModel) $ do
+      currentName <- liftIO $ currentModel `seq` makeStableName currentModel
+      updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
+      when (currentName /= updatedName && currentModel /= updatedModel) $ do
         newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
@@ -128,20 +128,35 @@ initialize Component {..} getView = do
           atomicWriteIORef componentVTree newVTree
           atomicWriteIORef componentModelCurrent updatedModel
           atomicWriteIORef componentModelNew updatedModel
-          sendMail componentNotify_ Null
+          sendMail componentDiffs Null
           -- dmj: child wake-up call for prop synch
       syncPoint
       eventLoop
+
+  -- mailbox
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
       message <- liftIO (readMail =<< copyMailbox componentMailbox)
       mapM_ componentSink (mailbox message)
-  componentParentNotifyThreadId <-
-    subscribeToParentDiffs componentDOMRef
-      componentModelNew bindings serve
+
+  -- bindings
+  componentParentToChildThreadId <-
+    synchronizeParentToChild
+      componentDOMRef
+      componentModelNew
+      bindings
+      serve
+
+  componentChildToParentThreadId <-
+    synchronizeChildToParent
+      componentDOMRef
+      componentModelNew
+      componentDiffs
+      bindings
+
   let vcomp = ComponentState
-        { componentNotify = componentNotify_
+        { componentServe = serve
         , ..
         }
   registerComponent vcomp
@@ -150,14 +165,22 @@ initialize Component {..} getView = do
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
-subscribeToParentDiffs
+-- | dmj: we only want to call this if props have been defined
+-- filter this function on 'ChildToParent'
+--
+-- What we do here is fork a thread on current ComponentDiffs
+-- Then iterate on props, see if there is a ChildToParent, if so
+-- then we grab the parent, read the child from the lens, set it on the parent
+-- then we call 'serve' on the parent
+--
+synchronizeChildToParent
   :: DOMRef
   -> IORef model
-  -> [ Binding type_ model ]
-  -> IO ()
+  -> Mailbox
+  -> [ Binding parent model ]
   -> JSM (Maybe ThreadId)
-subscribeToParentDiffs _ _ [] _ = pure Nothing
-subscribeToParentDiffs componentDOMRef componentModel_ props serve = do
+synchronizeChildToParent _ _ _ [] = pure Nothing
+synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindings = do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   FFI.getParentComponentId componentDOMRef >>= \case
@@ -170,19 +193,65 @@ subscribeToParentDiffs componentDOMRef componentModel_ props serve = do
           -- dmj: another impossible case, parent always mounted
           pure Nothing
         Just parentComponentState -> do
-          bindProps parentComponentState
+          bindProperty parentComponentState
           -- dmj: ^ assume parent state on initialization
           fmap Just $ FFI.forkJSM $ forever $ do
-            Null <- liftIO $ readMail =<<
-              copyMailbox (componentNotify parentComponentState)
-            bindProps parentComponentState
+            Null <- liftIO $ readMail =<< copyMailbox componentDiffs
+            -- dmj: ^ listen on child this time
+            bindProperty parentComponentState
   where
-    bindProps parentComponentState = do
-      forM_ props $ \prop_ ->
-        bindProp prop_ parentComponentState componentModel_
+    bindProperty parentComponentState = do
+      forM_ bindings $ \binding -> do
+        bindChildToParent binding parentComponentState componentModelNew
+      liftIO (componentServe parentComponentState)
+-----------------------------------------------------------------------------
+-- | dmj: we only want to call this if props have been defined
+-- filter this function on 'ParentToChild'
+synchronizeParentToChild
+  :: DOMRef
+  -> IORef model
+  -> [ Binding type_ model ]
+  -> IO ()
+  -> JSM (Maybe ThreadId)
+synchronizeParentToChild _ _ [] _ = pure Nothing
+synchronizeParentToChild componentDOMRef componentModel_ bindings serve = do
+  -- Get parent's componentNotify, subscribe to it, on notification
+  -- update the current Component model using the user-specified lenses
+  FFI.getParentComponentId componentDOMRef >>= \case
+    Nothing ->
+      -- dmj: impossible case, parent always mounted
+      pure Nothing
+    Just parentId -> do
+      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+        Nothing -> do
+          -- dmj: another impossible case, parent always mounted
+          pure Nothing
+        Just parentComponentState -> do
+          bindProperty parentComponentState
+          -- dmj: ^ assume parent state on initialization
+          fmap Just $ FFI.forkJSM $ forever $ do
+            Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
+            bindProperty parentComponentState
+  where
+    bindProperty parentComponentState = do
+      forM_ bindings $ \binding ->
+        bindParentToChild binding parentComponentState componentModel_
       liftIO serve
 -----------------------------------------------------------------------------
-bindProp
+bindChildToParent
+  :: forall parent model action
+   . Binding parent model
+  -> ComponentState parent action
+  -- ^ Parent model
+  -> IORef model
+  -- ^ Child new model
+  -> JSM ()
+bindChildToParent (Binding _ parent_ child_) ComponentState {..} childRef = do
+  childModel <- liftIO (readIORef childRef)
+  let newParent m = m & parent_ .~ (childModel ^. child_)
+  liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
+-----------------------------------------------------------------------------
+bindParentToChild
   :: forall props model action
    . Binding props model
   -> ComponentState props action
@@ -190,7 +259,7 @@ bindProp
   -> IORef model
   -- ^ Child new model
   -> JSM ()
-bindProp (Binding parent_ child_) ComponentState {..} modelRef = do
+bindParentToChild (Binding _ parent_ child_) ComponentState {..} modelRef = do
   parentModel <- liftIO (readIORef componentModelNew)
   let newChild m = m & child_ .~ (parentModel ^. parent_)
   liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
@@ -216,9 +285,11 @@ data ComponentState model action
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
   , componentMailboxThreadId :: ThreadId
-  , componentNotify          :: Mailbox
-    -- ^ What the current component writes to, to notify its children it has a dirty model
-  , componentParentNotifyThreadId  :: Maybe ThreadId
+  , componentDiffs           :: Mailbox
+  , componentServe           :: IO ()
+    -- ^ What the current component writes to, to notify anybody about its dirty model
+  , componentParentToChildThreadId  :: Maybe ThreadId
+  , componentChildToParentThreadId  :: Maybe ThreadId
     -- ^ What the current component listens on to invoke model synchronization
   }
 -----------------------------------------------------------------------------
@@ -582,11 +653,12 @@ unmount
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
-  undelegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  undelegator componentDOMRef componentVTree events
+    (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
-  liftIO (mapM_ killThread componentParentNotifyThreadId)
+  liftIO (mapM_ killThread componentParentToChildThreadId)
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())

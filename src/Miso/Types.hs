@@ -43,7 +43,10 @@ module Miso.Types
   , ToKey            (..)
   -- ** Smart Constructors
   , component
+  -- ** Data binding
   , (-->)
+  , (<--)
+  , (<-->)
   -- ** Component
   , mount
   , (+>)
@@ -412,21 +415,40 @@ textRaw = VTextRaw
 -- @
 --
 -- @since 1.9.0.0
-data Binding parent model = forall a . Binding (Lens parent a) (Lens model a)
+data Binding parent model = forall a . Binding Direction (Lens parent a) (Lens model a)
 -----------------------------------------------------------------------------
 -- | Smart constructor for 'Prop'.
 --
 -- @since 1.9.0.0
 bind
   :: forall parent type_ model
-   . Lens parent type_
+   . Direction
+  -> Lens parent type_
   -> Lens model type_
   -> Binding parent model
 bind = Binding
+-----------------------------------------------------------------------------
+data Direction
+  = ParentToChild
+  | ChildToParent
+  | Bidirectional
+  deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding'
 --
 -- @since 1.9.0.0
 (-->) :: Lens parent type_ -> Lens model type_ -> Binding parent model
-(-->) = bind
+(-->) = bind ParentToChild
+-----------------------------------------------------------------------------
+-- | Smart constructor for a 'Binding'
+--
+-- @since 1.9.0.0
+(<--) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(<--) = bind ChildToParent
+-----------------------------------------------------------------------------
+-- | Smart constructor for a 'Binding'
+--
+-- @since 1.9.0.0
+(<-->) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(<-->) = bind Bidirectional
 -----------------------------------------------------------------------------
