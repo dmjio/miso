@@ -1,19 +1,21 @@
 ----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE CPP                        #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import Miso
+import Miso hiding (model)
 import Miso.String
 import Miso.Lens
+import Miso.Lens.TH
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -22,11 +24,11 @@ data Model
   , _condition :: Bool
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
-counter :: Lens Model Int
-counter = lens _counter $ \record field -> record { _counter = field }
+data ChildModel = ChildModel { _x :: Int }
+  deriving (Eq, Show)
 ----------------------------------------------------------------------------
-condition :: Lens Model Bool
-condition = lens _condition $ \record field -> record { _condition = field }
+$(makeClassy ''Model)
+$(makeClassy ''ChildModel)
 ----------------------------------------------------------------------------
 -- | Sum type for App events
 data Action
@@ -56,8 +58,10 @@ emptyModel = Model 0 False
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Model Action
 updateModel = \case
-  AddOne -> counter += 1
-  SubtractOne -> counter -= 1
+  AddOne ->
+    counter += 1
+  SubtractOne ->
+    counter -= 1
   SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
@@ -66,7 +70,7 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel (Model x condition_) = div_ []
+viewModel (Model x_ condition_) = div_ []
   [ button_
     [ onClick AddOne ]
     [ text "+" ]
@@ -74,7 +78,10 @@ viewModel (Model x condition_) = div_ []
     [ onClick Toggle ]
     [ text "Toggle components" ]
   , if condition_
-      then div_  [ key_ @MisoString "component-1" ] +> childComponent
+      then div_ []
+           [ div_  [ key_ @MisoString "component-1" ] +> childComponent True
+           , div_  [ key_ @MisoString "component-2" ] +> childComponent False
+           ]
       else "foo"
   , button_
     [ onClick SubtractOne ]
@@ -83,49 +90,33 @@ viewModel (Model x condition_) = div_ []
   , button_
     [ onClick SayHelloWorld ]
     [ text "Alert Hello World!" ]
-  , text (ms x)
+  , text (ms x_)
   ]
 ----------------------------------------------------------------------------
-class ChildParams component where
-  getCounter :: component -> Int
-----------------------------------------------------------------------------
 -- | Component used for distribution
-childComponent
-  :: ChildParams props
-  => Component props ChildModel action
-childComponent = (component (ChildModel 0) noop view_)
-  { props =
-    [ prop getCounter childModel
+childComponent :: HasModel props => Bool -> Component props ChildModel action
+childComponent useBinding = (component (ChildModel 0) noop view_)
+  { bindings =
+    [ counter --> x
+    | useBinding
     ]
   } where
-      view_ (ChildModel x) =
+      view_ (ChildModel x_) =
         div_
         []
-        [ text (ms x)
-        , div_ [ key_ @MisoString "foobah" ] +> childComponent2
+        [ text (ms x_)
+        , div_ [] +> childComponent2
         ]
 ----------------------------------------------------------------------------
-childComponent2 :: Component ChildModel Int action
+childComponent2 :: HasChildModel parent => Component parent Int action
 childComponent2 = (component 0 noop view_)
-  { props =
-    [ getCounter --> _id
+  { bindings =
+    [ x --> this
     ]
   } where
-      view_ x =
+      view_ x_ =
         div_
         []
-        [ text (ms x)
+        [ text (ms x_)
         ]
-----------------------------------------------------------------------------
-instance ChildParams Model where
-  getCounter (Model x _) = x
-----------------------------------------------------------------------------
-instance ChildParams ChildModel where
-  getCounter (ChildModel x) = x
-----------------------------------------------------------------------------
-newtype ChildModel = ChildModel { _childModel :: Int }
-  deriving (Eq, Show)
-----------------------------------------------------------------------------
-childModel :: Lens ChildModel Int
-childModel = lens _childModel $ \r x -> r { _childModel = x }
 ----------------------------------------------------------------------------
