@@ -403,14 +403,14 @@ textRaw :: MisoString -> View parent action
 textRaw = VTextRaw
 -----------------------------------------------------------------------------
 -- | Type used for React-like "props" functionality. This is used to
--- to bind parent model changes to the child model.
+-- to bind parent model changes to the child model, or vice versa.
 --
 -- > https://react.dev/learn/passing-props-to-a-component
 --
 -- @
 --
 -- main :: IO ()
--- main = run app { props = [ ] }
+-- main = run app { bindings = [ foo --> bar ] }
 --
 -- @
 --

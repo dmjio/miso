@@ -40,8 +40,6 @@ module Miso.Runtime
   -- ** Communication
   , mail
   , parent
-  , (-->)
-  , Binding
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
