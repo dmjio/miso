@@ -27,3 +27,5 @@ if !impl(ghcjs)
     location: https://github.com/haskell-servant/servant.git
     tag: e07e92abd62641fc0f199a33e5131de273140cb0
     subdir: servant
+
+flags: +template-haskell

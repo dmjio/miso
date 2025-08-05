@@ -23,6 +23,7 @@ module Miso.Types
   ( -- ** Types
     App
   , Component        (..)
+  , Binding          (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -42,6 +43,12 @@ module Miso.Types
   , ToKey            (..)
   -- ** Smart Constructors
   , component
+  -- ** Data binding
+  , (-->)
+  , (<--)
+  , (<-->)
+  , getDirection
+  , Direction (..)
   -- ** Component
   , mount
   , (+>)
@@ -56,26 +63,28 @@ module Miso.Types
   -- *** MisoString
   , MisoString
   , toMisoString
-  , ms
   , fromMisoString
+  , ms
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
 import           Data.Coerce (coerce)
-import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
-import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
-import           Prelude hiding (null)
+import           Prelude hiding              (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
+import           Miso.Event.Types (Events, defaultEvents)
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
-import           Miso.Event.Types
+import           Miso.Lens (Lens)
 import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
+import           Miso.Event.Types
 import           Miso.Style.Types (StyleSheet)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
@@ -118,6 +127,7 @@ data Component parent model action
   -- ^ Used to receive mail from other 'Component'
   --
   -- @since 1.9.0.0
+  , bindings :: [ Binding parent model ]
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -180,6 +190,7 @@ component m u v = Component
   , logLevel = Off
   , initialAction = Nothing
   , mailbox = const Nothing
+  , bindings = []
   }
 -----------------------------------------------------------------------------
 -- | A top-level 'Component' can have no 'parent'
@@ -360,7 +371,7 @@ instance IsString (View model action) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see `View` instead.
 newtype VTree = VTree { getTree :: Object }
------------------------------------------------------------------------------  
+-----------------------------------------------------------------------------
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
@@ -398,4 +409,69 @@ text_ = VText . MS.concat
 -- | `TextRaw` creation. Don't use directly
 textRaw :: MisoString -> View parent action
 textRaw = VTextRaw
+-----------------------------------------------------------------------------
+-- | Type used for React-like "props" functionality. This is used to
+-- to bind parent model changes to the child model, or vice versa.
+--
+-- The difference between miso and React here is that miso is
+-- synchronizing model states of Components declaratively (outside of the
+-- view). In React "props" are used in the view code.
+--
+-- > https://react.dev/learn/passing-props-to-a-component
+--
+-- This can be thought of as establishing an "edge" in the 'Component' graph,
+-- whereby events cause model change synchronization to "ripple" or "pulsate"
+-- through the views. The "reactivity" of the graph is constructed manually
+-- by the end-user, using the edge primitives `-->`, `<--`, `<-->`.
+--
+-- This can also be thought of as a "Wire" (from `netwire`) for reactive
+-- variable synchronization, except done at the granularity specified by the `Lens`.
+--
+-- @
+--
+-- main :: IO ()
+-- main = run app { bindings = [ parentLens --> childLens ] }
+--
+-- @
+--
+-- @since 1.9.0.0
+data Binding parent model = forall a . Binding Direction (Lens parent a) (Lens model a)
+-----------------------------------------------------------------------------
+-- | Smart constructor for 'Binding'
+--
+-- @since 1.9.0.0
+bind
+  :: Direction
+  -> Lens parent a
+  -> Lens model a
+  -> Binding parent model
+bind = Binding
+-----------------------------------------------------------------------------
+data Direction
+  = ParentToChild
+  | ChildToParent
+  | Bidirectional
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Extract 'Direction' from 'Binding'
+getDirection :: Binding parent model -> Direction
+getDirection (Binding dir _ _) = dir
+-----------------------------------------------------------------------------
+-- | Smart constructor for a 'Binding', unidirectionally binds parent to child
+--
+-- @since 1.9.0.0
+(-->) :: Lens parent a -> Lens model a -> Binding parent model
+(-->) = bind ParentToChild
+-----------------------------------------------------------------------------
+-- | Smart constructor for a 'Binding', unidirectionally binds child to parent
+--
+-- @since 1.9.0.0
+(<--) :: Lens parent a -> Lens model a -> Binding parent model
+(<--) = bind ChildToParent
+-----------------------------------------------------------------------------
+-- | Smart constructor for a 'Binding', bidirectionlly binds child to parent
+--
+-- @since 1.9.0.0
+(<-->) :: Lens parent a -> Lens model a -> Binding parent model
+(<-->) = bind Bidirectional
 -----------------------------------------------------------------------------

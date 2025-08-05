@@ -46,8 +46,9 @@ import           Control.Exception (SomeException)
 import           Control.Monad (forM, forM_, when, void, forever)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
-import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
+import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
 import           Data.Foldable (toList)
+import           Data.Function ((&))
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -71,13 +72,14 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
+import           Miso.Lens ((.~), (^.))
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
-import           Miso.Effect (Sub, Sink, Effect, runEffect, io_, ComponentInfo(..), withSink)
+import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -94,6 +96,7 @@ initialize Component {..} getView = do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
       serve
   componentId <- liftIO freshComponentId
+  componentDiffs <- liftIO newMailbox
   (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentSubThreads <- liftIO (newIORef M.empty)
@@ -102,35 +105,165 @@ initialize Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModel <- liftIO (newIORef model)
+  componentModelCurrent <- liftIO (newIORef model)
+  componentModelNew <- liftIO (newIORef model)
   let
-    eventLoop !oldModel = liftIO wait >> do
+    eventLoop = liftIO wait >> do
+      currentModel <- liftIO (readIORef componentModelCurrent)
+      newModel <- liftIO (readIORef componentModelNew)
+      let
+        info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      let info = ComponentInfo componentId componentDOMRef
-      newModel <- foldEffects update Async info componentSink (toList as) oldModel
-      oldName <- liftIO $ oldModel `seq` makeStableName oldModel
-      newName <- liftIO $ newModel `seq` makeStableName newModel
-      when (oldName /= newName && oldModel /= newModel) $ do
-        newVTree <- runView Draw (view newModel) componentSink logLevel events
+      updatedModel <- foldEffects update Async info componentSink (toList as) newModel
+      currentName <- liftIO $ currentModel `seq` makeStableName currentModel
+      updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
+      when (currentName /= updatedName && currentModel /= updatedModel) $ do
+        newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
-          atomicWriteIORef componentModel newModel
+          atomicWriteIORef componentModelCurrent updatedModel
+          atomicWriteIORef componentModelNew updatedModel
+          sendMail componentDiffs Null
+          -- dmj: child wake-up call for prop synch
       syncPoint
-      eventLoop newModel
-  _ <- FFI.forkJSM (eventLoop model)
+      eventLoop
+
+  -- mailbox
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
     FFI.forkJSM . forever $ do
       message <- liftIO (readMail =<< copyMailbox componentMailbox)
       mapM_ componentSink (mailbox message)
-  let vcomp = ComponentState {..}
+
+  -- Bindings (aka. "reactive" mutable variable synchronization)
+  -- Between immediate ancestor / descendant (and sibling if bidi via parent)
+  componentParentToChildThreadId <-
+    synchronizeParentToChild
+      componentDOMRef
+      componentModelNew
+      [ binding
+      | binding <- bindings
+      , getDirection binding `elem`
+        [ ParentToChild
+        , Bidirectional
+        ]
+      ]
+      serve
+
+  componentChildToParentThreadId <-
+    synchronizeChildToParent
+      componentDOMRef
+      componentModelNew
+      componentDiffs
+      [ binding
+      | binding <- bindings
+      , getDirection binding `elem`
+        [ ChildToParent
+        , Bidirectional
+        ]
+      ]
+
+  let vcomp = ComponentState
+        { componentServe = serve
+        , ..
+        }
   registerComponent vcomp
   delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
+  _ <- FFI.forkJSM eventLoop
   pure vcomp
+-----------------------------------------------------------------------------
+synchronizeChildToParent
+  :: DOMRef
+  -> IORef model
+  -> Mailbox
+  -> [ Binding parent model ]
+  -> JSM (Maybe ThreadId)
+synchronizeChildToParent _ _ _ [] = pure Nothing
+synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindings = do
+  -- Get parent's componentNotify, subscribe to it, on notification
+  -- update the current Component model using the user-specified lenses
+  FFI.getParentComponentId componentDOMRef >>= \case
+    Nothing ->
+      -- dmj: impossible case, parent always mounted
+      pure Nothing
+    Just parentId -> do
+      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+        Nothing -> do
+          -- dmj: another impossible case, parent always mounted in children
+          pure Nothing
+        Just parentComponentState -> do
+          bindProperty parentComponentState
+          -- dmj: ^ parent assumes child state on initialization
+          fmap Just $ FFI.forkJSM $ forever $ do
+            Null <- liftIO $ readMail =<< copyMailbox componentDiffs
+            -- dmj: ^ listen on child this time
+            bindProperty parentComponentState
+  where
+    bindProperty parentComponentState = do
+      forM_ bindings $ \binding -> do
+        bindChildToParent binding parentComponentState componentModelNew
+      liftIO (componentServe parentComponentState)
+-----------------------------------------------------------------------------
+bindChildToParent
+  :: forall parent model action
+   . Binding parent model
+  -> ComponentState parent action
+  -- ^ Parent model
+  -> IORef model
+  -- ^ Child new model
+  -> JSM ()
+bindChildToParent (Binding _ parent_ child_) ComponentState {..} childRef = do
+  childModel <- liftIO (readIORef childRef)
+  let newParent m = m & parent_ .~ (childModel ^. child_)
+  liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
+-----------------------------------------------------------------------------
+synchronizeParentToChild
+  :: DOMRef
+  -> IORef model
+  -> [ Binding type_ model ]
+  -> IO ()
+  -> JSM (Maybe ThreadId)
+synchronizeParentToChild _ _ [] _ = pure Nothing
+synchronizeParentToChild componentDOMRef componentModel_ bindings serve = do
+  -- Get parent's componentNotify, subscribe to it, on notification
+  -- update the current Component model using the user-specified lenses
+  FFI.getParentComponentId componentDOMRef >>= \case
+    Nothing ->
+      -- dmj: impossible case, parent always mounted
+      pure Nothing
+    Just parentId -> do
+      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+        Nothing -> do
+          -- dmj: another impossible case, parent always mounted
+          pure Nothing
+        Just parentComponentState -> do
+          bindProperty parentComponentState
+          -- dmj: ^ assume parent state on initialization
+          fmap Just $ FFI.forkJSM $ forever $ do
+            Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
+            bindProperty parentComponentState
+  where
+    bindProperty parentComponentState = do
+      forM_ bindings $ \binding ->
+        bindParentToChild binding parentComponentState componentModel_
+      liftIO serve
+-----------------------------------------------------------------------------
+bindParentToChild
+  :: forall props model action
+   . Binding props model
+  -> ComponentState props action
+  -- ^ Parent model
+  -> IORef model
+  -- ^ Child new model
+  -> JSM ()
+bindParentToChild (Binding _ parent_ child_) ComponentState {..} modelRef = do
+  parentModel <- liftIO (readIORef componentModelNew)
+  let newChild m = m & child_ .~ (parentModel ^. parent_)
+  liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -147,11 +280,18 @@ data ComponentState model action
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
-  , componentModel           :: IORef model
+  , componentModelCurrent    :: IORef model
+  , componentModelNew        :: IORef model
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
-  , componentMailboxThreadId :: ThreadId
   , componentScripts         :: [DOMRef]
+  , componentMailboxThreadId :: ThreadId
+  , componentDiffs           :: Mailbox
+  , componentServe           :: IO ()
+    -- ^ What the current component writes to, to notify anybody about its dirty model
+  , componentParentToChildThreadId  :: Maybe ThreadId
+  , componentChildToParentThreadId  :: Maybe ThreadId
+    -- ^ What the current component listens on to invoke model synchronization
   }
 -----------------------------------------------------------------------------
 -- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
@@ -492,9 +632,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go info actions = do
-          x <- liftIO (readIORef componentModel)
+          x <- liftIO (readIORef componentModelCurrent)
           y <- foldEffects update Sync info componentSink (toList actions) x
-          liftIO (atomicWriteIORef componentModel y)
+          liftIO (atomicWriteIORef componentModelCurrent y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
@@ -518,6 +658,8 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   freeFunction mountCallback
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
+  liftIO (mapM_ killThread componentParentToChildThreadId)
+  liftIO (mapM_ killThread componentChildToParentThreadId)
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
@@ -798,6 +940,6 @@ parent successful errorful = do
         IM.lookup parentId <$> liftIO (readIORef components) >>= \case
           Nothing -> sink errorful
           Just ComponentState {..} -> do
-            model <- liftIO (readIORef componentModel)
+            model <- liftIO (readIORef componentModelCurrent)
             sink (successful model)
 -----------------------------------------------------------------------------

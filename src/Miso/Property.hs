@@ -16,14 +16,14 @@
 ----------------------------------------------------------------------------
 module Miso.Property
   ( -- *** Smart constructors
-    textProp
+    prop
+  , textProp
   , stringProp
   , boolProp
   , intProp
   , integerProp
   , doubleProp
   , objectProp
-  , prop
   , keyProp
   , key_
   ) where
