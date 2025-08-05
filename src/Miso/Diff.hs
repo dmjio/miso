@@ -21,7 +21,6 @@ import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
-import           Miso.String
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
 diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()

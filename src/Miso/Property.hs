@@ -31,7 +31,6 @@ module Miso.Property
 import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
 import           Miso.Types
-import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM 
 -- node associated with the vnode to @v@.

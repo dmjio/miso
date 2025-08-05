@@ -85,7 +85,6 @@ module Miso.Svg.Element
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Types  hiding (text_)
-import           Miso.String        (MisoString)
 -----------------------------------------------------------------------------
 -- | Used to construct a @VNode@ with namespace *"svg"*
 --
