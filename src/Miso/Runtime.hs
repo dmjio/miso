@@ -659,6 +659,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   liftIO (killThread componentMailboxThreadId)
   liftIO (mapM_ killThread =<< readIORef componentSubThreads)
   liftIO (mapM_ killThread componentParentToChildThreadId)
+  liftIO (mapM_ killThread componentChildToParentThreadId)
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
