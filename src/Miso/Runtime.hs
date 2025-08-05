@@ -205,7 +205,7 @@ synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindin
           pure Nothing
         Just parentComponentState -> do
           bindProperty parentComponentState
-          -- dmj: ^ assume parent state on initialization
+          -- dmj: ^ parent assumes child state on initialization
           fmap Just $ FFI.forkJSM $ forever $ do
             Null <- liftIO $ readMail =<< copyMailbox componentDiffs
             -- dmj: ^ listen on child this time
