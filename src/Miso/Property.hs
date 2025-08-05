@@ -16,7 +16,8 @@
 ----------------------------------------------------------------------------
 module Miso.Property
   ( -- *** Smart constructors
-    textProp
+    prop
+  , textProp
   , stringProp
   , boolProp
   , intProp
@@ -29,7 +30,7 @@ module Miso.Property
 -----------------------------------------------------------------------------
 import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
-import           Miso.Types hiding (prop)
+import           Miso.Types
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM 

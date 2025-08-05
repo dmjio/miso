@@ -40,8 +40,8 @@ module Miso.Runtime
   -- ** Communication
   , mail
   , parent
-  , prop
-  , Prop
+  , (-->)
+  , Binding
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -74,7 +74,7 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
-import           Miso.Lens ((.~))
+import           Miso.Lens ((.~), (^.))
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
@@ -139,7 +139,7 @@ initialize Component {..} getView = do
       mapM_ componentSink (mailbox message)
   componentParentNotifyThreadId <-
     subscribeToParentDiffs componentDOMRef
-      componentModelNew props serve
+      componentModelNew bindings serve
   let vcomp = ComponentState
         { componentNotify = componentNotify_
         , ..
@@ -153,7 +153,7 @@ initialize Component {..} getView = do
 subscribeToParentDiffs
   :: DOMRef
   -> IORef model
-  -> [ Prop type_ model ]
+  -> [ Binding type_ model ]
   -> IO ()
   -> JSM (Maybe ThreadId)
 subscribeToParentDiffs _ _ [] _ = pure Nothing
@@ -184,15 +184,15 @@ subscribeToParentDiffs componentDOMRef componentModel_ props serve = do
 -----------------------------------------------------------------------------
 bindProp
   :: forall props model action
-   . Prop props model
+   . Binding props model
   -> ComponentState props action
   -- ^ Parent model
   -> IORef model
   -- ^ Child new model
   -> JSM ()
-bindProp (Prop getter childLens) ComponentState {..} modelRef = do
+bindProp (Binding parent_ child_) ComponentState {..} modelRef = do
   parentModel <- liftIO (readIORef componentModelNew)
-  let newChild m = m & childLens .~ getter parentModel
+  let newChild m = m & child_ .~ (parentModel ^. parent_)
   liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@

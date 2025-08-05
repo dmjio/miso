@@ -23,7 +23,7 @@ module Miso.Types
   ( -- ** Types
     App
   , Component        (..)
-  , Prop             (..)
+  , Binding          (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -43,7 +43,6 @@ module Miso.Types
   , ToKey            (..)
   -- ** Smart Constructors
   , component
-  , prop
   , (-->)
   -- ** Component
   , mount
@@ -117,7 +116,7 @@ data Component parent model action
   -- ^ Used to receive mail from other 'Component'
   --
   -- @since 1.9.0.0
-  , props :: [ Prop parent model ]
+  , bindings :: [ Binding parent model ]
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -180,7 +179,7 @@ component m u v = Component
   , logLevel = Off
   , initialAction = Nothing
   , mailbox = const Nothing
-  , props = []
+  , bindings = []
   }
 -----------------------------------------------------------------------------
 -- | A top-level 'Component' can have no 'parent'
@@ -413,23 +412,21 @@ textRaw = VTextRaw
 -- @
 --
 -- @since 1.9.0.0
-data Prop parent model
-  = forall type_
-  . Prop (parent -> type_) (Lens model type_)
+data Binding parent model = forall a . Binding (Lens parent a) (Lens model a)
 -----------------------------------------------------------------------------
 -- | Smart constructor for 'Prop'.
 --
 -- @since 1.9.0.0
-prop
+bind
   :: forall parent type_ model
-   . (parent -> type_)
+   . Lens parent type_
   -> Lens model type_
-  -> Prop parent model
-prop = Prop
+  -> Binding parent model
+bind = Binding
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Prop'.
+-- | Smart constructor for a 'Binding'
 --
 -- @since 1.9.0.0
-(-->) :: (parent -> type_) -> Lens model type_ -> Prop parent model
-(-->) = prop
+(-->) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(-->) = bind
 -----------------------------------------------------------------------------
