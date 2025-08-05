@@ -60,6 +60,11 @@ module Miso.Types
   , text_
   , textRaw
   , rawHtml
+  -- *** MisoString
+  , MisoString
+  , toMisoString
+  , fromMisoString
+  , ms
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -78,7 +83,8 @@ import           Miso.Event.Types (Events, defaultEvents)
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Lens (Lens)
-import           Miso.String (MisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
+import           Miso.Event.Types
 import           Miso.Style.Types (StyleSheet)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
