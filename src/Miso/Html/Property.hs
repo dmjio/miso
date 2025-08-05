@@ -118,7 +118,7 @@ module Miso.Html.Property
 -----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.Property
-import           Miso.String (MisoString, intercalate)
+import           Miso.String (intercalate)
 -----------------------------------------------------------------------------
 -- | Define multiple classes conditionally
 --

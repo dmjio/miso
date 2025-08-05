@@ -105,7 +105,6 @@ import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage
-import           Miso.String (MisoString)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
