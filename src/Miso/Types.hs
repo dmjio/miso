@@ -53,6 +53,11 @@ module Miso.Types
   , text_
   , textRaw
   , rawHtml
+  -- *** MisoString
+  , MisoString
+  , toMisoString
+  , ms
+  , fromMisoString
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
@@ -70,7 +75,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Event.Types
-import           Miso.String (MisoString, toMisoString)
+import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Style.Types (StyleSheet)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
