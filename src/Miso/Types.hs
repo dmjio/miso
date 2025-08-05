@@ -47,6 +47,8 @@ module Miso.Types
   , (-->)
   , (<--)
   , (<-->)
+  , getDirection
+  , Direction (..)
   -- ** Component
   , mount
   , (+>)
@@ -421,10 +423,9 @@ data Binding parent model = forall a . Binding Direction (Lens parent a) (Lens m
 --
 -- @since 1.9.0.0
 bind
-  :: forall parent type_ model
-   . Direction
-  -> Lens parent type_
-  -> Lens model type_
+  :: Direction
+  -> Lens parent a
+  -> Lens model a
   -> Binding parent model
 bind = Binding
 -----------------------------------------------------------------------------
@@ -434,21 +435,25 @@ data Direction
   | Bidirectional
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Extract 'Direction' from 'Binding'
+getDirection :: Binding parent model -> Direction
+getDirection (Binding dir _ _) = dir
+-----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding'
 --
 -- @since 1.9.0.0
-(-->) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(-->) :: Lens parent a -> Lens model a -> Binding parent model
 (-->) = bind ParentToChild
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding'
 --
 -- @since 1.9.0.0
-(<--) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(<--) :: Lens parent a -> Lens model a -> Binding parent model
 (<--) = bind ChildToParent
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding'
 --
 -- @since 1.9.0.0
-(<-->) :: Lens parent type_ -> Lens model type_ -> Binding parent model
+(<-->) :: Lens parent a -> Lens model a -> Binding parent model
 (<-->) = bind Bidirectional
 -----------------------------------------------------------------------------

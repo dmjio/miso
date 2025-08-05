@@ -138,12 +138,19 @@ initialize Component {..} getView = do
       message <- liftIO (readMail =<< copyMailbox componentMailbox)
       mapM_ componentSink (mailbox message)
 
-  -- bindings
+  -- Bindings (aka. "reactive" mutable variable synchronization)
+  -- Between immediate ancestor / descendant (and sibling if bidi via parent)
   componentParentToChildThreadId <-
     synchronizeParentToChild
       componentDOMRef
       componentModelNew
-      bindings
+      [ binding
+      | binding <- bindings
+      , getDirection binding `elem`
+        [ ParentToChild
+        , Bidirectional
+        ]
+      ]
       serve
 
   componentChildToParentThreadId <-
@@ -151,7 +158,13 @@ initialize Component {..} getView = do
       componentDOMRef
       componentModelNew
       componentDiffs
-      bindings
+      [ binding
+      | binding <- bindings
+      , getDirection binding `elem`
+        [ ChildToParent
+        , Bidirectional
+        ]
+      ]
 
   let vcomp = ComponentState
         { componentServe = serve
@@ -188,7 +201,7 @@ synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindin
     Just parentId -> do
       IM.lookup parentId <$> liftIO (readIORef components) >>= \case
         Nothing -> do
-          -- dmj: another impossible case, parent always mounted
+          -- dmj: another impossible case, parent always mounted in children
           pure Nothing
         Just parentComponentState -> do
           bindProperty parentComponentState

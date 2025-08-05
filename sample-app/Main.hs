@@ -13,29 +13,38 @@
 module Main where
 ----------------------------------------------------------------------------
 import Miso hiding (model)
-import Miso.String
+import Miso.String (MisoString, ms)
 import Miso.Lens
-import Miso.Lens.TH
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
   { _counter :: Int
-  , _condition :: Bool
+  , _childCounter :: Int
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
-data ChildModel = ChildModel { _x :: Int }
-  deriving (Eq, Show)
+counter :: Lens Model Int
+counter = lens _counter $ \record field -> record { _counter = field }
 ----------------------------------------------------------------------------
-$(makeClassy ''Model)
-$(makeClassy ''ChildModel)
+childCounter :: Lens Model Int
+childCounter = lens _childCounter $ \record field -> record { _childCounter = field }
 ----------------------------------------------------------------------------
 -- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
-  | SayHelloWorld
-  | Toggle
+  deriving (Show, Eq)
+----------------------------------------------------------------------------
+data ChildModel = ChildModel { _x :: Int }
+  deriving (Eq, Show)
+----------------------------------------------------------------------------
+x :: Lens ChildModel Int
+x = lens _x $ \record field -> record { _x = field }
+----------------------------------------------------------------------------
+-- | Sum type for App events
+data ChildAction
+  = ChildAddOne
+  | ChildSubtractOne
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
@@ -48,12 +57,12 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-app :: App Model Action
+app :: Component ROOT Model Action
 app = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
-emptyModel = Model 0 False
+emptyModel = Model 0 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Transition Model Action
@@ -62,61 +71,46 @@ updateModel = \case
     counter += 1
   SubtractOne ->
     counter -= 1
-  SayHelloWorld -> io_ $ do
-    alert "Hello World"
-    consoleLog "Hello World"
-  Toggle ->
-    condition %= not
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel (Model x_ condition_) = div_ []
+viewModel (Model parentState _) = div_ []
   [ button_
     [ onClick AddOne ]
     [ text "+" ]
-  , button_
-    [ onClick Toggle ]
-    [ text "Toggle components" ]
-  , if condition_
-      then div_ []
-           [ div_  [ key_ @MisoString "component-1" ] +> childComponent True
-           , div_  [ key_ @MisoString "component-2" ] +> childComponent False
-           ]
-      else "foo"
+  , div_
+    [ id_ "child components"
+    ]
+    [ div_  [ key_ @MisoString "component-1" ] +> childComponent "one"
+    , div_  [ key_ @MisoString "component-2" ] +> childComponent "two"
+    ]
   , button_
     [ onClick SubtractOne ]
     [ text "-" ]
-  , br_ []
-  , button_
-    [ onClick SayHelloWorld ]
-    [ text "Alert Hello World!" ]
-  , text (ms x_)
+  , text ("Parent state: " <> ms parentState)
   ]
 ----------------------------------------------------------------------------
 -- | Component used for distribution
-childComponent :: HasModel props => Bool -> Component props ChildModel action
-childComponent useBinding = (component (ChildModel 0) noop view_)
+childComponent :: MisoString -> Component Model ChildModel ChildAction
+childComponent name = (component (ChildModel 0) updateChildModel childView_)
   { bindings =
-    [ counter --> x
-    | useBinding
-    ]
+      [ childCounter <--> x
+      ]
   } where
-      view_ (ChildModel x_) =
+      childView_ :: ChildModel -> View ChildModel ChildAction
+      childView_ (ChildModel x_) =
         div_
         []
-        [ text (ms x_)
-        , div_ [] +> childComponent2
+        [ text ("Hi I'm: " <> name <> ms x_)
+        , button_ [ onClick ChildAddOne ] [ "child +" ]
+        , button_ [ onClick ChildSubtractOne ] [ "child -" ]
         ]
 ----------------------------------------------------------------------------
-childComponent2 :: HasChildModel parent => Component parent Int action
-childComponent2 = (component 0 noop view_)
-  { bindings =
-    [ x --> this
-    ]
-  } where
-      view_ x_ =
-        div_
-        []
-        [ text (ms x_)
-        ]
+-- | Updates model, optionally introduces side effects
+updateChildModel :: ChildAction -> Effect Model ChildModel ChildAction
+updateChildModel = \case
+  ChildAddOne ->
+    x += 1
+  ChildSubtractOne ->
+    x -= 1
 ----------------------------------------------------------------------------
