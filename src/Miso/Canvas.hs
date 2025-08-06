@@ -107,7 +107,6 @@ import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
 import           Miso.Style (Color, renderColor)
-import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
 -- useful when building applications w/ three.js, or other libraries where

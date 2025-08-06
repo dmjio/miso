@@ -57,11 +57,9 @@ module Miso.Mathml.Property
   , voffset_
   , width_
   ) where
-
+-----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.Property
-import           Miso.String (MisoString)
-
 -----------------------------------------------------------------------------
 -- | [<\dir\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
 --

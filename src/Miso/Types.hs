@@ -79,7 +79,6 @@ import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude hiding              (null)
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
-import           Miso.Event.Types (Events, defaultEvents)
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
 import           Miso.Lens (Lens)
