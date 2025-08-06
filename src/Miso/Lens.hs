@@ -706,7 +706,7 @@ infix 4 -=
 --   _1 += 1
 -- @
 _1 :: Lens (a,b) a
-_1 = lens fst $ \x (_,b) -> (x,b)
+_1 = lens fst $ \(_,b) x -> (x,b)
 ---------------------------------------------------------------------------------
 -- | @Lens@ that operates on the second element of a tuple
 --
@@ -715,7 +715,7 @@ _1 = lens fst $ \x (_,b) -> (x,b)
 --   _2 += 1
 -- @
 _2 :: Lens (a,b) b
-_2 = lens snd $ \x (a,_) -> (a,x)
+_2 = lens snd $ \(a,_) x -> (a,x)
 ---------------------------------------------------------------------------------
 -- | @Lens@ that operates on itself
 --
@@ -742,7 +742,7 @@ this = _id
 --
 lens
   :: (record -> field)
-  -> (field -> record -> record)
+  -> (record -> field -> record)
   -> Lens record field
-lens = Lens
+lens getter setter = Lens getter (\f r -> setter r f)
 ----------------------------------------------------------------------------

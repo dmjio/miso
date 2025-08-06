@@ -53,11 +53,9 @@ makeLenses name = do
     mkLensType conType =
       AppT (AppT (ConT (mkName "Lens")) conType)
     mkLens n =
-      AppE (AppE (VarE (mkName "lens")) (VarE (mkName n))) $
-        LamE
-        [ VarP fieldName, VarP recName ] $
-          RecUpdE (VarE recName)
-            [ (mkName n, VarE fieldName) ]
+      AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
+        $ LamE [ VarP recName, VarP fieldName ]
+        $ RecUpdE (VarE recName) [ (mkName n, VarE fieldName) ]
       where
         recName = mkName "record"
         fieldName = mkName "field"
@@ -124,7 +122,7 @@ makeClassy name = do
       AppE (AppE (VarE (mkName "compose")) (mkLens n)) (VarE (mkName baseNameLower))
     mkLens n
       = AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
-      $ LamE [ VarP fieldName, VarP recName ]
+      $ LamE [ VarP recName, VarP fieldName ]
       $ RecUpdE (VarE recName) [ (mkName n, VarE fieldName) ]
       where
         recName = mkName "record"
