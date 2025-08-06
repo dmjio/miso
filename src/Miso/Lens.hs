@@ -105,6 +105,8 @@
 module Miso.Lens
   ( -- ** Types
     Lens (..)
+  , Getter
+  , Setter
     -- ** Smart constructor
   , lens
     -- ** Re-exports
@@ -176,11 +178,17 @@ import Miso.Util (compose)
 --
 data Lens record field
   = Lens
-  { _get :: record -> field
+  { _get :: Getter record field
     -- ^ Retrieves a field from a record
-  , _set :: record -> field -> record
+  , _set :: Setter record field
     -- ^ Sets a field on a record
   }
+----------------------------------------------------------------------------
+-- | Type to express a getter on a @Lens@
+type Getter record field = record -> field
+----------------------------------------------------------------------------
+-- | Type to express a setter on a @Lens@
+type Setter record field = record -> field -> record
 ----------------------------------------------------------------------------
 -- | Van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
