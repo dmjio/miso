@@ -148,12 +148,15 @@ module Miso.Lens
   -- *** Conversion
   , Lens'
   , toVL
+  , fromVL
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
+import Control.Monad.Identity (Identity(..))
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
+import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
 import Data.Kind (Type)
@@ -185,6 +188,15 @@ type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 -- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> _set record <$> f (_get record)
+----------------------------------------------------------------------------
+-- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
+fromVL
+  :: Lens' record field
+  -> Lens record field
+fromVL lens_ = Lens {..}
+  where
+    _get record = getConst (lens_ Const record)
+    _set record field = runIdentity . lens_ (\_ -> Identity field) $ record
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
