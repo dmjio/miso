@@ -188,14 +188,14 @@ data Lens record field
 type Getter record field = record -> field
 ----------------------------------------------------------------------------
 -- | Type to express a setter on a @Lens@
-type Setter record field = record -> field -> record
+type Setter record field = field -> record -> record
 ----------------------------------------------------------------------------
 -- | Van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
 -- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
 toVL :: Lens record field -> Lens' record field
-toVL Lens {..} = \f record -> _set record <$> f (_get record)
+toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
 -- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
 fromVL
@@ -204,14 +204,14 @@ fromVL
 fromVL lens_ = Lens {..}
   where
     _get record = getConst (lens_ Const record)
-    _set record field = runIdentity . lens_ (\_ -> Identity field) $ record
+    _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
-  id = Lens Prelude.id (flip const)
+  id = Lens Prelude.id const
   Lens g1 s1 . Lens g2 s2 = Lens
     { _get = g1 <<< g2
-    , _set = \r f -> s2 r (s1 (g2 r) f)
+    , _set = \f r -> s2 (s1 f (g2 r)) r
     }
 ----------------------------------------------------------------------------
 -- | Set a field on a record
@@ -227,7 +227,7 @@ instance Category Lens where
 -- @
 infixr 4 .~
 (.~) :: Lens record field -> field -> record -> record
-(.~) _lens = flip (_set _lens)
+(.~) _lens = _set _lens
 ----------------------------------------------------------------------------
 -- | Synonym for '(.~)'
 --
@@ -262,7 +262,7 @@ infixr 4 ?~
 -- @
 infixr 4 %~
 (%~) :: Lens record field -> (field -> field) -> record -> record
-(%~) _lens f record = _set _lens record $ f (record ^. _lens)
+(%~) _lens f record = _set _lens (f (record ^. _lens)) record
 ----------------------------------------------------------------------------
 -- | Synonym for '(%~)'
 over :: Lens record field -> (field -> field) -> record -> record
@@ -706,7 +706,7 @@ infix 4 -=
 --   _1 += 1
 -- @
 _1 :: Lens (a,b) a
-_1 = lens fst $ \(_,b) x -> (x,b)
+_1 = lens fst $ \x (_,b) -> (x,b)
 ---------------------------------------------------------------------------------
 -- | @Lens@ that operates on the second element of a tuple
 --
@@ -715,7 +715,7 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 --   _2 += 1
 -- @
 _2 :: Lens (a,b) b
-_2 = lens snd $ \(a,_) x -> (a,x)
+_2 = lens snd $ \x (a,_) -> (a,x)
 ---------------------------------------------------------------------------------
 -- | @Lens@ that operates on itself
 --
@@ -742,7 +742,7 @@ this = _id
 --
 lens
   :: (record -> field)
-  -> (record -> field -> record)
+  -> (field -> record -> record)
   -> Lens record field
 lens = Lens
 ----------------------------------------------------------------------------

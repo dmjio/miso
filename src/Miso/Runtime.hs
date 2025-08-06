@@ -208,7 +208,7 @@ bindChildToParent
   -> JSM ()
 bindChildToParent (ChildToParent setParent getChild) ComponentState {..} childRef = do
   childModel <- liftIO (readIORef childRef)
-  let newParent m = setParent m (getChild childModel)
+  let newParent = setParent (getChild childModel)
   liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
 bindChildToParent _ _ _ = pure ()
 -----------------------------------------------------------------------------
@@ -253,7 +253,7 @@ bindParentToChild
   -> JSM ()
 bindParentToChild (ParentToChild getParent setChild) ComponentState {..} modelRef = do
   parentModel <- liftIO (readIORef componentModelNew)
-  let newChild m = setChild m (getParent parentModel)
+  let newChild = setChild (getParent parentModel)
   liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
 bindParentToChild _ _ _ = pure ()
 -----------------------------------------------------------------------------
