@@ -55,7 +55,7 @@ makeLenses name = do
     mkLens n =
       AppE (AppE (VarE (mkName "lens")) (VarE (mkName n))) $
         LamE
-        [ VarP recName, VarP fieldName ] $
+        [ VarP fieldName, VarP recName ] $
           RecUpdE (VarE recName)
             [ (mkName n, VarE fieldName) ]
       where
@@ -124,7 +124,7 @@ makeClassy name = do
       AppE (AppE (VarE (mkName "compose")) (mkLens n)) (VarE (mkName baseNameLower))
     mkLens n
       = AppE (AppE (VarE (mkName "lens")) (VarE (mkName n)))
-      $ LamE [ VarP recName, VarP fieldName ]
+      $ LamE [ VarP fieldName, VarP recName ]
       $ RecUpdE (VarE recName) [ (mkName n, VarE fieldName) ]
       where
         recName = mkName "record"
