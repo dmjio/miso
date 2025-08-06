@@ -417,12 +417,12 @@ textRaw = VTextRaw
 -- synchronizing model states of Components declaratively (outside of the
 -- view). In React "props" are used in the view code.
 --
--- > https://react.dev/learn/passing-props-to-a-component
+-- <https://react.dev/learn/passing-props-to-a-component>
 --
 -- This can be thought of as establishing an "edge" in the 'Component' graph,
 -- whereby events cause model change synchronization to "ripple" or "pulsate"
 -- through the views. The "reactivity" of the graph is constructed manually
--- by the end-user, using the edge primitives `-->`, `<--`, `<-->`.
+-- by the end-user, using the edge primitives `-->`, `<--`, `<-->` (reactive combinators).
 --
 -- This can also be thought of as a "Wire" (from `netwire`) for reactive
 -- variable synchronization, except done at the granularity specified by the `Lens`.

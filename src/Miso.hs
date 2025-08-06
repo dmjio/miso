@@ -48,6 +48,11 @@ module Miso
   , io
   , io_
   , for
+  -- ** Reactivity
+  , Binding (..)
+  , (-->)
+  , (<--)
+  , (<-->)
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
