@@ -29,12 +29,6 @@ module Miso
     -- ** Sink
   , withSink
   , Sink
-    -- ** Publishers / Subscribers
-  , subscribe
-  , unsubscribe
-  , publish
-  , Topic
-  , topic
   -- ** Component
   , mail
   , parent
@@ -65,6 +59,8 @@ module Miso
   , module Miso.Render
     -- * Property
   , module Miso.Property
+    -- * PubSub
+  , module Miso.PubSub
     -- * Router
   , module Miso.Router
     -- * Run
@@ -105,6 +101,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
 import           Miso.Runtime
 import           Miso.Property
+import           Miso.PubSub
 import           Miso.Render
 import           Miso.Router
 import           Miso.Run

@@ -142,6 +142,7 @@ library
     Miso.Mathml.Property
     Miso.Media
     Miso.Property
+    Miso.PubSub
     Miso.Render
     Miso.Router
     Miso.Run
