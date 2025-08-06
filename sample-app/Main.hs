@@ -6,7 +6,6 @@
 module Main where
 ----------------------------------------------------------------------------
 import Miso
-import Miso.String
 import Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state

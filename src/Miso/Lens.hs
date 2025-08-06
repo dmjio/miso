@@ -744,5 +744,5 @@ lens
   :: (record -> field)
   -> (record -> field -> record)
   -> Lens record field
-lens getter setter = Lens getter (\f r -> setter r f)
+lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
