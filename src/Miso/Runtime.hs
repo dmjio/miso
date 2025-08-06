@@ -48,7 +48,6 @@ import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
 import           Data.Foldable (toList)
-import           Data.Function ((&))
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -72,7 +71,6 @@ import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
-import           Miso.Lens ((.~), (^.))
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
@@ -145,11 +143,7 @@ initialize Component {..} getView = do
       componentDOMRef
       componentModelNew
       [ binding
-      | binding <- bindings
-      , getDirection binding `elem`
-        [ ParentToChild
-        , Bidirectional
-        ]
+      | binding@ParentToChild{} <- bindings
       ]
       serve
 
@@ -159,11 +153,7 @@ initialize Component {..} getView = do
       componentModelNew
       componentDiffs
       [ binding
-      | binding <- bindings
-      , getDirection binding `elem`
-        [ ChildToParent
-        , Bidirectional
-        ]
+      | binding@ChildToParent{} <- bindings
       ]
 
   let vcomp = ComponentState
@@ -216,10 +206,11 @@ bindChildToParent
   -> IORef model
   -- ^ Child new model
   -> JSM ()
-bindChildToParent (Binding _ parent_ child_) ComponentState {..} childRef = do
+bindChildToParent (ChildToParent setParent getChild) ComponentState {..} childRef = do
   childModel <- liftIO (readIORef childRef)
-  let newParent m = m & parent_ .~ (childModel ^. child_)
+  let newParent m = setParent m (getChild childModel)
   liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
+bindChildToParent _ _ _ = pure ()
 -----------------------------------------------------------------------------
 synchronizeParentToChild
   :: DOMRef
@@ -260,10 +251,11 @@ bindParentToChild
   -> IORef model
   -- ^ Child new model
   -> JSM ()
-bindParentToChild (Binding _ parent_ child_) ComponentState {..} modelRef = do
+bindParentToChild (ParentToChild getParent setChild) ComponentState {..} modelRef = do
   parentModel <- liftIO (readIORef componentModelNew)
-  let newChild m = m & child_ .~ (parentModel ^. parent_)
+  let newChild m = setChild m (getParent parentModel)
   liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
+bindParentToChild _ _ _ = pure ()
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'

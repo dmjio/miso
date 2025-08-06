@@ -46,7 +46,6 @@ module Miso
   , Binding (..)
   , (-->)
   , (<--)
-  , (<-->)
   , module Miso.Types
     -- * Effect
   , module Miso.Effect

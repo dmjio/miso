@@ -46,9 +46,6 @@ module Miso.Types
   -- ** Data binding
   , (-->)
   , (<--)
-  , (<-->)
-  , getDirection
-  , Direction (..)
   -- ** Component
   , mount
   , (+>)
@@ -81,7 +78,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
-import           Miso.Lens (Lens)
+import           Miso.Lens (Getter, Setter)
 import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Event.Types
 import           Miso.Style.Types (StyleSheet)
@@ -434,43 +431,19 @@ textRaw = VTextRaw
 -- @
 --
 -- @since 1.9.0.0
-data Binding parent model = forall a . Binding Direction (Lens parent a) (Lens model a)
------------------------------------------------------------------------------
--- | Smart constructor for 'Binding'
---
--- @since 1.9.0.0
-bind
-  :: Direction
-  -> Lens parent a
-  -> Lens model a
-  -> Binding parent model
-bind = Binding
------------------------------------------------------------------------------
-data Direction
-  = ParentToChild
-  | ChildToParent
-  | Bidirectional
-  deriving (Show, Eq)
------------------------------------------------------------------------------
--- | Extract 'Direction' from 'Binding'
-getDirection :: Binding parent model -> Direction
-getDirection (Binding dir _ _) = dir
+data Binding parent child
+  = forall field . ParentToChild (Getter parent field) (Setter child field)
+  | forall field . ChildToParent (Setter parent field) (Getter child field)
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding', unidirectionally binds parent to child
 --
 -- @since 1.9.0.0
-(-->) :: Lens parent a -> Lens model a -> Binding parent model
-(-->) = bind ParentToChild
+(-->) :: Getter parent a -> Setter model a -> Binding parent model
+(-->) = ParentToChild
 -----------------------------------------------------------------------------
 -- | Smart constructor for a 'Binding', unidirectionally binds child to parent
 --
 -- @since 1.9.0.0
-(<--) :: Lens parent a -> Lens model a -> Binding parent model
-(<--) = bind ChildToParent
------------------------------------------------------------------------------
--- | Smart constructor for a 'Binding', bidirectionlly binds child to parent
---
--- @since 1.9.0.0
-(<-->) :: Lens parent a -> Lens model a -> Binding parent model
-(<-->) = bind Bidirectional
+(<--) :: Setter parent a -> Getter model a -> Binding parent model
+(<--) = ChildToParent
 -----------------------------------------------------------------------------
