@@ -39,6 +39,7 @@ module Miso.Runtime
   , ComponentState
   -- ** Communication
   , mail
+  , broadcast
   , parent
   ) where
 -----------------------------------------------------------------------------
@@ -949,4 +950,25 @@ parent successful errorful = do
           Just ComponentState {..} -> do
             model <- liftIO (readIORef componentModelCurrent)
             sink (successful model)
+-----------------------------------------------------------------------------
+-- | Sends a message to all @Component@ 'mailbox', excluding oneself.
+--
+-- @
+--
+--   broadcast (String "public service announcement")
+--
+-- @
+--
+-- @since 1.9.0.0
+broadcast
+  :: ToJSON message
+  => message
+  -> Effect parent model action
+broadcast message = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    vcomps <- liftIO (readIORef components)
+    forM_ (IM.toList vcomps) $ \(vcompId, ComponentState {..}) ->
+      when (_componentId /= vcompId) $ do
+        liftIO $ sendMail componentMailbox (toJSON message)
 -----------------------------------------------------------------------------
