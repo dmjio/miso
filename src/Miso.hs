@@ -32,6 +32,7 @@ module Miso
   -- ** Component
   , mail
   , parent
+  , broadcast
   -- ** Subscriptions
   , startSub
   , stopSub
