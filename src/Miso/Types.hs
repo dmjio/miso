@@ -48,7 +48,6 @@ module Miso.Types
   , (-->)
   , (<--)
   , (<-->)
-  , (<--->)
   -- ** Component
   , mount
   , (+>)
@@ -82,7 +81,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
-import           Miso.Lens (Getter, Setter, Lens(..), Lens', fromVL)
+import           Miso.Lens (Getter, Setter)
 import qualified Miso.String as MS
 import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Style.Types (StyleSheet)
@@ -448,19 +447,5 @@ data Binding parent child
 (<--) :: Setter parent a -> Getter model a -> Binding parent model
 (<--) = ChildToParent
 -----------------------------------------------------------------------------
--- | Bidirectionally binds a child field to a parent field, using @Lens@
---
--- This is a bidirectional reactive combinator for a miso @Lens@.
---
--- @since 1.9.0.0
-(<-->) :: Lens parent field -> Lens child field -> Binding parent child
-p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
------------------------------------------------------------------------------
--- | Bidirectionally binds a child field to a parent field, using @Lens'@
---
--- This is a bidirectional reactive combinator for a Van Laarhoven @Lens'@
---
--- @since 1.9.0.0
-(<--->) :: Lens' parent field -> Lens' child field -> Binding parent child
-p <---> c = Bidirectional (_get (fromVL p)) (_set (fromVL p)) (_get (fromVL c)) (_set (fromVL c))
------------------------------------------------------------------------------
+(<-->) :: (Getter parent field, Setter parent field) -> (Getter model field, Setter model field) -> Binding parent model
+(gp, sp) <--> (gc, sc) = Bidirectional gp sp gc sc
