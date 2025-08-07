@@ -51,6 +51,8 @@ module Miso.FFI
   -- ** Element
   , click
   , files
+  -- ** Clipboard
+  , copyClipboard
   -- ** Re-exports
   , JSVal
   ) where

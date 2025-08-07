@@ -28,6 +28,7 @@ module Miso.Media
   , pause
   , getUserMedia
   , srcObject
+  , copyClipboard
   -- *** Properties
   , autoplay
   , controls
@@ -59,7 +60,6 @@ import           Language.Javascript.JSaddle hiding (new)
 import qualified Language.Javascript.JSaddle as JS 
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
-import           Miso.FFI
 import           Miso.Event
 import           Miso.Effect hiding ((<#))
 import           Miso.String
@@ -89,7 +89,7 @@ newAudio :: MisoString -> JSM Media
 newAudio url = do
   a <- JS.new (jsg ("Audio" :: MisoString)) ([] :: [MisoString])
   o <- makeObject a
-  set ("src" :: MisoString) url o
+  FFI.set ("src" :: MisoString) url o
   pure (Media a)
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_met_load.asp
@@ -236,5 +236,23 @@ getUserMedia UserMedia {..} successful errorful =
   withSink $ \sink ->
     FFI.getUserMedia audio video
       (sink . successful)
+      (sink . errorful)
+-----------------------------------------------------------------------------
+-- | Get access to the user's clipboard.
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/clipboard>
+--
+copyClipboard
+  :: MisoString
+  -- ^ Options
+  -> action
+  -- ^ Successful callback
+  -> (JSVal -> action)
+  -- ^ Errorful callback
+  -> Effect parent model action
+copyClipboard txt successful errorful =
+  withSink $ \sink ->
+    FFI.copyClipboard txt
+      (sink successful)
       (sink . errorful)
 -----------------------------------------------------------------------------
