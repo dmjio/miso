@@ -10,6 +10,7 @@
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE RankNTypes                 #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -23,7 +24,6 @@ module Miso.Types
   ( -- ** Types
     App
   , Component        (..)
-  , Binding          (..)
   , ComponentId
   , SomeComponent    (..)
   , View             (..)
@@ -44,8 +44,11 @@ module Miso.Types
   -- ** Smart Constructors
   , component
   -- ** Data binding
+  , Binding (..)
   , (-->)
   , (<--)
+  , (<-->)
+  , (<--->)
   -- ** Component
   , mount
   , (+>)
@@ -73,16 +76,16 @@ import           Data.Coerce (coerce)
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
-import           Prelude hiding              (null)
+import           Prelude
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef)
-import           Miso.Lens (Getter, Setter)
-import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Event.Types
-import           Miso.Style.Types (StyleSheet)
+import           Miso.Lens (Getter, Setter, Lens(..), Lens', fromVL)
 import qualified Miso.String as MS
+import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
+import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
 data Component parent model action
@@ -426,7 +429,7 @@ textRaw = VTextRaw
 -- @
 --
 -- main :: IO ()
--- main = run app { bindings = [ parentLens --> childLens ] }
+-- main = run app { bindings = [ parentLens <--> childLens ] }
 --
 -- @
 --
@@ -434,16 +437,33 @@ textRaw = VTextRaw
 data Binding parent child
   = forall field . ParentToChild (Getter parent field) (Setter child field)
   | forall field . ChildToParent (Setter parent field) (Getter child field)
+  | forall field . Bidirectional (Getter parent field) (Setter parent field) (Getter child field) (Setter child field)
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Binding', unidirectionally binds parent to child
+-- | Unidirectionally binds a parent field to a child field, using @Getter@ and @Setter@
 --
 -- @since 1.9.0.0
 (-->) :: Getter parent a -> Setter model a -> Binding parent model
 (-->) = ParentToChild
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Binding', unidirectionally binds child to parent
+-- | Unidirectionally binds a child field to a parent field, using @Getter@ and @Setter@
 --
 -- @since 1.9.0.0
 (<--) :: Setter parent a -> Getter model a -> Binding parent model
 (<--) = ChildToParent
+-----------------------------------------------------------------------------
+-- | Bidirectionally binds a child field to a parent field, using @Lens@
+--
+-- This is a bidirectional reactive combinator for a miso @Lens@.
+--
+-- @since 1.9.0.0
+(<-->) :: Lens parent field -> Lens child field -> Binding parent child
+p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
+-----------------------------------------------------------------------------
+-- | Bidirectionally binds a child field to a parent field, using @Lens'@
+--
+-- This is a bidirectional reactive combinator for a Van Laarhoven @Lens'@
+--
+-- @since 1.9.0.0
+(<--->) :: Lens' parent field -> Lens' child field -> Binding parent child
+p <---> c = Bidirectional (_get (fromVL p)) (_set (fromVL p)) (_get (fromVL c)) (_set (fromVL c))
 -----------------------------------------------------------------------------
