@@ -100,6 +100,8 @@ module Miso.FFI.Internal
    -- * Element
    , files
    , click
+   -- * Clipboard
+   , copyClipboard
    -- * Media
    , getUserMedia
    ) where
@@ -675,6 +677,26 @@ getUserMedia video audio successful errorful = do
   devices <- jsg "navigator" ! "mediaDevices"
   promise <- devices # "getUserMedia" $ [params]
   successfulCallback <- asyncCallback1 successful
+  void $ promise # "then" $ [successfulCallback]
+  errorfulCallback <- asyncCallback1 errorful
+  void $ promise # "catch" $ [errorfulCallback]
+-----------------------------------------------------------------------------
+-- | Copy clipboard
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
+--
+copyClipboard
+  :: MisoString
+  -- ^ Text to copy
+  -> JSM ()
+  -- ^ successful
+  -> (JSVal -> JSM ())
+  -- ^ errorful
+  -> JSM ()
+copyClipboard txt successful errorful = do
+  clipboard <- jsg "navigator" ! "clipboard"
+  promise <- clipboard # "writeText" $ [txt]
+  successfulCallback <- asyncCallback successful
   void $ promise # "then" $ [successfulCallback]
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
