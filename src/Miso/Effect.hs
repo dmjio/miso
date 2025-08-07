@@ -26,6 +26,7 @@ module Miso.Effect
   , Sink
   , DOMRef
   , ComponentInfo (..)
+  , ComponentId
   , mkComponentInfo
     -- *** Combinators
   , (<#)

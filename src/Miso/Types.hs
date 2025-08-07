@@ -80,7 +80,7 @@ import           Prelude
 import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Mail)
-import           Miso.Effect (Effect, Sub, Sink, DOMRef)
+import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
 import           Miso.Lens (Getter, Setter, Lens(..), Lens', fromVL)
 import qualified Miso.String as MS
@@ -131,9 +131,6 @@ data Component parent model action
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
 type MountPoint = MisoString
------------------------------------------------------------------------------
--- | ID for 'Component'
-type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to <head> before the first draw
 --
