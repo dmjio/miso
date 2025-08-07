@@ -56,8 +56,6 @@ module Miso
     -- * Html
   , module Miso.Html
   , module Miso.Render
-    -- * Property
-  , module Miso.Property
     -- * PubSub
   , module Miso.PubSub
     -- * Router
