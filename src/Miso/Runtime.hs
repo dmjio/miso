@@ -142,9 +142,7 @@ initialize Component {..} getView = do
     synchronizeParentToChild
       componentDOMRef
       componentModelNew
-      [ binding
-      | binding@ParentToChild{} <- bindings
-      ]
+      bindings
       serve
 
   componentChildToParentThreadId <-
@@ -152,9 +150,7 @@ initialize Component {..} getView = do
       componentDOMRef
       componentModelNew
       componentDiffs
-      [ binding
-      | binding@ChildToParent{} <- bindings
-      ]
+      bindings
 
   let vcomp = ComponentState
         { componentServe = serve
@@ -194,23 +190,30 @@ synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindin
             bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings $ \binding -> do
-        bindChildToParent binding parentComponentState componentModelNew
+      forM_ bindings (bindChildToParent parentComponentState componentModelNew)
       liftIO (componentServe parentComponentState)
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
-   . Binding parent model
-  -> ComponentState parent action
+   . ComponentState parent action
   -- ^ Parent model
   -> IORef model
   -- ^ Child new model
+  -> Binding parent model
+  -- ^ Binding
   -> JSM ()
-bindChildToParent (ChildToParent setParent getChild) ComponentState {..} childRef = do
-  childModel <- liftIO (readIORef childRef)
-  let newParent = setParent (getChild childModel)
-  liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
-bindChildToParent _ _ _ = pure ()
+bindChildToParent ComponentState {..} childRef = \case
+  ChildToParent setParent getChild ->
+    childToParent setParent getChild
+  Bidirectional _ setParent getChild _ ->
+    childToParent setParent getChild
+  _ ->
+    pure ()
+  where
+    childToParent setParent getChild = do
+      childModel <- liftIO (readIORef childRef)
+      let newParent = setParent (getChild childModel)
+      liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
 -----------------------------------------------------------------------------
 synchronizeParentToChild
   :: DOMRef
@@ -239,23 +242,30 @@ synchronizeParentToChild componentDOMRef componentModel_ bindings serve = do
             bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings $ \binding ->
-        bindParentToChild binding parentComponentState componentModel_
+      forM_ bindings (bindParentToChild parentComponentState componentModel_)
       liftIO serve
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
-   . Binding props model
-  -> ComponentState props action
+   . ComponentState props action
   -- ^ Parent model
   -> IORef model
   -- ^ Child new model
+  -> Binding props model
+  -- ^ binding
   -> JSM ()
-bindParentToChild (ParentToChild getParent setChild) ComponentState {..} modelRef = do
-  parentModel <- liftIO (readIORef componentModelNew)
-  let newChild = setChild (getParent parentModel)
-  liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
-bindParentToChild _ _ _ = pure ()
+bindParentToChild ComponentState {..} modelRef = \case
+  ParentToChild getParent setChild -> do
+    parentToChild getParent setChild
+  Bidirectional getParent _ _ setChild -> 
+    parentToChild getParent setChild
+  _ ->
+    pure ()
+  where
+    parentToChild getParent setChild = do
+      parentModel <- liftIO (readIORef componentModelNew)
+      let newChild = setChild (getParent parentModel)
+      liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
