@@ -168,7 +168,7 @@ library
     Miso.Util.Lexer
     Miso.Util.Parser
 
-  if flag (template-haskell)
+  if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
     build-depends:
