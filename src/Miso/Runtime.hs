@@ -138,11 +138,16 @@ initialize Component {..} getView = do
 
   -- Bindings (aka. "reactive" mutable variable synchronization)
   -- Between immediate ancestor / descendant (and sibling if bidi via parent)
+  let
+    bidirectional = [ b | b@Bidirectional {} <- bindings ]
+    parentToChild = [ b | b@ParentToChild {} <- bindings ] ++ bidirectional
+    childToParent = [ b | b@ChildToParent {} <- bindings ] ++ bidirectional
+
   componentParentToChildThreadId <-
     synchronizeParentToChild
       componentDOMRef
       componentModelNew
-      bindings
+      parentToChild
       serve
 
   componentChildToParentThreadId <-
@@ -150,7 +155,7 @@ initialize Component {..} getView = do
       componentDOMRef
       componentModelNew
       componentDiffs
-      bindings
+      childToParent
 
   let vcomp = ComponentState
         { componentServe = serve
