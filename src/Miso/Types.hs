@@ -67,14 +67,16 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import qualified Data.Map.Strict as M
-import qualified Data.Text as T
+import           Control.Monad.Identity (Identity(..))
 import           Data.Aeson (Value, ToJSON)
+import           Data.Coerce (coerce)
+import           Data.Functor.Const (Const(..))
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
-import           Data.Coerce (coerce)
+import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe)
 import           Data.String (IsString, fromString)
+import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
 import           Servant.API (HasLink(MkLink, toLink))
@@ -82,7 +84,7 @@ import           Servant.API (HasLink(MkLink, toLink))
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
-import           Miso.Lens (Getter, Setter, Lens(..), Lens', fromVL)
+import           Miso.Lens (Getter, Setter, Lens(..), Lens')
 import qualified Miso.String as MS
 import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Style.Types (StyleSheet)
@@ -462,5 +464,8 @@ p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
 --
 -- @since 1.9.0.0
 (<--->) :: Lens' parent field -> Lens' child field -> Binding parent child
-p <---> c = Bidirectional (_get (fromVL p)) (_set (fromVL p)) (_get (fromVL c)) (_set (fromVL c))
+p <---> c = Bidirectional (get_ p) (set_ p) (get_ c) (set_ c)
+  where
+    get_ lens_ record = getConst (lens_ Const record)
+    set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
