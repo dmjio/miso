@@ -137,6 +137,8 @@ library
     Miso.Html.Event
     Miso.Html.Property
     Miso.Lens
+    Miso.Lens.Binding
+    Miso.Lens.VL
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property

@@ -147,21 +147,14 @@ module Miso.Lens
   , this
   -- *** Re-exports
   , compose
-  -- *** Conversion
-  , Lens'
-  , toVL
-  , fromVL
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
-import Control.Monad.Identity (Identity(..))
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
-import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
-import Data.Kind (Type)
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
@@ -189,22 +182,6 @@ type Getter record field = record -> field
 ----------------------------------------------------------------------------
 -- | Type to express a setter on a @Lens@
 type Setter record field = field -> record -> record
-----------------------------------------------------------------------------
--- | Van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
-type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
-----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
-toVL :: Lens record field -> Lens' record field
-toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
-----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
-fromVL
-  :: Lens' record field
-  -> Lens record field
-fromVL lens_ = Lens {..}
-  where
-    _get record = getConst (lens_ Const record)
-    _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
