@@ -22,8 +22,8 @@ module Miso.Subscription.Keyboard
 -----------------------------------------------------------------------------
 import           Control.Monad.IO.Class
 import           Data.IORef
-import           Data.Set
-import qualified Data.Set as S
+import           Data.IntSet
+import qualified Data.IntSet as S
 import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
 import           Miso.Effect (Sub)
@@ -43,7 +43,7 @@ data Arrows
 -----------------------------------------------------------------------------
 -- | Helper function to convert keys currently pressed to @Arrows@, given a
 -- mapping for keys representing up, down, left and right respectively.
-toArrows :: ([Int], [Int], [Int], [Int]) -> Set Int -> Arrows
+toArrows :: ([Int], [Int], [Int], [Int]) -> IntSet -> Arrows
 toArrows (up, down, left, right) set' = Arrows
   { arrowX =
       case (check left, check right) of
@@ -75,7 +75,7 @@ directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
 -- | Returns subscription for Keyboard.
 -- The callback will be called with the Set of currently pressed @keyCode@s.
-keyboardSub :: (Set Int -> action) -> Sub action
+keyboardSub :: (IntSet -> action) -> Sub action
 keyboardSub f sink = do
   keySetRef <- liftIO (newIORef mempty)
   FFI.windowAddEventListener "keyup" $ keyUpCallback keySetRef
