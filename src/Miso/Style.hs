@@ -216,6 +216,8 @@ module Miso.Style
   , em
   , s
   , ms
+  -- *** Misc
+  , url
   -- *** Animation
   , keyframes_
   -- *** Media Queries
@@ -269,6 +271,9 @@ s x = MS.ms x <> "s"
 -----------------------------------------------------------------------------
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
+-----------------------------------------------------------------------------
+url :: MisoString -> MisoString
+url x = "url(" <> x <> ")"
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
 pct :: Double -> MisoString
