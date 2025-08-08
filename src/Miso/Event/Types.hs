@@ -189,6 +189,7 @@ pointerEvents = M.fromList
   , ("pointerleave", False)
   , ("pointerover", False)
   , ("pointerout", False)
+  , ("contextmenu", False)
   ]
 -----------------------------------------------------------------------------
 -- | Audio video events
