@@ -53,7 +53,11 @@ common string-selector
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
-      jsaddle-warp < 0.10
+      jsaddle-warp < 0.10,
+      wai-middleware-static < 0.10,
+      wai < 3.3,
+      warp < 3.5,
+      websockets < 0.14
 
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
