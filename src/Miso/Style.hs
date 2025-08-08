@@ -218,6 +218,7 @@ module Miso.Style
   , ms
   -- *** Misc
   , url
+  , matrix
   -- *** Animation
   , keyframes_
   -- *** Media Queries
@@ -272,8 +273,30 @@ s x = MS.ms x <> "s"
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/url_function
 url :: MisoString -> MisoString
 url x = "url(" <> x <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix
+matrix
+  :: Double
+  -> Double
+  -> Double
+  -> Double
+  -> Double
+  -> Double
+  -> MisoString
+matrix a b c d tx ty = "matrix(" <> values <> ")"
+  where
+    values =
+      MS.intercalate ","
+      [ MS.ms a
+      , MS.ms b
+      , MS.ms c
+      , MS.ms d
+      , MS.ms tx
+      , MS.ms ty
+      ]
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
 pct :: Double -> MisoString
