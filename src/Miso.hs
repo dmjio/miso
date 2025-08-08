@@ -48,7 +48,7 @@ module Miso
   , (-->)
   , (<--)
   , (<-->)
-  , (<-->)
+  , (<--->)
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
