@@ -86,6 +86,7 @@ module Miso.Style
   , cursor
   , direction
   , display
+  , fill
   , filter
   , flexBasis
   , flexDirection
@@ -170,6 +171,8 @@ module Miso.Style
   , relativeTopOf
   , right
   , rowGap
+  , stroke
+  , strokeWidth
   , textAlign
   , textDecoration
   , textIndent
@@ -721,6 +724,11 @@ direction x = "direction" =: x
 display :: MisoString -> Style
 display x = "display" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/fill
+--
+fill :: MisoString -> Style
+fill x = "fill" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/filter
 --
 filter :: MisoString -> Style
@@ -1145,6 +1153,16 @@ right x = "right" =: x
 --
 rowGap :: MisoString -> Style
 rowGap x = "row-gap" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke
+--
+stroke :: MisoString -> Style
+stroke x = "stroke" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
+--
+strokeWidth :: MisoString -> Style
+strokeWidth x = "stroke-width" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-align
 --
