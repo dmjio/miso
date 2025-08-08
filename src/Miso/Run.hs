@@ -22,6 +22,10 @@ import           Data.Maybe
 import           System.Environment
 import           Text.Read
 import qualified Language.Javascript.JSaddle.Warp as J
+import           Network.Wai.Middleware.Static (static)
+import           Network.Wai.Handler.Warp (defaultSettings, setTimeout, setPort, runSettings)
+import           Network.WebSockets (defaultConnectionOptions)
+import           Language.Javascript.JSaddle.WebSockets (debugWrapper, jsaddleOr, jsaddleAppWithJs, jsaddleJs)
 #endif
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
@@ -43,6 +47,25 @@ run action = do
     port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
     isGhci <- (== "<interactive>") <$> getProgName
     putStrLn $ "Running on port " <> show port <> "..."
-    (if isGhci then J.debug else J.run) port action
+    if isGhci
+      then debugMiso port action
+      else J.run port action
+-----------------------------------------------------------------------------
+-- | Start or restart the server, with a static 'Middlware' policy.
+--
+-- dmj: This is like `debug` from `jsaddle-warp`, except it uses a static
+-- @Middleware@ for static file hosting.
+--
+-- This means that usage of `url('mario.png')` will "just work" when developing
+-- from GHCi.
+--
+debugMiso :: Int -> JSM () -> IO ()
+debugMiso port f = do
+  debugWrapper $ \withRefresh registerContext ->
+    runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
+      jsaddleOr
+        defaultConnectionOptions
+        (registerContext >> f >> syncPoint)
+        (static $ withRefresh $ jsaddleAppWithJs $ jsaddleJs True)
 #endif
 -----------------------------------------------------------------------------
