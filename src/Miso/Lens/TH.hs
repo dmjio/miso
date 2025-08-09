@@ -9,14 +9,23 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Lens.TH (makeLenses, makeClassy, compose, this) where
+module Miso.Lens.TH
+  ( -- ** TH
+    makeLenses
+  , makeClassy
+    -- ** Re-exports
+  , lens
+  , compose
+  , this
+  , Lens
+  ) where
 -----------------------------------------------------------------------------
 import Data.Char
 import Data.Maybe
 import Language.Haskell.TH
 -----------------------------------------------------------------------------
 import Miso.Util (compose)
-import Miso.Lens (this)
+import Miso.Lens (this, lens, Lens)
 -----------------------------------------------------------------------------
 makeLenses :: Name -> Q [Dec]
 makeLenses name = do
