@@ -175,6 +175,7 @@ library
   if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
+      Miso.String.QQ
     build-depends:
       template-haskell < 2.24
 
