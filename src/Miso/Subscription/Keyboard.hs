@@ -20,7 +20,6 @@ module Miso.Subscription.Keyboard
   , wasdSub
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.IntSet
@@ -28,6 +27,7 @@ import qualified Data.IntSet as S
 import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
 import           Miso.Effect (Sub)
+import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | type for arrow keys currently pressed
@@ -77,31 +77,38 @@ directionSub dirs = keyboardSub . (. toArrows dirs)
 -- | Returns @Subscription@ for keyboard.
 -- The callback will be called with the Set of currently pressed @keyCode@s.
 keyboardSub :: (IntSet -> action) -> Sub action
-keyboardSub f sink = do
-  keySetRef <- liftIO (newIORef mempty)
-  _ <- FFI.windowAddEventListener "keyup" $ keyUpCallback keySetRef
-  _ <- FFI.windowAddEventListener "keydown" $ keyDownCallback keySetRef
-  void $ FFI.windowAddEventListener "blur" $ blurCallback keySetRef
-    where
-      keyDownCallback keySetRef = \keyDownEvent -> do
-          key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyDownEvent)
-          newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
-             let !new = S.insert key keys
-             in (new, new)
-          sink (f newKeys)
-
-      keyUpCallback keySetRef = \keyUpEvent -> do
-          key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyUpEvent)
-          newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
-             let !new = S.delete key keys
-             in (new, new)
-          sink (f newKeys)
-
-      -- Assume keys are released the moment focus is lost. Otherwise going
-      -- back and forth to the app can cause keys to get stuck.
-      blurCallback keySetRef = \_ -> do
-          newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \_ ->
-            let !new = S.empty
-            in (new, new)
-          sink (f newKeys)
+keyboardSub f sink = createSub acquire release sink
+  where
+    release (cb1, cb2, cb3) = do
+      FFI.windowRemoveEventListener "keyup" cb1
+      FFI.windowRemoveEventListener "keydown" cb2
+      FFI.windowRemoveEventListener "blur" cb3
+    acquire = do
+      keySetRef <- liftIO (newIORef mempty)
+      cb1 <- FFI.windowAddEventListener "keyup" (keyUpCallback keySetRef)
+      cb2 <- FFI.windowAddEventListener "keydown" (keyDownCallback keySetRef)
+      cb3 <- FFI.windowAddEventListener "blur" (blurCallback keySetRef)
+      pure (cb1, cb2, cb3)
+        where
+          keyDownCallback keySetRef = \keyDownEvent -> do
+              key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyDownEvent)
+              newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
+                 let !new = S.insert key keys
+                 in (new, new)
+              sink (f newKeys)
+    
+          keyUpCallback keySetRef = \keyUpEvent -> do
+              key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyUpEvent)
+              newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
+                 let !new = S.delete key keys
+                 in (new, new)
+              sink (f newKeys)
+    
+          -- Assume keys are released the moment focus is lost. Otherwise going
+          -- back and forth to the app can cause keys to get stuck.
+          blurCallback keySetRef = \_ -> do
+              newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \_ ->
+                let !new = S.empty
+                in (new, new)
+              sink (f newKeys)
 -----------------------------------------------------------------------------

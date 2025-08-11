@@ -38,6 +38,8 @@ module Miso.Types
   , DOMRef
   , ROOT
   , Transition
+  -- ** Re-exports
+  , JSM
   -- ** Classes
   , ToView           (..)
   , ToKey            (..)

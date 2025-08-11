@@ -97,7 +97,7 @@ module Miso.Canvas
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad.Reader (ReaderT, runReaderT, ask)
-import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal, MakeArgs (..)
+import           Language.Javascript.JSaddle ( JSVal, (#), fromJSVal, MakeArgs (..)
                                              , (<#), toJSVal, (!), fromJSValUnchecked
                                              , liftJSM, FromJSVal, Object (..)
                                              , ToJSVal, MakeObject, (<##)
