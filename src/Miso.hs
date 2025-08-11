@@ -31,6 +31,7 @@ module Miso
   , Sink
   -- ** Component
   , mail
+  , checkMail
   , parent
   , broadcast
   -- ** Subscriptions

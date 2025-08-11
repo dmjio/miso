@@ -39,6 +39,7 @@ module Miso.Runtime
   , ComponentState
   -- ** Communication
   , mail
+  , checkMail
   , broadcast
   , parent
   ) where
@@ -930,6 +931,30 @@ mail vcompId message = io_ $
       pure ()
     Just ComponentState {..} ->
       liftIO $ sendMail componentMailbox (toJSON message)
+----------------------------------------------------------------------------
+-- | Helper function for processing 'Mail' from 'mail'.
+--
+-- @
+--
+-- data Action
+--   = ParsedMail Message
+--   | ErrorMail MisoString
+--
+-- main = app { mailbox = checkMail ParsedMail ErrorMail }
+--
+-- @
+--
+-- @since 1.9.0.0
+checkMail
+  :: FromJSON value
+  => (value -> action)
+  -> (MisoString -> action)
+  -> Value
+  -> Maybe action
+checkMail successful errorful value =
+  pure $ case fromJSON value of
+    Success x -> successful x
+    Error err -> errorful (ms err)
 -----------------------------------------------------------------------------
 -- | Fetches the parent `model` from the child.
 --
