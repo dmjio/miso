@@ -30,13 +30,14 @@ sseSub
   -> Sub action
 sseSub url f sink = do
   es <- JSaddle.new (jsg (ms "EventSource")) [url]
-  FFI.addEventListener es (ms "message") $ \v -> do
+  _ <- FFI.addEventListener es (ms "message") $ \v -> do
     dat <- FFI.jsonParse =<< v ! (ms "data")
     sink (f (SSEMessage dat))
-  FFI.addEventListener es (ms "error") $ \_ ->
+  _ <- FFI.addEventListener es (ms "error") $ \_ ->
     sink (f SSEError)
-  FFI.addEventListener es (ms "close") $ \_ ->
+  _ <- FFI.addEventListener es (ms "close") $ \_ ->
     sink (f SSEClose)
+  pure ()
 -----------------------------------------------------------------------------
 -- | Server-sent events data
 data SSE message

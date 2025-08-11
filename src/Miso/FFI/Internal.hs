@@ -29,10 +29,12 @@ module Miso.FFI.Internal
    , syncPoint
    -- * Events
    , addEventListener
+   , removeEventListener
    , eventPreventDefault
    , eventStopPropagation
    -- * Window
    , windowAddEventListener
+   , windowRemoveEventListener
    , windowInnerHeight
    , windowInnerWidth
    -- * Performance
@@ -191,13 +193,39 @@ addEventListener
   -> (JSVal -> JSM ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> JSM Function
 addEventListener self name cb = do
-  _ <- self # "addEventListener" $ (name, asyncFunction handle)
-  pure ()
+  cb_ <- asyncFunction handle
+  void $ self # "addEventListener" $ (name, cb_)
+  pure cb_
     where
       handle _ _ []    = error "addEventListener: no args, impossible"
       handle _ _ (x:_) = cb x
+-----------------------------------------------------------------------------
+-- | Register an event listener on given target.
+removeEventListener
+  :: JSVal
+  -- ^ Event target on which we want to register event listener
+  -> MisoString
+  -- ^ Type of event to listen to (e.g. "click")
+  -> Function
+  -- ^ Callback which will be called when the event occurs,
+  -- the event will be passed to it as a parameter.
+  -> JSM ()
+removeEventListener self name cb =
+  void $ self # "removeEventListener" $ (name, cb)
+-----------------------------------------------------------------------------
+-- | Registers an event listener on window
+windowRemoveEventListener
+  :: MisoString
+  -- ^ Type of event to listen to (e.g. "click")
+  -> Function
+  -- ^ Callback which will be called when the event occurs,
+  -- the event will be passed to it as a parameter.
+  -> JSM ()
+windowRemoveEventListener name cb = do
+  win <- jsg "window"
+  removeEventListener win name cb
 -----------------------------------------------------------------------------
 -- | Registers an event listener on window
 windowAddEventListener
@@ -206,7 +234,7 @@ windowAddEventListener
   -> (JSVal -> JSM ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> JSM Function
 windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
