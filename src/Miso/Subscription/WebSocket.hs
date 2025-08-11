@@ -63,19 +63,19 @@ websocketSub (URL u) (Protocols ps) f sink = do
   Socket socket <- createWebSocket u ps
   liftIO (writeIORef websocket (Just (Socket socket)))
   void . FFI.forkJSM $ handleReconnect
-  FFI.addEventListener socket "open" $ \_ -> do
+  _ <- FFI.addEventListener socket "open" $ \_ -> do
     liftIO (writeIORef closedCode Nothing)
     sink (f WebSocketOpen)
-  FFI.addEventListener socket "message" $ \v -> do
+  _ <- FFI.addEventListener socket "message" $ \v -> do
     d <- FFI.jsonParse =<< v ! ("data" :: MisoString)
     sink $ f (WebSocketMessage d)
-  FFI.addEventListener socket "close" $ \e -> do
+  _ <- FFI.addEventListener socket "close" $ \e -> do
     code <- codeToCloseCode <$> getCode e
     liftIO (writeIORef closedCode (Just code))
     reason <- getReason e
     clean <- wasClean e
     sink $ f (WebSocketClose code clean reason)
-  FFI.addEventListener socket "error" $ \v -> do
+  _ <- FFI.addEventListener socket "error" $ \v -> do
     liftIO (writeIORef closedCode Nothing)
     d' <- v ! ("data" :: MisoString)
 #ifndef ghcjs_HOST_OS
@@ -89,6 +89,7 @@ websocketSub (URL u) (Protocols ps) f sink = do
       else do
          Just d <- fromJSVal d'
          sink $ f (WebSocketError d)
+  pure ()
   where
     handleReconnect = do
       liftIO (threadDelay (secs 3))

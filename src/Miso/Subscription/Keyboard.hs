@@ -20,6 +20,7 @@ module Miso.Subscription.Keyboard
   , wasdSub
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.IntSet
@@ -73,24 +74,24 @@ directionSub
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
--- | Returns subscription for Keyboard.
+-- | Returns @Subscription@ for keyboard.
 -- The callback will be called with the Set of currently pressed @keyCode@s.
 keyboardSub :: (IntSet -> action) -> Sub action
 keyboardSub f sink = do
   keySetRef <- liftIO (newIORef mempty)
-  FFI.windowAddEventListener "keyup" $ keyUpCallback keySetRef
-  FFI.windowAddEventListener "keydown" $ keyDownCallback keySetRef
-  FFI.windowAddEventListener "blur" $ blurCallback keySetRef
+  _ <- FFI.windowAddEventListener "keyup" $ keyUpCallback keySetRef
+  _ <- FFI.windowAddEventListener "keydown" $ keyDownCallback keySetRef
+  void $ FFI.windowAddEventListener "blur" $ blurCallback keySetRef
     where
       keyDownCallback keySetRef = \keyDownEvent -> do
-          Just key <- fromJSVal =<< getProp "keyCode" (Object keyDownEvent)
+          key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyDownEvent)
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.insert key keys
              in (new, new)
           sink (f newKeys)
 
       keyUpCallback keySetRef = \keyUpEvent -> do
-          Just key <- fromJSVal =<< getProp "keyCode" (Object keyUpEvent)
+          key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyUpEvent)
           newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
              let !new = S.delete key keys
              in (new, new)

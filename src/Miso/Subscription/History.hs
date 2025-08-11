@@ -92,7 +92,7 @@ uriSub = \f sink -> do
   void . FFI.forkJSM . forever $ do
     liftIO (wait chan)
     sink . f =<< getURI
-  FFI.windowAddEventListener (ms "popstate") $ \_ ->
+  void $ FFI.windowAddEventListener (ms "popstate") $ \_ ->
     sink . f =<< getURI
 -----------------------------------------------------------------------------
 pushStateNoModel :: URI -> JSM ()
