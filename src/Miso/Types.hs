@@ -54,6 +54,8 @@ module Miso.Types
   , (+>)
   -- ** Utils
   , getMountPoint
+  , optionalAttrs
+  , optionalChildren
   -- *** Combinators
   , node
   , text
@@ -469,3 +471,48 @@ p <---> c = Bidirectional (get_ p) (set_ p) (get_ c) (set_ c)
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
 -----------------------------------------------------------------------------
+-- | Utility function to make it easy to specify conditional attributes
+--
+-- @
+-- view :: Bool -> View model action
+-- view danger =
+--   optionalAttrs textarea_ [ id_ "txt" ] danger [ class_ "danger" ] ["child"]
+-- @
+--
+-- @since 1.9.0.0
+optionalAttrs
+  :: ([Attribute action] -> [View model action] -> View model action)
+  -> [Attribute action]
+  -> Bool
+  -> [Attribute action]
+  -> [View model action]
+  -> View model action
+optionalAttrs element attrs condition opts kids =
+  case element attrs kids of
+    VNode ns name _ _ -> do
+      let newAttrs = concat [ opts | condition ] ++ attrs
+      VNode ns name newAttrs kids
+    x -> x
+----------------------------------------------------------------------------
+-- | Utility function to make it easy to specify conditional children
+--
+-- @
+-- view :: Bool -> View model action
+-- view withChild = optionalChildren div_ [ id_ "txt" ] [] withChild [ "foo" ]
+-- @
+--
+-- @since 1.9.0.0
+optionalChildren
+  :: ([Attribute action] -> [View model action] -> View model action)
+  -> [Attribute action]
+  -> [View model action]
+  -> Bool
+  -> [View model action]
+  -> View model action
+optionalChildren element attrs kids condition opts =
+  case element attrs kids of
+    VNode ns name _ _ -> do
+      let newKids = kids ++ concat [ opts | condition ]
+      VNode ns name attrs newKids
+    x -> x
+----------------------------------------------------------------------------
