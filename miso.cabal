@@ -158,6 +158,7 @@ library
     Miso.Subscription.WebSocket
     Miso.Subscription.Window
     Miso.Subscription.SSE
+    Miso.Subscription.Util
     Miso.Svg
     Miso.Svg.Property
     Miso.Svg.Element

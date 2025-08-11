@@ -20,8 +20,6 @@ module Miso.Subscription.Window
   , Coord
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Concurrent.MVar
 import           Control.Monad
 import           Language.Javascript.JSaddle
 import           Data.Aeson.Types (parseEither)
@@ -30,6 +28,7 @@ import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String
+import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
 -----------------------------------------------------------------------------
 -- | Captures window coordinates changes as they occur and writes them to
@@ -44,13 +43,18 @@ windowSub = windowSubWithOptions defaultOptions
 -----------------------------------------------------------------------------
 -- | @windowSubWithOptions options eventName decoder toAction@ provides a
 -- subscription to listen to window level events.
-windowSubWithOptions :: Options -> MisoString -> Decoder r -> (r -> action) -> Sub action
-windowSubWithOptions Options{..} eventName Decoder {..} toAction = \sink ->
+windowSubWithOptions
+  :: Options
+  -> MisoString
+  -> Decoder result
+  -> (result -> action)
+  -> Sub action
+windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
   createSub acquire release sink
     where
       release =
         FFI.windowRemoveEventListener eventName
-      acquire sink =
+      acquire =
         FFI.windowAddEventListener eventName $ \e -> do
           decodeAtVal <- toJSVal decodeAt
           v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
@@ -66,13 +70,4 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction = \sink ->
 -- A 'Sub' to handle @PointerEvent@s on window
 windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
------------------------------------------------------------------------------
--- | Utility function to allow resource finalization on window 'Sub'
-createSub :: (Sink action -> JSM a) -> (a -> JSM b) -> Sub action
-createSub acquire release = \sink -> do 
-  mvar <- liftIO newEmptyMVar
-  bracket
-    (acquire sink)
-    release
-    (\_ -> liftIO (takeMVar mvar))
 -----------------------------------------------------------------------------
