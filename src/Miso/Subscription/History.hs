@@ -19,30 +19,43 @@ module Miso.Subscription.History
   , back
   , forward
   , go
-   -- *** Types 
+   -- *** Types
   , URI (..)
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Control.Monad.IO.Class
 import           Language.Javascript.JSaddle
 import           Network.URI hiding (path)
-import           System.IO.Unsafe
 -----------------------------------------------------------------------------
-import           Miso.Concurrent
+import           Miso.Subscription.Util
 import qualified Miso.FFI.Internal as FFI
-import           Miso.String
+import           Miso.String (MisoString, ms, fromMisoString)
 import           Miso.Effect (Sub)
+-----------------------------------------------------------------------------
+-- | Subscription for @popstate@ events, from the History API
+uriSub :: (URI -> action) -> Sub action
+uriSub withURI sink = createSub acquire release sink
+  where
+    release callbacks = forM_ callbacks $ \(eventName, callback) ->
+      FFI.windowRemoveEventListener (ms eventName) callback
+    acquire = do
+      let eventNames =
+            [ "miso-pushState"
+            , "miso-replaceState"
+            , "popstate"
+            ]
+      cbs <- forM eventNames $ \eventName ->
+        FFI.windowAddEventListener (ms eventName) $ \_ ->
+          sink . withURI =<< getURI
+      pure (Prelude.zip eventNames cbs)
 -----------------------------------------------------------------------------
 -- | Retrieves current URI of page
 getURI :: JSM URI
-{-# INLINE getURI #-}
 getURI = do
   href <- fromMisoString <$> getWindowLocationHref
   case parseURI href of
     Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
-    Just uri ->
-      pure (dropPrefix uri)
+    Just uri -> pure (dropPrefix uri)
   where
     dropPrefix u@URI{..}
       | '/' : xs <- uriPath = u { uriPath = xs }
@@ -50,7 +63,6 @@ getURI = do
 -----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> JSM ()
-{-# INLINE pushURI #-}
 pushURI uri = pushStateNoModel uri { uriPath = toPath uri }
 -----------------------------------------------------------------------------
 -- | Prepend '/' if necessary
@@ -62,50 +74,32 @@ toPath uri =
     xs@('/' : _) -> xs
     xs -> '/' : xs
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState>
 replaceURI :: URI -> JSM ()
-{-# INLINE replaceURI #-}
-replaceURI uri = replaceTo' uri { uriPath = toPath uri }
+replaceURI uri = replaceState uri { uriPath = toPath uri }
 -----------------------------------------------------------------------------
--- | Navigates backwards
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/back>
 back :: JSM ()
-{-# INLINE back #-}
 back = void $ getHistory # "back" $ ()
 -----------------------------------------------------------------------------
--- | Navigates forwards
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/forward>
 forward :: JSM ()
-{-# INLINE forward #-}
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
--- | Jumps to a specific position in history
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/go>
 go :: Int -> JSM ()
-{-# INLINE go #-}
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
-chan :: Waiter
-{-# NOINLINE chan #-}
-chan = unsafePerformIO waiter
------------------------------------------------------------------------------
--- | Subscription for @popstate@ events, from the History API
-uriSub :: (URI -> action) -> Sub action
-uriSub = \f sink -> do
-  void . FFI.forkJSM . forever $ do
-    liftIO (wait chan)
-    sink . f =<< getURI
-  void $ FFI.windowAddEventListener (ms "popstate") $ \_ ->
-    sink . f =<< getURI
------------------------------------------------------------------------------
 pushStateNoModel :: URI -> JSM ()
-{-# INLINE pushStateNoModel #-}
-pushStateNoModel u = do
-  pushState . pack . show $ u
-  liftIO (serve chan)
+pushStateNoModel uri = do
+  void $ getHistory # "pushState" $ (jsNull, jsNull, ms (show uri))
+  FFI.customEvent (ms "miso-pushState") =<< jsg "window"
 -----------------------------------------------------------------------------
-replaceTo' :: URI -> JSM ()
-{-# INLINE replaceTo' #-}
-replaceTo' u = do
-  replaceState . pack . show $ u
-  liftIO (serve chan)
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState>
+replaceState :: URI -> JSM ()
+replaceState u = do
+  _ <- getHistory # "replaceState" $ (jsNull, jsNull, ms (show u))
+  FFI.customEvent (ms "miso-replaceState") =<< jsg "window"
 -----------------------------------------------------------------------------
 getWindowLocationHref :: JSM MisoString
 getWindowLocationHref = do
@@ -114,16 +108,7 @@ getWindowLocationHref = do
     Nothing -> pure mempty
     Just uri -> pure uri
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/Window/history>
 getHistory :: JSM JSVal
 getHistory = jsg "window" ! "history"
------------------------------------------------------------------------------
-pushState :: MisoString -> JSM ()
-pushState url = do
-  _ <- getHistory # "pushState" $ (jsNull, jsNull, url)
-  pure ()
------------------------------------------------------------------------------
-replaceState :: MisoString -> JSM ()
-replaceState url = do
-  _ <- getHistory # "replaceState" $ (jsNull, jsNull, url)
-  pure ()
 -----------------------------------------------------------------------------
