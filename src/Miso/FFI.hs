@@ -8,10 +8,8 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI
-  ( -- ** Functions
-    set
-  , now
-  , consoleLog
+  ( -- ** Logging
+    consoleLog
   , consoleLog'
   , consoleError
   , consoleWarn
@@ -20,20 +18,27 @@ module Miso.FFI
   , blur
   , alert
   , reload
+  -- ** Styles
   , addStyle
   , addStyleSheet
+  -- ** Events
+  , customEvent
   , addEventListener
+  -- ** Callbacks
   , syncCallback
   , syncCallback1
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
+  -- ** Misc.
   , flush
   , setDrawingContext
   , jsonStringify
   , jsonParse
   , windowInnerWidth
   , windowInnerHeight
+  , set
+  , now
   -- ** Image
   , Image (..)
   , newImage

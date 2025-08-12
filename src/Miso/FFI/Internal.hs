@@ -65,6 +65,7 @@ module Miso.FFI.Internal
    -- * Events
    , delegateEvent
    , undelegateEvent
+   , customEvent
    -- * Isomorphic
    , hydrate
    -- * Misc.
@@ -688,6 +689,7 @@ click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
 --
+-- @since 1.9.0.0
 getUserMedia
   :: Bool
   -- ^ video
@@ -728,4 +730,15 @@ copyClipboard txt successful errorful = do
   void $ promise # "then" $ [successfulCallback]
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
+-----------------------------------------------------------------------------
+-- | Custom events <https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent>
+--
+-- Raise custom events in JS, on any element.
+--
+-- @since 1.9.0.0
+-----------------------------------------------------------------------------
+customEvent :: MisoString -> JSVal -> JSM ()
+customEvent eventName element = do
+  event <- new (jsg "CustomEvent") [eventName]
+  (element <# "dispatchEvent") [event]
 -----------------------------------------------------------------------------
