@@ -93,6 +93,7 @@ module Miso.FFI.Internal
    -- * Date
    , Date (..)
    , newDate
+   , toLocaleString
    -- * Utils
    , getMilliseconds
    , getSeconds
@@ -629,6 +630,10 @@ newtype Date = Date JSVal
 -----------------------------------------------------------------------------
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
+-----------------------------------------------------------------------------
+toLocaleString :: Date -> JSM MisoString
+toLocaleString date = fromJSValUnchecked =<< do
+  date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
