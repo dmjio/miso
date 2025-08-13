@@ -130,7 +130,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
     /* If current property no longer exists, remove it */
     if (newProp === undefined) {
       /* current key is not in node, remove it from DOM, if SVG, remove attribute */
-      if (isSvg || !(c in node)) {
+      if (isSvg || !(c in node) || c === 'disabled' || c === 'checked') {
         context['removeAttribute'](node, c);
       } else {
         context['setAttribute'](node, c, '');
