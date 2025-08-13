@@ -255,10 +255,10 @@ data SomeComponent parent
 --
 -- @since 1.9.0.0
 mount
-  :: forall parent model action a . Eq model
-  => ([View parent a] -> View parent a)
-  -> Component parent model action
-  -> View parent a
+  :: forall child model action a . Eq child
+  => ([View model a] -> View model a)
+  -> Component model child action
+  -> View model a
 mount mkNode vcomp =
   case mkNode [] of
     VNode ns tag attrs _ ->
@@ -270,10 +270,10 @@ mount mkNode vcomp =
       error "Impossible: cannot mount on a Text node"
 -----------------------------------------------------------------------------
 (+>)
-  :: forall parent model action a . Eq model
-  => ([View parent a] -> View parent a)
-  -> Component parent model action
-  -> View parent a
+  :: forall child model action a . Eq child
+  => ([View model a] -> View model a)
+  -> Component model child action
+  -> View model a
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
@@ -385,7 +385,7 @@ instance ToJSVal VTree where
 -- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
 rawHtml
   :: MisoString
-  -> View parent action
+  -> View model action
 rawHtml = VTextRaw
 -----------------------------------------------------------------------------
 -- | Create a new @Miso.Types.VNode@.
@@ -396,20 +396,20 @@ rawHtml = VTextRaw
 node :: NS
      -> MisoString
      -> [Attribute action]
-     -> [View parent action]
-     -> View parent action
+     -> [View model action]
+     -> View model action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text :: MisoString -> View parent action
+text :: MisoString -> View model action
 text = VText
 -----------------------------------------------------------------------------
 -- | Create a new @Text@ with the given content.
-text_ :: [MisoString] -> View parent action
+text_ :: [MisoString] -> View model action
 text_ = VText . MS.concat
 -----------------------------------------------------------------------------
 -- | `TextRaw` creation. Don't use directly
-textRaw :: MisoString -> View parent action
+textRaw :: MisoString -> View model action
 textRaw = VTextRaw
 -----------------------------------------------------------------------------
 -- | Type used for React-like "props" functionality. This is used to
