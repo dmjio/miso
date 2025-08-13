@@ -93,6 +93,7 @@ module Miso.FFI.Internal
    -- * Date
    , Date (..)
    , newDate
+   , toLocaleString
    -- * Utils
    , getMilliseconds
    , getSeconds
@@ -106,6 +107,10 @@ module Miso.FFI.Internal
    , copyClipboard
    -- * Media
    , getUserMedia
+   -- * WebSocket
+   , websocketConnect
+   , websocketClose
+   , websocketSend
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -626,6 +631,10 @@ newtype Date = Date JSVal
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
+toLocaleString :: Date -> JSM MisoString
+toLocaleString date = fromJSValUnchecked =<< do
+  date # "toLocaleString" $ ()
+-----------------------------------------------------------------------------
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
@@ -728,4 +737,27 @@ copyClipboard txt successful errorful = do
   void $ promise # "then" $ [successfulCallback]
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
+-----------------------------------------------------------------------------
+websocketConnect
+  :: MisoString
+  -> JSM ()
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> JSM JSVal
+websocketConnect url onOpen onClose onMessage onError = do
+  onOpen_ <- asyncCallback onOpen
+  onClose_ <- asyncCallback1 onClose
+  onMessage_ <- asyncCallback1 onMessage
+  onError_ <- asyncCallback1 onError
+  jsg "miso" # "websocketConnect" $
+    (url, onOpen_, onClose_, onMessage_, onError_)
+-----------------------------------------------------------------------------
+websocketClose :: JSVal -> JSM ()
+websocketClose websocket = void $ do
+  jsg "miso" # "websocketClose" $ [websocket]
+-----------------------------------------------------------------------------
+websocketSend :: JSVal -> JSVal -> JSM ()
+websocketSend websocket message = void $ do
+  jsg "miso" # "websocketSend" $ [websocket, message]
 -----------------------------------------------------------------------------

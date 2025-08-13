@@ -91,3 +91,43 @@ export function getParentComponentId (
     }
     return climb (vcompNode);
 }
+
+export function websocketConnect (
+    url: string,
+    onOpen,
+    onClose,
+    onError,
+    onMessage,
+): WebSocket {
+  let socket = new WebSocket(url);
+  socket.onopen = function () {
+    onOpen();
+  };
+  socket.onclose = function (e) {
+    onClose(e);
+  };
+  socket.onerror = function (error) {
+    onError(error);
+  };
+  socket.onmessage = function (msg) {
+    onMessage(msg.data);
+  };
+  return socket;
+}
+
+export function websocketClose (
+  socket
+): void {
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+
+export function websocketSend (
+  socket, message
+): void {
+  if (message && socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(message);
+  }
+}

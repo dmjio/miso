@@ -155,7 +155,6 @@ library
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
-    Miso.Subscription.WebSocket
     Miso.Subscription.Window
     Miso.Subscription.SSE
     Miso.Subscription.Util
@@ -172,6 +171,7 @@ library
     Miso.Util
     Miso.Util.Lexer
     Miso.Util.Parser
+    Miso.WebSocket
 
   if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:

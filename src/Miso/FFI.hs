@@ -40,6 +40,7 @@ module Miso.FFI
   -- ** Date
   , Date (..)
   , newDate
+  , toLocaleString
   , getSeconds
   , getMilliseconds
   -- ** Component
