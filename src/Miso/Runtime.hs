@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -42,10 +43,21 @@ module Miso.Runtime
   , checkMail
   , broadcast
   , parent
+  -- ** WebSocket
+  , connect
+  , send
+  , close
+  , socketState
+  , emptyWebSocket
+  , WebSocket (..)
+  , URL
+  , SocketState (..)
+  , CloseCode (..)
+  , Closed (..)
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
-import           Control.Monad (forM, forM_, when, void, forever)
+import           Control.Monad (forM, forM_, when, void, forever, (<=<))
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
@@ -64,6 +76,7 @@ import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
 import           Language.Javascript.JSaddle
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
+import           GHC.Generics (Generic)
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -76,6 +89,7 @@ import           Miso.Diff (diff)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
+import           Miso.Util
 import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
@@ -264,7 +278,7 @@ bindParentToChild
 bindParentToChild ComponentState {..} modelRef = \case
   ParentToChild getParent setChild -> do
     parentToChild getParent setChild
-  Bidirectional getParent _ _ setChild -> 
+  Bidirectional getParent _ _ setChild ->
     parentToChild getParent setChild
   _ ->
     pure ()
@@ -672,6 +686,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
+  finalizeWebSockets componentId
   unloadScripts cs
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
@@ -996,4 +1011,208 @@ broadcast message = do
     forM_ (IM.toList vcomps) $ \(vcompId, ComponentState {..}) ->
       when (_componentId /= vcompId) $ do
         liftIO $ sendMail componentMailbox (toJSON message)
+-----------------------------------------------------------------------------
+type Socket = JSVal
+-----------------------------------------------------------------------------
+type WebSockets = IM.IntMap (IM.IntMap Socket)
+-----------------------------------------------------------------------------
+connections :: IORef WebSockets
+{-# NOINLINE connections #-}
+connections = unsafePerformIO (newIORef IM.empty)
+-----------------------------------------------------------------------------
+connectionIds :: IORef Int
+{-# NOINLINE connectionIds #-}
+connectionIds = unsafePerformIO (newIORef (0 :: Int))
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
+connect
+  :: URL
+  -- ^ WebSocket URL
+  -> (WebSocket -> action)
+  -- ^ onOpen
+  -> (Closed -> action)
+  -- ^ onClosed
+  -> (JSVal -> action)
+  -- ^ onMessage
+  -> (JSVal -> action)
+  -- ^ onError
+  -> Effect parent model action
+connect url onOpen onClosed onError onMessage = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink -> do
+    webSocketId <- freshWebSocket
+    socket <- FFI.websocketConnect url
+      (sink $ onOpen webSocketId)
+      (sink . onClosed <=< fromJSValUnchecked)
+      (sink . onMessage)
+      (sink . onError)
+    insertWebSocket _componentId webSocketId socket
+-----------------------------------------------------------------------------
+freshWebSocket :: JSM WebSocket
+freshWebSocket = WebSocket <$>
+  liftIO (atomicModifyIORef' connectionIds $ \x -> (x + 1, x))
+-----------------------------------------------------------------------------
+-- | dmj: This should only be used on a fresh WebSocket
+insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
+insertWebSocket componentId (WebSocket socketId) socket =
+  liftIO $
+    atomicModifyIORef' connections $ \websockets ->
+      (update websockets, ())
+  where
+    update websockets =
+      IM.unionWith IM.union websockets
+        $ IM.singleton componentId
+        $ IM.singleton socketId socket
+-----------------------------------------------------------------------------
+getWebSocket :: ComponentId -> WebSocket -> WebSockets -> Maybe Socket
+getWebSocket vcompId (WebSocket websocketId) =
+  IM.lookup websocketId <=< IM.lookup vcompId
+-----------------------------------------------------------------------------
+dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
+dropWebSocket vcompId (WebSocket websocketId) websockets = do
+  case IM.lookup vcompId websockets of
+    Nothing ->
+      websockets
+    Just componentSockets ->
+      IM.insert vcompId (IM.delete websocketId componentSockets) websockets
+-----------------------------------------------------------------------------
+finalizeWebSockets :: ComponentId -> JSM ()
+finalizeWebSockets vcompId = do
+  mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
+    IM.lookup vcompId <$> liftIO (readIORef connections)
+  dropComponentWebSockets
+    where
+      dropComponentWebSockets :: JSM ()
+      dropComponentWebSockets = liftIO $
+        atomicModifyIORef' connections $ \websockets ->
+          (IM.delete vcompId websockets, ())
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
+send :: WebSocket -> JSVal -> Effect parent model action
+send socketId msg = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    getWebSocket _componentId socketId <$> liftIO (readIORef connections) >>= \case
+      Nothing -> pure ()
+      Just socket -> FFI.websocketSend socket msg
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
+close :: WebSocket -> Effect parent model action
+close socketId = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    result <- liftIO $
+      atomicModifyIORef' connections $ \imap ->
+        dropWebSocket _componentId socketId imap =:
+          getWebSocket _componentId socketId imap
+    case result of
+      Nothing ->
+        pure ()
+      Just socket ->
+        FFI.websocketClose socket
+-----------------------------------------------------------------------------
+-- | Retrieves current status of `WebSocket`
+--
+-- If the 'WebSocket' identifier does not exist a 'CLOSED' is returned.
+--
+socketState :: WebSocket -> (SocketState -> action) -> Effect parent model action
+socketState socketId callback = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink -> do
+     getWebSocket _componentId socketId <$> liftIO (readIORef connections) >>= \case
+      Just socket -> do
+        x <- socket ! ("socketState" :: MisoString)
+        socketstate <- toEnum <$> fromJSValUnchecked x
+        sink (callback socketstate)
+      Nothing ->
+        sink (callback CLOSED)
+-----------------------------------------------------------------------------
+codeToCloseCode :: Int -> CloseCode
+codeToCloseCode = go
+  where
+    go 1000 = CLOSE_NORMAL
+    go 1001 = CLOSE_GOING_AWAY
+    go 1002 = CLOSE_PROTOCOL_ERROR
+    go 1003 = CLOSE_UNSUPPORTED
+    go 1005 = CLOSE_NO_STATUS
+    go 1006 = CLOSE_ABNORMAL
+    go 1007 = Unsupported_Data
+    go 1008 = Policy_Violation
+    go 1009 = CLOSE_TOO_LARGE
+    go 1010 = Missing_Extension
+    go 1011 = Internal_Error
+    go 1012 = Service_Restart
+    go 1013 = Try_Again_Later
+    go 1015 = TLS_Handshake
+    go n    = OtherCode n
+-----------------------------------------------------------------------------
+data Closed
+  = Closed
+  { closedCode :: CloseCode
+  , wasClean :: Bool
+  , reason :: MisoString
+  } deriving (Eq, Show)
+-----------------------------------------------------------------------------
+instance FromJSVal Closed where
+  fromJSVal o = do
+    closed_ <- fmap codeToCloseCode <$> do fromJSVal =<< o ! ("code" :: MisoString)
+    wasClean_ <- fromJSVal =<< o ! ("wasClean" :: MisoString)
+    reason_ <- fromJSVal =<< o ! ("reason" :: MisoString)
+    pure (Closed <$> closed_ <*> wasClean_ <*> reason_)
+-----------------------------------------------------------------------------
+-- | URL that the @Websocket@ will @connect@ to
+type URL = MisoString
+-----------------------------------------------------------------------------
+-- | `SocketState` corresponding to current WebSocket connection
+data SocketState
+  = CONNECTING -- ^ 0
+  | OPEN       -- ^ 1
+  | CLOSING    -- ^ 2
+  | CLOSED     -- ^ 3
+  deriving (Show, Eq, Ord, Enum)
+-----------------------------------------------------------------------------
+-- | Code corresponding to a closed connection
+-- https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
+data CloseCode
+  = CLOSE_NORMAL
+   -- ^ 1000, Normal closure; the connection successfully completed whatever purpose for which it was created.
+  | CLOSE_GOING_AWAY
+   -- ^ 1001, The endpoint is going away, either because of a server failure or because the browser is navigating away from the page that opened the connection.
+  | CLOSE_PROTOCOL_ERROR
+   -- ^ 1002, The endpoint is terminating the connection due to a protocol error.
+  | CLOSE_UNSUPPORTED
+   -- ^ 1003, The connection is being terminated because the endpoint received data of a type it cannot accept (for example, a textonly endpoint received binary data).
+  | CLOSE_NO_STATUS
+   -- ^ 1005, Reserved.  Indicates that no status code was provided even though one was expected.
+  | CLOSE_ABNORMAL
+   -- ^ 1006, Reserved. Used to indicate that a connection was closed abnormally (that is, with no close frame being sent) when a status code is expected.
+  | Unsupported_Data
+   -- ^ 1007, The endpoint is terminating the connection because a message was received that contained inconsistent data (e.g., nonUTF8 data within a text message).
+  | Policy_Violation
+   -- ^ 1008, The endpoint is terminating the connection because it received a message that violates its policy. This is a generic status code, used when codes 1003 and 1009 are not suitable.
+  | CLOSE_TOO_LARGE
+   -- ^ 1009, The endpoint is terminating the connection because a data frame was received that is too large.
+  | Missing_Extension
+   -- ^ 1010, The client is terminating the connection because it expected the server to negotiate one or more extension, but the server didn't.
+  | Internal_Error
+   -- ^ 1011, The server is terminating the connection because it encountered an unexpected condition that prevented it from fulfilling the request.
+  | Service_Restart
+   -- ^ 1012, The server is terminating the connection because it is restarting.
+  | Try_Again_Later
+   -- ^ 1013, The server is terminating the connection due to a temporary condition, e.g. it is overloaded and is casting off some of its clients.
+  | TLS_Handshake
+   -- ^ 1015, Reserved. Indicates that the connection was closed due to a failure to perform a TLS handshake (e.g., the server certificate can't be verified).
+  | OtherCode Int
+   -- ^ OtherCode that is reserved and not in the range 0999
+  deriving (Show, Eq, Generic)
+-----------------------------------------------------------------------------
+instance ToJSVal CloseCode
+-----------------------------------------------------------------------------
+instance FromJSVal CloseCode
+-----------------------------------------------------------------------------
+newtype WebSocket = WebSocket Int
+  deriving (ToJSVal, Eq, Num)
+-----------------------------------------------------------------------------
+emptyWebSocket :: WebSocket
+emptyWebSocket = (-1)
 -----------------------------------------------------------------------------
