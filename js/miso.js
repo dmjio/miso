@@ -55,6 +55,33 @@ function getParentComponentId(vcompNode) {
   };
   return climb(vcompNode);
 }
+function websocketConnect(url, onOpen, onClose, onError, onMessage) {
+  let socket = new WebSocket(url);
+  socket.onopen = function() {
+    onOpen();
+  };
+  socket.onclose = function(e) {
+    onClose(e);
+  };
+  socket.onerror = function(error) {
+    onError(error);
+  };
+  socket.onmessage = function(msg) {
+    onMessage(msg.data);
+  };
+  return socket;
+}
+function websocketClose(socket) {
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+function websocketSend(socket, message) {
+  if (message && socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(message);
+  }
+}
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -788,6 +815,9 @@ globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
+globalThis["miso"]["websocketConnect"] = websocketConnect;
+globalThis["miso"]["websocketClose"] = websocketClose;
+globalThis["miso"]["websocketSend"] = websocketSend;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["getParentComponentId"] = getParentComponentId;
 globalThis["miso"]["shouldSync"] = shouldSync;
