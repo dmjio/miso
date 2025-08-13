@@ -130,7 +130,7 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
     /* If current property no longer exists, remove it */
     if (newProp === undefined) {
       /* current key is not in node, remove it from DOM, if SVG, remove attribute */
-      if (isSvg || !(c in node) || c === 'disabled' || c === 'checked') {
+      if (isSvg || !(c in node) || c === 'disabled') {
         context['removeAttribute'](node, c);
       } else {
         context['setAttribute'](node, c, '');
@@ -153,9 +153,9 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
   }
   /* add remaining */
   for (const n in nProps) {
+    /* Only add new properties, skip (continue) if they already exist in current property map */
     if (cProps && cProps[n]) continue;
     newProp = nProps[n];
-    /* Only add new properties, skip (continue) if they already exist in current property map */
     if (isSvg) {
       if (n === 'href') {
         context['setAttributeNS'](node, 'http://www.w3.org/1999/xlink', 'href', newProp);
