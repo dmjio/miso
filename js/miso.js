@@ -212,7 +212,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
   for (const c in cProps) {
     newProp = nProps[c];
     if (newProp === undefined) {
-      if (isSvg || !(c in node)) {
+      if (isSvg || !(c in node) || c === "disabled") {
         context["removeAttribute"](node, c);
       } else {
         context["setAttribute"](node, c, "");
