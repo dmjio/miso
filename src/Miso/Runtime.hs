@@ -43,6 +43,7 @@ module Miso.Runtime
   , checkMail
   , broadcast
   , parent
+  , mailParent
   -- ** WebSocket
   , connect
   , send
@@ -927,7 +928,7 @@ stopSub subKey = do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid)
 -----------------------------------------------------------------------------
--- | Send any 'ToJSON message => message' to a 'Component' mailbox, by 'ComponentId'
+-- | Send any @ToJSON message => message@ to a 'Component' mailbox, by 'ComponentId'
 --
 -- @
 -- mail componentId ("test message" :: MisoString) :: Effect parent model action
@@ -946,6 +947,31 @@ mail vcompId message = io_ $
       pure ()
     Just ComponentState {..} ->
       liftIO $ sendMail componentMailbox (toJSON message)
+-----------------------------------------------------------------------------
+-- | Send any @ToJSON message => message@ to the parent's @Component@ mailbox
+--
+-- @
+-- mailParent ("test message" :: MisoString) :: Effect parent model action
+-- @
+--
+-- @since 1.9.0.0
+mailParent
+  :: ToJSON message
+  => message
+  -> Effect parent model action
+mailParent message = do
+  domRef <- asks _componentDOMRef
+  io_ $ do
+    FFI.getParentComponentId domRef >>= \case
+      Nothing ->
+        pure ()
+      Just vcompId ->
+        IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+          Nothing ->
+            -- dmj: TODO add DebugMail here
+            pure ()
+          Just ComponentState {..} ->
+            liftIO $ sendMail componentMailbox (toJSON message)
 ----------------------------------------------------------------------------
 -- | Helper function for processing 'Mail' from 'mail'.
 --

@@ -33,6 +33,7 @@ module Miso
   , mail
   , checkMail
   , parent
+  , mailParent
   , broadcast
   -- ** Subscriptions
   , startSub
