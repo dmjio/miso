@@ -111,6 +111,9 @@ module Miso.FFI.Internal
    , websocketConnect
    , websocketClose
    , websocketSend
+   -- * SSE
+   , eventSourceConnect
+   , eventSourceClose
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -760,4 +763,21 @@ websocketClose websocket = void $ do
 websocketSend :: JSVal -> JSVal -> JSM ()
 websocketSend websocket message = void $ do
   jsg "miso" # "websocketSend" $ [websocket, message]
+-----------------------------------------------------------------------------
+eventSourceConnect
+  :: MisoString
+  -> JSM ()
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> JSM JSVal
+eventSourceConnect url onOpen onMessage onError = do
+  onOpen_ <- asyncCallback onOpen
+  onMessage_ <- asyncCallback1 onMessage
+  onError_ <- asyncCallback1 onError
+  jsg "miso" # "eventSourceConnect" $
+    (url, onOpen_, onMessage_, onError_)
+-----------------------------------------------------------------------------
+eventSourceClose :: JSVal -> JSM ()
+eventSourceClose eventSource = void $ do
+  jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------

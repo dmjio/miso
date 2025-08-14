@@ -131,3 +131,32 @@ export function websocketSend (
       socket.send(message);
   }
 }
+
+export function eventSourceConnect (
+    url: string,
+    onOpen,
+    onMessage,
+    onError,
+): EventSource {
+  let eventSource = new EventSource(url);
+  eventSource.onopen = function () {
+    onOpen();
+  };
+  eventSource.onerror = function (error) {
+    onError(error);
+  };
+  eventSource.onmessage = function (msg) {
+    onMessage(msg.data);
+  };
+  return eventSource;
+}
+
+export function eventSourceClose (
+  eventSource: EventSource
+): void {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+

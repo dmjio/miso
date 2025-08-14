@@ -45,9 +45,9 @@ module Miso.Runtime
   , parent
   , mailParent
   -- ** WebSocket
-  , connect
-  , send
-  , close
+  , websocketConnect
+  , websocketSend
+  , websocketClose
   , socketState
   , emptyWebSocket
   , WebSocket (..)
@@ -55,6 +55,11 @@ module Miso.Runtime
   , SocketState (..)
   , CloseCode (..)
   , Closed (..)
+  -- ** EventSource
+  , eventSourceConnect
+  , eventSourceClose
+  , emptyEventSource
+  , EventSource (..)
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -688,6 +693,7 @@ unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
   finalizeWebSockets componentId
+  finalizeEventSources componentId
   unloadScripts cs
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
@@ -882,7 +888,7 @@ startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
     let vcompId = _componentId
-    (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing -> pure ()
       Just compState@ComponentState {..} -> do
         mtid <- liftIO (M.lookup (ms subKey) <$> readIORef componentSubThreads)
@@ -894,7 +900,7 @@ startSub subKey sub = do
             case status of
               ThreadFinished -> startThread compState
               ThreadDied -> startThread compState
-              _ -> pure ())
+              _ -> pure ()
   where
     startThread ComponentState {..} = do
       tid <- FFI.forkJSM (sub componentSink)
@@ -1041,16 +1047,18 @@ type Socket = JSVal
 -----------------------------------------------------------------------------
 type WebSockets = IM.IntMap (IM.IntMap Socket)
 -----------------------------------------------------------------------------
-connections :: IORef WebSockets
-{-# NOINLINE connections #-}
-connections = unsafePerformIO (newIORef IM.empty)
+type EventSources = IM.IntMap (IM.IntMap Socket)
 -----------------------------------------------------------------------------
-connectionIds :: IORef Int
-{-# NOINLINE connectionIds #-}
-connectionIds = unsafePerformIO (newIORef (0 :: Int))
+websocketConnections :: IORef WebSockets
+{-# NOINLINE websocketConnections #-}
+websocketConnections = unsafePerformIO (newIORef IM.empty)
+-----------------------------------------------------------------------------
+websocketConnectionIds :: IORef Int
+{-# NOINLINE websocketConnectionIds #-}
+websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
-connect
+websocketConnect
   :: URL
   -- ^ WebSocket URL
   -> (WebSocket -> action)
@@ -1062,7 +1070,7 @@ connect
   -> (JSVal -> action)
   -- ^ onError
   -> Effect parent model action
-connect url onOpen onClosed onError onMessage = do
+websocketConnect url onOpen onClosed onError onMessage = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
@@ -1072,62 +1080,44 @@ connect url onOpen onClosed onError onMessage = do
       (sink . onMessage)
       (sink . onError)
     insertWebSocket _componentId webSocketId socket
------------------------------------------------------------------------------
-freshWebSocket :: JSM WebSocket
-freshWebSocket = WebSocket <$>
-  liftIO (atomicModifyIORef' connectionIds $ \x -> (x + 1, x))
------------------------------------------------------------------------------
--- | dmj: This should only be used on a fresh WebSocket
-insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
-insertWebSocket componentId (WebSocket socketId) socket =
-  liftIO $
-    atomicModifyIORef' connections $ \websockets ->
-      (update websockets, ())
   where
-    update websockets =
-      IM.unionWith IM.union websockets
-        $ IM.singleton componentId
-        $ IM.singleton socketId socket
+    insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
+    insertWebSocket componentId (WebSocket socketId) socket =
+      liftIO $
+        atomicModifyIORef' websocketConnections $ \websockets ->
+          (update websockets, ())
+      where
+        update websockets =
+          IM.unionWith IM.union websockets
+            $ IM.singleton componentId
+            $ IM.singleton socketId socket
+  
+    freshWebSocket :: JSM WebSocket
+    freshWebSocket = WebSocket <$>
+      liftIO (atomicModifyIORef' websocketConnectionIds $ \x -> (x + 1, x))
 -----------------------------------------------------------------------------
 getWebSocket :: ComponentId -> WebSocket -> WebSockets -> Maybe Socket
 getWebSocket vcompId (WebSocket websocketId) =
   IM.lookup websocketId <=< IM.lookup vcompId
 -----------------------------------------------------------------------------
-dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
-dropWebSocket vcompId (WebSocket websocketId) websockets = do
-  case IM.lookup vcompId websockets of
-    Nothing ->
-      websockets
-    Just componentSockets ->
-      IM.insert vcompId (IM.delete websocketId componentSockets) websockets
------------------------------------------------------------------------------
 finalizeWebSockets :: ComponentId -> JSM ()
 finalizeWebSockets vcompId = do
   mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
-    IM.lookup vcompId <$> liftIO (readIORef connections)
+    IM.lookup vcompId <$> liftIO (readIORef websocketConnections)
   dropComponentWebSockets
     where
       dropComponentWebSockets :: JSM ()
       dropComponentWebSockets = liftIO $
-        atomicModifyIORef' connections $ \websockets ->
+        atomicModifyIORef' websocketConnections $ \websockets ->
           (IM.delete vcompId websockets, ())
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
-send :: WebSocket -> JSVal -> Effect parent model action
-send socketId msg = do
-  ComponentInfo {..} <- ask
-  io_ $ do
-    getWebSocket _componentId socketId <$> liftIO (readIORef connections) >>= \case
-      Nothing -> pure ()
-      Just socket -> FFI.websocketSend socket msg
------------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
-close :: WebSocket -> Effect parent model action
-close socketId = do
+websocketClose :: WebSocket -> Effect parent model action
+websocketClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
     result <- liftIO $
-      atomicModifyIORef' connections $ \imap ->
+      atomicModifyIORef' websocketConnections $ \imap ->
         dropWebSocket _componentId socketId imap =:
           getWebSocket _componentId socketId imap
     case result of
@@ -1135,6 +1125,23 @@ close socketId = do
         pure ()
       Just socket ->
         FFI.websocketClose socket
+  where
+    dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
+    dropWebSocket vcompId (WebSocket websocketId) websockets = do
+      case IM.lookup vcompId websockets of
+        Nothing ->
+          websockets
+        Just componentSockets ->
+          IM.insert vcompId (IM.delete websocketId componentSockets) websockets
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
+websocketSend :: WebSocket -> JSVal -> Effect parent model action
+websocketSend socketId msg = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
+      Nothing -> pure ()
+      Just socket -> FFI.websocketSend socket msg
 -----------------------------------------------------------------------------
 -- | Retrieves current status of `WebSocket`
 --
@@ -1144,7 +1151,7 @@ socketState :: WebSocket -> (SocketState -> action) -> Effect parent model actio
 socketState socketId callback = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
-     getWebSocket _componentId socketId <$> liftIO (readIORef connections) >>= \case
+     getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Just socket -> do
         x <- socket ! ("socketState" :: MisoString)
         socketstate <- toEnum <$> fromJSValUnchecked x
@@ -1240,4 +1247,92 @@ newtype WebSocket = WebSocket Int
 -----------------------------------------------------------------------------
 emptyWebSocket :: WebSocket
 emptyWebSocket = (-1)
+-----------------------------------------------------------------------------
+newtype EventSource = EventSource Int
+  deriving (ToJSVal, Eq, Num)
+-----------------------------------------------------------------------------
+emptyEventSource :: EventSource
+emptyEventSource = (-1)
+-----------------------------------------------------------------------------
+eventSourceConnections :: IORef EventSources
+{-# NOINLINE eventSourceConnections #-}
+eventSourceConnections = unsafePerformIO (newIORef IM.empty)
+-----------------------------------------------------------------------------
+eventSourceConnectionIds :: IORef Int
+{-# NOINLINE eventSourceConnectionIds #-}
+eventSourceConnectionIds = unsafePerformIO (newIORef (0 :: Int))
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
+eventSourceConnect
+  :: URL
+  -- ^ EventSource URL
+  -> (EventSource -> action)
+  -- ^ onOpen
+  -> (JSVal -> action)
+  -- ^ onMessage
+  -> (JSVal -> action)
+  -- ^ onError
+  -> Effect parent model action
+eventSourceConnect url onOpen onMessage onError = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink -> do
+    eventSourceId <- freshEventSource
+    socket <- FFI.eventSourceConnect url
+      (sink $ onOpen eventSourceId)
+      (sink . onMessage)
+      (sink . onError)
+    insertEventSource _componentId eventSourceId socket
+  where
+    insertEventSource :: ComponentId -> EventSource -> Socket -> JSM ()
+    insertEventSource componentId (EventSource socketId) socket =
+      liftIO $
+        atomicModifyIORef' eventSourceConnections $ \eventSources ->
+          (update eventSources, ())
+      where
+        update eventSources =
+          IM.unionWith IM.union eventSources
+            $ IM.singleton componentId
+            $ IM.singleton socketId socket
+  
+    freshEventSource :: JSM EventSource
+    freshEventSource = EventSource <$>
+      liftIO (atomicModifyIORef' eventSourceConnectionIds $ \x -> (x + 1, x))
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
+eventSourceClose :: EventSource -> Effect parent model action
+eventSourceClose socketId = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    result <- liftIO $
+      atomicModifyIORef' eventSourceConnections $ \imap ->
+        dropEventSource _componentId socketId imap =:
+          getEventSource _componentId socketId imap
+    case result of
+      Nothing ->
+        pure ()
+      Just socket ->
+        FFI.eventSourceClose socket
+  where
+    dropEventSource :: ComponentId -> EventSource -> EventSources -> EventSources
+    dropEventSource vcompId (EventSource eventSourceId) eventSources = do
+      case IM.lookup vcompId eventSources of
+        Nothing ->
+          eventSources
+        Just componentSockets ->
+          IM.insert vcompId (IM.delete eventSourceId componentSockets) eventSources
+  
+    getEventSource :: ComponentId -> EventSource -> EventSources -> Maybe Socket
+    getEventSource vcompId (EventSource eventSourceId) =
+      IM.lookup eventSourceId <=< IM.lookup vcompId
+-----------------------------------------------------------------------------
+finalizeEventSources :: ComponentId -> JSM ()
+finalizeEventSources vcompId = do
+  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) =<<
+    IM.lookup vcompId <$> liftIO (readIORef eventSourceConnections)
+  dropComponentEventSources
+    where
+      dropComponentEventSources :: JSM ()
+      dropComponentEventSources = liftIO $
+        atomicModifyIORef' eventSourceConnections $ \eventSources ->
+          (IM.delete vcompId eventSources, ())
 -----------------------------------------------------------------------------
