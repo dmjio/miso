@@ -915,10 +915,9 @@ startSub subKey sub = do
 -- @since 1.9.0.0
 stopSub :: ToMisoString subKey => subKey -> Effect parent model action
 stopSub subKey = do
-  domRef <- asks _componentDOMRef
+  vcompId <- asks _componentId
   io_ $ do
-    vcompId <- FFI.getComponentId domRef
-    (IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do
@@ -926,7 +925,7 @@ stopSub subKey = do
         forM_ mtid $ \tid ->
           liftIO $ do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
-            killThread tid)
+            killThread tid
 -----------------------------------------------------------------------------
 -- | Send any @ToJSON message => message@ to a 'Component' mailbox, by 'ComponentId'
 --
