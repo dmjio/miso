@@ -42,6 +42,7 @@ sseSub url successful errorful errorCb closeCb sink = createSub acquire release 
       FFI.removeEventListener es (ms "message") cb1
       FFI.removeEventListener es (ms "error") cb2
       FFI.removeEventListener es (ms "close") cb3
+      es # (ms "close") $ ()
     acquire = do
       es <- JSaddle.new (jsg (ms "EventSource")) [url]
       cb1 <- FFI.addEventListener es (ms "message") $ \v -> do
