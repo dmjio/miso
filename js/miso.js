@@ -82,6 +82,25 @@ function websocketSend(socket, message) {
     socket.send(message);
   }
 }
+function eventSourceConnect(url, onOpen, onMessage, onError) {
+  let eventSource = new EventSource(url);
+  eventSource.onopen = function() {
+    onOpen();
+  };
+  eventSource.onerror = function(error) {
+    onError(error);
+  };
+  eventSource.onmessage = function(msg) {
+    onMessage(msg.data);
+  };
+  return eventSource;
+}
+function eventSourceClose(eventSource) {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
 
 // ts/miso/smart.ts
 function vnode(props) {
@@ -815,6 +834,8 @@ globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
+globalThis["miso"]["eventSourceConnect"] = eventSourceConnect;
+globalThis["miso"]["eventSourceClose"] = eventSourceClose;
 globalThis["miso"]["websocketConnect"] = websocketConnect;
 globalThis["miso"]["websocketClose"] = websocketClose;
 globalThis["miso"]["websocketSend"] = websocketSend;

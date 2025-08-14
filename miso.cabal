@@ -134,6 +134,7 @@ library
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
+    Miso.EventSource
     Miso.Fetch
     Miso.FFI
     Miso.Html
@@ -156,7 +157,6 @@ library
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
     Miso.Subscription.Window
-    Miso.Subscription.SSE
     Miso.Subscription.Util
     Miso.Svg
     Miso.Svg.Property

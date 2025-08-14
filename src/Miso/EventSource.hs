@@ -5,27 +5,23 @@
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.WebSocket
+-- Module      :  Miso.EventSource
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.WebSocket
-  ( -- *** WebSocket
+module Miso.EventSource
+  ( -- *** EventSource
     connect
-  , send
   , close
   , socketState
   -- *** Defaults
-  , emptyWebSocket
+  , emptyEventSource
   -- *** Types
-  , WebSocket   (..)
+  , EventSource (..)
   , URL
-  , SocketState (..)
-  , CloseCode   (..)
-  , Closed      (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Effect
@@ -33,26 +29,21 @@ import           Miso.Runtime
 -----------------------------------------------------------------------------
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
 connect
   :: URL
-  -> (WebSocket -> action)
-  -> (Closed -> action)
+  -> (EventSource -> action)
+  -- ^ onOpen
   -> (JSVal -> action)
+  -- ^ onMessage
   -> (JSVal -> action)
+  -- ^ onError
   -> Effect parent model action
-connect = websocketConnect
+connect = eventSourceConnect
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
-send
-  :: WebSocket
-  -> JSVal
-  -> Effect parent model action
-send = websocketSend
------------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
 close
-  :: WebSocket
+  :: EventSource
   -> Effect parent model action
-close = websocketClose
+close = eventSourceClose
 -----------------------------------------------------------------------------
