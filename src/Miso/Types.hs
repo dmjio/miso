@@ -90,7 +90,7 @@ import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
 import           Miso.Lens (Getter, Setter, Lens(..), Lens')
 import qualified Miso.String as MS
-import           Miso.String (MisoString, toMisoString, ms, fromMisoString)
+import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMisoString)
 import           Miso.Style.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
@@ -314,7 +314,7 @@ instance ToJSVal NS where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
-  deriving (Show, Eq, IsString, ToJSON)
+  deriving (Show, Eq, IsString, ToJSON, ToMisoString)
 -----------------------------------------------------------------------------
 -- | ToJSVal instance for Key
 instance ToJSVal Key where
