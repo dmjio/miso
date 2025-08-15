@@ -28,7 +28,7 @@
 --
 -- The goal is to provide users with an out-of-the box lens experience without the large
 -- dependency footprint and cognitive load. This module also aims to preserve semantics of
--- existing lens combinators using a simple formulation (not the Van Laarhoven). It must be imported
+-- existing lens combinators using a simple formulation (not the van Laarhoven). It must be imported
 -- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
 -- application (as described below).
 --
@@ -37,7 +37,7 @@
 -- For convenience we re-export the 'Lens'' synonym to ease the transition into @lens@ or
 -- @microlens@.
 --
--- For the curious reader, if you'd like more information on @lens@ and the Van Laarhoven
+-- For the curious reader, if you'd like more information on @lens@ and the van Laarhoven
 -- formulation, we recommend the @lens@ library <https://hackage.haskell.org/package/lens>.
 --
 -- @
@@ -190,14 +190,14 @@ type Getter record field = record -> field
 -- | Type to express a setter on a @Lens@
 type Setter record field = field -> record -> record
 ----------------------------------------------------------------------------
--- | Van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
+-- | van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
+-- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to Van Laarhoven @Lens'@
+-- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
 fromVL
   :: Lens' record field
   -> Lens record field
