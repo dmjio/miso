@@ -150,6 +150,8 @@ module Miso.Lens
   , prism
   , preview
   , review
+  , _Nothing
+  , _Just
   , _Left
   , _Right
   -- *** Re-exports
