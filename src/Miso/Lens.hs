@@ -771,6 +771,12 @@ _Left = prism Left $ either Just (const Nothing)
 _Right :: Prism (Either a b) b
 _Right = prism Right (either (const Nothing) Just)
 ----------------------------------------------------------------------------
+_Just :: Prism (Maybe a) a
+_Just = prism Just Prelude.id
+----------------------------------------------------------------------------
+_Nothing :: Prism (Maybe a) a
+_Nothing = prism (const Nothing) Prelude.id
+----------------------------------------------------------------------------
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------
