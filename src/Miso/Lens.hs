@@ -154,6 +154,7 @@ module Miso.Lens
   , _Just
   , _Left
   , _Right
+  , (^?)
   -- *** Re-exports
   , compose
   -- *** Conversion
@@ -778,6 +779,9 @@ _Just = prism Just Prelude.id
 ----------------------------------------------------------------------------
 _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
+----------------------------------------------------------------------------
+infixl 8 ^?
+(^?) = flip preview
 ----------------------------------------------------------------------------
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
 prism = Prism
