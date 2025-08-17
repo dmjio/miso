@@ -1083,7 +1083,9 @@ websocketConnect url onOpen onClosed onError onMessage = do
     ctx <- askJSM
     let key = webSocketId
     weakPtr <- liftIO $ mkWeak key socket $ pure $ do
-      flip runJSM ctx (websocketClose_ _componentId key)
+      flip runJSM ctx $ do
+        FFI.consoleLog "in finalizer..."
+        websocketClose_ _componentId key
     insertWebSocket _componentId key weakPtr
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
