@@ -50,7 +50,7 @@ module Miso.Runtime
   , websocketClose
   , socketState
   , emptyWebSocket
-  , WebSocket (..)
+  , WebSocket
   , URL
   , SocketState (..)
   , CloseCode (..)
@@ -59,7 +59,7 @@ module Miso.Runtime
   , eventSourceConnect
   , eventSourceClose
   , emptyEventSource
-  , EventSource (..)
+  , EventSource
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -100,6 +100,7 @@ import           Miso.Style (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
+import           System.Mem.Weak (Weak, mkWeak, deRefWeak)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -1043,7 +1044,7 @@ broadcast message = do
       when (_componentId /= vcompId) $ do
         liftIO $ sendMail componentMailbox (toJSON message)
 -----------------------------------------------------------------------------
-type Socket = JSVal
+type Socket = Weak JSVal
 -----------------------------------------------------------------------------
 type WebSockets = IM.IntMap (IM.IntMap Socket)
 -----------------------------------------------------------------------------
@@ -1079,7 +1080,10 @@ websocketConnect url onOpen onClosed onError onMessage = do
       (sink . onClosed <=< fromJSValUnchecked)
       (sink . onMessage)
       (sink . onError)
-    insertWebSocket _componentId webSocketId socket
+    ctx <- askJSM
+    weakPtr <- liftIO $ mkWeak webSocketId socket $ pure $ do
+      flip runJSM ctx (websocketClose_ _componentId webSocketId)
+    insertWebSocket _componentId webSocketId weakPtr
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
     insertWebSocket componentId (WebSocket socketId) socket =
@@ -1102,8 +1106,13 @@ getWebSocket vcompId (WebSocket websocketId) =
 -----------------------------------------------------------------------------
 finalizeWebSockets :: ComponentId -> JSM ()
 finalizeWebSockets vcompId = do
-  mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
-    IM.lookup vcompId <$> liftIO (readIORef websocketConnections)
+  IM.lookup vcompId <$> liftIO (readIORef websocketConnections) >>= \case
+    Nothing ->
+      pure ()
+    Just conns ->
+      forM_ (IM.elems conns) $ \conn ->
+        mapM_ FFI.websocketClose =<<
+          liftIO (deRefWeak conn)
   dropComponentWebSockets
     where
       dropComponentWebSockets :: JSM ()
@@ -1115,24 +1124,29 @@ finalizeWebSockets vcompId = do
 websocketClose :: WebSocket -> Effect parent model action
 websocketClose socketId = do
   ComponentInfo {..} <- ask
-  io_ $ do
+  io_ (websocketClose_ _componentId socketId)
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
+websocketClose_ :: ComponentId -> WebSocket -> JSM ()
+websocketClose_ componentId socketId = do
     result <- liftIO $
       atomicModifyIORef' websocketConnections $ \imap ->
-        dropWebSocket _componentId socketId imap =:
-          getWebSocket _componentId socketId imap
+        dropWebSocket componentId socketId imap =:
+          getWebSocket componentId socketId imap
     case result of
       Nothing ->
         pure ()
-      Just socket ->
-        FFI.websocketClose socket
-  where
-    dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
-    dropWebSocket vcompId (WebSocket websocketId) websockets = do
-      case IM.lookup vcompId websockets of
-        Nothing ->
-          websockets
-        Just componentSockets ->
-          IM.insert vcompId (IM.delete websocketId componentSockets) websockets
+      Just weakPtr -> do
+        liftIO (deRefWeak weakPtr) >>=
+          mapM_ FFI.websocketClose
+-----------------------------------------------------------------------------
+dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
+dropWebSocket vcompId (WebSocket websocketId) websockets = do
+  case IM.lookup vcompId websockets of
+    Nothing ->
+      websockets
+    Just componentSockets ->
+      IM.insert vcompId (IM.delete websocketId componentSockets) websockets
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
 websocketSend :: WebSocket -> JSVal -> Effect parent model action
@@ -1141,7 +1155,11 @@ websocketSend socketId msg = do
   io_ $ do
     getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Nothing -> pure ()
-      Just socket -> FFI.websocketSend socket msg
+      Just weak -> do
+        liftIO (deRefWeak weak) >>= \case
+          Nothing -> pure ()
+          Just socket -> do
+            FFI.websocketSend socket msg
 -----------------------------------------------------------------------------
 -- | Retrieves current status of `WebSocket`
 --
@@ -1151,13 +1169,17 @@ socketState :: WebSocket -> (SocketState -> action) -> Effect parent model actio
 socketState socketId callback = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
-     getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
-      Just socket -> do
-        x <- socket ! ("socketState" :: MisoString)
-        socketstate <- toEnum <$> fromJSValUnchecked x
-        sink (callback socketstate)
+    getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Nothing ->
         sink (callback CLOSED)
+      Just weak -> do
+        liftIO (deRefWeak weak) >>= \case
+          Nothing ->
+            sink (callback CLOSED)
+          Just socket -> do
+            x <- socket ! ("socketState" :: MisoString)
+            socketstate <- toEnum <$> fromJSValUnchecked x
+            sink (callback socketstate)
 -----------------------------------------------------------------------------
 codeToCloseCode :: Int -> CloseCode
 codeToCloseCode = go
@@ -1242,17 +1264,23 @@ instance ToJSVal CloseCode
 -----------------------------------------------------------------------------
 instance FromJSVal CloseCode
 -----------------------------------------------------------------------------
-newtype WebSocket = WebSocket Int
-  deriving (ToJSVal, Eq, Num)
+data WebSocket = WebSocket Int
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal WebSocket where
+  toJSVal (WebSocket socket) = toJSVal socket
 -----------------------------------------------------------------------------
 emptyWebSocket :: WebSocket
-emptyWebSocket = (-1)
+emptyWebSocket = WebSocket (-1)
 -----------------------------------------------------------------------------
-newtype EventSource = EventSource Int
-  deriving (ToJSVal, Eq, Num)
+data EventSource = EventSource Int
+  deriving (Eq, Show)
+-----------------------------------------------------------------------------
+instance ToJSVal EventSource where
+  toJSVal (EventSource socket) = toJSVal socket
 -----------------------------------------------------------------------------
 emptyEventSource :: EventSource
-emptyEventSource = (-1)
+emptyEventSource = EventSource (-1)
 -----------------------------------------------------------------------------
 eventSourceConnections :: IORef EventSources
 {-# NOINLINE eventSourceConnections #-}
@@ -1281,7 +1309,11 @@ eventSourceConnect url onOpen onMessage onError = do
       (sink $ onOpen eventSourceId)
       (sink . onMessage)
       (sink . onError)
-    insertEventSource _componentId eventSourceId socket
+    ctx <- askJSM
+    weakPtr <- liftIO $ mkWeak eventSourceId socket $ pure $ do
+      flip runJSM ctx (eventSourceClose_ _componentId eventSourceId)
+
+    insertEventSource _componentId eventSourceId weakPtr
   where
     insertEventSource :: ComponentId -> EventSource -> Socket -> JSM ()
     insertEventSource componentId (EventSource socketId) socket =
@@ -1302,7 +1334,11 @@ eventSourceConnect url onOpen onMessage onError = do
 eventSourceClose :: EventSource -> Effect parent model action
 eventSourceClose socketId = do
   ComponentInfo {..} <- ask
-  io_ $ do
+  io_ (eventSourceClose_ _componentId socketId)
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
+eventSourceClose_ :: ComponentId -> EventSource -> JSM ()
+eventSourceClose_ _componentId socketId = do
     result <- liftIO $
       atomicModifyIORef' eventSourceConnections $ \imap ->
         dropEventSource _componentId socketId imap =:
@@ -1310,8 +1346,11 @@ eventSourceClose socketId = do
     case result of
       Nothing ->
         pure ()
-      Just socket ->
-        FFI.eventSourceClose socket
+      Just weak -> do
+        liftIO (deRefWeak weak) >>= \case
+          Nothing -> pure ()
+          Just socket ->
+            FFI.eventSourceClose socket
   where
     dropEventSource :: ComponentId -> EventSource -> EventSources -> EventSources
     dropEventSource vcompId (EventSource eventSourceId) eventSources = do
@@ -1327,8 +1366,13 @@ eventSourceClose socketId = do
 -----------------------------------------------------------------------------
 finalizeEventSources :: ComponentId -> JSM ()
 finalizeEventSources vcompId = do
-  mapM_ (mapM_ FFI.eventSourceClose . IM.elems) =<<
-    IM.lookup vcompId <$> liftIO (readIORef eventSourceConnections)
+  IM.lookup vcompId <$> liftIO (readIORef eventSourceConnections) >>= \case
+    Nothing ->
+      pure ()
+    Just conns ->
+      forM_ (IM.elems conns) $ \conn ->
+        mapM_ FFI.eventSourceClose =<<
+          liftIO (deRefWeak conn)
   dropComponentEventSources
     where
       dropComponentEventSources :: JSM ()
