@@ -1046,15 +1046,15 @@ broadcast message = do
 -----------------------------------------------------------------------------
 type Socket = Weak JSVal
 -----------------------------------------------------------------------------
-type WebSockets = Map ComponentId (Map WebSocket Socket)
+type WebSockets = IntMap (IntMap Socket)
 -----------------------------------------------------------------------------
-type EventSources = IM.IntMap (IM.IntMap Socket)
+type EventSources = IntMap (IntMap Socket)
 -----------------------------------------------------------------------------
 websocketConnections :: IORef WebSockets
 {-# NOINLINE websocketConnections #-}
 websocketConnections = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
-websocketConnectionIds :: IORef Int
+websocketConnectionIds :: IORef WebSocketId
 {-# NOINLINE websocketConnectionIds #-}
 websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
@@ -1075,7 +1075,7 @@ websocketConnect url onOpen onClosed onError onMessage = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
-    let key = webSocketId
+    let key = WebSocket webSocketId
     socket <- FFI.websocketConnect url
       (sink $ onOpen key)
       (sink . onClosed <=< fromJSValUnchecked)
@@ -1086,34 +1086,34 @@ websocketConnect url onOpen onClosed onError onMessage = do
       flip runJSM ctx $ do
         FFI.consoleLog "in finalizer..."
         websocketClose_ _componentId key
-    insertWebSocket _componentId key weakPtr
+    insertWebSocket _componentId webSocketId weakPtr
   where
-    insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
+    insertWebSocket :: ComponentId -> WebSocketId -> Socket -> JSM ()
     insertWebSocket componentId socketId socket =
       liftIO $
         atomicModifyIORef' websocketConnections $ \websockets ->
           (update websockets, ())
       where
         update websockets =
-          M.unionWith M.union websockets
-            $ M.singleton componentId
-            $ M.singleton socketId socket
+          IM.unionWith IM.union websockets
+            $ IM.singleton componentId
+            $ IM.singleton socketId socket
   
-    freshWebSocket :: JSM WebSocket
-    freshWebSocket = WebSocket <$>
+    freshWebSocket :: JSM WebSocketId
+    freshWebSocket =
       liftIO (atomicModifyIORef' websocketConnectionIds $ \x -> (x + 1, x))
 -----------------------------------------------------------------------------
 getWebSocket :: ComponentId -> WebSocket -> WebSockets -> Maybe Socket
-getWebSocket vcompId websocketId =
-  M.lookup websocketId <=< M.lookup vcompId
+getWebSocket vcompId (WebSocket websocketId) =
+  IM.lookup websocketId <=< IM.lookup vcompId
 -----------------------------------------------------------------------------
 finalizeWebSockets :: ComponentId -> JSM ()
 finalizeWebSockets vcompId = do
-  M.lookup vcompId <$> liftIO (readIORef websocketConnections) >>= \case
+  IM.lookup vcompId <$> liftIO (readIORef websocketConnections) >>= \case
     Nothing ->
       pure ()
     Just conns ->
-      forM_ (M.elems conns) $ \conn ->
+      forM_ (IM.elems conns) $ \conn ->
         mapM_ FFI.websocketClose =<<
           liftIO (deRefWeak conn)
   dropComponentWebSockets
@@ -1121,7 +1121,7 @@ finalizeWebSockets vcompId = do
       dropComponentWebSockets :: JSM ()
       dropComponentWebSockets = liftIO $
         atomicModifyIORef' websocketConnections $ \websockets ->
-          (M.delete vcompId websockets, ())
+          (IM.delete vcompId websockets, ())
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
 websocketClose :: WebSocket -> Effect parent model action
@@ -1144,12 +1144,12 @@ websocketClose_ componentId socketId = do
           mapM_ FFI.websocketClose
 -----------------------------------------------------------------------------
 dropWebSocket :: ComponentId -> WebSocket -> WebSockets -> WebSockets
-dropWebSocket vcompId websocketId websockets = do
-  case M.lookup vcompId websockets of
+dropWebSocket vcompId (WebSocket websocketId) websockets = do
+  case IM.lookup vcompId websockets of
     Nothing ->
       websockets
     Just componentSockets ->
-      M.insert vcompId (M.delete websocketId componentSockets) websockets
+      IM.insert vcompId (IM.delete websocketId componentSockets) websockets
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
 websocketSend :: WebSocket -> JSVal -> Effect parent model action
@@ -1268,7 +1268,9 @@ instance ToJSVal CloseCode
 instance FromJSVal CloseCode
 -----------------------------------------------------------------------------
 data WebSocket = WebSocket Int
-  deriving (Show, Ord, Eq)
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+type WebSocketId = Int
 -----------------------------------------------------------------------------
 instance ToJSVal WebSocket where
   toJSVal (WebSocket socket) = toJSVal socket
