@@ -1075,13 +1075,13 @@ websocketConnect url onOpen onClosed onError onMessage = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
+    let key = webSocketId
     socket <- FFI.websocketConnect url
-      (sink $ onOpen webSocketId)
+      (sink $ onOpen key)
       (sink . onClosed <=< fromJSValUnchecked)
       (sink . onMessage)
       (sink . onError)
     ctx <- askJSM
-    let key = webSocketId
     weakPtr <- liftIO $ mkWeak key socket $ pure $ do
       flip runJSM ctx $ do
         FFI.consoleLog "in finalizer..."
