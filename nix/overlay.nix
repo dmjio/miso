@@ -21,16 +21,44 @@ self: super: {
     super.writeTextFile {
       name = "targets.conf";
       text = ''
-        [default]
-        cc = "gcc"
-        ccflags = ""
-        conf = "unix-64"
+      [default]
+      cc = "cc"
+      ccflags = "-w -Wall -O3"
+      cclibs = "-lm"
+      conf = "unix"
 
-        [emscripten]
-        cc = "emcc"
-        ccflags = "-sALLOW_MEMORY_GROWTH -sTOTAL_STACK=5MB -sSINGLE_FILE -sENVIRONMENT=shell -sWASM=0"
-        conf = "unix-64"
-      '';
+      [debug]
+      cc = "cc"
+      ccflags = "-w -Wall -g"
+      cclibs = "-lm"
+      conf = "unix"
+
+      [emscripten]
+      cc = "emcc"
+      ccflags = "-O3 -sEXPORTED_RUNTIME_METHODS=stringToNewUTF8 -sALLOW_MEMORY_GROWTH -sTOTAL_STACK=5MB -sNODERAWFS -sSINGLE_FILE -DUSE_SYSTEM_RAW -sEXIT_RUNTIME -Wno-address-of-packed-member -sERROR_ON_UNDEFINED_SYMBOLS=0 -sWASM=0"
+      cclibs = "-lm"
+      conf = "unix"
+
+      [tcc]
+      cc = "tcc"
+      ccflags = "-D__TCC__=1"
+      cclibs = "-lm"
+      conf = "unix"
+
+      [windows]
+      cc = "cl"
+      ccflags = "-O2"
+      cclibs = ""
+      conf = "windows"
+      cout = "-Fe"
+
+      [environment]
+      -- Get all values from the environment
+      cc = "$CC"
+      ccflags = "$MHSCCFLAGS"
+      cclibs = "$MHSCCLIBS"
+      conf = "$MHSCONF"
+    '';
     };
 
   microhs =
@@ -54,6 +82,8 @@ self: super: {
         cat ${self.microhsTargetsConf} > $out/targets.conf
 
         cp README.md $out/share
+        ls -lah
+        ls -lah $out/
       '';
     };
 
