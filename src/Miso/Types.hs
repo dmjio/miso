@@ -93,7 +93,7 @@ import           Miso.Event.Types
 import           Miso.Lens (Getter, Setter, Lens(..), Lens')
 import qualified Miso.String as MS
 import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMisoString)
-import           Miso.Style.Types (StyleSheet)
+import           Miso.CSS.Types (StyleSheet)
 -----------------------------------------------------------------------------
 -- | Application entry point
 data Component parent model action
@@ -150,7 +150,7 @@ data CSS
   | Style MisoString
   -- ^ 'Style' is meant to be raw CSS in a 'style_' tag
   | Sheet StyleSheet
-  -- ^ 'Sheet' is meant to be CSS built with 'Miso.Style'
+  -- ^ 'Sheet' is meant to be CSS built with 'Miso.CSS'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Allow users to express JS and append it to <head> before the first draw

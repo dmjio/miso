@@ -1,13 +1,13 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Style.Types
+-- Module      :  Miso.CSS.Types
 -- Copyright   :  (C) 2016-2025 David M. Johnson (@dmjio)
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Style.Types
+module Miso.CSS.Types
   ( -- *** Types
     Style
   , Styles (..)

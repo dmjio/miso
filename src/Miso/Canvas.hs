@@ -106,7 +106,7 @@ import           Language.Javascript.JSaddle ( JSVal, (#), fromJSVal, MakeArgs (
 import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
-import           Miso.Style (Color, renderColor)
+import           Miso.CSS (Color, renderColor)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
 -- useful when building applications w/ three.js, or other libraries where
