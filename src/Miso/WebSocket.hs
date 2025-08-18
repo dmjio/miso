@@ -21,7 +21,7 @@ module Miso.WebSocket
   -- *** Defaults
   , emptyWebSocket
   -- *** Types
-  , WebSocket   (..)
+  , WebSocket
   , URL
   , SocketState (..)
   , CloseCode   (..)
