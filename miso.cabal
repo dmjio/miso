@@ -178,7 +178,7 @@ library
       Miso.Lens.TH
       Miso.String.QQ
     build-depends:
-      template-haskell > 2.21 && < 2.24
+      template-haskell >= 2.21 && < 2.24
 
   ghc-options:
     -Wall
