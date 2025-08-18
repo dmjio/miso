@@ -64,7 +64,7 @@ function buildTargetToElement(element: HTMLElement, target: ParentNode, context:
   var stack = [];
   while (!context['isEqual'](element, target)) {
     stack.unshift(target);
-    if (target && target.parentNode) {
+    if (target && context['parentNode'](target)) {
       target = context['parentNode'](target);
     } else {
       return stack;
