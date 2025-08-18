@@ -164,9 +164,9 @@ library
     Miso.Svg.Event
     Miso.Storage
     Miso.String
-    Miso.Style
-    Miso.Style.Color
-    Miso.Style.Types
+    Miso.CSS
+    Miso.CSS.Color
+    Miso.CSS.Types
     Miso.Types
     Miso.Util
     Miso.Util.Lexer

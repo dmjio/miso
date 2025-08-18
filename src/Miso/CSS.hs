@@ -2,16 +2,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Style
+-- Module      :  Miso.CSS
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Style
+module Miso.CSS
   ( -- *** Types
-    module Miso.Style.Types
+    module Miso.CSS.Types
   -- *** Smart Constructor
   , style_
   , styleInline_
@@ -200,7 +200,7 @@ module Miso.Style
   , xHandleSize
   , zIndex
   -- *** Colors
-  , module Miso.Style.Color
+  , module Miso.CSS.Color
   -- *** Units
   , px
   , ppx
@@ -228,8 +228,8 @@ module Miso.Style
 import qualified Data.Map as M
 import           Miso.String (MisoString)
 import qualified Miso.String as MS
-import           Miso.Style.Color
-import           Miso.Style.Types
+import           Miso.CSS.Color
+import           Miso.CSS.Types
 import           Miso.Property
 import           Miso.Types (Attribute)
 import qualified Miso.Types as MT

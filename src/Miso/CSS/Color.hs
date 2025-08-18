@@ -9,14 +9,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Style.Color
+-- Module      :  Miso.CSS.Color
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 -----------------------------------------------------------------------------
-module Miso.Style.Color
+module Miso.CSS.Color
   ( -- *** Types
     Color (RGB, RGBA, HSL, HSLA, Hex)
     -- *** Smart constructor

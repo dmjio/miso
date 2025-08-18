@@ -96,7 +96,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Util
-import           Miso.Style (renderStyleSheet)
+import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Property (textProp)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
