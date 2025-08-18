@@ -150,15 +150,14 @@ startComponent vcomp@Component { styles, scripts } =
 -- This is necessary for native support.
 renderApp
   :: Eq model
-  => Maybe MisoString
+  => MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
   -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
-renderApp Nothing vcomp _ = startApp vcomp
-renderApp (Just renderer) vcomp hooks = withJS $ do
+renderApp renderer vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------
