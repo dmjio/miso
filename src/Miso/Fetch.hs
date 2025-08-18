@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -15,10 +17,18 @@
 --
 ----------------------------------------------------------------------------
 module Miso.Fetch
-  ( fetch
+  ( -- ** Function
+    fetch
+    -- ** Header helpers
+  , accept
+  , contentType
+  , applicationJSON
+    -- ** Types
+  , Body
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON)
+import           Language.Javascript.JSaddle (JSVal)
 ----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink)
@@ -36,7 +46,8 @@ import           Miso.String (MisoString)
 --
 -- updateModel :: Action -> Effect Model Action
 -- updateModel FetchGitHub =
---   fetch "https://api.github.com" "GET" Nothing [] SetGitHub ErrorHandler
+--   let headers = [ accept =: applicationJSON ]
+--   fetch "https://api.github.com" "GET" Nothing headers SetGitHub ErrorHandler
 -- updateModel (SetGitHub apiInfo) =
 --   info ?= apiInfo
 -- updateModel (ErrorHandler msg) =
@@ -50,16 +61,29 @@ fetch
   -- ^ url
   -> MisoString
   -- ^ method
-  -> Maybe MisoString
+  -> Maybe Body
   -- ^ body
-  -> [(MisoString,MisoString)]
+  -> [(MisoString, MisoString)]
   -- ^ headers
   -> (result -> action)
   -- ^ successful callback
   -> (MisoString -> action)
   -- ^ errorful callback
-  -> Effect model action
+  -> Effect parent model action
 fetch url method body headers successful errorful =
   withSink $ \sink ->
-    FFI.fetch url method body headers (sink . successful) (sink . errorful)
+    FFI.fetch url method body headers
+      (sink . successful)
+      (sink . errorful)
+----------------------------------------------------------------------------
+type Body = JSVal
+----------------------------------------------------------------------------
+accept :: MisoString
+accept = "Accept"
+----------------------------------------------------------------------------
+contentType :: MisoString
+contentType = "Content-Type"
+----------------------------------------------------------------------------
+applicationJSON :: MisoString
+applicationJSON = "application/json"
 ----------------------------------------------------------------------------

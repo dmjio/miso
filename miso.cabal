@@ -37,7 +37,7 @@ common cpp
       -DWASM
   else
     cpp-options:
-      -DNATIVE
+      -DVANILLA
   if flag(production)
     cpp-options:
       -DPRODUCTION
@@ -53,7 +53,11 @@ common string-selector
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
-      jsaddle-warp < 0.10
+      jsaddle-warp < 0.10,
+      wai-middleware-static < 0.10,
+      wai < 3.3,
+      warp < 3.5,
+      websockets < 0.14
 
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
@@ -121,7 +125,7 @@ library
     Miso.Delegate
     Miso.Diff
     Miso.FFI.Internal
-    Miso.Internal
+    Miso.Runtime
   exposed-modules:
     Miso
     Miso.Canvas
@@ -130,6 +134,7 @@ library
     Miso.Event
     Miso.Event.Decoder
     Miso.Event.Types
+    Miso.EventSource
     Miso.Fetch
     Miso.FFI
     Miso.Html
@@ -142,6 +147,7 @@ library
     Miso.Mathml.Property
     Miso.Media
     Miso.Property
+    Miso.PubSub
     Miso.Render
     Miso.Router
     Miso.Run
@@ -150,9 +156,8 @@ library
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
-    Miso.Subscription.WebSocket
     Miso.Subscription.Window
-    Miso.Subscription.SSE
+    Miso.Subscription.Util
     Miso.Svg
     Miso.Svg.Property
     Miso.Svg.Element
@@ -166,10 +171,12 @@ library
     Miso.Util
     Miso.Util.Lexer
     Miso.Util.Parser
+    Miso.WebSocket
 
-  if flag (template-haskell)
+  if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
+      Miso.String.QQ
     build-depends:
       template-haskell < 2.24
 

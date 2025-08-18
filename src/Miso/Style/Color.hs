@@ -1,5 +1,12 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE OverloadedLabels      #-}
+-----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Style.Color
@@ -172,9 +179,13 @@ module Miso.Style.Color
   , yellowgreen
   ) where
 -----------------------------------------------------------------------------
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+import           Data.Proxy
+import           GHC.TypeLits
+import           GHC.OverloadedLabels
+import           Numeric (showHex)
 import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
@@ -186,6 +197,21 @@ data Color
   | Hex MisoString
   | VarColor MisoString
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | This instance exists to make it easy to define hex colors.
+--
+-- @
+-- grey :: Color
+-- grey = #cccccc
+-- @
+--
+instance KnownSymbol color => IsLabel color Color where
+  fromLabel = Hex (ms color)
+    where
+      color = symbolVal (Proxy @color)
+-----------------------------------------------------------------------------
+instance KnownSymbol hex => IsLabel hex MisoString where
+  fromLabel = ms ("#" <> symbolVal (Proxy @hex))
 -----------------------------------------------------------------------------
 instance MakeArgs Color where
   makeArgs color = (:[]) <$> toJSVal color
@@ -242,8 +268,13 @@ hsl = HSL
 hsla :: Int -> Int -> Int -> Double -> Color
 hsla = HSLA
 -----------------------------------------------------------------------------
-hex :: MisoString -> Color
-hex = Hex
+-- | Smart constructor for color in hexadecimal
+--
+-- > div [ style_ [ backgroundColor (hex 0xAABBCC) ] ] [ ]
+-- > -- "#aabbcc"
+--
+hex :: Int -> Color
+hex = Hex . ms . flip showHex ""
 -----------------------------------------------------------------------------
 transparent :: Color
 transparent = rgba 0 0 0 0

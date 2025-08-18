@@ -127,8 +127,8 @@ instance (HasRouter sublayout, KnownSymbol path)
     (mkRouter (Proxy :: Proxy sublayout) a page)
 -----------------------------------------------------------------------------
 -- | View
-instance HasRouter (View a) where
-  type RouteT (View a) x = x
+instance HasRouter (View m a) where
+  type RouteT (View m a) x = x
   mkRouter _ _ a = RPage a
 -----------------------------------------------------------------------------
 -- | Verb
@@ -200,7 +200,7 @@ runRoute
 runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
 -----------------------------------------------------------------------------
 -- | Executes router
--- This is most likely the function you want to use. See haskell-miso.org/shared/Common.hs for usage.
+-- This is most likely the function you want to use. See <https://gitub.com/haskell-miso.org/shared/Common.hs> for usage.
 route
   :: HasRouter layout
   => Proxy layout

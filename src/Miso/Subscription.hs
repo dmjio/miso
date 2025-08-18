@@ -16,16 +16,10 @@ module Miso.Subscription
   , module Miso.Subscription.History
     -- ** Window
   , module Miso.Subscription.Window
-    -- ** Websocket
-  , module Miso.Subscription.WebSocket
-    -- ** SSE
-  , module Miso.Subscription.SSE
   ) where
 -----------------------------------------------------------------------------
 import Miso.Subscription.Mouse
 import Miso.Subscription.Keyboard
 import Miso.Subscription.History
 import Miso.Subscription.Window
-import Miso.Subscription.WebSocket
-import Miso.Subscription.SSE
 -----------------------------------------------------------------------------

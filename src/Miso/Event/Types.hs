@@ -72,11 +72,15 @@ data PointerEvent
   -- ^ clientX, clientY
   , screen :: (Double, Double)
   -- ^ screenX, screenY
+  , offset :: (Double, Double)
+  -- ^ offsetX, offsetY
   , page :: (Double,Double)
   -- ^ pageX, pageY
   , tilt :: (Double,Double)
   -- ^ tiltX, tiltY
   , pressure :: Double
+  , button :: Int
+  -- ^ https://w3c.github.io/pointerevents/#the-button-property
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Pointer type
@@ -135,6 +139,7 @@ defaultEvents = M.fromList
   [ ("blur", True)
   , ("change", False)
   , ("click", False)
+  , ("contextmenu", False)
   , ("dblclick", False)
   , ("focus", False)
   , ("input", False)
@@ -159,6 +164,7 @@ mouseEvents = M.fromList
   , ("mouseleave", False)
   , ("mouseover", False)
   , ("mouseout", False)
+  , ("contextmenu", False)
   ]
 -----------------------------------------------------------------------------
 -- | Drag events
@@ -183,6 +189,7 @@ pointerEvents = M.fromList
   , ("pointerleave", False)
   , ("pointerover", False)
   , ("pointerout", False)
+  , ("contextmenu", False)
   ]
 -----------------------------------------------------------------------------
 -- | Audio video events
@@ -213,4 +220,3 @@ mediaEvents = M.fromList
   , ("waiting", True)
   ]
 -----------------------------------------------------------------------------
-

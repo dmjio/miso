@@ -41,19 +41,65 @@ function shouldSync(node) {
   }
   return enterSync;
 }
-function getParentComponentId(vcomp) {
+function getParentComponentId(vcompNode) {
   var climb = function(node) {
     let parentComponentId = null;
     while (node && node.parentNode) {
-      if ("component-id" in node.parentNode) {
-        parentComponentId = node.parentNode["component-id"];
+      if ("componentId" in node.parentNode) {
+        parentComponentId = node.parentNode["componentId"];
         break;
       }
       node = node.parentNode;
     }
     return parentComponentId;
   };
-  return climb(vcomp["domRef"]);
+  return climb(vcompNode);
+}
+function websocketConnect(url, onOpen, onClose, onError, onMessage) {
+  let socket = new WebSocket(url);
+  socket.onopen = function() {
+    onOpen();
+  };
+  socket.onclose = function(e) {
+    onClose(e);
+  };
+  socket.onerror = function(error) {
+    onError(error);
+  };
+  socket.onmessage = function(msg) {
+    onMessage(msg.data);
+  };
+  return socket;
+}
+function websocketClose(socket) {
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+function websocketSend(socket, message) {
+  if (message && socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(message);
+  }
+}
+function eventSourceConnect(url, onOpen, onMessage, onError) {
+  let eventSource = new EventSource(url);
+  eventSource.onopen = function() {
+    onOpen();
+  };
+  eventSource.onerror = function(error) {
+    onError(error);
+  };
+  eventSource.onmessage = function(msg) {
+    onMessage(msg.data);
+  };
+  return eventSource;
+}
+function eventSourceClose(eventSource) {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
 }
 
 // ts/miso/smart.ts
@@ -185,7 +231,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
   for (const c in cProps) {
     newProp = nProps[c];
     if (newProp === undefined) {
-      if (isSvg || !(c in node)) {
+      if (isSvg || !(c in node) || c === "disabled") {
         context["removeAttribute"](node, c);
       } else {
         context["setAttribute"](node, c, "");
@@ -259,13 +305,12 @@ function drawCanvas(obj) {
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
     obj["onUnmounted"](obj["domRef"]);
-  obj["unmount"]();
+  obj["unmount"](obj["domRef"]);
 }
 function mountComponent(obj, context) {
   if (obj["onBeforeMounted"])
     obj["onBeforeMounted"]();
   obj["mount"](obj["domRef"], (componentId, componentTree) => {
-    obj["domRef"]["component-id"] = componentId;
     obj["children"].push(componentTree);
     context["appendChild"](obj["domRef"], componentTree["domRef"]);
     if (obj["onMounted"])
@@ -789,6 +834,11 @@ globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
 globalThis["miso"]["fetchJSON"] = fetchJSON;
+globalThis["miso"]["eventSourceConnect"] = eventSourceConnect;
+globalThis["miso"]["eventSourceClose"] = eventSourceClose;
+globalThis["miso"]["websocketConnect"] = websocketConnect;
+globalThis["miso"]["websocketClose"] = websocketClose;
+globalThis["miso"]["websocketSend"] = websocketSend;
 globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["getParentComponentId"] = getParentComponentId;
 globalThis["miso"]["shouldSync"] = shouldSync;

@@ -17,16 +17,15 @@ module Miso.Diff
 import           GHCJS.Foreign.Internal hiding (Object)
 import           GHCJS.Types
 import           JavaScript.Object.Internal
+import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
-import           Miso.FFI.Internal (JSM)
 import           Miso.Types
-import           Miso.String
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
 diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
-diff current new mountEl =
-  case (current, new) of
+diff current new_ mountEl =
+  case (current, new_) of
     (Nothing, Nothing) -> pure ()
     (Just (VTree current'), Just (VTree new')) -> do
       FFI.diff current' new' mountEl

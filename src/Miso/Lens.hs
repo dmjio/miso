@@ -1,4 +1,10 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE ExplicitForAll      #-}
+{-# LANGUAGE RankNTypes          #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Lens
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -22,7 +28,7 @@
 --
 -- The goal is to provide users with an out-of-the box lens experience without the large
 -- dependency footprint and cognitive load. This module also aims to preserve semantics of
--- existing lens combinators using a simple formulation (not the Van Laarhoven). It must be imported
+-- existing lens combinators using a simple formulation (not the van Laarhoven). It must be imported
 -- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
 -- application (as described below).
 --
@@ -31,7 +37,7 @@
 -- For convenience we re-export the 'Lens'' synonym to ease the transition into @lens@ or
 -- @microlens@.
 --
--- For the curious reader, if you'd like more information on @lens@ and the Van Laarhoven
+-- For the curious reader, if you'd like more information on @lens@ and the van Laarhoven
 -- formulation, we recommend the @lens@ library <https://hackage.haskell.org/package/lens>.
 --
 -- @
@@ -99,7 +105,8 @@
 module Miso.Lens
   ( -- ** Types
     Lens (..)
-  , Lens'
+  , Getter
+  , Setter
     -- ** Smart constructor
   , lens
     -- ** Re-exports
@@ -131,18 +138,33 @@ module Miso.Lens
   , (<<%=)
   , assign
   , use
+  , view
   , (?=)
   , (<>~)
   , _1
   , _2
   , _id
+  , this
+  -- *** Re-exports
+  , compose
+  -- *** Conversion
+  , Lens'
+  , toVL
+  , fromVL
   ) where
 ----------------------------------------------------------------------------
+import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
+import Control.Monad.Identity (Identity(..))
 import Control.Category (Category (..))
 import Control.Arrow ((<<<))
+import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
+import Data.Kind (Type)
+import Prelude hiding ((.))
+----------------------------------------------------------------------------
+import Miso.Util (compose)
 ----------------------------------------------------------------------------
 -- | A @Lens@ is a generalized getter and setter.
 --
@@ -156,23 +178,40 @@ import Data.Functor((<&>))
 --
 data Lens record field
   = Lens
-  { _get :: record -> field
+  { _get :: Getter record field
     -- ^ Retrieves a field from a record
-  , _set :: record -> field -> record
+  , _set :: Setter record field
     -- ^ Sets a field on a record
   }
 ----------------------------------------------------------------------------
--- | Type synonym re-export for @lens@ / @microlens@ compatability.
--- Note: use this if you plan on migrating to lens or microlens eventually.
--- Just use @Lens@ otherwise (as examples show).
-type Lens' record field = Lens record field
+-- | Type to express a getter on a @Lens@
+type Getter record field = record -> field
+----------------------------------------------------------------------------
+-- | Type to express a setter on a @Lens@
+type Setter record field = field -> record -> record
+----------------------------------------------------------------------------
+-- | van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
+type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
+----------------------------------------------------------------------------
+-- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
+toVL :: Lens record field -> Lens' record field
+toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
+----------------------------------------------------------------------------
+-- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
+fromVL
+  :: Lens' record field
+  -> Lens record field
+fromVL lens_ = Lens {..}
+  where
+    _get record = getConst (lens_ Const record)
+    _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
 -- | Lens are Categories, and can therefore be composed.
 instance Category Lens where
-  id = Lens Prelude.id (flip const)
+  id = Lens Prelude.id const
   Lens g1 s1 . Lens g2 s2 = Lens
     { _get = g1 <<< g2
-    , _set = \r f -> s2 r (s1 (g2 r) f)
+    , _set = \f r -> s2 (s1 f (g2 r)) r
     }
 ----------------------------------------------------------------------------
 -- | Set a field on a record
@@ -188,7 +227,7 @@ instance Category Lens where
 -- @
 infixr 4 .~
 (.~) :: Lens record field -> field -> record -> record
-(.~) _lens = flip (_set _lens)
+(.~) _lens = _set _lens
 ----------------------------------------------------------------------------
 -- | Synonym for '(.~)'
 --
@@ -223,7 +262,7 @@ infixr 4 ?~
 -- @
 infixr 4 %~
 (%~) :: Lens record field -> (field -> field) -> record -> record
-(%~) _lens f record = _set _lens record $ f (record ^. _lens)
+(%~) _lens f record = _set _lens (f (record ^. _lens)) record
 ----------------------------------------------------------------------------
 -- | Synonym for '(%~)'
 over :: Lens record field -> (field -> field) -> record -> record
@@ -472,6 +511,28 @@ l <<.= b = do
   l .= b
   return old
 ----------------------------------------------------------------------------
+-- | Retrieves the field associated with a record in @MonadReader@ using a @Lens@.
+--
+-- @
+-- import Miso.String (ms)
+--
+-- newtype Model = Model { _value :: Int }
+--   deriving (Show, Eq)
+--
+-- data Action = PrintInt
+--
+-- value :: Lens Model Int
+-- value = lens _value $ \\p x -> p { _value = x }
+--
+-- update :: Action -> Effect Model Action
+-- update PrintInt = do
+--   Model x <- view value
+--   io_ $ consoleLog (ms x) -- prints model value
+-- @
+----------------------------------------------------------------------------
+view :: MonadReader record m => Lens record field -> m field
+view lens_ = asks (^. lens_)
+----------------------------------------------------------------------------
 -- | Modifies the field of a record in @MonadState@ using a @Lens@.
 -- Returns the /previous/ value, before modification.
 --
@@ -656,7 +717,7 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 _2 :: Lens (a,b) b
 _2 = lens snd $ \(a,_) x -> (a,x)
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on itself 
+-- | @Lens@ that operates on itself
 --
 -- @
 -- update AddOne = do
@@ -664,6 +725,15 @@ _2 = lens snd $ \(a,_) x -> (a,x)
 -- @
 _id :: Lens a a
 _id = Control.Category.id
+---------------------------------------------------------------------------------
+-- | @Lens@ that operates on itself
+--
+-- @
+-- update AddOne = do
+--   this += 1
+-- @
+this :: Lens a a
+this = _id
 ---------------------------------------------------------------------------------
 -- | Smart constructor @lens@ function. Used to easily construct a @Lens@
 --
@@ -674,5 +744,5 @@ lens
   :: (record -> field)
   -> (record -> field -> record)
   -> Lens record field
-lens = Lens
+lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------

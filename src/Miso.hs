@@ -16,24 +16,25 @@
 ----------------------------------------------------------------------------
 module Miso
   ( -- * API
-    -- ** Entry
+    -- ** Miso
     miso
   , (🍜)
+  -- ** App
+  , App
+  , startApp
+  , renderApp
+  -- ** Component
+  , Component
   , startComponent
-  , renderComponent
     -- ** Sink
   , withSink
   , Sink
-    -- ** Publishers / Subscribers
-  , subscribe
-  , unsubscribe
-  , publish
-  , Topic
-  , topic
   -- ** Component
   , mail
-  , getComponentId
-  , getParentComponentId
+  , checkMail
+  , parent
+  , mailParent
+  , broadcast
   -- ** Subscriptions
   , startSub
   , stopSub
@@ -44,6 +45,14 @@ module Miso
   , io
   , io_
   , for
+  -- ** Reactivity
+  , Binding (..)
+  , (-->)
+  , (<--)
+  , (<-->)
+  , (<--->)
+  , (--->)
+  , (<---)
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -54,8 +63,8 @@ module Miso
     -- * Html
   , module Miso.Html
   , module Miso.Render
-    -- * Property
-  , module Miso.Property
+    -- * PubSub
+  , module Miso.PubSub
     -- * Router
   , module Miso.Router
     -- * Run
@@ -77,7 +86,7 @@ module Miso
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (newIORef)
-import           Language.Javascript.JSaddle (Object(Object), JSM)
+import           Language.Javascript.JSaddle (Object(Object))
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
@@ -91,17 +100,17 @@ import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
-import           Miso.FFI hiding (getComponentId, getParentComponentId)
+import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Html
-import           Miso.Internal
+import           Miso.Runtime
 import           Miso.Property
+import           Miso.PubSub
 import           Miso.Render
 import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage
-import           Miso.String (MisoString)
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
@@ -109,63 +118,66 @@ import           Miso.Util
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
-miso :: Eq model => (URI -> Component model action) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
-  app@Component {..} <- f <$> getURI
-  initialize app $ \snk -> do
-    renderStyles styles
+  vcomp@Component {..} <- f <$> getURI
+  initialize vcomp $ \snk -> do
+    refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
-    mount <- FFI.getBody
-    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount vtree
+    mount_ <- FFI.getBody
+    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount_ vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (mount, viewRef)
+    pure (refs, mount_, viewRef)
+-----------------------------------------------------------------------------
+-- | Synonym 'startApp' to 'startComponent'.
+startApp :: Eq model => App model action -> JSM ()
+startApp = startComponent
 -----------------------------------------------------------------------------
 -- | Alias for 'miso'.
-(🍜) :: Eq model => (URI -> Component model action) -> JSM ()
+(🍜) :: Eq model => (URI -> App model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
--- Initializes application at 'mountPoint' (defaults to \<body\> when @Nothing@)
-startComponent
-  :: Eq model
-  => Component model action
-  -- ^ Component application
-  -> JSM ()
-startComponent vcomp@Component { styles } = withJS $ initComponent vcomp (renderStyles styles)
+startComponent :: Eq model => Component ROOT model action -> JSM ()
+startComponent vcomp@Component { styles, scripts } =
+  withJS $ initComponent vcomp $ do
+     (++) <$> renderScripts scripts
+          <*> renderStyles styles
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
 -- JS object that implements the context interface per 'ts/miso/context/dom.ts'
 -- This is necessary for native support.
-renderComponent
+renderApp
   :: Eq model
   => Maybe MisoString
   -- ^ Name of the JS object that contains the drawing context
-  -> Component model action
+  -> App model action
   -- ^ Component application
-  -> JSM ()
+  -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
-renderComponent Nothing vcomp _ = startComponent vcomp
-renderComponent (Just renderer) vcomp hooks = withJS $ do
+renderApp Nothing vcomp _ = startApp vcomp
+renderApp (Just renderer) vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------
 -- | Internal helper function to support both 'render' and 'startComponent'
 initComponent
   :: Eq model
-  => Component model action
+  => Component ROOT model action
   -- ^ Component application
-  -> JSM ()
+  -> JSM [DOMRef]
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
-  initialize vcomp $ \snk -> hooks >> do
+  initialize vcomp $ \snk -> do
+    refs <- hooks
     vtree <- runView Draw (view model) snk logLevel events
-    mount <- mountElement (getMountPoint mountPoint)
-    diff Nothing (Just vtree) mount
+    mount_ <- mountElement (getMountPoint mountPoint)
+    diff Nothing (Just vtree) mount_
     viewRef <- liftIO (newIORef vtree)
-    pure (mount, viewRef)
+    pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

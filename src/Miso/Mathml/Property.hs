@@ -56,13 +56,10 @@ module Miso.Mathml.Property
   , symmetric_
   , voffset_
   , width_
-  , xmlns_
   ) where
-
+-----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.Property
-import           Miso.String (MisoString)
-
 -----------------------------------------------------------------------------
 -- | [<\dir\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
 --
@@ -222,8 +219,4 @@ voffset_ = textProp "voffset"
 -- | @since 1.9.0.0
 width_ :: MisoString -> Attribute action
 width_ = textProp "width"
------------------------------------------------------------------------------
--- | @since 1.9.0.0
-xmlns_ :: MisoString -> Attribute action
-xmlns_ = textProp "xmlns"
 -----------------------------------------------------------------------------

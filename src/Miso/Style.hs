@@ -17,7 +17,6 @@ module Miso.Style
   , styleInline_
   , sheet_
   , selector_
-  , (=:)
     -- *** Render
   , renderStyleSheet
     -- *** Combinators
@@ -87,6 +86,7 @@ module Miso.Style
   , cursor
   , direction
   , display
+  , fill
   , filter
   , flexBasis
   , flexDirection
@@ -171,6 +171,8 @@ module Miso.Style
   , relativeTopOf
   , right
   , rowGap
+  , stroke
+  , strokeWidth
   , textAlign
   , textDecoration
   , textIndent
@@ -214,6 +216,9 @@ module Miso.Style
   , em
   , s
   , ms
+  -- *** Misc
+  , url
+  , matrix
   -- *** Animation
   , keyframes_
   -- *** Media Queries
@@ -228,6 +233,7 @@ import           Miso.Style.Types
 import           Miso.Property
 import           Miso.Types (Attribute)
 import qualified Miso.Types as MT
+import           Miso.Util ((=:))
 -----------------------------------------------------------------------------
 import           Prelude hiding (filter, rem)
 -----------------------------------------------------------------------------
@@ -267,24 +273,37 @@ s x = MS.ms x <> "s"
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/url_function
+url :: MisoString -> MisoString
+url x = "url(" <> x <> ")"
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function/matrix
+matrix
+  :: Double
+  -> Double
+  -> Double
+  -> Double
+  -> Double
+  -> Double
+  -> MisoString
+matrix a b c d tx ty = "matrix(" <> values <> ")"
+  where
+    values =
+      MS.intercalate ","
+      [ MS.ms a
+      , MS.ms b
+      , MS.ms c
+      , MS.ms d
+      , MS.ms tx
+      , MS.ms ty
+      ]
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/percentage
 pct :: Double -> MisoString
 pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
------------------------------------------------------------------------------
--- | Smart constructor for Attributes. This function is helpful when
--- constructing 'Style'.
---
--- Example shown below.
---
--- @
--- div_ [ style_  [ "background" =: "red" ] ] []
--- @
---
-(=:) :: k -> v -> (k, v)
-k =: v = (k,v)
 -----------------------------------------------------------------------------
 -- | Used when constructing a 'StyleSheet'
 --
@@ -733,6 +752,11 @@ direction x = "direction" =: x
 display :: MisoString -> Style
 display x = "display" =: x
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/fill
+--
+fill :: MisoString -> Style
+fill x = "fill" =: x
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/filter
 --
 filter :: MisoString -> Style
@@ -1157,6 +1181,16 @@ right x = "right" =: x
 --
 rowGap :: MisoString -> Style
 rowGap x = "row-gap" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke
+--
+stroke :: MisoString -> Style
+stroke x = "stroke" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/stroke-width
+--
+strokeWidth :: MisoString -> Style
+strokeWidth x = "stroke-width" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/text-align
 --

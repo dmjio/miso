@@ -17,7 +17,6 @@
 -- Portability :  non-portable
 --
 -- [Canvas Example](https://canvas.haskell-miso.org)
--- [Canvas Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)
 --
 ----------------------------------------------------------------------------
 module Miso.Canvas
@@ -98,7 +97,7 @@ module Miso.Canvas
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad.Reader (ReaderT, runReaderT, ask)
-import           Language.Javascript.JSaddle ( JSM, JSVal, (#), fromJSVal, MakeArgs (..)
+import           Language.Javascript.JSaddle ( JSVal, (#), fromJSVal, MakeArgs (..)
                                              , (<#), toJSVal, (!), fromJSValUnchecked
                                              , liftJSM, FromJSVal, Object (..)
                                              , ToJSVal, MakeObject, (<##)
@@ -108,20 +107,19 @@ import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
 import           Miso.Style (Color, renderColor)
-import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
 -- useful when building applications w/ three.js, or other libraries where
 -- explicit context is not necessary.
 canvas_
-  :: forall action canvasState
+  :: forall model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute action ]
   -> (DOMRef -> JSM canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> JSM ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View action
+  -> View model action
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]
@@ -145,14 +143,14 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
 -- This function abstracts over the context and interpret callback,
 -- including dimension ("2d" or "3d") canvas.
 canvas
-  :: forall action canvasState
+  :: forall model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute action ]
   -> (DOMRef -> Canvas canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
   -> (canvasState -> Canvas ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
-  -> View action
+  -> View model action
 canvas attributes initialize draw = node HTML "canvas" attrs []
   where
     attrs :: [ Attribute action ]

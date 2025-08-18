@@ -4,7 +4,7 @@
 <a href="https://haskell-miso.org">
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
    </a>
-<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> front-end web framework 🍜</p>
+<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> web and mobile framework 🍜</p>
 </p>
 
 <p align="center">
@@ -28,7 +28,11 @@
   </a>
 </p>
 
-**Miso** is a small, production-ready, component-oriented, [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web and [mobile](https://github.com/dmjio/miso-native) applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, Server-sent events ([SSE](https://html.spec.whatwg.org/multipage/server-sent-events.html)), [Websockets](https://websockets.spec.whatwg.org/), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
+## 
+
+**Miso** is a small, production-ready, component-oriented, [reactive](https://github.com/haskell-miso/miso-reactive), [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web and [mobile](https://github.com/dmjio/miso-native) applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, 2D/3D Canvas (WebGL), Server-sent events ([SSE](https://github.com/haskell-miso/miso-sse)), [Websockets](https://github.com/haskell-miso/miso-websocket), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. 
+
+**Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
 **Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
@@ -37,7 +41,8 @@
 
 ## Table of Contents
 - [History](#history-)
-- [Quick Start](#quick-start)
+- [Quick Start](#quick-start-%EF%B8%8F)
+- [Getting Started](#getting-started)
 - [Setup](#setup-%EF%B8%8F)
 - [Hot Reload](#hot-reload-)
 - [Compilation](#compilation)
@@ -67,17 +72,25 @@
 
 # History 📜
 
-**miso** is a play on the words ***micro*** and ***isomorphic***.
+> **miso** is a play on the words ***micro*** and ***isomorphic***.
 
 [miso](https://haskell-miso.org) began in 2016 as research in:
   - Expressing the [Elm architecture](https://elm-lang.org) in [GHCJS](https://github.com/ghcjs/ghcjs) as an [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language).
-  - Implementing modern JavaScript frontend techniques (e.g. [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
+  - Implementing modern JavaScript frontend techniques as found in [react](https://react.dev) (e.g. [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
 
-Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) between modern JavaScript techniques (as found in [React](https://reactjs.org), [Vue.js](https://vuejs.org), etc.) and functional programming in [Haskell](https://haskell.org).
+Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) between modern JavaScript frameworks (such as [React](https://reactjs.org), [Vue.js](https://vuejs.org), etc.) and functional programming in [Haskell](https://haskell.org).
 
-It has since grown to encompass more techniques from the JavaScript community like [Components](https://www.w3schools.com/react/react_components.asp) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). It also [now supports native development to iOS / Android](https://github.com/haskell-miso/miso-lynx) via [LynxJS](https://lynxjs.org) and additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
+It has since grown to encompass more features from the JavaScript community like [Components](https://www.w3schools.com/react/react_components.asp) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). It also [now supports native development to iOS / Android](https://github.com/haskell-miso/miso-lynx) via [LynxJS](https://lynxjs.org) and additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
 
-## Quick start
+## Quick start ⚡
+
+> [!TIP]
+> We have a [template repository](https://github.com/haskell-miso/miso-sampler) that includes a sample application and build scripts for all platforms.
+
+The fastest way to get started is to clone and build the [miso sampler](https://github.com/haskell-miso/miso-sampler) repository 🍔 This has build scripts for Web Assembly, JS and vanilla [GHC](https://haskell.org/ghc). This requires [Nix Flakes](https://wiki.nixos.org/wiki/Flakes) usage. See also the section on using [miso's binary cache](#binary-cache).
+
+## Getting started
+
 To start developing applications with `miso` you will need to acquire [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/). This can be done via [GHCup](https://www.haskell.org/ghcup/) or [Nix](https://nixos.org/).
 
 > [!TIP]
@@ -168,7 +181,7 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startComponent app)
+main = run (startApp app)
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
@@ -176,7 +189,7 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-app :: Component Model Action
+app :: App Model Action
 app = component emptyModel updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Empty application state
@@ -184,7 +197,7 @@ emptyModel :: Model
 emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Effect Model Action
+updateModel :: Action -> Transition Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
@@ -193,7 +206,7 @@ updateModel = \case
     alert "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Action
+viewModel :: Model -> View Model Action
 viewModel x = div_ []
   [ button_ [ onClick AddOne ] [ text "+" ]
   , text $ ms (x ^. counter)
@@ -538,66 +551,40 @@ For some details of the internals and general overview of how `miso` works, see 
 
 For real-world examples of Haskell `miso` applications, see below.
 
-| Name            | Description                            | Source Link                                                                      | Live Demo Link                                | Author                               |
-|-----------------|----------------------------------------|----------------------------------------------------------------------------------|-----------------------------------------------|--------------------------------------|
-| **TodoMVC**     | A classic TodoMVC implementation       | [Source](https://github.com/dmjio/miso/blob/master/examples/todo-mvc/Main.hs)    | [Demo](https://todo-mvc.haskell-miso.org/)    | [@dmjio](https://github.com/dmjio)   |
-| **2048**        | A clone of the 2048 game               | [Source](https://github.com/ptigwe/hs2048/)                                      | [Demo](https://2048.haskell-miso.org/)        | [@ptigwe](https://github.com/ptigwe) |
-| **Flatris**     | A Tetris-like game                     | [Source](https://github.com/ptigwe/hs-flatris/)                                  | [Demo](https://flatris.haskell-miso.org/)     | [@ptigwe](https://github.com/ptigwe) |
-| **Plane**       | A flappy-birds-like game               | [Source](https://github.com/Lermex/miso-plane)                                   | [Demo](https://miso-plane.haskell-miso.org/)  | [@Lermex](https://github.com/Lermex) |
-| **Snake**       | The classic Snake game                 | [Source](https://github.com/lbonn/miso-snake)                                    | [Demo](https://snake.haskell-miso.org/)       | [@lbonn](https://github.com/lbonn)   |
-| **SVG**         | An example showcasing SVG rendering    | [Source](https://github.com/dmjio/miso/blob/master/examples/svg/Main.hs)         | [Demo](https://svg.haskell-miso.org/)         | [@dmjio](https://github.com/dmjio)   |
-| **Fetch**       | An example demonstrating AJAX requests | [Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs)       | [Demo](https://fetch.haskell-miso.org/)       | [@dmjio](https://github.com/dmjio)   |
-| **File Reader** | A FileReader API example               | [Source](https://github.com/dmjio/miso/blob/master/examples/file-reader/Main.hs) | [Demo](https://file-reader.haskell-miso.org/) | [@dmjio](https://github.com/dmjio)   |
-| **Three.js**       | A 3D rendering example using Three.JS  | [Source](https://github.com/haskell-miso/three-miso) | [Demo](https://haskell-miso.github.io/three-miso/) | [@juliendehos](https://github.com/three-hs/three-miso-example)  |
-| **Mario**       | A Super Mario physics example          | [Source](https://github.com/dmjio/miso/blob/master/examples/mario/Main.hs)       | [Demo](https://mario.haskell-miso.org/)       | [@dmjio](https://github.com/dmjio)   |
-| **WebSocket**   | A simple WebSocket example             | [Source](https://github.com/dmjio/miso/blob/master/examples/websocket/Main.hs)   | [Demo](https://websocket.haskell-miso.org/)   | [@dmjio](https://github.com/dmjio)   |
-| **Router**      | A client-side routing example          | [Source](https://github.com/dmjio/miso/blob/master/examples/router/Main.hs)      | [Demo](https://router.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
-| **Canvas 2D**   | A 2D Canvas rendering example          | [Source](https://github.com/dmjio/miso/blob/master/examples/canvas2d/Main.hs)    | [Demo](https://canvas.haskell-miso.org/)      | [@dmjio](https://github.com/dmjio)   |
-| **Space Invaders**   | A Space-Invaders-like game       | [Source](https://github.com/haskell-miso/miso-invaders)    | [Demo](https://haskell-miso.github.io/miso-invaders/)      | [@juliendehos](https://github.com/juliendehos)   |
-| **Audio**   | Audio examples       | [Source](https://github.com/haskell-miso/miso-audio)    | [Demo](https://haskell-miso.github.io/miso-audio/)      | [@juliendehos](https://github.com/juliendehos)   |
-| **Video**   | Video examples       | [Source](https://github.com/haskell-miso/miso-video)    | [Demo](https://haskell-miso.github.io/miso-video/)      | [@juliendehos](https://github.com/juliendehos)   |
+| Name                  | Description                               | Source Link                                                   | Live Demo Link                                            | Author                                            |
+|-----------------------|-------------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------|---------------------------------------------------|
+| **TodoMVC**           | A classic TodoMVC implementation          | [Source](https://github.com/haskell-miso/miso-todomvc)        | [Demo](https://todomvc.haskell-miso.org)       | [@dmjio](https://github.com/dmjio)                |
+| **2048**              | A clone of the 2048 game                  | [Source](https://github.com/haskell-miso/miso-2048)           | [Demo](https://2048.haskell-miso.org/)         | [@ptigwe](https://github.com/ptigwe)              |
+| **Flatris**           | A Tetris-like game                        | [Source](https://github.com/haskell-miso/miso-flatris)        | [Demo](https://flatris.haskell-miso.org/)      | [@ptigwe](https://github.com/ptigwe)              |
+| **Plane**             | A flappy-birds-like game                  | [Source](https://github.com/haskell-miso/miso-plane)          | [Demo](https://plane.haskell-miso.org/)        | [@Lermex](https://github.com/Lermex)              |
+| **Snake**             | The classic Snake game                    | [Source](https://github.com/haskell-miso/miso-snake)          | [Demo](https://snake.haskell-miso.org/)        | [@lbonn](https://github.com/lbonn)                |
+| **SVG**               | An example showcasing SVG rendering       | [Source](https://github.com/haskell-miso/miso-svg)            | [Demo](https://svg.haskell-miso.org/)          | [@dmjio](https://github.com/dmjio)                |
+| **Fetch**             | An example demonstrating AJAX requests    | [Source](https://github.com/haskell-miso/miso-fetch)          | [Demo](https://fetch.haskell-miso.org)         | [@dmjio](https://github.com/dmjio)                |
+| **File Reader**       | A FileReader API example                  | [Source](https://github.com/haskell-miso/miso-filereader)     | [Demo](https://filereader.haskell-miso.org)    | [@dmjio](https://github.com/dmjio)                |
+| **Mario**             | A Super Mario physics example             | [Source](https://github.com/haskell-miso/miso-mario)          | [Demo](https://mario.haskell-miso.org)         | [@dmjio](https://github.com/dmjio)                |
+| **WebSocket**         | A simple WebSocket example                | [Source](https://github.com/haskell-miso/miso-websocket)      | [Demo](https://websocket.haskell-miso.org)     | [@dmjio](https://github.com/dmjio)                |
+| **Router**            | A client-side routing example             | [Source](https://github.com/haskell-miso/miso-router)         | [Demo](https://router.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
+| **Canvas 2D**         | A 2D Canvas rendering example             | [Source](https://github.com/haskell-miso/miso-canvas2d)       | [Demo](https://canvas.haskell-miso.org)      | [@dmjio](https://github.com/dmjio)                |
+| **Components**        | A simple pub/sub setup for Component      | [Source](https://github.com/haskell-miso/miso-components)     | [Demo](https://components.haskell-miso.org)    | [@dmjio](https://github.com/dmjio)                |
+| **MathML**            | A MathML example                          | [Source](https://github.com/haskell-miso/miso-mathml)         | [Demo](https://mathml.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
+| **Simple**            | A simple counter example                  | [Source](https://github.com/haskell-miso/miso-simple)         | [Demo](https://simple.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
+| **SSE**               | SSE (Server-sent events) Example          | [Source](https://github.com/haskell-miso/miso-sse)            | [Demo](https://sse.haskell-miso.org)           | [@dmjio](https://github.com/dmjio)                |
+| **Three.js**          | A 3D rendering example using Three.JS     | [Source](https://github.com/haskell-miso/three-miso)          | [Demo](https://miso.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
+| **Space Invaders**    | A Space-Invaders-like game                | [Source](https://github.com/haskell-miso/miso-invaders)       | [Demo](https://space-invaders.haskell-miso.org/)     | [@juliendehos](https://github.com/juliendehos)    |
+| **Audio**             | Audio examples                            | [Source](https://github.com/haskell-miso/miso-audio)          | [Demo](https://audio.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
+| **Video**             | Video examples                            | [Source](https://github.com/haskell-miso/miso-video)          | [Demo](https://video.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
+| **WebVR**             | WebVR examples                            | [Source](https://github.com/haskell-miso/miso-aframe)         | [Demo](https://aframe.haskell-miso.org/)        | [@dmjio](https://github.com/dmjio)    |
+| **FRP**             | Reactive examples                            | [Source](https://github.com/haskell-miso/miso-reactive)         | [Demo](https://reactive.haskell-miso.org/)        | [@dmjio](https://github.com/dmjio)    |
+
 
 ## Building examples
 
-The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager
+The easiest way to build the examples is with the [`nix`](https://nixos.org/nix/) package manager.
 
 > [!TIP]
 > Use [cachix](https://cachix.org) to ensure you're not building dependencies unnecessarily `cachix use haskell-miso-cachix`
 
-
-```
-$ git clone https://github.com/dmjio/miso
-$ cd miso
-$ nix-build -A miso-examples
-```
-
-This will compile all the examples to JavaScript into a folder named `result`.
-
-```
-➜ tree -d ./result/bin
-./result/bin
-|-- canvas2d.jsexe
-|-- file-reader.jsexe
-|-- mario.jsexe
-|   `-- imgs
-|-- mathml.jsexe
-|-- router.jsexe
-|-- simple.jsexe
-|-- svg.jsexe
-|-- tests.jsexe
-|-- threejs.jsexe
-|-- todo-mvc.jsexe
-|-- websocket.jsexe
-`-- fetch.jsexe
-```
-
-> [!NOTE]
-> To see examples, we recommend hosting them with a web server (we use [http-server](https://github.com/http-party/http-server))
-
-```
-cd result/bin/todo-mvc.jsexe && http-sever
-Serving HTTP on 0.0.0.0 port 8000 ...
-```
+See the [@HaskellMiso](https://github.com/haskell-miso) organization for all examples, and how to build then.
 
 ## Interacting with HTTP APIs 🔌
 
@@ -663,7 +650,7 @@ All files           |   92.37 |   85.48 |
 > The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Native📱
-Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-native) repository for more information.
+Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-lynx) repository for more information.
 
 ## Benchmarks 🏎️
 

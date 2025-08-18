@@ -26,6 +26,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
 import qualified Network.HTTP.Media as M
 import           Servant.API (Accept (..), MimeRender (..))
+import           Unsafe.Coerce (unsafeCoerce)
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
 import           Miso.Types
@@ -47,18 +48,18 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @View@ to a @L.ByteString@
-instance ToHtml (View a) where
+instance ToHtml (View m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[View]@ to a @L.ByteString@
-instance ToHtml [View a] where
+instance ToHtml [View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 -- | Render HTML from a servant API
 instance ToHtml a => MimeRender HTML a where
   mimeRender _ = toHtml
 ----------------------------------------------------------------------------
-renderView :: View a -> L.ByteString
+renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
@@ -71,7 +72,7 @@ intercalate sep (x:xs) =
   , intercalate sep xs
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: View a -> Builder
+renderBuilder :: View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VTextRaw "") = fromMisoString " "
@@ -93,14 +94,11 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp attributes (SomeComponent Component {..})) =
-  mconcat
-  [ stringUtf8 "<div "
-  , intercalate " " (renderAttrs <$> attributes)
-  , ">"
-  , renderBuilder (view model)
-  , "</div>"
-  ]
+renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
+  renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
+  -- dmj: Just trust me bro moment.
+  -- This is fine to do because we don't need the polymorphism here
+  -- when monomorphizing to Builder. Release the skolems.
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =
@@ -130,7 +128,7 @@ renderAttrs (Styles styles) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View a] -> [View a]
+collapseSiblingTextNodes :: [View m a] -> [View m a]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText x : VText y : xs) =
   collapseSiblingTextNodes (VText (x <> y) : xs)

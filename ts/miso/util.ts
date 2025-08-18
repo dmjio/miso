@@ -1,4 +1,4 @@
-import { VNode, VComp } from './types';
+import { VNode } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -69,25 +69,94 @@ export function shouldSync (
 
 /*
    'getParentComponentId'
-   dmj: Used to fetch the parent's component-id
+   dmj: Used to fetch the parent's componentId
 
-   Climbs up the tree, finds the immediate component ancestor (parent) and returns its component-id
-   This should be called on the DOMRef of a VComp, otherwise it will return the current component-id.
+   Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
+   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
 
 */
 export function getParentComponentId (
-  vcomp: VComp
+  vcompNode: ParentNode
 ): number {
     var climb = function (node : ParentNode) {
       let parentComponentId = null;
       while (node && node.parentNode) {
-          if ('component-id' in node.parentNode) {
-              parentComponentId = node.parentNode['component-id'];
+          if ('componentId' in node.parentNode) {
+              parentComponentId = node.parentNode['componentId'];
               break;
           }
           node = node.parentNode;
       }
       return parentComponentId;
     }
-    return climb (vcomp['domRef']);
+    return climb (vcompNode);
 }
+
+export function websocketConnect (
+    url: string,
+    onOpen,
+    onClose,
+    onError,
+    onMessage,
+): WebSocket {
+  let socket = new WebSocket(url);
+  socket.onopen = function () {
+    onOpen();
+  };
+  socket.onclose = function (e) {
+    onClose(e);
+  };
+  socket.onerror = function (error) {
+    onError(error);
+  };
+  socket.onmessage = function (msg) {
+    onMessage(msg.data);
+  };
+  return socket;
+}
+
+export function websocketClose (
+  socket
+): void {
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+
+export function websocketSend (
+  socket, message
+): void {
+  if (message && socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(message);
+  }
+}
+
+export function eventSourceConnect (
+    url: string,
+    onOpen,
+    onMessage,
+    onError,
+): EventSource {
+  let eventSource = new EventSource(url);
+  eventSource.onopen = function () {
+    onOpen();
+  };
+  eventSource.onerror = function (error) {
+    onError(error);
+  };
+  eventSource.onmessage = function (msg) {
+    onMessage(msg.data);
+  };
+  return eventSource;
+}
+
+export function eventSourceClose (
+  eventSource: EventSource
+): void {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+

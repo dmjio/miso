@@ -8,7 +8,7 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.FFI
-  ( -- * Functions
+  ( -- ** Functions
     set
   , now
   , consoleLog
@@ -40,12 +40,23 @@ module Miso.FFI
   -- ** Date
   , Date (..)
   , newDate
+  , toLocaleString
   , getSeconds
   , getMilliseconds
   -- ** Component
   , getParentComponentId
   , getComponentId
+  -- ** DOM
+  , nextSibling
+  , previousSibling
+  -- ** Element
+  , click
+  , files
+  -- ** Re-exports
+  , JSVal
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
+-----------------------------------------------------------------------------
+import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------

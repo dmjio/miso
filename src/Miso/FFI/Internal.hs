@@ -15,7 +15,9 @@
 ----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( JSM
+   -- * Concurrency
    , forkJSM
+   -- * Callbacks
    , syncCallback
    , syncCallback1
    , syncCallback2
@@ -23,61 +25,102 @@ module Miso.FFI.Internal
    , asyncCallback1
    , asyncCallback2
    , ghcjsPure
+   -- * JSAddle
    , syncPoint
+   -- * Events
    , addEventListener
-   , windowAddEventListener
-   , windowInnerHeight
-   , windowInnerWidth
+   , removeEventListener
    , eventPreventDefault
    , eventStopPropagation
+   -- * Window
+   , windowAddEventListener
+   , windowRemoveEventListener
+   , windowInnerHeight
+   , windowInnerWidth
+   -- * Performance
    , now
+   -- * Console
    , consoleWarn
    , consoleLog
    , consoleError
    , consoleLog'
+   -- * JSON
    , jsonStringify
    , jsonParse
    , eventJSON
+   -- * Object
    , set
+   -- * DOM
    , getBody
    , getDocument
    , getContext
    , getElementById
    , diff
+   , nextSibling
+   , previousSibling
+   -- * Conversions
    , integralToJSString
    , realFloatToJSString
    , jsStringToDouble
+   -- * Events
    , delegateEvent
    , undelegateEvent
+   -- * Isomorphic
    , hydrate
+   -- * Misc.
    , focus
    , blur
    , scrollIntoView
    , alert
    , reload
+   -- * CSS
    , addStyle
    , addStyleSheet
+   -- * JS
+   , addSrc
+   , addScript
+   , addScriptImportMap
+   -- * XHR
    , fetch
    , shouldSync
-   , flush
+   -- * Drawing
    , requestAnimationFrame
    , setDrawingContext
+   , flush
+   -- * Image
    , Image (..)
    , newImage
+   -- * Date
    , Date (..)
    , newDate
+   , toLocaleString
+   -- * Utils
    , getMilliseconds
    , getSeconds
+   -- * Component
    , getParentComponentId
    , getComponentId
+   -- * Element
+   , files
+   , click
+   -- * Clipboard
+   , copyClipboard
+   -- * Media
+   , getUserMedia
+   -- * WebSocket
+   , websocketConnect
+   , websocketClose
+   , websocketSend
+   -- * SSE
+   , eventSourceConnect
+   , eventSourceClose
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void, forM_)
+import           Control.Monad (void, forM_, (<=<))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
-import           Data.Maybe (isJust)
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
@@ -158,13 +201,39 @@ addEventListener
   -> (JSVal -> JSM ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> JSM Function
 addEventListener self name cb = do
-  _ <- self # "addEventListener" $ (name, asyncFunction handle)
-  pure ()
+  cb_ <- asyncFunction handle
+  void $ self # "addEventListener" $ (name, cb_)
+  pure cb_
     where
       handle _ _ []    = error "addEventListener: no args, impossible"
       handle _ _ (x:_) = cb x
+-----------------------------------------------------------------------------
+-- | Register an event listener on given target.
+removeEventListener
+  :: JSVal
+  -- ^ Event target on which we want to register event listener
+  -> MisoString
+  -- ^ Type of event to listen to (e.g. "click")
+  -> Function
+  -- ^ Callback which will be called when the event occurs,
+  -- the event will be passed to it as a parameter.
+  -> JSM ()
+removeEventListener self name cb =
+  void $ self # "removeEventListener" $ (name, cb)
+-----------------------------------------------------------------------------
+-- | Registers an event listener on window
+windowRemoveEventListener
+  :: MisoString
+  -- ^ Type of event to listen to (e.g. "click")
+  -> Function
+  -- ^ Callback which will be called when the event occurs,
+  -- the event will be passed to it as a parameter.
+  -> JSM ()
+windowRemoveEventListener name cb = do
+  win <- jsg "window"
+  removeEventListener win name cb
 -----------------------------------------------------------------------------
 -- | Registers an event listener on window
 windowAddEventListener
@@ -173,7 +242,7 @@ windowAddEventListener
   -> (JSVal -> JSM ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> JSM Function
 windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
@@ -417,11 +486,42 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 --
 -- > <head><style>body { background-color: green; }</style></head>
 --
-addStyle :: MisoString -> JSM ()
+addStyle :: MisoString -> JSM JSVal
 addStyle css = do
   style <- jsg "document" # "createElement" $ ["style"]
   (style <# "innerHTML") css
-  void $ jsg "document" ! "head" # "appendChild" $ [style]
+  jsg "document" ! "head" # "appendChild" $ [style]
+-----------------------------------------------------------------------------
+-- | Appends a 'script_' element containing JS to 'head_'
+--
+-- > addScript "function () { alert('hi'); }"
+--
+addScript :: MisoString -> JSM JSVal
+addScript js_ = do
+  script <- jsg "document" # "createElement" $ ["script"]
+  (script <# "innerHTML") js_
+  jsg "document" ! "head" # "appendChild" $ [script]
+-----------------------------------------------------------------------------
+-- | Appends a 'script_' element containing a JS import map.
+--
+-- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
+--
+addScriptImportMap :: MisoString -> JSM JSVal
+addScriptImportMap impMap = do
+  script <- jsg "document" # "createElement" $ ["script"]
+  (script <# "type") "importmap"
+  (script <# "innerHTML") impMap
+  jsg "document" ! "head" # "appendChild" $ [script]
+-----------------------------------------------------------------------------
+-- | Appends a \<script\> element to 'head_'
+--
+-- > addSrc "https://example.com/script.js"
+--
+addSrc :: MisoString -> JSM JSVal
+addSrc url = do
+  link <- jsg "document" # "createElement" $ ["script"]
+  _ <- link # "setAttribute" $ ["src", fromMisoString url]
+  jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'link_' element to 'head_'
 -- The 'link_' tag will contain a URL to a CSS file.
@@ -430,12 +530,12 @@ addStyle css = do
 --
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
-addStyleSheet :: MisoString -> JSM ()
+addStyleSheet :: MisoString -> JSM JSVal
 addStyleSheet url = do
   link <- jsg "document" # "createElement" $ ["link"]
   _ <- link # "setAttribute" $ ["rel","stylesheet"]
   _ <- link # "setAttribute" $ ["href", fromMisoString url]
-  void $ jsg "document" ! "head" # "appendChild" $ [link]
+  jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --
@@ -449,7 +549,7 @@ fetch
   -- ^ url
   -> MisoString
   -- ^ method
-  -> Maybe MisoString
+  -> Maybe JSVal
   -- ^ body
   -> [(MisoString,MisoString)]
   -- ^ headers
@@ -463,26 +563,27 @@ fetch url method maybeBody headers successful errorful = do
     asyncCallback1 $ \jval ->
       fromJSON <$> fromJSValUnchecked jval >>= \case
         Error string ->
-          error ("fetchJSON: " <> string <> ": decode failure")
+          errorful $ ms ("fetch: " <> string <> ": decode failure")
         Success result -> do
           successful result
-  errorful_ <- toJSVal =<< do
-    asyncCallback1 $ \jval ->
-       errorful =<< fromJSValUnchecked jval
+  errorful_ <- toJSVal =<<
+    asyncCallback1 (errorful <=< fromJSValUnchecked)
   moduleMiso <- jsg "miso"
   url_ <- toJSVal url
   method_ <- toJSVal method
   body_ <- toJSVal maybeBody
-  let jsonHeaders =
-        [(ms "Content-Type", ms "application/json") | isJust maybeBody]
-        <>
-        [(ms "Accept", ms "application/json")]
   Object headers_ <- do
     o <- create
-    forM_ (headers <> jsonHeaders) $ \(k,v) -> do
-      set k v o
+    forM_ headers $ \(k,v) -> set k v o
     pure o
-  void $ moduleMiso # "fetchJSON" $ [url_, method_, body_, headers_, successful_, errorful_]
+  void $ moduleMiso # "fetchJSON" $
+    [ url_
+    , method_
+    , body_
+    , headers_
+    , successful_
+    , errorful_
+    ]
 -----------------------------------------------------------------------------
 -- | shouldSync
 --
@@ -533,6 +634,10 @@ newtype Date = Date JSVal
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
+toLocaleString :: Date -> JSM MisoString
+toLocaleString date = fromJSValUnchecked =<< do
+  date # "toLocaleString" $ ()
+-----------------------------------------------------------------------------
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
@@ -553,5 +658,126 @@ getParentComponentId domRef =
 -- N.B. you * must * call this on the DOMRef, otherwise, problems.
 -- For use in `onMounted`, etc.
 getComponentId :: JSVal -> JSM Int
-getComponentId vtree = fromJSValUnchecked =<< vtree ! "component-id"
+getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
+-----------------------------------------------------------------------------
+-- | Fetch next sibling DOM node
+--
+-- @since 1.9.0.0
+nextSibling :: JSVal -> JSM JSVal
+nextSibling domRef = domRef ! "nextSibling"
+-----------------------------------------------------------------------------
+-- | Fetch previous sibling DOM node
+--
+-- @since 1.9.0.0
+previousSibling :: JSVal -> JSM JSVal
+previousSibling domRef = domRef ! "previousSibling"
+-----------------------------------------------------------------------------
+-- | When working with /<input>/ of type="file", this is useful for
+-- extracting out the selected files.
+--
+-- @
+--   update (InputClicked inputElement) = withSink $ \sink -> do
+--      files_ <- files inputElement
+--      forM_ files_ $ \file -> sink (Upload file)
+--   update (Upload file) = do
+--      fetch "https://localhost:8080/upload" "POST" (Just file) []
+--        Successful Errorful
+-- @
+--
+-- @since 1.9.0.0
+files :: JSVal -> JSM [JSVal]
+files domRef = fromJSValUnchecked =<< domRef ! "files"
+-----------------------------------------------------------------------------
+-- | Simulates a click event
+--
+-- > button & click ()
+--
+-- @since 1.9.0.0
+click :: () -> JSVal -> JSM ()
+click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
+-----------------------------------------------------------------------------
+-- | Get Camera on user's device
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
+--
+getUserMedia
+  :: Bool
+  -- ^ video
+  -> Bool
+  -- ^ audio
+  -> (JSVal -> JSM ())
+  -- ^ successful
+  -> (JSVal -> JSM ())
+  -- ^ errorful
+  -> JSM ()
+getUserMedia video audio successful errorful = do
+  params <- create
+  set (ms "video") video params
+  set (ms "audio") audio params
+  devices <- jsg "navigator" ! "mediaDevices"
+  promise <- devices # "getUserMedia" $ [params]
+  successfulCallback <- asyncCallback1 successful
+  void $ promise # "then" $ [successfulCallback]
+  errorfulCallback <- asyncCallback1 errorful
+  void $ promise # "catch" $ [errorfulCallback]
+-----------------------------------------------------------------------------
+-- | Copy clipboard
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
+--
+copyClipboard
+  :: MisoString
+  -- ^ Text to copy
+  -> JSM ()
+  -- ^ successful
+  -> (JSVal -> JSM ())
+  -- ^ errorful
+  -> JSM ()
+copyClipboard txt successful errorful = do
+  clipboard <- jsg "navigator" ! "clipboard"
+  promise <- clipboard # "writeText" $ [txt]
+  successfulCallback <- asyncCallback successful
+  void $ promise # "then" $ [successfulCallback]
+  errorfulCallback <- asyncCallback1 errorful
+  void $ promise # "catch" $ [errorfulCallback]
+-----------------------------------------------------------------------------
+websocketConnect
+  :: MisoString
+  -> JSM ()
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> JSM JSVal
+websocketConnect url onOpen onClose onMessage onError = do
+  onOpen_ <- asyncCallback onOpen
+  onClose_ <- asyncCallback1 onClose
+  onMessage_ <- asyncCallback1 onMessage
+  onError_ <- asyncCallback1 onError
+  jsg "miso" # "websocketConnect" $
+    (url, onOpen_, onClose_, onMessage_, onError_)
+-----------------------------------------------------------------------------
+websocketClose :: JSVal -> JSM ()
+websocketClose websocket = void $ do
+  jsg "miso" # "websocketClose" $ [websocket]
+-----------------------------------------------------------------------------
+websocketSend :: JSVal -> JSVal -> JSM ()
+websocketSend websocket message = void $ do
+  jsg "miso" # "websocketSend" $ [websocket, message]
+-----------------------------------------------------------------------------
+eventSourceConnect
+  :: MisoString
+  -> JSM ()
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> JSM JSVal
+eventSourceConnect url onOpen onMessage onError = do
+  onOpen_ <- asyncCallback onOpen
+  onMessage_ <- asyncCallback1 onMessage
+  onError_ <- asyncCallback1 onError
+  jsg "miso" # "eventSourceConnect" $
+    (url, onOpen_, onMessage_, onError_)
+-----------------------------------------------------------------------------
+eventSourceClose :: JSVal -> JSM ()
+eventSourceClose eventSource = void $ do
+  jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------

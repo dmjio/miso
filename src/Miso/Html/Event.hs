@@ -22,6 +22,7 @@ module Miso.Html.Event
   , onMouseLeave
   , onMouseOver
   , onMouseOut
+  , onContextMenuWithOptions
   -- *** Keyboard
   , onKeyDown
   , onKeyDownWithInfo
@@ -120,6 +121,18 @@ onBlur action = on "blur" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 onChecked :: (Checked -> action) -> Attribute action
 onChecked f = on "change" checkedDecoder (\action _ -> f action)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/contextmenu
+--
+-- This can be used to disable right-click context menu from appearing
+--
+-- @
+-- div_ [ onContextMenuWithOptions NoOp defaultOptions { preventDefault = False } ] [ ]
+-- @
+--
+-- @since 1.9.0.0
+onContextMenuWithOptions :: action -> Options -> Attribute action
+onContextMenuWithOptions action opts = onWithOptions opts "contextmenu" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClick :: action -> Attribute action

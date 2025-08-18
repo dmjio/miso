@@ -11,6 +11,11 @@ import {
   shouldSync,
   getParentComponentId,
   integrityCheck,
+  eventSourceConnect,
+  eventSourceClose,
+  websocketConnect,
+  websocketClose,
+  websocketSend,
 } from './miso';
 
 import { context } from './miso/context/dom';
@@ -25,6 +30,11 @@ globalThis['miso']['callBlur'] = callBlur;
 globalThis['miso']['callFocus'] = callFocus;
 globalThis['miso']['eventJSON'] = eventJSON;
 globalThis['miso']['fetchJSON'] = fetchJSON;
+globalThis['miso']['eventSourceConnect'] = eventSourceConnect;
+globalThis['miso']['eventSourceClose'] = eventSourceClose;
+globalThis['miso']['websocketConnect'] = websocketConnect;
+globalThis['miso']['websocketClose'] = websocketClose;
+globalThis['miso']['websocketSend'] = websocketSend;
 globalThis['miso']['undelegate'] = undelegate;
 globalThis['miso']['getParentComponentId'] = getParentComponentId;
 globalThis['miso']['shouldSync'] = shouldSync;
