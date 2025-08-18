@@ -347,7 +347,9 @@ eventJSON x y = do
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 getBody :: JSM JSVal
-getBody = jsg "document" ! "body"
+getBody = do
+  ctx <- getContext
+  ctx # "getRoot" $ ()
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the document.
 --
