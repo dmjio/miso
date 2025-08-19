@@ -54,6 +54,8 @@ module Miso.FFI
   , files
   -- ** Re-exports
   , JSVal
+   -- ** Navigator
+  , isOnLine
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
