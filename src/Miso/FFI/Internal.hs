@@ -114,6 +114,8 @@ module Miso.FFI.Internal
    -- * SSE
    , eventSourceConnect
    , eventSourceClose
+   -- * Navigator
+   , isOnLine
    -- * Blob
    , Blob (..)
    -- * ArrayBuffer
@@ -805,6 +807,9 @@ eventSourceConnect url onOpen onMessage onError = do
 eventSourceClose :: JSVal -> JSM ()
 eventSourceClose eventSource = void $ do
   jsg "miso" # "eventSourceClose" $ [eventSource]
+-----------------------------------------------------------------------------
+isOnLine :: JSM Bool
+isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 newtype Blob = Blob JSVal
   deriving ToJSVal

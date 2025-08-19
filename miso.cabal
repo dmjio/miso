@@ -157,6 +157,7 @@ library
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
     Miso.Subscription.Window
+    Miso.Subscription.OnLine
     Miso.Subscription.Util
     Miso.Svg
     Miso.Svg.Property
