@@ -54,6 +54,10 @@ module Miso.FFI
   , files
   -- ** Re-exports
   , JSVal
+  -- ** ArrayBuffer
+  , ArrayBuffer (..)
+  -- ** Blob
+  , Blob (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

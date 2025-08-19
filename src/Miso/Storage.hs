@@ -83,7 +83,7 @@ setLocalStorage
   -> JSM ()
 setLocalStorage key model = do
   s <- localStorage
-  setItem s key =<< jsonStringify model
+  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
 -----------------------------------------------------------------------------
 -- | Set the value of a key in session storage.
 --
@@ -95,7 +95,7 @@ setSessionStorage
   -> JSM ()
 setSessionStorage key model = do
   s <- sessionStorage
-  setItem s key =<< jsonStringify model
+  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage
 --
