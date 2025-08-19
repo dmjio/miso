@@ -116,6 +116,10 @@ module Miso.FFI.Internal
    , eventSourceClose
    -- * Navigator
    , isOnLine
+   -- * Blob
+   , Blob (..)
+   -- * ArrayBuffer
+   , ArrayBuffer (..)
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -320,11 +324,11 @@ consoleLog' v = do
   pure ()
 -----------------------------------------------------------------------------
 -- | Encodes a Haskell object as a JSON string by way of a JavaScript object
-jsonStringify :: ToJSON json => json -> JSM MisoString
+jsonStringify :: ToJSON json => json -> JSM JSVal
 {-# INLINE jsonStringify #-}
 jsonStringify j = do
   v <- toJSVal (toJSON j)
-  fromJSValUnchecked =<< (jsg "JSON" # "stringify" $ [v])
+  jsg "JSON" # "stringify" $ [v]
 -----------------------------------------------------------------------------
 -- | Parses a MisoString
 jsonParse :: FromJSON json => JSVal -> JSM json
@@ -751,14 +755,33 @@ websocketConnect
   -> (JSVal -> JSM ())
   -> (JSVal -> JSM ())
   -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
   -> JSM JSVal
-websocketConnect url onOpen onClose onMessage onError = do
-  onOpen_ <- asyncCallback onOpen
-  onClose_ <- asyncCallback1 onClose
-  onMessage_ <- asyncCallback1 onMessage
-  onError_ <- asyncCallback1 onError
-  jsg "miso" # "websocketConnect" $
-    (url, onOpen_, onClose_, onMessage_, onError_)
+websocketConnect
+  url onOpen onClose
+  onMessageText onMessageJSON
+  onMessageBLOB onMessageArrayBuffer
+  onError = do
+    url_ <- toJSVal url
+    onOpen_ <- toJSVal =<< asyncCallback onOpen
+    onClose_ <- toJSVal =<< asyncCallback1 onClose
+    onMessageText_ <- toJSVal =<< asyncCallback1 onMessageText
+    onMessageJSON_ <- toJSVal =<< asyncCallback1 onMessageJSON
+    onMessageBLOB_ <- toJSVal =<< asyncCallback1 onMessageBLOB
+    onMessageArrayBuffer_ <- toJSVal =<< asyncCallback1 onMessageArrayBuffer
+    onError_ <- toJSVal =<< asyncCallback1 onError
+    jsg "miso" # "websocketConnect" $
+      [ url_
+      , onOpen_
+      , onClose_
+      , onMessageText_
+      , onMessageJSON_
+      , onMessageBLOB_
+      , onMessageArrayBuffer_
+      , onError_
+      ]
 -----------------------------------------------------------------------------
 websocketClose :: JSVal -> JSM ()
 websocketClose websocket = void $ do
@@ -787,4 +810,10 @@ eventSourceClose eventSource = void $ do
 -----------------------------------------------------------------------------
 isOnLine :: JSM Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
+-----------------------------------------------------------------------------
+newtype Blob = Blob JSVal
+  deriving ToJSVal
+-----------------------------------------------------------------------------
+newtype ArrayBuffer = ArrayBuffer JSVal
+  deriving ToJSVal
 -----------------------------------------------------------------------------

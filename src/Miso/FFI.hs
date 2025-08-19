@@ -56,6 +56,10 @@ module Miso.FFI
   , JSVal
    -- ** Navigator
   , isOnLine
+  -- ** ArrayBuffer
+  , ArrayBuffer (..)
+  -- ** Blob
+  , Blob (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

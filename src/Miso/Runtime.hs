@@ -60,6 +60,11 @@ module Miso.Runtime
   , eventSourceClose
   , emptyEventSource
   , EventSource (..)
+  -- ** Payload
+  , Payload (..)
+  , json
+  , blob
+  , arrayBuffer
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -93,6 +98,7 @@ import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, read
 import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
 import qualified Miso.FFI.Internal as FFI
+import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import           Miso.String hiding (reverse)
 import           Miso.Types
 import           Miso.Util
@@ -1059,26 +1065,35 @@ websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketConnect
-  :: URL
+  :: FromJSON json
+  => URL
   -- ^ WebSocket URL
   -> (WebSocket -> action)
   -- ^ onOpen
   -> (Closed -> action)
   -- ^ onClosed
-  -> (JSVal -> action)
+  -> (Payload json -> action)
   -- ^ onMessage
-  -> (JSVal -> action)
+  -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
-websocketConnect url onOpen onClosed onError onMessage = do
+websocketConnect url onOpen onClosed onMessage onError = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
     socket <- FFI.websocketConnect url
       (sink $ onOpen webSocketId)
       (sink . onClosed <=< fromJSValUnchecked)
-      (sink . onMessage)
-      (sink . onError)
+      (sink . onMessage . TEXT <=< fromJSValUnchecked)
+      (\bytes -> do
+          value :: Value <- fromJSValUnchecked bytes
+          case fromJSON value of
+            Error msg -> sink $ onError (ms msg)
+            Success x -> sink $ onMessage (JSON x)
+      )
+      (sink . onMessage . BLOB . Blob)
+      (sink . onMessage . BUFFER . ArrayBuffer)
+      (sink . onError <=< fromJSValUnchecked)
     insertWebSocket _componentId webSocketId socket
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
@@ -1135,13 +1150,26 @@ websocketClose socketId = do
           IM.insert vcompId (IM.delete websocketId componentSockets) websockets
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
-websocketSend :: WebSocket -> JSVal -> Effect parent model action
+websocketSend
+  :: ToJSON value
+  => WebSocket
+  -> Payload value
+  -> Effect parent model action
 websocketSend socketId msg = do
   ComponentInfo {..} <- ask
   io_ $ do
     getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Nothing -> pure ()
-      Just socket -> FFI.websocketSend socket msg
+      Just socket ->
+        case msg of
+          JSON json_ ->
+            FFI.websocketSend socket =<< FFI.jsonStringify json_
+          BUFFER arrayBuffer_ -> do
+            FFI.websocketSend socket =<< toJSVal arrayBuffer_
+          TEXT txt ->
+            FFI.websocketSend socket =<< toJSVal txt
+          BLOB blob_ ->
+            FFI.websocketSend socket =<< toJSVal blob_
 -----------------------------------------------------------------------------
 -- | Retrieves current status of `WebSocket`
 --
@@ -1335,4 +1363,19 @@ finalizeEventSources vcompId = do
       dropComponentEventSources = liftIO $
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (IM.delete vcompId eventSources, ())
+-----------------------------------------------------------------------------
+data Payload value
+  = JSON value
+  | BLOB Blob
+  | TEXT MisoString
+  | BUFFER ArrayBuffer
+-----------------------------------------------------------------------------
+json :: ToJSON value => value -> Payload value
+json = JSON
+-----------------------------------------------------------------------------
+blob :: Blob -> Payload value
+blob = BLOB
+-----------------------------------------------------------------------------
+arrayBuffer :: ArrayBuffer -> Payload value
+arrayBuffer = BUFFER
 -----------------------------------------------------------------------------

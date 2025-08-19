@@ -38,6 +38,7 @@ import           Servant.API
 import           Web.HttpApiData
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model)
+import           Miso.Lens (Lens, (^.))
 -----------------------------------------------------------------------------
 -- | Router terminator.
 -- The @HasRouter@ instance for @View@ finalizes the router.
@@ -205,10 +206,10 @@ route
   :: HasRouter layout
   => Proxy layout
   -> RouteT layout (m -> a)
-  -> (m -> URI)
+  -> Lens m URI
   -> m
   -> Either RoutingError a
-route layout pages getURI model = ($ model) <$> runRoute layout pages (getURI model)
+route layout pages uriLens model = ($ model) <$> runRoute layout pages (model ^. uriLens)
 -----------------------------------------------------------------------------
 -- | Convert a 'URI' to a 'Location'.
 uriToLocation :: URI -> Location
