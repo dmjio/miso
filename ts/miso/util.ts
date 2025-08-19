@@ -96,23 +96,45 @@ export function websocketConnect (
     url: string,
     onOpen,
     onClose,
+    onMessageText,
+    onMessageJSON,
+    onMessageBLOB,
+    onMessageArrayBuffer,
     onError,
-    onMessage,
 ): WebSocket {
-  let socket = new WebSocket(url);
-  socket.onopen = function () {
-    onOpen();
-  };
-  socket.onclose = function (e) {
-    onClose(e);
-  };
-  socket.onerror = function (error) {
-    onError(error);
-  };
-  socket.onmessage = function (msg) {
-    onMessage(msg.data);
-  };
-  return socket;
+  try {
+    let socket = new WebSocket(url);
+    socket.onopen = function () {
+      onOpen();
+    };
+    socket.onclose = function (e) {
+      onClose(e);
+    };
+    socket.onerror = function (error) {
+      console.error (error);
+      onError("WebSocket error received");
+    };
+    socket.onmessage = function (msg) {
+      if (typeof msg.data === "string") {
+        try {
+            const json = JSON.parse (msg.data);
+            onMessageJSON(json);
+        } catch (err) {
+            onMessageText(msg.data)
+        }
+      } else if (msg.data instanceof Blob) {
+          onMessageBLOB (msg.data)
+      } else if (msg.data instanceof ArrayBuffer) {
+          onMessageArrayBuffer (msg.data)
+      } else {
+        console.error ("Received unknown message type from WebSocket", msg);
+        onError ("Unknown message received from WebSocket");
+      }
+    };
+    return socket;
+  } catch (err) {
+    onError (err.message);
+  }
 }
 
 export function websocketClose (
@@ -159,4 +181,3 @@ export function eventSourceClose (
     eventSource = null;
   }
 }
-

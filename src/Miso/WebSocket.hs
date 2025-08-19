@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
@@ -15,7 +16,10 @@
 module Miso.WebSocket
   ( -- *** WebSocket
     connect
-  , send
+  , sendText
+  , sendJSON
+  , sendBLOB
+  , sendArrayBuffer
   , close
   , socketState
   -- *** Defaults
@@ -26,29 +30,57 @@ module Miso.WebSocket
   , SocketState (..)
   , CloseCode   (..)
   , Closed      (..)
+  , Payload     (..)
+  , Blob        (..)
+  , ArrayBuffer (..)
   ) where
+-----------------------------------------------------------------------------
+import           Data.Aeson
 -----------------------------------------------------------------------------
 import           Miso.Effect
 import           Miso.Runtime
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
+import           Miso.String (MisoString)
+import           Miso.FFI (Blob(..), ArrayBuffer(..))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
 connect
-  :: URL
+  :: FromJSON json
+  => URL
   -> (WebSocket -> action)
   -> (Closed -> action)
-  -> (JSVal -> action)
-  -> (JSVal -> action)
+  -> (Payload json -> action)
+  -> (MisoString -> action)
   -> Effect parent model action
 connect = websocketConnect
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
-send
-  :: WebSocket
-  -> JSVal
+sendJSON
+  :: ToJSON json
+  => WebSocket
+  -> json
   -> Effect parent model action
-send = websocketSend
+sendJSON socket x = websocketSend socket (JSON x)
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
+sendBLOB
+  :: WebSocket
+  -> Blob
+  -> Effect parent model action
+sendBLOB socket x = websocketSend @() socket (blob x)
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
+sendArrayBuffer
+  :: WebSocket
+  -> ArrayBuffer
+  -> Effect parent model action
+sendArrayBuffer socket x = websocketSend @() socket (arrayBuffer x)
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
+sendText
+  :: WebSocket
+  -> MisoString
+  -> Effect parent model action
+sendText socket x = websocketSend @() socket (TEXT x)
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close>
 close
