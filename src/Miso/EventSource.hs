@@ -14,7 +14,8 @@
 ----------------------------------------------------------------------------
 module Miso.EventSource
   ( -- *** EventSource
-    connect
+    connectText
+  , connectJSON
   , close
   , socketState
   -- *** Defaults
@@ -33,17 +34,29 @@ import           Miso.Runtime
 import           Miso.String
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
-connect
-  :: FromJSON value
-  => URL
+connectText
+  :: URL
   -> (EventSource -> action)
   -- ^ onOpen
-  -> (Payload value -> action)
+  -> (MisoString -> action)
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
-connect = eventSourceConnect
+connectText = eventSourceConnectText
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
+connectJSON
+  :: FromJSON value
+  => URL
+  -> (EventSource -> action)
+  -- ^ onOpen
+  -> (value -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+connectJSON = eventSourceConnectJSON
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
 close

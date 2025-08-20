@@ -799,17 +799,22 @@ websocketSend websocket message = void $ do
 eventSourceConnect
   :: MisoString
   -> JSM ()
+  -> Maybe (JSVal -> JSM ())
+  -> Maybe (JSVal -> JSM ())
   -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
+  -> Bool
   -> JSM JSVal
-eventSourceConnect url onOpen onMessageText onMessageJSON onError = do
+eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
   onOpen_ <- asyncCallback onOpen
-  onMessageText_ <- asyncCallback1 onMessageText
-  onMessageJSON_ <- asyncCallback1 onMessageJSON
+  onMessageText_ <- withMaybe onMessageText
+  onMessageJSON_ <- withMaybe onMessageJSON
   onError_ <- asyncCallback1 onError
+  textOnly_ <- toJSVal textOnly
   jsg "miso" # "eventSourceConnect" $
-    (url, onOpen_, onMessageText_, onMessageJSON_, onError_)
+    (url, onOpen_, onMessageText_, onMessageJSON_, onError_, textOnly_)
+    where
+      withMaybe Nothing = pure jsNull
+      withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 eventSourceClose :: JSVal -> JSM ()
 eventSourceClose eventSource = void $ do
