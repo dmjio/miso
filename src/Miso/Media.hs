@@ -16,19 +16,15 @@ module Miso.Media
     Media        (..)
   , NetworkState (..)
   , ReadyState   (..)
-  , UserMedia    (..)
   , Stream
   -- *** Constructors
   , newAudio
-  , userMedia
   -- *** Methods
   , canPlayType
   , load
   , play
   , pause
-  , getUserMedia
   , srcObject
-  , copyClipboard
   -- *** Properties
   , autoplay
   , controls
@@ -61,7 +57,6 @@ import qualified Language.Javascript.JSaddle as JS
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Event
-import           Miso.Effect hiding ((<#))
 import           Miso.String
 -----------------------------------------------------------------------------
 newtype Media = Media JSVal
@@ -204,55 +199,9 @@ videoWidth (Media m) = fromJSValUnchecked =<< m ! ("videoWidth" :: MisoString)
 volume :: Media -> JSM Double
 volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 -----------------------------------------------------------------------------
--- | Type for dealing with 'navigator.mediaDevices.getUserMedia'
-data UserMedia
-  = UserMedia
-  { audio, video :: Bool
-  } deriving (Show, Eq)
------------------------------------------------------------------------------
--- | Default 'UserMedia'
-userMedia :: UserMedia
-userMedia = UserMedia True True
------------------------------------------------------------------------------
 type Stream = JSVal
 -----------------------------------------------------------------------------
 -- | Sets the `srcObject` on audio or video elements.
 srcObject :: Stream -> Media -> JSM ()
 srcObject stream (Media media) = media <# ("srcObject" :: MisoString) $ stream
------------------------------------------------------------------------------
--- | Get access to user's media devices.
---
--- <https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia>
---
-getUserMedia
-  :: UserMedia
-  -- ^ Options
-  -> (Stream -> action)
-  -- ^ Successful callback
-  -> (JSVal -> action)
-  -- ^ Errorful callback
-  -> Effect parent model action
-getUserMedia UserMedia {..} successful errorful =
-  withSink $ \sink ->
-    FFI.getUserMedia audio video
-      (sink . successful)
-      (sink . errorful)
------------------------------------------------------------------------------
--- | Get access to the user's clipboard.
---
--- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/clipboard>
---
-copyClipboard
-  :: MisoString
-  -- ^ Options
-  -> action
-  -- ^ Successful callback
-  -> (JSVal -> action)
-  -- ^ Errorful callback
-  -> Effect parent model action
-copyClipboard txt successful errorful =
-  withSink $ \sink ->
-    FFI.copyClipboard txt
-      (sink successful)
-      (sink . errorful)
 -----------------------------------------------------------------------------
