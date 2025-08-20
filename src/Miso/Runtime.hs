@@ -1292,13 +1292,14 @@ eventSourceConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceConnect
-  :: URL
+  :: FromJSON value
+  => URL
   -- ^ EventSource URL
   -> (EventSource -> action)
   -- ^ onOpen
-  -> (JSVal -> action)
+  -> (Payload value -> action)
   -- ^ onMessage
-  -> (JSVal -> action)
+  -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
 eventSourceConnect url onOpen onMessage onError = do
@@ -1307,8 +1308,13 @@ eventSourceConnect url onOpen onMessage onError = do
     eventSourceId <- freshEventSource
     socket <- FFI.eventSourceConnect url
       (sink $ onOpen eventSourceId)
-      (sink . onMessage)
-      (sink . onError)
+      (\e -> do string <- fromJSValUnchecked e
+                sink (onMessage (TEXT string)))
+      (\e -> do value <- fromJSValUnchecked e
+                case fromJSON value of
+                  Error errMsg -> sink (onError (ms errMsg))
+                  Success json_ -> sink $ onMessage (JSON json_))
+      (sink . onError <=< fromJSValUnchecked)
     insertEventSource _componentId eventSourceId socket
   where
     insertEventSource :: ComponentId -> EventSource -> Socket -> JSM ()

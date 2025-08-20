@@ -101,18 +101,27 @@ function websocketSend(socket, message) {
     socket.send(message);
   }
 }
-function eventSourceConnect(url, onOpen, onMessage, onError) {
-  let eventSource = new EventSource(url);
-  eventSource.onopen = function() {
-    onOpen();
-  };
-  eventSource.onerror = function(error) {
-    onError(error);
-  };
-  eventSource.onmessage = function(msg) {
-    onMessage(msg.data);
-  };
-  return eventSource;
+function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError) {
+  try {
+    let eventSource = new EventSource(url);
+    eventSource.onopen = function() {
+      onOpen();
+    };
+    eventSource.onerror = function() {
+      onError("EventSource error received");
+    };
+    eventSource.onmessage = function(msg) {
+      try {
+        const json = JSON.parse(msg.data);
+        onMessageJSON(json);
+      } catch (err) {
+        onMessageText(msg.data);
+      }
+    };
+    return eventSource;
+  } catch (err) {
+    onError(err.message);
+  }
 }
 function eventSourceClose(eventSource) {
   if (eventSource) {
