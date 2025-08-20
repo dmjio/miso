@@ -103,10 +103,6 @@ module Miso.FFI.Internal
    -- * Element
    , files
    , click
-   -- * Clipboard
-   , copyClipboard
-   -- * Media
-   , getUserMedia
    -- * WebSocket
    , websocketConnect
    , websocketClose
@@ -114,12 +110,15 @@ module Miso.FFI.Internal
    -- * SSE
    , eventSourceConnect
    , eventSourceClose
-   -- * Navigator
-   , isOnLine
    -- * Blob
    , Blob (..)
    -- * ArrayBuffer
    , ArrayBuffer (..)
+   -- * Navigator
+   , geolocation
+   , copyClipboard
+   , getUserMedia
+   , isOnLine
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -816,4 +815,11 @@ newtype Blob = Blob JSVal
 -----------------------------------------------------------------------------
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving ToJSVal
+-----------------------------------------------------------------------------
+geolocation :: (JSVal -> JSM ()) -> (JSVal -> JSM ()) -> JSM ()
+geolocation successful errorful = do
+  geo <- jsg "navigator" ! "geolocation"
+  cb1 <- asyncCallback1 successful
+  cb2 <- asyncCallback1 errorful
+  void $ geo # "getCurrentPosition" $ (cb1, cb2)
 -----------------------------------------------------------------------------

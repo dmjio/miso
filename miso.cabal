@@ -146,6 +146,7 @@ library
     Miso.Mathml.Element
     Miso.Mathml.Property
     Miso.Media
+    Miso.Navigator
     Miso.Property
     Miso.PubSub
     Miso.Render
