@@ -752,25 +752,27 @@ websocketConnect
   :: MisoString
   -> JSM ()
   -> (JSVal -> JSM ())
+  -> Maybe (JSVal -> JSM ())
+  -> Maybe (JSVal -> JSM ())
+  -> Maybe (JSVal -> JSM ())
+  -> Maybe (JSVal -> JSM ())
   -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
+  -> Bool
   -> JSM JSVal
 websocketConnect
   url onOpen onClose
   onMessageText onMessageJSON
   onMessageBLOB onMessageArrayBuffer
-  onError = do
+  onError textOnly = do
     url_ <- toJSVal url
     onOpen_ <- toJSVal =<< asyncCallback onOpen
     onClose_ <- toJSVal =<< asyncCallback1 onClose
-    onMessageText_ <- toJSVal =<< asyncCallback1 onMessageText
-    onMessageJSON_ <- toJSVal =<< asyncCallback1 onMessageJSON
-    onMessageBLOB_ <- toJSVal =<< asyncCallback1 onMessageBLOB
-    onMessageArrayBuffer_ <- toJSVal =<< asyncCallback1 onMessageArrayBuffer
+    onMessageText_ <- withMaybe onMessageText
+    onMessageJSON_ <- withMaybe onMessageJSON
+    onMessageBLOB_ <- withMaybe onMessageBLOB
+    onMessageArrayBuffer_ <- withMaybe onMessageArrayBuffer
     onError_ <- toJSVal =<< asyncCallback1 onError
+    textOnly_ <- toJSVal textOnly
     jsg "miso" # "websocketConnect" $
       [ url_
       , onOpen_
@@ -780,7 +782,11 @@ websocketConnect
       , onMessageBLOB_
       , onMessageArrayBuffer_
       , onError_
+      , textOnly_
       ]
+  where
+    withMaybe Nothing = pure jsNull
+    withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 websocketClose :: JSVal -> JSM ()
 websocketClose websocket = void $ do
