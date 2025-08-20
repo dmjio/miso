@@ -6,7 +6,7 @@ import {
   callBlur,
   callFocus,
   eventJSON,
-  fetchJSON,
+  fetchCore,
   undelegate,
   shouldSync,
   getParentComponentId,
@@ -29,7 +29,7 @@ globalThis['miso']['delegate'] = delegate;
 globalThis['miso']['callBlur'] = callBlur;
 globalThis['miso']['callFocus'] = callFocus;
 globalThis['miso']['eventJSON'] = eventJSON;
-globalThis['miso']['fetchJSON'] = fetchJSON;
+globalThis['miso']['fetchCore'] = fetchCore;
 globalThis['miso']['eventSourceConnect'] = eventSourceConnect;
 globalThis['miso']['eventSourceClose'] = eventSourceClose;
 globalThis['miso']['websocketConnect'] = websocketConnect;
