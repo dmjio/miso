@@ -795,13 +795,15 @@ eventSourceConnect
   -> JSM ()
   -> (JSVal -> JSM ())
   -> (JSVal -> JSM ())
+  -> (JSVal -> JSM ())
   -> JSM JSVal
-eventSourceConnect url onOpen onMessage onError = do
+eventSourceConnect url onOpen onMessageText onMessageJSON onError = do
   onOpen_ <- asyncCallback onOpen
-  onMessage_ <- asyncCallback1 onMessage
+  onMessageText_ <- asyncCallback1 onMessageText
+  onMessageJSON_ <- asyncCallback1 onMessageJSON
   onError_ <- asyncCallback1 onError
   jsg "miso" # "eventSourceConnect" $
-    (url, onOpen_, onMessage_, onError_)
+    (url, onOpen_, onMessageText_, onMessageJSON_, onError_)
 -----------------------------------------------------------------------------
 eventSourceClose :: JSVal -> JSM ()
 eventSourceClose eventSource = void $ do

@@ -22,21 +22,25 @@ module Miso.EventSource
   -- *** Types
   , EventSource (..)
   , URL
+  -- *** Re-exports
+  , Payload (..)
   ) where
+-----------------------------------------------------------------------------
+import           Data.Aeson
 -----------------------------------------------------------------------------
 import           Miso.Effect
 import           Miso.Runtime
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
+import           Miso.String
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
 connect
-  :: URL
+  :: FromJSON value
+  => URL
   -> (EventSource -> action)
   -- ^ onOpen
-  -> (JSVal -> action)
+  -> (Payload value -> action)
   -- ^ onMessage
-  -> (JSVal -> action)
+  -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
 connect = eventSourceConnect

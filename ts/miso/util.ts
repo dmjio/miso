@@ -157,20 +157,30 @@ export function websocketSend (
 export function eventSourceConnect (
     url: string,
     onOpen,
-    onMessage,
+    onMessageText,
+    onMessageJSON,
     onError,
 ): EventSource {
-  let eventSource = new EventSource(url);
-  eventSource.onopen = function () {
-    onOpen();
-  };
-  eventSource.onerror = function (error) {
-    onError(error);
-  };
-  eventSource.onmessage = function (msg) {
-    onMessage(msg.data);
-  };
-  return eventSource;
+  try {
+    let eventSource = new EventSource(url);
+    eventSource.onopen = function () {
+        onOpen();
+    };
+    eventSource.onerror = function () {
+        onError('EventSource error received');
+    };
+    eventSource.onmessage = function (msg) {
+        try {
+            const json = JSON.parse (msg.data);
+            onMessageJSON(json);
+        } catch (err) {
+            onMessageText(msg.data)
+        }
+    };
+    return eventSource;
+  } catch (err) {
+      onError (err.message);
+  }
 }
 
 export function eventSourceClose (
