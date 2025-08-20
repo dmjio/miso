@@ -113,7 +113,7 @@ function websocketSend(socket, message) {
     socket.send(message);
   }
 }
-function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError) {
+function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError, textOnly) {
   try {
     let eventSource = new EventSource(url);
     eventSource.onopen = function() {
@@ -124,10 +124,20 @@ function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError) 
     };
     eventSource.onmessage = function(msg) {
       try {
+        if (textOnly) {
+          if (onMessageText)
+            onMessageText(msg.data);
+          return;
+        }
         const json = JSON.parse(msg.data);
-        onMessageJSON(json);
+        if (onMessageJSON)
+          onMessageJSON(json);
       } catch (err) {
-        onMessageText(msg.data);
+        if (textOnly && onMessageText) {
+          onMessageText(msg.data);
+        } else {
+          onError(err.message);
+        }
       }
     };
     return eventSource;

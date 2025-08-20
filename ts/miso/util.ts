@@ -169,6 +169,7 @@ export function eventSourceConnect (
     onMessageText,
     onMessageJSON,
     onError,
+    textOnly: boolean,
 ): EventSource {
   try {
     let eventSource = new EventSource(url);
@@ -179,11 +180,19 @@ export function eventSourceConnect (
         onError('EventSource error received');
     };
     eventSource.onmessage = function (msg) {
-        try {
+       try {
+            if (textOnly) {
+              if (onMessageText) onMessageText(msg.data)
+              return;
+            }
             const json = JSON.parse (msg.data);
-            onMessageJSON(json);
+            if (onMessageJSON) onMessageJSON(json);
         } catch (err) {
-            onMessageText(msg.data)
+            if (textOnly && onMessageText) {
+              onMessageText(msg.data)
+            } else {
+              onError(err.message)
+            }
         }
     };
     return eventSource;

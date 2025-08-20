@@ -60,7 +60,8 @@ module Miso.Runtime
   , CloseCode (..)
   , Closed (..)
   -- ** EventSource
-  , eventSourceConnect
+  , eventSourceConnectText
+  , eventSourceConnectJSON
   , eventSourceClose
   , emptyEventSource
   , EventSource (..)
@@ -1218,7 +1219,7 @@ websocketCore core = do
           IM.unionWith IM.union websockets
             $ IM.singleton componentId
             $ IM.singleton socketId socket
-  
+
     freshWebSocket :: JSM WebSocket
     freshWebSocket = WebSocket <$>
       liftIO (atomicModifyIORef' websocketConnectionIds $ \x -> (x + 1, x))
@@ -1403,30 +1404,60 @@ eventSourceConnectionIds :: IORef Int
 eventSourceConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
-eventSourceConnect
-  :: FromJSON value
-  => URL
+eventSourceConnectText
+  :: URL
   -- ^ EventSource URL
   -> (EventSource -> action)
   -- ^ onOpen
-  -> (Payload value -> action)
+  -> (MisoString -> action)
   -- ^ onMessage
   -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
-eventSourceConnect url onOpen onMessage onError = do
+eventSourceConnectText url onOpen onMessage onError =
+  eventSourceCore $ \eventSourceId sink -> do
+    FFI.eventSourceConnect url
+      (sink $ onOpen eventSourceId)
+      (pure $ \e -> do
+          txt <- fromJSValUnchecked e
+          sink (onMessage txt))
+      Nothing
+      (sink . onError <=< fromJSValUnchecked)
+      True
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
+eventSourceConnectJSON
+  :: FromJSON json
+  => URL
+  -- ^ EventSource URL
+  -> (EventSource -> action)
+  -- ^ onOpen
+  -> (json -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+eventSourceConnectJSON url onOpen onMessage onError =
+  eventSourceCore $ \eventSourceId sink -> do
+    FFI.eventSourceConnect url
+      (sink $ onOpen eventSourceId)
+      Nothing
+      (pure $ \e ->
+         fromJSON <$> fromJSValUnchecked e >>= \case
+            Error errMsg -> sink (onError (ms errMsg))
+            Success json_ -> sink $ onMessage json_)
+      (sink . onError <=< fromJSValUnchecked)
+      False
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
+eventSourceCore
+  :: (EventSource -> Sink action -> JSM Socket)
+  -> Effect parent model action
+eventSourceCore core = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
     eventSourceId <- freshEventSource
-    socket <- FFI.eventSourceConnect url
-      (sink $ onOpen eventSourceId)
-      (\e -> do string <- fromJSValUnchecked e
-                sink (onMessage (TEXT string)))
-      (\e -> do value <- fromJSValUnchecked e
-                case fromJSON value of
-                  Error errMsg -> sink (onError (ms errMsg))
-                  Success json_ -> sink $ onMessage (JSON json_))
-      (sink . onError <=< fromJSValUnchecked)
+    socket <- core eventSourceId sink
     insertEventSource _componentId eventSourceId socket
   where
     insertEventSource :: ComponentId -> EventSource -> Socket -> JSM ()
@@ -1439,7 +1470,7 @@ eventSourceConnect url onOpen onMessage onError = do
           IM.unionWith IM.union eventSources
             $ IM.singleton componentId
             $ IM.singleton socketId socket
-  
+
     freshEventSource :: JSM EventSource
     freshEventSource = EventSource <$>
       liftIO (atomicModifyIORef' eventSourceConnectionIds $ \x -> (x + 1, x))
@@ -1466,7 +1497,7 @@ eventSourceClose socketId = do
           eventSources
         Just componentSockets ->
           IM.insert vcompId (IM.delete eventSourceId componentSockets) eventSources
-  
+
     getEventSource :: ComponentId -> EventSource -> EventSources -> Maybe Socket
     getEventSource vcompId (EventSource eventSourceId) =
       IM.lookup eventSourceId <=< IM.lookup vcompId
