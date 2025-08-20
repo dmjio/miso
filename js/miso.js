@@ -16,17 +16,31 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
-function fetchJSON(url, method, body, headers, successful, errorful) {
+function fetchCore(url, method, body, headers, successful, errorful, responseType) {
   var options = { method, headers };
   if (body) {
     options["body"] = body;
   }
-  fetch(url, options).then((response) => {
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  }).then(successful).catch(errorful);
+  try {
+    fetch(url, options).then((response) => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      if (responseType == "json") {
+        return response.json();
+      } else if (responseType == "text") {
+        return response.text();
+      } else if (responseType === "arrayBuffer") {
+        return response.arrayBuffer();
+      } else if (responseType === "blob") {
+        return response.blob();
+      } else if (responseType === "none") {
+        return successful(null);
+      }
+    }).then(successful).catch(errorful);
+  } catch (err) {
+    errorful(err.message);
+  }
 }
 function shouldSync(node) {
   if (node.children.length === 0) {
@@ -883,7 +897,7 @@ globalThis["miso"]["delegate"] = delegate;
 globalThis["miso"]["callBlur"] = callBlur;
 globalThis["miso"]["callFocus"] = callFocus;
 globalThis["miso"]["eventJSON"] = eventJSON;
-globalThis["miso"]["fetchJSON"] = fetchJSON;
+globalThis["miso"]["fetchCore"] = fetchCore;
 globalThis["miso"]["eventSourceConnect"] = eventSourceConnect;
 globalThis["miso"]["eventSourceClose"] = eventSourceClose;
 globalThis["miso"]["websocketConnect"] = websocketConnect;

@@ -551,30 +551,23 @@ addStyleSheet url = do
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
 fetch
-  :: FromJSON action
-  => MisoString
+  :: MisoString
   -- ^ url
   -> MisoString
   -- ^ method
   -> Maybe JSVal
   -- ^ body
-  -> [(MisoString,MisoString)]
+  -> [(MisoString, MisoString)]
   -- ^ headers
-  -> (action -> JSM ())
+  -> (JSVal -> JSM ())
   -- ^ successful callback
   -> (MisoString -> JSM ())
   -- ^ errorful callback
+  -> MisoString
   -> JSM ()
-fetch url method maybeBody headers successful errorful = do
-  successful_ <- toJSVal =<< do
-    asyncCallback1 $ \jval ->
-      fromJSON <$> fromJSValUnchecked jval >>= \case
-        Error string ->
-          errorful $ ms ("fetch: " <> string <> ": decode failure")
-        Success result -> do
-          successful result
-  errorful_ <- toJSVal =<<
-    asyncCallback1 (errorful <=< fromJSValUnchecked)
+fetch url method maybeBody headers successful errorful type_ = do
+  successful_ <- toJSVal =<< asyncCallback1 successful
+  errorful_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
   moduleMiso <- jsg "miso"
   url_ <- toJSVal url
   method_ <- toJSVal method
@@ -583,13 +576,15 @@ fetch url method maybeBody headers successful errorful = do
     o <- create
     forM_ headers $ \(k,v) -> set k v o
     pure o
-  void $ moduleMiso # "fetchJSON" $
+  typ <- toJSVal type_
+  void $ moduleMiso # "fetchCore" $
     [ url_
     , method_
     , body_
     , headers_
     , successful_
     , errorful_
+    , typ
     ]
 -----------------------------------------------------------------------------
 -- | shouldSync
@@ -825,6 +820,12 @@ isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 newtype Blob = Blob JSVal
   deriving ToJSVal
+-----------------------------------------------------------------------------
+instance FromJSVal Blob where
+  fromJSVal = pure . pure . Blob
+-----------------------------------------------------------------------------
+instance FromJSVal ArrayBuffer where
+  fromJSVal = pure . pure . ArrayBuffer
 -----------------------------------------------------------------------------
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving ToJSVal

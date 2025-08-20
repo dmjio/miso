@@ -20,28 +20,43 @@ export function callBlur(id: string, delay: number): void {
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
 
-export function fetchJSON (
+export function fetchCore (
   url : string,
   method : string,
   body : any,
   headers : Record<string,string>,
-  successful: (string) => void,
-  errorful: (string) => void
-): void
+  successful: (any) => void,
+  errorful: (string) => void,
+  responseType: string /* dmj: expected response type */
+): any
 {
   var options = { method, headers };
   if (body) {
     options['body'] = body;
   }
-  fetch (url, options)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        return response.json();
-      })
-    .then(successful) /* success callback */
-    .catch(errorful); /* error callback */
+  try {
+    fetch (url, options)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(response.statusText);
+          }
+          if (responseType == 'json') {
+            return response.json();
+          } else if (responseType == 'text') {
+            return response.text();
+          } else if (responseType === 'arrayBuffer') {
+            return response.arrayBuffer();
+          } else if (responseType === 'blob') {
+            return response.blob();
+          } else if (responseType === 'none') {
+            return successful(null);
+          }
+        })
+      .then(successful)
+      .catch(errorful); /* error callback */
+  } catch (err) {
+     errorful(err.message);
+  }
 }
 
 /*
