@@ -36,6 +36,7 @@ module Miso.Event.Types
   , dragEvents
   , pointerEvents
   , mediaEvents
+  , clipboardEvents
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
@@ -218,5 +219,13 @@ mediaEvents = M.fromList
   , ("timeupdate", True)
   , ("volumechange", True)
   , ("waiting", True)
+  ]
+-----------------------------------------------------------------------------
+-- | Clipboard events
+clipboardEvents :: Events
+clipboardEvents = M.fromList
+  [ ("cut", False)
+  , ("copy", False)
+  , ("paste", False)
   ]
 -----------------------------------------------------------------------------
