@@ -16,6 +16,10 @@
 module Miso.WebSocket
   ( -- *** WebSocket
     connect
+  , connectJSON
+  , connectText
+  , connectBLOB
+  , connectArrayBuffer
   , sendText
   , sendJSON
   , sendBLOB
@@ -52,6 +56,47 @@ connect
   -> (MisoString -> action)
   -> Effect parent model action
 connect = websocketConnect
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+connectJSON
+  :: FromJSON json
+  => URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (json -> action)
+  -> (MisoString -> action)
+  -> Effect parent model action
+connectJSON = websocketConnectJSON
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+connectText
+  :: URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (MisoString -> action)
+  -> (MisoString -> action)
+  -> Effect parent model action
+connectText = websocketConnectText
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+connectBLOB
+  :: URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (Blob -> action)
+  -> (MisoString -> action)
+  -> Effect parent model action
+connectBLOB = websocketConnectBLOB
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+connectArrayBuffer
+  :: URL
+  -> (WebSocket -> action)
+  -> (Closed -> action)
+  -> (ArrayBuffer -> action)
+  -> (MisoString -> action)
+  -> Effect parent model action
+connectArrayBuffer = websocketConnectArrayBuffer
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/send>
 sendJSON

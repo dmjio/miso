@@ -46,6 +46,10 @@ module Miso.Runtime
   , mailParent
   -- ** WebSocket
   , websocketConnect
+  , websocketConnectJSON
+  , websocketConnectText
+  , websocketConnectArrayBuffer
+  , websocketConnectBLOB
   , websocketSend
   , websocketClose
   , socketState
@@ -1063,7 +1067,107 @@ websocketConnectionIds :: IORef Int
 {-# NOINLINE websocketConnectionIds #-}
 websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
+websocketConnectText
+  :: URL
+  -- ^ WebSocket URL
+  -> (WebSocket -> action)
+  -- ^ onOpen
+  -> (Closed -> action)
+  -- ^ onClosed
+  -> (MisoString -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+websocketConnectText url onOpen onClosed onMessage onError =
+  websocketCore $ \webSocketId sink ->
+    FFI.websocketConnect url
+      (sink $ onOpen webSocketId)
+      (sink . onClosed <=< fromJSValUnchecked)
+      (pure (sink . onMessage <=< fromJSValUnchecked))
+      Nothing
+      Nothing
+      Nothing
+      (sink . onError <=< fromJSValUnchecked)
+      True
+-----------------------------------------------------------------------------
+websocketConnectBLOB
+  :: URL
+  -- ^ WebSocket URL
+  -> (WebSocket -> action)
+  -- ^ onOpen
+  -> (Closed -> action)
+  -- ^ onClosed
+  -> (Blob -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+websocketConnectBLOB url onOpen onClosed onMessage onError =
+  websocketCore $ \webSocketId sink ->
+    FFI.websocketConnect url
+      (sink $ onOpen webSocketId)
+      (sink . onClosed <=< fromJSValUnchecked)
+      Nothing
+      Nothing
+      (pure (sink . onMessage . Blob))
+      Nothing
+      (sink . onError <=< fromJSValUnchecked)
+      False
+-----------------------------------------------------------------------------
+websocketConnectArrayBuffer
+  :: URL
+  -- ^ WebSocket URL
+  -> (WebSocket -> action)
+  -- ^ onOpen
+  -> (Closed -> action)
+  -- ^ onClosed
+  -> (ArrayBuffer -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+websocketConnectArrayBuffer url onOpen onClosed onMessage onError =
+  websocketCore $ \webSocketId sink ->
+    FFI.websocketConnect url
+      (sink $ onOpen webSocketId)
+      (sink . onClosed <=< fromJSValUnchecked)
+      Nothing
+      Nothing
+      Nothing
+      (pure (sink . onMessage . ArrayBuffer))
+      (sink . onError <=< fromJSValUnchecked)
+      False
+-----------------------------------------------------------------------------
+websocketConnectJSON
+  :: FromJSON json
+  => URL
+  -- ^ WebSocket URL
+  -> (WebSocket -> action)
+  -- ^ onOpen
+  -> (Closed -> action)
+  -- ^ onClosed
+  -> (json -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+websocketConnectJSON url onOpen onClosed onMessage onError =
+  websocketCore $ \webSocketId sink ->
+    FFI.websocketConnect url
+      (sink $ onOpen webSocketId)
+      (sink . onClosed <=< fromJSValUnchecked)
+      Nothing
+      (pure (\bytes -> do
+          value :: Value <- fromJSValUnchecked bytes
+          case fromJSON value of
+            Error msg -> sink $ onError (ms msg)
+            Success x -> sink $ onMessage x))
+      Nothing
+      Nothing
+      (sink . onError <=< fromJSValUnchecked)
+      False
+-----------------------------------------------------------------------------
 websocketConnect
   :: FromJSON json
   => URL
@@ -1077,23 +1181,31 @@ websocketConnect
   -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
-websocketConnect url onOpen onClosed onMessage onError = do
-  ComponentInfo {..} <- ask
-  withSink $ \sink -> do
-    webSocketId <- freshWebSocket
-    socket <- FFI.websocketConnect url
+websocketConnect url onOpen onClosed onMessage onError =
+  websocketCore $ \webSocketId sink ->
+    FFI.websocketConnect url
       (sink $ onOpen webSocketId)
       (sink . onClosed <=< fromJSValUnchecked)
-      (sink . onMessage . TEXT <=< fromJSValUnchecked)
-      (\bytes -> do
+      (pure (sink . onMessage . TEXT <=< fromJSValUnchecked))
+      (pure (\bytes -> do
           value :: Value <- fromJSValUnchecked bytes
           case fromJSON value of
             Error msg -> sink $ onError (ms msg)
-            Success x -> sink $ onMessage (JSON x)
-      )
-      (sink . onMessage . BLOB . Blob)
-      (sink . onMessage . BUFFER . ArrayBuffer)
+            Success x -> sink $ onMessage (JSON x)))
+      (pure (sink . onMessage . BLOB . Blob))
+      (pure (sink . onMessage . BUFFER . ArrayBuffer))
       (sink . onError <=< fromJSValUnchecked)
+      False
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
+websocketCore
+  :: (WebSocket -> Sink action -> JSM Socket)
+  -> Effect parent model action
+websocketCore core = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink -> do
+    webSocketId <- freshWebSocket
+    socket <- core webSocketId sink
     insertWebSocket _componentId webSocketId socket
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()

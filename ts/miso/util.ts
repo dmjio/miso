@@ -101,6 +101,7 @@ export function websocketConnect (
     onMessageBLOB,
     onMessageArrayBuffer,
     onError,
+    textOnly : boolean,
 ): WebSocket {
   try {
     let socket = new WebSocket(url);
@@ -117,15 +118,23 @@ export function websocketConnect (
     socket.onmessage = function (msg) {
       if (typeof msg.data === "string") {
         try {
+            if (textOnly) {
+              if (onMessageText) onMessageText(msg.data)
+              return;
+            }
             const json = JSON.parse (msg.data);
-            onMessageJSON(json);
+            if (onMessageJSON) onMessageJSON(json);
         } catch (err) {
-            onMessageText(msg.data)
+            if (textOnly && onMessageText) {
+              onMessageText(msg.data)
+            } else {
+              onError(err.message)
+            }
         }
       } else if (msg.data instanceof Blob) {
-          onMessageBLOB (msg.data)
+          if (onMessageBLOB) onMessageBLOB (msg.data)
       } else if (msg.data instanceof ArrayBuffer) {
-          onMessageArrayBuffer (msg.data)
+          if (onMessageArrayBuffer) onMessageArrayBuffer (msg.data)
       } else {
         console.error ("Received unknown message type from WebSocket", msg);
         onError ("Unknown message received from WebSocket");
