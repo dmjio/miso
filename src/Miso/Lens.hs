@@ -3,6 +3,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE ExplicitForAll      #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 -----------------------------------------------------------------------------
 -- |
@@ -124,6 +125,7 @@ module Miso.Lens
   , (//~)
   , (-~)
   , (%=)
+  , (%?=)
   , modifying
   , (+=)
   , (*=)
@@ -622,6 +624,27 @@ use _lens = gets (^. _lens)
 infix 4 ?=
 (?=) :: MonadState record m => Lens record (Maybe field) -> field -> m ()
 (?=) _lens value = _lens .= Just value
+----------------------------------------------------------------------------
+-- | Alters the @Just@ value of a field in a record using a @Lens@ inside a @MonadState@
+--
+-- @
+-- newtype Model = Model { _value :: Maybe Int }
+--   deriving (Show, Eq)
+--
+-- data Action = IncrementIfJust
+--
+-- value :: Lens Model (Maybe Int)
+-- value = lens _value $ \\p x -> p { _value = x }
+--
+-- update :: Action -> Effect Model Action
+-- update IncrementIfJust = value %?= (+1)
+--
+-- @
+infix 4 %?=
+(%?=) :: MonadState record m => Lens record (Maybe field) -> (field -> field) -> m ()
+(%?=) _lens f = _lens %= \case
+  Nothing -> Nothing
+  Just x -> Just (f x)
 ----------------------------------------------------------------------------
 -- | Increments the value of a @Num@eric field of a record using a @Lens@
 -- inside a @State@ Monad.
