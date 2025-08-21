@@ -19,34 +19,35 @@ module Miso
     -- ** Miso
     miso
   , (🍜)
-  -- ** App
+    -- ** App
   , App
   , startApp
   , renderApp
-  -- ** Component
+    -- ** Component
   , Component
   , startComponent
     -- ** Sink
   , withSink
   , Sink
-  -- ** Component
+    -- ** Component
   , mail
   , checkMail
   , parent
   , mailParent
   , broadcast
-  -- ** Subscriptions
+    -- ** Subscriptions
   , startSub
   , stopSub
   , Sub
-  -- ** Effect
+    -- ** Effect
   , issue
   , batch
   , io
   , io_
   , for
-  -- ** Reactivity
+    -- * Reactivity
   , module Miso.Binding
+    -- * Types
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
