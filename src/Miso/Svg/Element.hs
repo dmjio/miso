@@ -106,56 +106,56 @@ circle_ :: [Attribute action] -> View model action
 circle_ = flip (nodeSvg "circle") []
 -----------------------------------------------------------------------------
 -- | [\<ellipse\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/ellipse)
-ellipse_ :: [Attribute action] -> [View model action] -> View model action
-ellipse_ = nodeSvg "ellipse"
+ellipse_ :: [Attribute action] -> View model action
+ellipse_ = flip (nodeSvg "ellipse") []
 -----------------------------------------------------------------------------
 -- | [\<image\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/image)
-image_ :: [Attribute action] -> [View model action] -> View model action
-image_ = nodeSvg "image"
+image_ :: [Attribute action] -> View model action
+image_ = flip (nodeSvg "image") []
 -----------------------------------------------------------------------------
 -- | [\<line\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/line)
-line_ :: [Attribute action] -> [View model action] -> View model action
-line_ = nodeSvg "line"
+line_ :: [Attribute action] -> View model action
+line_ = flip (nodeSvg "line") []
 -----------------------------------------------------------------------------
 -- | [\<path\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/path)
 path_ :: [Attribute action] -> View model action
 path_ = flip (nodeSvg "path") []
 -----------------------------------------------------------------------------
 -- | [\<polygon\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/polygon)
-polygon_ :: [Attribute action] -> [View model action] -> View model action
-polygon_ = nodeSvg "polygon"
+polygon_ :: [Attribute action] -> View model action
+polygon_ = flip (nodeSvg "polygon") []
 -----------------------------------------------------------------------------
 -- | [\<polyline\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/polyline)
-polyline_ :: [Attribute action] -> [View model action] -> View model action
-polyline_ = nodeSvg "polyline"
+polyline_ :: [Attribute action] -> View model action
+polyline_ = flip (nodeSvg "polyline") []
 -----------------------------------------------------------------------------
 -- | [\<rect\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/rect)
-rect_ :: [Attribute action] -> [View model action] -> View model action
-rect_ = nodeSvg "rect"
+rect_ :: [Attribute action] -> View model action
+rect_ = flip (nodeSvg "rect") []
 -----------------------------------------------------------------------------
 -- | [\<use\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/use)
-use_ :: [Attribute action] -> [View model action] -> View model action
-use_ = nodeSvg "use"
+use_ :: [Attribute action] -> View model action
+use_ = flip (nodeSvg "use") []
 -----------------------------------------------------------------------------
 -- | [\<animate\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animate)
-animate_ :: [Attribute action] -> [View model action] -> View model action
-animate_ = nodeSvg "animate"
+animate_ :: [Attribute action] -> View model action
+animate_ = flip (nodeSvg "animate") []
 -----------------------------------------------------------------------------
 -- | [\<animateMotion\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animateMotion)
-animateMotion_ :: [Attribute action] -> [View model action] -> View model action
-animateMotion_ = nodeSvg "animateMotion"
+animateMotion_ :: [Attribute action] -> View model action
+animateMotion_ = flip (nodeSvg "animateMotion") []
 -----------------------------------------------------------------------------
 -- | [\<animateTransform\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/animateTransform)
-animateTransform_ :: [Attribute action] -> [View model action] -> View model action
-animateTransform_ = nodeSvg "animateTransform"
+animateTransform_ :: [Attribute action] -> View model action
+animateTransform_ = flip (nodeSvg "animateTransform") []
 -----------------------------------------------------------------------------
 -- | [\<mpath\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/mpath)
-mpath_ :: [Attribute action] -> [View model action] -> View model action
-mpath_ = nodeSvg "mpath"
+mpath_ :: [Attribute action] -> View model action
+mpath_ = flip (nodeSvg "mpath") []
 -----------------------------------------------------------------------------
 -- | [\<set\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/set)
-set_ :: [Attribute action] -> [View model action] -> View model action
-set_ = nodeSvg "set"
+set_ :: [Attribute action] -> View model action
+set_ = flip (nodeSvg "set") []
 -----------------------------------------------------------------------------
 -- | [\<desc\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/desc)
 desc_ :: [Attribute action] -> [View model action] -> View model action
@@ -218,46 +218,46 @@ radialGradient_ :: [Attribute action] -> [View model action] -> View model actio
 radialGradient_ = nodeSvg "radialGradient"
 -----------------------------------------------------------------------------
 -- | [\<stop\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/stop)
-stop_ :: [Attribute action] -> [View model action] -> View model action
-stop_ = nodeSvg "stop"
+stop_ :: [Attribute action] -> View model action
+stop_ = flip (nodeSvg "stop") []
 -----------------------------------------------------------------------------
 -- | [\<feBlend\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feBlend)
-feBlend_ :: [Attribute action] -> [View model action] -> View model action
-feBlend_ = nodeSvg "feBlend"
+feBlend_ :: [Attribute action] -> View model action
+feBlend_ = flip (nodeSvg "feBlend") []
 -----------------------------------------------------------------------------
 -- | [\<feColorMatrix\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feColorMatrix)
-feColorMatrix_ :: [Attribute action] -> [View model action] -> View model action
-feColorMatrix_ = nodeSvg "feColorMatrix"
+feColorMatrix_ :: [Attribute action] -> View model action
+feColorMatrix_ = flip (nodeSvg "feColorMatrix") []
 -----------------------------------------------------------------------------
 -- | [\<feComponentTransfer\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feComponentTransfer)
 feComponentTransfer_ :: [Attribute action] -> [View model action] -> View model action
 feComponentTransfer_ = nodeSvg "feComponentTransfer"
 -----------------------------------------------------------------------------
 -- | [\<feComposite\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feComposite)
-feComposite_ :: [Attribute action] -> [View model action] -> View model action
-feComposite_ = nodeSvg "feComposite"
+feComposite_ :: [Attribute action] -> View model action
+feComposite_ = flip (nodeSvg "feComposite") []
 -----------------------------------------------------------------------------
 -- | [\<feConvolveMatrix\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feConvolveMatrix)
-feConvolveMatrix_ :: [Attribute action] -> [View model action] -> View model action
-feConvolveMatrix_ = nodeSvg "feConvolveMatrix"
+feConvolveMatrix_ :: [Attribute action] -> View model action
+feConvolveMatrix_ = flip (nodeSvg "feConvolveMatrix") []
 -----------------------------------------------------------------------------
 -- | [\<feDiffuseLighting\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDiffuseLighting)
 feDiffuseLighting_ :: [Attribute action] -> [View model action] -> View model action
 feDiffuseLighting_ = nodeSvg "feDiffuseLighting"
 -----------------------------------------------------------------------------
 -- | [\<feDisplacementMap\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDisplacementMap)
-feDisplacementMap_ :: [Attribute action] -> [View model action] -> View model action
-feDisplacementMap_ = nodeSvg "feDisplacementMap"
+feDisplacementMap_ :: [Attribute action] -> View model action
+feDisplacementMap_ = flip (nodeSvg "feDisplacementMap") []
 -----------------------------------------------------------------------------
 -- | [\<feDropShadow\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDropShadow)
 --
 -- @since 1.9.0.0
-feDropShadow_ :: [Attribute action] -> [View model action] -> View model action
-feDropShadow_ = nodeSvg "feDropShadow"
+feDropShadow_ :: [Attribute action] -> View model action
+feDropShadow_ = flip (nodeSvg "feDropShadow") []
 -----------------------------------------------------------------------------
 -- | [\<feFlood\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFlood)
-feFlood_ :: [Attribute action] -> [View model action] -> View model action
-feFlood_ = nodeSvg "feFlood"
+feFlood_ :: [Attribute action] -> View model action
+feFlood_ = flip (nodeSvg "feFlood") []
 -----------------------------------------------------------------------------
 -- | [\<feFuncA\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feFuncA)
 feFuncA_ :: [Attribute action] -> [View model action] -> View model action
@@ -276,54 +276,54 @@ feFuncR_ :: [Attribute action] -> [View model action] -> View model action
 feFuncR_ = nodeSvg "feFuncR"
 -----------------------------------------------------------------------------
 -- | [\<feGaussianBlur\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feGaussianBlur)
-feGaussianBlur_ :: [Attribute action] -> [View model action] -> View model action
-feGaussianBlur_ = nodeSvg "feGaussianBlur"
+feGaussianBlur_ :: [Attribute action] -> View model action
+feGaussianBlur_ = flip (nodeSvg "feGaussianBlur") []
 -----------------------------------------------------------------------------
 -- | [\<feImage\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feImage)
-feImage_ :: [Attribute action] -> [View model action] -> View model action
-feImage_ = nodeSvg "feImage"
+feImage_ :: [Attribute action] -> View model action
+feImage_ = flip (nodeSvg "feImage") []
 -----------------------------------------------------------------------------
 -- | [\<feMerge\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMerge)
 feMerge_ :: [Attribute action] -> [View model action] -> View model action
 feMerge_ = nodeSvg "feMerge"
 -----------------------------------------------------------------------------
 -- | [\<feMergeNode\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMergeNode)
-feMergeNode_ :: [Attribute action] -> [View model action] -> View model action
-feMergeNode_ = nodeSvg "feMergeNode"
+feMergeNode_ :: [Attribute action] -> View model action
+feMergeNode_ = flip (nodeSvg "feMergeNode") []
 -----------------------------------------------------------------------------
 -- | [\<feMorphology\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feMorphology)
 --
 -- @since 1.9.0.0
-feMorphology_ :: [Attribute action] -> [View model action] -> View model action
-feMorphology_ = nodeSvg "feMorphology"
+feMorphology_ :: [Attribute action] -> View model action
+feMorphology_ = flip (nodeSvg "feMorphology") []
 -----------------------------------------------------------------------------
 -- | [\<feOffset\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feOffset)
-feOffset_ :: [Attribute action] -> [View model action] -> View model action
-feOffset_ = nodeSvg "feOffset"
+feOffset_ :: [Attribute action] -> View model action
+feOffset_ = flip (nodeSvg "feOffset") []
 -----------------------------------------------------------------------------
 -- | [\<feSpecularLighting\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feSpecularLighting)
 feSpecularLighting_ :: [Attribute action] -> [View model action] -> View model action
 feSpecularLighting_ = nodeSvg "feSpecularLighting"
 -----------------------------------------------------------------------------
 -- | [\<feTile\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feTile)
-feTile_ :: [Attribute action] -> [View model action] -> View model action
-feTile_ = nodeSvg "feTile"
+feTile_ :: [Attribute action] -> View model action
+feTile_ = flip (nodeSvg "feTile") []
 -----------------------------------------------------------------------------
 -- | [\<feTurbulence\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feTurbulence)
-feTurbulence_ :: [Attribute action] -> [View model action] -> View model action
-feTurbulence_ = nodeSvg "feTurbulence"
+feTurbulence_ :: [Attribute action] -> View model action
+feTurbulence_ = flip (nodeSvg "feTurbulence") []
 -----------------------------------------------------------------------------
 -- | [\<feDistantLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feDistantLight)
 feDistantLight_ :: [Attribute action] -> [View model action] -> View model action
 feDistantLight_ = nodeSvg "feDistantLight"
 -----------------------------------------------------------------------------
 -- | [\<fePointLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/fePointLight)
-fePointLight_ :: [Attribute action] -> [View model action] -> View model action
-fePointLight_ = nodeSvg "fePointLight"
+fePointLight_ :: [Attribute action] -> View model action
+fePointLight_ = flip (nodeSvg "fePointLight") []
 -----------------------------------------------------------------------------
 -- | [\<feSpotLight\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/feSpotLight)
-feSpotLight_ :: [Attribute action] -> [View model action] -> View model action
-feSpotLight_ = nodeSvg "feSpotLight"
+feSpotLight_ :: [Attribute action] -> View model action
+feSpotLight_ = flip (nodeSvg "feSpotLight") []
 -----------------------------------------------------------------------------
 -- | [\<clipPath\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/clipPath)
 clipPath_ :: [Attribute action] -> [View model action] -> View model action
@@ -342,6 +342,6 @@ style_ :: [Attribute action] -> [View model action] -> View model action
 style_ = nodeSvg "style"
 -----------------------------------------------------------------------------
 -- | [\<view\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/view)
-view_ :: [Attribute action] -> [View model action] -> View model action
-view_ = nodeSvg "view"
+view_ :: [Attribute action] -> View model action
+view_ = flip (nodeSvg "view") []
 -----------------------------------------------------------------------------
