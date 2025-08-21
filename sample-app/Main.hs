@@ -5,8 +5,9 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import Miso
-import Miso.Lens
+import           Miso
+import qualified Miso.Html as H
+import           Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -52,11 +53,14 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel x = div_ []
-  [ button_ [ onClick AddOne ] [ text "+" ]
-  , text $ ms (x ^. counter)
-  , button_ [ onClick SubtractOne ] [ text "-" ]
-  , br_ []
-  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+viewModel x =
+  H.div_
+    [ H.className "counter"
+    ]
+    [ H.button_ [ H.onClick AddOne ] [ text "+" ]
+    , text $ ms (x ^. counter)
+    , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
+    , H.br_ []
+    , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------
