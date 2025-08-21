@@ -55,7 +55,6 @@ module Miso
     -- * Property
   , module Miso.Property
     -- * Html
-  , module Miso.Html
   , module Miso.Render
     -- * PubSub
   , module Miso.PubSub
@@ -97,7 +96,6 @@ import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Html
 import           Miso.Runtime
 import           Miso.Property
 import           Miso.PubSub

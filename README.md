@@ -154,25 +154,25 @@ This file contains a simple `miso` counter application.
 ```haskell
 ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import Miso
-import Miso.String
-import Miso.Lens
+import           Miso
+import qualified Miso.Html as H
+import           Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state
-newtype Model = Model
+data Model
+  = Model
   { _counter :: Int
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
 counter :: Lens Model Int
 counter = lens _counter $ \record field -> record { _counter = field }
 ----------------------------------------------------------------------------
--- | Sum type for Component events
+-- | Sum type for App events
 data Action
   = AddOne
   | SubtractOne
@@ -202,16 +202,20 @@ updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
   SayHelloWorld -> io_ $ do
-    consoleLog "Hello World"
     alert "Hello World"
+    consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel x = div_ []
-  [ button_ [ onClick AddOne ] [ text "+" ]
-  , text $ ms (x ^. counter)
-  , button_ [ onClick SubtractOne ] [ text "-" ]
-  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+viewModel x =
+  H.div_
+    [ H.className "counter"
+    ]
+    [ H.button_ [ H.onClick AddOne ] [ text "+" ]
+    , text $ ms (x ^. counter)
+    , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
+    , H.br_ []
+    , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
   ]
 ----------------------------------------------------------------------------
 ```
