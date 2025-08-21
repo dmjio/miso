@@ -72,6 +72,7 @@ module Miso.Runtime
   , arrayBuffer
   ) where
 -----------------------------------------------------------------------------
+import           Control.Concurrent.STM
 import           Control.Exception (SomeException)
 import           Control.Monad (forM, forM_, when, void, forever, (<=<))
 import           Control.Monad.Reader (ask, asks)
@@ -136,12 +137,12 @@ initialize Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModelCurrent <- liftIO (newIORef model)
-  componentModelNew <- liftIO (newIORef model)
+  componentModelCurrent <- liftIO (newTVarIO model)
+  componentModelNew <- liftIO (newTVarIO model)
   let
     eventLoop = liftIO wait >> do
-      currentModel <- liftIO (readIORef componentModelCurrent)
-      newModel <- liftIO (readIORef componentModelNew)
+      currentModel <- liftIO (readTVarIO componentModelCurrent)
+      newModel <- liftIO (readTVarIO componentModelNew)
       let
         info = ComponentInfo componentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
@@ -155,10 +156,11 @@ initialize Component {..} getView = do
         diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
-          atomicWriteIORef componentModelCurrent updatedModel
-          atomicWriteIORef componentModelNew updatedModel
-          sendMail componentDiffs Null
-          -- dmj: child wake-up call for prop synch
+          atomically $ do
+            writeTVar componentModelCurrent updatedModel
+            writeTVar componentModelNew updatedModel
+            writeTChan componentDiffs Null
+            -- dmj: child wake-up call for prop synch
       syncPoint
       eventLoop
 
@@ -202,7 +204,7 @@ initialize Component {..} getView = do
 -----------------------------------------------------------------------------
 synchronizeChildToParent
   :: DOMRef
-  -> IORef model
+  -> TVar model
   -> Mailbox
   -> [ Binding parent model ]
   -> JSM (Maybe ThreadId)
@@ -220,12 +222,13 @@ synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindin
           -- dmj: another impossible case, parent always mounted in children
           pure Nothing
         Just parentComponentState -> do
-          bindProperty parentComponentState
+          bindProperty parentComponentState          
           -- dmj: ^ parent assumes child state on initialization
-          fmap Just $ FFI.forkJSM $ forever $ do
-            Null <- liftIO $ readMail =<< copyMailbox componentDiffs
-            -- dmj: ^ listen on child this time
-            bindProperty parentComponentState
+          fmap Just $ FFI.forkJSM $ do
+            forever $ do
+              _ <- liftIO (readMail =<< copyMailbox componentDiffs)
+              -- dmj: ^ listen on child this time
+              bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
       forM_ bindings (bindChildToParent parentComponentState componentModelNew)
@@ -235,7 +238,7 @@ bindChildToParent
   :: forall parent model action
    . ComponentState parent action
   -- ^ Parent model
-  -> IORef model
+  -> TVar model
   -- ^ Child new model
   -> Binding parent model
   -- ^ Binding
@@ -248,14 +251,14 @@ bindChildToParent ComponentState {..} childRef = \case
   _ ->
     pure ()
   where
-    childToParent setParent getChild = do
-      childModel <- liftIO (readIORef childRef)
+    childToParent setParent getChild = liftIO $ atomically $ do
+      childModel <- readTVar childRef
       let newParent = setParent (getChild childModel)
-      liftIO $ atomicModifyIORef' componentModelNew $ \m -> (newParent m, ())
+      modifyTVar' componentModelNew newParent
 -----------------------------------------------------------------------------
 synchronizeParentToChild
   :: DOMRef
-  -> IORef model
+  -> TVar model
   -> [ Binding type_ model ]
   -> IO ()
   -> JSM (Maybe ThreadId)
@@ -287,7 +290,7 @@ bindParentToChild
   :: forall props model action
    . ComponentState props action
   -- ^ Parent model
-  -> IORef model
+  -> TVar model
   -- ^ Child new model
   -> Binding props model
   -- ^ binding
@@ -300,10 +303,10 @@ bindParentToChild ComponentState {..} modelRef = \case
   _ ->
     pure ()
   where
-    parentToChild getParent setChild = do
-      parentModel <- liftIO (readIORef componentModelNew)
+    parentToChild getParent setChild = liftIO $ atomically $ do
+      parentModel <- readTVar componentModelNew
       let newChild = setChild (getParent parentModel)
-      liftIO $ atomicModifyIORef' modelRef $ \m -> (newChild m, ())
+      modifyTVar' modelRef newChild
 -----------------------------------------------------------------------------
 -- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -320,8 +323,8 @@ data ComponentState model action
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
-  , componentModelCurrent    :: IORef model
-  , componentModelNew        :: IORef model
+  , componentModelCurrent    :: TVar model
+  , componentModelNew        :: TVar model
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
@@ -672,9 +675,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go info actions = do
-          x <- liftIO (readIORef componentModelCurrent)
+          x <- liftIO (readTVarIO componentModelCurrent)
           y <- foldEffects update Sync info componentSink (toList actions) x
-          liftIO (atomicWriteIORef componentModelCurrent y)
+          liftIO $ atomically (writeTVar componentModelCurrent y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
@@ -1030,7 +1033,7 @@ parent successful errorful = do
         IM.lookup parentId <$> liftIO (readIORef components) >>= \case
           Nothing -> sink errorful
           Just ComponentState {..} -> do
-            model <- liftIO (readIORef componentModelCurrent)
+            model <- liftIO (readTVarIO componentModelCurrent)
             sink (successful model)
 -----------------------------------------------------------------------------
 -- | Sends a message to all @Component@ 'mailbox', excluding oneself.
