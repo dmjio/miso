@@ -35,6 +35,7 @@ in
   # flake sources
   jsaddle = fetchFromFlake (nodes.jsaddle);
   servant = fetchFromFlake (nodes.servant);
+  haskell-language-server = fetchFromFlake (nodes."hls-2.10");
 
   # unflakified sources
   miso-from-html = fetchFromGitHub {

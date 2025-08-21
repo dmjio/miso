@@ -26,6 +26,9 @@
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
 
+    # Haskell Language Server
+    hls.url = "github:haskell/haskell-language-server";
+
     # Miso uses this for FFI
     jsaddle.url =
       "github:ghcjs/jsaddle?rev=2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
@@ -81,9 +84,19 @@
           # Default GHC shell
           default =
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
-              buildInputs = with pkgs; drv.buildInputs ++
-                [ just bun
-                ];
+              buildInputs = with pkgs;
+                drv.buildInputs ++
+                  [ just bun ormolu 
+                  ];
+            });
+
+          # Shell for hls dev
+          hls =
+            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
+              buildInputs = with pkgs; with haskell.packages.ghc9122;
+                drv.buildInputs ++
+                  [ just bun ormolu haskell-language-server
+                  ];
             });
 
           # Shell for JavaScript / TypeScript development
