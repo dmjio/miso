@@ -159,7 +159,7 @@ initialize Component {..} getView = do
           atomically $ do
             writeTVar componentModelCurrent updatedModel
             writeTVar componentModelNew updatedModel
-            writeTChan componentDiffs Null
+          atomically (writeTChan componentDiffs Null)
             -- dmj: child wake-up call for prop synch
       syncPoint
       eventLoop
