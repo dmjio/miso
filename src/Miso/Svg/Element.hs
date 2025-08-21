@@ -102,8 +102,8 @@ foreignObject_ :: [Attribute action] -> [View model action] -> View model action
 foreignObject_ = nodeSvg "foreignObject"
 -----------------------------------------------------------------------------
 -- | [\<circle\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/circle)
-circle_ :: [Attribute action] -> [View model action] -> View model action
-circle_ = nodeSvg "circle"
+circle_ :: [Attribute action] -> View model action
+circle_ = flip (nodeSvg "circle") []
 -----------------------------------------------------------------------------
 -- | [\<ellipse\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/ellipse)
 ellipse_ :: [Attribute action] -> [View model action] -> View model action
@@ -118,8 +118,8 @@ line_ :: [Attribute action] -> [View model action] -> View model action
 line_ = nodeSvg "line"
 -----------------------------------------------------------------------------
 -- | [\<path\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/path)
-path_ :: [Attribute action] -> [View model action] -> View model action
-path_ = nodeSvg "path"
+path_ :: [Attribute action] -> View model action
+path_ = flip (nodeSvg "path") []
 -----------------------------------------------------------------------------
 -- | [\<polygon\>](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/polygon)
 polygon_ :: [Attribute action] -> [View model action] -> View model action
