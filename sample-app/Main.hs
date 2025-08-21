@@ -7,6 +7,7 @@ module Main where
 ----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.Html as H
+import qualified Miso.Html.Property as P
 import           Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state
@@ -55,7 +56,7 @@ updateModel = \case
 viewModel :: Model -> View Model Action
 viewModel x =
   H.div_
-    [ H.className "counter"
+    [ P.className "counter"
     ]
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text $ ms (x ^. counter)

@@ -161,6 +161,7 @@ module Main where
 ----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.Html as H
+import qualified Miso.Html.Property as P
 import           Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state

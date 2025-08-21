@@ -114,6 +114,7 @@ module Miso.Html.Property
    , role_
    , xmlns_
    , aria_
+   , label_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -522,4 +523,8 @@ xmlns_ = textProp "xmlns"
 -- | @since 1.9.0.0
 aria_ :: MisoString -> MisoString -> Attribute action
 aria_ k = textProp ("aria-" <> k)
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+label_ :: MisoString -> Attribute action
+label_ = textProp "label"
 -----------------------------------------------------------------------------
