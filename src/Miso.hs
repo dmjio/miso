@@ -46,13 +46,7 @@ module Miso
   , io_
   , for
   -- ** Reactivity
-  , Binding (..)
-  , (-->)
-  , (<--)
-  , (<-->)
-  , (<--->)
-  , (--->)
-  , (<---)
+  , module Miso.Binding
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -96,6 +90,7 @@ import           Language.Javascript.JSaddle (eval)
 #endif
 #endif
 -----------------------------------------------------------------------------
+import           Miso.Binding
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
