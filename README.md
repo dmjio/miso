@@ -41,7 +41,7 @@
 
 ## Table of Contents
 - [History](#history-)
-- [Quick Start](#quick-start-%EF%B8%8F)
+- [Quick Start](#quick-start-)
 - [Getting Started](#getting-started)
 - [Setup](#setup-%EF%B8%8F)
 - [Hot Reload](#hot-reload-)
