@@ -83,7 +83,7 @@
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
               buildInputs = with pkgs;
                 drv.buildInputs ++
-                  [ just bun ormolu 
+                  [ just bun ormolu cabal-install
                   ];
             });
 
@@ -92,7 +92,7 @@
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
               buildInputs = with pkgs; with haskell.packages.ghc9122;
                 drv.buildInputs ++
-                  [ just bun ormolu haskell-language-server
+                  [ just bun ormolu haskell-language-server cabal-install
                   ];
             });
 
