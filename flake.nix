@@ -81,9 +81,19 @@
           # Default GHC shell
           default =
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
-              buildInputs = with pkgs; drv.buildInputs ++
-                [ just bun
-                ];
+              buildInputs = with pkgs;
+                drv.buildInputs ++
+                  [ just bun ormolu 
+                  ];
+            });
+
+          # Shell for hls dev
+          hls =
+            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
+              buildInputs = with pkgs; with haskell.packages.ghc9122;
+                drv.buildInputs ++
+                  [ just bun ormolu haskell-language-server
+                  ];
             });
 
           # Shell for JavaScript / TypeScript development

@@ -36,7 +36,7 @@ in
   jsaddle = fetchFromFlake (nodes.jsaddle);
   servant = fetchFromFlake (nodes.servant);
 
-  # unflakified sources
+  # non-flakified sources
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-from-html";

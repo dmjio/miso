@@ -49,6 +49,10 @@ with pkgs.haskell.lib;
   inherit (pkgs.haskell.packages.ghc9122)
     miso-from-html;
 
+  # hls
+  inherit (pkgs.haskell.packages.ghc9122)
+    haskell-language-server;
+
   # dmj: make a NixOS test to ensure examples can be hosted
   # dry-running this ensures we catch the failure before deploy
   inherit (legacyPkgs)
