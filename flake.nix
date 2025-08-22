@@ -26,9 +26,6 @@
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Haskell Language Server
-    hls.url = "github:haskell/haskell-language-server";
-
     # Miso uses this for FFI
     jsaddle.url =
       "github:ghcjs/jsaddle?rev=2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
