@@ -26,7 +26,6 @@ self: super:
 
   /* cruft */
   crypton = dontCheck super.crypton;
-  stylish-haskell = doJailbreak super.stylish-haskell;
   ghcid = doJailbreak super.ghcid;
   brick = doJailbreak super.brick;
   cryptonite = dontCheck super.cryptonite;
