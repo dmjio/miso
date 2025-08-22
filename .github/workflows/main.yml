@@ -38,6 +38,9 @@ jobs:
      - name: Bun build prod
        run: bun run build && bun run prod
 
+     - name: hls
+       run: nix-build -A haskell-language-server
+
      - name: (JS) Miso GHCJS (GHCJS 8.6)
        run: nix-build -A miso-ghcjs
 
