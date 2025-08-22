@@ -37,18 +37,6 @@ in
   servant = fetchFromFlake (nodes.servant);
 
   # non-flakified sources
-  haskell-language-server = fetchFromGitHub {
-    owner = "haskell";
-    repo = "haskell-language-server";
-    rev = "46ef4523ea4949f47f6d2752476239f1c6d806fe";
-    hash = "sha256-/MmtpF8+FyQlwfKHqHK05BdsxC9LHV70d/FiMM7pzBM=";
-  };
-  stylish-haskell = fetchFromGitHub {
-    owner = "haskell";
-    repo = "stylish-haskell";
-    rev = "f72885695a82a1da529ce4835bac1500bb70b78d";
-    hash = "sha256-oiteTBwaTXw+DFHEVdicXXapiGOLVCH9me3hL/aGB3A=";
-  };
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
     repo = "miso-from-html";

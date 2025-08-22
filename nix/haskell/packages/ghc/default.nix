@@ -17,15 +17,6 @@ self: super:
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
   servant = self.callCabal2nix "servant" "${source.servant}/servant" {};
 
-  /* hls */
-  haskell-language-server = doJailbreak (
-    self.callCabal2nix "haskell-language-server" source.haskell-language-server {}
-  );
-
-  stylish-haskell = doJailbreak (
-    self.callCabal2nix "stylish-haskell" source.stylish-haskell {}
-  );
-
   /* cruft */
   crypton = dontCheck super.crypton;
   ghcid = doJailbreak super.ghcid;
