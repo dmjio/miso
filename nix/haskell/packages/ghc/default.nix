@@ -21,6 +21,9 @@ self: super:
   haskell-language-server =
     self.callCabal2nix "haskell-language-server" source.haskell-language-server {};
 
+  stylish-haskell =
+    self.callCabal2nix "stylish-haskell" source.stylish-haskell {};
+
   /* cruft */
   crypton = dontCheck super.crypton;
   stylish-haskell = doJailbreak super.stylish-haskell;
