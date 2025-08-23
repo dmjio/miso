@@ -138,8 +138,10 @@ instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
   gFromRoute = K1 <$> capture
 -----------------------------------------------------------------------------
 instance GRouter U1 where
-  gToRoute = undefined
-  gFromRoute = undefined
+  gToRoute U1 
+    | x : xs <- show U1 = toUpper x : xs 
+    | otherwise = mempty
+  gFromRoute = pure U1
 -----------------------------------------------------------------------------
 instance (GRouter left, GRouter right) => GRouter (left :*: right) where
   gToRoute (left :*: right) = gToRoute left <> "/" <> gToRoute right
