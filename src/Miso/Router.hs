@@ -133,7 +133,7 @@ instance {-# OVERLAPS #-} forall path m . KnownSymbol path => GRouter (K1 m (Pat
   gToRoute (K1 x) = ms x
   gFromRoute = K1 <$> path chunk
     where
-      chunk = ms $ symbolVal (Proxy @path)
+      chunk = ms $ symbolVal (Proxy :: Proxy path)
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture a)) where
   gToRoute (K1 x) = ms x
