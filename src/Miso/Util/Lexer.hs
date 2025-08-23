@@ -10,10 +10,10 @@
 module Miso.Util.Lexer
   ( -- ** Types
     Lexer (..)
-  , Location (..)
-  , Located (..)
-  , LexerError (..)
   , Stream (..)
+  , Located (..)
+  , Location (..)
+  , LexerError (..)
     -- ** Combinators
   , getStartColumn
   , zeroLocation
@@ -71,9 +71,7 @@ zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
 newtype Lexer token
   = Lexer
-  { runLexer
-      :: Stream
-      -> Either LexerError (token, Stream)
+  { runLexer :: Stream -> Either LexerError (token, Stream)
   }
 ----------------------------------------------------------------------------
 oops :: Lexer token
