@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE TypeOperators              #-}
