@@ -86,12 +86,12 @@ type RouteParser route = ExceptT RoutingError (StateT [Token] []) route
 -----------------------------------------------------------------------------
 capture :: FromMisoString value => RouteParser value
 capture = fromMisoStringEither <$> undefined >>= \case
-  Left err -> throwError (DecodeFailure err)
+  Left err -> throwError (DecodeFailure (ms err))
   Right r -> pure r
 -----------------------------------------------------------------------------
 queryParam :: FromMisoString value => RouteParser (Maybe value)
 queryParam = fromMisoStringEither <$> undefined >>= \case
-  Left err -> throwError (DecodeFailure err)
+  Left err -> throwError (DecodeFailure (ms err))
   Right r -> pure (Just r)
 -----------------------------------------------------------------------------
 path :: MisoString -> RouteParser MisoString

@@ -59,8 +59,6 @@ module Miso
   , module Miso.Render
     -- * PubSub
   , module Miso.PubSub
-    -- * Router
-  , module Miso.Router
     -- * Run
   , module Miso.Run
     -- * Subscriptions
@@ -101,7 +99,6 @@ import           Miso.Runtime
 import           Miso.Property
 import           Miso.PubSub
 import           Miso.Render
-import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage
