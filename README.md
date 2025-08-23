@@ -80,7 +80,7 @@
 
 Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) between modern JavaScript frameworks (such as [React](https://reactjs.org), [Vue.js](https://vuejs.org), etc.) and functional programming in [Haskell](https://haskell.org).
 
-It has since grown to encompass more features from the JavaScript community like [Components](https://www.w3schools.com/react/react_components.asp) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). It also [now supports native development to iOS / Android](https://github.com/haskell-miso/miso-lynx) via [LynxJS](https://lynxjs.org) and additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
+It has since grown to encompass more features from the JavaScript community like [Components](https://react.dev/learn/your-first-component) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). It also [now supports native development to iOS / Android](https://github.com/haskell-miso/miso-lynx) via [LynxJS](https://lynxjs.org) and additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
 
 ## Quick start ⚡
 
