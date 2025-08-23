@@ -142,7 +142,7 @@ instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
 -----------------------------------------------------------------------------
 instance GRouter U1 where
   gToRoute U1 
-    | x : xs <- show U1 = C.toLower x : xs 
+    | x : xs <- show U1 = ms (C.toLower x : xs)
     | otherwise = mempty
   gFromRoute = pure U1
 -----------------------------------------------------------------------------
