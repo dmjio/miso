@@ -40,6 +40,7 @@ import           Control.Monad.Except
 import           Control.Monad
 import           Control.Monad.State
 import           GHC.Generics
+import           GHC.TypeLits
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model)
 import           Miso.Util.Parser
@@ -61,7 +62,7 @@ newtype Capture a = Capture a
   deriving stock (Generic, Show)
   deriving newtype (ToMisoString, FromMisoString)
 -----------------------------------------------------------------------------
-newtype Path = Path MisoString
+newtype Path (path :: Symbol) = Path MisoString
   deriving (Generic, Show)
   deriving newtype (ToMisoString, IsString)
 -----------------------------------------------------------------------------
@@ -127,10 +128,11 @@ instance GRouter next => GRouter (S1 m next) where
   gToRoute (M1 x) = gToRoute x
   gFromRoute = M1 <$> gFromRoute
 -----------------------------------------------------------------------------
-instance {-# OVERLAPS #-} GRouter (K1 m Path) where
+instance {-# OVERLAPS #-} KnownSymbol path => GRouter (K1 m (Path path)) where
   gToRoute (K1 x) = ms x
-  gFromRoute = undefined
-    -- K1 <$> path
+  gFromRoute = K1 <$> path chunk
+    where
+      chunk = ms $ symbolVal (Proxy @path)
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture a)) where
   gToRoute (K1 x) = ms x
