@@ -129,7 +129,7 @@ instance GRouter next => GRouter (S1 m next) where
   gToRoute (M1 x) = gToRoute x
   gFromRoute = M1 <$> gFromRoute
 -----------------------------------------------------------------------------
-instance {-# OVERLAPS #-} KnownSymbol path => GRouter (K1 m (Path path)) where
+instance {-# OVERLAPS #-} forall path . KnownSymbol path => GRouter (K1 m (Path path)) where
   gToRoute (K1 x) = ms x
   gFromRoute = K1 <$> path chunk
     where
