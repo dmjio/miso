@@ -27,6 +27,7 @@ import           Control.Exception (SomeException)
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy    as BL
+import           Data.Bifunctor
 import           Data.JSString
 import           Data.JSString.Text
 import           Data.Monoid             as S
@@ -54,14 +55,14 @@ class ToMisoString str where
 ----------------------------------------------------------------------------
 -- | Class from safely parsing 'MisoString'
 class FromMisoString t where
-  fromMisoStringEither :: MisoString -> Either String t
+  fromMisoStringEither :: MisoString -> Either MisoString t
 ----------------------------------------------------------------------------
 -- | Parses a `MisoString`, throws an error when decoding
 -- fails. Use `fromMisoStringEither` for as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s =
   case fromMisoStringEither s of
-    Left err -> error err
+    Left err -> error (T.unpack err)
     Right x  -> x
 ----------------------------------------------------------------------------
 -- | Convenience function, shorthand for `toMisoString`
@@ -126,14 +127,14 @@ instance FromMisoString B.Builder where
   fromMisoStringEither = fmap B.byteString . fromMisoStringEither
 ----------------------------------------------------------------------------
 instance FromMisoString Float where
-  fromMisoStringEither = readEither . T.unpack
+  fromMisoStringEither = first ms . readEither . T.unpack
 ----------------------------------------------------------------------------
 instance FromMisoString Double where
-  fromMisoStringEither = readEither . T.unpack
+  fromMisoStringEither = first ms . readEither . T.unpack
 ----------------------------------------------------------------------------
 instance FromMisoString Int where
-  fromMisoStringEither = readEither . T.unpack
+  fromMisoStringEither = first ms . readEither . T.unpack
 ----------------------------------------------------------------------------
 instance FromMisoString Word where
-  fromMisoStringEither = readEither . T.unpack
+  fromMisoStringEither = first ms . readEither . T.unpack
 ----------------------------------------------------------------------------

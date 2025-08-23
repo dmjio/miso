@@ -34,6 +34,7 @@ module Miso.Util.Lexer
   , withLocation
   ) where
 ----------------------------------------------------------------------------
+import           Control.Monad
 import           Control.Applicative
 ----------------------------------------------------------------------------
 import           Miso.String (MisoString, ToMisoString)
@@ -126,6 +127,9 @@ instance Alternative Lexer where
         if MS.length s <= MS.length t
         then Right (x, Stream s sl)
         else Right (y, Stream t tl)
+----------------------------------------------------------------------------
+instance MonadPlus Lexer where
+  mplus = (<|>)
 ----------------------------------------------------------------------------
 peek :: Lexer (Maybe Char)
 peek = Lexer $ \ys ->
