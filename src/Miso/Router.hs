@@ -35,6 +35,7 @@ module Miso.Router
 -----------------------------------------------------------------------------
 import           Data.Char
 import qualified Data.Char as C
+import           Data.Proxy
 import           Data.String
 import           Control.Applicative
 import           Control.Monad.Except
