@@ -61,11 +61,14 @@ module Miso.Router
     Router (..)
     -- ** Types
   , Capture
+    -- ** Re-exports
+  , URI (..)
     -- ** Errors
   , RoutingError (..)
     -- ** Functions
   , route
   , parseURI
+  , prettyURI
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
