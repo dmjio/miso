@@ -73,7 +73,7 @@ module Miso.Router
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
 import           Data.Functor
-import           Data.Typeable
+import           Data.Proxy
 import           Data.Char
 import qualified Data.Char as C
 import           Data.String
@@ -191,7 +191,7 @@ instance IsString RoutingError where
 -----------------------------------------------------------------------------
 type RouteParser = ParserT [Token] []
 -----------------------------------------------------------------------------
-capture :: forall value . (Typeable value, FromMisoString value) => RouteParser value
+capture :: FromMisoString value => RouteParser value
 capture = do
   CaptureOrPathToken capture_ <- captureOrPathToken
   case fromMisoStringEither capture_ of
@@ -298,7 +298,7 @@ instance {-# OVERLAPS #-} forall path m . KnownSymbol path => GRouter (K1 m (Pat
     where
       chunk = ms $ symbolVal (Proxy :: Proxy path)
 -----------------------------------------------------------------------------
-instance {-# OVERLAPS #-} (Typeable (Capture sym a), FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture sym a)) where
+instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture sym a)) where
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
   gRouteParser _ = K1 <$> capture
 -----------------------------------------------------------------------------
@@ -315,7 +315,7 @@ instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (Que
     where
       flag = ms $ symbolVal (Proxy @flag)
 -----------------------------------------------------------------------------
-instance (Typeable a, FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
+instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
   gRouteParser _ = K1 <$> capture
 -----------------------------------------------------------------------------
@@ -378,7 +378,15 @@ uriLexer = do
                 pure (key, value)
 -----------------------------------------------------------------------------
 chars :: Lexer MisoString
-chars = ms <$> some (L.satisfy isAlphaNum)
+chars = fmap ms <$> some $ do
+  L.satisfy $ \x -> or
+    [ isAlphaNum x
+    , x == '-'
+    , x == '_'
+    , x == '~'
+    , x == '%'
+    , x == '.'
+    ]
 -----------------------------------------------------------------------------
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
