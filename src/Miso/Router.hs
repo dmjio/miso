@@ -72,6 +72,7 @@ module Miso.Router
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
+import           Data.Maybe
 import           Data.Functor
 import           Data.Proxy
 import           Data.Char
@@ -208,15 +209,9 @@ queryParam URI {..} key = do
     _ -> pure Nothing
 -----------------------------------------------------------------------------
 queryFlag :: MisoString -> URI -> RouteParser Bool
-queryFlag specified URI {..} = foundFlag <|> pure False
-  where
-    foundFlag = do
-      QueryFlagToken parsed <- captureOrPathToken
-      guard (parsed == specified)
-      case M.lookup specified uriQueryString of
-        Nothing -> pure True
-        Just _ -> pure False
-          -- dmj: no values allowed in query flags
+queryFlag specified URI {..} =
+  pure $ isJust (M.lookup specified uriQueryString)
+      -- dmj: no values allowed in query flags
 -----------------------------------------------------------------------------
 path :: MisoString -> RouteParser ()
 path specified = do
@@ -254,6 +249,7 @@ class Router route where
   default routeParser :: (Generic route, GRouter (Rep route)) => RouteParser route
   routeParser = do
     uri <- tokensToURI <$> allTokens
+    modifyTokens $ \tokens -> [ token | token@CaptureOrPathToken{} <- tokens ]
     to <$> gRouteParser uri
 -----------------------------------------------------------------------------
 prettyURI :: URI -> MisoString
