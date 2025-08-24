@@ -88,7 +88,7 @@ import           Miso.Html.Property
 import           Miso.Util.Parser
 import qualified Miso.Util.Lexer as L
 import           Miso.Util.Lexer (Lexer)
-import           Miso.String
+import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 newtype Capture sym a = Capture a
@@ -136,7 +136,7 @@ data Token
 tokensToURI :: [Token] -> URI
 tokensToURI tokens = URI
   { uriPath =
-      foldMap ms (Prelude.filter isPathRelated tokens)
+      foldMap ms (filter isPathRelated tokens)
   , uriQueryString =
       M.unions
         [ case queryToken of
@@ -151,10 +151,10 @@ tokensToURI tokens = URI
               M.singleton k (pure v)
             _ ->
               mempty
-        | queryToken <- Prelude.filter isQuery tokens
+        | queryToken <- filter isQuery tokens
         ]
   , uriFragment =
-      foldMap ms (Prelude.filter isFragment tokens)
+      foldMap ms (filter isFragment tokens)
   } where
       isFragment = \case
         FragmentToken{} -> True
@@ -331,7 +331,7 @@ instance (GRouter left, GRouter right) => GRouter (left :+: right) where
   gFromRoute = \case
     L1 m1 -> gFromRoute m1
     R1 m1 -> gFromRoute m1
-  gRouteParser uri = asum
+  gRouteParser uri = foldr (<|>) empty
     [ L1 <$> gRouteParser uri
     , R1 <$> gRouteParser uri
     ]
@@ -348,7 +348,7 @@ uriLexer = do
   pure (postProcess tokens)
     where
       postProcess :: [Token] -> [Token]
-      postProcess = Prelude.concatMap $ \case
+      postProcess = concatMap $ \case
         QueryParamTokens queryParams_ ->
           [ QueryParamToken k v
           | (k,v) <- queryParams_
