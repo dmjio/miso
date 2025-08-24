@@ -73,6 +73,7 @@ module Miso.Types
   , ms
   -- *** URI
   , URI (..)
+  , emptyURI
   ) where
 -----------------------------------------------------------------------------
 import           Data.Map (Map)
@@ -463,4 +464,7 @@ data URI
   { uriPath, uriFragment :: MisoString
   , uriQueryString :: Map MisoString (Maybe MisoString)
   } deriving (Show, Eq)
+----------------------------------------------------------------------------
+emptyURI :: URI
+emptyURI = URI "/" mempty mempty
 ----------------------------------------------------------------------------
