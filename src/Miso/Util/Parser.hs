@@ -23,6 +23,7 @@ module Miso.Util.Parser
   , peek
   , token_
   , errorOut
+  , allTokens
   ) where
 ----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -90,6 +91,9 @@ satisfy f = Parser $ \input ->
   case input of
     t : ts | f t -> [(t, ts)]
     _ -> []
+----------------------------------------------------------------------------
+allTokens :: Parser token [token]
+allTokens = Parser $ \input -> [(input, input)]
 ----------------------------------------------------------------------------
 token_ :: Eq token => token -> Parser token token
 token_ t = satisfy (==t)

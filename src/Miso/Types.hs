@@ -71,8 +71,11 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
+  -- *** URI
+  , URI (..)
   ) where
 -----------------------------------------------------------------------------
+import           Data.Map (Map)
 import           Data.Aeson (Value, ToJSON)
 import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
@@ -450,4 +453,14 @@ optionalChildren element attrs kids condition opts =
       let newKids = kids ++ concat [ opts | condition ]
       VNode ns name attrs newKids
     x -> x
+----------------------------------------------------------------------------
+-- | Type for dealing with @URI@
+--
+-- > https://datatracker.ietf.org/doc/html/rfc3986
+--
+data URI
+  = URI
+  { uriPath, uriFragment :: MisoString
+  , uriQueryString :: Map MisoString (Maybe MisoString)
+  } deriving (Show, Eq)
 ----------------------------------------------------------------------------

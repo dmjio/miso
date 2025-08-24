@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                  #-}
 {-# LANGUAGE FlexibleInstances    #-}
