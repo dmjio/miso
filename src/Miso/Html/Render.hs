@@ -5,14 +5,14 @@
 {-# LANGUAGE RecordWildCards       #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Render
+-- Module      :  Miso.Html.Render
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Render
+module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
   ) where

@@ -142,6 +142,7 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Html.Render
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
@@ -150,7 +151,6 @@ library
     Miso.Navigator
     Miso.Property
     Miso.PubSub
-    Miso.Render
     Miso.Router
     Miso.Run
     Miso.State

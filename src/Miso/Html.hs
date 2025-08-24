@@ -43,8 +43,11 @@ module Miso.Html
      module Miso.Html.Element
      -- ** Events
    , module Miso.Html.Event
+     -- ** Render
+   , module Miso.Html.Render
    ) where
 -----------------------------------------------------------------------------
 import Miso.Html.Element
 import Miso.Html.Event
+import Miso.Html.Render
 -----------------------------------------------------------------------------
