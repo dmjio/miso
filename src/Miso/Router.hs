@@ -69,6 +69,11 @@ module Miso.Router
   , route
   , parseURI
   , prettyURI
+    -- ** Construction
+  , queryFlag
+  , queryParam
+  , capture
+  , path
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -133,6 +138,18 @@ data Token
   | FragmentToken MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+queryParam :: ToMisoString s => MisoString -> s -> Token
+queryParam k v = QueryParamToken k (ms v)
+-----------------------------------------------------------------------------
+queryFlag :: MisoString -> Token
+queryFlag = QueryFlagToken
+-----------------------------------------------------------------------------
+capture :: ToMisoString string => string -> Token
+capture = QueryFlagToken . ms
+-----------------------------------------------------------------------------
+path :: MisoString -> Token
+path = CaptureOrPathToken
+-----------------------------------------------------------------------------
 -- | Converts a list of @[Token]@ into an actual @URI@.
 tokensToURI :: [Token] -> URI
 tokensToURI tokens = URI
@@ -192,29 +209,15 @@ instance IsString RoutingError where
 -----------------------------------------------------------------------------
 type RouteParser = ParserT [Token] []
 -----------------------------------------------------------------------------
-capture :: FromMisoString value => RouteParser value
-capture = do
+captureToken :: FromMisoString value => RouteParser value
+captureToken = do
   CaptureOrPathToken capture_ <- captureOrPathToken
   case fromMisoStringEither capture_ of
     Left msg -> fail (fromMisoString (ms msg))
     Right token -> pure token
 -----------------------------------------------------------------------------
-queryParam :: FromMisoString value => URI -> MisoString -> RouteParser (Maybe value)
-queryParam URI {..} key = do
-  case M.lookup key uriQueryString of
-    Just (Just value) ->
-      case fromMisoStringEither value of
-        Left _ -> pure Nothing
-        Right parsed -> pure (Just parsed)
-    _ -> pure Nothing
------------------------------------------------------------------------------
-queryFlag :: MisoString -> URI -> RouteParser Bool
-queryFlag specified URI {..} =
-  pure $ isJust (M.lookup specified uriQueryString)
-      -- dmj: no values allowed in query flags
------------------------------------------------------------------------------
-path :: MisoString -> RouteParser ()
-path specified = do
+pathToken :: MisoString -> RouteParser ()
+pathToken specified = do
   CaptureOrPathToken parsed <- captureOrPathToken
   when (specified /= parsed) (fail "path")
 -----------------------------------------------------------------------------
@@ -229,12 +232,16 @@ parseURI txt =
     Right tokens -> Right (tokensToURI tokens)
 -----------------------------------------------------------------------------
 class Router route where
+  {-# MINIMAL fromRoute, routeParser  #-}
   fromRoute :: route -> [Token]
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
 
-  fromURI :: route -> URI
-  fromURI = tokensToURI . fromRoute
+  toURI :: route -> URI
+  toURI = tokensToURI . fromRoute
+
+  fromURI :: URI -> Either RoutingError route
+  fromURI = toRoute . prettyURI
 
   link_ :: route -> Attribute action
   link_ = href_ . prettyRoute
@@ -279,7 +286,7 @@ instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) nex
       where
         name = lowercase $ symbolVal (Proxy @name)
   gRouteParser uri = do
-    void (path name)
+    void (pathToken name)
     M1 <$> gRouteParser uri
       where
         name = lowercase $ symbolVal (Proxy @name)
@@ -290,30 +297,36 @@ instance GRouter next => GRouter (S1 m next) where
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall path m . KnownSymbol path => GRouter (K1 m (Path path)) where
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
-  gRouteParser _ = K1 (Path chunk) <$ path chunk
+  gRouteParser _ = K1 (Path chunk) <$ pathToken chunk
     where
       chunk = ms $ symbolVal (Proxy :: Proxy path)
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture sym a)) where
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
-  gRouteParser _ = K1 <$> capture
+  gRouteParser _ = K1 <$> captureToken
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, KnownSymbol param) => GRouter (K1 m (QueryParam param a)) where
   gFromRoute (K1 (QueryParam Nothing)) = []
   gFromRoute (K1 (QueryParam (Just v))) =
     pure (QueryParamToken (ms (symbolVal (Proxy @param))) (ms v))
-  gRouteParser uri = K1 . QueryParam <$> do
-    queryParam uri (ms (symbolVal (Proxy @param)))
+  gRouteParser URI{..} = K1 . QueryParam <$>
+    case M.lookup (ms (symbolVal (Proxy @param))) uriQueryString of
+      Just (Just value) ->
+        case fromMisoStringEither value of
+          Left _ -> pure Nothing
+          Right parsed -> pure (Just parsed)
+      _ -> pure Nothing
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
   gFromRoute (K1 x) = pure $ QueryFlagToken (ms x)
-  gRouteParser uri = K1 . QueryFlag <$> queryFlag flag uri
+  gRouteParser uri = K1 . QueryFlag <$> queryFlag_ flag uri
     where
       flag = ms $ symbolVal (Proxy @flag)
+      queryFlag_ specified URI {..} = pure $ isJust (M.lookup specified uriQueryString)
 -----------------------------------------------------------------------------
 instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
-  gRouteParser _ = K1 <$> capture
+  gRouteParser _ = K1 <$> captureToken
 -----------------------------------------------------------------------------
 instance GRouter U1 where
   gFromRoute U1 = pure $ CaptureOrPathToken $ lowercase (show U1)
