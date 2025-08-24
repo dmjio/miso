@@ -5,43 +5,26 @@
 {-# LANGUAGE RecordWildCards       #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Render
+-- Module      :  Miso.Html.Render
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.Render
+module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
-    -- *** Combinator
-  , HTML
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
-import qualified Network.HTTP.Media as M
-import           Servant.API (Accept (..), MimeRender (..))
 import           Unsafe.Coerce (unsafeCoerce)
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
 import           Miso.Types
-----------------------------------------------------------------------------
--- | HTML MimeType used for servant APIs
---
--- > type Home = "home" :> Get '[HTML] (Component model action)
---
-data HTML
-----------------------------------------------------------------------------
--- | @text/html;charset=utf-8@
-instance Accept HTML where
-  contentTypes _ =
-    "text" M.// "html" M./: ("charset", "utf-8") NE.:|
-      ["text" M.// "html"]
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
 class ToHtml a where
@@ -55,9 +38,9 @@ instance ToHtml (View m a) where
 instance ToHtml [View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
--- | Render HTML from a servant API
-instance ToHtml a => MimeRender HTML a where
-  mimeRender _ = toHtml
+-- | Render a @Component parent model action@ to a @L.ByteString@
+instance ToHtml (Component parent model action) where
+  toHtml Component {..} = renderView (view model)
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder

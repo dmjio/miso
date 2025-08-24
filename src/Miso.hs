@@ -55,8 +55,6 @@ module Miso
   , module Miso.Event
     -- * Property
   , module Miso.Property
-    -- * Html
-  , module Miso.Render
     -- * PubSub
   , module Miso.PubSub
     -- * Run
@@ -98,7 +96,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Runtime
 import           Miso.Property
 import           Miso.PubSub
-import           Miso.Render
+import           Miso.Router
 import           Miso.Run
 import           Miso.State
 import           Miso.Storage

@@ -29,6 +29,7 @@ module Miso.Navigator
   , geolocation
   , Geolocation (..)
   , GeolocationError (..)
+  , GeolocationErrorCode (..)
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad ((<=<))
