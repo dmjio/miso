@@ -193,7 +193,6 @@ library
     bytestring    < 0.13,
     containers    < 0.9,
     http-api-data < 0.9,
-    http-media    < 0.9,
     http-types    < 0.13,
     jsaddle       < 0.10,
     mtl           < 2.4,
