@@ -125,6 +125,7 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Html.Render
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
@@ -133,7 +134,6 @@ library
     Miso.Navigator
     Miso.Property
     Miso.PubSub
-    Miso.Render
     Miso.Router
     Miso.Run
     Miso.State
@@ -176,7 +176,6 @@ library
     bytestring    < 0.13,
     containers    < 0.9,
     http-api-data < 0.9,
-    http-media    < 0.9,
     http-types    < 0.13,
     jsaddle       < 0.10,
     mtl           < 2.4,
