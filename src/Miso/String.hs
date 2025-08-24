@@ -1,6 +1,6 @@
-{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                  #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE FlexibleInstances    #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}

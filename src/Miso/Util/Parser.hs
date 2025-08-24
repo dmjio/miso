@@ -1,8 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE CPP                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Util.Parser
@@ -107,4 +107,3 @@ peek = Parser $ \tokens ->
 errorOut :: errorToken -> ParserT errorToken [] ()
 errorOut x = Parser $ \_ -> [((),x)]
 ----------------------------------------------------------------------------
-
