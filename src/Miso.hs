@@ -57,6 +57,8 @@ module Miso
   , module Miso.Property
     -- * PubSub
   , module Miso.PubSub
+    -- * Router
+  , module Miso.Router
     -- * Run
   , module Miso.Run
     -- * Subscriptions
