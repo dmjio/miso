@@ -42,14 +42,6 @@ common cpp
     cpp-options:
       -DPRODUCTION
 
-common string-selector
-  if impl(ghcjs) || arch(javascript) || flag (jsstring-only) || arch(wasm32)
-    hs-source-dirs:
-      jsstring-src
-  else
-    hs-source-dirs:
-      text-src
-
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
@@ -105,17 +97,8 @@ flag tests
   description:
     Builds Miso's tests
 
-flag jsstring-only
-  manual:
-    True
-  default:
-    False
-  description:
-    Always set MisoString = JSString
-
 library
   import:
-    string-selector,
     jsaddle,
     client,
     cpp
