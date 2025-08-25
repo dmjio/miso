@@ -66,7 +66,6 @@ module Miso.Router
     -- ** Errors
   , RoutingError (..)
     -- ** Functions
-  , route
   , parseURI
   , prettyURI
     -- ** Construction
@@ -226,9 +225,6 @@ path specified = do
   CaptureOrPathToken parsed <- captureOrPathToken
   when (specified /= parsed) (fail "path")
 -----------------------------------------------------------------------------
-route :: Router route => MisoString -> Either RoutingError route
-route = toRoute
------------------------------------------------------------------------------
 parseURI :: MisoString -> Either MisoString URI
 parseURI txt =
   case lexTokens txt of
@@ -244,8 +240,8 @@ class Router route where
   toURI :: route -> URI
   toURI = tokensToURI . fromRoute
 
-  fromURI :: URI -> Either RoutingError route
-  fromURI = toRoute . prettyURI
+  route :: URI -> Either RoutingError route
+  route = toRoute . prettyURI
 
   href_ :: route -> Attribute action
   href_ = P.href_ . prettyRoute
