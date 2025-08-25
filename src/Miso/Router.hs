@@ -68,6 +68,7 @@ module Miso.Router
     -- ** Functions
   , parseURI
   , prettyURI
+  , prettyQueryString
     -- ** Construction
   , toQueryFlag
   , toQueryParam
@@ -260,7 +261,10 @@ class Router route where
   routeParser = to <$> gRouteParser
 -----------------------------------------------------------------------------
 prettyURI :: URI -> MisoString
-prettyURI URI {..} = uriPath <> queries <> flags <> uriFragment
+prettyURI uri@URI {..} = uriPath <> prettyQueryString uri <> uriFragment
+-----------------------------------------------------------------------------
+prettyQueryString :: URI -> MisoString
+prettyQueryString URI {..} = queries <> flags
   where
     queries =
       MS.concat
