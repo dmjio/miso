@@ -12,6 +12,7 @@
 module Miso.Subscription.History
   ( -- *** Subscription
     uriSub
+  , routerSub
     -- *** Functions
   , getURI
   , pushURI
@@ -71,6 +72,11 @@ uriSub = \f sink -> do
     sink . f =<< getURI
   void $ FFI.windowAddEventListener (ms "popstate") $ \_ ->
     sink . f =<< getURI
+-----------------------------------------------------------------------------
+-- | Subscription for @popstate@ events, from the History API, mapped
+-- to a user-defined @Router@
+routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
+routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
 -- | Retrieves the current relative URI by inspecting `pathname`, `search`
 -- and `hash`.
