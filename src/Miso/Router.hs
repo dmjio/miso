@@ -203,14 +203,8 @@ instance ToMisoString Token where
     QueryParamToken k v ->
       "?" <> k <> "=" <> v
 -----------------------------------------------------------------------------
-data RoutingError
-  = PathNotFound MisoString
-  | DecodeFailure MisoString MisoString
-  | ParseError MisoString
+data RoutingError = ParseError MisoString [Token]
   deriving (Show, Eq)
------------------------------------------------------------------------------
-instance IsString RoutingError where
-  fromString s = ParseError (ms s)
 -----------------------------------------------------------------------------
 type RouteParser = ParserT URI [Token] []
 -----------------------------------------------------------------------------
@@ -431,19 +425,23 @@ lexTokens input =
 parseRoute :: MisoString -> RouteParser a -> Either RoutingError a
 parseRoute input parser =
   case L.runLexer uriLexer (L.mkStream input) of
-    Left e ->
-      Left $ ParseError (ms (show e))
+    Left (L.LexerError oops _) ->
+      Left (ParseError ("LexerError: " <> oops <> " for input: " <> input) [])
+    Left (L.UnexpectedEOF _) ->
+      Left (ParseError ("LexerError: EOF in while lexing for input: " <> input) [])
     Right (tokens, _) -> do
-      let uri = tokensToURI tokens
-      case runParserT parser uri tokens of
+      let
+        uri = tokensToURI tokens
+        pathsAndCaptures = [ token | token@CaptureOrPathToken{} <- tokens ]
+      case runParserT parser uri pathsAndCaptures of
         [(x, [])]  ->
           Right x
-        [(_, _)]  ->
-          Left $ ParseError ("No parses for: " <> input)
+        [(_, leftovers)]  ->
+          Left $ ParseError ("No parses for:" <> input <> " leftovers: ") leftovers
         []  ->
-          Left $ ParseError ("No parses for: " <> input)
-        (_, _) : _  ->
-          Left $ ParseError ("Ambiguous parse for: " <> input)
+          Left $ ParseError ("No parses for: " <> input) []
+        (_, leftovers) : _  ->
+          Left $ ParseError ("Ambiguous parse for: " <> input) leftovers
 -----------------------------------------------------------------------------
 lowercase :: String -> MisoString
 lowercase (x:xs) = ms (C.toLower x : xs)
