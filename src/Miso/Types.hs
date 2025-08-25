@@ -71,8 +71,12 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
+  -- *** URI
+  , URI (..)
+  , emptyURI
   ) where
 -----------------------------------------------------------------------------
+import           Data.Map (Map)
 import           Data.Aeson (Value, ToJSON)
 import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
@@ -83,7 +87,6 @@ import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
-import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
@@ -277,11 +280,6 @@ mount mkNode vcomp =
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
--- | For constructing type-safe links
-instance HasLink (View m a) where
-  type MkLink (View m a) b = b
-  toLink x _ = x
------------------------------------------------------------------------------
 -- | Convenience class for using View
 class ToView m a where
   type ToViewAction m a :: Type
@@ -456,4 +454,17 @@ optionalChildren element attrs kids condition opts =
       let newKids = kids ++ concat [ opts | condition ]
       VNode ns name attrs newKids
     x -> x
+----------------------------------------------------------------------------
+-- | Type for dealing with @URI@
+--
+-- > https://datatracker.ietf.org/doc/html/rfc3986
+--
+data URI
+  = URI
+  { uriPath, uriFragment :: MisoString
+  , uriQueryString :: Map MisoString (Maybe MisoString)
+  } deriving (Show, Eq)
+----------------------------------------------------------------------------
+emptyURI :: URI
+emptyURI = URI "/" mempty mempty
 ----------------------------------------------------------------------------

@@ -10,10 +10,10 @@
 module Miso.Util.Lexer
   ( -- ** Types
     Lexer (..)
-  , Location (..)
-  , Located (..)
-  , LexerError (..)
   , Stream (..)
+  , Located (..)
+  , Location (..)
+  , LexerError (..)
     -- ** Combinators
   , getStartColumn
   , zeroLocation
@@ -34,6 +34,7 @@ module Miso.Util.Lexer
   , withLocation
   ) where
 ----------------------------------------------------------------------------
+import           Control.Monad
 import           Control.Applicative
 ----------------------------------------------------------------------------
 import           Miso.String (MisoString, ToMisoString)
@@ -70,9 +71,7 @@ zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
 newtype Lexer token
   = Lexer
-  { runLexer
-      :: Stream
-      -> Either LexerError (token, Stream)
+  { runLexer :: Stream -> Either LexerError (token, Stream)
   }
 ----------------------------------------------------------------------------
 oops :: Lexer token
@@ -126,6 +125,9 @@ instance Alternative Lexer where
         if MS.length s <= MS.length t
         then Right (x, Stream s sl)
         else Right (y, Stream t tl)
+----------------------------------------------------------------------------
+instance MonadPlus Lexer where
+  mplus = (<|>)
 ----------------------------------------------------------------------------
 peek :: Lexer (Maybe Char)
 peek = Lexer $ \ys ->
