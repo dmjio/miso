@@ -13,9 +13,8 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE PolyKinds                  #-}
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE PolyKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Router
@@ -25,18 +24,46 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Introduces a Router that can produce "correct-by-construction" URL
--- encoding and decoding from a sum type. This can be used in conjunction
--- with @uriSub@ to perform client side routing and the embedding
--- of type-safe links in any @View model action@.
+-- This module introduces a @Router@ that can produce "correct-by-construction" URL
+-- encoding and decoding from any Haskell algebraic data type. This can be used in conjunction
+-- with @uriSub@ or @routeSub@ to perform client-side routing and the embedding
+-- of type-safe links in any @View model action@ via the @href_@ function exported from
+-- this module.
+--
+-- This module can be used in two ways, one is the manual construction of a @Router@
+-- as seen below.
 --
 -- @
+--
+-- data Route = Widget MisoString Int
+--    deriving (Show, Eq)
+--
+-- instance Router Route where
+--   routeParser = routes [ Widget <$> path "widget" <*> capture ]
+--   fromRoute (Widget path_ value) = [ toPath path_, toCapture value ]
+--
+-- main :: IO ()
+-- main = print (runRouter "/widget/10" router)
+--
+-- > Right (Widget "widget" 10)
+--
+-- @
+--
+-- The second way is using the @Generic@ deriving mechanism. This should ensure that
+--
+-- @
+--
+-- {-# LANGUAGE DerivingStrategies #-}
+-- {-# LANGUAGE DeriveAnyClass     #-}
+-- {-# LANGUAGE DeriveGeneric      #-}
+--
 -- data Route
 --  = About
 --  | Home
 --  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int)
 --  deriving stock (Generic, Show)
 --  deriving anyclass Router
+--
 -- @
 --
 -- The @Generic@ deriving works by converting the constructor name to a path so
@@ -55,12 +82,32 @@
 -- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
 -- > "/widget/23/foo/okay?bar=0"
 --
+-- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View action@ code.
+--
+-- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
+--
+-- Note: the `Index` constructor is name special, it used to encode the `"/"` path.
+--
+-- @
+--
+-- data Route = Index
+--   deriving stock (Show, Eq)
+--   deriving anyclass (Router)
+--
+-- main :: IO ()
+-- main = print (toRoute Index)
+--
+-- @
+--
 -----------------------------------------------------------------------------
 module Miso.Router
   ( -- ** Classes
     Router (..)
     -- ** Types
-  , Capture
+  , Capture (..)
+  , QueryParam (..)
+  , QueryFlag (..)
+  , Path (..)
     -- ** Re-exports
   , URI (..)
     -- ** Errors
@@ -69,6 +116,9 @@ module Miso.Router
   , parseURI
   , prettyURI
   , prettyQueryString
+    -- ** Manual Routing
+  , runRouter
+  , routes
     -- ** Construction
   , toQueryFlag
   , toQueryParam
@@ -102,19 +152,30 @@ import           Miso.Util.Lexer (Lexer)
 import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+data Routel
+  = Index
+  | FooBah (Path "whohah") (Capture "foo" Int)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (Router)
+--
+main :: IO ()
+main = do
+  print (toRoute @Routel "/")
+  print (toURI Index)
+-----------------------------------------------------------------------------
 newtype Capture sym a = Capture a
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Eq, Show)
   deriving newtype (ToMisoString, FromMisoString)
 -----------------------------------------------------------------------------
 newtype Path (path :: Symbol) = Path MisoString
-  deriving (Generic, Show)
+  deriving (Generic, Eq, Show)
   deriving newtype (ToMisoString, IsString)
 -----------------------------------------------------------------------------
 newtype QueryFlag (path :: Symbol) = QueryFlag Bool
-  deriving (Generic, Show)
+  deriving (Generic, Eq, Show)
 -----------------------------------------------------------------------------
 newtype QueryParam (path :: Symbol) a = QueryParam (Maybe a)
-  deriving (Generic, Show)
+  deriving (Generic, Eq, Show)
 -----------------------------------------------------------------------------
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =
@@ -141,6 +202,7 @@ data Token
   | QueryFlagToken MisoString
   | CaptureOrPathToken MisoString
   | FragmentToken MisoString
+  | IndexToken
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 toQueryParam :: ToMisoString s => MisoString -> s -> Token
@@ -220,10 +282,17 @@ capture = do
     Left msg -> fail (fromMisoString (ms msg))
     Right token -> pure token
 -----------------------------------------------------------------------------
-path :: MisoString -> RouteParser ()
+path :: MisoString -> RouteParser MisoString
 path specified = do
   CaptureOrPathToken parsed <- captureOrPathToken
   when (specified /= parsed) (fail "path")
+  pure specified
+-----------------------------------------------------------------------------
+index :: MisoString -> RouteParser MisoString
+index specified = do
+  IndexToken <- indexToken
+  when (specified /= "index") (fail "index")
+  pure "/"
 -----------------------------------------------------------------------------
 parseURI :: MisoString -> Either MisoString URI
 parseURI txt =
@@ -249,8 +318,8 @@ class Router route where
   prettyRoute :: route -> MisoString
   prettyRoute = prettyURI . tokensToURI . fromRoute
 
-  dumpURI :: route -> String
-  dumpURI = show . tokensToURI . fromRoute
+  dumpURI :: route -> MisoString
+  dumpURI = ms . show . tokensToURI . fromRoute
 
   toRoute :: MisoString -> Either RoutingError route
   toRoute input = parseRoute input routeParser
@@ -258,6 +327,30 @@ class Router route where
   routeParser :: RouteParser route
   default routeParser :: (Generic route, GRouter (Rep route)) => RouteParser route
   routeParser = to <$> gRouteParser
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a @RouteParser@
+--
+-- @
+--
+-- data Route = Widget MisoString Int
+--
+-- instance Router Route where
+--   routeParser = routes [ Widget <$> path "widget" <*> capture ]
+--   fromRoute (Widget path value) = [ toPath path, toCapture value ]
+--
+-- router :: Router router => RouteParser router
+-- router = routes [ Widget <$> path "widget" <*> capture ]
+--
+-- > Right (Widget "widget" 10)
+--
+-- @
+--
+-----------------------------------------------------------------------------
+runRouter :: MisoString -> RouteParser route -> Either RoutingError route
+runRouter = parseRoute
+-----------------------------------------------------------------------------
+routes :: [ RouteParser route ] -> RouteParser route
+routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = uriPath <> prettyQueryString uri <> uriFragment
@@ -289,12 +382,19 @@ instance GRouter next => GRouter (D1 m next) where
 -----------------------------------------------------------------------------
 instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) next) where
   gFromRoute (M1 x) =
-    CaptureOrPathToken name : gFromRoute x
+    case name of
+      "index" -> [IndexToken]
+      _ -> CaptureOrPathToken name : gFromRoute x
       where
         name = lowercase $ symbolVal (Proxy @name)
   gRouteParser = do
-    void (path name)
-    M1 <$> gRouteParser
+    case name of
+      "index" -> do
+        void (index name)
+        M1 <$> gRouteParser
+      _ -> do
+        void (path name)
+        M1 <$> gRouteParser
       where
         name = lowercase $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
@@ -331,7 +431,7 @@ queryParam = do
         case fromMisoStringEither value of
           Left _ -> pure Nothing
           Right parsed -> pure (Just parsed)
-      _ -> pure Nothing  
+      _ -> pure Nothing
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
   gFromRoute (K1 (QueryFlag specified))
@@ -353,7 +453,7 @@ instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
   gRouteParser = K1 <$> capture
 -----------------------------------------------------------------------------
 instance GRouter U1 where
-  gFromRoute U1 = pure $ CaptureOrPathToken $ lowercase (show U1)
+  gFromRoute U1 = []
   gRouteParser = pure U1
 -----------------------------------------------------------------------------
 instance (GRouter left, GRouter right) => GRouter (left :*: right) where
@@ -374,6 +474,11 @@ captureOrPathToken = satisfy $ \case
   CaptureOrPathToken {} -> True
   _ -> False
 -----------------------------------------------------------------------------
+indexToken :: RouteParser Token
+indexToken = satisfy $ \case
+  IndexToken {} -> True
+  _ -> False
+-----------------------------------------------------------------------------
 uriLexer :: Lexer [Token]
 uriLexer = do
   tokens <- some lexer
@@ -392,7 +497,10 @@ uriLexer = do
         , captureOrPathLexer
         , queryParamLexer
         , fragmentLexer
+        , indexLexer
         ] where
+            indexLexer =
+              IndexToken <$ L.char '/' 
             captureOrPathLexer = do
               void (L.char '/')
               CaptureOrPathToken <$> chars
