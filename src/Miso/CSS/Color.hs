@@ -270,11 +270,11 @@ hsla = HSLA
 -----------------------------------------------------------------------------
 -- | Smart constructor for color in hexadecimal
 --
--- > div [ style_ [ backgroundColor (hex 0xAABBCC) ] ] [ ]
+-- > div [ style_ [ backgroundColor (hex #ccc) ] ] [ ]
 -- > -- "#aabbcc"
 --
-hex :: Int -> Color
-hex = Hex . ms . flip showHex ""
+hex :: MisoString -> Color
+hex = Hex
 -----------------------------------------------------------------------------
 transparent :: Color
 transparent = rgba 0 0 0 0
