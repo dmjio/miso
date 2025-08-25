@@ -96,7 +96,7 @@ import           GHC.TypeLits
 import           Miso.Types hiding (model)
 import           Miso.Util
 import qualified Miso.Html.Property as P
-import           Miso.Util.Parser
+import           Miso.Util.Parser hiding (NoParses)
 import qualified Miso.Util.Lexer as L
 import           Miso.Util.Lexer (Lexer)
 import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
@@ -203,7 +203,12 @@ instance ToMisoString Token where
     QueryParamToken k v ->
       "?" <> k <> "=" <> v
 -----------------------------------------------------------------------------
-data RoutingError = ParseError MisoString [Token]
+data RoutingError
+  = ParseError MisoString [Token]
+  | AmbiguousParse MisoString [Token]
+  | LexError MisoString MisoString
+  | LexErrorEOF MisoString
+  | NoParses MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 type RouteParser = ParserT URI [Token] []
@@ -425,10 +430,10 @@ lexTokens input =
 parseRoute :: MisoString -> RouteParser a -> Either RoutingError a
 parseRoute input parser =
   case L.runLexer uriLexer (L.mkStream input) of
-    Left (L.LexerError oops _) ->
-      Left (ParseError ("LexerError: " <> oops <> " for input: " <> input) [])
+    Left (L.LexerError lexErrorMessage _) ->
+      Left (LexError input lexErrorMessage)
     Left (L.UnexpectedEOF _) ->
-      Left (ParseError ("LexerError: EOF in while lexing for input: " <> input) [])
+      Left (LexErrorEOF input)
     Right (tokens, _) -> do
       let
         uri = tokensToURI tokens
@@ -437,11 +442,11 @@ parseRoute input parser =
         [(x, [])]  ->
           Right x
         [(_, leftovers)]  ->
-          Left $ ParseError ("No parses for:" <> input <> " leftovers: ") leftovers
+          Left $ ParseError input leftovers
         []  ->
-          Left $ ParseError ("No parses for: " <> input) []
+          Left $ NoParses input
         (_, leftovers) : _  ->
-          Left $ ParseError ("Ambiguous parse for: " <> input) leftovers
+          Left $ AmbiguousParse input leftovers
 -----------------------------------------------------------------------------
 lowercase :: String -> MisoString
 lowercase (x:xs) = ms (C.toLower x : xs)
