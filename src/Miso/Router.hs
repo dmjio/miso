@@ -95,7 +95,7 @@ import           GHC.TypeLits
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model)
 import           Miso.Util
-import           Miso.Html.Property
+import qualified Miso.Html.Property as P
 import           Miso.Util.Parser
 import qualified Miso.Util.Lexer as L
 import           Miso.Util.Lexer (Lexer)
@@ -150,7 +150,7 @@ toQueryFlag :: MisoString -> Token
 toQueryFlag = QueryFlagToken
 -----------------------------------------------------------------------------
 toCapture :: ToMisoString string => string -> Token
-toCapture = QueryFlagToken . ms
+toCapture = CaptureOrPathToken . ms
 -----------------------------------------------------------------------------
 toPath :: MisoString -> Token
 toPath = CaptureOrPathToken
@@ -237,7 +237,6 @@ parseURI txt =
     Right tokens -> Right (tokensToURI tokens)
 -----------------------------------------------------------------------------
 class Router route where
-  {-# MINIMAL fromRoute, routeParser  #-}
   fromRoute :: route -> [Token]
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
@@ -248,11 +247,14 @@ class Router route where
   fromURI :: URI -> Either RoutingError route
   fromURI = toRoute . prettyURI
 
-  link_ :: route -> Attribute action
-  link_ = href_ . prettyRoute
+  href_ :: route -> Attribute action
+  href_ = P.href_ . prettyRoute
 
   prettyRoute :: route -> MisoString
   prettyRoute = prettyURI . tokensToURI . fromRoute
+
+  dumpURI :: route -> String
+  dumpURI = show . tokensToURI . fromRoute
 
   toRoute :: MisoString -> Either RoutingError route
   toRoute input = parseRoute input routeParser
@@ -264,11 +266,15 @@ class Router route where
 prettyURI :: URI -> MisoString
 prettyURI URI {..} = uriPath <> queries <> flags <> uriFragment
   where
-    queries = "?" <>
-      MS.intercalate "&"
+    queries =
+      MS.concat
+      [ "?" <>
+        MS.intercalate "&"
         [ k <> "=" <> v
         | (k, Just v) <- M.toList uriQueryString
         ]
+      | any isJust (M.elems uriQueryString)
+      ]
     flags = mconcat
         [ "?" <> k
         | (k, Nothing) <- M.toList uriQueryString
@@ -329,7 +335,11 @@ queryParam = do
       _ -> pure Nothing  
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
-  gFromRoute (K1 x) = pure $ QueryFlagToken (ms x)
+  gFromRoute (K1 (QueryFlag specified))
+    | specified = [ QueryFlagToken flag ]
+    | otherwise = []
+        where
+          flag = ms (symbolVal (Proxy @flag))
   gRouteParser = K1 <$> queryFlag
 -----------------------------------------------------------------------------
 queryFlag :: forall flag . KnownSymbol flag => RouteParser (QueryFlag flag)
@@ -426,8 +436,10 @@ parseRoute input parser =
     Right (tokens, _) -> do
       let uri = tokensToURI tokens
       case runParserT parser uri tokens of
-        [(x, _)]  ->
+        [(x, [])]  ->
           Right x
+        [(_, _)]  ->
+          Left $ ParseError ("No parses for: " <> input)
         []  ->
           Left $ ParseError ("No parses for: " <> input)
         (_, _) : _  ->
