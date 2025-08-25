@@ -271,7 +271,7 @@ hsla = HSLA
 -- | Smart constructor for color in hexadecimal
 --
 -- > div [ style_ [ backgroundColor (hex #ccc) ] ] [ ]
--- > -- "#aabbcc"
+-- > -- "#ccc"
 --
 hex :: MisoString -> Color
 hex = Hex
