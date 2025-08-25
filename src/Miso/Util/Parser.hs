@@ -25,6 +25,7 @@ module Miso.Util.Parser
   , errorOut
   , allTokens
   , modifyTokens
+  , askParser
   ) where
 ----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -45,69 +46,72 @@ data ParseError a token
 parse :: Parser token a -> [token] -> Either (ParseError a token) a
 parse _ [] = Left EmptyStream
 parse parser tokens =
-  case runParserT parser tokens of
+  case runParserT parser () tokens of
     []        -> Left (NoParses (last tokens))
     [(x, [])] -> Right x
     [(_, xs)] -> Left (UnexpectedParse xs)
     xs        -> Left (Ambiguous xs)
 ----------------------------------------------------------------------------
-type Parser token a = ParserT [token] [] a
+type Parser token a = ParserT () [token] [] a
 ----------------------------------------------------------------------------
-newtype ParserT token m a
+newtype ParserT r token m a
   = Parser
-  { runParserT :: token -> m (a, token)
+  { runParserT :: r -> token -> m (a, token)
   }
 ----------------------------------------------------------------------------
-instance Functor (ParserT token []) where
-  fmap f (Parser run) = Parser $ \input ->
-    case run input of
+instance Functor (ParserT r token []) where
+  fmap f (Parser run) = Parser $ \r input ->
+    case run r input of
       tokens -> [ (f x, toks) | (x, toks) <- tokens ]
 ----------------------------------------------------------------------------
-instance Applicative (ParserT token []) where
-  pure x = Parser $ \s -> pure (x,s)
-  Parser f <*> Parser g = Parser $ \input -> do
-    (k, s) <- f input
-    (x, t) <- g s
+instance Applicative (ParserT r token []) where
+  pure x = Parser $ \_ s -> pure (x,s)
+  Parser f <*> Parser g = Parser $ \r input -> do
+    (k, s) <- f r input
+    (x, t) <- g r s
     pure (k x, t)
 ----------------------------------------------------------------------------
-instance Alternative (ParserT token []) where
-  empty = Parser $ \_ -> []
+instance Alternative (ParserT r token []) where
+  empty = Parser $ \_ _ -> []
   Parser f <|> Parser g =
-    Parser $ \tokens ->
-      case f tokens of
-        [] -> g tokens
-        r  -> r
+    Parser $ \r tokens ->
+      case f r tokens of
+        [] -> g r tokens
+        x  -> x
 ----------------------------------------------------------------------------
-instance Monad (ParserT token []) where
+instance Monad (ParserT r token []) where
   return = pure
-  Parser f >>= k = Parser $ \tokens -> do
-    (x, tokens') <- f tokens
-    runParserT (k x) tokens'
+  Parser f >>= k = Parser $ \r tokens -> do
+    (x, tokens') <- f r tokens
+    runParserT (k x) r tokens'
 ----------------------------------------------------------------------------
-instance MonadFail (ParserT token []) where
-  fail _ = Parser $ \_ -> []
+instance MonadFail (ParserT r token []) where
+  fail _ = Parser $ \_ _ -> []
 ----------------------------------------------------------------------------
-satisfy :: (token -> Bool) -> Parser token token
-satisfy f = Parser $ \input ->
+satisfy :: (a -> Bool) -> ParserT r [a] [] a
+satisfy f = Parser $ \_ input ->
   case input of
     t : ts | f t -> [(t, ts)]
     _ -> []
 ----------------------------------------------------------------------------
-allTokens :: Parser token [token]
-allTokens = Parser $ \input -> [(input, input)]
+allTokens :: ParserT r a [] a
+allTokens = Parser $ \_ input -> [(input, input)]
 ----------------------------------------------------------------------------
-modifyTokens :: ([token] -> [token]) -> Parser token ()
-modifyTokens f = Parser $ \input -> [((), f input)]
+modifyTokens :: (t -> t) -> ParserT r t [] ()
+modifyTokens f = Parser $ \_ input -> [((), f input)]
 ----------------------------------------------------------------------------
 token_ :: Eq token => token -> Parser token token
 token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
+askParser :: ParserT r token [] r
+askParser = Parser $ \r input -> [(r, input)]
+----------------------------------------------------------------------------
 peek :: Parser a a
-peek = Parser $ \tokens ->
+peek = Parser $ \_ tokens ->
   case tokens of
     [] -> []
     (x:xs) -> [(x, x:xs)]
 ----------------------------------------------------------------------------
-errorOut :: errorToken -> ParserT errorToken [] ()
-errorOut x = Parser $ \_ -> [((),x)]
+errorOut :: errorToken -> ParserT r errorToken [] ()
+errorOut x = Parser $ \_ _ -> [((),x)]
 ----------------------------------------------------------------------------
