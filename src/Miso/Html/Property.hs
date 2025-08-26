@@ -115,6 +115,7 @@ module Miso.Html.Property
    , xmlns_
    , aria_
    , label_
+   , draggable_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -527,4 +528,8 @@ aria_ k = textProp ("aria-" <> k)
 -- | @since 1.9.0.0
 label_ :: MisoString -> Attribute action
 label_ = textProp "label"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+draggable_ :: Bool -> Attribute action
+draggable_ = boolProp "draggable"
 -----------------------------------------------------------------------------
