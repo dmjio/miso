@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -42,8 +43,9 @@ module Miso.Event.Types
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
 import           GHC.Generics (Generic)
-import           GHCJS.Marshal (ToJSVal)
+import           Language.Javascript.JSaddle (ToJSVal(..), create)
 import           Miso.String (MisoString, ms)
+import qualified Miso.FFI as FFI
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
@@ -125,7 +127,12 @@ preventDefault = defaultOptions { _preventDefault = True }
 stopPropagation :: Options
 stopPropagation = defaultOptions { _stopPropagation = True }
 -----------------------------------------------------------------------------
-instance ToJSVal Options
+instance ToJSVal Options where
+  toJSVal Options {..} = do
+    o <- create
+    FFI.set "preventDefault" _preventDefault o
+    FFI.set "stopPropagation" _stopPropagation o
+    toJSVal o
 -----------------------------------------------------------------------------
 -- | Default value for 'Options'.
 --
