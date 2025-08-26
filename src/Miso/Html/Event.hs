@@ -138,8 +138,9 @@ onChecked f = on "change" checkedDecoder (\action _ -> f action)
 -- @
 --
 -- @since 1.9.0.0
-onContextMenuWithOptions :: action -> Options -> Attribute action
-onContextMenuWithOptions action opts = onWithOptions opts "contextmenu" emptyDecoder $ \() _ -> action
+onContextMenuWithOptions :: Options -> action -> Attribute action
+onContextMenuWithOptions opts action =
+  onWithOptions opts "contextmenu" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClick :: action -> Attribute action
@@ -219,8 +220,8 @@ onDragStart :: action -> Attribute action
 onDragStart action = on "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
-onDragStartWithOptions :: action -> Options -> Attribute action
-onDragStartWithOptions action options =
+onDragStartWithOptions :: Options -> action -> Attribute action
+onDragStartWithOptions options action =
   onWithOptions options "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
@@ -228,8 +229,8 @@ onDragOver :: action -> Attribute action
 onDragOver action = on "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
-onDragOverWithOptions :: action -> Options -> Attribute action
-onDragOverWithOptions action options =
+onDragOverWithOptions :: Options -> action -> Attribute action
+onDragOverWithOptions options action =
   onWithOptions options "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
@@ -237,8 +238,8 @@ onDragEnd :: action -> Attribute action
 onDragEnd action = on "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
-onDragEndWithOptions :: action -> Options -> Attribute action
-onDragEndWithOptions action options =
+onDragEndWithOptions :: Options -> action -> Attribute action
+onDragEndWithOptions options action =
   onWithOptions options "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
@@ -246,8 +247,8 @@ onDragEnter :: action -> Attribute action
 onDragEnter action = on "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
-onDragEnterWithOptions :: action -> Options -> Attribute action
-onDragEnterWithOptions action options =
+onDragEnterWithOptions :: Options -> action -> Attribute action
+onDragEnterWithOptions options action =
   onWithOptions options "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
@@ -255,8 +256,8 @@ onDragLeave :: action -> Attribute action
 onDragLeave action = on "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
-onDragLeaveWithOptions :: action -> Options -> Attribute action
-onDragLeaveWithOptions action options =
+onDragLeaveWithOptions :: Options -> action -> Attribute action
+onDragLeaveWithOptions options action =
   onWithOptions options "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
@@ -264,18 +265,18 @@ onDrag :: action -> Attribute action
 onDrag action = on "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
-onDragWithOptions :: action -> Options -> Attribute action
-onDragWithOptions action options =
+onDragWithOptions :: Options -> action -> Attribute action
+onDragWithOptions options action =
   onWithOptions options "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDrop :: action -> Options -> Attribute action
-onDrop action options =
+onDrop :: Options -> action -> Attribute action
+onDrop options action =
   onWithOptions options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDropWithOptions :: action -> Options -> Attribute action
-onDropWithOptions action options =
+onDropWithOptions :: Options -> action -> Attribute action
+onDropWithOptions options action =
   onWithOptions options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
