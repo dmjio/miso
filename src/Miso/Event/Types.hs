@@ -24,8 +24,6 @@ module Miso.Event.Types
     -- *** PointerEvent
   , PointerEvent(..)
   , PointerType(..)
-    -- *** DropEvent
-  , AllowDrop(..)
     -- *** Options
   , Options(..)
   , defaultOptions
@@ -118,10 +116,6 @@ defaultOptions
   { preventDefault = False
   , stopPropagation = False
   }
------------------------------------------------------------------------------
--- | Related to using drop-related events
-newtype AllowDrop = AllowDrop Bool
-  deriving (Show, Eq, FromJSON)
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
 type Events = M.Map MisoString Capture

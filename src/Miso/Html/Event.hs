@@ -39,13 +39,20 @@ module Miso.Html.Event
   , onFocus
   -- *** Drag
   , onDrag
+  , onDragWithOptions
   , onDragLeave
+  , onDragLeaveWithOptions
   , onDragEnter
+  , onDragEnterWithOptions
   , onDragEnd
+  , onDragEndWithOptions
   , onDragStart
+  , onDragStartWithOptions
   , onDragOver
+  , onDragOverWithOptions
   -- *** Drop
   , onDrop
+  , onDropWithOptions
   -- *** Select
   , onSelect
   -- *** Pointer
@@ -211,31 +218,65 @@ onMouseOut action = on "mouseout" emptyDecoder $ \() _ -> action
 onDragStart :: action -> Attribute action
 onDragStart action = on "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
+onDragStartWithOptions :: action -> Options -> Attribute action
+onDragStartWithOptions action options =
+  onWithOptions options "dragstart" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
 onDragOver :: action -> Attribute action
 onDragOver action = on "dragover" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
+onDragOverWithOptions :: action -> Options -> Attribute action
+onDragOverWithOptions action options =
+  onWithOptions options "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
 onDragEnd :: action -> Attribute action
 onDragEnd action = on "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
+onDragEndWithOptions :: action -> Options -> Attribute action
+onDragEndWithOptions action options =
+  onWithOptions options "dragend" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
 onDragEnter :: action -> Attribute action
 onDragEnter action = on "dragenter" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
+onDragEnterWithOptions :: action -> Options -> Attribute action
+onDragEnterWithOptions action options =
+  onWithOptions options "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
 onDragLeave :: action -> Attribute action
 onDragLeave action = on "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
+onDragLeaveWithOptions :: action -> Options -> Attribute action
+onDragLeaveWithOptions action options =
+  onWithOptions options "dragleave" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
 onDrag :: action -> Attribute action
 onDrag action = on "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
+onDragWithOptions :: action -> Options -> Attribute action
+onDragWithOptions action options =
+  onWithOptions options "drag" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
-onDrop :: AllowDrop -> action -> Attribute action
-onDrop (AllowDrop allowDrop) action =
-  onWithOptions defaultOptions { preventDefault = allowDrop }
-    "drop" emptyDecoder (\() _ -> action)
+onDrop :: action -> Options -> Attribute action
+onDrop action options =
+  onWithOptions options "drop" emptyDecoder (\() _ -> action)
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
+onDropWithOptions :: action -> Options -> Attribute action
+onDropWithOptions action options =
+  onWithOptions options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
 onSubmit :: action -> Attribute action
