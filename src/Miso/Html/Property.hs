@@ -11,7 +11,7 @@
 --
 -- Construct custom properties on DOM elements
 --
--- > div_ [ prop "id" "foo" ] [ ]
+-- > div_ [ id_ "miso" ] [ "miso" ]
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Property
@@ -116,6 +116,8 @@ module Miso.Html.Property
    , aria_
    , label_
    , draggable_
+   , frameborder_
+   , scrolling_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -532,4 +534,12 @@ label_ = textProp "label"
 -- | @since 1.9.0.0
 draggable_ :: Bool -> Attribute action
 draggable_ = boolProp "draggable"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+scrolling_ :: MisoString -> Attribute action
+scrolling_ = textProp "scrolling"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+frameborder_ :: MisoString -> Attribute action
+frameborder_ = textProp "frameborder"
 -----------------------------------------------------------------------------
