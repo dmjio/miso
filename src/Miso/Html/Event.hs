@@ -15,7 +15,10 @@ module Miso.Html.Event
   ( -- *** Mouse
     onClick
   , onClickWith
+  , onClickWithOptions
   , onDoubleClick
+  , onDoubleClickWith
+  , onDoubleClickWithOptions
   , onMouseDown
   , onMouseUp
   , onMouseEnter
@@ -113,10 +116,8 @@ module Miso.Html.Event
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Media (Media(..))
-import           Miso.Types (Attribute)
+import           Miso.Types (Attribute, DOMRef)
 import           Miso.String (MisoString)
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------
 -- | blur event defined with custom options
 --
@@ -148,8 +149,13 @@ onClick action = on "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 -- Like 'onClick', but passes the DOM reference along (akin to 'getElementBydId').
-onClickWith :: (JSVal -> action) -> Attribute action
+onClickWith :: (DOMRef -> action) -> Attribute action
 onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/click
+-- Like 'onClick', but passes the DOM reference along (akin to 'getElementBydId').
+onClickWithOptions :: Options -> action -> Attribute action
+onClickWithOptions options action = onWithOptions options "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
 onFocus :: action -> Attribute action
@@ -158,6 +164,15 @@ onFocus action = on "focus" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
 onDoubleClick :: action -> Attribute action
 onDoubleClick action = on "dblclick" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
+onDoubleClickWith :: (DOMRef -> action) -> Attribute action
+onDoubleClickWith f = on "dblclick" emptyDecoder $ \() domRef -> f domRef
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
+onDoubleClickWithOptions :: Options -> action -> Attribute action
+onDoubleClickWithOptions options action =
+  onWithOptions options "dblclick" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
 onInput :: (MisoString -> action) -> Attribute action
@@ -168,7 +183,7 @@ onChange :: (MisoString -> action) -> Attribute action
 onChange f = on "change" valueDecoder (\action _ -> f action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
-onChangeWith :: (MisoString -> JSVal -> action) -> Attribute action
+onChangeWith :: (MisoString -> DOMRef -> action) -> Attribute action
 onChangeWith = on "change" valueDecoder
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/select
