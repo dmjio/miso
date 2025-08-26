@@ -62,8 +62,8 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
             Left s ->
               error $ "windowSubWithOptions: Parse error on " <> unpack eventName <> ": " <> s
             Right r -> do
-              when stopPropagation (FFI.eventStopPropagation e)
-              when preventDefault (FFI.eventPreventDefault e)
+              when _stopPropagation (FFI.eventStopPropagation e)
+              when _preventDefault (FFI.eventPreventDefault e)
               sink (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@

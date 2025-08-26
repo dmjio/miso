@@ -185,7 +185,6 @@ import qualified Miso.String as MS
 import           Data.Proxy
 import           GHC.TypeLits
 import           GHC.OverloadedLabels
-import           Numeric (showHex)
 import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
