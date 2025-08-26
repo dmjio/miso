@@ -97,6 +97,8 @@
 -- main :: IO ()
 -- main = print (toRoute Index)
 --
+-- "/"
+--
 -- @
 --
 -----------------------------------------------------------------------------
@@ -152,16 +154,18 @@ import           Miso.Util.Lexer (Lexer)
 import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
-data Routel
-  = Index
-  | FooBah (Path "whohah") (Capture "foo" Int)
-  deriving stock (Show, Eq, Generic)
-  deriving anyclass (Router)
+-- dmj: used for sanity checks
 --
-main :: IO ()
-main = do
-  print (toRoute @Routel "/")
-  print (toURI Index)
+-- data Routel
+--   = Index
+--   | FooBah (Path "whohah") (Capture "foo" Int)
+--   deriving stock (Show, Eq, Generic)
+--   deriving anyclass (Router)
+--
+-- main :: IO ()
+-- main = do
+--   print (toRoute @Routel "/")
+--   print (prettyURI (toURI Index))
 -----------------------------------------------------------------------------
 newtype Capture sym a = Capture a
   deriving stock (Generic, Eq, Show)
@@ -250,6 +254,7 @@ tokensToURI tokens = URI
         _ -> False
       isPathRelated = \case
         CaptureOrPathToken {} -> True
+        IndexToken {} -> True
         _ -> False
 -----------------------------------------------------------------------------
 instance ToMisoString Token where
@@ -264,6 +269,7 @@ instance ToMisoString Token where
         ]
     QueryParamToken k v ->
       "?" <> k <> "=" <> v
+    IndexToken -> "/"
 -----------------------------------------------------------------------------
 data RoutingError
   = ParseError MisoString [Token]
@@ -545,8 +551,11 @@ parseRoute input parser =
     Right (tokens, _) -> do
       let
         uri = tokensToURI tokens
-        pathsAndCaptures = [ token | token@CaptureOrPathToken{} <- tokens ]
-      case runParserT parser uri pathsAndCaptures of
+        isCapturePathOrIndex = \case
+          CaptureOrPathToken{} -> True
+          IndexToken{} -> True
+          _ -> False
+      case runParserT parser uri (filter isCapturePathOrIndex tokens) of
         [(x, [])]  ->
           Right x
         [(_, leftovers)]  ->
