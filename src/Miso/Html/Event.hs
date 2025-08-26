@@ -279,9 +279,12 @@ onDropWithOptions action options =
   onWithOptions options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
+--
+-- Note: This has `preventDefault` enabled by default.
+--
 onSubmit :: action -> Attribute action
 onSubmit action =
-  onWithOptions defaultOptions { preventDefault = True }
+  onWithOptions preventDefault
     "submit" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
