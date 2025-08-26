@@ -22,11 +22,13 @@ module Miso.Event.Types
     -- *** CheckedEvent
   , Checked (..)
     -- *** PointerEvent
-  , PointerEvent(..)
-  , PointerType(..)
+  , PointerEvent (..)
+  , PointerType (..)
     -- *** Options
-  , Options(..)
+  , Options (..)
   , defaultOptions
+  , preventDefault
+  , stopPropagation
     -- *** Events
   , defaultEvents
   , keyboardEvents
@@ -101,9 +103,27 @@ instance FromJSON PointerType where
 -- | Options for handling event propagation.
 data Options
   = Options
-  { preventDefault :: Bool
-  , stopPropagation :: Bool
+  { _preventDefault :: Bool
+  , _stopPropagation :: Bool
   } deriving (Show, Eq, Generic)
+-----------------------------------------------------------------------------
+instance Monoid Options where
+  mempty = defaultOptions
+-----------------------------------------------------------------------------
+instance Semigroup Options where
+  Options p1 s1 <> Options p2 s2 = Options (p1 || p2) (s1 || s2)
+-----------------------------------------------------------------------------
+-- | Smart constructor for specifying 'preventDefault'
+--
+-- @since 1.9.0.0
+preventDefault :: Options
+preventDefault = defaultOptions { _preventDefault = True }
+-----------------------------------------------------------------------------
+-- | Smart constructor for specifying 'stopPropagation'
+--
+-- @since 1.9.0.0
+stopPropagation :: Options
+stopPropagation = defaultOptions { _stopPropagation = True }
 -----------------------------------------------------------------------------
 instance ToJSVal Options
 -----------------------------------------------------------------------------
@@ -113,8 +133,8 @@ instance ToJSVal Options
 defaultOptions :: Options
 defaultOptions
   = Options
-  { preventDefault = False
-  , stopPropagation = False
+  { _preventDefault = False
+  , _stopPropagation = False
   }
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
