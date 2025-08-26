@@ -457,7 +457,7 @@ optionalChildren element attrs kids condition opts =
 ----------------------------------------------------------------------------
 -- | Type for dealing with @URI@
 --
--- > https://datatracker.ietf.org/doc/html/rfc3986
+-- <<https://datatracker.ietf.org/doc/html/rfc3986>>
 --
 data URI
   = URI

@@ -24,29 +24,28 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module introduces a @Router@ that can produce "correct-by-construction" URL
--- encoding and decoding from any Haskell algebraic data type. This can be used in conjunction
--- with @uriSub@ or @routeSub@ to perform client-side routing and the embedding
--- of type-safe links in any @View model action@ via the @href_@ function exported from
--- this module.
+-- This module introduces a @Router@ that produces "correct-by-construction" URL
+-- encoding and decoding from any Haskell algebraic data type. This @Router@ can be used
+-- in conjunction with @uriSub@ or @routeSub@ to perform client-side routing. Further
+-- it also supports the construction of type-safe links in any @View model action@ via
+-- the @href_@ function exported from this module.
 --
 -- This module can be used in two ways, one is the manual construction of a @Router@
 -- as seen below.
 --
 -- @
 --
--- data Route = Widget MisoString Int
+-- data Route = Widget Int
 --    deriving (Show, Eq)
 --
 -- instance Router Route where
---   routeParser = routes [ Widget <$> path "widget" <*> capture ]
---   fromRoute (Widget path_ value) = [ toPath path_, toCapture value ]
+--   routeParser = routes [ Widget \<$\> (path "widget" *\> capture) ]
+--   fromRoute (Widget value) = [ toPath "widget", toCapture value ]
 --
 -- main :: IO ()
 -- main = print (runRouter "/widget/10" router)
 --
 -- > Right (Widget "widget" 10)
---
 -- @
 --
 -- The second way is using the @Generic@ deriving mechanism. This should ensure that
@@ -63,7 +62,6 @@
 --  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int)
 --  deriving stock (Generic, Show)
 --  deriving anyclass Router
---
 -- @
 --
 -- The @Generic@ deriving works by converting the constructor name to a path so
@@ -97,8 +95,7 @@
 -- main :: IO ()
 -- main = print (toRoute Index)
 --
--- "/"
---
+-- -- "/"
 -- @
 --
 -----------------------------------------------------------------------------
@@ -107,9 +104,10 @@ module Miso.Router
     Router (..)
     -- ** Types
   , Capture (..)
+  , Path (..)
   , QueryParam (..)
   , QueryFlag (..)
-  , Path (..)
+  , Token (..)
     -- ** Re-exports
   , URI (..)
     -- ** Errors
@@ -348,7 +346,6 @@ class Router route where
 -- router = routes [ Widget <$> path "widget" <*> capture ]
 --
 -- > Right (Widget "widget" 10)
---
 -- @
 --
 -----------------------------------------------------------------------------
