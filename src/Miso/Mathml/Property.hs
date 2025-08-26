@@ -56,6 +56,8 @@ module Miso.Mathml.Property
   , symmetric_
   , voffset_
   , width_
+  , close_
+  , open_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -219,4 +221,12 @@ voffset_ = textProp "voffset"
 -- | @since 1.9.0.0
 width_ :: MisoString -> Attribute action
 width_ = textProp "width"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+close_ :: MisoString -> Attribute action
+close_ = textProp "close"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+open_ :: MisoString -> Attribute action
+open_ = textProp "open"
 -----------------------------------------------------------------------------

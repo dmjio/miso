@@ -42,6 +42,7 @@ module Miso.Mathml.Element
   , munder_
   , munderover_
   , semantics_
+  , mfenced_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -224,4 +225,10 @@ munderover_ = nodeMathml "munderover"
 -- @since 1.9.0.0
 semantics_ :: [Attribute action] -> [View model action] -> View model action
 semantics_ = nodeMathml "semantics"
+-----------------------------------------------------------------------------
+-- | [\<semantics\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mfenced)
+--
+-- @since 1.9.0.0
+mfenced_ :: [Attribute action] -> [View model action] -> View model action
+mfenced_ = nodeMathml "mfenced"
 -----------------------------------------------------------------------------
