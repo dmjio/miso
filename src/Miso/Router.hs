@@ -80,7 +80,7 @@
 -- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
 -- > "/widget/23/foo/okay?bar=0"
 --
--- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View action@ code.
+-- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View model action@ code.
 --
 -- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
 --
@@ -93,9 +93,23 @@
 --   deriving anyclass (Router)
 --
 -- main :: IO ()
--- main = print (toRoute Index)
+-- main = print (fromRoute Index)
 --
 -- -- "/"
+-- @
+--
+-- Lastly, camel-case constructors only use the first hump of the camel.
+--
+-- @
+--
+-- data Route = Index | FooBar
+--   deriving anyclass Router
+--   deriving stock (Show, Eq, Generic)
+--
+-- main :: IO ()
+-- main = print (prettyRoute FooBar)
+--
+-- "/foo"
 -- @
 --
 -----------------------------------------------------------------------------
@@ -151,6 +165,13 @@ import qualified Miso.Util.Lexer as L
 import           Miso.Util.Lexer (Lexer)
 import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
 import qualified Miso.String as MS
+-----------------------------------------------------------------------------
+data Route = Index | FooBar
+  deriving anyclass Router
+  deriving stock (Show, Eq, Generic)
+-----------------------------------------------------------------------------
+main :: IO ()
+main = print (prettyRoute FooBar)
 -----------------------------------------------------------------------------
 -- dmj: used for sanity checks
 --
@@ -395,7 +416,7 @@ instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) nex
       "index" -> [IndexToken]
       _ -> CaptureOrPathToken name : gFromRoute x
       where
-        name = lowercase $ symbolVal (Proxy @name)
+        name = lowercaseStrip $ symbolVal (Proxy @name)
   gRouteParser = do
     case name of
       "index" -> do
@@ -509,7 +530,7 @@ uriLexer = do
         , indexLexer
         ] where
             indexLexer =
-              IndexToken <$ L.char '/' 
+              IndexToken <$ L.char '/'
             captureOrPathLexer = do
               void (L.char '/')
               CaptureOrPathToken <$> chars
