@@ -83,7 +83,6 @@ import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
-import           Servant.API (HasLink(MkLink, toLink))
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
@@ -276,11 +275,6 @@ mount mkNode vcomp =
   -> View model a
 infixr 0 +>
 (+>) = mount
------------------------------------------------------------------------------
--- | For constructing type-safe links
-instance HasLink (View m a) where
-  type MkLink (View m a) b = b
-  toLink x _ = x
 -----------------------------------------------------------------------------
 -- | Convenience class for using View
 class ToView m a where

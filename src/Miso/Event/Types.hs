@@ -16,7 +16,6 @@
 module Miso.Event.Types
   ( -- ** Types
     Events
-  , Capture
     -- *** KeyboardEvent
   , KeyInfo (..)
   , KeyCode (..)

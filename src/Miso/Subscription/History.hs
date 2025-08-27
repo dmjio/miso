@@ -12,6 +12,7 @@
 module Miso.Subscription.History
   ( -- *** Subscription
     uriSub
+  , routerSub
     -- *** Functions
   , getURI
   , pushURI
@@ -19,67 +20,43 @@ module Miso.Subscription.History
   , back
   , forward
   , go
-   -- *** Types 
+   -- *** Types
   , URI (..)
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Language.Javascript.JSaddle
-import           Network.URI hiding (path)
 import           System.IO.Unsafe
 -----------------------------------------------------------------------------
 import           Miso.Concurrent
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String
+import           Miso.Router
 import           Miso.Effect (Sub)
------------------------------------------------------------------------------
--- | Retrieves current URI of page
-getURI :: JSM URI
-{-# INLINE getURI #-}
-getURI = do
-  href <- fromMisoString <$> getWindowLocationHref
-  case parseURI href of
-    Nothing  -> fail $ "Could not parse URI from window.location: " ++ href
-    Just uri ->
-      pure (dropPrefix uri)
-  where
-    dropPrefix u@URI{..}
-      | '/' : xs <- uriPath = u { uriPath = xs }
-      | otherwise = u
 -----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack
 pushURI :: URI -> JSM ()
-{-# INLINE pushURI #-}
-pushURI uri = pushStateNoModel uri { uriPath = toPath uri }
------------------------------------------------------------------------------
--- | Prepend '/' if necessary
-toPath :: URI -> String
-toPath uri =
-  case uriPath uri of
-    "" -> "/"
-    "/" -> "/"
-    xs@('/' : _) -> xs
-    xs -> '/' : xs
+pushURI uri = do
+  pushState (prettyURI uri)
+  liftIO (serve chan)
 -----------------------------------------------------------------------------
 -- | Replaces current URI on stack
 replaceURI :: URI -> JSM ()
-{-# INLINE replaceURI #-}
-replaceURI uri = replaceTo' uri { uriPath = toPath uri }
+replaceURI uri = do
+  replaceState (prettyURI uri)
+  liftIO (serve chan)
 -----------------------------------------------------------------------------
 -- | Navigates backwards
 back :: JSM ()
-{-# INLINE back #-}
 back = void $ getHistory # "back" $ ()
 -----------------------------------------------------------------------------
 -- | Navigates forwards
 forward :: JSM ()
-{-# INLINE forward #-}
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
 -- | Jumps to a specific position in history
 go :: Int -> JSM ()
-{-# INLINE go #-}
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
 chan :: Waiter
@@ -95,35 +72,38 @@ uriSub = \f sink -> do
   void $ FFI.windowAddEventListener (ms "popstate") $ \_ ->
     sink . f =<< getURI
 -----------------------------------------------------------------------------
-pushStateNoModel :: URI -> JSM ()
-{-# INLINE pushStateNoModel #-}
-pushStateNoModel u = do
-  pushState . pack . show $ u
-  liftIO (serve chan)
+-- | Subscription for @popstate@ events, from the History API, mapped
+-- to a user-defined @Router@
+routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
+routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
-replaceTo' :: URI -> JSM ()
-{-# INLINE replaceTo' #-}
-replaceTo' u = do
-  replaceState . pack . show $ u
-  liftIO (serve chan)
------------------------------------------------------------------------------
-getWindowLocationHref :: JSM MisoString
-getWindowLocationHref = do
-  href <- fromJSVal =<< jsg "window" ! "location" ! "href"
-  case join href of
-    Nothing -> pure mempty
-    Just uri -> pure uri
+-- | Retrieves the current relative URI by inspecting `pathname`, `search`
+-- and `hash`.
+getURI :: JSM URI
+getURI = do
+  location <- jsg "window" ! "location"
+  pathname <- fromJSValUnchecked =<< location ! "pathname"
+  search <- fromJSValUnchecked =<< location ! "search"
+  hash <- fromJSValUnchecked =<< location ! "hash"
+  let uriText =
+        mconcat
+        [ pathname
+        , search
+        , hash
+        ]
+  case parseURI uriText of
+    Left err -> do
+      FFI.consoleError (ms "Couldn't parse URI: " <> err)
+      pure emptyURI
+    Right uri -> do
+      pure uri
 -----------------------------------------------------------------------------
 getHistory :: JSM JSVal
 getHistory = jsg "window" ! "history"
 -----------------------------------------------------------------------------
 pushState :: MisoString -> JSM ()
-pushState url = do
-  _ <- getHistory # "pushState" $ (jsNull, jsNull, url)
-  pure ()
+pushState url = void $ getHistory # "pushState" $ (jsNull, jsNull, url)
 -----------------------------------------------------------------------------
 replaceState :: MisoString -> JSM ()
-replaceState url = do
-  _ <- getHistory # "replaceState" $ (jsNull, jsNull, url)
-  pure ()
+replaceState url = void $ getHistory # "replaceState" $ (jsNull, jsNull, url)
 -----------------------------------------------------------------------------
