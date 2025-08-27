@@ -122,7 +122,7 @@ module Miso.FFI.Internal
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void, forM_, (<=<))
+import           Control.Monad (void, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
@@ -501,11 +501,12 @@ addStyle css = do
 -----------------------------------------------------------------------------
 -- | Appends a 'script_' element containing JS to 'head_'
 --
--- > addScript "function () { alert('hi'); }"
+-- > addScript False "function () { alert('hi'); }"
 --
-addScript :: MisoString -> JSM JSVal
-addScript js_ = do
+addScript :: Bool -> MisoString -> JSM JSVal
+addScript useModule js_ = do
   script <- jsg "document" # "createElement" $ ["script"]
+  when useModule $ (script <# "type") "module"
   (script <# "innerHTML") js_
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
