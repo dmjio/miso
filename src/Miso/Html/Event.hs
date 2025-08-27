@@ -520,7 +520,7 @@ onWaitingWith action = on "waiting" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
 onTouchStart :: action -> Attribute action
-onTouchStart action = on "touchstart" emptyDecoder $ \() -> action
+onTouchStart action = on "touchstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
 onTouchStartWithOptions :: Options -> action -> Attribute action
@@ -528,7 +528,7 @@ onTouchStartWithOptions options action = onWithOptions options "touchstart" empt
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
 onTouchEnd :: action -> Attribute action
-onTouchEnd action = on "touchend" emptyDecoder $ \() -> action
+onTouchEnd action = on "touchend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
 onTouchEndWithOptions :: Options -> action -> Attribute action
@@ -536,7 +536,7 @@ onTouchEndWithOptions options action = onWithOptions options "touchend" emptyDec
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
 onTouchMove :: action -> Attribute action
-onTouchMove action = on "touchmove" emptyDecoder $ \() -> action
+onTouchMove action = on "touchmove" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
 onTouchMoveWithOptions :: Options -> action -> Attribute action
@@ -544,7 +544,7 @@ onTouchMoveWithOptions options action = onWithOptions options "touchmove" emptyD
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
 onTouchCancel :: action -> Attribute action
-onTouchCancel action = on "touchcancel" emptyDecoder $ \() -> action
+onTouchCancel action = on "touchcancel" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
 onTouchCancelWithOptions :: Options -> action -> Attribute action
