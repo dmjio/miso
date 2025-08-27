@@ -156,7 +156,7 @@ data CSS
 --
 -- @
 --   Src "http://example.com/script.js"
---   Script "http://example.com/script.js"
+--   Script "alert('hi');"
 --   ImportMap [ "key" =: "value" ]
 -- @
 --
@@ -165,6 +165,8 @@ data JS
   -- ^ 'src' is a URL meant to link to hosted JS
   | Script MisoString
   -- ^ 'script' is meant to be raw JS in a 'script' tag
+  | Module MisoString
+  -- ^ 'module' is meant to be raw JS in a 'script' tag, of type 'module'
   | ImportMap [(MisoString,MisoString)]
   -- ^ 'script' is meant to be an import map in a 'script' tag
   deriving (Show, Eq)
