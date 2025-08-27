@@ -122,7 +122,7 @@ module Miso.FFI.Internal
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void, forM_, (<=<))
+import           Control.Monad (void, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
