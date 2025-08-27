@@ -38,6 +38,7 @@ module Miso.Event.Types
   , pointerEvents
   , mediaEvents
   , clipboardEvents
+  , touchEvents
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
@@ -248,5 +249,14 @@ clipboardEvents = M.fromList
   [ ("cut", False)
   , ("copy", False)
   , ("paste", False)
+  ]
+-----------------------------------------------------------------------------
+-- | Touch events
+touchEvents :: Events
+touchEvents = M.fromList
+  [ ("touchstart", False)
+  , ("touchcancel", False)
+  , ("touchmove", False)
+  , ("touchend", False)
   ]
 -----------------------------------------------------------------------------
