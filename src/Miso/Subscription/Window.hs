@@ -60,7 +60,7 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
           v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
           case parseEither decoder v of
             Left s ->
-              error $ "windowSubWithOptions: Parse error on " <> unpack eventName <> ": " <> s
+              FFI.consoleError ("windowSubWithOptions: Parse error on " <> unpack eventName <> ": " <> s)              
             Right r -> do
               when _stopPropagation (FFI.eventStopPropagation e)
               when _preventDefault (FFI.eventPreventDefault e)
