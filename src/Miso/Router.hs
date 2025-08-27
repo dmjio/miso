@@ -580,13 +580,10 @@ data URI
   = URI
   { uriPath, uriFragment :: MisoString
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
-  } deriving (Eq)
+  } deriving (Show, Eq)
 ----------------------------------------------------------------------------
 emptyURI :: URI
 emptyURI = URI mempty mempty mempty
-----------------------------------------------------------------------------
-instance Show URI where
-  show = MS.unpack . prettyURI
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
