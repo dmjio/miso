@@ -451,9 +451,9 @@ queryFlag = do
     where
       flag = ms $ symbolVal (Proxy @flag)
 -----------------------------------------------------------------------------
-instance (FromMisoString a, ToMisoString a) => GRouter (K1 m a) where
-  gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
-  gRouteParser = K1 <$> capture
+instance Router a => GRouter (K1 m a) where
+  gFromRoute (K1 x) = fromRoute x
+  gRouteParser = K1 <$> routeParser
 -----------------------------------------------------------------------------
 instance GRouter U1 where
   gFromRoute U1 = []
