@@ -71,9 +71,6 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
-  -- *** URI
-  , URI (..)
-  , emptyURI
   ) where
 -----------------------------------------------------------------------------
 import           Data.Map (Map)
@@ -454,17 +451,4 @@ optionalChildren element attrs kids condition opts =
       let newKids = kids ++ concat [ opts | condition ]
       VNode ns name attrs newKids
     x -> x
-----------------------------------------------------------------------------
--- | Type for dealing with @URI@
---
--- <<https://datatracker.ietf.org/doc/html/rfc3986>>
---
-data URI
-  = URI
-  { uriPath, uriFragment :: MisoString
-  , uriQueryString :: Map MisoString (Maybe MisoString)
-  } deriving (Show, Eq)
-----------------------------------------------------------------------------
-emptyURI :: URI
-emptyURI = URI "/" mempty mempty
 ----------------------------------------------------------------------------

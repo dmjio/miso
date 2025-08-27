@@ -108,6 +108,7 @@ module Miso.Router
   , QueryParam (..)
   , QueryFlag (..)
   , Token (..)
+  , URI (..)
     -- ** Re-exports
   , URI (..)
     -- ** Errors
@@ -124,6 +125,7 @@ module Miso.Router
   , toQueryParam
   , toCapture
   , toPath
+  , emptyURI
     -- ** Parser combinators
   , queryFlag
   , queryParam
@@ -356,7 +358,7 @@ routes :: [ RouteParser route ] -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
 prettyURI :: URI -> MisoString
-prettyURI uri@URI {..} = uriPath <> prettyQueryString uri <> uriFragment
+prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
 -----------------------------------------------------------------------------
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..} = queries <> flags
@@ -570,3 +572,22 @@ lowercaseStrip :: String -> MisoString
 lowercaseStrip (x:xs) = ms (C.toLower x : takeWhile C.isLower xs)
 lowercaseStrip x = ms x
 -----------------------------------------------------------------------------
+-- | Type for dealing with @URI@
+--
+-- <<https://datatracker.ietf.org/doc/html/rfc3986>>
+--
+data URI
+  = URI
+  { uriPath, uriFragment :: MisoString
+  , uriQueryString :: M.Map MisoString (Maybe MisoString)
+  } deriving (Eq)
+----------------------------------------------------------------------------
+emptyURI :: URI
+emptyURI = URI mempty mempty mempty
+----------------------------------------------------------------------------
+instance Show URI where
+  show = MS.unpack . prettyURI
+----------------------------------------------------------------------------
+instance ToMisoString URI where
+  toMisoString = prettyURI
+----------------------------------------------------------------------------
