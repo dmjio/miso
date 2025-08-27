@@ -109,8 +109,6 @@ module Miso.Router
   , QueryFlag (..)
   , Token (..)
   , URI (..)
-    -- ** Re-exports
-  , URI (..)
     -- ** Errors
   , RoutingError (..)
     -- ** Functions
@@ -225,7 +223,13 @@ toPath = CaptureOrPathToken
 tokensToURI :: [Token] -> URI
 tokensToURI tokens = URI
   { uriPath =
-      foldMap ms (filter isPathRelated tokens)
+      case tokens of
+        IndexToken : _ -> ""
+        _ ->
+          MS.intercalate "/"
+          [ x
+          | CaptureOrPathToken x <- filter isPathRelated tokens
+          ]
   , uriQueryString =
       M.unions
         [ case queryToken of

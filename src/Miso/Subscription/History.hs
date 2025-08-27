@@ -32,7 +32,6 @@ import           System.IO.Unsafe
 import           Miso.Concurrent
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String
-import           Miso.Types
 import           Miso.Router
 import           Miso.Effect (Sub)
 -----------------------------------------------------------------------------

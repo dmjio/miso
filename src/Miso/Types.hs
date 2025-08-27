@@ -73,7 +73,6 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Map (Map)
 import           Data.Aeson (Value, ToJSON)
 import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
