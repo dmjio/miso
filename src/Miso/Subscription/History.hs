@@ -88,7 +88,7 @@ getURI = do
   hash <- fromJSValUnchecked =<< location ! "hash"
   let uriText =
         mconcat
-        [ ms "/" <> pathname
+        [ pathname
         , search
         , hash
         ]
@@ -96,7 +96,7 @@ getURI = do
     Left err -> do
       FFI.consoleError (ms "Couldn't parse URI: " <> err)
       pure emptyURI
-    Right uri ->
+    Right uri -> do
       pure uri
 -----------------------------------------------------------------------------
 getHistory :: JSM JSVal
