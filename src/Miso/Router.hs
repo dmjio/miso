@@ -399,7 +399,7 @@ instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) nex
         void (path name)
         M1 <$> gRouteParser
       where
-        name = lowercase $ symbolVal (Proxy @name)
+        name = lowercaseStrip $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
 instance GRouter next => GRouter (S1 m next) where
   gFromRoute (M1 x) = gFromRoute x
@@ -565,4 +565,8 @@ parseRoute input parser =
 lowercase :: String -> MisoString
 lowercase (x:xs) = ms (C.toLower x : xs)
 lowercase x = ms x
+-----------------------------------------------------------------------------
+lowercaseStrip :: String -> MisoString
+lowercaseStrip (x:xs) = ms (C.toLower x : takeWhile C.isLower xs)
+lowercaseStrip x = ms x
 -----------------------------------------------------------------------------
