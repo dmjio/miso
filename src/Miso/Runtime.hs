@@ -875,7 +875,9 @@ renderScripts scripts =
     Src src ->
       FFI.addSrc src
     Script script ->
-      FFI.addScript script
+      FFI.addScript False script
+    Module src ->
+      FFI.addScript True src
     ImportMap importMap -> do
       o <- create
       forM_ importMap $ \(k,v) ->
