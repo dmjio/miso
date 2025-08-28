@@ -24,9 +24,7 @@ module Miso.String (
   ) where
 ----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
-#ifdef GHCJS_BOTH
 import           Data.Aeson
-#endif
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy    as BL
@@ -48,6 +46,9 @@ type MisoString = JS.JSString
 ----------------------------------------------------------------------------
 instance MakeArgs JS.JSString where
   makeArgs arg = (:[]) <$> toJSVal arg
+----------------------------------------------------------------------------
+instance ToJSONKey MisoString
+instance FromJSONKey MisoString
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
 -- | `ToJSON` for `MisoString`
