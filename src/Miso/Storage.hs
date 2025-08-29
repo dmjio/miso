@@ -40,7 +40,7 @@ getStorageCommon
   :: FromJSON b
   => (t -> JSM (Maybe JSVal))
   -> t
-  -> JSM (Either String b)
+  -> JSM (Either MisoString b)
 getStorageCommon f key = do
   result <- f key
   case result of
@@ -56,7 +56,7 @@ getStorageCommon f key = do
 getSessionStorage
   :: FromJSON model
   => MisoString
-  -> JSM (Either String model)
+  -> JSM (Either MisoString model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- sessionStorage
@@ -67,7 +67,7 @@ getSessionStorage =
 getLocalStorage
   :: FromJSON model
   => MisoString
-  -> JSM (Either String model)
+  -> JSM (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- localStorage
     r <- getItem s t
