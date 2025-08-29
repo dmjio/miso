@@ -177,6 +177,5 @@ library
     containers    < 0.9,
     jsaddle       < 0.10,
     mtl           < 2.4,
-    tagsoup       < 0.15,
     text          < 2.2,
     stm >= 2.4 && < 2.6

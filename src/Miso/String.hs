@@ -39,7 +39,6 @@ import qualified Data.Text.Lazy          as LT
 import qualified Data.Text.Lazy.Encoding as LT
 import           Language.Javascript.JSaddle (MakeArgs (..), toJSVal)
 import           Prelude                 hiding (foldr)
-import           Text.StringLike         (StringLike(..))
 ----------------------------------------------------------------------------
 -- | String type swappable based on compiler
 type MisoString = JS.JSString
@@ -168,15 +167,4 @@ parseInt   :: MisoString -> Either String Int
 parseInt s = case JS.uncons s of
                Just ('-',s') -> ((-1)*) . fromIntegral <$> parseWord s'
                _             ->           fromIntegral <$> parseWord s
-----------------------------------------------------------------------------
-instance StringLike MisoString where
-  uncons = JS.uncons
-  toString = JS.unpack
-  fromChar = JS.singleton
-  strConcat = JS.concat
-  empty = JS.empty
-  strNull = JS.null
-  cons = JS.cons
-  append = JS.append
-  strMap = JS.map
 ----------------------------------------------------------------------------

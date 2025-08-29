@@ -556,7 +556,7 @@ link_ = flip (nodeHtml "link") []
 --
 -- @'style_' [] "\</style\>"@
 style_ :: [Attribute action] -> MisoString -> View model action
-style_ attrs rawText = node HTML "style" attrs [textRaw rawText]
+style_ attrs rawText = node HTML "style" attrs [text rawText]
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script)
 --
@@ -570,7 +570,7 @@ style_ attrs rawText = node HTML "style" attrs [textRaw rawText]
 --
 -- @'script_' [] "\</script\>"@
 script_ :: [Attribute action] -> MisoString -> View model action
-script_ attrs rawText = node HTML "script" attrs [textRaw rawText]
+script_ attrs rawText = node HTML "script" attrs [text rawText]
 -----------------------------------------------------------------------------
 -- | [\<doctype\>](https://developer.mozilla.org/en-US/docs/Glossary/Doctype)
 doctype_ :: View model action

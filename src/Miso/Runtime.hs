@@ -97,8 +97,6 @@ import           GHC.Generics (Generic)
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
-import           Text.HTML.TagSoup (Tag(..))
-import           Text.HTML.TagSoup.Tree (parseTree, TagTree(..))
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
@@ -110,7 +108,6 @@ import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
-import           Miso.Property (textProp)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
@@ -770,14 +767,6 @@ runView _ (VText t) _ _ _ = do
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
-runView hydrate (VTextRaw str) snk logLevel events =
-  case parseView str of
-    [] ->
-      runView hydrate (VText (" " :: MisoString)) snk logLevel events
-    [parent_] ->
-      runView hydrate parent_ snk logLevel events
-    kids -> do
-      runView hydrate (VNode HTML "div" mempty kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
@@ -820,31 +809,6 @@ setAttrs vnode attrs snk logLevel events =
       cssObj <- getProp "css" vnode
       forM_ (M.toList styles) $ \(k,v) -> do
         FFI.set k v (Object cssObj)
------------------------------------------------------------------------------
--- | Used to support RawText, inlining of HTML.
--- Filters tree to only branches and leaves w/ Text tags.
--- converts to `View m a`. Note: if HTML is malformed,
--- (e.g. closing tags and opening tags are present) they will
--- be removed.
-parseView :: MisoString -> [View model action]
-parseView html = reverse (go (parseTree html) [])
-  where
-    go [] xs = xs
-    go (TagLeaf (TagText s) : next) views =
-      go next (VText s : views)
-    go (TagLeaf (TagOpen name attrs) : next) views =
-      go (TagBranch name attrs [] : next) views
-    go (TagBranch name attrs kids : next) views =
-      let
-        attrs' = [ textProp key value
-                 | (key, value) <- attrs
-                 ]
-        newNode =
-          VNode HTML name attrs' (reverse (go kids []))
-      in
-        go next (newNode:views)
-    go (TagLeaf _ : next) views =
-      go next views
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState model action -> m ()
