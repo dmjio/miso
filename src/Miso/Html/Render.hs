@@ -58,8 +58,6 @@ intercalate sep (x:xs) =
 renderBuilder :: View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
-renderBuilder (VTextRaw "") = fromMisoString " "
-renderBuilder (VTextRaw s)  = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat

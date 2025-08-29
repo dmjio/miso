@@ -64,8 +64,6 @@ module Miso.Types
   , node
   , text
   , text_
-  , textRaw
-  , rawHtml
   -- *** MisoString
   , MisoString
   , toMisoString
@@ -230,7 +228,6 @@ data LogLevel
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
-  | VTextRaw MisoString
   | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
@@ -373,17 +370,6 @@ newtype VTree = VTree { getTree :: Object }
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
--- | Create a new @Miso.Types.TextRaw@.
---
--- @expandable@
--- a 'rawHtml' node takes raw HTML and attempts to convert it to a 'VTree'
--- at runtime. This is a way to dynamically populate the virtual DOM from
--- HTML received at runtime. If rawHtml cannot parse the HTML it will not render.
-rawHtml
-  :: MisoString
-  -> View model action
-rawHtml = VTextRaw
------------------------------------------------------------------------------
 -- | Create a new @Miso.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
@@ -403,10 +389,6 @@ text = VText
 -- | Create a new @Text@ with the given content.
 text_ :: [MisoString] -> View model action
 text_ = VText . MS.concat
------------------------------------------------------------------------------
--- | `TextRaw` creation. Don't use directly
-textRaw :: MisoString -> View model action
-textRaw = VTextRaw
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
