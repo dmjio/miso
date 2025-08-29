@@ -45,7 +45,7 @@ run :: JSM () -> IO ()
 run app = setRef >> J.run app
 #elif GHCJS_BOTH
 run app = do
-  liftIO (writeIORef () contextRef)
+  liftIO (writeIORef contextRef ())
   app
 #else
 run action = do
