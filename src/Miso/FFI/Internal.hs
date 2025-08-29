@@ -119,6 +119,9 @@ module Miso.FFI.Internal
    , copyClipboard
    , getUserMedia
    , isOnLine
+   -- * FileReader
+   , FileReader (..)
+   , newFileReader
    ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent (ThreadId, forkIO)
@@ -837,4 +840,16 @@ geolocation successful errorful = do
   cb1 <- asyncCallback1 successful
   cb2 <- asyncCallback1 errorful
   void $ geo # "getCurrentPosition" $ (cb1, cb2)
+-----------------------------------------------------------------------------
+newtype FileReader = FileReader JSVal
+  deriving (ToJSVal, MakeObject)
+-----------------------------------------------------------------------------
+instance FromJSVal FileReader where
+  fromJSVal = pure . pure . FileReader
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a 'FileReader'
+newFileReader :: JSM FileReader
+newFileReader = do
+  reader <- new (jsg "FileReader") ([] :: [MisoString])
+  pure (FileReader reader)
 -----------------------------------------------------------------------------
