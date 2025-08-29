@@ -28,6 +28,9 @@ import           Network.WebSockets (defaultConnectionOptions)
 import           Language.Javascript.JSaddle.WebSockets (debugWrapper, jsaddleOr, jsaddleAppWithJs, jsaddleJs)
 #endif
 import           Language.Javascript.JSaddle
+import           Data.IORef
+import           System.IO.Unsafe
+import           Control.Monad.IO.Class (liftIO)
 -----------------------------------------------------------------------------
 -- | Entry point for a miso application
 -- When compiling with jsaddle on native platforms
@@ -39,17 +42,19 @@ import           Language.Javascript.JSaddle
 -- JSM becomes a type synonym for IO
 run :: JSM () -> IO ()
 #ifdef WASM
-run = J.run
+run app = setRef >> J.run app
 #elif GHCJS_BOTH
-run = id
+run app = do
+  liftIO (writeIORef () jsRef)
+  app
 #else
 run action = do
-    port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
-    isGhci <- (== "<interactive>") <$> getProgName
-    putStrLn $ "Running on port " <> show port <> "..."
-    if isGhci
-      then debugMiso port action
-      else J.run port action
+  port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
+  isGhci <- (== "<interactive>") <$> getProgName
+  putStrLn $ "Running on port " <> show port <> "..."
+  if isGhci
+    then debugMiso port action
+    else J.run port (setRef >> action)
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static 'Middlware' policy.
 --
@@ -65,7 +70,16 @@ debugMiso port f = do
     runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
       jsaddleOr
         defaultConnectionOptions
-        (registerContext >> f >> syncPoint)
+        (setRef >> registerContext >> f >> syncPoint)
         (static $ withRefresh $ jsaddleAppWithJs $ jsaddleJs True)
 #endif
+-----------------------------------------------------------------------------
+contextRef :: IORef JSContextRef
+{-# INLINE contextRef #-}
+contextRef = unsafePerformIO $ newIORef (undefined :: JSContextRef)
+-----------------------------------------------------------------------------
+setRef :: JSM ()
+setRef = do
+  ref <- askJSM
+  liftIO (writeIORef contextRef ref)
 -----------------------------------------------------------------------------

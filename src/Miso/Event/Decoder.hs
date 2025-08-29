@@ -27,7 +27,7 @@ module Miso.Event.Decoder
   ) where
 -----------------------------------------------------------------------------
 import Control.Applicative
-import Data.Aeson.Types
+import Miso.JSON
 #ifdef GHCJS_OLD
 import GHCJS.Marshal (ToJSVal(toJSVal))
 #else

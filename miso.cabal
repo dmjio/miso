@@ -126,6 +126,7 @@ library
     Miso.Html.Event
     Miso.Html.Property
     Miso.Html.Render
+    Miso.JSON
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element

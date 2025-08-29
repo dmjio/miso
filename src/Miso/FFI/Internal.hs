@@ -127,8 +127,8 @@ module Miso.FFI.Internal
 import           Control.Concurrent (ThreadId, forkIO)
 import           Control.Monad (void, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.Aeson hiding (Object)
-import qualified Data.Aeson as A
+import           Miso.JSON hiding (Object)
+import qualified Miso.JSON as A
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
@@ -339,7 +339,7 @@ jsonParse jval = do
   v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
   case fromJSON v of
     A.Success x -> pure x
-    A.Error y -> error y
+    A.Error y -> error (fromMisoString y)
 -----------------------------------------------------------------------------
 -- | Convert a JavaScript object to JSON
 -- JSONified representation of events

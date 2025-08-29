@@ -40,7 +40,7 @@ module Miso.Event.Types
   , touchEvents
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (FromJSON(..), withText)
+import           Miso.JSON (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
 import           GHC.Generics (Generic)
 import           Language.Javascript.JSaddle (ToJSVal(..), create)

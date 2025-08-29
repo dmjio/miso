@@ -28,8 +28,8 @@ module Miso.Storage
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
-import qualified Data.Aeson as A
+import           Miso.JSON (FromJSON(..), ToJSON, fromJSON)
+import qualified Miso.JSON as A
 import           Language.Javascript.JSaddle hiding (obj, val)
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (jsonParse, jsonStringify)

@@ -17,7 +17,7 @@ module Miso.Html.Render
     ToHtml (..)
   ) where
 ----------------------------------------------------------------------------
-import           Data.Aeson
+import           Miso.JSON
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M

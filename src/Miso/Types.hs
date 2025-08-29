@@ -71,7 +71,7 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON)
+import           Miso.JSON (Value, ToJSON)
 import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
