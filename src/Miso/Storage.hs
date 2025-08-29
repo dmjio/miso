@@ -45,7 +45,7 @@ getStorageCommon f key = do
   result <- f key
   case result of
     Nothing ->
-      pure (Left "Not Found")
+      pure (Left (ms "Not Found"))
     Just v -> do
       r <- jsonParse v
       pure $ case fromJSON r of
