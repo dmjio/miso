@@ -60,6 +60,9 @@ module Miso.FFI
   , ArrayBuffer (..)
   -- ** Blob
   , Blob (..)
+  -- ** FileReader
+  , FileReader (..)
+  , newFileReader
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
