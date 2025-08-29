@@ -45,7 +45,7 @@ run :: JSM () -> IO ()
 run app = setRef >> J.run app
 #elif GHCJS_BOTH
 run app = do
-  liftIO (writeIORef () jsRef)
+  liftIO (writeIORef () contextRef)
   app
 #else
 run action = do
@@ -75,7 +75,7 @@ debugMiso port f = do
 #endif
 -----------------------------------------------------------------------------
 contextRef :: IORef JSContextRef
-{-# INLINE contextRef #-}
+{-# NOINLINE contextRef #-}
 contextRef = unsafePerformIO $ newIORef (undefined :: JSContextRef)
 -----------------------------------------------------------------------------
 setRef :: JSM ()
