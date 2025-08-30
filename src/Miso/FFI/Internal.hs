@@ -114,6 +114,8 @@ module Miso.FFI.Internal
    , Blob (..)
    -- * FormData
    , FormData (..)
+   -- * File
+   , File (..)
    -- * ArrayBuffer
    , ArrayBuffer (..)
    -- * Navigator
@@ -848,6 +850,12 @@ geolocation successful errorful = do
   cb1 <- asyncCallback1 successful
   cb2 <- asyncCallback1 errorful
   void $ geo # "getCurrentPosition" $ (cb1, cb2)
+-----------------------------------------------------------------------------
+newtype File = File JSVal
+  deriving (ToJSVal, MakeObject)
+-----------------------------------------------------------------------------
+instance FromJSVal File where
+  fromJSVal = pure . pure . File
 -----------------------------------------------------------------------------
 newtype FileReader = FileReader JSVal
   deriving (ToJSVal, MakeObject)
