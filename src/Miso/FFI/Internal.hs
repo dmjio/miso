@@ -112,6 +112,8 @@ module Miso.FFI.Internal
    , eventSourceClose
    -- * Blob
    , Blob (..)
+   -- * FormData
+   , FormData (..)
    -- * ArrayBuffer
    , ArrayBuffer (..)
    -- * Navigator
@@ -827,6 +829,12 @@ newtype Blob = Blob JSVal
 -----------------------------------------------------------------------------
 instance FromJSVal Blob where
   fromJSVal = pure . pure . Blob
+-----------------------------------------------------------------------------
+newtype FormData = FormData JSVal
+  deriving ToJSVal
+-----------------------------------------------------------------------------
+instance FromJSVal FormData where
+  fromJSVal = pure . pure . FormData
 -----------------------------------------------------------------------------
 instance FromJSVal ArrayBuffer where
   fromJSVal = pure . pure . ArrayBuffer
