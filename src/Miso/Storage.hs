@@ -37,7 +37,7 @@ import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage
 getStorageCommon
-  :: FromJSON b
+  :: (FromJSVal b, FromJSON b)
   => (t -> JSM (Maybe JSVal))
   -> t
   -> JSM (Either MisoString b)
@@ -54,7 +54,7 @@ getStorageCommon f key = do
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in session storage
 getSessionStorage
-  :: FromJSON model
+  :: (FromJSVal model, FromJSON model)
   => MisoString
   -> JSM (Either MisoString model)
 getSessionStorage =
@@ -65,7 +65,7 @@ getSessionStorage =
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in local storage
 getLocalStorage
-  :: FromJSON model
+  :: (FromJSVal model, FromJSON model)
   => MisoString
   -> JSM (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
