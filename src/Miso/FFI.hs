@@ -60,6 +60,8 @@ module Miso.FFI
   , ArrayBuffer (..)
   -- ** Blob
   , Blob (..)
+   -- ** FormData
+  , FormData (..)
   -- ** FileReader
   , FileReader (..)
   , newFileReader
