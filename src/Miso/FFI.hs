@@ -64,6 +64,8 @@ module Miso.FFI
   , FormData (..)
    -- ** File
   , File (..)
+   -- ** URLSearchParams
+  , URLSearchParams (..)
   -- ** FileReader
   , FileReader (..)
   , newFileReader
