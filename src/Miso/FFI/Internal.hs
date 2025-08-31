@@ -114,6 +114,8 @@ module Miso.FFI.Internal
    , Blob (..)
    -- * FormData
    , FormData (..)
+   -- * URLSearchParams
+   , URLSearchParams (..)
    -- * File
    , File (..)
    -- * ArrayBuffer
@@ -862,6 +864,12 @@ newtype FileReader = FileReader JSVal
 -----------------------------------------------------------------------------
 instance FromJSVal FileReader where
   fromJSVal = pure . pure . FileReader
+-----------------------------------------------------------------------------
+newtype URLSearchParams = URLSearchParams JSVal
+  deriving (ToJSVal, MakeObject)
+-----------------------------------------------------------------------------
+instance FromJSVal URLSearchParams where
+  fromJSVal = pure . pure . URLSearchParams
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a 'FileReader'
 newFileReader :: JSM FileReader
