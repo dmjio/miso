@@ -574,6 +574,7 @@ fetch
   -> (MisoString -> JSM ())
   -- ^ errorful callback
   -> MisoString
+  -- ^ content type
   -> JSM ()
 fetch url method maybeBody headers successful errorful type_ = do
   successful_ <- toJSVal =<< asyncCallback1 successful
