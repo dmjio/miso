@@ -28,7 +28,7 @@
 
     # Miso uses this for FFI
     jsaddle.url =
-      "github:ghcjs/jsaddle?rev=2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
+      "github:ghcjs/jsaddle?rev=0fb7260ad02592546c9f180078d770256fb1f0f6";
 
     # Miso uses this for routing
     servant.url =
