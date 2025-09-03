@@ -24,7 +24,7 @@ module Miso.Concurrent
 -----------------------------------------------------------------------------
 import Control.Concurrent
 import Control.Concurrent.STM
-import Data.Aeson
+import Miso.JSON
 -----------------------------------------------------------------------------
 -- | Synchronization primitive for event loop
 data Waiter

@@ -47,7 +47,7 @@ module Miso.Fetch
 ----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
 import           Control.Monad
-import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON)
+import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON)
 import           Language.Javascript.JSaddle (fromJSValUnchecked, toJSVal)
 ----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI

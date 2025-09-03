@@ -22,7 +22,7 @@ module Miso.Subscription.Window
 -----------------------------------------------------------------------------
 import           Control.Monad
 import           Language.Javascript.JSaddle
-import           Data.Aeson.Types (parseEither)
+import           Miso.JSON (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Effect

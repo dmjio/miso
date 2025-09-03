@@ -28,8 +28,8 @@ module Miso.Storage
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
-import qualified Data.Aeson as A
+import           Miso.JSON (FromJSON(..), ToJSON, fromJSON)
+import qualified Miso.JSON as A
 import           Language.Javascript.JSaddle hiding (obj, val)
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (jsonParse, jsonStringify)
@@ -37,15 +37,15 @@ import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage
 getStorageCommon
-  :: FromJSON b
+  :: (FromJSVal b, FromJSON b)
   => (t -> JSM (Maybe JSVal))
   -> t
-  -> JSM (Either String b)
+  -> JSM (Either MisoString b)
 getStorageCommon f key = do
   result <- f key
   case result of
     Nothing ->
-      pure (Left "Not Found")
+      pure (Left (ms "Not Found"))
     Just v -> do
       r <- jsonParse v
       pure $ case fromJSON r of
@@ -54,9 +54,9 @@ getStorageCommon f key = do
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in session storage
 getSessionStorage
-  :: FromJSON model
+  :: (FromJSVal model, FromJSON model)
   => MisoString
-  -> JSM (Either String model)
+  -> JSM (Either MisoString model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- sessionStorage
@@ -65,9 +65,9 @@ getSessionStorage =
 -----------------------------------------------------------------------------
 -- | Retrieve a value stored under given key in local storage
 getLocalStorage
-  :: FromJSON model
+  :: (FromJSVal model, FromJSON model)
   => MisoString
-  -> JSM (Either String model)
+  -> JSM (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- localStorage
     r <- getItem s t
