@@ -1,5 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -122,8 +122,7 @@ postJSON url body headers successful errorful =
       (sink . errorful)
       "none"
   where
-    jsonHeaders =
-      [contentType =: applicationJSON] <> headers
+    jsonHeaders = biasHeaders headers [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
 putJSON
   :: ToJSON body
