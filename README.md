@@ -7,7 +7,7 @@
 <a href="https://haskell-miso.org">
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
    </a>
-<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> web and mobile framework 🍜</p>
+<p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> web and [mobile](https://github.com/haskell-miso/miso-lynx) framework 🍜</p>
 </p>
 
 <p align="center">
