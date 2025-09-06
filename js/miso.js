@@ -34,6 +34,10 @@ function fetchCore(url, method, body, headers, successful, errorful, responseTyp
         return response.arrayBuffer();
       } else if (responseType === "blob") {
         return response.blob();
+      } else if (responseType === "bytes") {
+        return response.bytes();
+      } else if (responseType === "formData") {
+        return response.formData();
       } else if (responseType === "none") {
         return successful(null);
       }

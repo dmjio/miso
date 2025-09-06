@@ -118,6 +118,8 @@ module Miso.FFI.Internal
    , URLSearchParams (..)
    -- * File
    , File (..)
+   -- * Uint8Array
+   , Uint8Array (..)
    -- * ArrayBuffer
    , ArrayBuffer (..)
    -- * Navigator
@@ -859,6 +861,12 @@ newtype File = File JSVal
 -----------------------------------------------------------------------------
 instance FromJSVal File where
   fromJSVal = pure . pure . File
+-----------------------------------------------------------------------------
+newtype Uint8Array = Uint8Array JSVal
+  deriving ToJSVal
+-----------------------------------------------------------------------------
+instance FromJSVal Uint8Array where
+  fromJSVal = pure . pure . Uint8Array
 -----------------------------------------------------------------------------
 newtype FileReader = FileReader JSVal
   deriving (ToJSVal, MakeObject)

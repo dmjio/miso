@@ -60,6 +60,8 @@ module Miso.FFI
   , ArrayBuffer (..)
   -- ** Blob
   , Blob (..)
+  -- ** Uint8Array
+  , Uint8Array (..)
    -- ** FormData
   , FormData (..)
    -- ** File

@@ -30,6 +30,14 @@ module Miso.Fetch
   , getBlob
   , postBlob
   , putBlob
+  -- ** FormData
+  , getFormData
+  , postFormData
+  , putFormData
+  -- ** Uint8Array
+  , getUint8Array
+  , postUint8Array
+  , putUint8Array
   -- ** Image
   , postImage
   , putImage
@@ -43,6 +51,8 @@ module Miso.Fetch
   , applicationJSON
     -- ** Types
   , Body
+    -- ** Internal
+  , fetch
   ) where
 ----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -67,12 +77,10 @@ import           Miso.FFI
 --  deriving (Show, Eq)
 --
 -- updateModel :: Action -> Effect Model Action
--- updateModel FetchGitHub =
---   getJSON "https://api.github.com" [] SetGitHub ErrorHandler
--- updateModel (SetGitHub apiInfo) =
---   info ?= apiInfo
--- updateModel (ErrorHandler msg) =
---  io_ (consoleError msg)
+-- updateModel = \case
+--   FetchGitHub -> getJSON "https://api.github.com" [] SetGitHub ErrorHandler
+--   SetGitHub apiInfo -> info ?= apiInfo
+--   ErrorHandler msg -> io_ (consoleError msg)
 --
 -- @
 --
@@ -273,6 +281,69 @@ putBlob url body headers successful errorful =
   where
     blobHeaders = biasHeaders headers [contentType =: octetStream]
 ----------------------------------------------------------------------------
+getFormData
+  :: MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> (FormData -> action)
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+getFormData url headers successful errorful =
+  withSink $ \sink ->
+    FFI.fetch url "GET" Nothing formDataHeaders
+      (sink . successful <=< fromJSValUnchecked)
+      (sink . errorful)
+      "formData" -- dmj: expected return type
+  where
+    formDataHeaders = biasHeaders headers [accept =: formData]
+----------------------------------------------------------------------------
+postFormData
+  :: MisoString
+  -- ^ url
+  -> FormData
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> action
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+postFormData url body headers successful errorful =
+  withSink $ \sink -> do
+    bodyVal <- toJSVal body
+    FFI.fetch url "POST" (Just bodyVal) formDataHeaders
+      (const (sink successful))
+      (sink . errorful)
+      "none"
+  where
+    formDataHeaders = biasHeaders headers [contentType =: formData]
+----------------------------------------------------------------------------
+putFormData
+  :: MisoString
+  -- ^ url
+  -> FormData
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> action
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+putFormData url body headers successful errorful =
+  withSink $ \sink -> do
+    body_ <- toJSVal body
+    FFI.fetch url "PUT" (Just body_) formDataHeaders
+      (const (sink successful))
+      (sink . errorful)
+      "none"
+  where
+    formDataHeaders = biasHeaders headers [contentType =: formData]
+----------------------------------------------------------------------------
 getArrayBuffer
   :: MisoString
   -- ^ url
@@ -336,6 +407,69 @@ putArrayBuffer url body headers successful errorful =
   where
     arrayBufferHeaders = biasHeaders headers [contentType =: octetStream]
 ----------------------------------------------------------------------------
+getUint8Array
+  :: MisoString
+  -- ^ url
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> (Uint8Array -> action)
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+getUint8Array url headers successful errorful =
+  withSink $ \sink ->
+    FFI.fetch url "GET" Nothing uint8ArrayHeaders
+      (sink . successful <=< fromJSValUnchecked)
+      (sink . errorful)
+      "bytes" -- dmj: expected return type
+  where
+    uint8ArrayHeaders = biasHeaders headers [accept =: octetStream]
+----------------------------------------------------------------------------
+postUint8Array
+  :: MisoString
+  -- ^ url
+  -> Uint8Array
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> action
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+postUint8Array url body headers successful errorful =
+  withSink $ \sink -> do
+    bodyVal <- toJSVal body
+    FFI.fetch url "POST" (Just bodyVal) uint8ArrayHeaders
+      (const (sink successful))
+      (sink . errorful)
+      "none"
+  where
+    uint8ArrayHeaders = biasHeaders headers [contentType =: octetStream]
+----------------------------------------------------------------------------
+putUint8Array
+  :: MisoString
+  -- ^ url
+  -> Uint8Array
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers
+  -> action
+  -- ^ successful callback
+  -> (MisoString -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+putUint8Array url body headers successful errorful =
+  withSink $ \sink -> do
+    body_ <- toJSVal body
+    FFI.fetch url "PUT" (Just body_) uint8ArrayHeaders
+      (const (sink successful))
+      (sink . errorful)
+      "none"
+  where
+    uint8ArrayHeaders = biasHeaders headers [contentType =: octetStream]
+----------------------------------------------------------------------------
 postImage
   :: MisoString
   -- ^ url
@@ -392,6 +526,9 @@ applicationText = "text/plain"
 ----------------------------------------------------------------------------
 octetStream :: MisoString
 octetStream = "application/octect-stream"
+----------------------------------------------------------------------------
+formData :: MisoString
+formData = "multipart/form-data"
 ----------------------------------------------------------------------------
 biasHeaders :: Ord k => [(k, a)] -> [(k, a)] -> [(k, a)]
 biasHeaders userDefined contentSpecific

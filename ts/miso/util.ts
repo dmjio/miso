@@ -48,6 +48,10 @@ export function fetchCore (
             return response.arrayBuffer();
           } else if (responseType === 'blob') {
             return response.blob();
+          } else if (responseType === 'bytes') {
+            return response.bytes();
+          } else if (responseType === 'formData') {
+            return response.formData();
           } else if (responseType === 'none') {
             return successful(null);
           }
