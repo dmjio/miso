@@ -172,12 +172,12 @@ putJSON url body_ headers_ successful errorful =
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
 getText
-  :: (FromJSVal success, FromJSVal error)
+  :: FromJSVal error
   => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
   -- ^ headers_
-  -> (Response success -> action)
+  -> (Response MisoString -> action)
   -- ^ successful callback
   -> (Response error -> action)
   -- ^ errorful callback
