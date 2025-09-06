@@ -105,6 +105,14 @@ type Context = {
   getRoot : () => Element;
 };
 
+/* dmj: used for Fetch API */
+type Response = {
+  body: any;
+  status: number;
+  headers: Record<string,string>;
+  error: string;
+};
+
 export {
   VTree,
   VComp,
@@ -120,4 +128,5 @@ export {
   DOMRef,
   Context,
   ComponentId,
+  Response,
 };

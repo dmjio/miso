@@ -1,4 +1,4 @@
-import { VNode } from './types';
+import { VNode, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -24,19 +24,25 @@ export function fetchCore (
   url : string,
   method : string,
   body : any,
-  headers : Record<string,string>,
-  successful: (any) => void,
-  errorful: (string) => void,
+  requestHeaders : Record<string,string>,
+  successful: (response: Response) => void,
+  errorful: (response: Response) => void,
   responseType: string /* dmj: expected response type */
 ): any
 {
-  var options = { method, headers };
+  var options = { method, headers: requestHeaders };
   if (body) {
     options['body'] = body;
   }
+  let headers = {};
+  let status = null;
   try {
     fetch (url, options)
         .then(response => {
+          status = response.status;
+          for (const [key, value] of response.headers) {
+             headers[key] = value;
+          }
           if (!response.ok) {
             throw new Error(response.statusText);
           }
@@ -53,13 +59,13 @@ export function fetchCore (
           } else if (responseType === 'formData') {
             return response.formData();
           } else if (responseType === 'none') {
-            return successful(null);
+            return successful({error:null, body: null, headers, status});
           }
         })
-      .then(successful)
-      .catch(errorful); /* error callback */
+        .then((body) => successful({error: null, body, headers, status}))
+        .catch((body) => errorful({error: null, body, headers, status})); /* error callback */
   } catch (err) {
-     errorful(err.message);
+      errorful({ body: null, error: err.message, headers, status});
   }
 }
 
