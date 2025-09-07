@@ -61,6 +61,7 @@ module Miso.Fetch
   , fetch
   ) where
 ----------------------------------------------------------------------------
+import           Control.Monad ((<=<))
 import           Data.Aeson
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
