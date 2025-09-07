@@ -104,7 +104,7 @@ getJSON
 getJSON url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing jsonHeaders
-      (handleJSON sink <=< fromJSValUnchecked)
+      (handleJSON sink)
       (sink . errorful)
       "json" -- dmj: expected return type
   where
