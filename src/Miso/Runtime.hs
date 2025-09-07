@@ -128,6 +128,10 @@ initialize Component {..} getView = do
   componentDiffs <- liftIO newMailbox
   (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
+  componentParentId <- do
+    FFI.getParentComponentId componentDOMRef >>= \case
+      Nothing -> pure rootComponentId
+      Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -316,6 +320,7 @@ data Hydrate
 data ComponentState model action
   = ComponentState
   { componentId              :: ComponentId
+  , componentParentId        :: ComponentId
   , componentSubThreads      :: IORef (Map MisoString ThreadId)
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
@@ -596,9 +601,14 @@ freshSubId = do
   x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
   pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
+-- | This is used to demarcate the ROOT of a page. This ID will never
+-- exist in the `components` map.
+rootComponentId :: ComponentId
+rootComponentId = 0
+-----------------------------------------------------------------------------
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
-componentIds = unsafePerformIO $ liftIO (newIORef 0)
+componentIds = unsafePerformIO $ liftIO (newIORef 1)
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
