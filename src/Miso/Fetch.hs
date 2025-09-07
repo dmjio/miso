@@ -63,7 +63,7 @@ module Miso.Fetch
 ----------------------------------------------------------------------------
 import           Data.Aeson
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (toJSVal, FromJSVal(fromJSVal), JSVal)
+import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
 ----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink, Sink)
@@ -103,7 +103,7 @@ getJSON
 getJSON url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing jsonHeaders
-      (\jval -> handleJSON sink jval)
+      (handleJSON sink)
       (sink . errorful)
       "json" -- dmj: expected return type
   where
@@ -119,7 +119,8 @@ getJSON url headers_ successful errorful =
             , errorMessage = Just "Not a valid JSON object"
             , ..
             }
-        Just (Success result) -> sink $ successful resp { body = result }
+        Just (Success result) -> 
+          sink $ successful resp { body = result }
         Just (Error msg) -> do 
           err <- fromJSValUnchecked body
           sink $ errorful $ Response
