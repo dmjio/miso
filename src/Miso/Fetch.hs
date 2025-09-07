@@ -103,13 +103,11 @@ getJSON
 getJSON url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing jsonHeaders
-      (handleJSON sink)
+      (handleJSON sink <=< fromJSValUnchecked)
       (sink . errorful)
       "json" -- dmj: expected return type
   where
     jsonHeaders = biasHeaders headers_ [accept =: applicationJSON]
-
-    handleJSON :: Sink action -> Response JSVal -> FFI.JSM ()
     handleJSON sink resp@Response {..} =
       fmap fromJSON <$> fromJSVal body >>= \case
         Nothing -> do
