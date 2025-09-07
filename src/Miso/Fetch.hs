@@ -90,14 +90,14 @@ import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, U
 -- @
 --
 getJSON
-  :: forall body error action parent model . (FromJSON body, FromJSVal error)
+  :: (FromJSON body, FromJSVal error)
   => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
   -- ^ headers
   -> (Response body -> action)
   -- ^ successful callback
-  -> (Response (Maybe error) -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
 getJSON url headers_ successful errorful =
@@ -113,18 +113,20 @@ getJSON url headers_ successful errorful =
     handleJSON sink resp@Response {..} =
       fmap fromJSON <$> fromJSVal body >>= \case
         Nothing -> do
-          err <- fromJSVal body
+          err <- fromJSValUnchecked body
           sink $ errorful $ Response
             { body = err
             , errorMessage = Just "Not a valid JSON object"
             , ..
             }
         Just (Success result) -> sink $ successful resp { body = result }
-        Just (Error msg) -> sink $ errorful $ Response
-          { body = Nothing
-          , errorMessage = Just (ms msg)
-          , ..
-          }
+        Just (Error msg) -> do 
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }
 ----------------------------------------------------------------------------
 postJSON
   :: (FromJSVal error, ToJSON body)
