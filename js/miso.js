@@ -16,13 +16,19 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
-function fetchCore(url, method, body, headers, successful, errorful, responseType) {
-  var options = { method, headers };
+function fetchCore(url, method, body, requestHeaders, successful, errorful, responseType) {
+  var options = { method, headers: requestHeaders };
   if (body) {
     options["body"] = body;
   }
+  let headers = {};
+  let status = null;
   try {
     fetch(url, options).then((response) => {
+      status = response.status;
+      for (const [key, value] of response.headers) {
+        headers[key] = value;
+      }
       if (!response.ok) {
         throw new Error(response.statusText);
       }
@@ -39,11 +45,11 @@ function fetchCore(url, method, body, headers, successful, errorful, responseTyp
       } else if (responseType === "formData") {
         return response.formData();
       } else if (responseType === "none") {
-        return successful(null);
+        return successful({ error: null, body: null, headers, status });
       }
-    }).then(successful).catch(errorful);
+    }).then((body2) => successful({ error: null, body: body2, headers, status })).catch((body2) => errorful({ error: null, body: body2, headers, status }));
   } catch (err) {
-    errorful(err.message);
+    errorful({ body: null, error: err.message, headers, status });
   }
 }
 function shouldSync(node) {

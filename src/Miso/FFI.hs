@@ -73,6 +73,7 @@ module Miso.FFI
   , newFileReader
   -- ** Fetch API
   , fetch
+  , Response (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

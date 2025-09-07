@@ -1,6 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Fetch
@@ -49,22 +52,25 @@ module Miso.Fetch
   , accept
   , contentType
   , applicationJSON
+  , textPlain
+  , formData
     -- ** Types
   , Body
+  , Response (..)
     -- ** Internal
   , fetch
   ) where
 ----------------------------------------------------------------------------
+import           Control.Monad ((<=<))
+import           Data.Aeson
 import qualified Data.Map.Strict as M
-import           Control.Monad
-import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON)
-import           Language.Javascript.JSaddle (fromJSValUnchecked, toJSVal)
+import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
 ----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Effect (Effect, withSink)
+import           Miso.Effect (Effect, withSink, Sink)
 import           Miso.String (MisoString, ms)
 import           Miso.Util ((=:))
-import           Miso.FFI
+import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch)
 ----------------------------------------------------------------------------
 -- | See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
@@ -85,428 +91,458 @@ import           Miso.FFI
 -- @
 --
 getJSON
-  :: FromJSON result
+  :: (FromJSON body, FromJSVal error)
   => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
   -- ^ headers
-  -> (result -> action)
+  -> (Response body -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getJSON url headers successful errorful =
+getJSON url headers_ successful errorful =
   withSink $ \sink ->
     FFI.fetch url "GET" Nothing jsonHeaders
-      (\e -> 
-         fromJSON <$> fromJSValUnchecked e >>= \case
-          Error decodeFailure ->
-            sink $ errorful (ms decodeFailure)
-          Success result -> do
-            sink $ successful result)
+      (handleJSON sink)
       (sink . errorful)
       "json" -- dmj: expected return type
   where
-    jsonHeaders = biasHeaders headers [accept =: applicationJSON]
+    jsonHeaders = biasHeaders headers_ [accept =: applicationJSON]
+    handleJSON sink resp@Response {..} =
+      fmap fromJSON <$> fromJSVal body >>= \case
+        Nothing -> do
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just "Not a valid JSON object"
+            , ..
+            }
+        Just (Success result) -> 
+          sink $ successful resp { body = result }
+        Just (Error msg) -> do 
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }
 ----------------------------------------------------------------------------
 postJSON
-  :: ToJSON body
+  :: (FromJSVal error, ToJSON body)
   => MisoString
   -- ^ url
   -> body
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postJSON url body headers successful errorful =
+postJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body
-    FFI.fetch url "POST" (Just bodyVal) jsonHeaders
-      (const (sink successful))
+    bodyVal <- FFI.jsonStringify body_
+    FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    jsonHeaders = biasHeaders headers [contentType =: applicationJSON]
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
 putJSON
-  :: ToJSON body
+  :: (FromJSVal error, ToJSON body)
   => MisoString
   -- ^ url
   -> body
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putJSON url body headers successful errorful =
+putJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body
-    FFI.fetch url "PUT" (Just bodyVal) jsonHeaders
-      (const (sink successful))
+    bodyVal <- FFI.jsonStringify body_
+    FFI.fetch url "PUT" (Just bodyVal) jsonHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    jsonHeaders = biasHeaders headers [contentType =: applicationJSON]
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
 getText
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> (MisoString -> action)
+  -- ^ headers_
+  -> (Response MisoString -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getText url headers successful errorful =
+getText url headers_ successful errorful =
   withSink $ \sink ->
-    FFI.fetch url "GET" Nothing textHeaders
-      (sink . successful <=< fromJSValUnchecked)
+    FFI.fetch url "GET" Nothing textHeaders_
+      (sink . successful)
       (sink . errorful)
       "text" -- dmj: expected return type
   where
-    textHeaders = biasHeaders headers [accept =: applicationText]
+    textHeaders_ = biasHeaders headers_ [accept =: textPlain]
 ----------------------------------------------------------------------------
 postText
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> MisoString
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postText url body headers successful errorful =
+postText url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body
-    FFI.fetch url "POST" (Just bodyVal) textHeaders
-      (const (sink successful))
+    bodyVal <- FFI.jsonStringify body_
+    FFI.fetch url "POST" (Just bodyVal) textHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    textHeaders = biasHeaders headers [contentType =: applicationText]
+    textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
 putText
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> MisoString
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putText url body headers successful errorful =
+putText url imageBody headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) textHeaders
-      (const (sink successful))
+    body_ <- toJSVal imageBody
+    FFI.fetch url "PUT" (Just body_) textHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    textHeaders = biasHeaders headers [contentType =: applicationText]
+    textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
 getBlob
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> (Blob -> action)
+  -- ^ headers_
+  -> (Response Blob -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getBlob url headers successful errorful =
+getBlob url headers_ successful errorful =
   withSink $ \sink ->
-    FFI.fetch url "GET" Nothing blobHeaders
-      (sink . successful <=< fromJSValUnchecked)
+    FFI.fetch url "GET" Nothing blobHeaders_
+      (sink . successful)
       (sink . errorful)
       "blob" -- dmj: expected return type
   where
-    blobHeaders = biasHeaders headers [accept =: octetStream]
+    blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
 postBlob
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Blob
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postBlob url body headers successful errorful =
+postBlob url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- toJSVal body
-    FFI.fetch url "POST" (Just bodyVal) blobHeaders
-      (const (sink successful))
+    bodyVal <- toJSVal body_
+    FFI.fetch url "POST" (Just bodyVal) blobHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    blobHeaders = biasHeaders headers [contentType =: octetStream]
+    blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 putBlob
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Blob
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putBlob url body headers successful errorful =
+putBlob url imageBody headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) blobHeaders
-      (const (sink successful))
+    body_ <- toJSVal imageBody
+    FFI.fetch url "PUT" (Just body_) blobHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    blobHeaders = biasHeaders headers [contentType =: octetStream]
+    blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 getFormData
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> (FormData -> action)
+  -- ^ headers_
+  -> (Response FormData -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getFormData url headers successful errorful =
+getFormData url headers_ successful errorful =
   withSink $ \sink ->
-    FFI.fetch url "GET" Nothing formDataHeaders
-      (sink . successful <=< fromJSValUnchecked)
+    FFI.fetch url "GET" Nothing formDataHeaders_
+      (sink . successful)
       (sink . errorful)
       "formData" -- dmj: expected return type
   where
-    formDataHeaders = biasHeaders headers [accept =: formData]
+    formDataHeaders_ = biasHeaders headers_ [accept =: formData]
 ----------------------------------------------------------------------------
 postFormData
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> FormData
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postFormData url body headers successful errorful =
+postFormData url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- toJSVal body
-    FFI.fetch url "POST" (Just bodyVal) formDataHeaders
-      (const (sink successful))
+    bodyVal <- toJSVal body_
+    FFI.fetch url "POST" (Just bodyVal) formDataHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    formDataHeaders = biasHeaders headers [contentType =: formData]
+    formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
 putFormData
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> FormData
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error  -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putFormData url body headers successful errorful =
+putFormData url imageBody headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) formDataHeaders
-      (const (sink successful))
+    body_ <- toJSVal imageBody
+    FFI.fetch url "PUT" (Just body_) formDataHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    formDataHeaders = biasHeaders headers [contentType =: formData]
+    formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
 getArrayBuffer
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> (ArrayBuffer -> action)
+  -- ^ headers_
+  -> (Response ArrayBuffer -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getArrayBuffer url headers successful errorful =
+getArrayBuffer url headers_ successful errorful =
   withSink $ \sink ->
-    FFI.fetch url "GET" Nothing arrayBufferHeaders
-      (sink . successful <=< fromJSValUnchecked)
+    FFI.fetch url "GET" Nothing arrayBufferHeaders_
+      (sink . successful)
       (sink . errorful)
       "arrayBuffer" -- dmj: expected return type
   where
-    arrayBufferHeaders = biasHeaders headers [accept =: octetStream]
+    arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
 postArrayBuffer
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> ArrayBuffer
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postArrayBuffer url body headers successful errorful =
+postArrayBuffer url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- toJSVal body
-    FFI.fetch url "POST" (Just bodyVal) arrayBufferHeaders
-      (const (sink successful))
+    bodyVal <- toJSVal body_
+    FFI.fetch url "POST" (Just bodyVal) arrayBufferHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    arrayBufferHeaders = biasHeaders headers [contentType =: octetStream]
+    arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 putArrayBuffer
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> ArrayBuffer
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putArrayBuffer url body headers successful errorful =
+putArrayBuffer url arrayBuffer_ headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) arrayBufferHeaders
-      (const (sink successful))
+    body_ <- toJSVal arrayBuffer_
+    FFI.fetch url "PUT" (Just body_) arrayBufferHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    arrayBufferHeaders = biasHeaders headers [contentType =: octetStream]
+    arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 getUint8Array
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> (Uint8Array -> action)
+  -- ^ headers_
+  -> (Response Uint8Array -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-getUint8Array url headers successful errorful =
+getUint8Array url headers_ successful errorful =
   withSink $ \sink ->
-    FFI.fetch url "GET" Nothing uint8ArrayHeaders
-      (sink . successful <=< fromJSValUnchecked)
+    FFI.fetch url "GET" Nothing uint8ArrayHeaders_
+      (sink . successful)
       (sink . errorful)
       "bytes" -- dmj: expected return type
   where
-    uint8ArrayHeaders = biasHeaders headers [accept =: octetStream]
+    uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
 postUint8Array
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Uint8Array
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postUint8Array url body headers successful errorful =
+postUint8Array url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- toJSVal body
-    FFI.fetch url "POST" (Just bodyVal) uint8ArrayHeaders
-      (const (sink successful))
+    bodyVal <- toJSVal body_
+    FFI.fetch url "POST" (Just bodyVal) uint8ArrayHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    uint8ArrayHeaders = biasHeaders headers [contentType =: octetStream]
+    uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 putUint8Array
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Uint8Array
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putUint8Array url body headers successful errorful =
+putUint8Array url uint8Array_ headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) uint8ArrayHeaders
-      (const (sink successful))
+    body_ <- toJSVal uint8Array_
+    FFI.fetch url "PUT" (Just body_) uint8ArrayHeaders_
+      (sink . successful)
       (sink . errorful)
       "none"
   where
-    uint8ArrayHeaders = biasHeaders headers [contentType =: octetStream]
+    uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
 postImage
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Image
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-postImage url body headers successful errorful =
+postImage url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- toJSVal body
-    FFI.fetch url "POST" (Just bodyVal) headers
-      (const (sink successful))
+    bodyVal <- toJSVal body_
+    FFI.fetch url "POST" (Just bodyVal) headers_
+      (sink . successful)
       (sink . errorful)
       "none"
 ----------------------------------------------------------------------------
 putImage
-  :: MisoString
+  :: FromJSVal error
+  => MisoString
   -- ^ url
   -> Image
   -- ^ Body
   -> [(MisoString, MisoString)]
-  -- ^ headers
-  -> action
+  -- ^ headers_
+  -> (Response () -> action)
   -- ^ successful callback
-  -> (MisoString -> action)
+  -> (Response error -> action)
   -- ^ errorful callback
   -> Effect parent model action
-putImage url body headers successful errorful =
+putImage url imageBody headers_ successful errorful =
   withSink $ \sink -> do
-    body_ <- toJSVal body
-    FFI.fetch url "PUT" (Just body_) headers
-      (const (sink successful))
+    body_ <- toJSVal imageBody
+    FFI.fetch url "PUT" (Just body_) headers_
+      (sink . successful)
       (sink . errorful)
       "none"
 ----------------------------------------------------------------------------
@@ -521,8 +557,8 @@ contentType = "Content-Type"
 applicationJSON :: MisoString
 applicationJSON = "application/json"
 ----------------------------------------------------------------------------
-applicationText :: MisoString
-applicationText = "text/plain"
+textPlain :: MisoString
+textPlain = "text/plain"
 ----------------------------------------------------------------------------
 octetStream :: MisoString
 octetStream = "application/octect-stream"

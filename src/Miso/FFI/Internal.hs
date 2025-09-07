@@ -1,9 +1,13 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
+-----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -130,8 +134,14 @@ module Miso.FFI.Internal
    -- * FileReader
    , FileReader (..)
    , newFileReader
+   -- * fetch API
+   , Response (..)
    ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (foldM)
+import qualified Data.Map.Strict as M
+import           Data.Map.Strict (Map)
+import           Data.Maybe
 import           Control.Concurrent (ThreadId, forkIO)
 import           Control.Monad (void, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
@@ -563,7 +573,8 @@ addStyleSheet url = do
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
 fetch
-  :: MisoString
+  :: (FromJSVal success, FromJSVal error)
+  => MisoString
   -- ^ url
   -> MisoString
   -- ^ method
@@ -571,15 +582,15 @@ fetch
   -- ^ body
   -> [(MisoString, MisoString)]
   -- ^ headers
-  -> (JSVal -> JSM ())
+  -> (Response success -> JSM ())
   -- ^ successful callback
-  -> (MisoString -> JSM ())
+  -> (Response error -> JSM ())
   -- ^ errorful callback
   -> MisoString
   -- ^ content type
   -> JSM ()
-fetch url method maybeBody headers successful errorful type_ = do
-  successful_ <- toJSVal =<< asyncCallback1 successful
+fetch url method maybeBody requestHeaders successful errorful type_ = do
+  successful_ <- toJSVal =<< asyncCallback1 (successful <=< fromJSValUnchecked)
   errorful_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
   moduleMiso <- jsg "miso"
   url_ <- toJSVal url
@@ -587,7 +598,7 @@ fetch url method maybeBody headers successful errorful type_ = do
   body_ <- toJSVal maybeBody
   Object headers_ <- do
     o <- create
-    forM_ headers $ \(k,v) -> set k v o
+    forM_ requestHeaders $ \(k,v) -> set k v o
     pure o
   typ <- toJSVal type_
   void $ moduleMiso # "fetchCore" $
@@ -885,4 +896,30 @@ newFileReader :: JSM FileReader
 newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
+-----------------------------------------------------------------------------
+data Response body
+  = Response
+  { status :: Maybe Int
+  , headers :: Map MisoString MisoString
+  , errorMessage :: Maybe MisoString
+  , body :: body
+  }
+-----------------------------------------------------------------------------
+instance Functor Response where
+  fmap f response@Response { body } = response { body = f body }
+-----------------------------------------------------------------------------
+instance FromJSVal body => FromJSVal (Response body) where
+  fromJSVal o = do
+    status_ <- fromJSVal =<< getProp (ms "status") (Object o)
+    headers_ <- fromJSVal =<< getProp (ms "headers") (Object o)
+    errorMessage_ <- fromJSVal =<< getProp (ms "error") (Object o)
+    body_ <- fromJSVal =<< getProp (ms "body") (Object o)
+    pure (Response <$> status_ <*> headers_ <*> errorMessage_ <*> body_)
+-----------------------------------------------------------------------------
+instance FromJSVal (Map MisoString MisoString) where
+  fromJSVal o = pure <$> do foldM populate M.empty =<< listProps (Object o)
+    where
+      populate m k = do
+        v <- fromJSValUnchecked =<< getProp k (Object o)
+        pure (M.insert k v m)
 -----------------------------------------------------------------------------
