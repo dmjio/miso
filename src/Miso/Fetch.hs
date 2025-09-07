@@ -56,6 +56,7 @@ module Miso.Fetch
   , formData
     -- ** Types
   , Body
+  , Response (..)
     -- ** Internal
   , fetch
   ) where
