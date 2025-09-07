@@ -1,10 +1,13 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
+-----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
@@ -135,6 +138,10 @@ module Miso.FFI.Internal
    , Response (..)
    ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (foldM)
+import qualified Data.Map.Strict as M
+import           Data.Map.Strict (Map)
+import           Data.Maybe
 import           Control.Concurrent (ThreadId, forkIO)
 import           Control.Monad (void, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
@@ -893,7 +900,7 @@ newFileReader = do
 data Response body
   = Response
   { status :: Maybe Int
-  , headers :: [(MisoString, MisoString)]
+  , headers :: Map MisoString MisoString
   , errorMessage :: Maybe MisoString
   , body :: body
   }
@@ -908,4 +915,11 @@ instance FromJSVal body => FromJSVal (Response body) where
     errorMessage_ <- fromJSVal =<< getProp (ms "error") (Object o)
     body_ <- fromJSVal =<< getProp (ms "body") (Object o)
     pure (Response <$> status_ <*> headers_ <*> errorMessage_ <*> body_)
+-----------------------------------------------------------------------------
+instance FromJSVal (Map MisoString MisoString) where
+  fromJSVal o = pure <$> do foldM populate M.empty =<< listProps (Object o)
+    where
+      populate m k = do
+        v <- fromJSValUnchecked =<< getProp k (Object o)
+        pure (M.insert k v m)
 -----------------------------------------------------------------------------
