@@ -128,6 +128,10 @@ initialize Component {..} getView = do
   componentDiffs <- liftIO newMailbox
   (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
+  componentParentId <- do
+    FFI.getParentComponentId componentDOMRef >>= \case
+      Nothing -> pure rootComponentId
+      Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -141,7 +145,7 @@ initialize Component {..} getView = do
       currentModel <- liftIO (readTVarIO componentModelCurrent)
       newModel <- liftIO (readTVarIO componentModelNew)
       let
-        info = ComponentInfo componentId componentDOMRef
+        info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) newModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
@@ -177,14 +181,14 @@ initialize Component {..} getView = do
 
   componentParentToChildThreadId <-
     synchronizeParentToChild
-      componentDOMRef
+      componentParentId
       componentModelNew
       parentToChild
       serve
 
   componentChildToParentThreadId <-
     synchronizeChildToParent
-      componentDOMRef
+      componentParentId
       componentModelNew
       componentDiffs
       childToParent
@@ -200,32 +204,27 @@ initialize Component {..} getView = do
   pure vcomp
 -----------------------------------------------------------------------------
 synchronizeChildToParent
-  :: DOMRef
+  :: ComponentId
   -> TVar model
   -> Mailbox
   -> [ Binding parent model ]
   -> JSM (Maybe ThreadId)
 synchronizeChildToParent _ _ _ [] = pure Nothing
-synchronizeChildToParent componentDOMRef componentModelNew componentDiffs bindings = do
+synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
-  FFI.getParentComponentId componentDOMRef >>= \case
-    Nothing ->
-      -- dmj: impossible case, parent always mounted
+  IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+    Nothing -> do
+      -- dmj: another impossible case, parent always mounted in children
       pure Nothing
-    Just parentId -> do
-      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> do
-          -- dmj: another impossible case, parent always mounted in children
-          pure Nothing
-        Just parentComponentState -> do
-          bindProperty parentComponentState          
-          -- dmj: ^ parent assumes child state on initialization
-          fmap Just $ FFI.forkJSM $ do
-            forever $ do
-              _ <- liftIO (readMail =<< copyMailbox componentDiffs)
-              -- dmj: ^ listen on child this time
-              bindProperty parentComponentState
+    Just parentComponentState -> do
+      bindProperty parentComponentState          
+      -- dmj: ^ parent assumes child state on initialization
+      fmap Just $ FFI.forkJSM $ do
+        forever $ do
+          _ <- liftIO (readMail =<< copyMailbox componentDiffs)
+          -- dmj: ^ listen on child this time
+          bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
       forM_ bindings (bindChildToParent parentComponentState componentModelNew)
@@ -254,30 +253,25 @@ bindChildToParent ComponentState {..} childRef = \case
       modifyTVar' componentModelNew newParent
 -----------------------------------------------------------------------------
 synchronizeParentToChild
-  :: DOMRef
+  :: ComponentId
   -> TVar model
   -> [ Binding type_ model ]
   -> IO ()
   -> JSM (Maybe ThreadId)
 synchronizeParentToChild _ _ [] _ = pure Nothing
-synchronizeParentToChild componentDOMRef componentModel_ bindings serve = do
+synchronizeParentToChild parentId componentModel_ bindings serve = do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
-  FFI.getParentComponentId componentDOMRef >>= \case
-    Nothing ->
-      -- dmj: impossible case, parent always mounted
+  IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+    Nothing -> do
+      -- dmj: another impossible case, parent always mounted
       pure Nothing
-    Just parentId -> do
-      IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> do
-          -- dmj: another impossible case, parent always mounted
-          pure Nothing
-        Just parentComponentState -> do
-          bindProperty parentComponentState
-          -- dmj: ^ assume parent state on initialization
-          fmap Just $ FFI.forkJSM $ forever $ do
-            Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
-            bindProperty parentComponentState
+    Just parentComponentState -> do
+      bindProperty parentComponentState
+      -- dmj: ^ assume parent state on initialization
+      fmap Just $ FFI.forkJSM $ forever $ do
+        Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
+        bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
       forM_ bindings (bindParentToChild parentComponentState componentModel_)
@@ -316,6 +310,7 @@ data Hydrate
 data ComponentState model action
   = ComponentState
   { componentId              :: ComponentId
+  , componentParentId        :: ComponentId
   , componentSubThreads      :: IORef (Map MisoString ThreadId)
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
@@ -596,9 +591,14 @@ freshSubId = do
   x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
   pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
+-- | This is used to demarcate the ROOT of a page. This ID will never
+-- exist in the `components` map.
+rootComponentId :: ComponentId
+rootComponentId = 0
+-----------------------------------------------------------------------------
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
-componentIds = unsafePerformIO $ liftIO (newIORef 0)
+componentIds = unsafePerformIO $ liftIO (newIORef 1)
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
@@ -667,7 +667,7 @@ drain
   -> JSM ()
 drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-  let info = ComponentInfo componentId componentDOMRef
+  let info = ComponentInfo componentId componentParentId componentDOMRef
   if S.null actions then pure () else go info actions
   unloadScripts cs
       where
@@ -945,18 +945,15 @@ mailParent
   => message
   -> Effect parent model action
 mailParent message = do
-  domRef <- asks _componentDOMRef
+  vcompId <- asks _componentParentId
   io_ $ do
-    FFI.getParentComponentId domRef >>= \case
+    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing ->
+        -- dmj: TODO add DebugMail here, if '0' then you're at the root
+        -- w/o a parent, so no message can be sent.
         pure ()
-      Just vcompId ->
-        IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
-          Nothing ->
-            -- dmj: TODO add DebugMail here
-            pure ()
-          Just ComponentState {..} ->
-            liftIO $ sendMail componentMailbox (toJSON message)
+      Just ComponentState {..} ->
+        liftIO $ sendMail componentMailbox (toJSON message)
 ----------------------------------------------------------------------------
 -- | Helper function for processing 'Mail' from 'mail'.
 --
@@ -992,15 +989,11 @@ parent
 parent successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
-    FFI.getParentComponentId _componentDOMRef >>= \case
-      Nothing ->
-        sink errorful
-      Just parentId -> do
-        IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-          Nothing -> sink errorful
-          Just ComponentState {..} -> do
-            model <- liftIO (readTVarIO componentModelCurrent)
-            sink (successful model)
+    IM.lookup _componentParentId <$> liftIO (readIORef components) >>= \case
+      Nothing -> sink errorful
+      Just ComponentState {..} -> do
+        model <- liftIO (readTVarIO componentModelCurrent)
+        sink (successful model)
 -----------------------------------------------------------------------------
 -- | Sends a message to all @Component@ 'mailbox', excluding oneself.
 --

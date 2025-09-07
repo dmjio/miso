@@ -64,7 +64,9 @@ import           Miso.FFI.Internal (JSM)
 -----------------------------------------------------------------------------
 mkComponentInfo
   :: ComponentId
-  -- ^ Component ID
+  -- ^ Component Id
+  -> ComponentId
+  -- ^ Parent Component Id
   -> DOMRef
   -- ^ DOM Reference
   -> ComponentInfo parent
@@ -76,6 +78,7 @@ mkComponentInfo = ComponentInfo
 data ComponentInfo parent
   = ComponentInfo
   { _componentId :: ComponentId
+  , _componentParentId :: ComponentId
   , _componentDOMRef :: DOMRef
   }
 -----------------------------------------------------------------------------
