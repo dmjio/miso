@@ -61,13 +61,12 @@ module Miso.Fetch
   , fetch
   ) where
 ----------------------------------------------------------------------------
-import           Control.Monad ((<=<))
 import           Data.Aeson
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
 ----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Effect (Effect, withSink, Sink)
+import           Miso.Effect (Effect, withSink)
 import           Miso.String (MisoString, ms)
 import           Miso.Util ((=:))
 import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch)
