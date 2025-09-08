@@ -81,6 +81,10 @@ fromMisoString s =
 ms :: ToMisoString str => str -> MisoString
 ms = toMisoString
 ----------------------------------------------------------------------------
+instance ToMisoString a => ToMisoString (Maybe a) where
+  toMisoString Nothing = mempty
+  toMisoString (Just x) = toMisoString x
+----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
 ----------------------------------------------------------------------------
