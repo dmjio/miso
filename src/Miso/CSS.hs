@@ -47,6 +47,7 @@ module Miso.CSS
   , borderBottomRightRadius
   , borderBottomStyle
   , borderBottomWidth
+  , borderCollapse
   , borderColor
   , borderEndEndRadius
   , borderEndStartRadius
@@ -561,6 +562,11 @@ borderBottomStyle x = "border-bottom-style" =: x
 --
 borderBottomWidth :: MisoString -> Style
 borderBottomWidth x = "border-bottom-width" =: x
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-collapse
+--
+borderCollapse :: MisoString -> Style
+borderCollapse x = "border-collapse" =: x
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/CSS/border-color
 --
