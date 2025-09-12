@@ -85,6 +85,9 @@ instance ToMisoString a => ToMisoString (Maybe a) where
   toMisoString Nothing = mempty
   toMisoString (Just x) = toMisoString x
 ----------------------------------------------------------------------------
+instance ToMisoString Char where
+  toMisoString = JS.singleton
+----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
 ----------------------------------------------------------------------------
