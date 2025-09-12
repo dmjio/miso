@@ -516,28 +516,60 @@ uriLexer = do
               CaptureOrPathToken <$> chars
             fragmentLexer = do
               void (L.char '#')
-              FragmentToken <$> chars
+              FragmentToken <$> fragment
             queryFlagLexer = do
               void (L.char '?')
-              QueryFlagToken <$> chars
+              QueryFlagToken <$> query
             queryParamLexer = QueryParamTokens <$> do
               void (L.char '?')
               sepBy (L.char '&') $ do
-                key <- chars
+                key <- query
                 void (L.char '=')
-                value <- chars
+                value <- query
                 pure (key, value)
 -----------------------------------------------------------------------------
 chars :: Lexer MisoString
-chars = fmap ms <$> some $ do
+chars = MS.concat <$> some pchar
+-----------------------------------------------------------------------------
+pchar :: Lexer MisoString
+pchar = unreserved <|> pctEncoded <|> subDelims <|> L.string ":" <|> L.string "@"
+-----------------------------------------------------------------------------
+fragment :: Lexer MisoString
+fragment = query
+-----------------------------------------------------------------------------
+query :: Lexer MisoString
+query = foldr (<|>) empty
+  [ MS.concat <$> some pchar
+  , L.string "/"
+  , L.string "?"
+  ]
+-----------------------------------------------------------------------------
+subDelims :: Lexer MisoString
+subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$&'()*+,;=" :: String)
+-----------------------------------------------------------------------------
+unreserved :: Lexer MisoString
+unreserved = ms <$> do
   L.satisfy $ \x -> or
     [ isAlphaNum x
     , x == '-'
+    , x == '.'
     , x == '_'
     , x == '~'
-    , x == '%'
-    , x == '.'
     ]
+-----------------------------------------------------------------------------
+pctEncoded :: Lexer MisoString
+pctEncoded = do
+  pct <- L.char '%'
+  d1 <- hexDig
+  d2 <- hexDig
+  pure (ms pct <> ms d1 <> ms d2)
+-----------------------------------------------------------------------------
+hexDig :: Lexer Char
+hexDig = L.satisfy $ \x -> or
+  [ x `elem` [ '0' .. '9' ]
+  , x `elem` [ 'a' .. 'f' ]
+  , x `elem` [ 'A' .. 'F' ]
+  ]
 -----------------------------------------------------------------------------
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
