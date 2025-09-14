@@ -86,6 +86,7 @@ module Miso.FFI.Internal
    , addScriptImportMap
    -- * XHR
    , fetch
+   , CONTENT_TYPE(..)
    , shouldSync
    -- * Drawing
    , requestAnimationFrame
@@ -586,7 +587,7 @@ fetch
   -- ^ successful callback
   -> (Response error -> JSM ())
   -- ^ errorful callback
-  -> MisoString
+  -> CONTENT_TYPE
   -- ^ content type
   -> JSM ()
 fetch url method maybeBody requestHeaders successful errorful type_ = do
@@ -610,6 +611,33 @@ fetch url method maybeBody requestHeaders successful errorful type_ = do
     , errorful_
     , typ
     ]
+-----------------------------------------------------------------------------
+data CONTENT_TYPE
+  = JSON
+  | ARRAY_BUFFER
+  | TEXT
+  | BLOB
+  | BYTES
+  | FORM_DATA
+  | NONE
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal CONTENT_TYPE where
+  toJSVal = \case
+    JSON ->
+      toJSVal "json"
+    ARRAY_BUFFER ->
+      toJSVal "arrayBuffer"
+    TEXT ->
+      toJSVal "text"
+    BLOB ->
+      toJSVal "blob"
+    BYTES ->
+      toJSVal "bytes"
+    FORM_DATA ->
+      toJSVal "formData"
+    NONE ->
+      toJSVal "none"
 -----------------------------------------------------------------------------
 -- | shouldSync
 --

@@ -57,6 +57,7 @@ module Miso.Fetch
     -- ** Types
   , Body
   , Response (..)
+  , CONTENT_TYPE (..)
     -- ** Internal
   , fetch
   ) where
@@ -69,7 +70,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink)
 import           Miso.String (MisoString, ms)
 import           Miso.Util ((=:))
-import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch)
+import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch, CONTENT_TYPE(..))
 ----------------------------------------------------------------------------
 -- | See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
@@ -105,7 +106,7 @@ getJSON url headers_ successful errorful =
     FFI.fetch url "GET" Nothing jsonHeaders
       (handleJSON sink)
       (sink . errorful)
-      "json" -- dmj: expected return type
+      JSON -- dmj: expected return type
   where
     jsonHeaders = biasHeaders headers_ [accept =: applicationJSON]
     handleJSON sink resp@Response {..} =
@@ -146,7 +147,7 @@ postJSON url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
@@ -169,7 +170,7 @@ putJSON url body_ headers_ successful errorful =
     FFI.fetch url "PUT" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
@@ -189,7 +190,7 @@ getText url headers_ successful errorful =
     FFI.fetch url "GET" Nothing textHeaders_
       (sink . successful)
       (sink . errorful)
-      "text" -- dmj: expected return type
+      TEXT -- dmj: expected return type
   where
     textHeaders_ = biasHeaders headers_ [accept =: textPlain]
 ----------------------------------------------------------------------------
@@ -212,7 +213,7 @@ postText url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) textHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
@@ -235,7 +236,7 @@ putText url imageBody headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) textHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
@@ -255,7 +256,7 @@ getBlob url headers_ successful errorful =
     FFI.fetch url "GET" Nothing blobHeaders_
       (sink . successful)
       (sink . errorful)
-      "blob" -- dmj: expected return type
+      BLOB -- dmj: expected return type
   where
     blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
@@ -278,7 +279,7 @@ postBlob url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) blobHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -301,7 +302,7 @@ putBlob url imageBody headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) blobHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -321,7 +322,7 @@ getFormData url headers_ successful errorful =
     FFI.fetch url "GET" Nothing formDataHeaders_
       (sink . successful)
       (sink . errorful)
-      "formData" -- dmj: expected return type
+      FORM_DATA -- dmj: expected return type
   where
     formDataHeaders_ = biasHeaders headers_ [accept =: formData]
 ----------------------------------------------------------------------------
@@ -344,7 +345,7 @@ postFormData url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) formDataHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
@@ -367,7 +368,7 @@ putFormData url imageBody headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) formDataHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
@@ -387,7 +388,7 @@ getArrayBuffer url headers_ successful errorful =
     FFI.fetch url "GET" Nothing arrayBufferHeaders_
       (sink . successful)
       (sink . errorful)
-      "arrayBuffer" -- dmj: expected return type
+      ARRAY_BUFFER -- dmj: expected return type
   where
     arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
@@ -410,7 +411,7 @@ postArrayBuffer url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) arrayBufferHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -433,7 +434,7 @@ putArrayBuffer url arrayBuffer_ headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) arrayBufferHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -453,7 +454,7 @@ getUint8Array url headers_ successful errorful =
     FFI.fetch url "GET" Nothing uint8ArrayHeaders_
       (sink . successful)
       (sink . errorful)
-      "bytes" -- dmj: expected return type
+      BYTES -- expected return type
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
@@ -476,7 +477,7 @@ postUint8Array url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) uint8ArrayHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -499,7 +500,7 @@ putUint8Array url uint8Array_ headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) uint8ArrayHeaders_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
@@ -522,7 +523,7 @@ postImage url body_ headers_ successful errorful =
     FFI.fetch url "POST" (Just bodyVal) headers_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
 ----------------------------------------------------------------------------
 putImage
   :: FromJSVal error
@@ -543,7 +544,7 @@ putImage url imageBody headers_ successful errorful =
     FFI.fetch url "PUT" (Just body_) headers_
       (sink . successful)
       (sink . errorful)
-      "none"
+      NONE
 ----------------------------------------------------------------------------
 type Body = JSVal
 ----------------------------------------------------------------------------
