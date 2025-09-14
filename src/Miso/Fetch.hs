@@ -57,6 +57,7 @@ module Miso.Fetch
     -- ** Types
   , Body
   , Response (..)
+  , CONTENT_TYPE (..)
     -- ** Internal
   , fetch
   ) where
