@@ -223,9 +223,9 @@ function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): bo
             break;
           case 'vcomp':
             if (domChild.nodeType !== 1) return false;
-            vdomChild['mount'](domChild, (componentId: ComponentId, component: VComp) => {
+            vdomChild['domRef'] = domChild as HTMLElement;
+            vdomChild['mount'](vdomChild['domRef'], (componentId: ComponentId, component: VComp) => {
               vdomChild['children'].push(component);
-              vdomChild['domRef'] = domChild as DOMRef;
               domChild['componentId'] = componentId;
               walk(logLevel, vdomChild, domChild, context);
             });
