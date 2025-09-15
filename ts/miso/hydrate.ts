@@ -1,5 +1,5 @@
 import { callCreated, populate } from './dom';
-import { Context, VTree, VComp, VNode, VText, DOMRef, ComponentId } from './types';
+import { Context, VTree, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
