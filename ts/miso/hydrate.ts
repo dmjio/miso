@@ -1,5 +1,5 @@
 import { callCreated, populate } from './dom';
-import { Context, VTree, VNode, VText, DOMRef } from './types';
+import { Context, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
@@ -192,6 +192,10 @@ function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): bo
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
   switch (vtree['type']) {
+    case 'vcomp':
+      (vtree as VComp)['domRef'] = node as HTMLElement;
+      callCreated(vtree, context);
+      break;
     case 'vtext':
       (vtree as VText)['domRef'] = node as Text;
       break;

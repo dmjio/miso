@@ -744,6 +744,10 @@ function check(result, vtree, context) {
 }
 function walk(logLevel, vtree, node, context) {
   switch (vtree["type"]) {
+    case "vcomp":
+      vtree["domRef"] = node;
+      callCreated(vtree, context);
+      break;
     case "vtext":
       vtree["domRef"] = node;
       break;
