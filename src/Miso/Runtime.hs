@@ -218,7 +218,7 @@ synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
       -- dmj: another impossible case, parent always mounted in children
       pure Nothing
     Just parentComponentState -> do
-      bindProperty parentComponentState          
+      bindProperty parentComponentState
       -- dmj: ^ parent assumes child state on initialization
       fmap Just $ FFI.forkJSM $ do
         forever $ do
@@ -656,7 +656,11 @@ drawComponent
 drawComponent hydrate mountElement Component {..} snk = do
   refs <- (++) <$> renderScripts scripts <*> renderStyles styles
   vtree <- runView hydrate (view model) snk logLevel events
-  when (hydrate == Draw) (diff Nothing (Just vtree) mountElement)
+  case hydrate of
+    Draw ->
+      diff Nothing (Just vtree) mountElement
+    Hydrate ->
+      FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mountElement =<< toJSVal vtree
   ref <- liftIO (newIORef vtree)
   pure (refs, mountElement, ref)
 -----------------------------------------------------------------------------
