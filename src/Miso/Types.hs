@@ -130,6 +130,13 @@ data Component parent model action
   --
   -- @since 1.9.0.0
   , bindings :: [ Binding parent model ]
+  -- ^ Use data binding between the parent model and Component model
+  --
+  -- @since 1.9.0.0
+  , shadowRoot :: Bool
+  -- ^ Use ShadowRoot for DOM encapsulation of events and styling
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for @Component@, e.g "body"
@@ -192,6 +199,7 @@ component m u v = Component
   , initialAction = Nothing
   , mailbox = const Nothing
   , bindings = []
+  , shadowRoot = False
   }
 -----------------------------------------------------------------------------
 -- | A top-level 'Component' can have no 'parent'

@@ -135,8 +135,10 @@ module Miso.FFI.Internal
    -- * FileReader
    , FileReader (..)
    , newFileReader
-   -- * fetch API
+   -- * Fetch API
    , Response (..)
+   -- * Shadow
+   , attachShadow
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (foldM)
@@ -725,6 +727,17 @@ nextSibling domRef = domRef ! "nextSibling"
 -- @since 1.9.0.0
 previousSibling :: JSVal -> JSM JSVal
 previousSibling domRef = domRef ! "previousSibling"
+-----------------------------------------------------------------------------
+-- | Calls 'node.attachShadow({ mode : \"open\" })'
+--
+-- <https://developer.mozilla.org/en-US/docs/Web/API/Element/attachShadow>
+--
+-- @since 1.9.0.0
+attachShadow :: JSVal -> JSM JSVal
+attachShadow domRef = do
+  args <- create
+  set (ms "mode") "open" args
+  (domRef # "attachShadow") [args]
 -----------------------------------------------------------------------------
 -- | When working with /<input>/ of type="file", this is useful for
 -- extracting out the selected files.
