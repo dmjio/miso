@@ -652,7 +652,7 @@ drawComponent
   -> DOMRef
   -> Component parent model action
   -> Sink action
-  -> JSM ([DOMRef], JSVal, IORef VTree)
+  -> JSM ([DOMRef], DOMRef, IORef VTree)
 drawComponent hydrate mountElement Component {..} snk = do
   refs <- (++) <$> renderScripts scripts <*> renderStyles styles
   vtree <- runView hydrate (view model) snk logLevel events
@@ -825,7 +825,7 @@ registerComponent componentState = liftIO
 -- Meant for development purposes
 -- Appends CSS to <head>
 --
-renderStyles :: [CSS] -> JSM [JSVal]
+renderStyles :: [CSS] -> JSM [DOMRef]
 renderStyles styles =
   forM styles $ \case
     Href url -> FFI.addStyleSheet url
@@ -837,7 +837,7 @@ renderStyles styles =
 -- Meant for development purposes
 -- Appends JS to <head>
 --
-renderScripts :: [JS] -> JSM [JSVal]
+renderScripts :: [JS] -> JSM [DOMRef]
 renderScripts scripts =
   forM scripts $ \case
     Src src ->
