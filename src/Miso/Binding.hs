@@ -35,7 +35,7 @@ module Miso.Binding
 import Data.Functor.Const (Const(..))
 import Control.Monad.Identity (Identity(..))
 ----------------------------------------------------------------------------
-import Miso.Lens (Lens(..), Lens', Setter, Getter)
+import Miso.Lens (Lens(..), Lens')
 ----------------------------------------------------------------------------
 -- | Type used for React-like "props" functionality. This is used to
 -- to bind parent model changes to the child model, or vice versa.
@@ -63,9 +63,9 @@ import Miso.Lens (Lens(..), Lens', Setter, Getter)
 --
 -- @since 1.9.0.0
 data Binding parent child
-  = forall field . ParentToChild (Getter parent field) (Setter child field)
-  | forall field . ChildToParent (Setter parent field) (Getter child field)
-  | forall field . Bidirectional (Getter parent field) (Setter parent field) (Getter child field) (Setter child field)
+  = forall field . ParentToChild (parent -> field) (field -> child -> child)
+  | forall field . ChildToParent (field -> parent -> parent) (child -> field)
+  | forall field . Bidirectional (parent -> field) (field -> parent -> parent) (child -> field) (field -> child -> child)
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a parent field to a child field
 --
