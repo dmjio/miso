@@ -583,7 +583,7 @@ For real-world examples of Haskell `miso` applications, see below.
 | **Audio**             | Audio examples                            | [Source](https://github.com/haskell-miso/miso-audio)          | [Demo](https://audio.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
 | **Video**             | Video examples                            | [Source](https://github.com/haskell-miso/miso-video)          | [Demo](https://video.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
 | **WebVR**             | WebVR examples                            | [Source](https://github.com/haskell-miso/miso-aframe)         | [Demo](https://aframe.haskell-miso.org/)        | [@dmjio](https://github.com/dmjio)    |
-| **FRP**             | Reactive examples                            | [Source](https://github.com/haskell-miso/miso-reactive)         | [Demo](https://reactive.haskell-miso.org/)        | [@dmjio](https://github.com/dmjio)    |
+| **Reactivity**             | Reactive examples                            | [Source](https://github.com/haskell-miso/miso-reactive)         | [Demo](https://reactive.haskell-miso.org/)        | [@dmjio](https://github.com/dmjio)    |
 
 
 ## Building examples
