@@ -599,11 +599,11 @@ See the [@HaskellMiso](https://github.com/haskell-miso) organization for all exa
 
 If you want to interact with an HTTP API, we recommend one of the following approaches:
 
-  1. For a simple JSON-based API, you can use Miso's `fetch` function.
+  1. For a simple JSON-based API, you can use Miso's [Fetch](https://haddocks.haskell-miso.org/miso/Miso-Fetch.html) module.
 
-  2. In more complex cases, you can define a [Servant](https://www.servant.dev/) API and automatically obtain client functions via `servant-client-js` (or any other `servant-client-core`-based backend).
+  2. In more complex cases, you can define a [Servant](https://www.servant.dev/) API and automatically obtain client functions via [servant-miso-client](https://github.com/haskell-miso/miso-servant-client).
 
-     The Fetch example ([Source](https://github.com/dmjio/miso/blob/master/examples/fetch/Main.hs), [Demo](https://fetch.haskell-miso.org/)) demonstrates the necessary ingredients. Make sure to add the following to your `cabal.project`:
+     The Fetch example ([Source](https://github.com/haskell-miso/miso-fetch), [Demo](https://fetch.haskell-miso.org/)) demonstrates the necessary ingredients. Make sure to add the following to your `cabal.project`:
 
      ```cabal
      source-repository-package
