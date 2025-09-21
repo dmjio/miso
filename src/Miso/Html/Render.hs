@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE LambdaCase            #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Render
@@ -24,6 +25,7 @@ import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -55,9 +57,23 @@ intercalate sep (x:xs) =
   , intercalate sep xs
   ]
 ----------------------------------------------------------------------------
+-- |
+-- HTML-encodes the given text.
+--
+-- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
+-- &lt;a href=&quot;&quot;&gt;
+htmlEncode :: MisoString -> MisoString
+htmlEncode = MS.concatMap $ \case
+  '<' -> "&lt;"
+  '>' -> "&gt;"
+  '&' -> "&amp;"
+  '"' -> "&quot;"
+  '\'' -> "&#39;"
+  x -> MS.singleton x
+----------------------------------------------------------------------------
 renderBuilder :: View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString s
+renderBuilder (VText s)     = fromMisoString (htmlEncode s)
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat
