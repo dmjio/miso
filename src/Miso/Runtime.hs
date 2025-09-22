@@ -86,7 +86,6 @@ import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-import qualified JavaScript.Array as JSArray
 #ifndef GHCJS_BOTH
 import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
 #else
@@ -754,7 +753,7 @@ runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
 runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
-  vchildren <- ghcjsPure . jsval =<< procreate
+  vchildren <- toJSVal =<< procreate
   FFI.set "children" vchildren vnode
   sync <- FFI.shouldSync =<< toJSVal vnode
   FFI.set "shouldSync" sync vnode
@@ -764,7 +763,7 @@ runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
         kidsViews <- forM kids $ \kid -> do
           VTree (Object vtree) <- runView hydrate kid snk logLevel events
           pure vtree
-        ghcjsPure (JSArray.fromList kidsViews)
+        pure kidsViews
 runView _ (VText t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
