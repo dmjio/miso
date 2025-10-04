@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
@@ -111,12 +112,13 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp@Component {..} <- f <$> getURI
   initialize vcomp $ \snk -> do
-    refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-    VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     mount_ <- FFI.getBody
+    refs <- (++) <$> renderScripts mount_ scripts <*> renderStyles mount_ styles
+    VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount_ vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
-    pure (refs, mount_, viewRef)
+    shadow <- getShadowRoot mount_ shadowRoot
+    pure (refs, shadow, viewRef)
 -----------------------------------------------------------------------------
 -- | Synonym 'startApp' to 'startComponent'.
 startApp :: Eq model => App model action -> JSM ()
@@ -129,9 +131,9 @@ startApp = startComponent
 -- | Runs a miso application
 startComponent :: Eq model => Component ROOT model action -> JSM ()
 startComponent vcomp@Component { styles, scripts } =
-  withJS $ initComponent vcomp $ do
-     (++) <$> renderScripts scripts
-          <*> renderStyles styles
+  withJS $ initComponent vcomp $ \domRef ->
+     (++) <$> renderScripts domRef scripts
+          <*> renderStyles domRef styles
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
 -- The @MisoString@ specified here is the variable name of a globally-scoped
@@ -143,7 +145,7 @@ renderApp
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
-  -> JSM [DOMRef]
+  -> (DOMRef -> JSM [DOMRef])
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM ()
 renderApp renderer vcomp hooks = withJS $ do
@@ -155,17 +157,18 @@ initComponent
   :: Eq model
   => Component ROOT model action
   -- ^ Component application
-  -> JSM [DOMRef]
+  -> (DOMRef -> JSM [DOMRef])
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
   initialize vcomp $ \snk -> do
-    refs <- hooks
     vtree <- runView Draw (view model) snk logLevel events
     mount_ <- mountElement (getMountPoint mountPoint)
+    shadow <- getShadowRoot mount_ shadowRoot
+    refs <- hooks shadow
     diff Nothing (Just vtree) mount_
     viewRef <- liftIO (newIORef vtree)
-    pure (refs, mount_, viewRef)
+    pure (refs, shadow, viewRef)
 -----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

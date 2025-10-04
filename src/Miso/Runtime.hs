@@ -70,6 +70,8 @@ module Miso.Runtime
   , json
   , blob
   , arrayBuffer
+  -- ** ShadowRoot
+  , getShadowRoot
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
@@ -653,7 +655,7 @@ drawComponent
   -> Sink action
   -> JSM ([DOMRef], DOMRef, IORef VTree)
 drawComponent hydrate mountElement Component {..} snk = do
-  refs <- (++) <$> renderScripts scripts <*> renderStyles styles
+  refs <- (++) <$> renderScripts mountElement scripts <*> renderStyles mountElement styles
   vtree <- runView hydrate (view model) snk logLevel events
   case hydrate of
     Draw ->
@@ -715,6 +717,12 @@ killSubscribers componentId =
   mapM_ (flip unsubscribe_ componentId) =<<
     M.keys <$> liftIO (readIORef mailboxes)
 -----------------------------------------------------------------------------
+-- | If shadowRoot is enabled
+getShadowRoot :: DOMRef -> Bool -> JSM DOMRef
+getShadowRoot domRef = \case
+  True -> pure domRef
+  False -> FFI.attachShadow domRef
+-----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
 -- Component mounting should be synchronous.
@@ -729,13 +737,14 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
+runView hydrate (VComp ns tag attrs (SomeComponent comp)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
+      shadow <- getShadowRoot domRef (shadowRoot comp)
+      ComponentState {..} <- initialize comp (drawComponent hydrate shadow comp)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object domRef)
+      FFI.set "componentId" vcompId (Object shadow)
       void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
     FFI.syncCallback1 $ \domRef -> do
@@ -743,9 +752,9 @@ runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
-          unmount mountCallback app componentState
+          unmount mountCallback comp componentState
   vcomp <- createNode "vcomp" ns tag
-  setAttrs vcomp attrs snk (logLevel app) (events app)
+  setAttrs vcomp attrs snk (logLevel comp) (events comp)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
@@ -824,8 +833,8 @@ registerComponent componentState = liftIO
 -- Meant for development purposes
 -- Appends CSS to <head>
 --
-renderStyles :: [CSS] -> JSM [DOMRef]
-renderStyles styles =
+renderStyles :: DOMRef -> [CSS] -> JSM [DOMRef]
+renderStyles _ styles =
   forM styles $ \case
     Href url -> FFI.addStyleSheet url
     Style css -> FFI.addStyle css
@@ -836,8 +845,8 @@ renderStyles styles =
 -- Meant for development purposes
 -- Appends JS to <head>
 --
-renderScripts :: [JS] -> JSM [DOMRef]
-renderScripts scripts =
+renderScripts :: DOMRef -> [JS] -> JSM [DOMRef]
+renderScripts _ scripts =
   forM scripts $ \case
     Src src ->
       FFI.addSrc src
