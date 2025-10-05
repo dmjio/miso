@@ -213,8 +213,8 @@ for actions = withSink $ \sink -> actions >>= flip for_ sink
 --
 -- Example usage:
 --
--- > -- delays all a
--- > beforeAll $ liftIO $ threadDelay 100000 
+-- > -- delays connecting a websocket by 100000 microseconds
+-- > beforeAll (liftIO $ threadDelay 100000) $ websocketConnectJSON OnConnect OnClose OnOpen OnError
 beforeAll :: JSM () -> Effect parent model action -> Effect parent model action
 beforeAll = modifyAllJSM . (*>)
 -----------------------------------------------------------------------------
@@ -223,8 +223,8 @@ beforeAll = modifyAllJSM . (*>)
 --
 -- Example usage:
 --
--- > -- log that a given effect completed execution
--- > afterAll $ consoleLog "Done!"
+-- > -- log that running the a websocket Effect completed
+-- > afterAll (consoleLog "Done running websocket effect") $ websocketConnectJSON OnConnect OnClose OnOpen OnError
 afterAll :: JSM () -> Effect parent model action -> Effect parent model action
 afterAll = modifyAllJSM . (<*)
 -----------------------------------------------------------------------------
