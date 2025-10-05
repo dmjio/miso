@@ -95,6 +95,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
+  , initialModel :: Maybe (JSM model)
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
@@ -181,6 +182,7 @@ component
   -> Component parent model action
 component m u v = Component
   { model = m
+  , initialModel = Nothing
   , update = u
   , view = v
   , subs = []

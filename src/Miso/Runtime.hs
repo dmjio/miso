@@ -137,8 +137,11 @@ initialize Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
+  initializedModel <- case initialModel of
+        Nothing -> pure model
+        Just action -> action
   componentModelCurrent <- liftIO (newTVarIO model)
-  componentModelNew <- liftIO (newTVarIO model)
+  componentModelNew <- liftIO (newTVarIO initializedModel)
   let
     eventLoop = liftIO wait >> do
       currentModel <- liftIO (readTVarIO componentModelCurrent)
