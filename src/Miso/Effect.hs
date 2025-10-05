@@ -224,7 +224,7 @@ beforeAll = modifyAllJSM . (*>)
 -- Example usage:
 --
 -- > -- log that a given effect completed execution
--- > beforeAll $ consoleLog "Done!"
+-- > afterAll $ consoleLog "Done!"
 afterAll :: JSM () -> Effect parent model action -> Effect parent model action
 afterAll = modifyAllJSM . (<*)
 -----------------------------------------------------------------------------
