@@ -231,9 +231,8 @@ afterAll = modifyAllJSM . (<*)
 -- | Modifies all JSM collected by the given Effect.
 --
 -- All JSM expressions collected by Effect are evaluated asynchronously.
--- This function can be used to adjoin synchronous actions to all 
---
--- For examples see 'beforeAll' and 'afterAll'.
+-- This function can be used to adjoin synchronous actions to all JSM
+-- expressions in an effect. For examples see 'beforeAll' and 'afterAll'.
 modifyAllJSM :: (JSM () -> JSM ()) -> Effect parent model action -> Effect parent model action
 modifyAllJSM = censor . (fmap . fmap)  
 -----------------------------------------------------------------------------
