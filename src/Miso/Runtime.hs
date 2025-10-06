@@ -112,11 +112,12 @@ import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, i
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
   :: Eq model
-  => Component parent model action
+  => Hydrate
+  -> Component parent model action
   -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
-initialize Component {..} getView = do
+initialize hydrate Component {..} getView = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -125,9 +126,11 @@ initialize Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
-  initializedModel <- case initialModel of
+  initializedModel <- case hydrate of
+    Hydrate -> case initialModel of
         Nothing -> pure model
         Just action -> action
+    Draw -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
@@ -736,7 +739,7 @@ runView
 runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
+      ComponentState {..} <- initialize hydrate app (drawComponent hydrate domRef app)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
       FFI.set "componentId" vcompId (Object domRef)
