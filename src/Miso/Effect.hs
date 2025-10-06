@@ -40,6 +40,9 @@ module Miso.Effect
   , withSink
   , mapSub
   , noop
+  , beforeAll
+  , afterAll
+  , modifyAllJSM
   -- * Internal
   , runEffect
   -- * Deprecated
@@ -53,7 +56,7 @@ module Miso.Effect
   ) where
 -----------------------------------------------------------------------------
 import           Data.Foldable (for_)
-import           Control.Monad.RWS ( RWS, put, tell, execRWS )
+import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
 import           Language.Javascript.JSaddle (JSVal)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
@@ -204,6 +207,34 @@ io_ action = withSink (\_ -> action)
 -- @since 1.9.0.0
 for :: Foldable f => JSM (f action) -> Effect parent model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
+-----------------------------------------------------------------------------
+-- | Performs the given JSM action before all JSM actions collected by the given
+-- effect.
+--
+-- Example usage:
+--
+-- > -- delays connecting a websocket by 100000 microseconds
+-- > beforeAll (liftIO $ threadDelay 100000) $ websocketConnectJSON OnConnect OnClose OnOpen OnError
+beforeAll :: JSM () -> Effect parent model action -> Effect parent model action
+beforeAll = modifyAllJSM . (*>)
+-----------------------------------------------------------------------------
+-- | Performs the given JSM action after all JSM actions collected by the given
+-- effect.
+--
+-- Example usage:
+--
+-- > -- log that running the a websocket Effect completed
+-- > afterAll (consoleLog "Done running websocket effect") $ websocketConnectJSON OnConnect OnClose OnOpen OnError
+afterAll :: JSM () -> Effect parent model action -> Effect parent model action
+afterAll = modifyAllJSM . (<*)
+-----------------------------------------------------------------------------
+-- | Modifies all JSM collected by the given Effect.
+--
+-- All JSM expressions collected by Effect are evaluated asynchronously.
+-- This function can be used to adjoin synchronous actions to all JSM
+-- expressions in an effect. For examples see 'beforeAll' and 'afterAll'.
+modifyAllJSM :: (JSM () -> JSM ()) -> Effect parent model action -> Effect parent model action
+modifyAllJSM = censor . (fmap . fmap)  
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the 'Component' or top-level
 -- 'Component' in their application. This is useful for introducing 'IO' into the system.
