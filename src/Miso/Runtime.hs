@@ -113,7 +113,7 @@ import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, i
 initialize
   :: Eq model
   => Component parent model action
-  -> (Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
+  -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
 initialize Component {..} getView = do
@@ -125,7 +125,10 @@ initialize Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
-  (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
+  initializedModel <- case initialModel of
+        Nothing -> pure model
+        Just action -> action
+  (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
@@ -137,9 +140,6 @@ initialize Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  initializedModel <- case initialModel of
-        Nothing -> pure model
-        Just action -> action
   componentModelCurrent <- liftIO (newTVarIO model)
   componentModelNew <- liftIO (newTVarIO initializedModel)
   let
@@ -653,11 +653,12 @@ drawComponent
   :: Hydrate
   -> DOMRef
   -> Component parent model action
+  -> model
   -> Sink action
   -> JSM ([DOMRef], DOMRef, IORef VTree)
-drawComponent hydrate mountElement Component {..} snk = do
+drawComponent hydrate mountElement Component {..} initializedModel snk = do
   refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-  vtree <- runView hydrate (view model) snk logLevel events
+  vtree <- runView hydrate (view initializedModel) snk logLevel events
   case hydrate of
     Draw ->
       diff Nothing (Just vtree) mountElement
