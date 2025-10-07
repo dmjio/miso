@@ -108,15 +108,17 @@ import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
+import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
   :: Eq model
-  => Component parent model action
-  -> (Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
+  => Hydrate
+  -> Component parent model action
+  -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
   -- ^ Callback function is used to perform the creation of VTree
   -> JSM (ComponentState model action)
-initialize Component {..} getView = do
+initialize hydrate Component {..} getView = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -125,7 +127,12 @@ initialize Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
-  (componentScripts, componentDOMRef, componentVTree) <- getView componentSink
+  initializedModel <- case hydrate of
+    Hydrate -> case hydrateModel of
+        Nothing     -> pure model
+        Just action -> getURI >>= action
+    Draw -> pure model
+  (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
@@ -138,7 +145,7 @@ initialize Component {..} getView = do
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
   componentModelCurrent <- liftIO (newTVarIO model)
-  componentModelNew <- liftIO (newTVarIO model)
+  componentModelNew <- liftIO (newTVarIO initializedModel)
   let
     eventLoop = liftIO wait >> do
       currentModel <- liftIO (readTVarIO componentModelCurrent)
@@ -650,11 +657,12 @@ drawComponent
   :: Hydrate
   -> DOMRef
   -> Component parent model action
+  -> model
   -> Sink action
   -> JSM ([DOMRef], DOMRef, IORef VTree)
-drawComponent hydrate mountElement Component {..} snk = do
+drawComponent hydrate mountElement Component {..} initializedModel snk = do
   refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-  vtree <- runView hydrate (view model) snk logLevel events
+  vtree <- runView hydrate (view initializedModel) snk logLevel events
   case hydrate of
     Draw ->
       diff Nothing (Just vtree) mountElement
@@ -732,7 +740,7 @@ runView
 runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize app (drawComponent hydrate domRef app)
+      ComponentState {..} <- initialize hydrate app (drawComponent hydrate domRef app)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
       FFI.set "componentId" vcompId (Object domRef)

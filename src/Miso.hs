@@ -110,9 +110,9 @@ import           Miso.Util
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp@Component {..} <- f <$> getURI
-  initialize vcomp $ \snk -> do
+  initialize Hydrate vcomp $ \initializedModel snk -> do
     refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-    VTree (Object vtree) <- runView Hydrate (view model) snk logLevel events
+    VTree (Object vtree) <- runView Hydrate (view initializedModel) snk logLevel events
     mount_ <- FFI.getBody
     FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount_ vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
@@ -159,9 +159,9 @@ initComponent
   -- ^ Custom hook to perform any JSM action (e.g. render styles) before initialization.
   -> JSM (ComponentState model action)
 initComponent vcomp@Component{..} hooks = do
-  initialize vcomp $ \snk -> do
+  initialize Draw vcomp $ \initializedModel snk -> do
     refs <- hooks
-    vtree <- runView Draw (view model) snk logLevel events
+    vtree <- runView Draw (view initializedModel) snk logLevel events
     mount_ <- mountElement (getMountPoint mountPoint)
     diff Nothing (Just vtree) mount_
     viewRef <- liftIO (newIORef vtree)

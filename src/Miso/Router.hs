@@ -362,26 +362,6 @@ runRouter = parseRoute
 routes :: [ RouteParser route ] -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
-prettyURI :: URI -> MisoString
-prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
------------------------------------------------------------------------------
-prettyQueryString :: URI -> MisoString
-prettyQueryString URI {..} = queries <> flags
-  where
-    queries =
-      MS.concat
-      [ "?" <>
-        MS.intercalate "&"
-        [ k <> "=" <> v
-        | (k, Just v) <- M.toList uriQueryString
-        ]
-      | any isJust (M.elems uriQueryString)
-      ]
-    flags = mconcat
-        [ "?" <> k
-        | (k, Nothing) <- M.toList uriQueryString
-        ]
------------------------------------------------------------------------------
 class GRouter f where
   gFromRoute :: f route -> [Token]
   gRouteParser :: RouteParser (f route)
@@ -605,19 +585,3 @@ lowercaseStrip :: String -> MisoString
 lowercaseStrip (x:xs) = ms (C.toLower x : takeWhile C.isLower xs)
 lowercaseStrip x = ms x
 -----------------------------------------------------------------------------
--- | Type for dealing with @URI@
---
--- <<https://datatracker.ietf.org/doc/html/rfc3986>>
---
-data URI
-  = URI
-  { uriPath, uriFragment :: MisoString
-  , uriQueryString :: M.Map MisoString (Maybe MisoString)
-  } deriving (Show, Eq)
-----------------------------------------------------------------------------
-emptyURI :: URI
-emptyURI = URI mempty mempty mempty
-----------------------------------------------------------------------------
-instance ToMisoString URI where
-  toMisoString = prettyURI
-----------------------------------------------------------------------------
