@@ -38,6 +38,7 @@ module Miso.Types
   , DOMRef
   , ROOT
   , Transition
+  , URI (..)
   -- ** Re-exports
   , JSM
   -- ** Classes
@@ -46,6 +47,7 @@ module Miso.Types
   -- ** Data Bindings
   , Binding (..)
   -- ** Smart Constructors
+  , emptyURI
   , component
   , (-->)
   , (<--)
@@ -60,6 +62,8 @@ module Miso.Types
   , getMountPoint
   , optionalAttrs
   , optionalChildren
+  , prettyURI
+  , prettyQueryString
   -- *** Combinators
   , node
   , text
@@ -76,7 +80,7 @@ import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
@@ -95,7 +99,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-  , initialModel :: Maybe (JSM model)
+  , initialModel :: Maybe (URI -> JSM model)
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
@@ -437,3 +441,39 @@ optionalChildren element attrs kids condition opts =
       VNode ns name attrs newKids
     x -> x
 ----------------------------------------------------------------------------
+-- | Type for dealing with @URI@
+--
+-- <<https://datatracker.ietf.org/doc/html/rfc3986>>
+--
+data URI
+  = URI
+  { uriPath, uriFragment :: MisoString
+  , uriQueryString :: M.Map MisoString (Maybe MisoString)
+  } deriving (Show, Eq)
+----------------------------------------------------------------------------
+emptyURI :: URI
+emptyURI = URI mempty mempty mempty
+----------------------------------------------------------------------------
+instance ToMisoString URI where
+  toMisoString = prettyURI
+----------------------------------------------------------------------------
+prettyURI :: URI -> MisoString
+prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
+-----------------------------------------------------------------------------
+prettyQueryString :: URI -> MisoString
+prettyQueryString URI {..} = queries <> flags
+  where
+    queries =
+      MS.concat
+      [ "?" <>
+        MS.intercalate "&"
+        [ k <> "=" <> v
+        | (k, Just v) <- M.toList uriQueryString
+        ]
+      | any isJust (M.elems uriQueryString)
+      ]
+    flags = mconcat
+        [ "?" <> k
+        | (k, Nothing) <- M.toList uriQueryString
+        ]
+-----------------------------------------------------------------------------
