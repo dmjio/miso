@@ -128,7 +128,7 @@ initialize hydrate Component {..} getView = do
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
   initializedModel <- case hydrate of
-    Hydrate -> case initialModel of
+    Hydrate -> case hydrateModel of
         Nothing     -> pure model
         Just action -> getURI >>= action
     Draw -> pure model

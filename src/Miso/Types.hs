@@ -99,7 +99,9 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-  , initialModel :: Maybe (URI -> JSM model)
+  , hydrateModel :: Maybe (URI -> JSM model)
+  -- ^ Perform action to load component state, such as reading data from page
+  --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
@@ -186,7 +188,7 @@ component
   -> Component parent model action
 component m u v = Component
   { model = m
-  , initialModel = Nothing
+  , hydrateModel = Nothing
   , update = u
   , view = v
   , subs = []
