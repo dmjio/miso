@@ -108,7 +108,6 @@ import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
-import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of @Component@ between top-level API functions.
 initialize
@@ -127,11 +126,10 @@ initialize hydrate Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
-  initializedModel <- case hydrate of
-    Hydrate -> case hydrateModel of
-        Nothing     -> pure model
-        Just action -> getURI >>= action
-    Draw -> pure model
+  initializedModel <-
+    case (hydrate, hydrateModel) of
+      (Hydrate, Just action) -> action
+      _ -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do

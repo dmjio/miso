@@ -51,6 +51,10 @@ common jsaddle
       warp < 3.5,
       websockets < 0.14
 
+  if flag (jsaddle)
+    cpp-options:
+      -DJSADDLE
+
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
       file-embed < 0.1
@@ -71,6 +75,12 @@ common client
     else
       js-sources:
         js/miso.js
+
+flag jsaddle
+  manual:
+    True
+  default:
+    True
 
 flag production
   manual:

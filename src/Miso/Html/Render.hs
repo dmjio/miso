@@ -1,9 +1,11 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Render
@@ -18,6 +20,10 @@ module Miso.Html.Render
     ToHtml (..)
   ) where
 ----------------------------------------------------------------------------
+#ifndef JSADDLE
+import           System.IO.Unsafe (unsafePerformIO)
+import           Control.Exception (catch, SomeException)
+#endif
 import           Data.Aeson
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
@@ -41,8 +47,19 @@ instance ToHtml [View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 -- | Render a @Component parent model action@ to a @L.ByteString@
+#ifndef JSADDLE
 instance ToHtml (Component parent model action) where
-  toHtml Component {..} = renderView (view model)
+  toHtml Component {..} = do
+    case hydrateModel of
+      Nothing ->
+        renderView (view model)
+      Just action -> unsafePerformIO $ do
+        m <- action `catch` (\(e :: SomeException) -> do
+          putStrLn "Encountered exception during model hydration, falling back to default model"
+          print e
+          pure model)
+        pure $ renderView (view m)
+#endif
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
