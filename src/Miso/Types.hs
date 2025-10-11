@@ -86,6 +86,10 @@ import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
+#ifndef JSADDLE
+import           System.IO.Unsafe (unsafePerformIO)
+import           Control.Exception (catch, SomeException)
+#endif
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
@@ -299,7 +303,20 @@ instance ToView model (View model action) where
 -----------------------------------------------------------------------------
 instance ToView model (Component parent model action) where
   type ToViewAction model (Component parent model action) = action
-  toView Component {..} = toView (view model)
+  toView Component {..} = toView (view appropriateModel)
+    where
+#ifdef JSADDLE
+      appropriateModel = model
+#else
+      appropriateModel =
+        case hydrateModel of
+          Nothing -> model
+          Just action -> unsafePerformIO $
+            action `catch` (\(e :: SomeException) -> do
+              putStrLn "Encountered exception during model hydration, falling back to default model"
+              print e
+              pure model)
+#endif
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS

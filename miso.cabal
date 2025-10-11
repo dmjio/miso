@@ -50,8 +50,7 @@ common jsaddle
       wai < 3.3,
       warp < 3.5,
       websockets < 0.14
-
-  if flag (jsaddle)
+  else
     cpp-options:
       -DJSADDLE
 
@@ -75,12 +74,6 @@ common client
     else
       js-sources:
         js/miso.js
-
-flag jsaddle
-  manual:
-    True
-  default:
-    True
 
 flag production
   manual:
