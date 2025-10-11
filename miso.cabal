@@ -50,6 +50,9 @@ common jsaddle
       wai < 3.3,
       warp < 3.5,
       websockets < 0.14
+  else
+    cpp-options:
+      -DJSADDLE
 
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
