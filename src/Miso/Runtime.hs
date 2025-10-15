@@ -74,7 +74,7 @@ module Miso.Runtime
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
 import           Control.Exception (SomeException)
-import           Control.Monad (forM, forM_, when, void, forever, (<=<))
+import           Control.Monad (forM, forM_, when, void, forever, (<=<), zipWithM_)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
@@ -102,7 +102,7 @@ import           Miso.Delegate (delegator, undelegator)
 import           Miso.Diff (diff)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
-import           Miso.String hiding (reverse)
+import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
@@ -771,7 +771,11 @@ runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
         kidsViews <- forM kids $ \kid -> do
           VTree (Object vtree) <- runView hydrate kid snk logLevel events
           pure vtree
+        setNextSibling kidsViews
         pure kidsViews
+          where
+            setNextSibling xs =
+              zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
 runView _ (VText t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
