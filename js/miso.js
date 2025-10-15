@@ -433,7 +433,7 @@ function syncChildren(os, ns, parent, context) {
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst["key"] === nLast["key"]) {
-      context["insertBefore"](parent, oFirst["domRef"], oLast["domRef"].nextSibling);
+      context["insertBefore"](parent, oFirst["domRef"], context["nextSibling"](oLast["domRef"]));
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast["key"] === nFirst["key"]) {
@@ -800,6 +800,9 @@ var context = {
   },
   parentNode: (node) => {
     return node.parentNode;
+  },
+  nextSibling: (node) => {
+    return node.nextSibling;
   },
   createTextNode: (s) => {
     return document.createTextNode(s);
