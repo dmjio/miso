@@ -2,7 +2,7 @@ import { Context, VNode, VComp, ComponentId, DOMRef, VTree, Props, CSS } from '.
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
-export function diff(currentObj: VTree, newObj: VTree, parent: Element, context: Context): void {
+export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, context: Context<T>): void {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) create(newObj, parent, context);
   else if (!newObj) destroy(currentObj, parent, context);
@@ -15,7 +15,7 @@ export function diff(currentObj: VTree, newObj: VTree, parent: Element, context:
   }
 }
 // replace everything function
-function replace(c: VTree, n: VTree, parent: Element, context : Context): void {
+function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : Context<T>): void {
   // step1 : prepare to delete, unmount things
   callBeforeDestroyedRecursive(c);
   // ^ this will unmount sub components before we replace the child
@@ -25,7 +25,7 @@ function replace(c: VTree, n: VTree, parent: Element, context : Context): void {
     n['domRef'] = context['createTextNode'](n['text']);
     context['replaceChild'](parent, n['domRef'], c['domRef']);
   } else {
-    createElement(n, context, (newChild: Element) => {
+    createElement(n, context, (newChild: T) => {
       context['replaceChild'](parent, newChild, c['domRef']);
     });
   }
@@ -34,7 +34,7 @@ function replace(c: VTree, n: VTree, parent: Element, context : Context): void {
 }
 
 // destroy vtext, vnode, vcomp
-function destroy(obj: VTree, parent: Element, context: Context): void {
+function destroy<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
   callBeforeDestroyedRecursive(obj);
   // step 2: destroy
@@ -43,7 +43,7 @@ function destroy(obj: VTree, parent: Element, context: Context): void {
   callDestroyedRecursive(obj);
 }
 
-function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void {
+function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, context: Context<T>): void {
   // bail out on easy vtext case
   if (c['type'] === 'vtext') {
     if (c['text'] !== n['text']) {
@@ -74,23 +74,23 @@ function diffNodes(c: VTree, n: VTree, parent: Element, context: Context): void 
   }
 }
 // ** recursive calls to hooks
-function callDestroyedRecursive(obj: VTree): void {
+function callDestroyedRecursive<T>(obj: VTree<T>): void {
   callDestroyed(obj);
   for (const i in obj['children']) {
     callDestroyedRecursive(obj['children'][i]);
   }
 }
 
-function callDestroyed(obj: VTree): void {
+function callDestroyed<T>(obj: VTree<T>): void {
   if (obj['onDestroyed']) obj['onDestroyed']();
   if (obj['type'] === 'vcomp') unmountComponent(obj);
 }
 
-function callBeforeDestroyed(obj: VTree): void {
+function callBeforeDestroyed<T>(obj: VTree<T>): void {
   if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
 }
 
-function callBeforeDestroyedRecursive(obj: VTree): void {
+function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
   if (obj['type'] === 'vcomp' && obj['onBeforeUnmounted']) {
     obj['onBeforeUnmounted']();
   }
@@ -101,28 +101,28 @@ function callBeforeDestroyedRecursive(obj: VTree): void {
 }
 
 // ** </> recursive calls to hooks
-export function callCreated(obj: VTree, context: Context): void {
+export function callCreated<T>(obj: VTree<T>, context: Context<T>): void {
   if (obj['onCreated']) obj['onCreated'](obj['domRef']);
   if (obj['type'] === 'vcomp') mountComponent(obj, context);
 }
 
-export function callBeforeCreated(obj: VTree): void {
+export function callBeforeCreated<T>(obj: VTree<T>): void {
   if (obj['onBeforeCreated']) obj['onBeforeCreated']();
 }
 
-export function populate(c: VTree, n: VTree, context: Context): void {
+export function populate<T>(c: VTree<T>, n: VTree<T>, context: Context<T>): void {
   if (n['type'] !== 'vtext') {
     if (!c) c = vnode({});
     diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg', context);
     diffCss(c['css'], n['css'], n['domRef'], context);
     if (n['type'] === 'vnode') {
-      diffChildren(c as VNode, n as VNode, n['domRef'], context);
+        diffChildren<T>(c as VNode<T>, n as VNode<T>, n['domRef'], context);
     }
     drawCanvas(n);
   }
 }
 
-function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, context: Context): void {
+function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSvg: boolean, context: Context<T>): void {
   var newProp;
   /* Is current prop in new prop list? */
   for (const c in cProps) {
@@ -170,11 +170,11 @@ function diffProps(cProps: Props, nProps: Props, node: Element, isSvg: boolean, 
   }
 }
 
-function diffCss(cCss: CSS, nCss: CSS, node: DOMRef, context: Context): void {
+function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: Context<T>): void {
   context['setInlineStyle'](cCss, nCss, node);
 }
 
-function diffChildren(c: VNode, n: VNode, parent: Element, context: Context): void {
+function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: Context<T>): void {
   if (c['shouldSync'] && n['shouldSync']) {
     syncChildren(c.children, n.children, parent, context);
   } else {
@@ -188,18 +188,18 @@ function diffChildren(c: VNode, n: VNode, parent: Element, context: Context): vo
   }
 }
 
-function populateDomRef(obj: VTree, context: Context): void {
+function populateDomRef<T>(obj: VTree<T>, context: Context<T>): void {
   if (obj['ns'] === 'svg') {
-    (obj['domRef'] as Element) = context['createElementNS']('http://www.w3.org/2000/svg', obj['tag']);
+    (obj['domRef'] as T) = context['createElementNS']('http://www.w3.org/2000/svg', obj['tag']);
   } else if (obj['ns'] === 'mathml') {
-    (obj['domRef'] as Element)= context['createElementNS']('http://www.w3.org/1998/Math/MathML', obj['tag']);
+    (obj['domRef'] as T)= context['createElementNS']('http://www.w3.org/1998/Math/MathML', obj['tag']);
   } else {
     /* calling createElement on doucment */
-    (obj['domRef'] as Element) = context['createElement'](obj['tag']);
+    (obj['domRef'] as T) = context['createElement'](obj['tag']);
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement(obj: VTree, context: Context, attach: (e: Node) => void): void {
+function createElement<T>(obj: VTree<T>, context: Context<T>, attach: (e: T) => void): void {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
   callCreated(obj, context);
@@ -208,25 +208,25 @@ function createElement(obj: VTree, context: Context, attach: (e: Node) => void):
 }
 
 /* draw the canvas if you need to */
-function drawCanvas (obj: VTree) {
+function drawCanvas<T> (obj: VTree<T>) {
   if (obj['tag'] === 'canvas' && 'draw' in obj) {
     obj['draw'](obj['domRef']);
   }
 }
 
 // unmount components
-function unmountComponent(obj: VTree): void {
+function unmountComponent<T>(obj: VTree<T>): void {
   if ('onUnmounted' in obj) obj['onUnmounted'](obj['domRef']);
   obj['unmount'](obj['domRef']);
 }
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
-function mountComponent(obj: VComp, context: Context): void {
+function mountComponent<T>(obj: VComp<T>, context: Context<T>): void {
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
   if (obj['onBeforeMounted']) obj['onBeforeMounted']();
   // Call 'onBeforeMounted' before calling 'mount'
-  obj['mount'](obj['domRef'], (componentId: ComponentId, componentTree: VNode) => {
+  obj['mount'](obj['domRef'], (componentId: ComponentId, componentTree: VNode<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj['children'].push(componentTree);
@@ -235,29 +235,29 @@ function mountComponent(obj: VComp, context: Context): void {
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
-function create(obj: VTree, parent: Element, context: Context): void {
+function create<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
   if (obj['type'] === 'vtext') {
     obj['domRef'] = context['createTextNode'](obj['text']);
     context['appendChild'](parent, obj['domRef']);
   } else {
-    createElement(obj, context, (child: Element) => {
+    createElement<T>(obj, context, (child: T) => {
       context['appendChild'](parent, child);
     });
   }
 }
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element, context: Context): void {
+function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: Context<T>): void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,
     newLastIndex: number = ns.length - 1,
     tmp: number,
-    nFirst: VTree,
-    nLast: VTree,
-    oLast: VTree,
-    oFirst: VTree,
+    nFirst: VTree<T>,
+    nLast: VTree<T>,
+    oLast: VTree<T>,
+    oFirst: VTree<T>,
     found: boolean,
-    node: VTree;
+    node: VTree<T>;
   for (;;) {
     /* check base case, first > last for both new and old
               [ ] -- old children empty (fully-swapped)
@@ -313,7 +313,7 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element, conte
       */
      else if (oFirst['key'] === nLast['key'] && nFirst['key'] === oLast['key']) {
       context['swapDOMRefs'](oLast['domRef'], oFirst['domRef'], parent);
-      swap<VTree>(os, oldFirstIndex, oldLastIndex);
+      swap<VTree<T>>(os, oldFirstIndex, oldLastIndex);
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } /* Or just one could be swapped (d's align here)
@@ -397,7 +397,7 @@ function syncChildren(os: Array<VTree>, ns: Array<VTree>, parent: Element, conte
         -> [ b e a j   ] <- new children
              ^
         */ else {
-        createElement(nFirst, context, (e: Element) => {
+        createElement<T>(nFirst, context, (e: T) => {
           context['insertBefore'](parent, e, oFirst['domRef']);
         });
         os.splice(oldFirstIndex++, 0, nFirst);
