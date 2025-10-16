@@ -1,4 +1,4 @@
-import { Context, VNode, VComp, ComponentId, DOMRef, VTree, Props, CSS } from './types';
+import { Context, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
