@@ -1,4 +1,4 @@
-import { DOMRef, NodeId, ComponentId, Context } from './types';
+import { NodeId, ComponentId, Context } from './types';
 
 /* The environment contains a mapping of all components and a read-only JSON rep. of its model
    N.B. no virtual DOM is present here.
