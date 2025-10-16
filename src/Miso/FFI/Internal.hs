@@ -89,7 +89,6 @@ module Miso.FFI.Internal
    , CONTENT_TYPE(..)
    , shouldSync
    -- * Drawing
-   , requestAnimationFrame
    , setDrawingContext
    , flush
    -- * Image
@@ -655,12 +654,6 @@ flush :: JSM ()
 flush = do
   context <- jsg "miso" ! "context"
   void $ context # "flush" $ ([] :: [JSVal])
------------------------------------------------------------------------------
-requestAnimationFrame :: JSM () -> JSM ()
-requestAnimationFrame f = do
-  context <- jsg "miso" ! "context"
-  cb <- syncCallback f
-  void $ context # "requestAnimationFrame" $ [cb]
 -----------------------------------------------------------------------------
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)

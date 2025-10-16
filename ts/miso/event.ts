@@ -1,12 +1,12 @@
-import { Context, VTree, EventCapture, EventObject, Options } from './types';
+import { Context, VTree, EventCapture, EventObject, Options, DOMRef } from './types';
 
 /* event delegation algorithm */
-export function delegate(
+export function delegate (
   mount: HTMLElement,
   events: Array<EventCapture>,
-  getVTree: (vtree: VTree) => void,
+  getVTree: (vtree: VTree<DOMRef>) => void,
   debug: boolean,
-  context: Context,
+  context: Context<DOMRef>,
 ): void {
 
   for (const event of events) {
@@ -24,9 +24,9 @@ export function delegate(
 export function undelegate(
   mount: HTMLElement,
   events: Array<EventCapture>,
-  getVTree: (vtree: VTree) => void,
+  getVTree: (vtree: VTree<DOMRef>) => void,
   debug: boolean,
-  context: Context,
+  context: Context<DOMRef>,
 ): void {
   for (const event of events) {
     mount.removeEventListener(
@@ -39,8 +39,8 @@ export function undelegate(
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => void, debug: boolean, context: Context): void {
-  getVTree(function (vtree: VTree) {
+function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => void, debug: boolean, context: Context<DOMRef>): void {
+  getVTree(function (vtree: VTree<DOMRef>) {
       if (Array.isArray(e)) {
           for (const key of e) {
               dispatch(key, vtree, mount, debug, context);
@@ -60,7 +60,7 @@ function dispatch (ev, vtree, mount, debug, context) {
 }
 
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement(element: HTMLElement, target: ParentNode, context: Context): Array<HTMLElement> {
+function buildTargetToElement(element: HTMLElement, target: ParentNode, context: Context<DOMRef>): Array<HTMLElement> {
   var stack = [];
   while (!context['isEqual'](element, target)) {
     stack.unshift(target);
@@ -77,11 +77,11 @@ function buildTargetToElement(element: HTMLElement, target: ParentNode, context:
 */
 function delegateEvent(
   event: Event,
-  obj: VTree,
-  stack: Array<HTMLElement>,
-  parentStack: Array<VTree>,
+  obj: VTree<DOMRef>,
+  stack: Array<DOMRef>,
+  parentStack: Array<VTree<DOMRef>>,
   debug: boolean,
-  context: Context,
+  context: Context<DOMRef>,
 ): void {
   /* base case, not found */
   if (!stack.length) {
@@ -106,7 +106,7 @@ function delegateEvent(
     }
   } /* stack.length == 1 */
   else {
-    const eventObj: EventObject = obj['events'][event.type];
+    const eventObj: EventObject<DOMRef> = obj['events'][event.type];
     if (eventObj) {
       const options: Options = eventObj['options'];
       if (options['preventDefault']) {
@@ -124,7 +124,7 @@ function delegateEvent(
   }
 }
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
+function propagateWhileAble(parentStack: Array<VTree<DOMRef>>, event: Event): void {
   for (const vtree of parentStack) {
     if (vtree['events'][event.type]) {
       const eventObj = vtree['events'][event.type],
