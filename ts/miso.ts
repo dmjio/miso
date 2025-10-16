@@ -16,7 +16,23 @@ import {
    eventSourceClose
 } from './miso/util';
 
-import { VTree, VNode, VText, VComp, Props, CSS, Events, NS, DOMRef, EventCapture, EventObject, Options } from './miso/types';
+import {
+    VTree,
+    VNode,
+    VText,
+    VComp,
+    Props,
+    CSS,
+    Events,
+    NS,
+    DOMRef,
+    EventCapture,
+    EventObject,
+    Options,
+} from './miso/types';
+
+import { applyPatch } from './miso/patch';
+
 import { vcomp, vnode, vtext } from './miso/smart';
 
 /* top level re-export */
@@ -39,6 +55,7 @@ export {
   websocketSend,
   eventSourceConnect,
   eventSourceClose,
+  applyPatch,
 
   /* Types */
   VTree,

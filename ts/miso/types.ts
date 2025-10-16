@@ -1,72 +1,75 @@
 /* core type for virtual DOM */
-type Props = Record<string, string>;
-type CSS = Record<string, string>;
-type Events = Record<string, EventObject>;
+export type Props = Record<string, string>;
+export type CSS = Record<string, string>;
+export type Events<T> = Record<string, EventObject<T>>;
 
 /* element name spacing */
-type NS = 'text' | 'html' | 'svg' | 'mathml';
+export type NS = 'text' | 'html' | 'svg' | 'mathml';
 
-type DOMRef = HTMLElement | SVGElement | MathMLElement;
+export type DOMRef = HTMLElement | MathMLElement | SVGElement;
+export type ComponentId = number;
 
-type ComponentId = number;
-
-type VComp = {
+export type VComp<T> = {
   type: 'vcomp';
-  domRef: DOMRef;
+  domRef: T;
   ns: 'html';
-  tag: 'div';
-  key: string;
-  props: Props;
-  css: CSS;
-  events: Events;
-  children: Array<VTree>;
-  onBeforeMounted: () => void;
-  onMounted: (domRef: DOMRef) => void;
-  onBeforeUnmounted: () => void;
-  onUnmounted: (domRef: DOMRef) => void;
-  mount: (domRef: DOMRef, callback: ((componentId : ComponentId, component: VTree) => void)) => void;
-  unmount: (e: DOMRef) => void;
-};
-
-type VNode = {
-  type: 'vnode';
-  ns: NS;
-  domRef: DOMRef;
   tag: string;
   key: string;
   props: Props;
   css: CSS;
-  events: Events;
+  events: Events<T>;
+  children: Array<VTree<T>>;
+  onBeforeMounted: () => void;
+  onMounted: (domRef: T) => void;
+  onBeforeUnmounted: () => void;
+  onUnmounted: (domRef: T) => void;
+  mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  unmount: (e: T) => void;
+};
+
+export type VNode<T> = {
+  type: 'vnode';
+  ns: NS;
+  domRef: T;
+  tag: string;
+  key: string;
+  props: Props;
+  css: CSS;
+  events: Events<T>;
   shouldSync: boolean;
-  children: Array<VTree>;
+  children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
   onCreated: () => void;
   onBeforeCreated: () => void;
-  draw?: (DOMRef) => void;
+  draw?: (T) => void;
 };
 
-type VText = {
+export type VText<T> = {
   type: 'vtext';
   text: string;
-  domRef: Text;
+  domRef: T;
   ns: NS;
   key: string;
 };
 
-type VTree = VComp | VNode | VText;
+export type NodeId = {
+  nodeId: number;
+}
 
-type EventObject = {
+export type VTree<T> = VComp<T> | VNode<T> | VText<T>;
+
+export type EventObject<T> = {
   options: Options;
-  runEvent: (e: Event, node : DOMRef) => void;
+  runEvent: (e: Event, node: T) => void;
 };
 
-type Options = {
+export type Options = {
   preventDefault: boolean;
   stopPropagation: boolean;
 };
 
-type EventCapture = {
+export type EventCapture = {
   name: string;
   capture: boolean;
 };
@@ -74,17 +77,18 @@ type EventCapture = {
 /*
   dmj: Context used for dependency injection of native or browser environment.
 */
-type Context = {
-  addEventListener : (mount : Node, event : string, listener : any, capture : boolean) => void;
-  createTextNode : (s: string) => Text;
-  createElementNS : (ns : string, tag : string) => Element;
-  appendChild : (parent, child) => void;
-  replaceChild : (parent, n, o) => void;
+export type Context<T> = {
+  addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
+  nextSibling : (node) => T;
+  createTextNode : (s: string) => T;
+  createElementNS : (ns : string, tag : string) => T;
+  appendChild : (parent : T, child : T) => void;
+  replaceChild : (parent : T, n : T, o : T) => void;
   removeChild : (parent, child) => void;
-  createElement : (name : string) => Element;
-  insertBefore : (parent, child, node) => void;
-  swapDOMRefs: (a: Node, b: Node, p: Node) => void;
-  querySelectorAll: (sel: string) => NodeListOf<Element>;
+  createElement : (name : string) => T;
+  insertBefore : (parent : T, child, node) => void;
+  swapDOMRefs: (a: T, b: T, p: T) => void;
+  querySelectorAll: (sel: string) => Array<T>;
   setAttribute : (node, key, value) => void;
   removeAttribute : (node, key) => void;
   setAttributeNS : (node, ns, key, value) => void;
@@ -92,41 +96,22 @@ type Context = {
   getTextContent : (node) => string;
   isEqual : (n1, n2) => boolean;
   getTarget : (e: Event) => EventTarget;
-  children : (e: Node) => NodeListOf<ChildNode>;
+  children : (e: T) => Array<T>;
   getInlineStyle : (e, string) => string;
-  setInlineStyle : (cCss: CSS, nCss: CSS, node : DOMRef) => void;
-  getAttribute : (e: Element, string) => string;
+  setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
+  getAttribute : (e: T, string) => string;
   getTag : (e) => string;
-  firstChild : (e) => Element;
-  lastChild : (e) => Element;
-  parentNode : (e) => Element;
-  requestAnimationFrame : (callback: ((timestamp: number) => void)) => void;
+  firstChild : (e) => T;
+  lastChild : (e) => T;
+  parentNode : (e) => T;
   flush : () => void;
-  getRoot : () => Element;
+  getRoot : () => T;
 };
 
 /* dmj: used for Fetch API */
-type Response = {
+export type Response = {
   body: any;
   status: number;
   headers: Record<string,string>;
   error: string;
-};
-
-export {
-  VTree,
-  VComp,
-  VNode,
-  VText,
-  EventCapture,
-  EventObject,
-  Options,
-  Props,
-  CSS,
-  Events,
-  NS,
-  DOMRef,
-  Context,
-  ComponentId,
-  Response,
 };

@@ -74,8 +74,8 @@ export function fetchCore (
    dmj: Used to determine if we should enter `syncChildren`
 
 */
-export function shouldSync (
-  node: VNode
+export function shouldSync<T> (
+  node: VNode<T>
 ): boolean {
     /* cannot sync on null children */
     if (node.children.length === 0) {

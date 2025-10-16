@@ -2,7 +2,7 @@ import { callCreated, populate } from './dom';
 import { Context, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
-function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
+function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
     if (adjusted[ax]['type'] === 'vtext' && vs[ix]['type'] === 'vtext') {
@@ -16,7 +16,7 @@ function collapseSiblingTextNodes(vs: Array<VTree>): Array<VTree> {
 
 /* function to determine if <script> tags are present in `body` top-level
    if so we work around them */
-function preamble(mountPoint: DOMRef | Text, context : Context): Node {
+function preamble(mountPoint: DOMRef | Text, context : Context<DOMRef>): Node {
   /* this needs to be abstracted out for native as well ... at some point */
   var mountChildIdx = 0,
     node: ChildNode;
@@ -46,7 +46,7 @@ function preamble(mountPoint: DOMRef | Text, context : Context): Node {
   return node;
 }
 
-export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree, context: Context): boolean {
+export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, context: Context<DOMRef>): boolean {
   // If script tags are rendered first in body, skip them.
   const node: Node = preamble(mountPoint, context);
 
@@ -74,7 +74,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   }
   return true;
 }
-function diagnoseError(logLevel: boolean, vtree: VTree, node: Node): void {
+function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): void {
   if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
 }
 // https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
@@ -96,12 +96,12 @@ function parseColor(input: string): number[] {
         return +x;
       });
 }
-export function integrityCheck(vtree: VTree, context: Context): boolean {
+export function integrityCheck(vtree: VTree<DOMRef>, context: Context<DOMRef>): boolean {
   return check(true, vtree, context);
 }
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-function check(result: boolean, vtree: VTree, context: Context): boolean {
+function check(result: boolean, vtree: VTree<DOMRef>, context: Context<DOMRef>): boolean {
   // text nodes must be the same
   if (vtree['type'] == 'vtext') {
     if (context['getTag'](vtree['domRef']) !== '#text') {
@@ -186,21 +186,21 @@ function check(result: boolean, vtree: VTree, context: Context): boolean {
   return result;
 }
 
-function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): boolean {
+function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Context<DOMRef>): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
   switch (vtree['type']) {
     case 'vcomp':
-      (vtree as VComp)['domRef'] = node as HTMLElement;
+      (vtree as VComp<DOMRef>)['domRef'] = node as DOMRef;
       callCreated(vtree, context);
       break;
     case 'vtext':
-      (vtree as VText)['domRef'] = node as Text;
+      (vtree as VText<DOMRef>)['domRef'] = node as DOMRef;
       break;
     default:
-      (vtree as VNode)['domRef'] = node as DOMRef;
+      (vtree as VNode<DOMRef>)['domRef'] = node as DOMRef;
       vtree['children'] = collapseSiblingTextNodes(vtree['children']);
       // Fire onCreated events as though the elements had just been created.
       callCreated(vtree, context);
@@ -219,7 +219,7 @@ function walk(logLevel: boolean, vtree: VTree, node: Node, context: Context): bo
               return false;
             }
             if (vdomChild['text'] === domChild.textContent) {
-              vdomChild['domRef'] = context['children'](node)[i] as Text;
+              vdomChild['domRef'] = context['children'](node as DOMRef)[i];
             } else {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;
