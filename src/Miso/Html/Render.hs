@@ -100,8 +100,8 @@ renderBuilder (VComp ns tag attrs (SomeComponent comp@Component {..})) =
   renderBuilder
       ( VNode ns tag attrs
           [ unsafeCoerce (view $ getInitialComponentModel comp) ]
-                                 -- ^ this is the only difference
-                                 --   (need to run hydrateModel server-side)
+{-                                  ^ this is the only difference
+                                   (need to run hydrateModel server-side) -}
       )
 #endif
 
