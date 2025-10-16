@@ -127,11 +127,10 @@ initialize hydrate Component {..} getView = do
       serve
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
-  initializedModel <- case hydrate of
-    Hydrate -> case hydrateModel of
-        Nothing     -> pure model
-        Just action -> getURI >>= action
-    Draw -> pure model
+  initializedModel <-
+    case (hydrate, hydrateModel) of
+      (Hydrate, Just action) -> getURI >>= action
+      _ -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
@@ -160,6 +159,7 @@ initialize hydrate Component {..} getView = do
         newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
+        global <# ("currentComponentId" :: MisoString) $ componentId
         diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
