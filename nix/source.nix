@@ -43,4 +43,10 @@ in
     rev = "8c7635889ca0a5aaac36a8b21db7f5e5ec0ae4c9";
     sha256 = "0s6kzqxbshsnqbqfj7rblqkrr5mzkjxknb6k8m8z4h10mcv1zh7j";
   };
+  microhs = fetchFromGitHub {
+    owner = "augustss";
+    repo = "microhs";
+    rev = "849d5494919a1270fa61e0dd421ca4efd8c6973b";
+    hash = "sha256-BplxfCPjktA9D7Hht4juGgpX4gCDgA1UnZRHbnfT49g=";
+  };
 }
