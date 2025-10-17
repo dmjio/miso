@@ -23,6 +23,19 @@ import Language.Haskell.TH.Quote
 ----------------------------------------------------------------------------
 import Miso.String (toMisoString)
 ----------------------------------------------------------------------------
+-- | QuasiQuoter for specifying multiline 'MisoString'
+--
+-- @
+-- {-# LANGUAGE QuasiQuotes #-}
+--
+-- test :: MisoString
+-- test = [misoString| foo
+--   bar
+--     baz
+-- |]
+--
+-- @
+--
 misoString :: QuasiQuoter
 misoString = QuasiQuoter
   { quoteExp  = \string -> [| toMisoString string |]

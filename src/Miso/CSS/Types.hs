@@ -6,6 +6,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Types for CSS, including inline styles and [StyleSheets](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet).
+--
 ----------------------------------------------------------------------------
 module Miso.CSS.Types
   ( -- *** Types

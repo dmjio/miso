@@ -1360,15 +1360,19 @@ instance ToJSVal CloseCode
 -----------------------------------------------------------------------------
 instance FromJSVal CloseCode
 -----------------------------------------------------------------------------
+-- | Type for holding a 'WebSocket' file descriptor.
 newtype WebSocket = WebSocket Int
   deriving (ToJSVal, Eq, Num)
 -----------------------------------------------------------------------------
+-- | A null 'WebSocket' is one with a negative descriptor.
 emptyWebSocket :: WebSocket
 emptyWebSocket = (-1)
 -----------------------------------------------------------------------------
+-- | A type for holding an 'EventSource' descriptor.
 newtype EventSource = EventSource Int
   deriving (ToJSVal, Eq, Num)
 -----------------------------------------------------------------------------
+-- | A null 'EventSource' is one with a negative descriptor.
 emptyEventSource :: EventSource
 emptyEventSource = (-1)
 -----------------------------------------------------------------------------
@@ -1490,18 +1494,26 @@ finalizeEventSources vcompId = do
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (IM.delete vcompId eventSources, ())
 -----------------------------------------------------------------------------
+-- | Payload is used as the potential source of data when working with 'EventSource'
 data Payload value
   = JSON value
+  -- ^ JSON encoded data
   | BLOB Blob
+  -- ^ Binary encoded data
   | TEXT MisoString
+  -- ^ Text encoded data
   | BUFFER ArrayBuffer
+  -- ^ Buffered data
 -----------------------------------------------------------------------------
+-- | Smart constructor for sending JSON encoded data via an 'EventSource'
 json :: ToJSON value => value -> Payload value
 json = JSON
 -----------------------------------------------------------------------------
+-- | Smart constructor for sending binary encoded data via an 'EventSource'
 blob :: Blob -> Payload value
 blob = BLOB
 -----------------------------------------------------------------------------
+-- | Smart constructor for sending an 'ArrayBuffer' via an 'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------

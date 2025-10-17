@@ -16,6 +16,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Internal FFI functions for browser / device interaction.
+--
 ----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( JSM
@@ -462,10 +465,9 @@ undelegate mountPoint events debug callback ctx = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "undelegate" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
--- | Copies DOM pointers into virtual dom
--- entry point into isomorphic javascript
+-- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
 --
--- <https://en.wikipedia.org/wiki/Hydration_(web_development)>
+-- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
 hydrate :: Bool -> JSVal -> JSVal -> JSM ()
 hydrate logLevel mountPoint vtree = void $ do
@@ -651,17 +653,21 @@ shouldSync vnode = do
   returnValue <- jsg "miso" # "shouldSync" $ [vnode]
   fromJSValUnchecked returnValue
 -----------------------------------------------------------------------------
+-- | Flush is used to force a draw of the render tree. This is currently
+-- only used when targeting platforms other than the browser (like mobile).
 flush :: JSM ()
 flush = do
   context <- jsg "miso" ! "context"
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
+-- | Calls 'requestAnimationFrame'
 requestAnimationFrame :: JSM () -> JSM ()
 requestAnimationFrame f = do
   context <- jsg "miso" ! "context"
   cb <- syncCallback f
   void $ context # "requestAnimationFrame" $ [cb]
 -----------------------------------------------------------------------------
+-- | [Image](https://developer.mozilla.org/en-US/docs/Web/API/Image)
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
@@ -685,18 +691,22 @@ setDrawingContext rendererName =
 newtype Date = Date JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
+-- | Smart constructor for a 'Date'
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
+-- | Date conversion function to produce a locale
 toLocaleString :: Date -> JSM MisoString
 toLocaleString date = fromJSValUnchecked =<< do
   date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
+-- | Retrieves current milliseconds from 'Date'
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
     date # "getMilliseconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
+-- | Retrieves current seconds from 'Date'
 getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
@@ -795,6 +805,7 @@ copyClipboard txt successful errorful = do
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
 -----------------------------------------------------------------------------
+-- | Establishes a 'WebSocket' connection
 websocketConnect
   :: MisoString
   -> JSM ()
@@ -867,15 +878,21 @@ eventSourceClose :: JSVal -> JSM ()
 eventSourceClose eventSource = void $ do
   jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------
+-- | Navigator function to query the current online status of the user's computer
+--
+-- See [navigator.onLine](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine)
+--
 isOnLine :: JSM Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
+-- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype Blob = Blob JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
 instance FromJSVal Blob where
   fromJSVal = pure . pure . Blob
 -----------------------------------------------------------------------------
+-- | [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype FormData = FormData JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
@@ -885,6 +902,7 @@ instance FromJSVal FormData where
 instance FromJSVal ArrayBuffer where
   fromJSVal = pure . pure . ArrayBuffer
 -----------------------------------------------------------------------------
+-- | [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/API/ArrayBuffer)
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
@@ -895,24 +913,28 @@ geolocation successful errorful = do
   cb2 <- asyncCallback1 errorful
   void $ geo # "getCurrentPosition" $ (cb1, cb2)
 -----------------------------------------------------------------------------
+-- | [File](https://developer.mozilla.org/en-US/docs/Web/API/File)
 newtype File = File JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal File where
   fromJSVal = pure . pure . File
 -----------------------------------------------------------------------------
+-- | [Uint8Array](https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array)
 newtype Uint8Array = Uint8Array JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
 instance FromJSVal Uint8Array where
   fromJSVal = pure . pure . Uint8Array
 -----------------------------------------------------------------------------
+-- | [FileReader](https://developer.mozilla.org/en-US/docs/Web/API/FileReader)
 newtype FileReader = FileReader JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal FileReader where
   fromJSVal = pure . pure . FileReader
 -----------------------------------------------------------------------------
+-- | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
 newtype URLSearchParams = URLSearchParams JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
@@ -925,12 +947,17 @@ newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
 -----------------------------------------------------------------------------
+-- | Type returned from a 'fetch' request 
 data Response body
   = Response
   { status :: Maybe Int
+    -- ^ HTTP status code
   , headers :: Map MisoString MisoString
+    -- ^ Response headers 
   , errorMessage :: Maybe MisoString
+    -- ^ Optional error message
   , body :: body
+    -- ^ Response body
   }
 -----------------------------------------------------------------------------
 instance Functor Response where

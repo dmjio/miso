@@ -8,6 +8,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Predefined list of HTML elements
+--
 ----------------------------------------------------------------------------
 module Miso.Html.Element
   ( -- ** Smart constructors

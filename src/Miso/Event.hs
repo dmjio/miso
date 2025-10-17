@@ -9,6 +9,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions for specifying component lifecycle events and event handlers in 'View'.
+--
 ----------------------------------------------------------------------------
 module Miso.Event
    ( -- *** Smart constructors
