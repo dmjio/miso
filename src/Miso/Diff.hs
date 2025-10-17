@@ -8,6 +8,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions and helpers for Virtual DOM diffing.
+--
 ----------------------------------------------------------------------------
 module Miso.Diff
   ( diff

@@ -753,7 +753,7 @@ this = _id
 -- | Smart constructor @lens@ function. Used to easily construct a @Lens@
 --
 -- > name :: Lens Person String
--- > name = lens _name $ \p n -> p { _name = n }
+-- > name = lens _name $ \\p n -> p { _name = n }
 --
 lens
   :: (record -> field)

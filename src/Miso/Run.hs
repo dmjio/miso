@@ -54,7 +54,7 @@ run action = do
 -- | Start or restart the server, with a static 'Middlware' policy.
 --
 -- dmj: This is like `debug` from `jsaddle-warp`, except it uses a static
--- @Middleware@ for static file hosting.
+-- middleware for static file hosting.
 --
 -- This means that usage of `url('mario.png')` will "just work" when developing
 -- from GHCi.

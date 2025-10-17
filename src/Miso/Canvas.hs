@@ -173,6 +173,7 @@ canvas attributes initialize draw = node HTML "canvas" attrs []
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
           runReaderT (draw initialState) ctx
 -----------------------------------------------------------------------------
+-- | Various patterns used in the canvas API
 data PatternType = Repeat | RepeatX | RepeatY | NoRepeat
 -----------------------------------------------------------------------------
 instance ToJSVal PatternType where
@@ -187,20 +188,25 @@ instance FromJSVal PatternType where
       "no-repeat" -> pure (Just NoRepeat)
       _ -> pure Nothing
 -----------------------------------------------------------------------------
+-- | Color, Gradient or Pattern styling
 data StyleArg
   = ColorArg Color
   | GradientArg Gradient
   | PatternArg Pattern
 -----------------------------------------------------------------------------
+-- | Smart constructor for 'Color' when using 'StyleArg'
 color :: Color -> StyleArg
 color = ColorArg
 -----------------------------------------------------------------------------
+-- | Smart constructor for 'Gradient' when using 'StyleArg'
 gradient :: Gradient -> StyleArg
 gradient = GradientArg
 -----------------------------------------------------------------------------
+-- | Smart constructor for 'Pattern' when using 'StyleArg'
 pattern_ :: Pattern -> StyleArg
 pattern_ = PatternArg
 -----------------------------------------------------------------------------
+-- | Renders a 'StyleArg' to a 'JSVal'
 renderStyleArg :: StyleArg -> JSM JSVal
 renderStyleArg (ColorArg c)    = toJSVal (renderColor c)
 renderStyleArg (GradientArg g) = toJSVal g
@@ -212,12 +218,14 @@ instance MakeArgs StyleArg where
 instance ToJSVal StyleArg where
   toJSVal = toJSVal . renderStyleArg
 -----------------------------------------------------------------------------
+-- | Pretty-prints a 'PatternType' as 'MisoString'
 renderPattern :: PatternType -> MisoString
 renderPattern Repeat   = "repeat"
 renderPattern RepeatX  = "repeat-x"
 renderPattern RepeatY  = "repeat-y"
 renderPattern NoRepeat = "no-repeat"
 -----------------------------------------------------------------------------
+-- | [LineCap](https://www.w3schools.com/tags/canvas_linecap.asp)
 data LineCapType
   = LineCapButt
   | LineCapRound
@@ -230,11 +238,13 @@ instance MakeArgs LineCapType where
 instance ToJSVal LineCapType where
   toJSVal = toJSVal . renderLineCapType
 -----------------------------------------------------------------------------
+-- | Pretty-printing for 'LineCapType'
 renderLineCapType :: LineCapType -> MisoString
 renderLineCapType LineCapButt = "butt"
 renderLineCapType LineCapRound = "round"
 renderLineCapType LineCapSquare = "square"
 -----------------------------------------------------------------------------
+-- | [LineJoin](https://www.w3schools.com/tags/canvas_linejoin.asp)
 data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -244,11 +254,13 @@ instance MakeArgs LineJoinType where
 instance ToJSVal LineJoinType where
   toJSVal = toJSVal . renderLineJoinType
 -----------------------------------------------------------------------------
+-- | Pretty-print a 'LineJoinType'
 renderLineJoinType :: LineJoinType -> MisoString
 renderLineJoinType LineJoinBevel = "bevel"
 renderLineJoinType LineJoinRound = "round"
 renderLineJoinType LineJoinMiter = "miter"
 -----------------------------------------------------------------------------
+-- | Left-to-right, right-to-left, or inherit direction type.
 data DirectionType = LTR | RTL | Inherit
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -258,11 +270,13 @@ instance MakeArgs DirectionType where
 instance ToJSVal DirectionType where
   toJSVal = toJSVal . renderDirectionType
 -----------------------------------------------------------------------------
+-- | Pretty-printing for 'DirectionType'
 renderDirectionType :: DirectionType -> MisoString
 renderDirectionType LTR = "ltr"
 renderDirectionType RTL = "rtl"
 renderDirectionType Inherit = "inherit"
 -----------------------------------------------------------------------------
+-- | Text alignment type
 data TextAlignType
   = TextAlignCenter
   | TextAlignEnd
@@ -277,6 +291,7 @@ instance MakeArgs TextAlignType where
 instance ToJSVal TextAlignType where
   toJSVal = toJSVal . renderTextAlignType
 -----------------------------------------------------------------------------
+-- | Pretty-print 'TextAlignType'
 renderTextAlignType :: TextAlignType -> MisoString
 renderTextAlignType TextAlignCenter = "center"
 renderTextAlignType TextAlignEnd    = "end"
@@ -284,6 +299,7 @@ renderTextAlignType TextAlignLeft   = "left"
 renderTextAlignType TextAlignRight  = "right"
 renderTextAlignType TextAlignStart  = "start"
 -----------------------------------------------------------------------------
+-- | TextBaselineType
 data TextBaselineType
   = TextBaselineAlphabetic
   | TextBaselineTop
@@ -299,6 +315,7 @@ instance MakeArgs TextBaselineType where
 instance ToJSVal TextBaselineType where
   toJSVal = toJSVal . renderTextBaselineType
 -----------------------------------------------------------------------------
+-- | Pretty-printing for 'TextBaselineType'
 renderTextBaselineType :: TextBaselineType -> MisoString
 renderTextBaselineType TextBaselineAlphabetic = "alphabetic"
 renderTextBaselineType TextBaselineTop = "top"
@@ -307,6 +324,7 @@ renderTextBaselineType TextBaselineMiddle = "middle"
 renderTextBaselineType TextBaselineIdeographic = "ideographic"
 renderTextBaselineType TextBaselineBottom = "bottom"
 -----------------------------------------------------------------------------
+-- | CompositeOperation
 data CompositeOperation
   = SourceOver
   | SourceAtop
@@ -327,6 +345,7 @@ instance MakeArgs CompositeOperation where
 instance ToJSVal CompositeOperation where
   toJSVal = toJSVal . renderCompositeOperation
 -----------------------------------------------------------------------------
+-- | Pretty-print a 'CompositeOperation'
 renderCompositeOperation :: CompositeOperation -> MisoString
 renderCompositeOperation SourceOver      = "source-over"
 renderCompositeOperation SourceAtop      = "source-atop"
@@ -340,16 +359,19 @@ renderCompositeOperation Lighter         = "lighter"
 renderCompositeOperation Copy            = "copy"
 renderCompositeOperation Xor             = "xor"
 -----------------------------------------------------------------------------
+-- | Type used to hold a canvas Pattern
 newtype Pattern = Pattern JSVal deriving (ToJSVal)
 -----------------------------------------------------------------------------
 instance FromJSVal Pattern where
   fromJSVal = pure . pure . Pattern
 -----------------------------------------------------------------------------
+-- | Type used to hold a Gradient
 newtype Gradient = Gradient JSVal deriving (ToJSVal)
 -----------------------------------------------------------------------------
 instance FromJSVal Gradient where
   fromJSVal = pure . pure . Gradient
 -----------------------------------------------------------------------------
+-- | Type used to hold 'ImageData'
 newtype ImageData = ImageData JSVal deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance MakeArgs ImageData where
