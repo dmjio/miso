@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Render
@@ -40,10 +41,6 @@ instance ToHtml (View m a) where
 -- | Render a @[View]@ to a @L.ByteString@
 instance ToHtml [View m a] where
   toHtml = foldMap renderView
-----------------------------------------------------------------------------
--- | Render a @Component parent model action@ to a @L.ByteString@
-instance ToHtml (Component parent model action) where
-  toHtml Component {..} = renderView (view model)
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
@@ -92,11 +89,22 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
+#ifdef JSADDLE
 renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
   renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
   -- dmj: Just trust me bro moment.
   -- This is fine to do because we don't need the polymorphism here
   -- when monomorphizing to Builder. Release the skolems.
+#else
+renderBuilder (VComp ns tag attrs (SomeComponent comp@Component {..})) =
+  renderBuilder
+      ( VNode ns tag attrs
+          [ unsafeCoerce (view $ getInitialComponentModel comp) ]
+{-                                  ^ this is the only difference
+                                   (need to run hydrateModel server-side) -}
+      )
+#endif
+
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =

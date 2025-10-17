@@ -74,6 +74,9 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
+#ifndef JSADDLE
+  , getInitialComponentModel
+#endif
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
@@ -303,19 +306,22 @@ instance ToView model (View model action) where
 -----------------------------------------------------------------------------
 instance ToView model (Component parent model action) where
   type ToViewAction model (Component parent model action) = action
-  toView Component {..} = toView (view appropriateModel)
-    where
 #ifdef JSADDLE
-      appropriateModel = model
+  toView Component {..} = toView (view model)
 #else
-      appropriateModel =
-        case hydrateModel of
-          Nothing -> model
-          Just action -> unsafePerformIO $
-            action `catch` (\(e :: SomeException) -> do
-              putStrLn "Encountered exception during model hydration, falling back to default model"
-              print e
-              pure model)
+  toView comp@Component {..} = toView (view $ getInitialComponentModel comp)
+#endif
+-----------------------------------------------------------------------------
+#ifndef JSADDLE
+getInitialComponentModel :: Component parent model action -> model
+getInitialComponentModel Component {..} =
+  case hydrateModel of
+    Nothing -> model
+    Just action -> unsafePerformIO $
+      action `catch` (\(e :: SomeException) -> do
+        putStrLn "Encountered exception during model hydration, falling back to default model"
+        print e
+        pure model)
 #endif
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
