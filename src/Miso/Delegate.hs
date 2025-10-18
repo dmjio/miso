@@ -9,6 +9,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Types and functions related to [event delegation](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling#event_delegation)
+--
 ----------------------------------------------------------------------------
 module Miso.Delegate
   ( delegator

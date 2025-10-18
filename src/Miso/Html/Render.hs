@@ -12,6 +12,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- 'View' serialization
+--
 ----------------------------------------------------------------------------
 module Miso.Html.Render
   ( -- *** Classes

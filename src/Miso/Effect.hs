@@ -65,6 +65,7 @@ import           Data.Functor.Identity (Identity(..))
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (JSM)
 -----------------------------------------------------------------------------
+-- | Smart constructor for 'ComponentInfo'
 mkComponentInfo
   :: ComponentId
   -- ^ Component Id
@@ -85,6 +86,7 @@ data ComponentInfo parent
   , _componentDOMRef :: DOMRef
   }
 -----------------------------------------------------------------------------
+-- | 'ComponentId' of the current 'Component'
 type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.

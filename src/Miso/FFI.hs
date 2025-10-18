@@ -6,6 +6,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Module for re-exporting internal FFI functions for public consumption
+--
 ----------------------------------------------------------------------------
 module Miso.FFI
   ( -- ** Functions

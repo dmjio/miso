@@ -453,15 +453,18 @@ data URI
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
+-- | An empty 'URI'
 emptyURI :: URI
 emptyURI = URI mempty mempty mempty
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
 ----------------------------------------------------------------------------
+-- | 'URI' pretty-printing
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
 -----------------------------------------------------------------------------
+-- | 'URI' query string pretty-printing
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..} = queries <> flags
   where

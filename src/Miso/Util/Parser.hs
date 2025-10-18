@@ -35,6 +35,7 @@ import           Control.Applicative
 ----------------------------------------------------------------------------
 import           Miso.Util.Lexer (LexerError)
 ----------------------------------------------------------------------------
+-- | A type for expressing failure during parsing.
 data ParseError a token
   = UnexpectedParse [token]
   | LexicalError LexerError
@@ -43,6 +44,7 @@ data ParseError a token
   | EmptyStream
   deriving (Show, Eq)
 ----------------------------------------------------------------------------
+-- | Executes a parser against a series of tokens.
 parse :: Parser token a -> [token] -> Either (ParseError a token) a
 parse _ [] = Left EmptyStream
 parse parser tokens =
@@ -52,8 +54,10 @@ parse parser tokens =
     [(_, xs)] -> Left (UnexpectedParse xs)
     xs        -> Left (Ambiguous xs)
 ----------------------------------------------------------------------------
+-- | Convenience synonym when defining parser combinators
 type Parser token a = ParserT () [token] [] a
 ----------------------------------------------------------------------------
+-- | Core type for parsing
 newtype ParserT r token m a
   = Parser
   { runParserT :: r -> token -> m (a, token)
@@ -88,30 +92,38 @@ instance Monad (ParserT r token []) where
 instance MonadFail (ParserT r token []) where
   fail _ = Parser $ \_ _ -> []
 ----------------------------------------------------------------------------
+-- | Predicate combinator used as a base to construct other high-level
+-- parser combinators.
 satisfy :: (a -> Bool) -> ParserT r [a] [] a
 satisfy f = Parser $ \_ input ->
   case input of
     t : ts | f t -> [(t, ts)]
     _ -> []
 ----------------------------------------------------------------------------
+-- | Returns all input from a parser
 allTokens :: ParserT r a [] a
 allTokens = Parser $ \_ input -> [(input, input)]
 ----------------------------------------------------------------------------
+-- | Modifies tokens
 modifyTokens :: (t -> t) -> ParserT r t [] ()
 modifyTokens f = Parser $ \_ input -> [((), f input)]
 ----------------------------------------------------------------------------
+-- | Smart constructor for building a token parser combinator
 token_ :: Eq token => token -> Parser token token
 token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
+-- | Retrieves read-only state from a Parser 
 askParser :: ParserT r token [] r
 askParser = Parser $ \r input -> [(r, input)]
 ----------------------------------------------------------------------------
+-- | Views the next token without consuming input
 peek :: Parser a a
 peek = Parser $ \_ tokens ->
   case tokens of
     [] -> []
     (x:xs) -> [(x, x:xs)]
 ----------------------------------------------------------------------------
+-- | Parser combinator that always fails
 errorOut :: errorToken -> ParserT r errorToken [] ()
 errorOut x = Parser $ \_ _ -> [((),x)]
 ----------------------------------------------------------------------------

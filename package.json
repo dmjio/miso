@@ -4,6 +4,7 @@
   "description": "miso: A tasty Haskell front-end web and mobile framework",
   "scripts": {
     "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete",
+    "clean-hs": "find src -type f -name '*.o' -or -name '*.hi' -or -name '*~undo-tree~*' | xargs rm",
     "lint": "eslint --fix ts/*.ts",
     "test": "bun test && bun run lcov",
     "lcov": "lcov-viewer lcov -o ./coverage ./coverage/lcov.info",

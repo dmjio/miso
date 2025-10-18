@@ -43,7 +43,7 @@
 --   fromRoute (Widget value) = [ toPath "widget", toCapture value ]
 --
 -- main :: IO ()
--- main = print (runRouter "/widget/10" router)
+-- main = print (runRouter "//widget//10" router)
 --
 -- > Right (Widget "widget" 10)
 -- @
@@ -78,7 +78,7 @@
 -- The router is "reversible" which means it can produce type-safe links using the `href_` function.
 --
 -- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
--- > "/widget/23/foo/okay?bar=0"
+-- > "//widget//23//foo//okay?bar=0"
 --
 -- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View model action@ code.
 --
@@ -166,17 +166,21 @@ import           Miso.Util.Lexer (Lexer)
 import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
 import qualified Miso.String as MS
 -----------------------------------------------------------------------------
+-- | Type used for representing capture variables
 newtype Capture sym a = Capture a
   deriving stock (Generic, Eq, Show)
   deriving newtype (ToMisoString, FromMisoString)
 -----------------------------------------------------------------------------
+-- | Type used for representing URL paths
 newtype Path (path :: Symbol) = Path MisoString
   deriving (Generic, Eq, Show)
   deriving newtype (ToMisoString, IsString)
 -----------------------------------------------------------------------------
+-- | Type used for representing query flags
 newtype QueryFlag (path :: Symbol) = QueryFlag Bool
   deriving (Generic, Eq, Show)
 -----------------------------------------------------------------------------
+-- | Type used for representing query parameters
 newtype QueryParam (path :: Symbol) a = QueryParam (Maybe a)
   deriving (Generic, Eq, Show)
 -----------------------------------------------------------------------------
@@ -208,15 +212,19 @@ data Token
   | IndexToken
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Smart constructor for building a 'QueryParamToken'
 toQueryParam :: ToMisoString s => MisoString -> s -> Token
 toQueryParam k v = QueryParamToken k (ms v)
 -----------------------------------------------------------------------------
+-- | Smart constructor for building a 'QueryFlagToken'
 toQueryFlag :: MisoString -> Token
 toQueryFlag = QueryFlagToken
 -----------------------------------------------------------------------------
+-- | Smart constructor for building a 'Capture' variable 
 toCapture :: ToMisoString string => string -> Token
 toCapture = CaptureOrPathToken . ms
 -----------------------------------------------------------------------------
+-- | Smart constructor for building a path fragment
 toPath :: MisoString -> Token
 toPath = CaptureOrPathToken
 -----------------------------------------------------------------------------
@@ -305,6 +313,7 @@ index specified = do
   when (specified /= "index") (fail "index")
   pure "/"
 -----------------------------------------------------------------------------
+-- | URI parsing
 parseURI :: MisoString -> Either MisoString URI
 parseURI txt =
   case lexTokens txt of
@@ -312,26 +321,33 @@ parseURI txt =
     Left (L.UnexpectedEOF eof) -> Left ("EOF: " <> ms (show eof))
     Right tokens -> Right (tokensToURI tokens)
 -----------------------------------------------------------------------------
+-- | Class used to facilitate routing for miso applications
 class Router route where
   fromRoute :: route -> [Token]
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
 
+  -- | Convert a 'Router route => route' into a 'URI'
   toURI :: route -> URI
   toURI = tokensToURI . fromRoute
 
+  -- | Map a URI back to a route
   route :: URI -> Either RoutingError route
   route = toRoute . prettyURI
 
+  -- | Convenience for specifying a URL as a hyperlink reference in 'View'
   href_ :: route -> Attribute action
   href_ = P.href_ . prettyRoute
 
+  -- | Route pretty printing
   prettyRoute :: route -> MisoString
   prettyRoute = prettyURI . tokensToURI . fromRoute
 
+  -- | Route debugging
   dumpURI :: route -> MisoString
   dumpURI = ms . show . tokensToURI . fromRoute
 
+  -- | Route parsing from a 'MisoString'
   toRoute :: MisoString -> Either RoutingError route
   toRoute input = parseRoute input routeParser
 
@@ -359,6 +375,7 @@ class Router route where
 runRouter :: MisoString -> RouteParser route -> Either RoutingError route
 runRouter = parseRoute
 -----------------------------------------------------------------------------
+-- | Convenience for specifying multiple routes
 routes :: [ RouteParser route ] -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
@@ -410,6 +427,7 @@ instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, 
         Just v -> pure $ QueryParamToken (ms (symbolVal (Proxy @param))) (ms v)
     gRouteParser = K1 <$> queryParam
 -----------------------------------------------------------------------------
+-- | Query parameter parser from a route
 queryParam
   :: forall param a . (FromMisoString a, KnownSymbol param)
   => RouteParser (QueryParam param a)
@@ -431,6 +449,7 @@ instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (Que
           flag = ms (symbolVal (Proxy @flag))
   gRouteParser = K1 <$> queryFlag
 -----------------------------------------------------------------------------
+-- | Query flag parser from a route
 queryFlag :: forall flag . KnownSymbol flag => RouteParser (QueryFlag flag)
 queryFlag = do
   URI {..} <- askParser
@@ -469,6 +488,7 @@ indexToken = satisfy $ \case
   IndexToken {} -> True
   _ -> False
 -----------------------------------------------------------------------------
+-- | Lexing for a URI
 uriLexer :: Lexer [Token]
 uriLexer = do
   tokens <- some lexer

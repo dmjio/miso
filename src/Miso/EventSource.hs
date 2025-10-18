@@ -11,6 +11,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions and types for working with [Server Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
+--
 ----------------------------------------------------------------------------
 module Miso.EventSource
   ( -- *** EventSource

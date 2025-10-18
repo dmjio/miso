@@ -40,6 +40,7 @@ import           Control.Applicative
 import           Miso.String (MisoString, ToMisoString)
 import qualified Miso.String as MS
 ----------------------------------------------------------------------------
+-- | Potential errors during lexing
 data LexerError
   = LexerError MisoString Location
   | UnexpectedEOF Location
@@ -51,6 +52,7 @@ instance Show LexerError where
   show (LexerError xs loc) =
     "Unexpected \"" <> take 5 (MS.unpack xs) <> "\"... at " <> show loc
 ----------------------------------------------------------------------------
+-- | Type to hold the location (line and column) of a Token
 data Location
   = Location
   { line :: Int
@@ -60,12 +62,15 @@ data Location
 instance Show Location where
   show (Location l col) = show l <> " " <> show col
 ----------------------------------------------------------------------------
+-- | Helper for extracting column from 'Location'
 getStartColumn :: Location -> Int
 getStartColumn = fst . column
 ----------------------------------------------------------------------------
+-- | Initial 'Location'
 initialLocation :: Location
 initialLocation = Location 1 (1,1)
 ----------------------------------------------------------------------------
+-- | Empty 'Location'
 zeroLocation :: Location
 zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
@@ -74,21 +79,29 @@ newtype Lexer token
   { runLexer :: Stream -> Either LexerError (token, Stream)
   }
 ----------------------------------------------------------------------------
+-- | Combinator that always fails to lex
 oops :: Lexer token
 oops = Lexer $ \s -> Left (streamError s)
 ----------------------------------------------------------------------------
+-- | Smart constructor for 'LexerError'
 streamError :: Stream -> LexerError
 streamError (Stream xs l) = unexpected xs l
 ----------------------------------------------------------------------------
+-- | Smart constructor for 'Stream'
 mkStream :: MisoString -> Stream
 mkStream xs = Stream xs initialLocation
 ----------------------------------------------------------------------------
+-- | A 'Stream' of text used as input to lexing
 data Stream
   = Stream
   { stream :: MisoString
+    -- ^ Current 'Stream' of text
   , currentLocation :: Location
+    -- ^ current 'Location' in the 'Stream'
   } deriving Eq
 ----------------------------------------------------------------------------
+-- | A 'Located' token holds the lexed output the 'Location' at which
+-- the successful lex occurred.
 data Located token
   = Located
   { token :: token
@@ -129,6 +142,7 @@ instance Alternative Lexer where
 instance MonadPlus Lexer where
   mplus = (<|>)
 ----------------------------------------------------------------------------
+-- | Fetches the first character in the 'Stream', does not consume input
 peek :: Lexer (Maybe Char)
 peek = Lexer $ \ys ->
   pure $ case ys of
@@ -137,6 +151,7 @@ peek = Lexer $ \ys ->
         Nothing -> (Nothing, Stream mempty l)
         Just (z,zs) -> (Just z, Stream (MS.singleton z <> zs) l)
 ----------------------------------------------------------------------------
+-- | Predicate combinator that consumes matching input
 satisfy :: (Char -> Bool) -> Lexer Char
 satisfy predicate = Lexer $ \ys ->
   case ys of
@@ -147,33 +162,43 @@ satisfy predicate = Lexer $ \ys ->
           | predicate z -> Right (z, Stream zs l)
           | otherwise -> Left (unexpected zs l)
 ----------------------------------------------------------------------------
+-- | Smart constructor for 'LexerError'
+-- If the input is empty, an 'UnexpectedEOF' is issued.
 unexpected :: MisoString -> Location -> LexerError
 unexpected xs loc | MS.null xs = UnexpectedEOF loc
 unexpected cs loc = LexerError cs loc
 ----------------------------------------------------------------------------
+-- | Retrieves current input from 'Lexer'
 getInput :: Lexer Stream
 getInput = Lexer $ \s -> Right (s, s)
 ----------------------------------------------------------------------------
+-- | Overrides current 'Stream' in 'Lexer' to user-specified 'Stream'.
 putInput :: Stream -> Lexer ()
 putInput s = Lexer $ \_ -> Right ((), s)
 ----------------------------------------------------------------------------
+-- | Retrieves the current 'Stream' 'Location'
 getLocation :: Lexer Location
 getLocation = Lexer $ \(Stream s l) -> pure (l, Stream s l)
 ----------------------------------------------------------------------------
+-- | Sets the current 'Stream' 'Location'
 setLocation :: Location -> Lexer ()
 setLocation l = Lexer $ \(Stream s _) -> pure ((), Stream s l)
 ----------------------------------------------------------------------------
+-- | Modifies a 'Stream'
 modifyInput :: (Stream -> Stream) -> Lexer ()
 modifyInput f = do
   s <- getInput
   putInput (f s)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'Char'
 char :: Char -> Lexer Char
 char c = satisfy (== c)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'String'
 string' :: String -> Lexer String
 string' = traverse char
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'MisoString'
 string :: MisoString -> Lexer MisoString
 string prefix = Lexer $ \s ->
   case s of
@@ -183,6 +208,7 @@ string prefix = Lexer $ \s ->
       | otherwise ->
           Left (unexpected ys l)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for executing a 'Lexer' with annotated 'Location' information
 withLocation :: ToMisoString token => Lexer token -> Lexer (Located token)
 withLocation lexer = do
   result <- lexer
