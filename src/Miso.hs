@@ -122,7 +122,7 @@ miso f = withJS $ do
 startApp :: Eq model => App model action -> JSM ()
 startApp = startComponent
 -----------------------------------------------------------------------------
--- | Alias for 'miso'.
+-- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => (URI -> App model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------

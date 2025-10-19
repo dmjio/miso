@@ -48,7 +48,7 @@ conditionalViews condition views =
     then views
     else []
 -----------------------------------------------------------------------------
--- | Select the first Alternative, analogous to 'asum'.
+-- | Select the first Alternative, analogous to @asum@.
 oneOf :: Alternative f => [f a] -> f a
 oneOf = foldr (<|>) empty
 ----------------------------------------------------------------------------

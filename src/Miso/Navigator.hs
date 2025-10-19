@@ -98,7 +98,7 @@ data UserMedia
   { audio, video :: Bool
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Default 'UserMedia'
+-- | Default t'UserMedia'
 userMedia :: UserMedia
 userMedia = UserMedia True True
 -----------------------------------------------------------------------------

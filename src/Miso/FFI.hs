@@ -46,7 +46,7 @@ module Miso.FFI
   , toLocaleString
   , getSeconds
   , getMilliseconds
-  -- ** Component
+  -- ** 'Miso.Types.Component'
   , getParentComponentId
   , getComponentId
   -- ** DOM
@@ -55,8 +55,6 @@ module Miso.FFI
   -- ** Element
   , click
   , files
-  -- ** Re-exports
-  , JSVal
    -- ** Navigator
   , isOnLine
   -- ** ArrayBuffer
@@ -80,6 +78,4 @@ module Miso.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------

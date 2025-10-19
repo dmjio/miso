@@ -109,7 +109,7 @@ import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
 import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
--- | Helper function to abstract out initialization of @Component@ between top-level API functions.
+-- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
   :: Eq model
   => Hydrate
@@ -311,7 +311,7 @@ data Hydrate
   | Hydrate
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | @Component@ state, data associated with the lifetime of a @Component@
+-- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
 data ComponentState model action
   = ComponentState
   { componentId              :: ComponentId
@@ -335,16 +335,16 @@ data ComponentState model action
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
--- communication between 'Component'. 'Component' can 'subscribe' to or 'publish' to any @Topic@,
--- within the same 'Component' or across 'Component'.
+-- communication between t'Miso.Types.Component'. t'Miso.Types.Component' can 'subscribe' to or 'publish' to any @Topic@,
+-- within the same t'Miso.Types.Component' or across t'Miso.Types.Component'.
 --
--- This requires creating a custom 'ToJSON' / 'FromJSON'. Any other 'Component'
+-- This requires creating a custom 'ToJSON' / 'FromJSON'. Any other t'Miso.Types.Component'
 -- can 'publish' or 'subscribe' to this @Topic message@. It is a way to provide
 -- loosely-coupled communication between @Components@.
 --
 -- See 'publish', 'subscribe', 'unsubscribe' for more details.
 --
--- When distributing 'Component' for third-party use, it is recommended to export
+-- When distributing t'Miso.Types.Component' for third-party use, it is recommended to export
 -- the @Topic@, where message is the JSON protocol.
 --
 --
@@ -396,12 +396,12 @@ subscribers :: IORef (Map (ComponentId, Topic a) ThreadId)
 {-# NOINLINE subscribers #-}
 subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Subscribes to a @Topic@, provides callback function that writes to 'Component' 'Sink'
+-- | Subscribes to a @Topic@, provides callback function that writes to t'Miso.Types.Component' 'Sink'
 --
 -- If a @Topic message@ does not exist when calling 'subscribe' it is generated dynamically.
 -- Each subscriber decodes the received 'Value' using it's own 'FromJSON' instance. This provides
--- for loose-coupling between 'Component'. As long as the underlying 'Value' are identical
--- 'Component' can use their own types without serialization issues. @Topic message@ should
+-- for loose-coupling between t'Miso.Types.Component'. As long as the underlying 'Value' are identical
+-- t'Miso.Types.Component' can use their own types without serialization issues. @Topic message@ should
 -- have their own JSON API specification when being distributed.
 --
 -- @
@@ -510,7 +510,7 @@ subscribe topicName successful errorful = do
 -----------------------------------------------------------------------------
 -- | Unsubscribe to a @Topic@
 --
--- Unsubscribes a 'Component' from receiving messages from @Topic message@
+-- Unsubscribes a t'Miso.Types.Component' from receiving messages from @Topic message@
 --
 -- See 'subscribe' for more use.
 --
@@ -540,7 +540,7 @@ unsubscribe_ topicName vcompId = do
 -- all subscribers are immediately notified of a new message. A message is distributed as a 'Value'
 -- The underlying 'ToJSON' instance is used to construct this 'Value'.
 --
--- We recommend documenting a public API for the JSON protocol message when distributing a 'Component'
+-- We recommend documenting a public API for the JSON protocol message when distributing a t'Miso.Types.Component'
 -- downstream to end users for consumption (be it inside a single cabal project or across multiple
 -- cabal projects).
 --
@@ -610,8 +610,8 @@ freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 -----------------------------------------------------------------------------
 -- | componentMap
 --
--- This is a global @Component@ @Map@ that holds the state of all currently
--- mounted @Component@s
+-- This is a global t'Miso.Types.Component' @Map@ that holds the state of all currently
+-- mounted t'Miso.Types.Component's
 components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
@@ -697,7 +697,7 @@ unloadScripts ComponentState {..} = do
       # ("removeChild" :: MisoString)
       $ [domRef]
 -----------------------------------------------------------------------------
--- | Helper function for cleanly destroying a @Component@
+-- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
   :: Function
   -> Component parent model action
@@ -864,9 +864,9 @@ renderScripts scripts =
         =<< fromJSValUnchecked
         =<< (jsg @MisoString "JSON" # ("stringify" :: MisoString) $ [o])
 -----------------------------------------------------------------------------
--- | Starts a named 'Sub' dynamically, during the life of a 'Component'.
+-- | Starts a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
--- All 'Sub' started will be stopped if a 'Component' is unmounted.
+-- All 'Sub' started will be stopped if a t'Miso.Types.Component' is unmounted.
 --
 -- @
 -- data SubType = LoggerSub | TimerSub
@@ -901,8 +901,8 @@ startSub subKey sub = do
       liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
         (M.insert (ms subKey) tid m, ())
 -----------------------------------------------------------------------------
--- | Stops a named 'Sub' dynamically, during the life of a 'Component'.
--- All 'Sub' started will be stopped automatically if a 'Component' is unmounted.
+-- | Stops a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
+-- All 'Sub' started will be stopped automatically if a t'Miso.Types.Component' is unmounted.
 --
 -- @
 -- data SubType = LoggerSub | TimerSub
@@ -927,7 +927,7 @@ stopSub subKey = do
             atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid
 -----------------------------------------------------------------------------
--- | Send any @ToJSON message => message@ to a 'Component' mailbox, by 'ComponentId'
+-- | Send any @ToJSON message => message@ to a t'Miso.Types.Component' mailbox, by 'ComponentId'
 --
 -- @
 -- mail componentId ("test message" :: MisoString) :: Effect parent model action
@@ -947,7 +947,7 @@ mail vcompId message = io_ $
     Just ComponentState {..} ->
       liftIO $ sendMail componentMailbox (toJSON message)
 -----------------------------------------------------------------------------
--- | Send any @ToJSON message => message@ to the parent's @Component@ mailbox
+-- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
 --
 -- @
 -- mailParent ("test message" :: MisoString) :: Effect parent model action
@@ -1008,7 +1008,7 @@ parent successful errorful = do
         model <- liftIO (readTVarIO componentModelCurrent)
         sink (successful model)
 -----------------------------------------------------------------------------
--- | Sends a message to all @Component@ 'mailbox', excluding oneself.
+-- | Sends a message to all t'Miso.Types.Component' 'mailbox', excluding oneself.
 --
 -- @
 --
@@ -1259,9 +1259,9 @@ websocketSend socketId msg = do
           BLOB blob_ ->
             FFI.websocketSend socket =<< toJSVal blob_
 -----------------------------------------------------------------------------
--- | Retrieves current status of `WebSocket`
+-- | Retrieves current status of t'WebSocket'
 --
--- If the 'WebSocket' identifier does not exist a 'CLOSED' is returned.
+-- If the t'WebSocket' identifier does not exist a 'CLOSED' is returned.
 --
 socketState :: WebSocket -> (SocketState -> action) -> Effect parent model action
 socketState socketId callback = do
@@ -1358,19 +1358,19 @@ data CloseCode
    -- ^ OtherCode that is reserved and not in the range 0999
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Type for holding a 'WebSocket' file descriptor.
+-- | Type for holding a t'WebSocket' file descriptor.
 newtype WebSocket = WebSocket Int
   deriving (ToJSVal, Eq, Num)
 -----------------------------------------------------------------------------
--- | A null 'WebSocket' is one with a negative descriptor.
+-- | A null t'WebSocket' is one with a negative descriptor.
 emptyWebSocket :: WebSocket
 emptyWebSocket = (-1)
 -----------------------------------------------------------------------------
--- | A type for holding an @EventSource@ descriptor.
+-- | A type for holding an t'EventSource' descriptor.
 newtype EventSource = EventSource Int
   deriving (ToJSVal, Eq, Num)
 -----------------------------------------------------------------------------
--- | A null @EventSource@ is one with a negative descriptor.
+-- | A null t'EventSource' is one with a negative descriptor.
 emptyEventSource :: EventSource
 emptyEventSource = (-1)
 -----------------------------------------------------------------------------

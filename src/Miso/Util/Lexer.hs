@@ -62,15 +62,15 @@ data Location
 instance Show Location where
   show (Location l col) = show l <> " " <> show col
 ----------------------------------------------------------------------------
--- | Helper for extracting column from 'Location'
+-- | Helper for extracting column from t'Location'
 getStartColumn :: Location -> Int
 getStartColumn = fst . column
 ----------------------------------------------------------------------------
--- | Initial 'Location'
+-- | Initial t'Location'
 initialLocation :: Location
 initialLocation = Location 1 (1,1)
 ----------------------------------------------------------------------------
--- | Empty 'Location'
+-- | Empty t'Location'
 zeroLocation :: Location
 zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
@@ -85,24 +85,24 @@ newtype Lexer token
 oops :: Lexer token
 oops = Lexer $ \s -> Left (streamError s)
 ----------------------------------------------------------------------------
--- | Smart constructor for 'LexerError'
+-- | Smart constructor for t'LexerError'
 streamError :: Stream -> LexerError
 streamError (Stream xs l) = unexpected xs l
 ----------------------------------------------------------------------------
--- | Smart constructor for 'Stream'
+-- | Smart constructor for t'Stream'
 mkStream :: MisoString -> Stream
 mkStream xs = Stream xs initialLocation
 ----------------------------------------------------------------------------
--- | A 'Stream' of text used as input to lexing
+-- | A t'Stream' of text used as input to lexing
 data Stream
   = Stream
   { stream :: MisoString
-    -- ^ Current 'Stream' of text
+    -- ^ Current t'Stream' of text
   , currentLocation :: Location
-    -- ^ current 'Location' in the 'Stream'
+    -- ^ current t'Location' in the t'Stream'
   } deriving Eq
 ----------------------------------------------------------------------------
--- | A 'Located' token holds the lexed output the 'Location' at which
+-- | A t'Located' token holds the lexed output the t'Location' at which
 -- the successful lex occurred.
 data Located token
   = Located
@@ -144,7 +144,7 @@ instance Alternative Lexer where
 instance MonadPlus Lexer where
   mplus = (<|>)
 ----------------------------------------------------------------------------
--- | Fetches the first character in the 'Stream', does not consume input
+-- | Fetches the first character in the t'Stream', does not consume input
 peek :: Lexer (Maybe Char)
 peek = Lexer $ \ys ->
   pure $ case ys of
@@ -164,29 +164,29 @@ satisfy predicate = Lexer $ \ys ->
           | predicate z -> Right (z, Stream zs l)
           | otherwise -> Left (unexpected zs l)
 ----------------------------------------------------------------------------
--- | Smart constructor for 'LexerError'
+-- | Smart constructor for t'LexerError'
 -- If the input is empty, an 'UnexpectedEOF' is issued.
 unexpected :: MisoString -> Location -> LexerError
 unexpected xs loc | MS.null xs = UnexpectedEOF loc
 unexpected cs loc = LexerError cs loc
 ----------------------------------------------------------------------------
--- | Retrieves current input from 'Lexer'
+-- | Retrieves current input from t'Lexer'
 getInput :: Lexer Stream
 getInput = Lexer $ \s -> Right (s, s)
 ----------------------------------------------------------------------------
--- | Overrides current 'Stream' in 'Lexer' to user-specified 'Stream'.
+-- | Overrides current t'Stream' in t'Lexer' to user-specified t'Stream'.
 putInput :: Stream -> Lexer ()
 putInput s = Lexer $ \_ -> Right ((), s)
 ----------------------------------------------------------------------------
--- | Retrieves the current 'Stream' 'Location'
+-- | Retrieves the current t'Stream' t'Location'
 getLocation :: Lexer Location
 getLocation = Lexer $ \(Stream s l) -> pure (l, Stream s l)
 ----------------------------------------------------------------------------
--- | Sets the current 'Stream' 'Location'
+-- | Sets the current t'Stream' t'Location'
 setLocation :: Location -> Lexer ()
 setLocation l = Lexer $ \(Stream s _) -> pure ((), Stream s l)
 ----------------------------------------------------------------------------
--- | Modifies a 'Stream'
+-- | Modifies a t'Stream'
 modifyInput :: (Stream -> Stream) -> Lexer ()
 modifyInput f = do
   s <- getInput
@@ -210,7 +210,7 @@ string prefix = Lexer $ \s ->
       | otherwise ->
           Left (unexpected ys l)
 ----------------------------------------------------------------------------
--- | Lexer combinator for executing a 'Lexer' with annotated 'Location' information
+-- | Lexer combinator for executing a t'Lexer' with annotated t'Location' information
 withLocation :: ToMisoString token => Lexer token -> Lexer (Located token)
 withLocation lexer = do
   result <- lexer

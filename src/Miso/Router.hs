@@ -73,18 +73,18 @@
 --
 -- > Right (Widget (Capture 23) (Path "foo") (Capture "okay") (QueryParam (Just 0)))
 --
--- The order of `Capture` and `Path` matters when defined on your sum type. The order of `QueryParam` and `QueryFlag` does not.
+-- The order of t`Capture` and t`Path` matters when defined on your sum type. The order of t`QueryParam` and t`QueryFlag` does not.
 --
 -- The router is "reversible" which means it can produce type-safe links using the `href_` function.
 --
 -- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
 -- > "/widget/23/foo/okay?bar=0"
 --
--- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View model action@ code.
+-- This can be used in conjunction with the @href_@ field below to embed type safe links into 'Miso.miso' @View model action@ code.
 --
 -- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
 --
--- Note: the `Index` constructor is name special, it used to encode the `"/"` path.
+-- Note: the 'Miso.Router.Index' constructor is name special, it used to encode the `"/"` path.
 --
 -- @
 --
@@ -205,7 +205,7 @@ instance KnownSymbol name => ToMisoString (QueryFlag name) where
     QueryFlag False ->
       mempty
 -----------------------------------------------------------------------------
--- | A list of tokens are returned from a successful lex of a URI
+-- | A list of tokens are returned from a successful lex of a t'URI'
 data Token
   = QueryParamTokens [(MisoString, MisoString)]
   | QueryParamToken MisoString MisoString
@@ -223,7 +223,7 @@ toQueryParam k v = QueryParamToken k (ms v)
 toQueryFlag :: MisoString -> Token
 toQueryFlag = QueryFlagToken
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'Capture' variable 
+-- | Smart constructor for building a capture variable 
 toCapture :: ToMisoString string => string -> Token
 toCapture = CaptureOrPathToken . ms
 -----------------------------------------------------------------------------
@@ -335,7 +335,7 @@ class Router route where
   default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
   fromRoute = gFromRoute . from
 
-  -- | Convert a 'Router route => route' into a 'URI'
+  -- | Convert a 'Router route => route' into a t'URI'
   toURI :: route -> URI
   toURI = tokensToURI . fromRoute
 
@@ -343,7 +343,7 @@ class Router route where
   route :: URI -> Either RoutingError route
   route = toRoute . prettyURI
 
-  -- | Convenience for specifying a URL as a hyperlink reference in 'View'
+  -- | Convenience for specifying a URL as a hyperlink reference in 'Miso.Types.View'
   href_ :: route -> Attribute action
   href_ = P.href_ . prettyRoute
 

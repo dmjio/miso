@@ -150,7 +150,7 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'HTML' 'node' in 'View'.
+-- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute action] -> [View model action] -> View model action
 nodeHtml nodeName = node HTML nodeName

@@ -13,7 +13,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- 'View' serialization
+-- 'Miso.Types.View' serialization
 --
 ----------------------------------------------------------------------------
 module Miso.Html.Render
@@ -35,19 +35,19 @@ import           Miso.Types
 class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
--- | Render a @View@ to a @L.ByteString@
-instance ToHtml (View m a) where
+-- | Render a @Miso.Types.View@ to a @L.ByteString@
+instance ToHtml (Miso.Types.View m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
--- | Render a @[View]@ to a @L.ByteString@
-instance ToHtml [View m a] where
+-- | Render a @[Miso.Types.View]@ to a @L.ByteString@
+instance ToHtml [Miso.Types.View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 -- | Render a @Component parent model action@ to a @L.ByteString@
 instance ToHtml (Component parent model action) where
   toHtml Component {..} = renderView (view model)
 ----------------------------------------------------------------------------
-renderView :: View m a -> L.ByteString
+renderView :: Miso.Types.View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
@@ -74,7 +74,7 @@ htmlEncode = MS.concatMap $ \case
   '\'' -> "&#39;"
   x -> MS.singleton x
 ----------------------------------------------------------------------------
-renderBuilder :: View m a -> Builder
+renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString (htmlEncode s)
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"

@@ -400,7 +400,7 @@ pct x = MS.ms x <> "%"
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
--- | Used when constructing a 'StyleSheet'
+-- | Used when constructing a t'StyleSheet'
 --
 -- @
 -- sheet_
@@ -414,7 +414,7 @@ ppx x = MS.ms x <> "ppx"
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
--- | Smart constructor for 'StyleSheet'
+-- | Smart constructor for t'StyleSheet'
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------
@@ -439,7 +439,7 @@ style_ = MT.Styles . M.fromList
 styleInline_ ::  MisoString -> Attribute action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
--- | Renders a 'Styles' to a 'MisoString'
+-- | Renders a t'Styles' to a t'MisoString'
 renderStyles :: Int -> Styles -> MisoString
 renderStyles indent (Styles (sel,styles)) = MS.unlines
   [ sel <> " {" <> MS.replicate indent " "
@@ -475,7 +475,7 @@ renderStyles indent (Media name frames) = MS.intercalate " "
   , "}\n"
   ]
 -----------------------------------------------------------------------------
--- | Render 'StyleSheet' as 'MisoString'
+-- | Render t'StyleSheet' as 'MisoString'
 --
 renderStyleSheet :: StyleSheet -> MisoString
 renderStyleSheet styleSheet = MS.intercalate "\n"

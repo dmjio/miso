@@ -23,7 +23,7 @@ import Language.Haskell.TH.Quote
 ----------------------------------------------------------------------------
 import Miso.String (toMisoString)
 ----------------------------------------------------------------------------
--- | QuasiQuoter for specifying multiline 'MisoString'
+-- | QuasiQuoter for specifying multiline 'Miso.String.MisoString'
 --
 -- @
 -- {-# LANGUAGE QuasiQuotes #-}

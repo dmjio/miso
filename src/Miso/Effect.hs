@@ -65,7 +65,7 @@ import           Data.Functor.Identity (Identity(..))
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal (JSM)
 -----------------------------------------------------------------------------
--- | Smart constructor for 'ComponentInfo'
+-- | Smart constructor for t'ComponentInfo'
 mkComponentInfo
   :: ComponentId
   -- ^ Component Id
@@ -76,9 +76,9 @@ mkComponentInfo
   -> ComponentInfo parent
 mkComponentInfo = ComponentInfo
 -----------------------------------------------------------------------------
--- | This is the 'Reader r' in 'Effect'. Accessible via 'ask'. It holds
--- a phantom type for `parent`. This is used as a witness when calling the
--- 'parent' function, and using 'prop'.
+-- | This is the 'Reader r' in t'Miso.Effect'. Accessible via 'Control.Monad.Reader.ask'. It holds
+-- a phantom type for @parent@. This is used as a witness when calling the
+-- @parent@ function, and using 'Miso.Property.prop'.
 data ComponentInfo parent
   = ComponentInfo
   { _componentId :: ComponentId
@@ -86,7 +86,7 @@ data ComponentInfo parent
   , _componentDOMRef :: DOMRef
   }
 -----------------------------------------------------------------------------
--- | 'ComponentId' of the current 'Component'
+-- | 'ComponentId' of the current t'Miso.Types.Component'
 type ComponentId = Int
 -----------------------------------------------------------------------------
 -- | Type synonym for constructing event subscriptions.
@@ -238,8 +238,8 @@ afterAll = modifyAllJSM . (<*)
 modifyAllJSM :: (JSM () -> JSM ()) -> Effect parent model action -> Effect parent model action
 modifyAllJSM = censor . (fmap . fmap)  
 -----------------------------------------------------------------------------
--- | @withSink@ allows users to access the sink of the 'Component' or top-level
--- 'Component' in their application. This is useful for introducing 'IO' into the system.
+-- | @withSink@ allows users to access the sink of the t'Miso.Types.Component' or top-level
+-- t'Miso.Types.Component' in their application. This is useful for introducing 'IO' into the system.
 -- A synonym for 'Control.Monad.Writer.tell', specialized to 'Effect'.
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
@@ -253,8 +253,10 @@ modifyAllJSM = censor . (fmap . fmap)
 withSink :: (Sink action -> JSM ()) -> Effect parent model action
 withSink f = tell [ f ]
 -----------------------------------------------------------------------------
--- | Issue a new 'Action' to be processed by 'update'.
+-- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
+-- > data Action = HelloWorld 
+-- >
 -- > update :: Action -> Effect Model Action
 -- > update = \case
 -- >   Click -> issue HelloWorld
@@ -300,7 +302,7 @@ batchEff model actions = do
   put model
   batch actions
 -----------------------------------------------------------------------------
--- | Helper for 'Component' construction, when you want to ignore the 'update'
+-- | Helper for t'Miso.Types.Component' construction, when you want to ignore the 'Miso.Types.update'
 -- function temporarily, or permanently.
 --
 -- @since 1.9.0.0

@@ -19,7 +19,7 @@ module Miso.CSS.Types
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to 'Styles'.
+-- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to t'Styles'.
 --
 -- @
 -- testSheet :: StyleSheet

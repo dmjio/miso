@@ -105,7 +105,7 @@ module Miso.FFI.Internal
    -- * Utils
    , getMilliseconds
    , getSeconds
-   -- * Component
+   -- * 'Miso.Types.Component'
    , getParentComponentId
    , getComponentId
    -- * Element
@@ -161,7 +161,7 @@ import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
 ----------------------------------------------------------------------------
--- | Run given `JSM` action asynchronously, in a separate thread.
+-- | Run given t'JSM' action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
@@ -511,7 +511,7 @@ alert a = () <$ jsg1 "alert" a
 reload :: JSM ()
 reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
--- | Appends a 'style_' element containing CSS to 'head_'
+-- | Appends a 'Miso.Html.Element.style_' element containing CSS to 'Miso.Html.Element.head_'
 --
 -- > addStyle "body { background-color: green; }"
 --
@@ -523,7 +523,7 @@ addStyle css = do
   (style <# "innerHTML") css
   jsg "document" ! "head" # "appendChild" $ [style]
 -----------------------------------------------------------------------------
--- | Appends a 'script_' element containing JS to 'head_'
+-- | Appends a 'Miso.Html.Element.script_' element containing JS to 'Miso.Html.Element.head_'
 --
 -- > addScript False "function () { alert('hi'); }"
 --
@@ -534,7 +534,7 @@ addScript useModule js_ = do
   (script <# "innerHTML") js_
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
--- | Appends a 'script_' element containing a JS import map.
+-- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
 --
 -- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
 --
@@ -545,7 +545,7 @@ addScriptImportMap impMap = do
   (script <# "innerHTML") impMap
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
--- | Appends a \<script\> element to 'head_'
+-- | Appends a \<script\> element to 'Miso.Html.Element.head_'
 --
 -- > addSrc "https://example.com/script.js"
 --
@@ -555,8 +555,8 @@ addSrc url = do
   _ <- link # "setAttribute" $ ["src", fromMisoString url]
   jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
--- | Appends a StyleSheet 'link_' element to 'head_'
--- The 'link_' tag will contain a URL to a CSS file.
+-- | Appends a StyleSheet 'Miso.Html.Element.link_' element to 'Miso.Html.Element.head_'
+-- The 'Miso.Html.Element.link_' tag will contain a URL to a CSS file.
 --
 -- > addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
 --
@@ -644,9 +644,9 @@ instance ToJSVal CONTENT_TYPE where
 -----------------------------------------------------------------------------
 -- | shouldSync
 --
--- Used to set whether or not the current VNode should enter the 'syncChildren'
+-- Used to set whether or not the current VNode should enter the @syncChildren@
 -- function during diffing. The criteria for entrance is that all children
--- have a populated 'key' node. We can determine this property more efficiently
+-- have a populated 'Miso.Property.key_' node. We can determine this property more efficiently
 -- at tree construction time rather than dynamic detection during diffing.
 --
 shouldSync :: JSVal -> JSM Bool
@@ -675,7 +675,7 @@ newtype Image = Image JSVal
 instance FromJSVal Image where
   fromJSVal = pure . pure . Image
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'Image' w/ 'src' attribute.
+-- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' 'Miso.Types.Attribute'.
 newImage :: MisoString -> JSM Image
 newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
@@ -684,7 +684,7 @@ newImage url = do
 -----------------------------------------------------------------------------
 -- | Used to select a drawing context. Users can override the default DOM renderer
 -- by implementing their own Context, and exporting it to the global scope. This
--- opens the door to different rendering engines, ala miso-native.
+-- opens the door to different rendering engines, ala [miso-lynx](https://github.com/haskell-miso/miso-lynx).
 setDrawingContext :: MisoString -> JSM ()
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
@@ -693,7 +693,7 @@ setDrawingContext rendererName =
 newtype Date = Date JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
--- | Smart constructor for a 'Date'
+-- | Smart constructor for a t'Date'
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
@@ -702,13 +702,13 @@ toLocaleString :: Date -> JSM MisoString
 toLocaleString date = fromJSValUnchecked =<< do
   date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
--- | Retrieves current milliseconds from 'Date'
+-- | Retrieves current milliseconds from t'Date'
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
     date # "getMilliseconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
--- | Retrieves current seconds from 'Date'
+-- | Retrieves current seconds from t'Date'
 getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
@@ -720,9 +720,9 @@ getParentComponentId domRef =
   fromJSVal =<< do
     jsg "miso" # "getParentComponentId" $ [domRef]
 -----------------------------------------------------------------------------
--- | Get access to the 'ComponentId'
+-- | Get access to the 'Miso.Effect.ComponentId'
 -- N.B. you * must * call this on the DOMRef, otherwise, problems.
--- For use in `onMounted`, etc.
+-- For use in 'Miso.Event.onMounted', etc.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
@@ -943,7 +943,7 @@ newtype URLSearchParams = URLSearchParams JSVal
 instance FromJSVal URLSearchParams where
   fromJSVal = pure . pure . URLSearchParams
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'FileReader'
+-- | Smart constructor for building a t'FileReader'
 newFileReader :: JSM FileReader
 newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])

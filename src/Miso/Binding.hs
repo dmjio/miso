@@ -37,28 +37,16 @@ import Control.Monad.Identity (Identity(..))
 ----------------------------------------------------------------------------
 import Miso.Lens (Lens(..), Lens')
 ----------------------------------------------------------------------------
--- | Type used for React-like "props" functionality. This is used to
--- to bind parent model changes to the child model, or vice versa.
+-- | t'Binding' is used to synchronize parent and child model changes at the granularity specified by a t'Miso.Lens.Lens'
 --
--- The difference between miso and React here is that miso is
--- synchronizing model states of Components declaratively (outside of the
--- view). In React "props" are used in the view code.
---
--- <https://react.dev/learn/passing-props-to-a-component>
---
--- This can be thought of as establishing an "edge" in the 'Component' graph,
+-- This can be thought of as establishing an "edge" in the 'Miso.Types.Component' graph,
 -- whereby events cause model change synchronization to "ripple" or "pulsate"
 -- through the views. The "reactivity" of the graph is constructed manually
 -- by the end-user, using the edge primitives `-->`, `<--`, `<-->` (reactive combinators).
 --
--- This can also be thought of as a "Wire" (from `netwire`) for reactive
--- variable synchronization, except done at the granularity specified by the `Lens`.
---
 -- @
---
 -- main :: IO ()
 -- main = run app { bindings = [ parentLens \<--\> childLens ] }
---
 -- @
 --
 -- @since 1.9.0.0

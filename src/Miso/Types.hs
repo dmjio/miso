@@ -105,7 +105,7 @@ data Component parent model action
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
-  -- ^ Function to draw `View`
+  -- ^ Function to draw 'Miso.Types.View'
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
   , events :: Events
@@ -133,16 +133,16 @@ data Component parent model action
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   , mailbox :: Mail -> Maybe action
-  -- ^ Used to receive mail from other @Component@
+  -- ^ Used to receive mail from other t'Miso.Types.Component'
   --
   -- @since 1.9.0.0
   , bindings :: [ Binding parent model ]
   }
 -----------------------------------------------------------------------------
--- | @mountPoint@ for @Component@, e.g "body"
+-- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
 type MountPoint = MisoString
 -----------------------------------------------------------------------------
--- | Allow users to express CSS and append it to <head> before the first draw
+-- | Allow users to express CSS and append it to \<head\> before the first draw
 --
 -- > Href "http://domain.com/style.css
 --
@@ -150,7 +150,7 @@ data CSS
   = Href MisoString
   -- ^ 'Href' is a URL meant to link to hosted CSS
   | Style MisoString
-  -- ^ 'Style' is meant to be raw CSS in a 'style_' tag
+  -- ^ 'Style' is meant to be raw CSS in a 'Miso.Html.Element.style_' tag
   | Sheet StyleSheet
   -- ^ 'Sheet' is meant to be CSS built with 'Miso.CSS'
   deriving (Show, Eq)
@@ -161,26 +161,26 @@ data CSS
 --
 -- @
 --   Src "http://example.com/script.js"
---   Script "alert('hi');"
+--   Script "alert(\"hi\");"
 --   ImportMap [ "key" =: "value" ]
 -- @
 --
 data JS
   = Src MisoString
-  -- ^ 'src' is a URL meant to link to hosted JS
+  -- ^ v'Src' is a URL meant to link to hosted JS
   | Script MisoString
-  -- ^ 'script' is meant to be raw JS in a 'script' tag
+  -- ^ v'Script' is meant to be raw JS in a \<script\> tag
   | Module MisoString
-  -- ^ 'module' is meant to be raw JS in a 'script' tag, of type 'module'
+  -- ^ v'Module' is meant to be raw JS in a \<script\> tag, of type @module@
   | ImportMap [(MisoString,MisoString)]
-  -- ^ 'script' is meant to be an import map in a 'script' tag
+  -- ^ v'ImportMap' is meant to be an import map in a \<script\> tag
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
 getMountPoint :: Maybe MisoString -> MisoString
 getMountPoint = fromMaybe "body"
 -----------------------------------------------------------------------------
--- | Smart constructor for @Component@ with sane defaults.
+-- | Smart constructor for t'Miso.Types.Component' with sane defaults.
 component
   :: model
   -> (action -> Effect parent model action)
@@ -202,17 +202,17 @@ component m u v = Component
   , bindings = []
   }
 -----------------------------------------------------------------------------
--- | A top-level @Component@ can have no 'parent'
+-- | A top-level t'Miso.Types.Component' can have no @parent@
 --
--- The 'ROOT' type is for disallowing a top-level mounted @Component@ access
--- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
+-- The 'ROOT' type is for disallowing a top-level mounted t'Miso.Types.Component' access
+-- into its parent state. It has no inhabitants (spiritually 'Data.Void.Void')
 --
 data ROOT
 -----------------------------------------------------------------------------
--- | For top-level `Component`, `ROOT` must always be specified for parent.
+-- | For top-level t'Miso.Types.Component', 'ROOT' must always be specified for parent.
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
--- | When `Component` are not in use, also for pre-1.9 `miso` applications.
+-- | When t'Miso.Types.Component' are not in use, also for pre-1.9 'Miso.miso' applications.
 type Transition model action = Effect ROOT model action
 -----------------------------------------------------------------------------
 -- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
@@ -239,12 +239,12 @@ data View model action
   | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of @Component@ in @Component@
+-- | Existential wrapper used to allow the nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to mount a @Component@ on any 'VNode'
+-- | Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'
 --
 -- @
 --   mount (p_ [ key_ "component-1" ]) $ component model noop $ \\m ->
@@ -269,7 +269,7 @@ mount mkNode vcomp =
 -----------------------------------------------------------------------------
 -- | Infix version of 'mount'.
 --
--- Used in the @view@ function to mount a @Component@ on any 'VNode'
+-- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'
 --
 -- @
 --   div_ [ key_ "component-id" ] +\> $ component model noop $ \\m ->
@@ -372,9 +372,9 @@ data Attribute action
 instance IsString (View model action) where
   fromString = VText . fromString
 -----------------------------------------------------------------------------
--- | Virtual DOM implemented as a JavaScript `Object`.
+-- | Virtual DOM implemented as a JavaScript t'Object'.
 --   Used for diffing, patching and event delegation.
---   Not meant to be constructed directly, see `View` instead.
+--   Not meant to be constructed directly, see 'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
 -----------------------------------------------------------------------------
 instance ToJSVal VTree where
@@ -383,7 +383,7 @@ instance ToJSVal VTree where
 -- | Create a new @Miso.Types.VNode@.
 --
 -- @node ns tag key attrs children@ creates a new node with tag @tag@
--- and 'Key' @key@ in the namespace @ns@. All @attrs@ are called when
+-- and 'Miso.Types.Key' @key@ in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
 node :: NS
      -> MisoString
@@ -404,8 +404,7 @@ text_ = VText . MS.concat
 --
 -- @
 -- view :: Bool -> View model action
--- view danger =
---   optionalAttrs textarea_ [ id_ "txt" ] danger [ class_ "danger" ] ["child"]
+-- view danger = optionalAttrs textarea_ [ id_ "txt" ] danger [ class_ "danger" ] ["child"]
 -- @
 --
 -- @since 1.9.0.0

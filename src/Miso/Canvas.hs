@@ -198,15 +198,15 @@ data StyleArg
 color :: Color -> StyleArg
 color = ColorArg
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Gradient' when using 'StyleArg'
+-- | Smart constructor for t'Gradient' when using t'StyleArg'
 gradient :: Gradient -> StyleArg
 gradient = GradientArg
 -----------------------------------------------------------------------------
--- | Smart constructor for 'Pattern' when using 'StyleArg'
+-- | Smart constructor for t'Pattern' when using t'StyleArg'
 pattern_ :: Pattern -> StyleArg
 pattern_ = PatternArg
 -----------------------------------------------------------------------------
--- | Renders a 'StyleArg' to a 'JSVal'
+-- | Renders a t'StyleArg' to a 'JSVal'
 renderStyleArg :: StyleArg -> JSM JSVal
 renderStyleArg (ColorArg c)    = toJSVal (renderColor c)
 renderStyleArg (GradientArg g) = toJSVal g
@@ -218,7 +218,7 @@ instance MakeArgs StyleArg where
 instance ToJSVal StyleArg where
   toJSVal = toJSVal . renderStyleArg
 -----------------------------------------------------------------------------
--- | Pretty-prints a 'PatternType' as 'MisoString'
+-- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
 renderPattern Repeat   = "repeat"
 renderPattern RepeatX  = "repeat-x"
@@ -371,7 +371,7 @@ newtype Gradient = Gradient JSVal deriving (ToJSVal)
 instance FromJSVal Gradient where
   fromJSVal = pure . pure . Gradient
 -----------------------------------------------------------------------------
--- | Type used to hold 'ImageData'
+-- | Type used to hold t'ImageData'
 newtype ImageData = ImageData JSVal deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance MakeArgs ImageData where
