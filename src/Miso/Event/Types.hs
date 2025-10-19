@@ -16,6 +16,7 @@
 module Miso.Event.Types
   ( -- ** Types
     Events
+  , Capture
     -- *** KeyboardEvent
   , KeyInfo (..)
   , KeyCode (..)
@@ -134,7 +135,7 @@ instance ToJSVal Options where
     FFI.set "stopPropagation" _stopPropagation o
     toJSVal o
 -----------------------------------------------------------------------------
--- | Default value for 'Options'.
+-- | Default value for @Options@.
 --
 -- > defaultOptions = Options { preventDefault = False, stopPropagation = False }
 defaultOptions :: Options
@@ -147,7 +148,7 @@ defaultOptions
 -- | Convenience type for Events
 type Events = M.Map MisoString Capture
 -----------------------------------------------------------------------------
--- | Capture
+-- | Type synonym to express capture mode for browser / mobile events.
 --
 -- Used to determine if *capture* should be set when using /addEventListener/
 --

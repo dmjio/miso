@@ -376,9 +376,11 @@ onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
 onDurationChangeWith :: (Media -> action) -> Attribute action
 onDurationChangeWith action = on "durationchange" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
+-- | https://www.w3schools.com/jsref/event_onemptied.asp
 onEmptied :: action -> Attribute action
 onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://www.w3schools.com/jsref/event_onemptied.asp
 onEmptiedWith :: (Media -> action) -> Attribute action
 onEmptiedWith action = on "emptied" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------

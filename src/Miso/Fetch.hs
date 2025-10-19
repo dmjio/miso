@@ -176,6 +176,7 @@ putJSON url body_ headers_ successful errorful =
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
+-- | GET request that uses Text encoded data
 getText
   :: FromJSVal error
   => MisoString

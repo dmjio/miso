@@ -77,8 +77,8 @@ uriSub = \f sink -> do
 routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
 routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
--- | Retrieves the current relative URI by inspecting `pathname`, `search`
--- and `hash`.
+-- | Retrieves the current relative URI by inspecting @pathname@, @search@
+-- and @hash@.
 getURI :: JSM URI
 getURI = do
   location <- jsg "window" ! "location"

@@ -57,7 +57,7 @@ import Miso.Lens (Lens(..), Lens')
 -- @
 --
 -- main :: IO ()
--- main = run app { bindings = [ parentLens <--> childLens ] }
+-- main = run app { bindings = [ parentLens \<--\> childLens ] }
 --
 -- @
 --

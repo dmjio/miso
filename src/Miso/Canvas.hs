@@ -380,6 +380,7 @@ instance MakeArgs ImageData where
 instance FromJSVal ImageData where
   fromJSVal = pure . pure . ImageData
 -----------------------------------------------------------------------------
+-- | An (x,y) coordinate.
 type Coord = (Double, Double)
 -----------------------------------------------------------------------------
 type Context = JSVal

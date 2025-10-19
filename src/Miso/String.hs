@@ -63,6 +63,7 @@ instance FromJSON MisoString where
 ----------------------------------------------------------------------------
 -- | Convenience class for creating `MisoString` from other string-like types
 class ToMisoString str where
+  -- | Convert a type into 'MisoString'
   toMisoString :: str -> MisoString
 ----------------------------------------------------------------------------
 -- | Class used to parse a 'MisoString'. Like a safe 'Read' for 'MisoString'

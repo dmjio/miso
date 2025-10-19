@@ -150,7 +150,7 @@ renderApp renderer vcomp hooks = withJS $ do
   FFI.setDrawingContext renderer
   initComponent vcomp hooks
 ----------------------------------------------------------------------------
--- | Internal helper function to support both 'render' and 'startComponent'
+-- | Internal helper function to support 'startComponent'
 initComponent
   :: Eq model
   => Component ROOT model action

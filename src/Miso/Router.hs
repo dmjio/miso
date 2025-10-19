@@ -78,7 +78,7 @@
 -- The router is "reversible" which means it can produce type-safe links using the `href_` function.
 --
 -- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
--- > "//widget//23//foo//okay?bar=0"
+-- > "/widget/23/foo/okay?bar=0"
 --
 -- This can be used in conjunction with the @href_@ field below to embed type safe links into 'miso' @View model action@ code.
 --
@@ -116,6 +116,8 @@
 module Miso.Router
   ( -- ** Classes
     Router (..)
+  , RouteParser
+  , GRouter (..)
     -- ** Types
   , Capture (..)
   , Path (..)
@@ -203,6 +205,7 @@ instance KnownSymbol name => ToMisoString (QueryFlag name) where
     QueryFlag False ->
       mempty
 -----------------------------------------------------------------------------
+-- | A list of tokens are returned from a successful lex of a URI
 data Token
   = QueryParamTokens [(MisoString, MisoString)]
   | QueryParamToken MisoString MisoString
@@ -284,6 +287,8 @@ instance ToMisoString Token where
       "?" <> k <> "=" <> v
     IndexToken -> "/"
 -----------------------------------------------------------------------------
+-- | An error that can occur during lexing / parsing of a URI into a user-defined
+-- data type
 data RoutingError
   = ParseError MisoString [Token]
   | AmbiguousParse MisoString [Token]
@@ -292,8 +297,10 @@ data RoutingError
   | NoParses MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | State monad for parsing URI 
 type RouteParser = ParserT URI [Token] []
 -----------------------------------------------------------------------------
+-- | Combinator for parsing a capture variable out of a URI
 capture :: FromMisoString value => RouteParser value
 capture = do
   CaptureOrPathToken capture_ <- captureOrPathToken
@@ -301,6 +308,7 @@ capture = do
     Left msg -> fail (fromMisoString (ms msg))
     Right token -> pure token
 -----------------------------------------------------------------------------
+-- | Combinator for parsing a path out of a URI
 path :: MisoString -> RouteParser MisoString
 path specified = do
   CaptureOrPathToken parsed <- captureOrPathToken
@@ -362,11 +370,11 @@ class Router route where
 -- data Route = Widget MisoString Int
 --
 -- instance Router Route where
---   routeParser = routes [ Widget <$> path "widget" <*> capture ]
+--   routeParser = routes [ Widget \<$\> path "widget" \<*\> capture ]
 --   fromRoute (Widget path value) = [ toPath path, toCapture value ]
 --
 -- router :: Router router => RouteParser router
--- router = routes [ Widget <$> path "widget" <*> capture ]
+-- router = routes [ Widget \<$\> path "widget" \<*\> capture ]
 --
 -- > Right (Widget "widget" 10)
 -- @
@@ -379,6 +387,7 @@ runRouter = parseRoute
 routes :: [ RouteParser route ] -> RouteParser route
 routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
+-- | Generic deriving for 'Router'
 class GRouter f where
   gFromRoute :: f route -> [Token]
   gRouteParser :: RouteParser (f route)

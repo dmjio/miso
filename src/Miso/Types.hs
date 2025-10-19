@@ -133,7 +133,7 @@ data Component parent model action
   , logLevel :: LogLevel
   -- ^ Debugging for prerendering and event delegation
   , mailbox :: Mail -> Maybe action
-  -- ^ Used to receive mail from other 'Component'
+  -- ^ Used to receive mail from other @Component@
   --
   -- @since 1.9.0.0
   , bindings :: [ Binding parent model ]
@@ -202,9 +202,9 @@ component m u v = Component
   , bindings = []
   }
 -----------------------------------------------------------------------------
--- | A top-level 'Component' can have no 'parent'
+-- | A top-level @Component@ can have no 'parent'
 --
--- The 'ROOT' type is for disallowing a top-level mounted 'Component' access
+-- The 'ROOT' type is for disallowing a top-level mounted @Component@ access
 -- into its parent state. It has no inhabitants (spiritually Data.Void.Void)
 --
 data ROOT
@@ -244,20 +244,12 @@ data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to mount a 'Component' on any 'VNode'
+-- | Used in the @view@ function to mount a @Component@ on any 'VNode'
 --
 -- @
---   mount (p_ [ key_ "component-1" ]) $ component $ \\m ->
+--   mount (p_ [ key_ "component-1" ]) $ component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
---
--- Warning this *is* a partial function. Do not attempt to mount on a
--- Text node. This function will ignore the children given and mount the
--- new 'Component' on top of them. Attempts to mount a 'Component' ontop of an
--- existing 'Component' always prioritize the component specified in the lowest
--- level.
---
--- See usage above. In general, it's wise to only mount on `VNode`.
 --
 -- @since 1.9.0.0
 mount
@@ -275,6 +267,16 @@ mount mkNode vcomp =
     _ ->
       error "Impossible: cannot mount on a Text node"
 -----------------------------------------------------------------------------
+-- | Infix version of 'mount'.
+--
+-- Used in the @view@ function to mount a @Component@ on any 'VNode'
+--
+-- @
+--   div_ [ key_ "component-id" ] +\> $ component model noop $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
 (+>)
   :: forall child model action a . Eq child
   => ([View model a] -> View model a)
@@ -443,9 +445,8 @@ optionalChildren element attrs kids condition opts =
       VNode ns name attrs newKids
     x -> x
 ----------------------------------------------------------------------------
--- | Type for dealing with @URI@
+-- | Type for dealing with @URI@. See the official [specification](https://github.com/llvm/llvm-project/pull/151445)
 --
--- <<https://datatracker.ietf.org/doc/html/rfc3986>>
 --
 data URI
   = URI
@@ -453,18 +454,18 @@ data URI
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
--- | An empty 'URI'
+-- | An empty @URI@
 emptyURI :: URI
 emptyURI = URI mempty mempty mempty
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
 ----------------------------------------------------------------------------
--- | 'URI' pretty-printing
+-- | @URI@ pretty-printing
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
 -----------------------------------------------------------------------------
--- | 'URI' query string pretty-printing
+-- | @URI@ query string pretty-printing
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..} = queries <> flags
   where

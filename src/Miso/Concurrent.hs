@@ -46,7 +46,7 @@ waiter = do
         pure ()
     }
 -----------------------------------------------------------------------------
--- | Type for expressing 'Mail' (or message payloads) put into a 'Mailbox' for delivery
+-- | Type for expressing @Mail@ (or message payloads) put into a 'Mailbox' for delivery
 type Mail = Value
 -----------------------------------------------------------------------------
 -- | Publish / Subscribe concurrency primitive

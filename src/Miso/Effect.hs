@@ -263,30 +263,37 @@ withSink f = tell [ f ]
 issue :: action -> Effect parent model action
 issue action = tell [ \f -> f action ]
 -----------------------------------------------------------------------------
+-- | See 'io'
 {-# DEPRECATED scheduleIO "Please use 'io' instead" #-}
 scheduleIO :: JSM action -> Effect parent model action
 scheduleIO = io
 -----------------------------------------------------------------------------
+-- | See 'io_'
 {-# DEPRECATED scheduleIO_ "Please use 'io_' instead" #-}
 scheduleIO_ :: JSM () -> Effect parent model action
 scheduleIO_ = io_
 -----------------------------------------------------------------------------
+-- | See 'for'
 {-# DEPRECATED scheduleIOFor_ "Please use 'for' instead" #-}
 scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect parent model action
 scheduleIOFor_ = for
 -----------------------------------------------------------------------------
+-- | See 'withSink'
 {-# DEPRECATED scheduleSub "Please use 'withSink' instead" #-}
 scheduleSub :: (Sink action -> JSM ()) -> Effect parent model action
 scheduleSub = withSink
 -----------------------------------------------------------------------------
+-- | See 'withSink', 'put'
 {-# DEPRECATED effectSub "Please use 'put' and 'withSink' instead " #-}
 effectSub :: model -> (Sink action -> JSM ()) -> Effect parent model action
 effectSub m s = put m >> withSink s
 -----------------------------------------------------------------------------
+-- | See 'put'
 {-# DEPRECATED noEff "Please use 'put' instead " #-}
 noEff :: model -> Effect parent model action
 noEff = put
 -----------------------------------------------------------------------------
+-- | See 'put', 'batch'
 {-# DEPRECATED batchEff "Please use 'put' and 'batch' instead " #-}
 batchEff :: model -> [JSM action] -> Effect parent model action
 batchEff model actions = do

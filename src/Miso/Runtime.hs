@@ -92,7 +92,6 @@ import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
 import           Language.Javascript.JSaddle
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
-import           GHC.Generics (Generic)
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -305,7 +304,7 @@ bindParentToChild ComponentState {..} modelRef = \case
       let newChild = setChild (getParent parentModel)
       modifyTVar' modelRef newChild
 -----------------------------------------------------------------------------
--- | 'Hydrate' avoids calling @diff@, and instead calls @hydrate@
+-- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
 data Hydrate
   = Draw
@@ -335,18 +334,18 @@ data ComponentState model action
     -- ^ What the current component listens on to invoke model synchronization
   }
 -----------------------------------------------------------------------------
--- | A 'Topic' represents a place to send and receive messages. 'Topic' is used to facilitate
--- communication between 'Component'. 'Component' can 'subscribe' to or 'publish' to any 'Topic',
+-- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
+-- communication between 'Component'. 'Component' can 'subscribe' to or 'publish' to any @Topic@,
 -- within the same 'Component' or across 'Component'.
 --
 -- This requires creating a custom 'ToJSON' / 'FromJSON'. Any other 'Component'
 -- can 'publish' or 'subscribe' to this @Topic message@. It is a way to provide
--- loosely-coupled communication between 'Components'.
+-- loosely-coupled communication between @Components@.
 --
 -- See 'publish', 'subscribe', 'unsubscribe' for more details.
 --
 -- When distributing 'Component' for third-party use, it is recommended to export
--- the 'Topic', where 'message' is the JSON protocol.
+-- the @Topic@, where message is the JSON protocol.
 --
 --
 -- @since 1.9.0.0
@@ -397,7 +396,7 @@ subscribers :: IORef (Map (ComponentId, Topic a) ThreadId)
 {-# NOINLINE subscribers #-}
 subscribers = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Subscribes to a 'Topic', provides callback function that writes to 'Component' 'Sink'
+-- | Subscribes to a @Topic@, provides callback function that writes to 'Component' 'Sink'
 --
 -- If a @Topic message@ does not exist when calling 'subscribe' it is generated dynamically.
 -- Each subscriber decodes the received 'Value' using it's own 'FromJSON' instance. This provides
@@ -509,7 +508,7 @@ subscribe topicName successful errorful = do
 --
 -- N.B. Components can be both publishers and subscribers to their own topics.
 -----------------------------------------------------------------------------
--- | Unsubscribe to a 'Topic'
+-- | Unsubscribe to a @Topic@
 --
 -- Unsubscribes a 'Component' from receiving messages from @Topic message@
 --
@@ -784,7 +783,7 @@ runView _ (VText t) _ _ _ = do
   pure $ VTree vtree
 -----------------------------------------------------------------------------
 -- | @createNode@
--- A helper function for constructing a vtree (used for 'vcomp' and 'vnode')
+-- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
 -- Doesn't handle children
 createNode :: MisoString -> NS -> MisoString -> JSM Object
 createNode typ ns tag = do
@@ -970,7 +969,7 @@ mailParent message = do
       Just ComponentState {..} ->
         liftIO $ sendMail componentMailbox (toJSON message)
 ----------------------------------------------------------------------------
--- | Helper function for processing 'Mail' from 'mail'.
+-- | Helper function for processing @Mail@ from 'mail'.
 --
 -- @
 --
@@ -979,7 +978,6 @@ mailParent message = do
 --   | ErrorMail MisoString
 --
 -- main = app { mailbox = checkMail ParsedMail ErrorMail }
---
 -- @
 --
 -- @since 1.9.0.0
@@ -1296,11 +1294,15 @@ codeToCloseCode = go
     go 1015 = TLS_Handshake
     go n    = OtherCode n
 -----------------------------------------------------------------------------
+-- | Closed message is sent when a WebSocket has closed 
 data Closed
   = Closed
   { closedCode :: CloseCode
+    -- ^ The code used to indicate why a socket closed
   , wasClean :: Bool
+    -- ^ If the connection was closed cleanly, or forcefully.
   , reason :: MisoString
+    -- ^ The reason for socket closure.
   } deriving (Eq, Show)
 -----------------------------------------------------------------------------
 instance FromJSVal Closed where
@@ -1354,11 +1356,7 @@ data CloseCode
    -- ^ 1015, Reserved. Indicates that the connection was closed due to a failure to perform a TLS handshake (e.g., the server certificate can't be verified).
   | OtherCode Int
    -- ^ OtherCode that is reserved and not in the range 0999
-  deriving (Show, Eq, Generic)
------------------------------------------------------------------------------
-instance ToJSVal CloseCode
------------------------------------------------------------------------------
-instance FromJSVal CloseCode
+  deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Type for holding a 'WebSocket' file descriptor.
 newtype WebSocket = WebSocket Int
@@ -1368,11 +1366,11 @@ newtype WebSocket = WebSocket Int
 emptyWebSocket :: WebSocket
 emptyWebSocket = (-1)
 -----------------------------------------------------------------------------
--- | A type for holding an 'EventSource' descriptor.
+-- | A type for holding an @EventSource@ descriptor.
 newtype EventSource = EventSource Int
   deriving (ToJSVal, Eq, Num)
 -----------------------------------------------------------------------------
--- | A null 'EventSource' is one with a negative descriptor.
+-- | A null @EventSource@ is one with a negative descriptor.
 emptyEventSource :: EventSource
 emptyEventSource = (-1)
 -----------------------------------------------------------------------------
@@ -1494,7 +1492,7 @@ finalizeEventSources vcompId = do
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (IM.delete vcompId eventSources, ())
 -----------------------------------------------------------------------------
--- | Payload is used as the potential source of data when working with 'EventSource'
+-- | Payload is used as the potential source of data when working with @EventSource@
 data Payload value
   = JSON value
   -- ^ JSON encoded data
@@ -1505,15 +1503,15 @@ data Payload value
   | BUFFER ArrayBuffer
   -- ^ Buffered data
 -----------------------------------------------------------------------------
--- | Smart constructor for sending JSON encoded data via an 'EventSource'
+-- | Smart constructor for sending JSON encoded data via an @EventSource@
 json :: ToJSON value => value -> Payload value
 json = JSON
 -----------------------------------------------------------------------------
--- | Smart constructor for sending binary encoded data via an 'EventSource'
+-- | Smart constructor for sending binary encoded data via an @EventSource@
 blob :: Blob -> Payload value
 blob = BLOB
 -----------------------------------------------------------------------------
--- | Smart constructor for sending an 'ArrayBuffer' via an 'EventSource'
+-- | Smart constructor for sending an @ArrayBuffer@ via an @EventSource@
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------

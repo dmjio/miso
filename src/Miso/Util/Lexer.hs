@@ -74,6 +74,8 @@ initialLocation = Location 1 (1,1)
 zeroLocation :: Location
 zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
+-- | A Lexer is a state monad with optional failure the abides by the
+-- maximal munch rule in its 'Alternative' instance.
 newtype Lexer token
   = Lexer
   { runLexer :: Stream -> Either LexerError (token, Stream)

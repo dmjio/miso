@@ -59,6 +59,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Event
 import           Miso.String
 -----------------------------------------------------------------------------
+-- | Type that abstracts over [Audio](https://www.w3schools.com/jsref/dom_obj_audio.asp) or [Video](https://www.w3schools.com/jsref/dom_obj_video.asp) media objects
 newtype Media = Media JSVal
   deriving (ToJSVal)
 -----------------------------------------------------------------------------
@@ -199,6 +200,7 @@ videoWidth (Media m) = fromJSValUnchecked =<< m ! ("videoWidth" :: MisoString)
 volume :: Media -> JSM Double
 volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 -----------------------------------------------------------------------------
+-- | A media Stream
 type Stream = JSVal
 -----------------------------------------------------------------------------
 -- | Sets the `srcObject` on audio or video elements.

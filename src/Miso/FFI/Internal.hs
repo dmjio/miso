@@ -614,6 +614,7 @@ fetch url method maybeBody requestHeaders successful errorful type_ = do
     , typ
     ]
 -----------------------------------------------------------------------------
+-- | List of possible content types that are available for use with the fetch API
 data CONTENT_TYPE
   = JSON
   | ARRAY_BUFFER
@@ -688,6 +689,7 @@ setDrawingContext :: MisoString -> JSM ()
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
 -----------------------------------------------------------------------------
+-- | The [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) type
 newtype Date = Date JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
@@ -805,7 +807,7 @@ copyClipboard txt successful errorful = do
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
 -----------------------------------------------------------------------------
--- | Establishes a 'WebSocket' connection
+-- | Establishes a @WebSocket@ connection
 websocketConnect
   :: MisoString
   -> JSM ()

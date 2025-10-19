@@ -396,6 +396,7 @@ matrix a b c d tx ty = "matrix(" <> values <> ")"
 pct :: Double -> MisoString
 pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
+-- | ppx unit of measure
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
@@ -413,6 +414,7 @@ ppx x = MS.ms x <> "ppx"
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
+-- | Smart constructor for 'StyleSheet'
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------

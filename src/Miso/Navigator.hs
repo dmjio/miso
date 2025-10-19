@@ -40,6 +40,7 @@ import           Miso.String
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
 ----------------------------------------------------------------------------
+-- | A media stream
 type Stream = JSVal
 ----------------------------------------------------------------------------
 -- | Get access to user's media devices.
@@ -115,6 +116,7 @@ geolocation successful errorful = do
       (sink . successful <=< fromJSValUnchecked)
       (sink . errorful <=< fromJSValUnchecked)
 -----------------------------------------------------------------------------
+-- | Geolocation errors
 data GeolocationError = GeolocationError GeolocationErrorCode MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -124,6 +126,7 @@ instance FromJSVal GeolocationError where
     msg <- fromJSVal =<< (v ! "message")
     pure (GeolocationError <$> code <*> msg)
 -----------------------------------------------------------------------------
+-- | Geolocation error code
 data GeolocationErrorCode
   = PERMISSION_DENIED
   | POSITION_UNAVAILABLE
@@ -138,6 +141,7 @@ instance FromJSVal GeolocationErrorCode where
       3 -> pure (Just TIMEOUT)
       _ -> pure Nothing
 -----------------------------------------------------------------------------
+-- | Geolocation holds latitude, longitude and accuracy, among others.
 data Geolocation
   = Geolocation
   { latitude, longitude, accuracy :: Double

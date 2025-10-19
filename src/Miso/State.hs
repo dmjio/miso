@@ -8,9 +8,9 @@
 -- Portability :  non-portable
 --
 -- Similar to how one manages state in [React](https://react.dev/learn/managing-state),
--- `miso` applications manage state with the 'State' monad.
+-- 'miso' applications manage state with the @State@ monad.
 --
--- The 'State' 'Monad' works well with `MonadState` lenses as seen in 'Miso.Lens' and the 'lens' library.
+-- The @State@ 'Monad' works well with @MonadState@ lenses as seen in 'Miso\.Lens' and the [lens](haddocks.haskell.org/pacakges/lens) library.
 --
 -- @
 -- updateModel :: Action -> Effect Model Action
