@@ -107,11 +107,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-#ifdef JSADDLE
-  , hydrateModel :: Maybe (JSM model)
-#else
   , hydrateModel :: Maybe (IO model)
-#endif
   -- ^ Perform action to load component state, such as reading data from page
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action

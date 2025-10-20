@@ -129,11 +129,7 @@ initialize hydrate Component {..} getView = do
   initializedModel <-
     case (hydrate, hydrateModel) of
       (Hydrate, Just action) ->
-#ifdef JSADDLE
-          action
-#else
           liftIO action
-#endif
       _ -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
