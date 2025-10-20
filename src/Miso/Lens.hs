@@ -33,9 +33,9 @@
 -- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
 -- application (as described below).
 --
--- This module is at fixity and interface parity with 'lens' and @microlens@ and can therefore
+-- This module is at fixity and interface parity with @lens@ and @microlens@ and can therefore
 -- be used interchangeably with them. Simply replace the @Miso.Lens@ import with @Control.Lens@.
--- For convenience we re-export the t'Miso.Lens.Lens\'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/lens)
+-- For convenience we re-export the t'Miso.Lens.Lens'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/microlens)
 --
 -- For the curious reader, if you'd like more information on 'lens' and the van Laarhoven
 -- formulation, we recommend the [lens](https://hackage.haskell.org/package/lens) library.
@@ -186,11 +186,11 @@ data Lens record field
 -- | van Laarhoven formulation, used for conversion w/ 'Miso.miso' t'Lens'.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens\''
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens\''
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 fromVL
   :: Lens' record field
   -> Lens record field
@@ -752,7 +752,7 @@ this = _id
 -- | Smart constructor 'lens' function. Used to easily construct a t'Lens'
 --
 -- > name :: Lens Person String
--- > name = lens _name $ \\p n -> p { _name = n }
+-- > name = lens _name $ \p n -> p { _name = n }
 --
 lens
   :: (record -> field)
