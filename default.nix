@@ -85,4 +85,10 @@ with pkgs.haskell.lib;
     '';
   };
 
+  # MicroHs-Miso
+  inherit (pkgs)
+    microhs
+    microhs-env
+    microhs-wrapper;
+
 }
