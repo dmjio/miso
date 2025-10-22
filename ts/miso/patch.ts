@@ -23,12 +23,9 @@ export type NodeMap<T> = Record <number, T>;
 export function applyPatch<T> (context: Context<T>, message: MESSAGE, environment: Environment<T>) {
     let map: NodeMap<T> = null;
     switch (message.type) {
-        case "mount":
-            break;
-        case "unmount":
-            break;
         case "events":
-            /* apply events */
+            /* registers background events events */
+
             break;
         case "insertBefore":
             map = environment[message.componentId]?.nodeMap;
@@ -41,34 +38,77 @@ export function applyPatch<T> (context: Context<T>, message: MESSAGE, environmen
             map = environment[message.componentId]?.nodeMap;
             if (map) {
               context.swapDOMRefs (map[message.nodeA.nodeId], map[message.nodeB.nodeId], map[message.parent.nodeId]);
+              // dmj: reinsert into map here at specified ID
             }
             break;
         case "createElement":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+                var newNode = context.createElement (message.tag);
+                newNode['nodeId'] = message.nodeId;
+                map['nodeId'] = newNode;
+            }
             break;
         case "createElementNS":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+                var newNode = context.createElementNS (message.namespace, message.tag);
+                newNode['nodeId'] = message.nodeId;
+                map['nodeId'] = newNode;
+            }
             break;
         case "createTextNode":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+                var newNode = context.createTextNode (message.text);
+                newNode['nodeId'] = message.nodeId;
+                map['nodeId'] = newNode;
+            }
             break;
         case "setAttribute":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+              context.setAttribute (map[message.nodeId], message.key, message.value);
+            }
             break;
         case "appendChild":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+              context.appendChild (map[message.parent], map[message.child]);
+            }
             break;
         case "replaceChild":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+              context.replaceChild (map[message.parent], map[message.new], map[message.current]);
+            }
             break;
         case "removeAttribute":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+              context.removeAttribute (map[message.nodeId], message.key);
+            }
             break;
         case "setTextContent":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+              context.setTextContent (map[message.nodeId], message.text);
+            }
             break;
         case "setInlineStyle":
+            map = environment[message.componentId]?.nodeMap;
+            if (map) {
+                context.setInlineStyle (message.current, message.new, map[message.nodeId]);
+            }
             break;
         case "flush":
+            context.flush ();
             break;
     }
 }
 
 /* Message protocol for bidirectional synchronization between MTS / BTS */
-export type MESSAGE = COMPONENT | EVENTS | PATCH;
-export type COMPONENT = MOUNT | UNMOUNT;
+export type MESSAGE = EVENTS | PATCH;
 export type PATCH
   = InsertBefore
   | SwapDOMRefs
@@ -86,16 +126,6 @@ export type PATCH
 export type EVENTS = {
   type: "events";
   events: Object;
-};
-
-export type UNMOUNT = {
-  type: "unmount";
-  componentId: ComponentId;
-};
-
-export type MOUNT = {
-  type: "mount";
-  componentId: ComponentId;
 };
 
 export type InsertBefore = {
@@ -117,48 +147,67 @@ export type SwapDOMRefs = {
 export type CreateElement = {
   componentId: ComponentId,
   nodeId: number,
+  tag: string,
   type: "createElement"
 };
 
 export type CreateElementNS = {
   componentId: ComponentId,
   nodeId: number,
+  tag: string,
+  namespace: string,
   type: "createElementNS"
 };
 
 export type CreateTextNode = {
   componentId: ComponentId,
   nodeId: number,
+  text: string,
   type: "createTextNode"
 };
 
 export type SetAttribute = {
   componentId: ComponentId,
+  key: string,
+  value: string,
+  nodeId: number,
   type: "setAttribute"
 };
 
 export type AppendChild = {
   componentId: ComponentId,
+  parent: number,
+  child: number,
   type: "appendChild"
 };
 
 export type ReplaceChild = {
   componentId: ComponentId,
+  current: number,
+  new: number,
+  parent: number,
   type: "replaceChild"
 };
 
 export type RemoveAttribute = {
   componentId: ComponentId,
-  type: "removeAttribute"
+  type: "removeAttribute",
+  nodeId: number,
+  key: string,
 };
 
 export type SetTextContent = {
   componentId: ComponentId,
-  type: "setTextContent"
+  type: "setTextContent",
+  nodeId: number,
+  text: string,
 };
 
 export type SetInlineStyle = {
   componentId: ComponentId,
+  new : Record<string, any>,
+  current : Record<string, any>,
+  nodeId: number,
   type: "setInlineStyle"
 };
 
