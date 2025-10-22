@@ -170,21 +170,21 @@ import qualified Miso.String as MS
 -----------------------------------------------------------------------------
 -- | Type used for representing capture variables
 newtype Capture sym a = Capture a
-  deriving stock (Generic, Eq, Show)
+  deriving stock (Eq, Show)
   deriving newtype (ToMisoString, FromMisoString)
 -----------------------------------------------------------------------------
 -- | Type used for representing URL paths
 newtype Path (path :: Symbol) = Path MisoString
-  deriving (Generic, Eq, Show)
+  deriving stock (Eq, Show)
   deriving newtype (ToMisoString, IsString)
 -----------------------------------------------------------------------------
 -- | Type used for representing query flags
 newtype QueryFlag (path :: Symbol) = QueryFlag Bool
-  deriving (Generic, Eq, Show)
+  deriving stock (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Type used for representing query parameters
 newtype QueryParam (path :: Symbol) a = QueryParam (Maybe a)
-  deriving (Generic, Eq, Show)
+  deriving stock (Eq, Show)
 -----------------------------------------------------------------------------
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =

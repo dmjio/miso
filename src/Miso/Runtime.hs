@@ -508,9 +508,9 @@ subscribe topicName successful errorful = do
 --
 -- N.B. Components can be both publishers and subscribers to their own topics.
 -----------------------------------------------------------------------------
--- | Unsubscribe to a @Topic@
+-- | Unsubscribe to a t'Topic'
 --
--- Unsubscribes a t'Miso.Types.Component' from receiving messages from @Topic message@
+-- Unsubscribes a t'Miso.Types.Component' from receiving messages from t'Topic'
 --
 -- See 'subscribe' for more use.
 --
@@ -534,9 +534,9 @@ unsubscribe_ topicName vcompId = do
     Nothing ->
       pure ()
 -----------------------------------------------------------------------------
--- | Publish to a @Topic message@
+-- | Publish to a t'Topic message'
 --
--- @Topic message@ are generated dynamically if they do not exist. When using 'publish'
+-- t'Topic message' are generated dynamically if they do not exist. When using 'publish'
 -- all subscribers are immediately notified of a new message. A message is distributed as a 'Value'
 -- The underlying 'ToJSON' instance is used to construct this 'Value'.
 --
@@ -1045,7 +1045,7 @@ websocketConnectionIds = unsafePerformIO (newIORef (0 :: Int))
 -----------------------------------------------------------------------------
 websocketConnectText
   :: URL
-  -- ^ WebSocket URL
+  -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
   -> (Closed -> action)
@@ -1069,7 +1069,7 @@ websocketConnectText url onOpen onClosed onMessage onError =
 -----------------------------------------------------------------------------
 websocketConnectBLOB
   :: URL
-  -- ^ WebSocket URL
+  -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
   -> (Closed -> action)
@@ -1093,7 +1093,7 @@ websocketConnectBLOB url onOpen onClosed onMessage onError =
 -----------------------------------------------------------------------------
 websocketConnectArrayBuffer
   :: URL
-  -- ^ WebSocket URL
+  -- ^ t'WebSocket' 'URL'
   -> (WebSocket -> action)
   -- ^ onOpen
   -> (Closed -> action)
@@ -1294,7 +1294,7 @@ codeToCloseCode = go
     go 1015 = TLS_Handshake
     go n    = OtherCode n
 -----------------------------------------------------------------------------
--- | Closed message is sent when a WebSocket has closed 
+-- | Closed message is sent when a t'WebSocket' has closed 
 data Closed
   = Closed
   { closedCode :: CloseCode
@@ -1312,10 +1312,10 @@ instance FromJSVal Closed where
     reason_ <- fromJSVal =<< o ! ("reason" :: MisoString)
     pure (Closed <$> closed_ <*> wasClean_ <*> reason_)
 -----------------------------------------------------------------------------
--- | URL that the @Websocket@ will @connect@ to
+-- | URL that the t'WebSocket' will @connect@ to
 type URL = MisoString
 -----------------------------------------------------------------------------
--- | `SocketState` corresponding to current WebSocket connection
+-- | 'SocketState' corresponding to current t'WebSocket' connection
 data SocketState
   = CONNECTING -- ^ 0
   | OPEN       -- ^ 1
@@ -1492,10 +1492,10 @@ finalizeEventSources vcompId = do
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (IM.delete vcompId eventSources, ())
 -----------------------------------------------------------------------------
--- | Payload is used as the potential source of data when working with @EventSource@
+-- | Payload is used as the potential source of data when working with t'EventSource'
 data Payload value
   = JSON value
-  -- ^ JSON encoded data
+  -- ^ JSON-encoded data
   | BLOB Blob
   -- ^ Binary encoded data
   | TEXT MisoString
@@ -1503,15 +1503,15 @@ data Payload value
   | BUFFER ArrayBuffer
   -- ^ Buffered data
 -----------------------------------------------------------------------------
--- | Smart constructor for sending JSON encoded data via an @EventSource@
+-- | Smart constructor for sending JSON encoded data via an t'EventSource'
 json :: ToJSON value => value -> Payload value
 json = JSON
 -----------------------------------------------------------------------------
--- | Smart constructor for sending binary encoded data via an @EventSource@
+-- | Smart constructor for sending binary encoded data via an t'EventSource'
 blob :: Blob -> Payload value
 blob = BLOB
 -----------------------------------------------------------------------------
--- | Smart constructor for sending an @ArrayBuffer@ via an @EventSource@
+-- | Smart constructor for sending an @ArrayBuffer@ via an t'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------

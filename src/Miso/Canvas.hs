@@ -22,6 +22,7 @@
 module Miso.Canvas
   ( -- * Types
     Canvas
+  , CanvasContext2D
   , Pattern            (..)
   , Gradient           (..)
   , ImageData          (..)
@@ -383,7 +384,8 @@ instance FromJSVal ImageData where
 -- | An (x,y) coordinate.
 type Coord = (Double, Double)
 -----------------------------------------------------------------------------
-type Context = JSVal
+-- | The canvas t'CanvasContext2D'
+type CanvasContext2D = JSVal
 -----------------------------------------------------------------------------
 call :: (FromJSVal a, MakeArgs args) => MisoString -> args -> Canvas a
 call name arg = do
@@ -397,7 +399,7 @@ set name arg = do
   liftJSM (ctx <# name $ makeArgs arg)
 -----------------------------------------------------------------------------
 -- | DSL for expressing operations on 'canvas_'
-type Canvas a = ReaderT Context JSM a
+type Canvas a = ReaderT CanvasContext2D JSM a
 -----------------------------------------------------------------------------
 -- | [ctx.globalCompositeOperation = "source-over"](https://www.w3schools.com/tags/canvas_globalcompositeoperation.asp)
 globalCompositeOperation :: CompositeOperation -> Canvas ()

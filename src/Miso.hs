@@ -134,8 +134,8 @@ startComponent vcomp@Component { styles, scripts } =
           <*> renderStyles styles
 ----------------------------------------------------------------------------
 -- | Runs a miso application, but with a custom rendering engine.
--- The @MisoString@ specified here is the variable name of a globally-scoped
--- JS object that implements the context interface per 'ts/miso/context/dom.ts'
+-- The 'MisoString' specified here is the variable name of a globally-scoped
+-- JS object that implements the context interface per @ts/miso/context/dom.ts@
 -- This is necessary for native support.
 renderApp
   :: Eq model

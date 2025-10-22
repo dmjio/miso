@@ -43,7 +43,6 @@ module Miso.Event.Types
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
-import           GHC.Generics (Generic)
 import           Language.Javascript.JSaddle (ToJSVal(..), create)
 import           Miso.String (MisoString, ms)
 import qualified Miso.FFI as FFI
@@ -103,12 +102,12 @@ instance FromJSON PointerType where
     "pen"   -> pure PenPointerType
     x       -> pure (UnknownPointerType (ms x))
 -----------------------------------------------------------------------------
--- | Options for handling event propagation.
+-- | t'Options' for handling event propagation.
 data Options
   = Options
   { _preventDefault :: Bool
   , _stopPropagation :: Bool
-  } deriving (Show, Eq, Generic)
+  } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance Monoid Options where
   mempty = defaultOptions

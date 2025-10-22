@@ -272,7 +272,7 @@ mount mkNode vcomp =
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'
 --
 -- @
---   div_ [ key_ "component-id" ] +\> $ component model noop $ \\m ->
+--   div_ [ key_ "component-id" ] +\> component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
@@ -285,24 +285,29 @@ mount mkNode vcomp =
 infixr 0 +>
 (+>) = mount
 -----------------------------------------------------------------------------
--- | Convenience class for using View
+-- | Convenience class for using t'View'
 class ToView m a where
   type ToViewAction m a :: Type
   toView :: a -> View m (ToViewAction m a)
 -----------------------------------------------------------------------------
+-- | t'ToView' instance for t'View'
 instance ToView model (View model action) where
   type ToViewAction model (View model action) = action
   toView = coerce
 -----------------------------------------------------------------------------
+-- | t'ToView' instance for t'Component'
 instance ToView model (Component parent model action) where
   type ToViewAction model (Component parent model action) = action
   toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
-  = HTML   -- ^ HTML Namespace
-  | SVG    -- ^ SVG Namespace
-  | MATHML -- ^ MATHML Namespace
+  = HTML
+  -- ^ v'HTML' Namespace
+  | SVG
+  -- ^ v'SVG' Namespace
+  | MATHML
+  -- ^ v'MATHML' Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
@@ -319,44 +324,44 @@ instance ToJSVal NS where
 newtype Key = Key MisoString
   deriving (Show, Eq, IsString, ToJSON, ToMisoString)
 -----------------------------------------------------------------------------
--- | ToJSVal instance for Key
+-- | ToJSVal instance for t'Key'
 instance ToJSVal Key where
   toJSVal (Key x) = toJSVal x
 -----------------------------------------------------------------------------
--- | Convert custom key types to @Key@.
+-- | Convert custom key types to t'Key'.
 --
 -- Instances of this class do not have to guarantee uniqueness of the
 -- generated keys, it is up to the user to do so. @toKey@ must be an
 -- injective function.
 class ToKey key where
-  -- | Converts any key into @Key@
+  -- | Converts any key into t'Key'
   toKey :: key -> Key
 -----------------------------------------------------------------------------
 -- | Identity instance
 instance ToKey Key where toKey = id
 -----------------------------------------------------------------------------
--- | Convert @MisoString@ to @Key@
+-- | Convert 'MisoString' to t'Key'
 instance ToKey JSString where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @T.Text@ to @Key@
+-- | Convert 'T.Text' to t'Key'
 instance ToKey T.Text where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @String@ to @Key@
+-- | Convert 'String' to t'Key'
 instance ToKey String where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @Int@ to @Key@
+-- | Convert 'Int' to t'Key'
 instance ToKey Int where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @Double@ to @Key@
+-- | Convert 'Double' to t'Key'
 instance ToKey Double where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @Float@ to @Key@
+-- | Convert 'Float' to t'Key'
 instance ToKey Float where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Convert @Word@ to @Key@
+-- | Convert 'Word' to t'Key'
 instance ToKey Word where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
--- | Attribute of a vnode in a @View@.
+-- | Attribute of a vnode in a t'View'.
 --
 -- The @Sink@ callback can be used to dispatch actions which are fed back to
 -- the @update@ function. This is especially useful for event handlers
