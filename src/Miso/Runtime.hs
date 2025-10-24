@@ -111,7 +111,7 @@ import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
-  :: Eq model
+  :: (Eq parent, Eq model)
   => Hydrate
   -> Component parent model action
   -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
@@ -132,7 +132,6 @@ initialize hydrate Component {..} getView = do
       _ -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
-  componentModelDirty <- liftIO (newTVarIO False)
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
       Nothing -> pure rootComponentId
@@ -147,14 +146,13 @@ initialize hydrate Component {..} getView = do
   let
     eventLoop = liftIO wait >> do
       currentModel <- liftIO (readTVarIO componentModel)
-      isDirty <- liftIO (readTVarIO componentModelDirty)
       let
         info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
-      when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
+      when (currentName /= updatedName && currentModel /= updatedModel) $ do
         newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
@@ -164,7 +162,6 @@ initialize hydrate Component {..} getView = do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
             writeTVar componentModel updatedModel
-            writeTVar componentModelDirty False
             -- dmj: reset the dirty bit
             writeTChan componentDiffs Null
             -- dmj: child wake-up call for prop synch.
@@ -210,13 +207,14 @@ initialize hydrate Component {..} getView = do
   pure vcomp
 -----------------------------------------------------------------------------
 synchronizeChildToParent
-  :: ComponentId
+  :: Eq parent
+  => ComponentId
   -> TVar model
   -> Mailbox
   -> [ Binding parent model ]
   -> JSM (Maybe ThreadId)
 synchronizeChildToParent _ _ _ [] = pure Nothing
-synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
+synchronizeChildToParent parentId componentModel componentDiffs bindings = do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   IM.lookup parentId <$> liftIO (readIORef components) >>= \case
@@ -233,34 +231,39 @@ synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
           bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings (bindChildToParent parentComponentState componentModelNew)
-      liftIO (componentServe parentComponentState)
+      isDirty <- or <$> forM bindings (bindChildToParent parentComponentState componentModel)
+      when isDirty $ liftIO (componentServe parentComponentState)
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
-   . ComponentState parent action
+   . Eq parent
+  => ComponentState parent action
   -- ^ Parent model
   -> TVar model
   -- ^ Child new model
   -> Binding parent model
   -- ^ Binding
-  -> JSM ()
+  -> JSM Bool
 bindChildToParent ComponentState {..} childRef = \case
   ChildToParent setParent getChild ->
     childToParent setParent getChild
   Bidirectional _ setParent getChild _ ->
     childToParent setParent getChild
   _ ->
-    pure ()
+    pure False
   where
-    childToParent setParent getChild = liftIO $ atomically $ do
-      childModel <- readTVar childRef
-      let newParent = setParent (getChild childModel)
-      modifyTVar' componentModel newParent
-      writeTVar componentModelDirty True
+    childToParent setParent getChild = do
+       liftIO $ atomically $ do
+         childModel <- readTVar childRef
+         let f = setParent (getChild childModel)
+         currentParent <- readTVar componentModel
+         modifyTVar' componentModel f
+         newParent <- readTVar componentModel
+         pure (currentParent /= newParent)
 -----------------------------------------------------------------------------
 synchronizeParentToChild
-  :: ComponentId
+  :: Eq model
+  => ComponentId
   -> TVar model
   -> [ Binding type_ model ]
   -> IO ()
@@ -281,31 +284,34 @@ synchronizeParentToChild parentId componentModel_ bindings serve = do
         bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings (bindParentToChild parentComponentState componentModel_)
-      liftIO serve
+      isDirty <- or <$> forM bindings (bindParentToChild parentComponentState componentModel_)
+      when isDirty (liftIO serve)
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
-   . ComponentState props action
+   . Eq model
+  => ComponentState props action
   -- ^ Parent model
   -> TVar model
   -- ^ Child new model
   -> Binding props model
   -- ^ binding
-  -> JSM ()
+  -> JSM Bool
 bindParentToChild ComponentState {..} modelRef = \case
   ParentToChild getParent setChild -> do
     parentToChild getParent setChild
   Bidirectional getParent _ _ setChild ->
     parentToChild getParent setChild
   _ ->
-    pure ()
+    pure False
   where
     parentToChild getParent setChild = liftIO $ atomically $ do
       parentModel <- readTVar componentModel
-      let newChild = setChild (getParent parentModel)
-      modifyTVar' modelRef newChild
-      writeTVar componentModelDirty True
+      let f = setChild (getParent parentModel)
+      currentChild <- readTVar modelRef
+      modifyTVar' modelRef f
+      newChild <- readTVar modelRef
+      pure (currentChild /= newChild)
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -656,7 +662,8 @@ foldEffects update synchronicity info snk (e:es) o =
 -- Initial draw helper
 -- If hydrateing, bypass diff and continue copying
 drawComponent
-  :: Hydrate
+  :: Eq model
+  => Hydrate
   -> DOMRef
   -> Component parent model action
   -> model
@@ -733,7 +740,8 @@ killSubscribers componentId =
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 runView
-  :: Hydrate
+  :: Eq model
+  => Hydrate
   -> View model action
   -> Sink action
   -> LogLevel
