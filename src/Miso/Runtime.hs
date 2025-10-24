@@ -205,6 +205,13 @@ initialize hydrate Component {..} getView = do
   registerComponent vcomp
   delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
+  case hydrate of
+    Hydrate -> do
+      VTree (Object vtree) <- liftIO (readIORef componentVTree)
+      FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) componentDOMRef vtree
+    Draw -> do
+      vtree <- liftIO (readIORef componentVTree)
+      diff Nothing (Just vtree) componentDOMRef
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
@@ -662,11 +669,6 @@ drawComponent
 drawComponent hydrate mountElement Component {..} initializedModel snk = do
   refs <- (++) <$> renderScripts scripts <*> renderStyles styles
   vtree <- runView hydrate (view initializedModel) snk logLevel events
-  case hydrate of
-    Draw ->
-      diff Nothing (Just vtree) mountElement
-    Hydrate ->
-      FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mountElement =<< toJSVal vtree
   ref <- liftIO (newIORef vtree)
   pure (refs, mountElement, ref)
 -----------------------------------------------------------------------------

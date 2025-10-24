@@ -114,7 +114,6 @@ miso f = withJS $ do
     refs <- (++) <$> renderScripts scripts <*> renderStyles styles
     VTree (Object vtree) <- runView Hydrate (view initializedModel) snk logLevel events
     mount_ <- FFI.getBody
-    FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mount_ vtree
     viewRef <- liftIO $ newIORef $ VTree (Object vtree)
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
@@ -163,7 +162,6 @@ initComponent vcomp@Component{..} hooks = do
     refs <- hooks
     vtree <- runView Draw (view initializedModel) snk logLevel events
     mount_ <- mountElement (getMountPoint mountPoint)
-    diff Nothing (Just vtree) mount_
     viewRef <- liftIO (newIORef vtree)
     pure (refs, mount_, viewRef)
 -----------------------------------------------------------------------------
