@@ -98,7 +98,8 @@ import           System.Mem.StableName (makeStableName)
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
-import           Miso.Diff (diff)
+import qualified Miso.Diff as Diff
+import qualified Miso.Hydrate as Hydrate
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import           Miso.String hiding (reverse, drop)
@@ -114,10 +115,10 @@ initialize
   :: Eq model
   => Hydrate
   -> Component parent model action
-  -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
-  -- ^ Callback function is used to perform the creation of VTree
+  -> JSM DOMRef
+  -- ^ Callback function is used for obtaining the t'Component' 'DOMRef'.
   -> JSM (ComponentState model action)
-initialize hydrate Component {..} getView = do
+initialize hydrate Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -130,7 +131,11 @@ initialize hydrate Component {..} getView = do
     case (hydrate, hydrateModel) of
       (Hydrate, Just action) -> getURI >>= action
       _ -> pure model
-  (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
+  componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
+  componentDOMRef <- getComponentMountPoint
+  componentVTree <- do
+    vtree <- runView hydrate (view initializedModel) componentSink logLevel events
+    liftIO (newIORef vtree)
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
@@ -159,7 +164,7 @@ initialize hydrate Component {..} getView = do
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         global <# ("currentComponentId" :: MisoString) $ componentId
-        diff (Just oldVTree) (Just newVTree) componentDOMRef
+        Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
@@ -205,6 +210,13 @@ initialize hydrate Component {..} getView = do
   registerComponent vcomp
   delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
+  case hydrate of
+    Draw -> do
+      vtree <- liftIO (readIORef componentVTree)
+      Diff.diff Nothing (Just vtree) componentDOMRef
+    Hydrate -> do
+      vtree <- liftIO (readIORef componentVTree)
+      Hydrate.hydrate logLevel componentDOMRef vtree
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
@@ -648,27 +660,6 @@ foldEffects update synchronicity info snk (e:es) o =
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
---------------------------------------------------
--- | Internally used for runView parent and startComponent
--- Initial draw helper
--- If hydrateing, bypass diff and continue copying
-drawComponent
-  :: Hydrate
-  -> DOMRef
-  -> Component parent model action
-  -> model
-  -> Sink action
-  -> JSM ([DOMRef], DOMRef, IORef VTree)
-drawComponent hydrate mountElement Component {..} initializedModel snk = do
-  refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-  vtree <- runView hydrate (view initializedModel) snk logLevel events
-  case hydrate of
-    Draw ->
-      diff Nothing (Just vtree) mountElement
-    Hydrate ->
-      FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mountElement =<< toJSVal vtree
-  ref <- liftIO (newIORef vtree)
-  pure (refs, mountElement, ref)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
@@ -739,7 +730,7 @@ runView
 runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize hydrate app (drawComponent hydrate domRef app)
+      ComponentState {..} <- initialize hydrate app (pure domRef)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
       FFI.set "componentId" vcompId (Object domRef)
