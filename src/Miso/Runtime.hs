@@ -132,6 +132,7 @@ initialize hydrate Component {..} getView = do
       _ -> pure model
   (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
+  componentModelDirty <- liftIO (newTVarIO False)
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
       Nothing -> pure rootComponentId
@@ -142,19 +143,18 @@ initialize hydrate Component {..} getView = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModelCurrent <- liftIO (newTVarIO model)
-  componentModelNew <- liftIO (newTVarIO initializedModel)
+  componentModel <- liftIO (newTVarIO model)
   let
     eventLoop = liftIO wait >> do
-      currentModel <- liftIO (readTVarIO componentModelCurrent)
-      newModel <- liftIO (readTVarIO componentModelNew)
+      currentModel <- liftIO (readTVarIO componentModel)
+      isDirty <- liftIO (readTVarIO componentModelDirty)
       let
         info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update Async info componentSink (toList as) newModel
+      updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
-      when (currentName /= updatedName && currentModel /= updatedModel) $ do
+      when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
         newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
@@ -163,10 +163,11 @@ initialize hydrate Component {..} getView = do
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
-            writeTVar componentModelCurrent updatedModel
-            writeTVar componentModelNew updatedModel
+            writeTVar componentModel updatedModel
+            writeTVar componentModelDirty False
+            -- dmj: reset the dirty bit
             writeTChan componentDiffs Null
-            -- dmj: child wake-up call for prop synch
+            -- dmj: child wake-up call for prop synch.
       syncPoint
       eventLoop
 
@@ -187,14 +188,14 @@ initialize hydrate Component {..} getView = do
   componentParentToChildThreadId <-
     synchronizeParentToChild
       componentParentId
-      componentModelNew
+      componentModel
       parentToChild
       serve
 
   componentChildToParentThreadId <-
     synchronizeChildToParent
       componentParentId
-      componentModelNew
+      componentModel
       componentDiffs
       childToParent
 
@@ -255,7 +256,8 @@ bindChildToParent ComponentState {..} childRef = \case
     childToParent setParent getChild = liftIO $ atomically $ do
       childModel <- readTVar childRef
       let newParent = setParent (getChild childModel)
-      modifyTVar' componentModelNew newParent
+      modifyTVar' componentModel newParent
+      writeTVar componentModelDirty True
 -----------------------------------------------------------------------------
 synchronizeParentToChild
   :: ComponentId
@@ -300,9 +302,10 @@ bindParentToChild ComponentState {..} modelRef = \case
     pure ()
   where
     parentToChild getParent setChild = liftIO $ atomically $ do
-      parentModel <- readTVar componentModelNew
+      parentModel <- readTVar componentModel
       let newChild = setChild (getParent parentModel)
       modifyTVar' modelRef newChild
+      writeTVar componentModelDirty True
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -320,8 +323,8 @@ data ComponentState model action
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
-  , componentModelCurrent    :: TVar model
-  , componentModelNew        :: TVar model
+  , componentModel           :: TVar model
+  , componentModelDirty      :: TVar Bool
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
@@ -682,9 +685,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go info actions = do
-          x <- liftIO (readTVarIO componentModelCurrent)
+          x <- liftIO (readTVarIO componentModel)
           y <- foldEffects update Sync info componentSink (toList actions) x
-          liftIO $ atomically (writeTVar componentModelCurrent y)
+          liftIO $ atomically (writeTVar componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
@@ -1005,7 +1008,7 @@ parent successful errorful = do
     IM.lookup _componentParentId <$> liftIO (readIORef components) >>= \case
       Nothing -> sink errorful
       Just ComponentState {..} -> do
-        model <- liftIO (readTVarIO componentModelCurrent)
+        model <- liftIO (readTVarIO componentModel)
         sink (successful model)
 -----------------------------------------------------------------------------
 -- | Sends a message to all t'Miso.Types.Component' 'mailbox', excluding oneself.
