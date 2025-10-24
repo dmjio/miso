@@ -209,6 +209,9 @@ component m u v = Component
 --
 data ROOT
 -----------------------------------------------------------------------------
+-- | 'Eq' instance for 'ROOT'
+instance Eq ROOT where _ == _ = True
+-----------------------------------------------------------------------------
 -- | For top-level t'Miso.Types.Component', 'ROOT' must always be specified for parent.
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
