@@ -729,7 +729,7 @@ runView
   -> JSM VTree
 runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
-    FFI.syncCallback2 $ \domRef continuation -> do
+    FFI.asyncCallback2 $ \domRef continuation -> do
       ComponentState {..} <- initialize hydrate app (pure domRef)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
