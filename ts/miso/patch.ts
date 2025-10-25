@@ -22,6 +22,7 @@ export type NodeMap<T> = Record <number, T>;
 /* Function for patch application */
 export function applyPatch<T> (context: Context<T>, message: MESSAGE, environment: Environment<T>) {
     let map: NodeMap<T> = null;
+    let newNode = null;
     switch (message.type) {
         case "events":
             /* registers background events events */
@@ -44,7 +45,7 @@ export function applyPatch<T> (context: Context<T>, message: MESSAGE, environmen
         case "createElement":
             map = environment[message.componentId]?.nodeMap;
             if (map) {
-                var newNode = context.createElement (message.tag);
+                newNode = context.createElement (message.tag);
                 newNode['nodeId'] = message.nodeId;
                 map['nodeId'] = newNode;
             }
@@ -52,7 +53,7 @@ export function applyPatch<T> (context: Context<T>, message: MESSAGE, environmen
         case "createElementNS":
             map = environment[message.componentId]?.nodeMap;
             if (map) {
-                var newNode = context.createElementNS (message.namespace, message.tag);
+                newNode = context.createElementNS (message.namespace, message.tag);
                 newNode['nodeId'] = message.nodeId;
                 map['nodeId'] = newNode;
             }
@@ -60,7 +61,7 @@ export function applyPatch<T> (context: Context<T>, message: MESSAGE, environmen
         case "createTextNode":
             map = environment[message.componentId]?.nodeMap;
             if (map) {
-                var newNode = context.createTextNode (message.text);
+                newNode = context.createTextNode (message.text);
                 newNode['nodeId'] = message.nodeId;
                 map['nodeId'] = newNode;
             }
