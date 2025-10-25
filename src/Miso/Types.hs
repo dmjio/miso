@@ -373,7 +373,7 @@ data Attribute action
   | Styles (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
--- | @IsString@ instance
+-- | 'IsString' instance
 instance IsString (View model action) where
   fromString = VText . fromString
 -----------------------------------------------------------------------------
@@ -397,11 +397,11 @@ node :: NS
      -> View model action
 node = VNode
 -----------------------------------------------------------------------------
--- | Create a new @Text@ with the given content.
+-- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
 text = VText
 -----------------------------------------------------------------------------
--- | Create a new @Text@ with the given content.
+-- | Create a new v'VText' with the given content.
 text_ :: [MisoString] -> View model action
 text_ = VText . MS.concat
 -----------------------------------------------------------------------------
@@ -449,8 +449,7 @@ optionalChildren element attrs kids condition opts =
       VNode ns name attrs newKids
     x -> x
 ----------------------------------------------------------------------------
--- | Type for dealing with @URI@. See the official [specification](https://github.com/llvm/llvm-project/pull/151445)
---
+-- | Type for dealing with t'URI'. See the official [specification](https://www.rfc-editor.org/rfc/rfc3986)
 --
 data URI
   = URI
@@ -458,18 +457,18 @@ data URI
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
--- | An empty @URI@
+-- | An empty t'URI'
 emptyURI :: URI
 emptyURI = URI mempty mempty mempty
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
 ----------------------------------------------------------------------------
--- | @URI@ pretty-printing
+-- | t'URI' pretty-printing
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
 -----------------------------------------------------------------------------
--- | @URI@ query string pretty-printing
+-- | t'URI' query string pretty-printing
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..} = queries <> flags
   where
