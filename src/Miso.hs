@@ -117,7 +117,7 @@ startApp = startComponent
 (🍜) :: Eq model => (URI -> App model action) -> JSM ()
 (🍜) = miso
 ----------------------------------------------------------------------------
--- | Runs a miso application
+-- | Runs a 'Miso.miso' application
 startComponent :: Eq model => Component ROOT model action -> JSM ()
 startComponent vcomp = withJS (initComponent vcomp)
 ----------------------------------------------------------------------------
@@ -133,18 +133,15 @@ renderApp
   -> App model action
   -- ^ Component application
   -> JSM ()
-renderApp renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
+renderApp renderer vcomp = withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
 ----------------------------------------------------------------------------
 -- | top-level 'Component' initialization helper for `renderApp` and `startComponent`
 initComponent
-  :: Eq model
+  :: (Eq parent, Eq model)
   => Component parent model action
   -> JSM (ComponentState model action)
-initComponent vcomp@Component {..} =
-  initialize Draw vcomp (mountElement (getMountPoint mountPoint))
+initComponent vcomp@Component {..} = initialize Draw vcomp $ mountElement (getMountPoint mountPoint)
 ----------------------------------------------------------------------------
-
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else

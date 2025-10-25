@@ -112,7 +112,7 @@ import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
-  :: Eq model
+  :: (Eq parent, Eq model)
   => Hydrate
   -> Component parent model action
   -> JSM DOMRef
@@ -147,16 +147,14 @@ initialize hydrate Component {..} getComponentMountPoint = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModelCurrent <- liftIO (newTVarIO model)
-  componentModelNew <- liftIO (newTVarIO initializedModel)
+  componentModel <- liftIO (newTVarIO model)
   let
     eventLoop = liftIO wait >> do
-      currentModel <- liftIO (readTVarIO componentModelCurrent)
-      newModel <- liftIO (readTVarIO componentModelNew)
+      currentModel <- liftIO (readTVarIO componentModel)
       let
         info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update Async info componentSink (toList as) newModel
+      updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       when (currentName /= updatedName && currentModel /= updatedModel) $ do
@@ -168,10 +166,10 @@ initialize hydrate Component {..} getComponentMountPoint = do
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
-            writeTVar componentModelCurrent updatedModel
-            writeTVar componentModelNew updatedModel
+            writeTVar componentModel updatedModel
+            -- dmj: reset the dirty bit
             writeTChan componentDiffs Null
-            -- dmj: child wake-up call for prop synch
+            -- dmj: child wake-up call for prop synch.
       syncPoint
       eventLoop
 
@@ -192,14 +190,14 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentParentToChildThreadId <-
     synchronizeParentToChild
       componentParentId
-      componentModelNew
+      componentModel
       parentToChild
       serve
 
   componentChildToParentThreadId <-
     synchronizeChildToParent
       componentParentId
-      componentModelNew
+      componentModel
       componentDiffs
       childToParent
 
@@ -221,13 +219,14 @@ initialize hydrate Component {..} getComponentMountPoint = do
   pure vcomp
 -----------------------------------------------------------------------------
 synchronizeChildToParent
-  :: ComponentId
+  :: Eq parent
+  => ComponentId
   -> TVar model
   -> Mailbox
   -> [ Binding parent model ]
   -> JSM (Maybe ThreadId)
 synchronizeChildToParent _ _ _ [] = pure Nothing
-synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
+synchronizeChildToParent parentId componentModel componentDiffs bindings = do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   IM.lookup parentId <$> liftIO (readIORef components) >>= \case
@@ -244,33 +243,39 @@ synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
           bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings (bindChildToParent parentComponentState componentModelNew)
-      liftIO (componentServe parentComponentState)
+      isDirty <- or <$> forM bindings (bindChildToParent parentComponentState componentModel)
+      when isDirty $ liftIO (componentServe parentComponentState)
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
-   . ComponentState parent action
+   . Eq parent
+  => ComponentState parent action
   -- ^ Parent model
   -> TVar model
   -- ^ Child new model
   -> Binding parent model
   -- ^ Binding
-  -> JSM ()
+  -> JSM Bool
 bindChildToParent ComponentState {..} childRef = \case
   ChildToParent setParent getChild ->
     childToParent setParent getChild
   Bidirectional _ setParent getChild _ ->
     childToParent setParent getChild
   _ ->
-    pure ()
+    pure False
   where
-    childToParent setParent getChild = liftIO $ atomically $ do
-      childModel <- readTVar childRef
-      let newParent = setParent (getChild childModel)
-      modifyTVar' componentModelNew newParent
+    childToParent setParent getChild = do
+       liftIO $ atomically $ do
+         childModel <- readTVar childRef
+         let f = setParent (getChild childModel)
+         currentParent <- readTVar componentModel
+         modifyTVar' componentModel f
+         newParent <- readTVar componentModel
+         pure (currentParent /= newParent)
 -----------------------------------------------------------------------------
 synchronizeParentToChild
-  :: ComponentId
+  :: Eq model
+  => ComponentId
   -> TVar model
   -> [ Binding type_ model ]
   -> IO ()
@@ -291,30 +296,34 @@ synchronizeParentToChild parentId componentModel_ bindings serve = do
         bindProperty parentComponentState
   where
     bindProperty parentComponentState = do
-      forM_ bindings (bindParentToChild parentComponentState componentModel_)
-      liftIO serve
+      isDirty <- or <$> forM bindings (bindParentToChild parentComponentState componentModel_)
+      when isDirty (liftIO serve)
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
-   . ComponentState props action
+   . Eq model
+  => ComponentState props action
   -- ^ Parent model
   -> TVar model
   -- ^ Child new model
   -> Binding props model
   -- ^ binding
-  -> JSM ()
+  -> JSM Bool
 bindParentToChild ComponentState {..} modelRef = \case
   ParentToChild getParent setChild -> do
     parentToChild getParent setChild
   Bidirectional getParent _ _ setChild ->
     parentToChild getParent setChild
   _ ->
-    pure ()
+    pure False
   where
     parentToChild getParent setChild = liftIO $ atomically $ do
-      parentModel <- readTVar componentModelNew
-      let newChild = setChild (getParent parentModel)
-      modifyTVar' modelRef newChild
+      parentModel <- readTVar componentModel
+      let f = setChild (getParent parentModel)
+      currentChild <- readTVar modelRef
+      modifyTVar' modelRef f
+      newChild <- readTVar modelRef
+      pure (currentChild /= newChild)
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'diff'
@@ -332,8 +341,8 @@ data ComponentState model action
   , componentDOMRef          :: DOMRef
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
-  , componentModelCurrent    :: TVar model
-  , componentModelNew        :: TVar model
+  , componentModel           :: TVar model
+  , componentModelDirty      :: TVar Bool
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
@@ -673,9 +682,9 @@ drain app@Component{..} cs@ComponentState {..} = do
   unloadScripts cs
       where
         go info actions = do
-          x <- liftIO (readTVarIO componentModelCurrent)
+          x <- liftIO (readTVarIO componentModel)
           y <- foldEffects update Sync info componentSink (toList actions) x
-          liftIO $ atomically (writeTVar componentModelCurrent y)
+          liftIO $ atomically (writeTVar componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
@@ -721,7 +730,8 @@ killSubscribers componentId =
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
 runView
-  :: Hydrate
+  :: Eq model
+  => Hydrate
   -> View model action
   -> Sink action
   -> LogLevel
@@ -996,7 +1006,7 @@ parent successful errorful = do
     IM.lookup _componentParentId <$> liftIO (readIORef components) >>= \case
       Nothing -> sink errorful
       Just ComponentState {..} -> do
-        model <- liftIO (readTVarIO componentModelCurrent)
+        model <- liftIO (readTVarIO componentModel)
         sink (successful model)
 -----------------------------------------------------------------------------
 -- | Sends a message to all t'Miso.Types.Component' 'mailbox', excluding oneself.
