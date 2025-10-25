@@ -131,7 +131,7 @@ version: 0.1.0.0
 synopsis: Sample miso app
 category: Web
 
-common wasm
+common options
   if arch(wasm32)
     ghc-options:
       -no-hs-main
@@ -140,9 +140,13 @@ common wasm
     cpp-options:
       -DWASM
 
+  if arch(javascript)
+     ld-options:
+       -sEXPORTED_RUNTIME_METHODS=HEAP8
+
 executable app
   import:
-    wasm
+    options
   main-is:
     Main.hs
   build-depends:
