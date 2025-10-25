@@ -1,52 +1,52 @@
-import { Context } from '../types';
+import { Context, DOMRef } from '../types';
 
-const context : Context = {
-  'addEventListener' : (mount, event, listener, capture) => {
+const context : Context<DOMRef> = {
+  addEventListener : (mount, event, listener, capture) => {
       mount.addEventListener(event, listener, capture);
   },
-  'firstChild' : (node) => {
+  firstChild : (node) => {
     return node.firstChild;
   },
-  'lastChild' : (node) => {
+  lastChild : (node) => {
     return node.lastChild;
   },
-  'parentNode' : (node) => {
+  parentNode : (node) => {
     return node.parentNode;
   },
-  'nextSibling' : (node) => {
+  nextSibling : (node) => {
     return node.nextSibling;
   },
-  'createTextNode' : (s: string) => {
-    return document.createTextNode(s);
+  createTextNode : (s) => {
+    return document.createTextNode(s) as any;
   },
-  'createElementNS' : (ns : string, tag : string) => {
-    return document.createElementNS(ns, tag);
+  createElementNS : (ns, tag) => {
+    return document.createElementNS(ns, tag) as any;
   },
-  'appendChild' : (parent : Element, child : Element) => {
+  appendChild : (parent, child) => {
     return parent.appendChild (child);
   },
-  'replaceChild' : (parent, n, old) => {
+  replaceChild : (parent, n, old) => {
     return parent.replaceChild (n, old);
   },
-  'removeChild' : (parent, child) => {
+  removeChild : (parent, child) => {
     return parent.removeChild (child);
   },
-  'createElement' : (tag :string) => {
+  createElement : (tag) => {
     return document.createElement(tag);
   },
-  'insertBefore' : (parent, child, node) => {
+  insertBefore : (parent, child, node) => {
     return parent.insertBefore(child, node);
   },
-  'swapDOMRefs' : (a: Node, b: Node, p: Node) => {
+  swapDOMRefs : (a, b, p) => {
     const tmp = a.nextSibling;
     p.insertBefore(a, b);
     p.insertBefore(b, tmp);
     return;
   },
-  'querySelectorAll': (sel: string) => {
-    return document.querySelectorAll(sel);
+  querySelectorAll: (sel) => {
+    return document.querySelectorAll(sel) as any;
   },
-  'setInlineStyle' : (cCss, nCss, node) => {
+  setInlineStyle: (cCss, nCss, node) => {
      var result: string;
      /* is current attribute in new attribute list? */
      for (const key in cCss) {
@@ -65,49 +65,46 @@ const context : Context = {
      }
     return;
   },
-  'getInlineStyle' : (node, key) => {
+  getInlineStyle: (node, key) => {
     return node.style[key];
   },
-  'setAttribute' : (node, key, value) => {
+  setAttribute: (node, key, value) => {
     return node.setAttribute(key, value)
   },
-  'getAttribute' : (node, key) => {
+  getAttribute: (node, key) => {
       if (key === 'class') return node.className;
       if (key in node) return node[key];
       return node.getAttribute(key);
   },
-  'setAttributeNS' : (node, ns, key, value) => {
+  setAttributeNS: (node, ns, key, value) => {
     return node.setAttributeNS(ns, key, value)
   },
-  'removeAttribute' : (node, key) => {
+  removeAttribute : (node, key) => {
     return node.removeAttribute(key);
   },
-  'setTextContent' : (node, text) => {
+  setTextContent : (node, text) => {
     node.textContent = text;
     return;
   },
-  'getTag' : (node) => {
+  getTag: (node) => {
     return node.nodeName;
   },
-  'getTextContent' : (node) => {
+  getTextContent: (node) => {
     return node.textContent;
   },
-  'children' : (node) => {
-    return node.childNodes;
+  children: (node) => {
+    return node.childNodes as any;
   },
-  'isEqual' : (x, y) => {
+  isEqual: (x, y) => {
     return x === y;
   },
-  'getTarget' : (e : Event) => {
+  getTarget: (e : Event) => {
     return e.target;
   },
-  'requestAnimationFrame' : (callback: (timestamp: number) => void): void => {
-     return window.requestAnimationFrame (callback);
-  },
-  'flush' : (): void => {
+  flush: (): void => {
     return;
   },
-  'getRoot' : () => {
+  getRoot : () => {
     return document.body
   },
 };

@@ -17,10 +17,7 @@ module Miso.Diff
   , mountElement
   ) where
 -----------------------------------------------------------------------------
-import           GHCJS.Foreign.Internal hiding (Object)
-import           GHCJS.Types
-import           JavaScript.Object.Internal
-import           Language.Javascript.JSaddle
+import           Language.Javascript.JSaddle (JSVal, Object(..), jsNull)
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
