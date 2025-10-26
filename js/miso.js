@@ -484,7 +484,7 @@ function delegate(mount, events, getVTree, debug, context) {
 }
 function undelegate(mount, events, getVTree, debug, context) {
   for (const event of events) {
-    mount.removeEventListener(event["name"], function(e) {
+    context.removeEventListener(mount, event["name"], function(e) {
       listener(e, mount, getVTree, debug, context);
     }, event["capture"]);
   }
@@ -792,6 +792,9 @@ var context = {
   addEventListener: (mount, event, listener2, capture) => {
     mount.addEventListener(event, listener2, capture);
   },
+  removeEventListener: (mount, event, listener2, capture) => {
+    mount.removeEventListener(event, listener2, capture);
+  },
   firstChild: (node) => {
     return node.firstChild;
   },
@@ -888,9 +891,6 @@ var context = {
   },
   getTarget: (e) => {
     return e.target;
-  },
-  requestAnimationFrame: (callback) => {
-    return window.requestAnimationFrame(callback);
   },
   flush: () => {
     return;

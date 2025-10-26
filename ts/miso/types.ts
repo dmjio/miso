@@ -79,6 +79,7 @@ export type EventCapture = {
 */
 export type Context<T> = {
   addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
+  removeEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
   nextSibling : (node) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns : string, tag : string) => T;
@@ -95,7 +96,7 @@ export type Context<T> = {
   setTextContent : (node, text) => void;
   getTextContent : (node) => string;
   isEqual : (n1, n2) => boolean;
-  getTarget : (e: Event) => EventTarget;
+  getTarget : (e: Event) => T;
   children : (e: T) => Array<T>;
   getInlineStyle : (e, string) => string;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;

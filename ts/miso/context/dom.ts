@@ -4,6 +4,9 @@ const context : Context<DOMRef> = {
   addEventListener : (mount, event, listener, capture) => {
       mount.addEventListener(event, listener, capture);
   },
+  removeEventListener : (mount, event, listener, capture) => {
+      mount.removeEventListener(event, listener, capture);
+  },
   firstChild : (node) => {
     return node.firstChild;
   },
@@ -99,7 +102,7 @@ const context : Context<DOMRef> = {
     return x === y;
   },
   getTarget: (e : Event) => {
-    return e.target;
+    return e.target as DOMRef;
   },
   flush: (): void => {
     return;

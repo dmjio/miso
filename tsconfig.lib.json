@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "files": ["./ts/miso.ts"]
+  "files": ["./ts/miso.ts", "./ts/miso/context/dom.ts" ]
 }

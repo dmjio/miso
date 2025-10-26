@@ -5,6 +5,7 @@ import { NodeId, ComponentId, Context } from './types';
 
    'T' is abstract over any render tree Node type.
 */
+
 export type Environment<T> = Record <ComponentId, ComponentInfo<T>>;
 
 /* Object representation of Model */
@@ -12,7 +13,7 @@ export type Model = Object;
 
 /* Information about the current component that lives on the render thread */
 export type ComponentInfo<T> = {
-  model: Object; /* read-only access to the model */
+  model: Object; /* read-only access to the model, model must be serializable */
   nodeMap: NodeMap<T>;
 };
 
