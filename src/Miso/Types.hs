@@ -87,10 +87,8 @@ import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
-#ifndef JSADDLE
-import           System.IO.Unsafe (unsafePerformIO)
 import           Control.Exception (catch, SomeException)
-#endif
+import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
