@@ -47,7 +47,7 @@ module Miso.Mathml.Element
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'MATHML' 'node' in 'View'.
+-- | Low-level helper used to construct 'MATHML' 'node' in 'Miso.Types.View'.
 -- Most View helpers in this module are defined in terms of it.
 nodeMathml :: MisoString -> [Attribute action] -> [View model action] -> View model action
 nodeMathml nodeName = node MATHML nodeName

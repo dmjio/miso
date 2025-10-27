@@ -12,7 +12,7 @@ type ComponentId = number;
 
 type VComp = {
   type: 'vcomp';
-  domRef: HTMLElement;
+  domRef: DOMRef;
   ns: 'html';
   tag: 'div';
   key: string;

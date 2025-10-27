@@ -8,6 +8,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Predefined list of HTML elements
+--
 ----------------------------------------------------------------------------
 module Miso.Html.Element
   ( -- ** Smart constructors
@@ -147,7 +150,7 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'HTML' 'node' in 'View'.
+-- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute action] -> [View model action] -> View model action
 nodeHtml nodeName = node HTML nodeName
@@ -202,7 +205,7 @@ button_ = nodeHtml "button"
 -----------------------------------------------------------------------------
 -- | [\<form\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form)
 --
--- For usage in a real-world application with the 'onSubmit' event.
+-- For usage in a real-world application with the @onSubmit@ event.
 --
 -- > view :: Model -> View model action
 -- > view model = form [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
@@ -554,7 +557,9 @@ link_ = flip (nodeHtml "link") []
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
--- @'style_' [] "\</style\>"@
+-- @
+-- style_ [] "\</style\>"
+-- @
 style_ :: [Attribute action] -> MisoString -> View model action
 style_ attrs rawText = node HTML "style" attrs [text rawText]
 -----------------------------------------------------------------------------

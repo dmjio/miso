@@ -35,7 +35,7 @@ data Waiter
     -- ^ Unblocks threads waiting on MVar
   }
 -----------------------------------------------------------------------------
--- | Creates a new 'Waiter'
+-- | Creates a new @Waiter@
 waiter :: IO Waiter
 waiter = do
   mvar <- newEmptyMVar
@@ -46,7 +46,7 @@ waiter = do
         pure ()
     }
 -----------------------------------------------------------------------------
--- | Type for expressing 'Mail' (or message payloads) put into a 'Mailbox' for delivery
+-- | Type for expressing @Mail@ (or message payloads) put into a 'Mailbox' for delivery
 type Mail = Value
 -----------------------------------------------------------------------------
 -- | Publish / Subscribe concurrency primitive
@@ -59,7 +59,7 @@ type Mail = Value
 --
 -- All the above are supported as well in a bidirectional setting.
 --
--- * Bidirectional (multicast / broadcast / unicast) (n:m)
+-- * Bidirectional (multicast \/ broadcast \/ unicast) (n:m)
 --
 -- Practically this pattern resembles cloud notifcation services like
 --

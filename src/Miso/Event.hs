@@ -9,6 +9,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions for specifying component lifecycle events and event handlers in 'Miso.Types.View'.
+--
 ----------------------------------------------------------------------------
 module Miso.Event
    ( -- *** Smart constructors
@@ -81,7 +84,7 @@ onWithOptions options eventName Decoder{..} toAction =
             [ "Event \""
             , eventName
             , "\" is not being listened on. To use this event, "
-            , "add to the 'events' Map in 'Component'"
+            , "add to the 'events' Map in Component"
             ]
       Just _ -> do
         eventObj <- getProp "events" n
@@ -110,7 +113,7 @@ onMounted action =
 -----------------------------------------------------------------------------
 -- | @onMountedWith action@ is an event that gets called after the actual DOM
 -- element is created. It returns the /componentId/ from the component.
--- Returning /componentId/ is useful when creating 'Component' dynamically.
+-- Returning /componentId/ is useful when creating t'Miso.Types.Component' dynamically.
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -128,7 +131,7 @@ onMountedWith action =
 -----------------------------------------------------------------------------
 -- | @onMountedWith action@ is an event that gets called after the actual DOM
 -- element is created. It returns the /componentId/ from the component.
--- Returning /componentId/ is useful when creating 'Component' dynamically.
+-- Returning /componentId/ is useful when creating t'Miso.Types.Component' dynamically.
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --

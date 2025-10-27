@@ -51,10 +51,10 @@ run action = do
       then debugMiso port action
       else J.run port action
 -----------------------------------------------------------------------------
--- | Start or restart the server, with a static 'Middlware' policy.
+-- | Start or restart the server, with a static Middleware policy.
 --
--- dmj: This is like `debug` from `jsaddle-warp`, except it uses a static
--- @Middleware@ for static file hosting.
+-- dmj: This is like @debug@ from `jsaddle-warp`, except it uses a static
+-- middleware for static file hosting.
 --
 -- This means that usage of `url('mario.png')` will "just work" when developing
 -- from GHCi.

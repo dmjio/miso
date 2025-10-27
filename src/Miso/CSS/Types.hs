@@ -6,6 +6,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Types for CSS, including inline styles and [StyleSheets](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet).
+--
 ----------------------------------------------------------------------------
 module Miso.CSS.Types
   ( -- *** Types
@@ -16,7 +19,7 @@ module Miso.CSS.Types
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to 'Styles'.
+-- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to t'Styles'.
 --
 -- @
 -- testSheet :: StyleSheet

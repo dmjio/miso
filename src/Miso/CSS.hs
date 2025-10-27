@@ -8,11 +8,14 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Module for constructing CSS styles and stylesheets in miso
+--
 -----------------------------------------------------------------------------
 module Miso.CSS
   ( -- *** Types
     module Miso.CSS.Types
-  -- *** Smart Constructor
+    -- *** Smart Constructor
   , style_
   , styleInline_
   , sheet_
@@ -238,43 +241,133 @@ import           Miso.Util ((=:))
 -----------------------------------------------------------------------------
 import           Prelude hiding (filter, rem)
 -----------------------------------------------------------------------------
-pt :: Double -> MisoString
+-- | Font sizing in terms of *pt*
+--
+-- @
+-- >>> pt 10
+-- "10pt"
+-- @
+--
+pt :: Int -> MisoString
 pt x = MS.ms x <> "pt"
 -----------------------------------------------------------------------------
-px :: Double -> MisoString
+-- | Font sizing in terms of *px*
+--
+-- @
+-- >>> px 10
+-- "10px"
+-- @
+--
+px :: Int -> MisoString
 px x = MS.ms x <> "px"
 -----------------------------------------------------------------------------
+-- | Degree specification
+--
+-- @
+-- >>> deg 10
+-- "10deg"
+-- @
+--
 deg :: Double -> MisoString
 deg x = MS.ms x <> "deg"
 -----------------------------------------------------------------------------
+-- | Turn constructor, useful for specifying rotations
+--
+-- @
+-- >>> turn 10.0
+-- "10.0turn"
+-- @
+--
 turn :: Double -> MisoString
 turn x = MS.ms x <> "turn"
 -----------------------------------------------------------------------------
+-- | Radial constructor
+--
+-- @
+-- >>> rad 10.0
+-- "10.0rad"
+-- @
+--
 rad :: Double -> MisoString
 rad x = MS.ms x <> "rad"
 -----------------------------------------------------------------------------
+-- | Responsive pixel sizing, *rpx*
+--
+-- @
+-- >>> rpx 10.0
+-- "10.0rpx"
+-- @
+--
 rpx :: Double -> MisoString
 rpx x = MS.ms x <> "rpx"
 -----------------------------------------------------------------------------
+-- | Relative *em* sizing
+--
+-- @
+-- >>> rem 10.0
+-- "10.0rem"
+-- @
+--
 rem :: Double -> MisoString
 rem x = MS.ms x <> "rem"
 -----------------------------------------------------------------------------
+-- | *em* sizing
+--
+-- @
+-- >>> em 10.0
+-- "10.0em"
+-- @
+--
 em :: Double -> MisoString
 em x = MS.ms x <> "em"
 -----------------------------------------------------------------------------
+-- | Viewport height
+--
+-- @
+-- >>> vh 10.0
+-- "10.0vh"
+-- @
+--
 vh :: Double -> MisoString
 vh x = MS.ms x <> "vh"
 -----------------------------------------------------------------------------
+-- | Viewport width
+--
+-- @
+-- >>> vw 10.0
+-- "10.0vw"
+-- @
+--
 vw :: Double -> MisoString
 vw x = MS.ms x <> "vw"
 -----------------------------------------------------------------------------
+-- | Duration in seconds
+--
+-- @
+-- >>> s 10.0
+-- "10.0s"
+-- @
+--
 s :: Double -> MisoString
 s x = MS.ms x <> "s"
 -----------------------------------------------------------------------------
+-- | Duration in milliseconds
+--
+-- @
+-- >>> ms 10.0
+-- "10.0ms"
+-- @
+--
 ms :: Double -> MisoString
 ms x = MS.ms x <> "ms"
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/CSS/url_function
+-- | CSS function for specifying a [URL](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet)
+--
+-- @
+-- >>> url "dog.png"
+-- "url(\"dog.png\")"
+-- @
+--
 url :: MisoString -> MisoString
 url x = "url(" <> x <> ")"
 -----------------------------------------------------------------------------
@@ -303,10 +396,11 @@ matrix a b c d tx ty = "matrix(" <> values <> ")"
 pct :: Double -> MisoString
 pct x = MS.ms x <> "%"
 -----------------------------------------------------------------------------
+-- | ppx unit of measure
 ppx :: Double -> MisoString
 ppx x = MS.ms x <> "ppx"
 -----------------------------------------------------------------------------
--- | Used when constructing a 'StyleSheet'
+-- | Used when constructing a t'StyleSheet'
 --
 -- @
 -- sheet_
@@ -320,6 +414,7 @@ ppx x = MS.ms x <> "ppx"
 selector_ :: MisoString -> [Style] -> Styles
 selector_ k v = Styles (k,v)
 -----------------------------------------------------------------------------
+-- | Smart constructor for t'StyleSheet'
 sheet_ :: [Styles] -> StyleSheet
 sheet_ = StyleSheet
 -----------------------------------------------------------------------------
@@ -344,7 +439,7 @@ style_ = MT.Styles . M.fromList
 styleInline_ ::  MisoString -> Attribute action
 styleInline_ = textProp "style"
 -----------------------------------------------------------------------------
--- | Renders a 'Styles' to a 'MisoString'
+-- | Renders a t'Styles' to a t'MisoString'
 renderStyles :: Int -> Styles -> MisoString
 renderStyles indent (Styles (sel,styles)) = MS.unlines
   [ sel <> " {" <> MS.replicate indent " "
@@ -380,7 +475,7 @@ renderStyles indent (Media name frames) = MS.intercalate " "
   , "}\n"
   ]
 -----------------------------------------------------------------------------
--- | Render 'StyleSheet' as 'MisoString'
+-- | Render t'StyleSheet' as 'MisoString'
 --
 renderStyleSheet :: StyleSheet -> MisoString
 renderStyleSheet styleSheet = MS.intercalate "\n"

@@ -157,12 +157,12 @@ onClick :: action -> Attribute action
 onClick action = on "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
--- Like 'onClick', but passes the DOM reference along (akin to 'getElementBydId').
+-- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
 onClickWith :: (DOMRef -> action) -> Attribute action
 onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
--- Like 'onClick', but passes the DOM reference along (akin to 'getElementBydId').
+-- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
 onClickWithOptions :: Options -> action -> Attribute action
 onClickWithOptions options action = onWithOptions options "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
@@ -376,9 +376,11 @@ onDurationChange action = on "durationchange" emptyDecoder $ \() _ -> action
 onDurationChangeWith :: (Media -> action) -> Attribute action
 onDurationChangeWith action = on "durationchange" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------
+-- | https://www.w3schools.com/jsref/event_onemptied.asp
 onEmptied :: action -> Attribute action
 onEmptied action = on "emptied" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
+-- | https://www.w3schools.com/jsref/event_onemptied.asp
 onEmptiedWith :: (Media -> action) -> Attribute action
 onEmptiedWith action = on "emptied" emptyDecoder $ \() -> action . Media
 -----------------------------------------------------------------------------

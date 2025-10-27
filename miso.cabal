@@ -110,6 +110,7 @@ library
   other-modules:
     Miso.Delegate
     Miso.Diff
+    Miso.Hydrate
     Miso.FFI.Internal
     Miso.Runtime
   exposed-modules:

@@ -27,6 +27,8 @@ import Language.Haskell.TH
 import Miso.Util (compose)
 import Miso.Lens (this, lens, Lens)
 -----------------------------------------------------------------------------
+-- | Automatically generates Haskell lenses via template-haskell.
+--
 makeLenses :: Name -> Q [Dec]
 makeLenses name = do
   reify name >>= \case
@@ -69,6 +71,7 @@ makeLenses name = do
         recName = mkName "record"
         fieldName = mkName "field"
 -----------------------------------------------------------------------------
+-- | Automatically generates classy lenses via template-haskell.
 makeClassy :: Name -> Q [Dec]
 makeClassy name = do
   reify name >>= \case

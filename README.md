@@ -131,7 +131,7 @@ version: 0.1.0.0
 synopsis: Sample miso app
 category: Web
 
-common wasm
+common options
   if arch(wasm32)
     ghc-options:
       -no-hs-main
@@ -140,9 +140,13 @@ common wasm
     cpp-options:
       -DWASM
 
+  if arch(javascript)
+     ld-options:
+       -sEXPORTED_RUNTIME_METHODS=HEAP8
+
 executable app
   import:
-    wasm
+    options
   main-is:
     Main.hs
   build-depends:
@@ -550,7 +554,7 @@ Offical [Haskell](https://haskell.org) documentation of the [Miso](https://haske
 For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32).
 
 > [!TIP]
-> For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/dmjio/miso/blob/master/haskell-miso.org/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
+> For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/haskell-miso/haskell-miso.org/blob/master/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).
 
 ## Internals ⚙️
 

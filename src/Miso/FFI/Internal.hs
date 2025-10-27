@@ -16,6 +16,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Internal FFI functions for browser / device interaction.
+--
 ----------------------------------------------------------------------------
 module Miso.FFI.Internal
    ( JSM
@@ -102,7 +105,7 @@ module Miso.FFI.Internal
    -- * Utils
    , getMilliseconds
    , getSeconds
-   -- * Component
+   -- * 'Miso.Types.Component'
    , getParentComponentId
    , getComponentId
    -- * Element
@@ -158,7 +161,7 @@ import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
 ----------------------------------------------------------------------------
--- | Run given `JSM` action asynchronously, in a separate thread.
+-- | Run given t'JSM' action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ThreadId
 forkJSM a = do
   ctx <- askJSM
@@ -462,10 +465,9 @@ undelegate mountPoint events debug callback ctx = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "undelegate" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
--- | Copies DOM pointers into virtual dom
--- entry point into isomorphic javascript
+-- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
 --
--- <https://en.wikipedia.org/wiki/Hydration_(web_development)>
+-- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
 hydrate :: Bool -> JSVal -> JSVal -> JSM ()
 hydrate logLevel mountPoint vtree = void $ do
@@ -509,7 +511,7 @@ alert a = () <$ jsg1 "alert" a
 reload :: JSM ()
 reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
--- | Appends a 'style_' element containing CSS to 'head_'
+-- | Appends a 'Miso.Html.Element.style_' element containing CSS to 'Miso.Html.Element.head_'
 --
 -- > addStyle "body { background-color: green; }"
 --
@@ -521,7 +523,7 @@ addStyle css = do
   (style <# "innerHTML") css
   jsg "document" ! "head" # "appendChild" $ [style]
 -----------------------------------------------------------------------------
--- | Appends a 'script_' element containing JS to 'head_'
+-- | Appends a 'Miso.Html.Element.script_' element containing JS to 'Miso.Html.Element.head_'
 --
 -- > addScript False "function () { alert('hi'); }"
 --
@@ -532,7 +534,7 @@ addScript useModule js_ = do
   (script <# "innerHTML") js_
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
--- | Appends a 'script_' element containing a JS import map.
+-- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
 --
 -- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
 --
@@ -543,7 +545,7 @@ addScriptImportMap impMap = do
   (script <# "innerHTML") impMap
   jsg "document" ! "head" # "appendChild" $ [script]
 -----------------------------------------------------------------------------
--- | Appends a \<script\> element to 'head_'
+-- | Appends a \<script\> element to 'Miso.Html.Element.head_'
 --
 -- > addSrc "https://example.com/script.js"
 --
@@ -553,8 +555,8 @@ addSrc url = do
   _ <- link # "setAttribute" $ ["src", fromMisoString url]
   jsg "document" ! "head" # "appendChild" $ [link]
 -----------------------------------------------------------------------------
--- | Appends a StyleSheet 'link_' element to 'head_'
--- The 'link_' tag will contain a URL to a CSS file.
+-- | Appends a StyleSheet 'Miso.Html.Element.link_' element to 'Miso.Html.Element.head_'
+-- The 'Miso.Html.Element.link_' tag will contain a URL to a CSS file.
 --
 -- > addStyleSheet "https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css"
 --
@@ -612,6 +614,7 @@ fetch url method maybeBody requestHeaders successful errorful type_ = do
     , typ
     ]
 -----------------------------------------------------------------------------
+-- | List of possible content types that are available for use with the fetch API
 data CONTENT_TYPE
   = JSON
   | ARRAY_BUFFER
@@ -641,9 +644,9 @@ instance ToJSVal CONTENT_TYPE where
 -----------------------------------------------------------------------------
 -- | shouldSync
 --
--- Used to set whether or not the current VNode should enter the 'syncChildren'
+-- Used to set whether or not the current VNode should enter the @syncChildren@
 -- function during diffing. The criteria for entrance is that all children
--- have a populated 'key' node. We can determine this property more efficiently
+-- have a populated 'Miso.Property.key_' node. We can determine this property more efficiently
 -- at tree construction time rather than dynamic detection during diffing.
 --
 shouldSync :: JSVal -> JSM Bool
@@ -651,24 +654,28 @@ shouldSync vnode = do
   returnValue <- jsg "miso" # "shouldSync" $ [vnode]
   fromJSValUnchecked returnValue
 -----------------------------------------------------------------------------
+-- | Flush is used to force a draw of the render tree. This is currently
+-- only used when targeting platforms other than the browser (like mobile).
 flush :: JSM ()
 flush = do
   context <- jsg "miso" ! "context"
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
+-- | Calls 'requestAnimationFrame'
 requestAnimationFrame :: JSM () -> JSM ()
 requestAnimationFrame f = do
   context <- jsg "miso" ! "context"
   cb <- syncCallback f
   void $ context # "requestAnimationFrame" $ [cb]
 -----------------------------------------------------------------------------
+-- | [Image](https://developer.mozilla.org/en-US/docs/Web/API/Image)
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal Image where
   fromJSVal = pure . pure . Image
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'Image' w/ 'src' attribute.
+-- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' 'Miso.Types.Attribute'.
 newImage :: MisoString -> JSM Image
 newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
@@ -677,26 +684,31 @@ newImage url = do
 -----------------------------------------------------------------------------
 -- | Used to select a drawing context. Users can override the default DOM renderer
 -- by implementing their own Context, and exporting it to the global scope. This
--- opens the door to different rendering engines, ala miso-native.
+-- opens the door to different rendering engines, ala [miso-lynx](https://github.com/haskell-miso/miso-lynx).
 setDrawingContext :: MisoString -> JSM ()
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
 -----------------------------------------------------------------------------
+-- | The [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) type
 newtype Date = Date JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
+-- | Smart constructor for a t'Date'
 newDate :: JSM Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
+-- | Date conversion function to produce a locale
 toLocaleString :: Date -> JSM MisoString
 toLocaleString date = fromJSValUnchecked =<< do
   date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
+-- | Retrieves current milliseconds from t'Date'
 getMilliseconds :: Date -> JSM Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
     date # "getMilliseconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
+-- | Retrieves current seconds from t'Date'
 getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
@@ -708,9 +720,9 @@ getParentComponentId domRef =
   fromJSVal =<< do
     jsg "miso" # "getParentComponentId" $ [domRef]
 -----------------------------------------------------------------------------
--- | Get access to the 'ComponentId'
+-- | Get access to the 'Miso.Effect.ComponentId'
 -- N.B. you * must * call this on the DOMRef, otherwise, problems.
--- For use in `onMounted`, etc.
+-- For use in 'Miso.Event.onMounted', etc.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
@@ -795,6 +807,7 @@ copyClipboard txt successful errorful = do
   errorfulCallback <- asyncCallback1 errorful
   void $ promise # "catch" $ [errorfulCallback]
 -----------------------------------------------------------------------------
+-- | Establishes a @WebSocket@ connection
 websocketConnect
   :: MisoString
   -> JSM ()
@@ -867,15 +880,21 @@ eventSourceClose :: JSVal -> JSM ()
 eventSourceClose eventSource = void $ do
   jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------
+-- | Navigator function to query the current online status of the user's computer
+--
+-- See [navigator.onLine](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine)
+--
 isOnLine :: JSM Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
+-- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype Blob = Blob JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
 instance FromJSVal Blob where
   fromJSVal = pure . pure . Blob
 -----------------------------------------------------------------------------
+-- | [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype FormData = FormData JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
@@ -885,6 +904,7 @@ instance FromJSVal FormData where
 instance FromJSVal ArrayBuffer where
   fromJSVal = pure . pure . ArrayBuffer
 -----------------------------------------------------------------------------
+-- | [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/API/ArrayBuffer)
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
@@ -895,42 +915,51 @@ geolocation successful errorful = do
   cb2 <- asyncCallback1 errorful
   void $ geo # "getCurrentPosition" $ (cb1, cb2)
 -----------------------------------------------------------------------------
+-- | [File](https://developer.mozilla.org/en-US/docs/Web/API/File)
 newtype File = File JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal File where
   fromJSVal = pure . pure . File
 -----------------------------------------------------------------------------
+-- | [Uint8Array](https://developer.mozilla.org/en-US/docs/Web/API/Uint8Array)
 newtype Uint8Array = Uint8Array JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
 instance FromJSVal Uint8Array where
   fromJSVal = pure . pure . Uint8Array
 -----------------------------------------------------------------------------
+-- | [FileReader](https://developer.mozilla.org/en-US/docs/Web/API/FileReader)
 newtype FileReader = FileReader JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal FileReader where
   fromJSVal = pure . pure . FileReader
 -----------------------------------------------------------------------------
+-- | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
 newtype URLSearchParams = URLSearchParams JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal URLSearchParams where
   fromJSVal = pure . pure . URLSearchParams
 -----------------------------------------------------------------------------
--- | Smart constructor for building a 'FileReader'
+-- | Smart constructor for building a t'FileReader'
 newFileReader :: JSM FileReader
 newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
 -----------------------------------------------------------------------------
+-- | Type returned from a 'fetch' request 
 data Response body
   = Response
   { status :: Maybe Int
+    -- ^ HTTP status code
   , headers :: Map MisoString MisoString
+    -- ^ Response headers 
   , errorMessage :: Maybe MisoString
+    -- ^ Optional error message
   , body :: body
+    -- ^ Response body
   }
 -----------------------------------------------------------------------------
 instance Functor Response where

@@ -13,6 +13,9 @@ const context : Context = {
   'parentNode' : (node) => {
     return node.parentNode;
   },
+  'nextSibling' : (node) => {
+    return node.nextSibling;
+  },
   'createTextNode' : (s: string) => {
     return document.createTextNode(s);
   },

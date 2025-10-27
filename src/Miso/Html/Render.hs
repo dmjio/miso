@@ -14,6 +14,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- 'Miso.Types.View' serialization
+--
 ----------------------------------------------------------------------------
 module Miso.Html.Render
   ( -- *** Classes
@@ -34,12 +37,12 @@ import           Miso.Types
 class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
--- | Render a @View@ to a @L.ByteString@
-instance ToHtml (View m a) where
+-- | Render a @Miso.Types.View@ to a @L.ByteString@
+instance ToHtml (Miso.Types.View m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
--- | Render a @[View]@ to a @L.ByteString@
-instance ToHtml [View m a] where
+-- | Render a @[Miso.Types.View]@ to a @L.ByteString@
+instance ToHtml [Miso.Types.View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
@@ -69,7 +72,7 @@ htmlEncode = MS.concatMap $ \case
   '\'' -> "&#39;"
   x -> MS.singleton x
 ----------------------------------------------------------------------------
-renderBuilder :: View m a -> Builder
+renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString (htmlEncode s)
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
