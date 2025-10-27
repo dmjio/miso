@@ -42,7 +42,6 @@ module Miso.Types
   -- ** Re-exports
   , JSM
   -- ** Classes
-  , ToView           (..)
   , ToKey            (..)
   -- ** Data Bindings
   , Binding (..)
@@ -76,7 +75,6 @@ module Miso.Types
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
-import           Data.Coerce (coerce)
 import           Data.JSString (JSString)
 import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
@@ -284,21 +282,6 @@ mount mkNode vcomp =
   -> View model a
 infixr 0 +>
 (+>) = mount
------------------------------------------------------------------------------
--- | Convenience class for using t'View'
-class ToView m a where
-  type ToViewAction m a :: Type
-  toView :: a -> View m (ToViewAction m a)
------------------------------------------------------------------------------
--- | t'ToView' instance for t'View'
-instance ToView model (View model action) where
-  type ToViewAction model (View model action) = action
-  toView = coerce
------------------------------------------------------------------------------
--- | t'ToView' instance for t'Component'
-instance ToView model (Component parent model action) where
-  type ToViewAction model (Component parent model action) = action
-  toView Component {..} = toView (view model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
