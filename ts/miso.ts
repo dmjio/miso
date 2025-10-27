@@ -31,7 +31,7 @@ import {
     Options,
 } from './miso/types';
 
-import { applyPatch } from './miso/patch';
+import { patch } from './miso/patch';
 
 import { vcomp, vnode, vtext } from './miso/smart';
 
@@ -55,7 +55,7 @@ export {
   websocketSend,
   eventSourceConnect,
   eventSourceClose,
-  applyPatch,
+  patch,
 
   /* Types */
   VTree,
