@@ -24,6 +24,7 @@ module Miso.Fetch
   ( -- ** JSON
     getJSON
   , postJSON
+  , postJSON'
   , putJSON
   -- ** Text
   , getText
@@ -151,6 +152,30 @@ postJSON url body_ headers_ successful errorful =
       NONE
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
+----------------------------------------------------------------------------
+-- | POST request that uses JSON encoded data, and returns JSON encoded data
+postJSON'
+  :: (FromJSVal error, ToJSON body, FromJSON return)
+  => MisoString
+  -- ^ url
+  -> body
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> (Response return -> action)
+  -- ^ successful callback
+  -> (Response error -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+postJSON' url body_ headers_ successful errorful =
+  withSink $ \sink -> do
+    bodyVal <- FFI.jsonStringify body_
+    FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
+      (sink . successful)
+      (sink . errorful)
+      JSON
+  where
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON, accept =: applicationJSON]
 ----------------------------------------------------------------------------
 -- | PUT request that uses JSON encoded data
 putJSON
