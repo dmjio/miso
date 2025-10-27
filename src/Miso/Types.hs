@@ -76,7 +76,6 @@ module Miso.Types
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
-import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)

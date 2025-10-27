@@ -31,7 +31,7 @@ data Waiter
   = Waiter
   { wait :: IO ()
     -- ^ Blocks on MVar
-  , serve :: IO ()
+  , notify :: IO ()
     -- ^ Unblocks threads waiting on MVar
   }
 -----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ waiter = do
   mvar <- newEmptyMVar
   pure Waiter
     { wait = takeMVar mvar
-    , serve = do
+    , notify = do
         _ <- tryPutMVar mvar ()
         pure ()
     }
