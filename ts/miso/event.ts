@@ -1,4 +1,4 @@
-import { Context, VTree, EventCapture, EventObject, Options, DOMRef } from './types';
+import { Context, VTree, EventCapture, EventObject, Options } from './types';
 
 /* event delegation algorithm */
 export function delegate<T> (
