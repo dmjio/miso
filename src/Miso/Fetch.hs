@@ -171,11 +171,29 @@ postJSON' url body_ headers_ successful errorful =
   withSink $ \sink -> do
     bodyVal <- FFI.jsonStringify body_
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
-      (sink . successful)
+      (handleJSON sink)
       (sink . errorful)
       JSON
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON, accept =: applicationJSON]
+    handleJSON sink resp@Response {..} =
+      fmap fromJSON <$> fromJSVal body >>= \case
+        Nothing -> do
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just "Not a valid JSON object"
+            , ..
+            }
+        Just (Success result) -> 
+          sink $ successful resp { body = result }
+        Just (Error msg) -> do 
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }    
 ----------------------------------------------------------------------------
 -- | PUT request that uses JSON encoded data
 putJSON
