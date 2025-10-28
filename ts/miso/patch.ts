@@ -9,9 +9,9 @@ export type Components<T> = Record <ComponentId, Component<T>>;
 
 /* Information about the current component that lives on the render thread */
 export type Component<T> = {
-  model: Object; /* read-only access to the model, model must be serializable */
+  model: Array<EventCapture>; /* read-only access to the model, model must be serializable */
   nodes: Record<number, T>;
-  mountPoint: T;
+  mountPoint: T; /* acts as parent */
 };
 
 /* Convenience table to allow O(1) application of DOM references */
@@ -25,8 +25,9 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
         case "insertBefore":
             map = environment[patch.componentId]?.nodes;
             if (map) {
-              context.insertBefore
-                (map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
+              newNode = context.insertBefore(map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
+              newNode['nodeId'] = patch.node.nodeId;
+              map['nodeId'] = newNode;
             }
             break;
         case "swapDOMRefs":
@@ -102,7 +103,7 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
 }
 
 /* Message protocol for bidirectional synchronization between MTS / BTS */
-export type MESSAGE = EVENTS | PATCH;
+export type MESSAGE = EVENTS | PATCHES | MODEL_HYDRATION;
 
 export type PATCH
   = InsertBefore
@@ -118,9 +119,21 @@ export type PATCH
   | SetInlineStyle
   | Flush;
 
+export type MODEL_HYDRATION = {
+  componentId: ComponentId,
+  type: "model_hydration";
+  events: Object;
+};
+
 export type EVENTS = {
+  componentId: ComponentId,
   type: "events";
   events: Object;
+};
+
+export type PATCHES = {
+  type: "patches";
+  patches: Array<PATCH>;
 };
 
 export type InsertBefore = {
