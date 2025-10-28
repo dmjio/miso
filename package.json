@@ -3,7 +3,7 @@
   "version": "1.9.0",
   "description": "miso: A tasty Haskell front-end web and mobile framework",
   "scripts": {
-    "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete",
+    "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete && rm -rf out-tsc",
     "clean-hs": "find src -type f -name '*.o' -or -name '*.hi' -or -name '*~undo-tree~*' | xargs rm",
     "lint": "eslint --fix ts/*.ts",
     "test": "bun test && bun run lcov",
@@ -59,6 +59,7 @@
     "ts/spec/dom.ts",
     "ts/spec/event.ts",
     "ts/spec/hydrate.ts",
+    "ts/spec/patch.ts",
     "ts/spec/smart.ts",
     "ts/spec/types.ts",
     "ts/spec/util.ts",
