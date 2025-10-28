@@ -29,7 +29,6 @@ import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
-import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
