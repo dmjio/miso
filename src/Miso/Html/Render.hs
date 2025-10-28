@@ -92,22 +92,14 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
+renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
+  renderBuilder (VNode ns tag attrs vkids)
+    where
 #ifdef JSADDLE
-renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
-  renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
-  -- dmj: Just trust me bro moment.
-  -- This is fine to do because we don't need the polymorphism here
-  -- when monomorphizing to Builder. Release the skolems.
+      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
 #else
-renderBuilder (VComp ns tag attrs (SomeComponent comp@Component {..})) =
-  renderBuilder
-      ( VNode ns tag attrs
-          [ unsafeCoerce (view $ getInitialComponentModel comp) ]
-{-                                  ^ this is the only difference
-                                   (need to run hydrateModel server-side) -}
-      )
+      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel comp) ]
 #endif
-
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =
@@ -154,4 +146,21 @@ toHtmlFromJSON (Bool False) = "false"
 toHtmlFromJSON Null         = "null"
 toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
 toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+-----------------------------------------------------------------------------
+#ifndef JSADDLE
+-- | Used for server-side model hydration, internally only in 'renderView'.
+--
+-- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
+-- yet we need to allow the user's to hydrate in 'IO'.
+--
+getInitialComponentModel :: Component parent model action -> model
+getInitialComponentModel Component {..} =
+  case hydrateModel of
+    Nothing -> model
+    Just action -> unsafePerformIO $
+      action `catch` (\(e :: SomeException) -> do
+        putStrLn "Encountered exception during model hydration, falling back to default model"
+        print e
+        pure model)
 ----------------------------------------------------------------------------
+#endif

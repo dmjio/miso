@@ -73,22 +73,16 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
-#ifndef JSADDLE
-  , getInitialComponentModel
-#endif
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
 import           Data.JSString (JSString)
-import           Data.Kind (Type)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
 import           Prelude
-import           Control.Exception (catch, SomeException)
-import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
@@ -103,7 +97,11 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
+#ifndef JSADDLE
   , hydrateModel :: Maybe (IO model)
+#else
+  , hydrateModel :: Maybe (JSM model)
+#endif
   -- ^ Perform action to load component state, such as reading data from page
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
@@ -288,17 +286,6 @@ mount mkNode vcomp =
   -> View model a
 infixr 0 +>
 (+>) = mount
------------------------------------------------------------------------------
--- | Used for server-side model hydration, internally only in `renderView`
-getInitialComponentModel :: Component parent model action -> model
-getInitialComponentModel Component {..} =
-  case hydrateModel of
-    Nothing -> model
-    Just action -> unsafePerformIO $
-      action `catch` (\(e :: SomeException) -> do
-        putStrLn "Encountered exception during model hydration, falling back to default model"
-        print e
-        pure model)
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS

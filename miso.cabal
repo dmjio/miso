@@ -38,9 +38,14 @@ common cpp
   else
     cpp-options:
       -DVANILLA
+
   if flag(production)
     cpp-options:
       -DPRODUCTION
+
+  if flag(jsaddle)
+    cpp-options:
+      -DJSADDLE
 
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
@@ -50,9 +55,6 @@ common jsaddle
       wai < 3.3,
       warp < 3.5,
       websockets < 0.14
-  else
-    cpp-options:
-      -DJSADDLE
 
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
@@ -83,6 +85,15 @@ flag production
   description:
     Uses miso's production quality JS (miso.prod.js).
     This is built from calling "bun build --production"
+
+flag jsaddle
+  manual:
+    True
+  default:
+    True
+  description:
+    Used to indicate if jsaddle should be used. Defaults to true.
+    Disable when performing hydration / server rendering of Html using ToHtml.
 
 flag template-haskell
   manual:
