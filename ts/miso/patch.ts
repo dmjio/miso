@@ -22,110 +22,93 @@ export type NodeMap<T> = Record <number, T>;
 export function patch<T> (context: Context<T>, patch: PATCH, components: Components<T>) {
     let map: NodeMap<T> = null;
     let newNode = null;
-    switch (patch.type) {
-        case "insertBefore":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              newNode = context.insertBefore(map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
-              newNode['nodeId'] = patch.node.nodeId;
-              map['nodeId'] = newNode;
-            }
-            break;
-        case "swapDOMRefs":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.swapDOMRefs (map[patch.nodeA.nodeId], map[patch.nodeB.nodeId], map[patch.parent.nodeId]);
-            }
-            break;
-        case "createElement":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
+    withComponent (components, patch.componentId, (component) => {
+        map = component.nodeMap;
+        switch (patch.type) {
+            case "insertBefore":
+                newNode = context.insertBefore(map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
+                newNode['nodeId'] = patch.node.nodeId;
+                map['nodeId'] = newNode;
+                break;
+            case "swapDOMRefs":
+                context.swapDOMRefs (map[patch.nodeA.nodeId], map[patch.nodeB.nodeId], map[patch.parent.nodeId]);
+                break;
+            case "createElement":
                 newNode = context.createElement (patch.tag);
                 newNode['nodeId'] = patch.nodeId;
                 map['nodeId'] = newNode;
-            }
-            break;
-        case "createElementNS":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
+                break;
+            case "createElementNS":
                 newNode = context.createElementNS (patch.namespace, patch.tag);
                 newNode['nodeId'] = patch.nodeId;
                 map['nodeId'] = newNode;
-            }
-            break;
-        case "createTextNode":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
+                break;
+            case "createTextNode":
                 newNode = context.createTextNode (patch.text);
                 newNode['nodeId'] = patch.nodeId;
                 map['nodeId'] = newNode;
-            }
-            break;
-        case "setAttribute":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.setAttribute (map[patch.nodeId], patch.key, patch.value);
-            }
-            break;
-        case "appendChild":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.appendChild (map[patch.parent], map[patch.child]);
-            }
-            break;
-        case "replaceChild":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.replaceChild (map[patch.parent], map[patch.new], map[patch.current]);
-            }
-            break;
-        case "removeAttribute":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.removeAttribute (map[patch.nodeId], patch.key);
-            }
-            break;
-        case "setTextContent":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
-              context.setTextContent (map[patch.nodeId], patch.text);
-            }
-            break;
-        case "setInlineStyle":
-            map = components[patch.componentId]?.nodes;
-            if (map) {
+                break;
+            case "setAttribute":
+                context.setAttribute (map[patch.nodeId], patch.key, patch.value);
+                break;
+            case "appendChild":
+                context.appendChild (map[patch.parent], map[patch.child]);
+                break;
+            case "replaceChild":
+                context.replaceChild (map[patch.parent], map[patch.new], map[patch.current]);
+                break;
+            case "removeAttribute":
+                context.removeAttribute (map[patch.nodeId], patch.key);
+                break;
+            case "setTextContent":
+                context.setTextContent (map[patch.nodeId], patch.text);
+                break;
+            case "setInlineStyle":
                 context.setInlineStyle (patch.current, patch.new, map[patch.nodeId]);
-            }
-            break;
-        case "flush":
-            context.flush ();
-            break;
-    }
+                break;
+            case "flush":
+                context.flush ();
+                break;
+        }
+    });
 }
 
 /* addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void; */
 export function registerEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
-  var component = components[e.componentId];
-  if (component) {
+  withComponent (components, e.componentId, (component) => {
       /* listener needs to be from context<T> */
       var listener = undefined;
       let debug = false;
       delegate (component.mountPoint, e.events, listener, debug, context);
-  }
+  });
 }
 
 export function unregisterEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
-  var component = components[e.componentId];
-  if (component) {
+  withComponent (components, e.componentId, (component) => {
       /* listener needs to be from context<T> */
       var listener = undefined;
       let debug = false;
       undelegate (component.mountPoint, e.events, listener, debug, context);
-  }
+  });
+}
+
+export function hydrateModel<T> (context: Context<T>, o: HYDRATION, components: Components<T>) {
+  withComponent (components, o.componentId, (component) => {
+      component.model = o.model;
+  });
+}
+
+function withComponent (components, componentId, callback) {
+    var component = components[componentId];
+    if (component) {
+      callback (component);
+    } else {
+        console.error ('Could not find component at ID: ', componentId);
+    }
 }
 
 /* Message protocol for bidirectional synchronization between MTS / BTS */
-export type MESSAGE = EVENTS | PATCHES | MODEL_HYDRATION;
+export type MESSAGE = EVENTS | PATCHES | HYDRATION;
 
 export type PATCH
   = InsertBefore
@@ -141,10 +124,10 @@ export type PATCH
   | SetInlineStyle
   | Flush;
 
-export type MODEL_HYDRATION = {
-  componentId: ComponentId,
-  type: "model_hydration";
-  events: Array<EventCapture>;
+export type HYDRATION = {
+  componentId: ComponentId;
+  type: "hydration";
+  model: Object;
 };
 
 export type EVENTS = {
