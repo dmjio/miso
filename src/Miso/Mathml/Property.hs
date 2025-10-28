@@ -63,19 +63,19 @@ module Miso.Mathml.Property
 import           Miso.Types
 import           Miso.Property
 -----------------------------------------------------------------------------
--- | [<\dir\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
+-- | [dir](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
 --
 -- @since 1.9.0.0
 dir_ :: MisoString -> Attribute action
 dir_ = textProp "dir"
 -----------------------------------------------------------------------------
--- | [<\displaystyle\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/displaystyle)
+-- | [displaystyle](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/displaystyle)
 --
 -- @since 1.9.0.0
 displaystyle_ :: MisoString -> Attribute action
 displaystyle_ = textProp "displaystyle"
 ------------------------------------------------------------------------------
--- | [<\scriptlevel\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/scriptlevel)
+-- | [scriptlevel](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/scriptlevel)
 --
 -- @since 1.9.0.0
 scriptlevel_ :: Int -> Attribute action

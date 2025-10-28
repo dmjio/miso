@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                  #-}
-{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE FlexibleInstances    #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -71,7 +70,7 @@ class FromMisoString t where
   fromMisoStringEither :: MisoString -> Either String t
 ----------------------------------------------------------------------------
 -- | Reads a 'MisoString', throws an error when decoding
--- fails. Use `fromMisoStringEither` for as a safe alternative.
+-- fails. Use `fromMisoStringEither` as a safe alternative.
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s =
   case fromMisoStringEither s of

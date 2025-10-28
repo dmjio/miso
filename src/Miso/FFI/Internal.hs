@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -949,13 +948,13 @@ newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
 -----------------------------------------------------------------------------
--- | Type returned from a 'fetch' request 
+-- | Type returned from a 'fetch' request
 data Response body
   = Response
   { status :: Maybe Int
     -- ^ HTTP status code
   , headers :: Map MisoString MisoString
-    -- ^ Response headers 
+    -- ^ Response headers
   , errorMessage :: Maybe MisoString
     -- ^ Optional error message
   , body :: body

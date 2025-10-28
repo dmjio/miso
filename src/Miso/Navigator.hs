@@ -1,9 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
@@ -107,8 +104,8 @@ userMedia = UserMedia True True
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/geolocation>
 --
 geolocation
-  :: (Geolocation -> action) 
-  -> (GeolocationError -> action) 
+  :: (Geolocation -> action)
+  -> (GeolocationError -> action)
   -> Effect parent model action
 geolocation successful errorful = do
   withSink $ \sink ->

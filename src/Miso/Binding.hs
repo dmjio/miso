@@ -1,13 +1,8 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -59,7 +54,7 @@ data Binding parent child
 --
 -- @since 1.9.0.0
 (-->) :: Lens parent a -> Lens model a -> Binding parent model
-parent --> child = ParentToChild (_get parent) (_set child) 
+parent --> child = ParentToChild (_get parent) (_set child)
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a child field to a parent field
 --

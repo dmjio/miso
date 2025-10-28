@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}

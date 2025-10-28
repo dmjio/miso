@@ -13,7 +13,7 @@
 -- The @State@ 'Monad' works well with @MonadState@ lenses as seen in [Miso\.Lens](https://haddocks.haskell-miso.org) and the [lens](haddocks.haskell.org/pacakges/lens) library.
 --
 -- @
--- updateModel :: Action -> Effect Model Action
+-- updateModel :: Action -> Transition Model Action
 -- updateModel (AddOne event) = do
 --   modify (+1)
 --   io_ (consoleLog "Added One!")
