@@ -134,6 +134,11 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentDOMRef <- getComponentMountPoint
   componentVTree <- do
     vtree <- runView hydrate (view initializedModel) componentSink logLevel events
+    case hydrate of
+      Draw -> do
+        Diff.diff Nothing (Just vtree) componentDOMRef
+      Hydrate -> do
+        Hydrate.hydrate logLevel componentDOMRef vtree
     liftIO (newIORef vtree)
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
@@ -209,13 +214,6 @@ initialize hydrate Component {..} getComponentMountPoint = do
   registerComponent vcomp
   delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
-  case hydrate of
-    Draw -> do
-      vtree <- liftIO (readIORef componentVTree)
-      Diff.diff Nothing (Just vtree) componentDOMRef
-    Hydrate -> do
-      vtree <- liftIO (readIORef componentVTree)
-      Hydrate.hydrate logLevel componentDOMRef vtree
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
