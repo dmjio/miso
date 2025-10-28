@@ -27,6 +27,10 @@ import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
+#ifndef JSADDLE
+import Control.Exception (SomeException, catch)
+import System.IO.Unsafe (unsafePerformIO)
+#endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
 import           Miso.Types
@@ -82,7 +86,7 @@ renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
 #ifdef JSADDLE
       vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
 #else
-      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel comp) ]
+      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
