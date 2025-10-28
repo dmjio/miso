@@ -5,7 +5,6 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
@@ -97,12 +96,12 @@ data Component parent model action
   { model :: model
   -- ^ initial model
   , hydrateModel :: Maybe (URI -> JSM model)
-  -- ^ Perform action to load component state, such as reading data from page
+  -- ^ Perform action to load component state, such as reading data from page.
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.
   , view :: model -> View model action
-  -- ^ Function to draw 'Miso.Types.View'
+  -- ^ Function to draw t'Miso.Types.View'
   , subs :: [ Sub action ]
   -- ^ List of subscriptions to run during application lifetime
   , events :: Events
@@ -110,14 +109,14 @@ data Component parent model action
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
   -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
-  -- These styles are appended dynamically to the <head> section of your HTML page
-  -- before the initial draw on <body> occurs.
+  -- These styles are appended dynamically to the \<head\> section of your HTML page
+  -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
   , scripts :: [JS]
-  -- ^ List of JavaScript <scripts> expressed as either a URL ('Src') or raw JS text.
-  -- These scripts are appended dynamically to the <head> section of your HTML page
-  -- before the initial draw on <body> occurs.
+  -- ^ List of JavaScript scripts expressed as either a URL ('Src') or raw JS text.
+  -- These scripts are appended dynamically to the \<head\> section of your HTML page
+  -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
   , initialAction :: Maybe action
@@ -166,7 +165,7 @@ data JS
   = Src MisoString
   -- ^ v'Src' is a URL meant to link to hosted JS
   | Script MisoString
-  -- ^ v'Script' is meant to be raw JS in a \<script\> tag
+  -- ^ v'Script' is meant to be raw JS that you would enter in a \<script\> tag
   | Module MisoString
   -- ^ v'Module' is meant to be raw JS in a \<script\> tag, of type @module@
   | ImportMap [(MisoString,MisoString)]
@@ -206,16 +205,18 @@ component m u v = Component
 --
 data ROOT
 -----------------------------------------------------------------------------
--- | For top-level t'Miso.Types.Component', 'ROOT' must always be specified for parent.
+-- | A top level t'Miso.Types.Component' of the application.
+-- For top-level Component, The @parent@ type variable must always be specialized to 'ROOT'.
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
--- | When t'Miso.Types.Component' are not in use, also for pre-1.9 'Miso.miso' applications.
+-- | A specialized version of 'Effect' that can be used in the type of application 'update' function,
+-- when t'Miso.Types.Component's are not in use. Also for pre-1.9 'Miso.miso' applications.
 type Transition model action = Effect ROOT model action
 -----------------------------------------------------------------------------
 -- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
-  -- ^ No debug logging, the default value used in @component@
+  -- ^ No debug logging, the default value used in 'component'
   | DebugHydrate
   -- ^ Will warn if the structure or properties of the
   -- DOM vs. Virtual DOM differ during prerendering.

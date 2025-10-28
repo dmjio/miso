@@ -61,7 +61,7 @@ type Mail = Value
 --
 -- * Bidirectional (multicast \/ broadcast \/ unicast) (n:m)
 --
--- Practically this pattern resembles cloud notifcation services like
+-- Practically this pattern resembles cloud notification services like
 --
 -- * Amazon SNS
 -- * Google Pub/Sub
@@ -76,8 +76,8 @@ newMailbox = newBroadcastTChanIO
 copyMailbox :: Mailbox -> IO Mailbox
 copyMailbox mailbox = atomically (dupTChan mailbox)
 -----------------------------------------------------------------------------
--- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'
--- Messages in original 'Mailbox' are retained (unlike `copyMailbox`).
+-- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'.
+-- Messages in the original 'Mailbox' are retained (unlike `copyMailbox`).
 cloneMailbox :: Mailbox -> IO Mailbox
 cloneMailbox mailbox = atomically (cloneTChan mailbox)
 -----------------------------------------------------------------------------

@@ -1,6 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Hydrate
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -21,7 +19,7 @@ import           Language.Javascript.JSaddle
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | Hydration of a 'VTree'
+-- | Hydration of a t'VTree'
 hydrate :: LogLevel -> DOMRef -> VTree -> JSM ()
 hydrate loggingLevel domRef vtree = do
   jval <- toJSVal vtree

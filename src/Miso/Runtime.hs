@@ -317,7 +317,7 @@ bindParentToChild ComponentState {..} modelRef = \case
       modifyTVar' modelRef newChild
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'diff'
+-- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
   = Draw
   | Hydrate
@@ -575,7 +575,7 @@ unsubscribe_ topicName vcompId = do
 --     [ onMountedWith Mount
 --     ]
 --   ] where
---       update_ :: Action -> Effect () Action
+--       update_ :: Action -> Transition () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
@@ -1285,7 +1285,7 @@ codeToCloseCode = go
     go 1015 = TLS_Handshake
     go n    = OtherCode n
 -----------------------------------------------------------------------------
--- | Closed message is sent when a t'WebSocket' has closed 
+-- | Closed message is sent when a t'WebSocket' has closed
 data Closed
   = Closed
   { closedCode :: CloseCode
