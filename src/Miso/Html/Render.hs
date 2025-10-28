@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
@@ -58,23 +57,9 @@ intercalate sep (x:xs) =
   , intercalate sep xs
   ]
 ----------------------------------------------------------------------------
--- |
--- HTML-encodes the given text.
---
--- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
--- &lt;a href=&quot;&quot;&gt;
-htmlEncode :: MisoString -> MisoString
-htmlEncode = MS.concatMap $ \case
-  '<' -> "&lt;"
-  '>' -> "&gt;"
-  '&' -> "&amp;"
-  '"' -> "&quot;"
-  '\'' -> "&#39;"
-  x -> MS.singleton x
-----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString (htmlEncode s)
+renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat
