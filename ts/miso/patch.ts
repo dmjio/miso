@@ -1,6 +1,7 @@
-import { NodeId, ComponentId, Context } from './types';
+import { NodeId, ComponentId, EventCapture, Context } from './types';
+import { delegate, undelegate } from './event';
 
-/* The environment contains a mapping of all components and a read-only JSON rep. of its model
+/* The components contains a mapping of all components and a read-only JSON rep. of its model
    N.B. no virtual DOM is present here.
 
    'T' is abstract over any render tree Node type.
@@ -9,7 +10,7 @@ export type Components<T> = Record <ComponentId, Component<T>>;
 
 /* Information about the current component that lives on the render thread */
 export type Component<T> = {
-  model: Array<EventCapture>; /* read-only access to the model, model must be serializable */
+  model: Object; /* read-only access to the model, model must be serializable */
   nodes: Record<number, T>;
   mountPoint: T; /* acts as parent */
 };
@@ -18,12 +19,12 @@ export type Component<T> = {
 export type NodeMap<T> = Record <number, T>;
 
 /* Function for patch application */
-export function patch<T> (context: Context<T>, patch: PATCH, environment: Components<T>) {
+export function patch<T> (context: Context<T>, patch: PATCH, components: Components<T>) {
     let map: NodeMap<T> = null;
     let newNode = null;
     switch (patch.type) {
         case "insertBefore":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               newNode = context.insertBefore(map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
               newNode['nodeId'] = patch.node.nodeId;
@@ -31,13 +32,13 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
             }
             break;
         case "swapDOMRefs":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.swapDOMRefs (map[patch.nodeA.nodeId], map[patch.nodeB.nodeId], map[patch.parent.nodeId]);
             }
             break;
         case "createElement":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
                 newNode = context.createElement (patch.tag);
                 newNode['nodeId'] = patch.nodeId;
@@ -45,7 +46,7 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
             }
             break;
         case "createElementNS":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
                 newNode = context.createElementNS (patch.namespace, patch.tag);
                 newNode['nodeId'] = patch.nodeId;
@@ -53,7 +54,7 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
             }
             break;
         case "createTextNode":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
                 newNode = context.createTextNode (patch.text);
                 newNode['nodeId'] = patch.nodeId;
@@ -61,37 +62,37 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
             }
             break;
         case "setAttribute":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.setAttribute (map[patch.nodeId], patch.key, patch.value);
             }
             break;
         case "appendChild":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.appendChild (map[patch.parent], map[patch.child]);
             }
             break;
         case "replaceChild":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.replaceChild (map[patch.parent], map[patch.new], map[patch.current]);
             }
             break;
         case "removeAttribute":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.removeAttribute (map[patch.nodeId], patch.key);
             }
             break;
         case "setTextContent":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
               context.setTextContent (map[patch.nodeId], patch.text);
             }
             break;
         case "setInlineStyle":
-            map = environment[patch.componentId]?.nodes;
+            map = components[patch.componentId]?.nodes;
             if (map) {
                 context.setInlineStyle (patch.current, patch.new, map[patch.nodeId]);
             }
@@ -100,6 +101,27 @@ export function patch<T> (context: Context<T>, patch: PATCH, environment: Compon
             context.flush ();
             break;
     }
+}
+
+/* addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void; */
+export function registerEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
+  var component = components[e.componentId];
+  if (component) {
+      /* listener needs to be from context<T> */
+      var listener = undefined;
+      let debug = false;
+      delegate (component.mountPoint, e.events, listener, debug, context);
+  }
+}
+
+export function unregisterEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
+  var component = components[e.componentId];
+  if (component) {
+      /* listener needs to be from context<T> */
+      var listener = undefined;
+      let debug = false;
+      undelegate (component.mountPoint, e.events, listener, debug, context);
+  }
 }
 
 /* Message protocol for bidirectional synchronization between MTS / BTS */
@@ -122,13 +144,13 @@ export type PATCH
 export type MODEL_HYDRATION = {
   componentId: ComponentId,
   type: "model_hydration";
-  events: Object;
+  events: Array<EventCapture>;
 };
 
 export type EVENTS = {
   componentId: ComponentId,
   type: "events";
-  events: Object;
+  events: Array<EventCapture>;
 };
 
 export type PATCHES = {
