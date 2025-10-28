@@ -1,8 +1,5 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications           #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
@@ -46,7 +43,7 @@ import           Miso.Runtime
 import           Miso.String (MisoString)
 import           Miso.FFI (Blob(..), ArrayBuffer(..))
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
 -- Establishes a t'WebSocket' server that receives potentially multiple different t'Payload'.
 --
@@ -68,7 +65,7 @@ connect
   -> Effect parent model action
 connect = websocketConnect
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
 -- Establishes a t'WebSocket' server that assumes a JSON-encoded protocol.
 --
@@ -87,7 +84,7 @@ connectJSON
   -> Effect parent model action
 connectJSON = websocketConnectJSON
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
 -- Establishes a t'WebSocket' server that assumes a text-encoded protocol.
 --
@@ -105,7 +102,7 @@ connectText
   -> Effect parent model action
 connectText = websocketConnectText
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
 -- Establishes a t'WebSocket' server that assumes a binary-encoded protocol.
 --
@@ -123,7 +120,7 @@ connectBLOB
   -> Effect parent model action
 connectBLOB = websocketConnectBLOB
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/connect>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket>
 --
 -- Establishes a t'WebSocket' server that assumes an t'ArrayBuffer' protocol.
 --

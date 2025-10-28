@@ -133,6 +133,9 @@ data Component parent model action
   --
   -- @since 1.9.0.0
   , bindings :: [ Binding parent model ]
+  -- ^ Data bindings between parent and child components
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -140,7 +143,8 @@ type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to \<head\> before the first draw
 --
--- > Href "http://domain.com/style.css
+-- > Href "http://domain.com/style.css"
+-- > Style "body { background-color: red; }"
 --
 data CSS
   = Href MisoString
@@ -156,7 +160,7 @@ data CSS
 -- This is meant to be useful in development only.
 --
 -- @
---   Src "http://example.com/script.js"
+--   Src \"http:\/\/example.com\/script.js\"
 --   Script "alert(\"hi\");"
 --   ImportMap [ "key" =: "value" ]
 -- @
@@ -167,9 +171,11 @@ data JS
   | Script MisoString
   -- ^ v'Script' is meant to be raw JS that you would enter in a \<script\> tag
   | Module MisoString
-  -- ^ v'Module' is meant to be raw JS in a \<script\> tag, of type @module@
+  -- ^ v'Module' is meant to be raw JS that you would enter in a \<script type="module"\> tag.
+  -- See [script type](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type)
   | ImportMap [(MisoString,MisoString)]
-  -- ^ v'ImportMap' is meant to be an import map in a \<script\> tag
+  -- ^ v'ImportMap' is meant to be an import map in a \<script type="importmap"\> tag.
+  -- See [importmap](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Convenience for extracting mount point
@@ -315,7 +321,7 @@ instance ToJSVal Key where
 --
 -- Instances of this class do not have to guarantee uniqueness of the
 -- generated keys, it is up to the user to do so. @toKey@ must be an
--- injective function.
+-- injective function (different inputs must map to different outputs).
 class ToKey key where
   -- | Converts any key into t'Key'
   toKey :: key -> Key
@@ -346,13 +352,13 @@ instance ToKey Word where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
 -- | Attribute of a vnode in a t'View'.
 --
--- The @Sink@ callback can be used to dispatch actions which are fed back to
--- the @update@ function. This is especially useful for event handlers
--- like the @onclick@ attribute. The second argument represents the
--- vnode the attribute is attached to.
 data Attribute action
   = Property MisoString Value
   | Event (Sink action -> VTree -> LogLevel -> Events -> JSM ())
+  -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
+  -- the @update@ function. This is especially useful for event handlers
+  -- like the @onclick@ attribute. The second argument represents the
+  -- vnode the attribute is attached to.
   | Styles (M.Map MisoString MisoString)
   deriving Functor
 -----------------------------------------------------------------------------
@@ -362,16 +368,16 @@ instance IsString (View model action) where
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
 --   Used for diffing, patching and event delegation.
---   Not meant to be constructed directly, see 'Miso.Types.View' instead.
+--   Not meant to be constructed directly, see t'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
 -----------------------------------------------------------------------------
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree
 -----------------------------------------------------------------------------
--- | Create a new @Miso.Types.VNode@.
+-- | Create a new 'Miso.Types.VNode'.
 --
--- @node ns tag key attrs children@ creates a new node with tag @tag@
--- and 'Miso.Types.Key' @key@ in the namespace @ns@. All @attrs@ are called when
+-- @node ns tag attrs children@ creates a new node with tag @tag@
+-- in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
 node :: NS
      -> MisoString
@@ -384,7 +390,7 @@ node = VNode
 text :: MisoString -> View model action
 text = VText
 -----------------------------------------------------------------------------
--- | Create a new v'VText' with the given content.
+  -- | Create a new v'VText' containing concatenation of the given strings.
 text_ :: [MisoString] -> View model action
 text_ = VText . MS.concat
 -----------------------------------------------------------------------------
@@ -398,10 +404,10 @@ text_ = VText . MS.concat
 -- @since 1.9.0.0
 optionalAttrs
   :: ([Attribute action] -> [View model action] -> View model action)
-  -> [Attribute action]
-  -> Bool
-  -> [Attribute action]
-  -> [View model action]
+  -> [Attribute action] -- ^ Attributes to be added unconditionally
+  -> Bool -- ^ A condition
+  -> [Attribute action] -- ^ Additional attributes to add if the condition is True
+  -> [View model action] -- ^ Children
   -> View model action
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
@@ -420,10 +426,10 @@ optionalAttrs element attrs condition opts kids =
 -- @since 1.9.0.0
 optionalChildren
   :: ([Attribute action] -> [View model action] -> View model action)
-  -> [Attribute action]
-  -> [View model action]
-  -> Bool
-  -> [View model action]
+  -> [Attribute action] -- ^ Attributes to be added unconditionally
+  -> [View model action] -- ^ Children to be added unconditionally
+  -> Bool -- ^ A condition
+  -> [View model action] -- ^ Additional children to add if the condition is True
   -> View model action
 optionalChildren element attrs kids condition opts =
   case element attrs kids of

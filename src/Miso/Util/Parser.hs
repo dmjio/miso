@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE CPP                  #-}
@@ -112,7 +111,7 @@ modifyTokens f = Parser $ \_ input -> [((), f input)]
 token_ :: Eq token => token -> Parser token token
 token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
--- | Retrieves read-only state from a Parser 
+-- | Retrieves read-only state from a Parser
 askParser :: ParserT r token [] r
 askParser = Parser $ \r input -> [(r, input)]
 ----------------------------------------------------------------------------

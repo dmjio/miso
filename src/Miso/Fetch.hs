@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
@@ -119,9 +118,9 @@ getJSON url headers_ successful errorful =
             , errorMessage = Just "Not a valid JSON object"
             , ..
             }
-        Just (Success result) -> 
+        Just (Success result) ->
           sink $ successful resp { body = result }
-        Just (Error msg) -> do 
+        Just (Error msg) -> do
           err <- fromJSValUnchecked body
           sink $ errorful $ Response
             { body = err
@@ -185,15 +184,15 @@ postJSON' url body_ headers_ successful errorful =
             , errorMessage = Just "Not a valid JSON object"
             , ..
             }
-        Just (Success result) -> 
+        Just (Success result) ->
           sink $ successful resp { body = result }
-        Just (Error msg) -> do 
+        Just (Error msg) -> do
           err <- fromJSValUnchecked body
           sink $ errorful $ Response
             { body = err
             , errorMessage = Just (ms msg)
             , ..
-            }    
+            }
 ----------------------------------------------------------------------------
 -- | PUT request that uses JSON encoded data
 putJSON
@@ -635,7 +634,7 @@ octetStream = "application/octect-stream"
 formData :: MisoString
 formData = "multipart/form-data"
 ----------------------------------------------------------------------------
--- | Helper function for the union of two header Map 
+-- | Helper function for the union of two header Map
 biasHeaders :: Ord k => [(k, a)] -> [(k, a)] -> [(k, a)]
 biasHeaders userDefined contentSpecific
   = M.toList
