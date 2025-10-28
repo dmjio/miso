@@ -390,7 +390,7 @@ node = VNode
 text :: MisoString -> View model action
 text = VText
 -----------------------------------------------------------------------------
-  -- | Create a new v'VText' containing concatenation of the given strings.
+-- | Create a new v'VText' containing concatenation of the given strings.
 text_ :: [MisoString] -> View model action
 text_ = VText . MS.concat
 -----------------------------------------------------------------------------
