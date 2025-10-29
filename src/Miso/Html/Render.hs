@@ -21,6 +21,8 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
+    -- Util
+  , htmlEncode
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson
@@ -78,7 +80,7 @@ htmlEncode = MS.concatMap $ \case
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString (htmlEncode s)
+renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat
