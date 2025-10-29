@@ -1,9 +1,11 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Render
@@ -19,6 +21,8 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
+    -- Util
+  , htmlEncode
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson
@@ -26,6 +30,10 @@ import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
+#ifndef JSADDLE
+import Control.Exception (SomeException, catch)
+import System.IO.Unsafe (unsafePerformIO)
+#endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
 import qualified Miso.String as MS
@@ -43,11 +51,7 @@ instance ToHtml (Miso.Types.View m a) where
 instance ToHtml [Miso.Types.View m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
--- | Render a @Component parent model action@ to a @L.ByteString@
-instance ToHtml (Component parent model action) where
-  toHtml Component {..} = renderView (view model)
-----------------------------------------------------------------------------
-renderView :: Miso.Types.View m a -> L.ByteString
+renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
@@ -76,7 +80,7 @@ htmlEncode = MS.concatMap $ \case
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString (htmlEncode s)
+renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat
@@ -94,11 +98,14 @@ renderBuilder (VNode _ tag attrs children) =
     | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
   ]
-renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
-  renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
-  -- dmj: Just trust me bro moment.
-  -- This is fine to do because we don't need the polymorphism here
-  -- when monomorphizing to Builder. Release the skolems.
+renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
+  renderBuilder (VNode ns tag attrs vkids)
+    where
+#ifdef JSADDLE
+      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
+#else
+      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
+#endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =
@@ -145,4 +152,21 @@ toHtmlFromJSON (Bool False) = "false"
 toHtmlFromJSON Null         = "null"
 toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
 toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+-----------------------------------------------------------------------------
+#ifndef JSADDLE
+-- | Used for server-side model hydration, internally only in 'renderView'.
+--
+-- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
+-- yet we need to allow the users to hydrate in 'IO'.
+--
+getInitialComponentModel :: Component parent model action -> model
+getInitialComponentModel Component {..} =
+  case hydrateModel of
+    Nothing -> model
+    Just action -> unsafePerformIO $
+      action `catch` (\(e :: SomeException) -> do
+        putStrLn "Encountered exception during model hydration, falling back to default model"
+        print e
+        pure model)
 ----------------------------------------------------------------------------
+#endif

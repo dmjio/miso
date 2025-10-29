@@ -144,7 +144,6 @@ initComponent
 initComponent vcomp@Component {..} =
   initialize Draw vcomp (mountElement (getMountPoint mountPoint))
 ----------------------------------------------------------------------------
-
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else

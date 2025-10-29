@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Types
@@ -95,8 +96,12 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-  , hydrateModel :: Maybe (URI -> JSM model)
-  -- ^ Perform action to load component state, such as reading data from page.
+#ifndef JSADDLE
+  , hydrateModel :: Maybe (IO model)
+#else
+  , hydrateModel :: Maybe (JSM model)
+#endif
+  -- ^ Perform action to load component state, such as reading data from page
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Function to update model, optionally providing effects.

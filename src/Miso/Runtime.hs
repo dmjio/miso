@@ -106,7 +106,6 @@ import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
-import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -127,12 +126,22 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentDiffs <- liftIO newMailbox
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) -> getURI >>= action
+      (Hydrate, Just action) ->
+#ifdef JSADDLE
+         action
+#else
+         liftIO action
+#endif
       _ -> pure model
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
   componentVTree <- do
     vtree <- runView hydrate (view initializedModel) componentSink logLevel events
+    case hydrate of
+      Draw -> do
+        Diff.diff Nothing (Just vtree) componentDOMRef
+      Hydrate -> do
+        Hydrate.hydrate logLevel componentDOMRef vtree
     liftIO (newIORef vtree)
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
@@ -208,13 +217,6 @@ initialize hydrate Component {..} getComponentMountPoint = do
   registerComponent vcomp
   delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
-  case hydrate of
-    Draw -> do
-      vtree <- liftIO (readIORef componentVTree)
-      Diff.diff Nothing (Just vtree) componentDOMRef
-    Hydrate -> do
-      vtree <- liftIO (readIORef componentVTree)
-      Hydrate.hydrate logLevel componentDOMRef vtree
   _ <- FFI.forkJSM eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
