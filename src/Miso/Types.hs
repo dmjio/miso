@@ -11,7 +11,6 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
-{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
@@ -68,7 +67,6 @@ module Miso.Types
   -- *** Combinators
   , node
   , text
-  , textRaw
   , text_
   -- *** MisoString
   , MisoString
@@ -386,13 +384,9 @@ node :: NS
      -> View model action
 node = VNode
 -----------------------------------------------------------------------------
--- | Create a new v'VText' with the given content html encoded.
-text :: MisoString -> View model action
-text = VText . htmlEncode
------------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
-textRaw :: MisoString -> View model action
-textRaw = VText
+text :: MisoString -> View model action
+text = VText
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text_ :: [MisoString] -> View model action
@@ -478,18 +472,4 @@ prettyQueryString URI {..} = queries <> flags
         [ "?" <> k
         | (k, Nothing) <- M.toList uriQueryString
         ]
------------------------------------------------------------------------------
--- |
--- HTML-encodes the given text.
---
--- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
--- &lt;a href=&quot;&quot;&gt;
-htmlEncode :: MisoString -> MisoString
-htmlEncode = MS.concatMap $ \case
-  '<' -> "&lt;"
-  '>' -> "&gt;"
-  '&' -> "&amp;"
-  '"' -> "&quot;"
-  '\'' -> "&#39;"
-  x -> MS.singleton x
 -----------------------------------------------------------------------------

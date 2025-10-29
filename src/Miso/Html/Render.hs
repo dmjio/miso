@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
@@ -20,6 +21,8 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
+    -- Util
+  , htmlEncode
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson
@@ -33,6 +36,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -59,6 +63,20 @@ intercalate sep (x:xs) =
   , sep
   , intercalate sep xs
   ]
+----------------------------------------------------------------------------
+-- |
+-- HTML-encodes the given text.
+--
+-- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
+-- &lt;a href=&quot;&quot;&gt;
+htmlEncode :: MisoString -> MisoString
+htmlEncode = MS.concatMap $ \case
+  '<' -> "&lt;"
+  '>' -> "&gt;"
+  '&' -> "&amp;"
+  '"' -> "&quot;"
+  '\'' -> "&#39;"
+  x -> MS.singleton x
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
