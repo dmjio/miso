@@ -159,13 +159,13 @@ initialize hydrate Component {..} getComponentMountPoint = do
   let
     eventLoop = liftIO wait >> do
       currentModel <- liftIO (readTVarIO componentModel)
-      let
-        info = ComponentInfo componentId componentParentId componentDOMRef
+      let info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
       updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
-      when (currentName /= updatedName && currentModel /= updatedModel) $ do
+      isDirty <- liftIO (readTVarIO componentIsDirty)
+      when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
         newVTree <- runView Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
