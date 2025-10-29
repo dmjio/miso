@@ -135,6 +135,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       _ -> pure model
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
+  componentModelDirty <- liftIO (newTVarIO False)
   componentVTree <- do
     vtree <- runView hydrate (view initializedModel) componentSink logLevel events
     case hydrate of
