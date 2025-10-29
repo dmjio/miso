@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE OverloadedLabels      #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
@@ -236,7 +235,7 @@ instance ToJSVal Color where
 --
 -- >>> renderColor (hex "ccc")
 -- "#ccc"
--- 
+--
 renderColor :: Color -> MisoString
 renderColor (RGBA r g b a) = "rgba(" <> values <> ")"
   where
@@ -275,7 +274,7 @@ renderColor (VarColor n) = "var(--" <> n <> ")"
 --
 -- >>> renderColor (var "foo")
 -- "var(--foo)"
--- 
+--
 var :: MisoString -> Color
 var = VarColor
 -----------------------------------------------------------------------------

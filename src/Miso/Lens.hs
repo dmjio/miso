@@ -2,7 +2,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE ExplicitForAll      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 -----------------------------------------------------------------------------
@@ -33,9 +32,9 @@
 -- separately (@import Miso.Lens@) and can be used with the @Effect@ Monad inside of a miso
 -- application (as described below).
 --
--- This module is at fixity and interface parity with 'lens' and @microlens@ and can therefore
+-- This module is at fixity and interface parity with @lens@ and @microlens@ and can therefore
 -- be used interchangeably with them. Simply replace the @Miso.Lens@ import with @Control.Lens@.
--- For convenience we re-export the t'Miso.Lens.Lens\'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/lens)
+-- For convenience we re-export the t'Miso.Lens.Lens'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/microlens)
 --
 -- For the curious reader, if you'd like more information on 'lens' and the van Laarhoven
 -- formulation, we recommend the [lens](https://hackage.haskell.org/package/lens) library.
@@ -97,7 +96,7 @@
 --
 -- data Action = AddOne | SubtractOne
 --
--- updateModel :: Action -> Effect Model Action
+-- updateModel :: Action -> Transition Model Action
 -- updateModel AddOne      = value '+=' 1
 -- updateModel SubtractOne = value '-=' 1
 -- @
@@ -186,11 +185,11 @@ data Lens record field
 -- | van Laarhoven formulation, used for conversion w/ 'Miso.miso' t'Lens'.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens\''
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens\''
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 fromVL
   :: Lens' record field
   -> Lens record field
@@ -391,7 +390,7 @@ l <~ mb = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update AddOne = do
 --   value %= (+1)
 -- @
@@ -417,7 +416,7 @@ modifying = (%=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update AddOne = do
 --   result <- value <%= (+1)
 --   io_ $ consoleLog (ms result)
@@ -441,7 +440,7 @@ l <%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Assign x) = do
 --   result <- value <.= x
 --   io_ $ consoleLog (ms result) -- x
@@ -465,7 +464,7 @@ l <.= b = do
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SetValue x) = do
 --   result <- value <?= x
 --   io_ $ consoleLog (ms result) -- Just 1
@@ -491,7 +490,7 @@ l <?= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Assign x) = do
 --   value .= x
 --   previousValue <- value <<.= 1
@@ -517,7 +516,7 @@ l <<.= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update PrintInt = do
 --   Model x <- view value
 --   io_ $ consoleLog (ms x) -- prints model value
@@ -540,7 +539,7 @@ view lens_ = asks (^. lens_)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Modify f) = do
 --   value .= 2
 --   result <- value <<%= f
@@ -564,7 +563,7 @@ l <<%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update' :: Action -> Effect Model Action
+-- update' :: Action -> Transition Model Action
 -- update' (SetValue v) = value .= v
 -- @
 infix 4 .=
@@ -588,7 +587,7 @@ assign = (.=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SetValue x) = do
 --   value .= x
 --   result <- use value
@@ -609,7 +608,7 @@ use _lens = gets (^. _lens)
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (AssignValue x) = value ?= x
 -- @
 infix 4 ?=
@@ -627,7 +626,7 @@ infix 4 ?=
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update IncrementIfJust = value %?= (+1)
 --
 -- @
@@ -649,7 +648,7 @@ infix 4 %?=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (IncrementBy x) = value += x
 -- @
 infix 4 +=
@@ -668,7 +667,7 @@ infix 4 +=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (MultiplyBy x) = value *= x
 -- @
 infix 4 *=
@@ -687,7 +686,7 @@ infix 4 *=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (DivideBy x) = value //= x
 -- @
 infix 4 //=
@@ -706,7 +705,7 @@ infix 4 //=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SubtractBy x) = value -= x
 -- @
 infix 4 -=
@@ -752,7 +751,7 @@ this = _id
 -- | Smart constructor 'lens' function. Used to easily construct a t'Lens'
 --
 -- > name :: Lens Person String
--- > name = lens _name $ \\p n -> p { _name = n }
+-- > name = lens _name $ \p n -> p { _name = n }
 --
 lens
   :: (record -> field)

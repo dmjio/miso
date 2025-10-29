@@ -1,8 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 -----------------------------------------------------------------------------
@@ -164,13 +162,13 @@ type Effect parent model action = RWS (ComponentInfo parent) [Sink action -> JSM
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
 -----------------------------------------------------------------------------
--- | @MonadFail@ instance for @EffectCore@
 #if __GLASGOW_HASKELL__ <= 881
+-- | @MonadFail@ instance for 'Identity'
 instance Fail.MonadFail Identity where
   fail = error
 #endif
 -----------------------------------------------------------------------------
--- | Internal function used to unwrap an @EffectCore@
+-- | Internal function used to unwrap an @Effect@
 runEffect
     :: Effect parent model action
     -> ComponentInfo parent
@@ -236,7 +234,7 @@ afterAll = modifyAllJSM . (<*)
 -- This function can be used to adjoin synchronous actions to all JSM
 -- expressions in an effect. For examples see 'beforeAll' and 'afterAll'.
 modifyAllJSM :: (JSM () -> JSM ()) -> Effect parent model action -> Effect parent model action
-modifyAllJSM = censor . (fmap . fmap)  
+modifyAllJSM = censor . (fmap . fmap)
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the t'Miso.Types.Component' or top-level
 -- t'Miso.Types.Component' in their application. This is useful for introducing 'IO' into the system.
@@ -255,7 +253,7 @@ withSink f = tell [ f ]
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
--- > data Action = HelloWorld 
+-- > data Action = HelloWorld
 -- >
 -- > update :: Action -> Effect Model Action
 -- > update = \case

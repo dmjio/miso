@@ -1,7 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
@@ -24,6 +23,7 @@ module Miso.Fetch
   ( -- ** JSON
     getJSON
   , postJSON
+  , postJSON'
   , putJSON
   -- ** Text
   , getText
@@ -118,9 +118,9 @@ getJSON url headers_ successful errorful =
             , errorMessage = Just "Not a valid JSON object"
             , ..
             }
-        Just (Success result) -> 
+        Just (Success result) ->
           sink $ successful resp { body = result }
-        Just (Error msg) -> do 
+        Just (Error msg) -> do
           err <- fromJSValUnchecked body
           sink $ errorful $ Response
             { body = err
@@ -151,6 +151,48 @@ postJSON url body_ headers_ successful errorful =
       NONE
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
+----------------------------------------------------------------------------
+-- | POST request that uses JSON encoded data, and returns JSON encoded data
+postJSON'
+  :: (FromJSVal error, ToJSON body, FromJSON return)
+  => MisoString
+  -- ^ url
+  -> body
+  -- ^ Body
+  -> [(MisoString, MisoString)]
+  -- ^ headers_
+  -> (Response return -> action)
+  -- ^ successful callback
+  -> (Response error -> action)
+  -- ^ errorful callback
+  -> Effect parent model action
+postJSON' url body_ headers_ successful errorful =
+  withSink $ \sink -> do
+    bodyVal <- FFI.jsonStringify body_
+    FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
+      (handleJSON sink)
+      (sink . errorful)
+      JSON
+  where
+    jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON, accept =: applicationJSON]
+    handleJSON sink resp@Response {..} =
+      fmap fromJSON <$> fromJSVal body >>= \case
+        Nothing -> do
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just "Not a valid JSON object"
+            , ..
+            }
+        Just (Success result) ->
+          sink $ successful resp { body = result }
+        Just (Error msg) -> do
+          err <- fromJSValUnchecked body
+          sink $ errorful $ Response
+            { body = err
+            , errorMessage = Just (ms msg)
+            , ..
+            }
 ----------------------------------------------------------------------------
 -- | PUT request that uses JSON encoded data
 putJSON
@@ -592,7 +634,7 @@ octetStream = "application/octect-stream"
 formData :: MisoString
 formData = "multipart/form-data"
 ----------------------------------------------------------------------------
--- | Helper function for the union of two header Map 
+-- | Helper function for the union of two header Map
 biasHeaders :: Ord k => [(k, a)] -> [(k, a)] -> [(k, a)]
 biasHeaders userDefined contentSpecific
   = M.toList

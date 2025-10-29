@@ -8,9 +8,7 @@
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE DataKinds                  #-}
@@ -223,7 +221,7 @@ toQueryParam k v = QueryParamToken k (ms v)
 toQueryFlag :: MisoString -> Token
 toQueryFlag = QueryFlagToken
 -----------------------------------------------------------------------------
--- | Smart constructor for building a capture variable 
+-- | Smart constructor for building a capture variable
 toCapture :: ToMisoString string => string -> Token
 toCapture = CaptureOrPathToken . ms
 -----------------------------------------------------------------------------
@@ -297,7 +295,7 @@ data RoutingError
   | NoParses MisoString
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | State monad for parsing URI 
+-- | State monad for parsing URI
 type RouteParser = ParserT URI [Token] []
 -----------------------------------------------------------------------------
 -- | Combinator for parsing a capture variable out of a URI

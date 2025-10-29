@@ -2,8 +2,6 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -98,7 +96,8 @@ import           System.Mem.StableName (makeStableName)
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator, undelegator)
-import           Miso.Diff (diff)
+import qualified Miso.Diff as Diff
+import qualified Miso.Hydrate as Hydrate
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import           Miso.String hiding (reverse, drop)
@@ -107,30 +106,43 @@ import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
-import           Miso.Subscription.History (getURI)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
   :: (Eq parent, Eq model)
   => Hydrate
   -> Component parent model action
-  -> (model -> Sink action -> JSM ([DOMRef], DOMRef, IORef VTree))
-  -- ^ Callback function is used to perform the creation of VTree
+  -> JSM DOMRef
+  -- ^ Callback function is used for obtaining the t'Component' 'DOMRef'.
   -> JSM (ComponentState model action)
-initialize hydrate Component {..} getView = do
+initialize hydrate Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
-      serve
+      notify
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) -> getURI >>= action
+      (Hydrate, Just action) ->
+#ifdef JSADDLE
+         action
+#else
+         liftIO action
+#endif
       _ -> pure model
-  (componentScripts, componentDOMRef, componentVTree) <- getView initializedModel componentSink
+  componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
+  componentDOMRef <- getComponentMountPoint
+  componentVTree <- do
+    vtree <- runView hydrate (view initializedModel) componentSink logLevel events
+    case hydrate of
+      Draw -> do
+        Diff.diff Nothing (Just vtree) componentDOMRef
+      Hydrate -> do
+        Hydrate.hydrate logLevel componentDOMRef vtree
+    liftIO (newIORef vtree)
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
     FFI.getParentComponentId componentDOMRef >>= \case
@@ -157,7 +169,7 @@ initialize hydrate Component {..} getView = do
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         global <# ("currentComponentId" :: MisoString) $ componentId
-        diff (Just oldVTree) (Just newVTree) componentDOMRef
+        Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
@@ -187,7 +199,7 @@ initialize hydrate Component {..} getView = do
       componentParentId
       componentModel
       parentToChild
-      serve
+      notify
 
   componentChildToParentThreadId <-
     synchronizeChildToParent
@@ -197,7 +209,7 @@ initialize hydrate Component {..} getView = do
       childToParent
 
   let vcomp = ComponentState
-        { componentServe = serve
+        { componentNotify = notify
         , ..
         }
   registerComponent vcomp
@@ -232,7 +244,7 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
   where
     bindProperty parentComponentState = do
       isDirty <- or <$> forM bindings (bindChildToParent parentComponentState componentModel)
-      when isDirty $ liftIO (componentServe parentComponentState)
+      when isDirty $ liftIO (componentNotify parentComponentState)
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -269,7 +281,7 @@ synchronizeParentToChild
   -> IO ()
   -> JSM (Maybe ThreadId)
 synchronizeParentToChild _ _ [] _ = pure Nothing
-synchronizeParentToChild parentId componentModel_ bindings serve = do
+synchronizeParentToChild parentId componentModel_ bindings notify= do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   IM.lookup parentId <$> liftIO (readIORef components) >>= \case
@@ -285,7 +297,7 @@ synchronizeParentToChild parentId componentModel_ bindings serve = do
   where
     bindProperty parentComponentState = do
       isDirty <- or <$> forM bindings (bindParentToChild parentComponentState componentModel_)
-      when isDirty (liftIO serve)
+      when isDirty (liftIO notify)
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
@@ -314,7 +326,7 @@ bindParentToChild ComponentState {..} modelRef = \case
       pure (currentChild /= newChild)
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'diff'
+-- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
   = Draw
   | Hydrate
@@ -336,7 +348,7 @@ data ComponentState model action
   , componentScripts         :: [DOMRef]
   , componentMailboxThreadId :: ThreadId
   , componentDiffs           :: Mailbox
-  , componentServe           :: IO ()
+  , componentNotify          :: IO ()
     -- ^ What the current component writes to, to notify anybody about its dirty model
   , componentParentToChildThreadId  :: Maybe ThreadId
   , componentChildToParentThreadId  :: Maybe ThreadId
@@ -572,7 +584,7 @@ unsubscribe_ topicName vcompId = do
 --     [ onMountedWith Mount
 --     ]
 --   ] where
---       update_ :: Action -> Effect () Action
+--       update_ :: Action -> Transition () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
@@ -657,28 +669,6 @@ foldEffects update synchronicity info snk (e:es) o =
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
---------------------------------------------------
--- | Internally used for runView parent and startComponent
--- Initial draw helper
--- If hydrateing, bypass diff and continue copying
-drawComponent
-  :: Eq model
-  => Hydrate
-  -> DOMRef
-  -> Component parent model action
-  -> model
-  -> Sink action
-  -> JSM ([DOMRef], DOMRef, IORef VTree)
-drawComponent hydrate mountElement Component {..} initializedModel snk = do
-  refs <- (++) <$> renderScripts scripts <*> renderStyles styles
-  vtree <- runView hydrate (view initializedModel) snk logLevel events
-  case hydrate of
-    Draw ->
-      diff Nothing (Just vtree) mountElement
-    Hydrate ->
-      FFI.hydrate (logLevel `elem` [DebugHydrate, DebugAll]) mountElement =<< toJSVal vtree
-  ref <- liftIO (newIORef vtree)
-  pure (refs, mountElement, ref)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
@@ -749,8 +739,8 @@ runView
   -> JSM VTree
 runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
-    FFI.syncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize hydrate app (drawComponent hydrate domRef app)
+    FFI.asyncCallback2 $ \domRef continuation -> do
+      ComponentState {..} <- initialize hydrate app (pure domRef)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
       FFI.set "componentId" vcompId (Object domRef)
@@ -1305,7 +1295,7 @@ codeToCloseCode = go
     go 1015 = TLS_Handshake
     go n    = OtherCode n
 -----------------------------------------------------------------------------
--- | Closed message is sent when a t'WebSocket' has closed 
+-- | Closed message is sent when a t'WebSocket' has closed
 data Closed
   = Closed
   { closedCode :: CloseCode

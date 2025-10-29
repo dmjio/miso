@@ -1,5 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -53,7 +52,7 @@ module Miso.Media
 -----------------------------------------------------------------------------
 import           Control.Monad
 import           Language.Javascript.JSaddle hiding (new)
-import qualified Language.Javascript.JSaddle as JS 
+import qualified Language.Javascript.JSaddle as JS
 -----------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Event
