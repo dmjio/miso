@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
@@ -27,12 +28,9 @@ import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
-#ifndef JSADDLE
-import Control.Exception (SomeException, catch)
-import System.IO.Unsafe (unsafePerformIO)
-#endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -60,9 +58,23 @@ intercalate sep (x:xs) =
   , intercalate sep xs
   ]
 ----------------------------------------------------------------------------
+-- |
+-- HTML-encodes the given text.
+--
+-- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
+-- &lt;a href=&quot;&quot;&gt;
+htmlEncode :: MisoString -> MisoString
+htmlEncode = MS.concatMap $ \case
+  '<' -> "&lt;"
+  '>' -> "&gt;"
+  '&' -> "&amp;"
+  '"' -> "&quot;"
+  '\'' -> "&#39;"
+  x -> MS.singleton x
+----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString s
+renderBuilder (VText s)     = fromMisoString (htmlEncode s)
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode _ tag attrs children) =
   mconcat
@@ -86,7 +98,7 @@ renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
 #ifdef JSADDLE
       vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
 #else
-      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
+      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel comp) ]
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder

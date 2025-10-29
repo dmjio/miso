@@ -128,12 +128,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentDiffs <- liftIO newMailbox
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) ->
-#ifdef JSADDLE
-         action
-#else
-         liftIO action
-#endif
+      (Hydrate, Just action) -> liftIO action
       _ -> pure model
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
