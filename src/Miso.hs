@@ -140,7 +140,7 @@ renderApp renderer vcomp =
 ----------------------------------------------------------------------------
 -- | top-level t'Component' initialization helper for `renderApp` and `startComponent`
 initComponent
-  :: Eq model
+  :: (Eq parent, Eq model)
   => Component parent model action
   -> JSM (ComponentState model action)
 initComponent vcomp@Component {..} =

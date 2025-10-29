@@ -216,8 +216,10 @@ component m u v = Component
 --
 data ROOT
 -----------------------------------------------------------------------------
--- | A top level t'Miso.Types.Component' of the application.
--- For top-level Component, The @parent@ type variable must always be specialized to 'ROOT'.
+-- | 'Eq' instance for 'ROOT'
+instance Eq ROOT where _ == _ = True
+-----------------------------------------------------------------------------
+-- | For top-level t'Miso.Types.Component', 'ROOT' must always be specified for parent.
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
 -- | A specialized version of 'Effect' that can be used in the type of application 'update' function,
