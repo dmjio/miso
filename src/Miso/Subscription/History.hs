@@ -1,6 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE RecordWildCards   #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.History
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -39,13 +37,13 @@ import           Miso.Effect (Sub)
 pushURI :: URI -> JSM ()
 pushURI uri = do
   pushState (prettyURI uri)
-  liftIO (serve chan)
+  liftIO (notify chan)
 -----------------------------------------------------------------------------
 -- | Replaces current URI on stack
 replaceURI :: URI -> JSM ()
 replaceURI uri = do
   replaceState (prettyURI uri)
-  liftIO (serve chan)
+  liftIO (notify chan)
 -----------------------------------------------------------------------------
 -- | Navigates backwards
 back :: JSM ()

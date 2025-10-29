@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Html.Event
@@ -162,7 +161,6 @@ onClickWith :: (DOMRef -> action) -> Attribute action
 onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
--- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
 onClickWithOptions :: Options -> action -> Attribute action
 onClickWithOptions options action = onWithOptions options "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------

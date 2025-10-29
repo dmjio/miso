@@ -1,4 +1,3 @@
-:set -XOverloadedStrings
 :set prompt ">>> "
 :set prompt2 "... "
 :set -isrc

@@ -37,12 +37,12 @@ windowCoordsSub :: (Coord -> action) -> Sub action
 windowCoordsSub f = windowPointerMoveSub (f . client)
 -----------------------------------------------------------------------------
 -- | @windowSub eventName decoder toAction@ provides a subscription
--- to listen to window level events.
+-- to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
 windowSub :: MisoString -> Decoder r -> (r -> action) -> Sub action
 windowSub = windowSubWithOptions defaultOptions
 -----------------------------------------------------------------------------
 -- | @windowSubWithOptions options eventName decoder toAction@ provides a
--- subscription to listen to window level events.
+-- subscription to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
 windowSubWithOptions
   :: Options
   -> MisoString
@@ -60,7 +60,7 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
           v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
           case parseEither decoder v of
             Left s ->
-              FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)              
+              FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)
             Right r -> do
               when _stopPropagation (FFI.eventStopPropagation e)
               when _preventDefault (FFI.eventPreventDefault e)

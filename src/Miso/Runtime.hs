@@ -2,8 +2,6 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
@@ -123,7 +121,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
   let
     componentSink = \action -> liftIO $ do
       atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
-      serve
+      notify
   componentId <- liftIO freshComponentId
   componentDiffs <- liftIO newMailbox
   initializedModel <-
@@ -203,7 +201,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       componentParentId
       componentModelNew
       parentToChild
-      serve
+      notify
 
   componentChildToParentThreadId <-
     synchronizeChildToParent
@@ -213,7 +211,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       childToParent
 
   let vcomp = ComponentState
-        { componentServe = serve
+        { componentNotify = notify
         , ..
         }
   registerComponent vcomp
@@ -247,7 +245,7 @@ synchronizeChildToParent parentId componentModelNew componentDiffs bindings = do
   where
     bindProperty parentComponentState = do
       forM_ bindings (bindChildToParent parentComponentState componentModelNew)
-      liftIO (componentServe parentComponentState)
+      liftIO (componentNotify parentComponentState)
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -278,7 +276,7 @@ synchronizeParentToChild
   -> IO ()
   -> JSM (Maybe ThreadId)
 synchronizeParentToChild _ _ [] _ = pure Nothing
-synchronizeParentToChild parentId componentModel_ bindings serve = do
+synchronizeParentToChild parentId componentModel_ bindings notify= do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   IM.lookup parentId <$> liftIO (readIORef components) >>= \case
@@ -294,7 +292,7 @@ synchronizeParentToChild parentId componentModel_ bindings serve = do
   where
     bindProperty parentComponentState = do
       forM_ bindings (bindParentToChild parentComponentState componentModel_)
-      liftIO serve
+      liftIO notify
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
@@ -319,7 +317,7 @@ bindParentToChild ComponentState {..} modelRef = \case
       modifyTVar' modelRef newChild
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
--- 'Draw' invokes 'diff'
+-- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
   = Draw
   | Hydrate
@@ -341,7 +339,7 @@ data ComponentState model action
   , componentScripts         :: [DOMRef]
   , componentMailboxThreadId :: ThreadId
   , componentDiffs           :: Mailbox
-  , componentServe           :: IO ()
+  , componentNotify          :: IO ()
     -- ^ What the current component writes to, to notify anybody about its dirty model
   , componentParentToChildThreadId  :: Maybe ThreadId
   , componentChildToParentThreadId  :: Maybe ThreadId
@@ -577,7 +575,7 @@ unsubscribe_ topicName vcompId = do
 --     [ onMountedWith Mount
 --     ]
 --   ] where
---       update_ :: Action -> Effect () Action
+--       update_ :: Action -> Transition () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
@@ -1287,7 +1285,7 @@ codeToCloseCode = go
     go 1015 = TLS_Handshake
     go n    = OtherCode n
 -----------------------------------------------------------------------------
--- | Closed message is sent when a t'WebSocket' has closed 
+-- | Closed message is sent when a t'WebSocket' has closed
 data Closed
   = Closed
   { closedCode :: CloseCode

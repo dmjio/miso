@@ -136,7 +136,7 @@ renderApp
 renderApp renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
 ----------------------------------------------------------------------------
--- | top-level 'Component' initialization helper for `renderApp` and `startComponent`
+-- | top-level t'Component' initialization helper for `renderApp` and `startComponent`
 initComponent
   :: Eq model
   => Component parent model action
