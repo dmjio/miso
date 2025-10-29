@@ -135,7 +135,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       _ -> pure model
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
-  componentModelDirty <- liftIO (newTVarIO False)
+  componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
     vtree <- runView hydrate (view initializedModel) componentSink logLevel events
     case hydrate of
@@ -175,9 +175,10 @@ initialize hydrate Component {..} getComponentMountPoint = do
           atomicWriteIORef componentVTree newVTree
           atomically $ do
             writeTVar componentModel updatedModel
+            writeTVar componentIsDirty False
             -- dmj: reset the dirty bit
             writeTChan componentDiffs Null
-            -- dmj: child wake-up call for prop synch.
+            -- dmj: child wake-up call for model synch.
       syncPoint
       eventLoop
 
@@ -199,6 +200,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
     synchronizeParentToChild
       componentParentId
       componentModel
+      componentIsDirty
       parentToChild
       notify
 
@@ -245,7 +247,10 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
   where
     bindProperty parentComponentState = do
       isDirty <- or <$> forM bindings (bindChildToParent parentComponentState componentModel)
-      when isDirty $ liftIO (componentNotify parentComponentState)
+      when isDirty $ do
+        liftIO $ do
+          atomically $ writeTVar (componentIsDirty parentComponentState) True
+          componentNotify parentComponentState
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -278,11 +283,12 @@ synchronizeParentToChild
   :: Eq model
   => ComponentId
   -> TVar model
+  -> TVar Bool
   -> [ Binding type_ model ]
   -> IO ()
   -> JSM (Maybe ThreadId)
-synchronizeParentToChild _ _ [] _ = pure Nothing
-synchronizeParentToChild parentId componentModel_ bindings notify= do
+synchronizeParentToChild _ _ _ [] _ = pure Nothing
+synchronizeParentToChild parentId componentModel_ componentIsDirty bindings notify= do
   -- Get parent's componentNotify, subscribe to it, on notification
   -- update the current Component model using the user-specified lenses
   IM.lookup parentId <$> liftIO (readIORef components) >>= \case
@@ -298,7 +304,9 @@ synchronizeParentToChild parentId componentModel_ bindings notify= do
   where
     bindProperty parentComponentState = do
       isDirty <- or <$> forM bindings (bindParentToChild parentComponentState componentModel_)
-      when isDirty (liftIO notify)
+      when isDirty . liftIO $ do
+        atomically (writeTVar componentIsDirty True)
+        notify
 -----------------------------------------------------------------------------
 bindParentToChild
   :: forall props model action
@@ -343,17 +351,15 @@ data ComponentState model action
   , componentVTree           :: IORef VTree
   , componentSink            :: action -> JSM ()
   , componentModel           :: TVar model
-  , componentModelDirty      :: TVar Bool
+  , componentIsDirty         :: TVar Bool
   , componentActions         :: IORef (Seq action)
   , componentMailbox         :: Mailbox
   , componentScripts         :: [DOMRef]
   , componentMailboxThreadId :: ThreadId
   , componentDiffs           :: Mailbox
   , componentNotify          :: IO ()
-    -- ^ What the current component writes to, to notify anybody about its dirty model
   , componentParentToChildThreadId  :: Maybe ThreadId
   , componentChildToParentThreadId  :: Maybe ThreadId
-    -- ^ What the current component listens on to invoke model synchronization
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
