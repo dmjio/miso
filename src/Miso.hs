@@ -26,10 +26,12 @@ module Miso
     -- ** Component
   , Component
   , startComponent
+  , component
+  , (+>)
     -- ** Sink
   , withSink
   , Sink
-    -- ** Component
+    -- ** Mail
   , mail
   , checkMail
   , parent
