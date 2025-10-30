@@ -39,6 +39,7 @@ module Miso.Canvas
   , canvas
   , canvas_
     -- * API
+  , set
   , globalCompositeOperation
   , clearRect
   , fillRect
@@ -110,7 +111,7 @@ import           Miso.Types
 import           Miso.CSS (Color, renderColor)
 -----------------------------------------------------------------------------
 -- | Another variant of canvas, this is not specialized to 'ReaderT'. This is
--- useful when building applications w/ three.js, or other libraries where
+-- useful when building applications with three.js, or other libraries where
 -- explicit context is not necessary.
 canvas_
   :: forall model action canvasState
@@ -367,7 +368,7 @@ instance FromJSVal Pattern where
   fromJSVal = pure . pure . Pattern
 -----------------------------------------------------------------------------
 -- | Type used to hold a Gradient
-newtype Gradient = Gradient JSVal deriving (ToJSVal)
+newtype Gradient = Gradient JSVal deriving (ToJSVal, MakeArgs)
 -----------------------------------------------------------------------------
 instance FromJSVal Gradient where
   fromJSVal = pure . pure . Gradient
