@@ -12,11 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-     - uses: DeterminateSystems/nix-installer-action@main
+     - uses: nixbuild/nix-quick-install-action@v34
      - uses: actions/checkout@v3.5.3
-     - uses: cachix/install-nix-action@v25
-       with:
-         nix_path: nixpkgs=channel:nixpkgs-unstable
      - name: Cancel Previous Runs
        uses: styfle/cancel-workflow-action@0.9.1
        with:
