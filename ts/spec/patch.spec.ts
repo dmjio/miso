@@ -1,10 +1,10 @@
 /* imports */
 import { diff } from '../miso/dom';
-import { vnode, vcomp, vtext } from '../miso/smart';
-import { VTree, DOMRef } from '../miso/types';
+// import { vnode, vcomp, vtext } from '../miso/smart';
+// import { VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { context } from '../miso/context/dom';
-import { patch } from '../miso/patch';
+// import { context } from '../miso/context/dom';
+// import { patch } from '../miso/patch';
 
 /* silence */
 beforeAll(() => {
@@ -22,6 +22,9 @@ afterEach(() => {
 /* tests */
 describe ('Patch tests', () => {
     test('Should process the insertBefore patch', () => {
+        /* Create a context for diffing that uses objects that contain a number.
+           Create a virtual DOM, `diff` against it.
+        */
         expect(2+2).toEqual(4);
     });
     test('Should process the swapDOMRefs patch', () => {

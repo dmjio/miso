@@ -55,6 +55,7 @@
     "ts/miso/util.ts",
     "ts/miso/patch.ts",
     "ts/miso/context/dom.ts",
+    "ts/miso/context/patch.ts",
     "ts/miso.spec.ts",
     "ts/spec/dom.ts",
     "ts/spec/event.ts",
