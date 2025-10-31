@@ -45,7 +45,14 @@ run = id
 #else
 run action = do
   port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
-  debugMiso port action  
+  isGhci <- (== "<interactive>") <$> getProgName
+  putStrLn $ "Running on port " <> show port <> "..."
+  if isGhci
+    then debugMiso port action
+    else
+      runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
+        jsaddleOr defaultConnectionOptions (action >> syncPoint)
+        (static J.jsaddleApp)
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static Middleware policy.
 --
