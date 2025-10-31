@@ -30,6 +30,7 @@ module Miso.Html.Event
   , onKeyDownWithInfo
   , onKeyPress
   , onKeyUp
+  , onEnter
   -- *** Form
   , onInput
   , onChange
@@ -122,6 +123,8 @@ module Miso.Html.Event
   , onTouchCancelWithOptions
   ) where
 -----------------------------------------------------------------------------
+import           Data.Bool (bool)
+-----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Media (Media(..))
 import           Miso.Types (Attribute, DOMRef)
@@ -204,6 +207,29 @@ onKeyDownWithInfo f = on "keydown" keyInfoDecoder (\action _ -> f action)
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keydown
 onKeyDown :: (KeyCode -> action) -> Attribute action
 onKeyDown f = on "keydown" keycodeDecoder (\action _ -> f action)
+-----------------------------------------------------------------------------
+-- | 'onEnter'
+--
+-- A convenience function for processing the @Enter@ key.
+--
+-- @
+--
+-- data Action = NoOp | OnEnter
+--
+-- type Model = Int
+--
+-- view :: Model -> View model Action
+-- view entryId = input_ [ onEnter NoOp OnEnter ]
+-- @
+--
+-- @since 1.9.0.0
+onEnter
+  :: action
+  -- ^ The action to call when the keydown *is not* 13 (typically @NoOp@ or @Id@)
+  -> action
+  -- ^ The action to call when keydown *is* 13.
+  -> Attribute action
+onEnter nothing action = onKeyDown $ bool nothing action . (==13)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/keypress
 onKeyPress :: (KeyCode -> action) -> Attribute action

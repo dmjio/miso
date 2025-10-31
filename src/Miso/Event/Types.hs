@@ -57,7 +57,7 @@ data KeyInfo
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#Browser_compatibility>
 newtype KeyCode = KeyCode Int
-  deriving (Show, Eq, Ord, FromJSON)
+  deriving (Show, Eq, Ord, FromJSON, Num)
 -----------------------------------------------------------------------------
 -- | Type used for Checkbox events.
 newtype Checked = Checked Bool
