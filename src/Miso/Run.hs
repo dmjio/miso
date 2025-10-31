@@ -44,12 +44,8 @@ run = J.run
 run = id
 #else
 run action = do
-    port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
-    isGhci <- (== "<interactive>") <$> getProgName
-    putStrLn $ "Running on port " <> show port <> "..."
-    if isGhci
-      then debugMiso port action
-      else J.run port action
+  port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
+  debugMiso port action  
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static Middleware policy.
 --
