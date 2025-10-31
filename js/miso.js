@@ -501,7 +501,7 @@ function listener(e, mount, getVTree, debug, context) {
   });
 }
 function dispatch(ev, vtree, mount, debug, context) {
-  var target = context["getTarget"](ev);
+  var target = context.getTarget(ev);
   if (target) {
     var stack = buildTargetToElement(mount, target, context);
     delegateEvent(ev, vtree, stack, [], debug, context);
@@ -509,10 +509,10 @@ function dispatch(ev, vtree, mount, debug, context) {
 }
 function buildTargetToElement(element, target, context) {
   var stack = [];
-  while (!context["isEqual"](element, target)) {
+  while (!context.isEqual(element, target)) {
     stack.unshift(target);
-    if (target && context["parentNode"](target)) {
-      target = context["parentNode"](target);
+    if (target && context.parentNode(target)) {
+      target = context.parentNode(target);
     } else {
       return stack;
     }
@@ -531,7 +531,7 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
       var child = obj["children"][c];
       if (child["type"] === "vcomp")
         continue;
-      if (context["isEqual"](child["domRef"], stack[1])) {
+      if (context.isEqual(child["domRef"], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
       }
@@ -641,20 +641,20 @@ function preamble(mountPoint, context) {
   }
   return node;
 }
-function hydrate(logLevel, mountPoint, vtree, context) {
-  const node = preamble(mountPoint, context);
-  if (!walk(logLevel, vtree, node, context)) {
+function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
+  const node = preamble(mountPoint, drawingContext);
+  if (!walk(logLevel, vtree, node, context, drawingContext)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (context["firstChild"](node))
-      context["removeChild"](node, context["lastChild"](node));
+      drawingContext["removeChild"](node, context["lastChild"](node));
     vtree["domRef"] = node;
-    populate(null, vtree, context);
+    populate(null, vtree, drawingContext);
     return false;
   } else {
     if (logLevel) {
-      if (!integrityCheck(vtree, context)) {
+      if (!integrityCheck(vtree, context, drawingContext)) {
         console.warn("[DEBUG_HYDRATE] Integrity check completed with errors");
       } else {
         console.info("[DEBUG_HYDRATE] Successfully prerendered page");
@@ -681,10 +681,10 @@ function parseColor(input) {
       return +x;
     });
 }
-function integrityCheck(vtree, context) {
-  return check(true, vtree, context);
+function integrityCheck(vtree, context, drawingContext) {
+  return check(true, vtree, context, drawingContext);
 }
-function check(result, vtree, context) {
+function check(result, vtree, context, drawingContext) {
   if (vtree["type"] == "vtext") {
     if (context["getTag"](vtree["domRef"]) !== "#text") {
       console.warn("VText domRef not a TEXT_NODE", vtree);
@@ -736,17 +736,17 @@ function check(result, vtree, context) {
       }
     }
     for (const child of vtree["children"]) {
-      const value = check(result, child, context);
+      const value = check(result, child, context, drawingContext);
       result = result && value;
     }
   }
   return result;
 }
-function walk(logLevel, vtree, node, context) {
+function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree["type"]) {
     case "vcomp":
       vtree["domRef"] = node;
-      callCreated(vtree, context);
+      callCreated(vtree, drawingContext);
       break;
     case "vtext":
       vtree["domRef"] = node;
@@ -754,7 +754,7 @@ function walk(logLevel, vtree, node, context) {
     default:
       vtree["domRef"] = node;
       vtree["children"] = collapseSiblingTextNodes(vtree["children"]);
-      callCreated(vtree, context);
+      callCreated(vtree, drawingContext);
       for (var i = 0;i < vtree["children"].length; i++) {
         const vdomChild = vtree["children"][i];
         const domChild = node.childNodes[i];
@@ -779,7 +779,7 @@ function walk(logLevel, vtree, node, context) {
             if (domChild.nodeType !== 1)
               return false;
             vdomChild["domRef"] = domChild;
-            walk(logLevel, vdomChild, domChild, context);
+            walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
       }
@@ -788,12 +788,26 @@ function walk(logLevel, vtree, node, context) {
 }
 
 // ts/miso/context/dom.ts
-var context = {
+var eventContext = {
   addEventListener: (mount, event, listener2, capture) => {
     mount.addEventListener(event, listener2, capture);
   },
   removeEventListener: (mount, event, listener2, capture) => {
     mount.removeEventListener(event, listener2, capture);
+  },
+  isEqual: (x, y) => {
+    return x === y;
+  },
+  getTarget: (e) => {
+    return e.target;
+  },
+  parentNode: (node) => {
+    return node.parentNode;
+  }
+};
+var hydrationContext = {
+  getInlineStyle: (node, key) => {
+    return node.style[key];
   },
   firstChild: (node) => {
     return node.firstChild;
@@ -801,9 +815,24 @@ var context = {
   lastChild: (node) => {
     return node.lastChild;
   },
-  parentNode: (node) => {
-    return node.parentNode;
+  getAttribute: (node, key) => {
+    if (key === "class")
+      return node.className;
+    if (key in node)
+      return node[key];
+    return node.getAttribute(key);
   },
+  getTag: (node) => {
+    return node.nodeName;
+  },
+  getTextContent: (node) => {
+    return node.textContent;
+  },
+  children: (node) => {
+    return node.childNodes;
+  }
+};
+var drawingContext = {
   nextSibling: (node) => {
     return node.nextSibling;
   },
@@ -834,9 +863,6 @@ var context = {
     p.insertBefore(b, tmp);
     return;
   },
-  querySelectorAll: (sel) => {
-    return document.querySelectorAll(sel);
-  },
   setInlineStyle: (cCss, nCss, node) => {
     var result;
     for (const key in cCss) {
@@ -854,18 +880,8 @@ var context = {
     }
     return;
   },
-  getInlineStyle: (node, key) => {
-    return node.style[key];
-  },
   setAttribute: (node, key, value) => {
     return node.setAttribute(key, value);
-  },
-  getAttribute: (node, key) => {
-    if (key === "class")
-      return node.className;
-    if (key in node)
-      return node[key];
-    return node.getAttribute(key);
   },
   setAttributeNS: (node, ns, key, value) => {
     return node.setAttributeNS(ns, key, value);
@@ -877,31 +893,20 @@ var context = {
     node.textContent = text;
     return;
   },
-  getTag: (node) => {
-    return node.nodeName;
-  },
-  getTextContent: (node) => {
-    return node.textContent;
-  },
-  children: (node) => {
-    return node.childNodes;
-  },
-  isEqual: (x, y) => {
-    return x === y;
-  },
-  getTarget: (e) => {
-    return e.target;
-  },
   flush: () => {
     return;
   },
-  getRoot: () => {
+  getRoot: function() {
     return document.body;
   }
 };
 
 // ts/index.ts
 globalThis["miso"] = {};
+globalThis["miso"]["hydrationContext"] = hydrationContext;
+globalThis["miso"]["eventContext"] = eventContext;
+globalThis["miso"]["drawingContext"] = drawingContext;
+globalThis["miso"]["flush"] = flush;
 globalThis["miso"]["diff"] = diff;
 globalThis["miso"]["hydrate"] = hydrate;
 globalThis["miso"]["version"] = version;
@@ -919,12 +924,15 @@ globalThis["miso"]["undelegate"] = undelegate;
 globalThis["miso"]["getParentComponentId"] = getParentComponentId;
 globalThis["miso"]["shouldSync"] = shouldSync;
 globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["context"] = context;
 globalThis["miso"]["setDrawingContext"] = function(name) {
-  const ctx = globalThis[name];
-  if (!ctx) {
-    console.warn("Custom rendering engine is not defined", name, globalThis[name]);
+  const drawing = globalThis[name]["drawingContext"];
+  const events = globalThis[name]["eventContext"];
+  if (!drawing) {
+    console.warn("Custom rendering engine is not defined", name, globalThis[name]["drawingContext"]);
+  } else if (!events) {
+    console.warn("Custom event delegation is not defined", name, globalThis[name]["eventContext"]);
   } else {
-    globalThis["miso"]["context"] = ctx;
+    globalThis["miso"]["drawingContext"] = drawing;
+    globalThis["miso"]["eventContext"] = events;
   }
 };
