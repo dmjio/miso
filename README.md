@@ -12,22 +12,19 @@
 
 <p align="center">
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
-    <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=flat-square" alt="Matrix #haskell-miso:matrix.org">
+    <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
   </a>
   <a href="https://haskell.org">
-    <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=flat-square" alt="Haskell">
+    <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=for-the-badge" alt="Haskell">
   </a>
   <a href="https://haskell-miso-cachix.cachix.org">
-    <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=flat-square" alt="Cachix">
+    <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=for-the-badge" alt="Cachix">
   </a>
   <a href="https://actions-badge.atrox.dev/dmjio/miso/goto?ref=master">
-    <img alt="Build Status" src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fdmjio%2Fmiso%2Fbadge%3Fref%3Dmaster&style=flat-square" />
+    <img alt="Build Status" src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fdmjio%2Fmiso%2Fbadge%3Fref%3Dmaster&style=for-the-badge" />
   </a>
   <a href="http://hackage.haskell.org/package/miso">
-    <img src="https://img.shields.io/hackage/v/miso.svg?style=flat-square" alt="Hackage">
-  </a>
-  <a href="https://github.com/dmjio/miso/blob/master/LICENSE">
-    <img src="http://img.shields.io/badge/license-BSD3-blueviolet.svg?style=flat-square" alt="LICENSE">
+    <img src="https://img.shields.io/hackage/v/miso.svg?style=for-the-badge" alt="Hackage">
   </a>
 </p>
 
