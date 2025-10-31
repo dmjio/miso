@@ -3,7 +3,7 @@ import { diff } from '../miso/dom';
 import { vnode, vcomp, vtext } from '../miso/smart';
 import { VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { context } from '../miso/context/dom';
+import { drawingContext } from '../miso/context/dom';
 
 /* silence */
 beforeAll(() => {
@@ -35,8 +35,8 @@ describe ('Component tests', () => {
     };
 
     var tree: VTree<DOMRef> = build('one', [build('two', [build('three', [])])]);
-    diff<DOMRef>(null, tree, document.body, context);
-    diff<DOMRef>(tree, null, document.body, context);
+    diff<DOMRef>(null, tree, document.body, drawingContext);
+    diff<DOMRef>(tree, null, document.body, drawingContext);
     expect(unmounts).toEqual(['one', 'two', 'three']);
   });
   test('Should mount and unmount a component', () => {
@@ -54,11 +54,11 @@ describe ('Component tests', () => {
         'background-color': 'red',
       },
     });
-    diff<DOMRef>(null, newNode, document.body, context);
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(mountCount).toBe(1);
     expect(newNode.domRef.id).toBe('vcomp-foo');
     expect(newNode.domRef.style['background-color']).toBe('red');
-    diff<DOMRef>(newNode, null, document.body, context);
+    diff<DOMRef>(newNode, null, document.body, drawingContext);
     expect(unmountCount).toBe(1);
   });
   test('Should Diff attrs of two Components', () => {
@@ -70,7 +70,7 @@ describe ('Component tests', () => {
       },
       css: { 'background-color': 'red' },
     });
-    diff<DOMRef>(null, compNode1, document.body, context);
+    diff<DOMRef>(null, compNode1, document.body, drawingContext);
     expect(mountCount).toBe(1);
 
     // Test node was populated
@@ -85,7 +85,7 @@ describe ('Component tests', () => {
       },
       css: { 'background-color': 'green' },
     });
-    diff<DOMRef>(compNode1, compNode2, document.body, context);
+    diff<DOMRef>(compNode1, compNode2, document.body, drawingContext);
     expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
   });
 
@@ -103,7 +103,7 @@ describe ('Component tests', () => {
         },
     });
     // dmj: tag always 'div' for component, this is just for a test to ensure swap property
-    diff<DOMRef>(null, comp1, document.body, context);
+    diff<DOMRef>(null, comp1, document.body, drawingContext);
     expect((document.body.firstChild as Element).tagName).toBe('A');
 
     // Test node was populated
@@ -116,7 +116,7 @@ describe ('Component tests', () => {
         mountCount++;
       },
     });
-    diff<DOMRef>(comp1, comp2, document.body, context);
+    diff<DOMRef>(comp1, comp2, document.body, drawingContext);
 
     // Node is removed from DOM, Component is on the DOM
     expect(document.body.childNodes.length).toBe(1);
@@ -136,7 +136,7 @@ describe ('Component tests', () => {
       }
     });
     // dmj: tag always 'div' for component, this is just for a test to ensure swap property
-    diff<DOMRef>(null, comp1, document.body, context);
+    diff<DOMRef>(null, comp1, document.body, drawingContext);
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
@@ -149,7 +149,7 @@ describe ('Component tests', () => {
         mountCount++;
       },
     });
-    diff<DOMRef>(comp1, comp2, document.body, context);
+    diff<DOMRef>(comp1, comp2, document.body, drawingContext);
 
     // Node is removed from DOM, Component is on the DOM
     expect((document.body.firstChild as Element).tagName).toBe('DIV');
@@ -160,7 +160,7 @@ describe ('Component tests', () => {
   test('Should replace Node with Component', () => {
     // populate DOM
     var node = vnode<DOMRef>({ tag: 'a' });
-    diff<DOMRef>(null, node, document.body, context);
+    diff<DOMRef>(null, node, document.body, drawingContext);
     expect((document.body.firstChild as Element).tagName).toBe('A');
 
     // Test node was populated
@@ -173,7 +173,7 @@ describe ('Component tests', () => {
         mountCount++;
       },
     });
-    diff<DOMRef>(node, compNode, document.body, context);
+    diff<DOMRef>(node, compNode, document.body, drawingContext);
 
     // Node is removed from DOM, Component is on the DOM
     expect(mountCount).toBe(1);
@@ -183,7 +183,7 @@ describe ('Component tests', () => {
   test('Should replace Text with Component', () => {
     // populate DOM
     var node = vtext<DOMRef>('foo');
-    diff<DOMRef>(null, node, document.body, context);
+    diff<DOMRef>(null, node, document.body, drawingContext);
 
     // Test node was populated
     expect(node.domRef.textContent).toBe('foo');
@@ -195,7 +195,7 @@ describe ('Component tests', () => {
         mountCount++;
       },
     });
-    diff<DOMRef>(node, compNode, document.body, context);
+    diff<DOMRef>(node, compNode, document.body, drawingContext);
 
     // Node is removed from DOM, Component is on the DOM
     expect(mountCount).toBe(1);
@@ -211,7 +211,7 @@ describe ('Component tests', () => {
         return unmountCount++;
       },
     });
-    diff<DOMRef>(null, component, document.body, context);
+    diff<DOMRef>(null, component, document.body, drawingContext);
     // Test component was populated
     expect(document.body.childNodes.length).toBe(1);
     expect(mountCount).toBe(1);
@@ -219,7 +219,7 @@ describe ('Component tests', () => {
 
     // Replace component
     var textNode = vtext<DOMRef>('fooo');
-    diff<DOMRef>(component, textNode, document.body, context);
+    diff<DOMRef>(component, textNode, document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.childNodes[0].textContent).toBe('fooo');
@@ -238,7 +238,7 @@ describe ('Component tests', () => {
         unmountCount++;
       },
     });
-    diff<DOMRef>(null, component, document.body, context);
+    diff<DOMRef>(null, component, document.body, drawingContext);
 
     // Test component was populated
     expect(document.childNodes.length).toBe(1);
@@ -246,7 +246,7 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff<DOMRef>(component, vnode<DOMRef>({}), document.body, context);
+    diff<DOMRef>(component, vnode<DOMRef>({}), document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
@@ -268,7 +268,7 @@ describe ('Component tests', () => {
       },
     });
 
-    diff<DOMRef>(null, node, document.body, context);
+    diff<DOMRef>(null, node, document.body, drawingContext);
 
     // Test component was populated
     expect(document.childNodes.length).toBe(1);
@@ -276,7 +276,7 @@ describe ('Component tests', () => {
     expect(unmountCount).toBe(0);
 
     // Replace component
-    diff<DOMRef>(node, component, document.body, context);
+    diff<DOMRef>(node, component, document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');

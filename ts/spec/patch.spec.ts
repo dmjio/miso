@@ -1,5 +1,5 @@
 /* imports */
-import { diff } from '../miso/dom';
+// import { diff } from '../miso/dom';
 // import { vnode, vcomp, vtext } from '../miso/smart';
 // import { VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';

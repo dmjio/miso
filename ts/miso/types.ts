@@ -76,10 +76,28 @@ export type EventCapture = {
 
 /*
   dmj: Context used for dependency injection of native or browser environment.
+  This is used to abstract event delegation, hydration and DOM diffing over a generic T.
 */
-export type Context<T> = {
+
+export type EventContext<T> = {
   addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
   removeEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
+  isEqual : (n1, n2) => boolean;
+  getTarget : (e: Event) => T;
+  parentNode : (e) => T;
+}
+
+export type HydrationContext<T> = {
+  getTextContent : (node) => string;
+  children : (e: T) => Array<T>;
+  getInlineStyle : (e, string) => string;
+  getTag : (e) => string;
+  firstChild : (e) => T;
+  lastChild : (e) => T;
+  getAttribute : (e: T, string) => string;
+};
+
+export type DrawingContext<T> = {
   nextSibling : (node) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns : string, tag : string) => T;
@@ -89,22 +107,11 @@ export type Context<T> = {
   createElement : (name : string) => T;
   insertBefore : (parent : T, child, node) => void;
   swapDOMRefs: (a: T, b: T, p: T) => void;
-  querySelectorAll: (sel: string) => Array<T>;
   setAttribute : (node, key, value) => void;
   removeAttribute : (node, key) => void;
   setAttributeNS : (node, ns, key, value) => void;
   setTextContent : (node, text) => void;
-  getTextContent : (node) => string;
-  isEqual : (n1, n2) => boolean;
-  getTarget : (e: Event) => T;
-  children : (e: T) => Array<T>;
-  getInlineStyle : (e, string) => string;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
-  getAttribute : (e: T, string) => string;
-  getTag : (e) => string;
-  firstChild : (e) => T;
-  lastChild : (e) => T;
-  parentNode : (e) => T;
   flush : () => void;
   getRoot : () => T;
 };

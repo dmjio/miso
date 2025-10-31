@@ -1,9 +1,9 @@
-import { NodeId, Context } from '../types';
+import { DrawingContext, EventContext, NodeId } from '../types';
 
 globalThis['componentId'] = 0;
 globalThis['nodeId'] = 0;
 
-const context : Context<NodeId> = {
+export const eventContext : EventContext<NodeId> = {
   addEventListener : (mount, event, listener, capture) => {
       // mount.addEventListener(event, listener, capture);
       // dmj: not used in dom.ts (abstract out into event context)
@@ -12,21 +12,23 @@ const context : Context<NodeId> = {
       // mount.removeEventListener(event, listener, capture);
       // dmj: not used in dom.ts (abstract out into event context)
   },
-  firstChild : (node) => {
-      // return node.firstChild;
-      // dmj: not used in dom.ts (abstract out into hydration context)
-      return { nodeId: 0 }; // TODO
+  isEqual: function (x, y) {
+    return x.nodeId === y.nodeId;
+    // return x === y;
   },
-  lastChild : (node) => {
-      // return node.lastChild;
-      // dmj: not used in dom.ts (abstract out into hydration context)
-      return { nodeId: 0 }; // TODO
+  getTarget: function (e) {
+    // return e.target as DOMRef;
+    // retrieve the root
+    return { nodeId : globalThis['nodeId']++ }
   },
-  parentNode : (node) => {
-      // return node.parentNode;
-      // dmj: not used in dom.ts (abstract out into event context)
-      return { nodeId: 0 }; // TODO
+  parentNode: function (node) {
+    // return e.target as DOMRef;
+    // retrieve the root
+    return { nodeId : 10 } //TODO: flesh
   },
+}
+
+export const drawingContext : DrawingContext<NodeId> = {
   nextSibling : (node) => {
     // return node.nextSibling;
     // dmj: this is important for use in
@@ -72,10 +74,6 @@ const context : Context<NodeId> = {
     // p.insertBefore(b, tmp);
     // return;
   },
-  querySelectorAll: (sel) => {
-    // return document.querySelectorAll(sel) as any;
-    return [];
-  },
   setInlineStyle: (cCss, nCss, node) => {
     //  var result: string;
     //  /* is current attribute in new attribute list? */
@@ -95,18 +93,9 @@ const context : Context<NodeId> = {
     //  }
     // return;
   },
-  getInlineStyle: (node, key) => {
-    // return node.style[key];
-      return "foo";
-  },
+
   setAttribute: (node, key, value) => {
     // return node.setAttribute(key, value);
-  },
-  getAttribute: (node, key) => {
-    // if (key === 'class') return node.className;
-    // if (key in node) return node[key];
-    // return node.getAttribute(key);
-      return "TODO";
   },
   setAttributeNS: (node, ns, key, value) => {
     // return node.setAttributeNS(ns, key, value)
@@ -118,27 +107,6 @@ const context : Context<NodeId> = {
     // node.textContent = text;
     // return;
   },
-  getTag: (node) => {
-    // return node.nodeName;
-    return "TODO";
-  },
-  getTextContent: function (node) {
-    // return node.textContent;
-    return "TODO";
-  },
-  children: function (node) {
-      // return node.childNodes as any;
-      return [];
-  },
-  isEqual: function (x, y) {
-    return x.nodeId === y.nodeId;
-    // return x === y;
-  },
-  getTarget: function (e) {
-    // return e.target as DOMRef;
-    // retrieve the root
-    return { nodeId : globalThis['nodeId']++ }
-  },
   flush: (): void => {
     return;
   },
@@ -148,8 +116,4 @@ const context : Context<NodeId> = {
     return { nodeId : 0 /* globalThis['nodeId']++ */ };
   },
 
-};
-
-export {
-  context
 };

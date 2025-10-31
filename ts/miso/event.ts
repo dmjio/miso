@@ -1,4 +1,4 @@
-import { Context, VTree, EventCapture, EventObject, Options } from './types';
+import { EventContext, VTree, EventCapture, EventObject, Options } from './types';
 
 /* event delegation algorithm */
 export function delegate<T> (
@@ -6,7 +6,7 @@ export function delegate<T> (
   events: Array<EventCapture>,
   getVTree: (vtree: VTree<T>) => void,
   debug: boolean,
-  context: Context<T>,
+  context: EventContext<T>,
 ): void {
 
   for (const event of events) {
@@ -26,7 +26,7 @@ export function undelegate<T> (
   events: Array<EventCapture>,
   getVTree: (vtree: VTree<T>) => void,
   debug: boolean,
-  context: Context<T>,
+  context: EventContext<T>,
 ): void {
   for (const event of events) {
     context.removeEventListener (
@@ -40,7 +40,7 @@ export function undelegate<T> (
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: Context<T>): void {
+function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {
       if (Array.isArray(e)) {
           for (const key of e) {
@@ -52,8 +52,8 @@ function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, de
   });
 }
 
-function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context : Context<T>) {
-  var target = context['getTarget'](ev);
+function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
+  var target = context.getTarget(ev);
   if (target) {
      var stack = buildTargetToElement(mount, target, context);
      delegateEvent(ev, vtree, stack, [], debug, context);
@@ -61,12 +61,12 @@ function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context :
 }
 
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement<T>(element: T, target: T, context: Context<T>): Array<T> {
+function buildTargetToElement<T>(element: T, target: T, context: EventContext<T>): Array<T> {
   var stack = [];
-  while (!context['isEqual'](element, target)) {
+  while (!context.isEqual(element, target)) {
     stack.unshift(target);
-    if (target && context['parentNode'](target)) {
-      target = context['parentNode'](target);
+    if (target && context.parentNode(target)) {
+      target = context.parentNode(target);
     } else {
       return stack;
     }
@@ -82,7 +82,7 @@ function delegateEvent <T>(
   stack: Array<T>,
   parentStack: Array<VTree<T>>,
   debug: boolean,
-  context: Context<T>,
+  context: EventContext<T>,
 ): void {
   /* base case, not found */
   if (!stack.length) {
@@ -100,7 +100,7 @@ function delegateEvent <T>(
     for (var c in obj['children']) {
       var child = obj['children'][c];
       if (child['type'] === 'vcomp') continue;
-      if (context['isEqual'](child['domRef'], stack[1])) {
+      if (context.isEqual(child['domRef'], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
       }

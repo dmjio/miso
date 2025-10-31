@@ -1,8 +1,8 @@
-import { Context, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
+import { DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
-export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, context: Context<T>): void {
+export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, context: DrawingContext<T>): void {
   if (!currentObj && !newObj) return;
   else if (!currentObj && newObj) create(newObj, parent, context);
   else if (!newObj) destroy(currentObj, parent, context);
@@ -15,7 +15,7 @@ export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, conte
   }
 }
 // replace everything function
-function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : Context<T>): void {
+function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
   // step1 : prepare to delete, unmount things
   callBeforeDestroyedRecursive(c);
   // ^ this will unmount sub components before we replace the child
@@ -34,7 +34,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : Context<T>): 
 }
 
 // destroy vtext, vnode, vcomp
-function destroy<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
+function destroy<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
   callBeforeDestroyedRecursive(obj);
   // step 2: destroy
@@ -43,7 +43,7 @@ function destroy<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
   callDestroyedRecursive(obj);
 }
 
-function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, context: Context<T>): void {
+function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // bail out on easy vtext case
   if (c['type'] === 'vtext') {
     if (c['text'] !== n['text']) {
@@ -101,7 +101,7 @@ function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
 }
 
 // ** </> recursive calls to hooks
-export function callCreated<T>(obj: VTree<T>, context: Context<T>): void {
+export function callCreated<T>(obj: VTree<T>, context: DrawingContext<T>): void {
   if (obj['onCreated']) obj['onCreated'](obj['domRef']);
   if (obj['type'] === 'vcomp') mountComponent(obj, context);
 }
@@ -110,7 +110,7 @@ export function callBeforeCreated<T>(obj: VTree<T>): void {
   if (obj['onBeforeCreated']) obj['onBeforeCreated']();
 }
 
-export function populate<T>(c: VTree<T>, n: VTree<T>, context: Context<T>): void {
+export function populate<T>(c: VTree<T>, n: VTree<T>, context: DrawingContext<T>): void {
   if (n['type'] !== 'vtext') {
     if (!c) c = vnode({});
     diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg', context);
@@ -122,7 +122,7 @@ export function populate<T>(c: VTree<T>, n: VTree<T>, context: Context<T>): void
   }
 }
 
-function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSvg: boolean, context: Context<T>): void {
+function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSvg: boolean, context: DrawingContext<T>): void {
   var newProp;
   /* Is current prop in new prop list? */
   for (const c in cProps) {
@@ -170,11 +170,11 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
   }
 }
 
-function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: Context<T>): void {
+function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: DrawingContext<T>): void {
   context['setInlineStyle'](cCss, nCss, node);
 }
 
-function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: Context<T>): void {
+function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingContext<T>): void {
   if (c['shouldSync'] && n['shouldSync']) {
     syncChildren(c.children, n.children, parent, context);
   } else {
@@ -188,7 +188,7 @@ function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: Context<T
   }
 }
 
-function populateDomRef<T>(obj: VTree<T>, context: Context<T>): void {
+function populateDomRef<T>(obj: VTree<T>, context: DrawingContext<T>): void {
   if (obj['ns'] === 'svg') {
     (obj['domRef'] as T) = context['createElementNS']('http://www.w3.org/2000/svg', obj['tag']);
   } else if (obj['ns'] === 'mathml') {
@@ -199,7 +199,7 @@ function populateDomRef<T>(obj: VTree<T>, context: Context<T>): void {
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement<T>(obj: VTree<T>, context: Context<T>, attach: (e: T) => void): void {
+function createElement<T>(obj: VTree<T>, context: DrawingContext<T>, attach: (e: T) => void): void {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
   callCreated(obj, context);
@@ -222,7 +222,7 @@ function unmountComponent<T>(obj: VTree<T>): void {
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
-function mountComponent<T>(obj: VComp<T>, context: Context<T>): void {
+function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
   // ^ we have to set this before 'mount()' is called, since `diff` requires it.
   if (obj['onBeforeMounted']) obj['onBeforeMounted']();
   // Call 'onBeforeMounted' before calling 'mount'
@@ -235,7 +235,7 @@ function mountComponent<T>(obj: VComp<T>, context: Context<T>): void {
   });
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
-function create<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
+function create<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
   if (obj['type'] === 'vtext') {
     obj['domRef'] = context['createTextNode'](obj['text']);
     context['appendChild'](parent, obj['domRef']);
@@ -246,7 +246,7 @@ function create<T>(obj: VTree<T>, parent: T, context: Context<T>): void {
   }
 }
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
-function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: Context<T>): void {
+function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
   var oldFirstIndex: number = 0,
     newFirstIndex: number = 0,
     oldLastIndex: number = os.length - 1,

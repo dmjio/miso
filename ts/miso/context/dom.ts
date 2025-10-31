@@ -1,11 +1,26 @@
-import { Context, DOMRef } from '../types';
+import { DrawingContext, EventContext, HydrationContext, DOMRef } from '../types';
 
-const context : Context<DOMRef> = {
+export const eventContext : EventContext<DOMRef> = {
   addEventListener : (mount, event, listener, capture) => {
       mount.addEventListener(event, listener, capture);
   },
   removeEventListener : (mount, event, listener, capture) => {
       mount.removeEventListener(event, listener, capture);
+  },
+  isEqual: (x, y) => {
+    return x === y;
+  },
+  getTarget: (e : Event) => {
+    return e.target as DOMRef;
+  },
+  parentNode : (node) => {
+    return node.parentNode;
+  },
+};
+
+export const hydrationContext : HydrationContext<DOMRef> = {
+  getInlineStyle: (node, key) => {
+    return node.style[key];
   },
   firstChild : (node) => {
     return node.firstChild;
@@ -13,9 +28,23 @@ const context : Context<DOMRef> = {
   lastChild : (node) => {
     return node.lastChild;
   },
-  parentNode : (node) => {
-    return node.parentNode;
+  getAttribute: (node, key) => {
+      if (key === 'class') return node.className;
+      if (key in node) return node[key];
+      return node.getAttribute(key);
   },
+  getTag: (node) => {
+    return node.nodeName;
+  },
+  getTextContent: (node) => {
+    return node.textContent;
+  },
+  children: (node) => {
+    return node.childNodes as any;
+  },
+};
+
+export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node) => {
     return node.nextSibling;
   },
@@ -23,7 +52,7 @@ const context : Context<DOMRef> = {
     return document.createTextNode(s) as any;
   },
   createElementNS : (ns, tag) => {
-    return document.createElementNS(ns, tag) as any;
+    return document.createElementNS(ns, tag) as DOMRef;
   },
   appendChild : (parent, child) => {
     return parent.appendChild (child);
@@ -46,9 +75,6 @@ const context : Context<DOMRef> = {
     p.insertBefore(b, tmp);
     return;
   },
-  querySelectorAll: (sel) => {
-    return document.querySelectorAll(sel) as any;
-  },
   setInlineStyle: (cCss, nCss, node) => {
      var result: string;
      /* is current attribute in new attribute list? */
@@ -68,16 +94,8 @@ const context : Context<DOMRef> = {
      }
     return;
   },
-  getInlineStyle: (node, key) => {
-    return node.style[key];
-  },
   setAttribute: (node, key, value) => {
     return node.setAttribute(key, value)
-  },
-  getAttribute: (node, key) => {
-      if (key === 'class') return node.className;
-      if (key in node) return node[key];
-      return node.getAttribute(key);
   },
   setAttributeNS: (node, ns, key, value) => {
     return node.setAttributeNS(ns, key, value)
@@ -89,29 +107,10 @@ const context : Context<DOMRef> = {
     node.textContent = text;
     return;
   },
-  getTag: (node) => {
-    return node.nodeName;
-  },
-  getTextContent: (node) => {
-    return node.textContent;
-  },
-  children: (node) => {
-    return node.childNodes as any;
-  },
-  isEqual: (x, y) => {
-    return x === y;
-  },
-  getTarget: (e : Event) => {
-    return e.target as DOMRef;
-  },
   flush: (): void => {
     return;
   },
-  getRoot : () => {
+  getRoot : function () {
     return document.body
   },
-};
-
-export {
-  context
 };

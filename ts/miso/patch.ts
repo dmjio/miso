@@ -1,4 +1,4 @@
-import { NodeId, ComponentId, EventCapture, Context } from './types';
+import { NodeId, ComponentId, EventCapture, DrawingContext, EventContext } from './types';
 import { delegate, undelegate } from './event';
 
 /* The components contains a mapping of all components and a read-only JSON rep. of its model
@@ -19,7 +19,7 @@ export type Component<T> = {
 export type NodeMap<T> = Record <number, T>;
 
 /* Function for patch application */
-export function patch<T> (context: Context<T>, patch: PATCH, components: Components<T>) {
+export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: Components<T>) {
     let map: NodeMap<T> = null;
     let newNode = null;
     withComponent (components, patch.componentId, (component) => {
@@ -74,7 +74,7 @@ export function patch<T> (context: Context<T>, patch: PATCH, components: Compone
 }
 
 /* addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void; */
-export function registerEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
+export function registerEvents<T> (context: EventContext<T>, e: EVENTS, components: Components<T>) {
   withComponent (components, e.componentId, (component) => {
       /* listener needs to be from context<T> */
       var listener = undefined;
@@ -83,7 +83,7 @@ export function registerEvents<T> (context: Context<T>, e: EVENTS, components: C
   });
 }
 
-export function unregisterEvents<T> (context: Context<T>, e: EVENTS, components: Components<T>) {
+export function unregisterEvents<T> (context: EventContext<T>, e: EVENTS, components: Components<T>) {
   withComponent (components, e.componentId, (component) => {
       /* listener needs to be from context<T> */
       var listener = undefined;
@@ -92,7 +92,7 @@ export function unregisterEvents<T> (context: Context<T>, e: EVENTS, components:
   });
 }
 
-export function hydrateModel<T> (context: Context<T>, o: HYDRATION, components: Components<T>) {
+export function hydrateModel<T> (o: HYDRATION, components: Components<T>) {
   withComponent (components, o.componentId, (component) => {
       component.model = o.model;
   });
