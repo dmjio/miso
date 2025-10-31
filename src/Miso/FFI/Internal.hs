@@ -675,7 +675,7 @@ shouldSync vnode = do
 -- only used when targeting platforms other than the browser (like mobile).
 flush :: JSM ()
 flush = do
-  context <- jsg "miso" ! "context"
+  context <- getDrawingContext
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
 newtype Image = Image JSVal

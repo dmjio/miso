@@ -25,7 +25,6 @@ globalThis['miso'] = {};
 globalThis['miso']['hydrationContext'] = hydrationContext;
 globalThis['miso']['eventContext'] = eventContext;
 globalThis['miso']['drawingContext'] = drawingContext;
-globalThis['miso']['flush'] = flush;
 globalThis['miso']['diff'] = diff;
 globalThis['miso']['hydrate'] = hydrate;
 globalThis['miso']['version'] = version;
