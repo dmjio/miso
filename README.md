@@ -696,7 +696,7 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 $ cachix use haskell-miso-cachix
 ```
 
-## Community 🫶
+## Community :octocat:
 
 - [Github](https://github.com/haskell-miso)
 - [Matrix](https://matrix.to/#/#haskell-miso:matrix.org)
