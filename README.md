@@ -12,10 +12,7 @@
 
 <p align="center">
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
-    <img src="https://img.shields.io/badge/matrix.org-miso-E01563.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
-  </a>
-  <a href="https://haskell.org">
-    <img src="https://img.shields.io/badge/language-Haskell-orange.svg?style=for-the-badge" alt="Haskell">
+    <img src="https://img.shields.io/badge/matrix.org-miso-FF4B33.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
   </a>
   <a href="https://haskell-miso-cachix.cachix.org">
     <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=for-the-badge" alt="Cachix">
