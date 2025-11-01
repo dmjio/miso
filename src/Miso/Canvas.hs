@@ -578,7 +578,7 @@ createImageData = call "createImageData"
 getImageData :: (Double, Double, Double, Double) -> Canvas ImageData
 getImageData = call "getImageData"
 -----------------------------------------------------------------------------
--- | [imageData.data[index] = 255](https://www.w3schools.com/tags/canvas_imagedata_data.asp)
+-- | [imageData.data\[index\] = 255](https://www.w3schools.com/tags/canvas_imagedata_data.asp)
 setImageData :: (ImageData, Int, Double) -> Canvas ()
 setImageData (imgData, index, value) = liftJSM $ do
    o <- imgData ! ("data" :: MisoString)
