@@ -21,8 +21,6 @@
 module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
-    -- Util
-  , htmlEncode
   ) where
 ----------------------------------------------------------------------------
 import           Data.Aeson
@@ -63,20 +61,6 @@ intercalate sep (x:xs) =
   , sep
   , intercalate sep xs
   ]
-----------------------------------------------------------------------------
--- |
--- HTML-encodes the given text.
---
--- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
--- &lt;a href=&quot;&quot;&gt;
-htmlEncode :: MisoString -> MisoString
-htmlEncode = MS.concatMap $ \case
-  '<' -> "&lt;"
-  '>' -> "&gt;"
-  '&' -> "&amp;"
-  '"' -> "&quot;"
-  '\'' -> "&#39;"
-  x -> MS.singleton x
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
