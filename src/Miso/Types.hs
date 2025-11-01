@@ -8,8 +8,9 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
@@ -66,6 +67,8 @@ module Miso.Types
   , node
   , text
   , text_
+  , textRaw
+  , htmlEncode
   -- *** MisoString
   , MisoString
   , toMisoString
@@ -379,7 +382,36 @@ node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
+#ifdef JASDDLE
 text = VText
+#else
+text = VText . htmlEncode
+#endif
+----------------------------------------------------------------------------
+-- | Create a new v'VText', not subject to HTML escaping.
+--
+-- Like 'text', except will not escape HTML when used on the server.
+--
+textRaw :: MisoString -> View model action
+textRaw = VText
+----------------------------------------------------------------------------
+-- |
+-- HTML-encodes the given text.
+--
+-- N.B. This only works when not using @jsaddle@, useful for escaping HTML
+-- when delivering on the server. Naive usage of 'text' will ensure this
+-- as well.
+--
+-- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
+-- &lt;a href=&quot;&quot;&gt;
+htmlEncode :: MisoString -> MisoString
+htmlEncode = MS.concatMap $ \case
+  '<' -> "&lt;"
+  '>' -> "&gt;"
+  '&' -> "&amp;"
+  '"' -> "&quot;"
+  '\'' -> "&#39;"
+  x -> MS.singleton x
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' containing concatenation of the given strings.
 text_ :: [MisoString] -> View model action

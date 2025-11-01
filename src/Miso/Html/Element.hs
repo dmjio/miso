@@ -575,7 +575,7 @@ style_ attrs rawText = node HTML "style" attrs [text rawText]
 --
 -- @'script_' [] "\</script\>"@
 script_ :: [Attribute action] -> MisoString -> View model action
-script_ attrs rawText = node HTML "script" attrs [text rawText]
+script_ attrs rawText = node HTML "script" attrs [textRaw rawText]
 -----------------------------------------------------------------------------
 -- | [\<doctype\>](https://developer.mozilla.org/en-US/docs/Glossary/Doctype)
 doctype_ :: View model action
