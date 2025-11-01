@@ -21,7 +21,7 @@ module Miso.Runtime
   ( -- * Internal functions
     initialize
   , freshComponentId
-  , runView
+  , buildVTree
   , renderStyles
   , renderScripts
   , Hydrate(..)
@@ -137,7 +137,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
-    vtree <- runView hydrate (view initializedModel) componentSink logLevel events
+    vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
@@ -166,7 +166,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- runView Draw (view updatedModel) componentSink logLevel events
+        newVTree <- buildVTree Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         global <# ("currentComponentId" :: MisoString) $ componentId
@@ -736,7 +736,7 @@ killSubscribers componentId =
 -- (creating sub components as detected), setting up
 -- infrastructure for each sub-component. During this
 -- process we go between the Haskell heap and the JS heap.
-runView
+buildVTree
   :: Eq model
   => Hydrate
   -> View model action
@@ -744,7 +744,7 @@ runView
   -> LogLevel
   -> Events
   -> JSM VTree
-runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
+buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.asyncCallback2 $ \domRef continuation -> do
       ComponentState {..} <- initialize hydrate app (pure domRef)
@@ -765,7 +765,7 @@ runView hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   pure (VTree vcomp)
-runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
+buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- toJSVal =<< procreate
@@ -776,14 +776,14 @@ runView hydrate (VNode ns tag attrs kids) snk logLevel events = do
     where
       procreate = do
         kidsViews <- forM kids $ \kid -> do
-          VTree (Object vtree) <- runView hydrate kid snk logLevel events
+          VTree (Object vtree) <- buildVTree hydrate kid snk logLevel events
           pure vtree
         setNextSibling kidsViews
         pure kidsViews
           where
             setNextSibling xs =
               zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
-runView _ (VText t) _ _ _ = do
+buildVTree _ (VText t) _ _ _ = do
   vtree <- create
   FFI.set "type" ("vtext" :: JSString) vtree
   FFI.set "ns" ("text" :: JSString) vtree
