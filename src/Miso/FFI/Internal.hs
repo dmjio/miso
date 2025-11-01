@@ -59,7 +59,9 @@ module Miso.FFI.Internal
    -- * DOM
    , getBody
    , getDocument
-   , getContext
+   , getDrawingContext
+   , getHydrationContext
+   , getEventContext
    , getElementById
    , diff
    , nextSibling
@@ -91,7 +93,6 @@ module Miso.FFI.Internal
    , CONTENT_TYPE(..)
    , shouldSync
    -- * Drawing
-   , requestAnimationFrame
    , setDrawingContext
    , flush
    -- * Image
@@ -377,7 +378,7 @@ eventJSON x y = do
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 getBody :: JSM JSVal
 getBody = do
-  ctx <- getContext
+  ctx <- getDrawingContext
   ctx # "getRoot" $ ()
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the document.
@@ -386,13 +387,29 @@ getBody = do
 getDocument :: JSM JSVal
 getDocument = jsg "document"
 -----------------------------------------------------------------------------
--- | Retrieves a reference to the context.
+-- | Retrieves a reference to the drawing context.
 --
 -- This is a miso specific construct used to provide an identical interface
 -- for both native (iOS / Android, etc.) and browser environments.
 --
-getContext :: JSM JSVal
-getContext = jsg "miso" ! "context"
+getDrawingContext :: JSM JSVal
+getDrawingContext = jsg "miso" ! "drawingContext"
+-----------------------------------------------------------------------------
+-- | Retrieves a reference to the event context.
+--
+-- This is a miso specific construct used to provide an identical interface
+-- for both native (iOS / Android, etc.) and browser environments.
+--
+getEventContext :: JSM JSVal
+getEventContext = jsg "miso" ! "eventContext"
+-----------------------------------------------------------------------------
+-- | Retrieves a reference to the hydration context.
+--
+-- This is a miso specific construct used to provide an identical interface
+-- for both native (iOS / Android, etc.) and browser environments.
+--
+getHydrationContext :: JSM JSVal
+getHydrationContext = jsg "miso" ! "hydrationContext"
 -----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
@@ -412,7 +429,7 @@ diff
   -> JSM ()
 diff (Object a) (Object b) c = do
   moduleMiso <- jsg "miso"
-  context <- getContext
+  context <- getDrawingContext
   void $ moduleMiso # "diff" $ [a,b,c,context]
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
@@ -430,7 +447,7 @@ jsStringToDouble = read . unpack
 -- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
 delegateEvent mountPoint events debug getVTree = do
-  ctx <- getContext
+  ctx <- getEventContext
   cb <- function handler
   delegate mountPoint events debug cb ctx
     where
@@ -441,7 +458,7 @@ delegateEvent mountPoint events debug getVTree = do
 -- | Deinitialize event delegation from a mount point.
 undelegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
 undelegateEvent mountPoint events debug getVTree = do
-  ctx <- getContext
+  ctx <- getEventContext
   cb <- function handler
   undelegate mountPoint events debug cb ctx
     where
@@ -471,9 +488,10 @@ undelegate mountPoint events debug callback ctx = do
 hydrate :: Bool -> JSVal -> JSVal -> JSM ()
 hydrate logLevel mountPoint vtree = void $ do
   ll <- toJSVal logLevel
-  context <- getContext
+  drawingContext <- getDrawingContext
+  hydrationContext <- getHydrationContext
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree, context]
+  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree, hydrationContext, drawingContext]
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -657,17 +675,9 @@ shouldSync vnode = do
 -- only used when targeting platforms other than the browser (like mobile).
 flush :: JSM ()
 flush = do
-  context <- jsg "miso" ! "context"
+  context <- getDrawingContext
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
--- | Calls 'requestAnimationFrame'
-requestAnimationFrame :: JSM () -> JSM ()
-requestAnimationFrame f = do
-  context <- jsg "miso" ! "context"
-  cb <- syncCallback f
-  void $ context # "requestAnimationFrame" $ [cb]
------------------------------------------------------------------------------
--- | [Image](https://developer.mozilla.org/en-US/docs/Web/API/Image)
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
