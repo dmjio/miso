@@ -79,11 +79,11 @@
 -- main :: IO ()
 -- main = print $ john '&' address '.~' Address "10012"
 --
--- > Person
--- >  { _name = "john"
--- >  , _age = 33
--- >  , _address = Address {_zipCode = "10012"}
--- >  }
+-- -- Person
+-- --  { _name = "john"
+-- --  , _age = 33
+-- --  , _address = Address {_zipCode = "10012"}
+-- --  }
 -- @
 --
 -- Example usage with miso's @Effect@ @Monad@
@@ -97,8 +97,9 @@
 -- data Action = AddOne | SubtractOne
 --
 -- updateModel :: Action -> Transition Model Action
--- updateModel AddOne      = value '+=' 1
--- updateModel SubtractOne = value '-=' 1
+-- updateModel = \\case 
+--   AddOne -> value '+=' 1
+--   SubtractOne -> value '-=' 1
 -- @
 ----------------------------------------------------------------------------
 module Miso.Lens
