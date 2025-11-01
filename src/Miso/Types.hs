@@ -54,8 +54,7 @@ module Miso.Types
   , (<--->)
   , (--->)
   , (<---)
-  -- ** Component
-  , mount
+  -- ** Component mounting
   , (+>)
   -- ** Utils
   , getMountPoint
@@ -255,32 +254,9 @@ data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
--- | Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'
+-- | The 'Component' 'mount' combinator
 --
--- @
---   mount (p_ [ key_ "component-1" ]) $ component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
--- @
---
--- @since 1.9.0.0
-mount
-  :: forall child model action a . Eq child
-  => ([View model a] -> View model a)
-  -> Component model child action
-  -> View model a
-mount mkNode vcomp =
-  case mkNode [] of
-    VNode ns tag attrs _ ->
-      VComp ns tag attrs
-        (SomeComponent vcomp)
-    VComp ns tag attrs vcomp_ ->
-      VComp ns tag attrs vcomp_
-    _ ->
-      error "Impossible: cannot mount on a Text node"
------------------------------------------------------------------------------
--- | Infix version of 'mount'.
---
--- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'
+-- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
 --   div_ [ key_ "component-id" ] +\> component model noop $ \\m ->
@@ -294,7 +270,15 @@ mount mkNode vcomp =
   -> Component model child action
   -> View model a
 infixr 0 +>
-(+>) = mount
+(+>) mkNode vcomp =
+  case mkNode [] of
+    VNode ns tag attrs _ ->
+      VComp ns tag attrs
+        (SomeComponent vcomp)
+    VComp ns tag attrs vcomp_ ->
+      VComp ns tag attrs vcomp_
+    _ ->
+      error "Impossible: cannot mount on a Text node"
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS
