@@ -866,8 +866,10 @@ renderScripts scripts =
       FFI.addScript True src
     ImportMap importMap -> do
       o <- create
+      imports <- create
       forM_ importMap $ \(k,v) ->
-        FFI.set k v o
+        FFI.set k v imports
+      FFI.set "imports" imports o
       FFI.addScriptImportMap
         =<< fromJSValUnchecked
         =<< (jsg @MisoString "JSON" # ("stringify" :: MisoString) $ [o])
