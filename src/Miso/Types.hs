@@ -254,7 +254,7 @@ data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
--- | The 'Component' 'mount' combinator
+-- | The t'Miso.Types.Component' mounting combinator
 --
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --

@@ -394,6 +394,13 @@ call name arg = do
   liftJSM $ fromJSValUnchecked =<< do
     ctx # name $ arg
 -----------------------------------------------------------------------------
+-- | Property setter specialized to t'Canvas'.
+--
+-- @
+-- globalCompositeOperation :: CompositeOperation -> Canvas ()
+-- globalCompositeOperation = set "globalCompositeOperation"
+-- @
+--
 set :: MakeArgs args => MisoString -> args -> Canvas ()
 set name arg = do
   ctx <- ask
