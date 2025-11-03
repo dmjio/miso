@@ -98,7 +98,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ initial model
-#ifndef JSADDLE
+#ifdef SSR
   , hydrateModel :: Maybe (IO model)
 #else
   , hydrateModel :: Maybe (JSM model)
@@ -382,10 +382,10 @@ node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
-#ifdef JASDDLE
-text = VText
-#else
+#ifdef SSR
 text = VText . htmlEncode
+#else
+text = VText
 #endif
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
