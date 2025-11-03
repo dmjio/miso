@@ -43,9 +43,9 @@ common cpp
     cpp-options:
       -DPRODUCTION
 
-  if flag(jsaddle)
+  if flag(ssr)
     cpp-options:
-      -DJSADDLE
+      -DSSR
 
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
@@ -86,14 +86,14 @@ flag production
     Uses miso's production quality JS (miso.prod.js).
     This is built from calling "bun build --production"
 
-flag jsaddle
+flag ssr
   manual:
     True
   default:
-    True
+    False
   description:
-    Used to indicate if jsaddle should be used. Defaults to true.
-    Disable when performing hydration / server rendering of Html using ToHtml.
+    Used to indicate if SSR (server-side rendering) is being used. Defaults to false.
+    Enable when performing hydration / server rendering of Html using ToHtml.
 
 flag template-haskell
   manual:

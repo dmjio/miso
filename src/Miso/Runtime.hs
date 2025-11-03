@@ -127,10 +127,10 @@ initialize hydrate Component {..} getComponentMountPoint = do
   initializedModel <-
     case (hydrate, hydrateModel) of
       (Hydrate, Just action) ->
-#ifdef JSADDLE
-         action
-#else
+#ifdef SSR
          liftIO action
+#else
+         action
 #endif
       _ -> pure model
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles

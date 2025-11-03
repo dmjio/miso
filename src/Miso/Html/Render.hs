@@ -28,7 +28,7 @@ import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
-#ifndef JSADDLE
+#ifdef SSR
 import Control.Exception (SomeException, catch)
 import System.IO.Unsafe (unsafePerformIO)
 #endif
@@ -84,10 +84,10 @@ renderBuilder (VNode _ tag attrs children) =
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
     where
-#ifdef JSADDLE
-      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
-#else
+#ifdef SSR
       vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
+#else
+      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
@@ -136,7 +136,7 @@ toHtmlFromJSON Null         = "null"
 toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
 toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
 -----------------------------------------------------------------------------
-#ifndef JSADDLE
+#ifdef SSR
 -- | Used for server-side model hydration, internally only in 'renderView'.
 --
 -- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
