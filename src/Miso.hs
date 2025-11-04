@@ -108,6 +108,10 @@ import           Miso.Util
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
 -- To get an IO action that starts the application, use 'run' on the result of this function.
+--
+-- @
+-- main = run (miso (\uri -> ..))
+-- @
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
@@ -116,6 +120,10 @@ miso f = withJS $ do
 -- | Synonym 'startApp' to 'startComponent'.
 --
 -- To get an IO action that starts the application, use 'run' on the result of this function.
+--
+-- @
+-- main = run (startApp app)
+-- @
 startApp :: Eq model => App model action -> JSM ()
 startApp = startComponent
 -----------------------------------------------------------------------------
@@ -134,6 +142,10 @@ startComponent vcomp = withJS (initComponent vcomp)
 -- This is necessary for native support.
 --
 -- To get an IO action that starts the application, use 'run' on the result of this function.
+--
+-- @
+-- main = run (renderApp "my-context" app)
+-- @
 renderApp
   :: Eq model
   => MisoString
