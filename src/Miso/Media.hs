@@ -62,7 +62,7 @@ import           Miso.String
 newtype Media = Media JSVal
   deriving (ToJSVal)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_networkstate.asp
+-- | Possible values of [networkState](https://www.w3schools.com/tags/av_prop_networkstate.asp) property.
 data NetworkState
   = NETWORK_EMPTY
   | NETWORK_IDLE
@@ -70,7 +70,7 @@ data NetworkState
   | NETWORK_NO_SOURCE
   deriving (Show, Eq, Enum)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_readystate.asp
+-- | Possible values of [readyState](https://www.w3schools.com/tags/av_prop_readystate.asp) property.
 data ReadyState
   = HAVE_NOTHING
   | HAVE_METADATA
@@ -87,115 +87,137 @@ newAudio url = do
   FFI.set ("src" :: MisoString) url o
   pure (Media a)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_load.asp
+-- | The [load](https://www.w3schools.com/tags/av_met_load.asp) method
+-- re-loads the audio/video element.
 load :: Media -> JSM ()
 load (Media m) = void $ m # ("load" :: MisoString) $ ()
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_play.asp
+-- | The [play](https://www.w3schools.com/tags/av_met_play.asp) method starts
+-- playing the current audio or video.
 play :: Media -> JSM ()
 play (Media m) = void $ m # ("play" :: MisoString) $ ()
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_pause.asp
+-- | The [pause](https://www.w3schools.com/tags/av_met_pause.asp) method pauses
+-- the currently playing audio or video.
 pause :: Media -> JSM ()
 pause (Media a) = void $ a # ("pause" :: MisoString) $ ()
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_met_canplaytype.asp
+-- | The [canPlayType](https://www.w3schools.com/tags/av_met_canplaytype.asp)
+-- method checks if the browser can play the specified audio/video type.
 canPlayType :: Media -> JSM MisoString
 canPlayType (Media m) = do
   fromJSValUnchecked =<< do
     m # ("canPlayType" :: MisoString) $ ()
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_autoplay.asp
+-- | The [autoplay](https://www.w3schools.com/tags/av_prop_autoplay.asp) property
+-- sets or returns whether the audio/video should start playing as soon as it is loaded.
 autoplay :: Media -> JSM Bool
 autoplay (Media m) = fromJSValUnchecked =<< m ! ("autoplay" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_controls.asp
+-- | The [controls](https://www.w3schools.com/tags/av_prop_controls.asp)
+-- property sets or returns whether the browser should display standard audio/video controls.
 controls :: Media -> JSM Bool
 controls (Media m) = fromJSValUnchecked =<< m ! ("controls" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_currentsrc.asp
+-- | The [currentSrc](https://www.w3schools.com/tags/av_prop_currentsrc.asp)
+-- property returns the URL of the current audio/video.
 currentSrc :: Media -> JSM MisoString
 currentSrc (Media m) = fromJSValUnchecked =<< m ! ("currentSrc" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_currenttime.asp
+-- | The [currentTime](https://www.w3schools.com/tags/av_prop_currenttime.asp)
+-- property sets or returns the current position (in seconds) of the audio/video playback.
 currentTime :: Media -> JSM Double
 currentTime (Media m) = fromJSValUnchecked =<< m ! ("currentTime" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_defaultmuted.asp
+-- | The [defaultMuted](https://www.w3schools.com/tags/av_prop_defaultmuted.asp)
+-- property sets or returns whether the audio/video should be muted by default.
 defaultMuted :: Media -> JSM Bool
 defaultMuted (Media m) = fromJSValUnchecked =<< m ! ("defaultMuted" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_defaultplaybackrate.asp
+-- | The [defaultPlaybackRate](https://www.w3schools.com/tags/av_prop_defaultplaybackrate.asp)
+-- property sets or returns the default playback speed of the audio/video.
 defaultPlaybackRate :: Media -> JSM Double
 defaultPlaybackRate (Media m) = fromJSValUnchecked =<< m ! ("defaultPlaybackRate" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_duration.asp
+-- | The [duration](https://www.w3schools.com/tags/av_prop_duration.asp) property
+-- returns the length of the current audio/video, in seconds.
 duration :: Media -> JSM Double
 duration (Media m) = fromJSValUnchecked =<< m ! ("duration" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_ended.asp
+-- | The [ended](https://www.w3schools.com/tags/av_prop_ended.asp) property
+-- returns whether the playback of the audio/video has ended.
 ended :: Media -> JSM Bool
 ended (Media m) = fromJSValUnchecked =<< m ! ("ended" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_loop.asp
+-- | The [loop](https://www.w3schools.com/tags/av_prop_loop.asp) property
+-- sets or returns whether the audio/video should start playing over again when it is finished.
 loop :: Media -> JSM Bool
 loop (Media m) = fromJSValUnchecked =<< m ! ("loop" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_mediagroup.asp
+-- | The [mediaGroup](https://www.w3schools.com/tags/av_prop_mediagroup.asp) property
+-- sets or returns the name of the media group the audio/video is a part of.
 mediaGroup :: Media -> JSM MisoString
 mediaGroup (Media m) = fromJSValUnchecked =<< m ! ("mediaGroup" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_muted.asp
+-- | The [muted](https://www.w3schools.com/tags/av_prop_muted.asp) property
+-- sets or returns whether the audio/video should be muted (sound turned off).
 muted :: Media -> JSM Bool
 muted (Media m) = fromJSValUnchecked =<< m ! ("muted" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_networkstate.asp
+-- | The [networkState](https://www.w3schools.com/tags/av_prop_networkstate.asp)
+-- property returns the current network state (activity) of the audio/video.
 networkState :: Media -> JSM NetworkState
 networkState (Media m) = do
   number <- fromJSValUnchecked =<< m ! ("networkState" :: MisoString)
   pure (toEnum number)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_paused.asp
+-- | The [paused](https://www.w3schools.com/tags/av_prop_paused.asp) property
+-- returns whether the audio/video is paused.
 paused :: Media -> JSM Bool
 paused (Media a) = fromJSValUnchecked =<< a ! ("paused" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_playbackRate.asp
+-- | The [playbackRate](https://www.w3schools.com/tags/av_prop_playbackRate.asp)
+-- property sets or returns the current playback speed of the audio/video.
 playbackRate :: Media -> JSM Double
 playbackRate (Media a) = fromJSValUnchecked =<< a ! ("playbackRate" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster
+-- | The [poster](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/poster) property
+-- of the HTMLVideoElement interface is a string that reflects the URL for an image
+-- to be shown while no video data is available.
 --
 -- Specific to videos.
 poster :: Media -> JSM MisoString
 poster (Media a) = fromJSValUnchecked =<< a ! ("poster" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_preload.asp
+-- | The [preload](https://www.w3schools.com/tags/av_prop_preload.asp) property
+-- sets or returns whether the audio/video should start loading as soon as the page loads.
 preload :: Media -> JSM MisoString
 preload (Media a) = fromJSValUnchecked =<< a ! ("preload" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_readyState.asp
+-- | The [readyState](https://www.w3schools.com/tags/av_prop_readyState.asp) property
+-- returns the current ready state of the audio/video.
 readyState :: Media -> JSM ReadyState
 readyState (Media a) = do
   number <- fromJSValUnchecked =<< a ! ("readyState" :: MisoString)
   pure (toEnum number)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_seeking.asp
+-- | The [seeking](https://www.w3schools.com/tags/av_prop_seeking.asp) property
+-- returns whether the user is currently seeking in the audio/video.
 seeking :: Media -> JSM Bool
 seeking (Media a) = fromJSValUnchecked =<< a ! ("seeking" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoHeight
---
--- Specific to videos.
+-- | The HTMLVideoElement interface's read-only [videoHeight](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoHeight)
+-- property indicates the intrinsic height of the video, expressed in CSS pixels.
 videoHeight :: Media -> JSM Int
 videoHeight (Media m) = fromJSValUnchecked =<< m ! ("videoHeight" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoWidth
---
--- Specific to videos.
+-- | The HTMLVideoElement interface's read-only [videoWidth](https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/videoWidth)
+-- property indicates the intrinsic width of the video, expressed in CSS pixels
 videoWidth :: Media -> JSM Int
 videoWidth (Media m) = fromJSValUnchecked =<< m ! ("videoWidth" :: MisoString)
 -----------------------------------------------------------------------------
--- | https://www.w3schools.com/tags/av_prop_volume.asp
+-- | The [volume](https://www.w3schools.com/tags/av_prop_volume.asp) property
+-- sets or returns the current volume of the audio/video.
 volume :: Media -> JSM Double
 volume (Media m) = fromJSValUnchecked =<< m ! ("volume" :: MisoString)
 -----------------------------------------------------------------------------
