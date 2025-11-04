@@ -29,12 +29,14 @@ import           Language.Javascript.JSaddle.WebSockets (debugWrapper, jsaddleOr
 #endif
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
--- | Entry point for a miso application
+-- | Entry point for a miso application.
+--
 -- When compiling with jsaddle on native platforms
 -- 'run' will start a web server for live reload
 -- of your miso application.
 --
 -- When compiling to WASM use 'jsaddle-wasm'.
+--
 -- When compiling to JS no special package is required (simply the 'id' function).
 -- JSM becomes a type synonym for IO
 run :: JSM () -> IO ()

@@ -552,14 +552,15 @@ link_ = flip (nodeHtml "link") []
 -- This takes the raw text to be put in the style tag.
 --
 -- That means that if any part of the text is not trusted there's
--- a potential CSS injection. Read more at
--- https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client-side_Testing/05-Testing_for_CSS_Injection
+-- a potential [CSS injection](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client-side_Testing/05-Testing_for_CSS_Injection).
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
 -- @
 -- style_ [] "\</style\>"
 -- @
+--
+-- You can use 'Miso.CSS.style_' as a safer anternative.
 style_ :: [Attribute action] -> MisoString -> View model action
 style_ attrs rawText = node HTML "style" attrs [text rawText]
 -----------------------------------------------------------------------------
