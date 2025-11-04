@@ -222,7 +222,7 @@ data ROOT
 instance Eq ROOT where _ == _ = True
 -----------------------------------------------------------------------------
 -- | A miso applicatoin is a top level t'Miso.Types.Component', which has no parent.
--- This is enforce by specializing the 'parent' type parameter to 'ROOT'.
+-- This is enforced by specializing the 'parent' type parameter to 'ROOT'.
 --
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
