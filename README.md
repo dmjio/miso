@@ -1,5 +1,3 @@
-
-
 <h1 align="center">miso</h1>
 
 <p align="center">
@@ -25,9 +23,9 @@
   </a>
 </p>
 
-## 
+##
 
-**Miso** is a small, production-ready, component-oriented, [reactive](https://github.com/haskell-miso/miso-reactive), [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web and [mobile](https://github.com/dmjio/miso-native) applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, 2D/3D Canvas (WebGL), Server-sent events ([SSE](https://github.com/haskell-miso/miso-sse)), [Websockets](https://github.com/haskell-miso/miso-websocket), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type. 
+**Miso** is a small, production-ready, component-oriented, [reactive](https://github.com/haskell-miso/miso-reactive), [isomorphic](http://nerds.airbnb.com/isomorphic-javascript-future-web-apps/) [Haskell](https://www.haskell.org/) front-end framework for quickly building highly interactive single-page web and [mobile](https://github.com/dmjio/miso-native) applications. It features a virtual-dom, recursive diffing / patching algorithm, attribute and property normalization, event delegation, event batching, SVG, 2D/3D Canvas (WebGL), Server-sent events ([SSE](https://github.com/haskell-miso/miso-sse)), [Websockets](https://github.com/haskell-miso/miso-websocket), type-safe [servant](https://haskell-servant.github.io/)-style routing and an extensible Subscription-based subsystem. Inspired by [Elm](http://elm-lang.org/) and [React](http://react.dev/). **Miso** is pure by default, but side effects can be introduced into the system via the `Effect` data type.
 
 **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
@@ -60,6 +58,7 @@
   - [Binary cache](#binary-cache)
 - [Community](#community-)
 - [Maintainers](#maintainers)
+- [Commercial](#commercial-)
 - [Contributing](#contributing)
 - [Contributors](#contributors-)
 - [Partnerships](#partnerships-)
@@ -701,6 +700,21 @@ $ cachix use haskell-miso-cachix
 ## Maintainers
 
 [@dmjio](https://github.com/dmjio)
+
+## Commercial 🚀
+
+Since it's launch, `miso` has been used in a variety of industries, including but not limited to:
+
+  - SF bay-area startups
+  - Quantitative finance
+  - Network security
+  - Defense research
+  - Academia
+  - Public sector
+  - Non-profit sector
+  - etc.
+
+The largest `miso` installation known was ~200,000 lines of `miso` code with 10,000+ users.
 
 ## Contributing
 
