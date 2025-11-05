@@ -211,7 +211,7 @@ updateModel = \case
 viewModel :: Model -> View Model Action
 viewModel x =
   H.div_
-    [ H.className "counter"
+    [ P.className "counter"
     ]
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
     , text $ ms (x ^. counter)
