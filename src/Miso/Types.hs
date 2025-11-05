@@ -221,7 +221,9 @@ data ROOT
 -- | 'Eq' instance for 'ROOT'
 instance Eq ROOT where _ == _ = True
 -----------------------------------------------------------------------------
--- | For top-level t'Miso.Types.Component', 'ROOT' must always be specified for parent.
+-- | A miso applicatoin is a top level t'Miso.Types.Component', which has no parent.
+-- This is enforced by specializing the 'parent' type parameter to 'ROOT'.
+--
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------
 -- | A specialized version of 'Effect' that can be used in the type of application 'update' function,

@@ -423,7 +423,6 @@ sheet_ = StyleSheet
 --
 -- @style@ attributes not contained in @attrs@ will be deleted.
 --
--- > import qualified Data.Map as M
 -- > div_ [ style_ [ backgroundColor "red" ] [ ]
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/CSS>
