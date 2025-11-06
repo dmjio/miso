@@ -737,15 +737,15 @@ nextSibling domRef = domRef ! "nextSibling"
 previousSibling :: JSVal -> JSM JSVal
 previousSibling domRef = domRef ! "previousSibling"
 -----------------------------------------------------------------------------
--- | When working with /<input>/ of type="file", this is useful for
+-- | When working with @\<input type="file"\>@, this is useful for
 -- extracting out the selected files.
 --
 -- @
---   update (InputClicked inputElement) = withSink $ \sink -> do
+--   update (InputClicked inputElement) = withSink $ \\sink -> do
 --      files_ <- files inputElement
---      forM_ files_ $ \file -> sink (Upload file)
+--      forM_ files_ $ \\file -> sink (Upload file)
 --   update (Upload file) = do
---      fetch "https://localhost:8080/upload" "POST" (Just file) []
+--      fetch \"https://localhost:8080\/upload\" \"POST\" (Just file) []
 --        Successful Errorful
 -- @
 --

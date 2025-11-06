@@ -214,7 +214,12 @@ pointerEvents = M.fromList
   ]
 -----------------------------------------------------------------------------
 -- | Audio video events
--- For use with the /<audio/> and /<video/> tags.
+-- For use with the @<audio>@ and @<video>@ tags.
+--
+-- @
+-- myApp :: 'Miso.Types.App' Model Action
+-- myApp = ('Miso.Types.component' model update view){ events = 'defaultEvents' <> 'mediaEvents' }
+-- @
 mediaEvents :: Events
 mediaEvents = M.fromList
   [ ("abort", True)
