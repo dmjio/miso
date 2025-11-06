@@ -705,11 +705,11 @@ $ cachix use haskell-miso-cachix
 
 Since it's launch, `miso` has been used in a variety of industries, including but not limited to:
 
-  - SF bay-area startups
   - Quantitative finance
   - Network security
   - Defense research
   - Academia
+  - SaaS companies 
   - Public sector
   - Non-profit sector
   - etc.
