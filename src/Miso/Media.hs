@@ -16,8 +16,6 @@ module Miso.Media
   , NetworkState (..)
   , ReadyState   (..)
   , Stream
-  -- *** Constructors
-  , newAudio
   -- *** Methods
   , canPlayType
   , load
@@ -52,19 +50,18 @@ module Miso.Media
 -----------------------------------------------------------------------------
 import           Control.Monad
 import           Language.Javascript.JSaddle hiding (new)
-import qualified Language.Javascript.JSaddle as JS
 -----------------------------------------------------------------------------
-import qualified Miso.FFI.Internal as FFI
 import           Miso.Event
 import           Miso.String
 -----------------------------------------------------------------------------
--- | Type that abstracts over [Audio](https://www.w3schools.com/jsref/dom_obj_audio.asp) or [Video](https://www.w3schools.com/jsref/dom_obj_video.asp) media objects
+-- | Type that abstracts over [Audio](https://www.w3schools.com/jsref/dom_obj_audio.asp)
+-- or [Video](https://www.w3schools.com/jsref/dom_obj_video.asp) media objects.
 --
--- To get a value of this type you can use 'newAudio' or create an audio/video element
--- or do something like
+-- You can create them in the View using 'Miso.Html.Element.audio_' or 'Miso.Html.Element.video_'.
+-- To get the corresponding t'Media' object from the DOM, you can use
 --
 -- @
--- media <- 'Media' \<$\> 'Miso.FFI.getElementById' "myVideo"
+-- media <- t'Media' \<$\> 'Miso.FFI.getElementById' "myVideo"
 -- @
 newtype Media = Media JSVal
   deriving (ToJSVal)
@@ -85,14 +82,6 @@ data ReadyState
   | HAVE_FUTURE_DATA
   | HAVE_ENOUGH_DATA
   deriving (Show, Eq, Enum)
------------------------------------------------------------------------------
--- | Smart constructor for an audio @Media@ with 'Miso.Html.Property.src_' element
-newAudio :: MisoString -> JSM Media
-newAudio url = do
-  a <- JS.new (jsg ("Audio" :: MisoString)) ([] :: [MisoString])
-  o <- makeObject a
-  FFI.set ("src" :: MisoString) url o
-  pure (Media a)
 -----------------------------------------------------------------------------
 -- | The [load](https://www.w3schools.com/tags/av_met_load.asp) method
 -- re-loads the audio/video element.
