@@ -61,7 +61,6 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 context.flush ();
                 break;
             case "insertBefore":
-                /* dmj: swap it in the component environemnt too */
                 context.insertBefore(component.nodes[patch.parent], component.nodes[patch.node], component.nodes[patch.child]);
                 break;
             case "swapDOMRefs":
@@ -69,7 +68,6 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent]);
                 break;
             case "replaceChild":
-                /* dmj: swap it in the component environemnt too */
                 context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
                 delete component.nodes[patch.current];
                 break;

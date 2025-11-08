@@ -223,7 +223,6 @@ function unmountComponent<T>(obj: VTree<T>): void {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
-  // ^ we have to set this before 'mount()' is called, since `diff` requires it.
   if (obj.onBeforeMounted) obj.onBeforeMounted();
   // Call 'onBeforeMounted' before calling 'mount'
   obj.mount(obj.domRef, (componentId: ComponentId, componentTree: VNode<T>) => {
