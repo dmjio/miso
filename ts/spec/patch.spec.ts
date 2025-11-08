@@ -11,6 +11,8 @@ import {
     CreateTextNode,
     AppendChild,
     RemoveChild,
+    InsertBefore,
+    ReplaceChild,
     SetTextContent,
     SetAttribute,
     SetAttributeNS,
@@ -721,15 +723,11 @@ describe ('Patch tests', () => {
         patch (domContext, expectedChild2, components);
         patch (domContext, insertBeforeOp, components);
         expect(component.nodes[nodeId].childNodes.length).toEqual(2);
-        expect(document.body.firstChild.children[1].previousSibling.nodeName).toEqual('IMG');
+        expect(document.body.firstChild.childNodes[1].previousSibling.nodeName).toEqual('IMG');
 
         patch (domContext, removeChildOp, components);
         expect(component.nodes[nodeIdChild1]).toEqual(undefined);
         expect(component.nodes[nodeIdChild2].nodeName).toEqual('IMG');
     });
-
-   // test('Should process the swapDOMRefs patch', () => {
-   //     expect(2+2).toEqual(4);
-   // });
 
 });

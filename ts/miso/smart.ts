@@ -24,7 +24,7 @@ export function vnode<T>(props: Partial<VNode<T>>): VNode<T> {
      By setting 'shouldSync' manually in  'vnode' you are implicitly
      saying all keys exist and should be synched.
    */
-  if (!node['shouldSync']) node['shouldSync'] = shouldSync<T>(node);
+  if (!node.shouldSync) node.shouldSync = shouldSync<T>(node);
   return node;
 }
 

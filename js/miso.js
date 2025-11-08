@@ -179,8 +179,8 @@ function eventSourceClose(eventSource) {
 // ts/miso/smart.ts
 function vnode(props) {
   var node = union(mkVNode(), props);
-  if (!node["shouldSync"])
-    node["shouldSync"] = shouldSync(node);
+  if (!node.shouldSync)
+    node.shouldSync = shouldSync(node);
   return node;
 }
 function union(obj, updates) {
@@ -247,8 +247,8 @@ function diffNodes(c, n, parent, context) {
     n.domRef = c.domRef;
     return;
   }
-  if (n["tag"] === c["tag"] && n["key"] === c["key"] && n["type"] === c["type"]) {
-    n["domRef"] = c["domRef"];
+  if (n["tag"] === c["tag"] && n.key === c.key && n.type === c.type) {
+    n.domRef = c.domRef;
     populate(c, n, context);
   } else {
     replace(c, n, parent, context);
@@ -263,7 +263,7 @@ function callDestroyedRecursive(obj) {
 function callDestroyed(obj) {
   if (obj["onDestroyed"])
     obj["onDestroyed"]();
-  if (obj["type"] === "vcomp")
+  if (obj.type === "vcomp")
     unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
@@ -271,7 +271,7 @@ function callBeforeDestroyed(obj) {
     obj["onBeforeDestroyed"]();
 }
 function callBeforeDestroyedRecursive(obj) {
-  if (obj["type"] === "vcomp" && obj["onBeforeUnmounted"]) {
+  if (obj.type === "vcomp" && obj["onBeforeUnmounted"]) {
     obj["onBeforeUnmounted"]();
   }
   callBeforeDestroyed(obj);
@@ -293,9 +293,9 @@ function populate(c, n, context) {
   if (n.type !== "vtext") {
     if (!c)
       c = vnode({});
-    diffProps(c["props"], n["props"], n["domRef"], n["ns"] === "svg", context);
-    diffCss(c["css"], n["css"], n["domRef"], context);
-    if (n["type"] === "vnode") {
+    diffProps(c["props"], n["props"], n.domRef, n.ns === "svg", context);
+    diffCss(c["css"], n["css"], n.domRef, context);
+    if (n.type === "vnode") {
       diffChildren(c, n, n.domRef, context);
     }
     drawCanvas(n);
@@ -374,13 +374,13 @@ function createElement(obj, context, attach) {
 }
 function drawCanvas(obj) {
   if (obj.tag === "canvas" && "draw" in obj) {
-    obj.draw(obj["domRef"]);
+    obj.draw(obj.domRef);
   }
 }
 function unmountComponent(obj) {
   if ("onUnmounted" in obj)
-    obj["onUnmounted"](obj["domRef"]);
-  obj["unmount"](obj["domRef"]);
+    obj["onUnmounted"](obj.domRef);
+  obj["unmount"](obj.domRef);
 }
 function mountComponent(obj, context) {
   if (obj.onBeforeMounted)
@@ -478,16 +478,16 @@ function swap(os, l, r) {
 // ts/miso/event.ts
 function delegate(mount, events, getVTree, debug, context) {
   for (const event of events) {
-    context.addEventListener(mount, event["name"], function(e) {
+    context.addEventListener(mount, event.name, function(e) {
       listener(e, mount, getVTree, debug, context);
-    }, event["capture"]);
+    }, event.capture);
   }
 }
 function undelegate(mount, events, getVTree, debug, context) {
   for (const event of events) {
-    context.removeEventListener(mount, event["name"], function(e) {
+    context.removeEventListener(mount, event.name, function(e) {
       listener(e, mount, getVTree, debug, context);
-    }, event["capture"]);
+    }, event.capture);
   }
 }
 function listener(e, mount, getVTree, debug, context) {
@@ -540,12 +540,12 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
   } else {
     const eventObj = obj["events"][event.type];
     if (eventObj) {
-      const options = eventObj["options"];
-      if (options["preventDefault"]) {
+      const options = eventObj.options;
+      if (options.preventDefault) {
         event.preventDefault();
       }
-      eventObj["runEvent"](event, stack[0]);
-      if (!options["stopPropagation"]) {
+      eventObj.runEvent(event, stack[0]);
+      if (!options.stopPropagation) {
         propagateWhileAble(parentStack, event);
       }
     } else {
@@ -556,11 +556,11 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
 function propagateWhileAble(parentStack, event) {
   for (const vtree of parentStack) {
     if (vtree["events"][event.type]) {
-      const eventObj = vtree["events"][event.type], options = eventObj["options"];
-      if (options["preventDefault"])
+      const eventObj = vtree["events"][event.type], options = eventObj.options;
+      if (options.preventDefault)
         event.preventDefault();
-      eventObj["runEvent"](event, vtree["domRef"]);
-      if (options["stopPropagation"]) {
+      eventObj.runEvent(event, vtree.domRef);
+      if (options.stopPropagation) {
         event.stopPropagation();
         break;
       }
@@ -611,8 +611,8 @@ function getAllPropertyNames(obj) {
 function collapseSiblingTextNodes(vs) {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1;ix < vs.length; ix++) {
-    if (adjusted[ax]["type"] === "vtext" && vs[ix]["type"] === "vtext") {
-      adjusted[ax]["text"] += vs[ix]["text"];
+    if (adjusted[ax].type === "vtext" && vs[ix].type === "vtext") {
+      adjusted[ax].text += vs[ix].text;
       continue;
     }
     adjusted[++ax] = vs[ix];
@@ -621,21 +621,21 @@ function collapseSiblingTextNodes(vs) {
 }
 function preamble(mountPoint, context) {
   var mountChildIdx = 0, node;
-  var root = context["getRoot"]();
+  var root = context.getRoot();
   if (!mountPoint) {
     if (root.childNodes.length > 0) {
       node = root.firstChild;
     } else {
-      node = root.appendChild(context["createElement"]("div"));
+      node = root.appendChild(context.createElement("div"));
     }
   } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(context["createElement"]("div"));
+    node = mountPoint.appendChild(context.createElement("div"));
   } else {
     while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === 3 || mountPoint.childNodes[mountChildIdx].localName === "script")) {
       mountChildIdx++;
     }
     if (!mountPoint.childNodes[mountChildIdx]) {
-      node = root.appendChild(context["createElement"]("div"));
+      node = root.appendChild(context.createElement("div"));
     } else {
       node = mountPoint.childNodes[mountChildIdx];
     }
@@ -648,9 +648,9 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
-    while (context["firstChild"](node))
-      drawingContext.removeChild(node, context["lastChild"](node));
-    vtree["domRef"] = node;
+    while (context.firstChild(node))
+      drawingContext.removeChild(node, context.lastChild(node));
+    vtree.domRef = node;
     populate(null, vtree, drawingContext);
     return false;
   } else {
@@ -686,57 +686,57 @@ function integrityCheck(vtree, context, drawingContext) {
   return check(true, vtree, context, drawingContext);
 }
 function check(result, vtree, context, drawingContext) {
-  if (vtree["type"] == "vtext") {
-    if (context["getTag"](vtree["domRef"]) !== "#text") {
+  if (vtree.type == "vtext") {
+    if (context.getTag(vtree.domRef) !== "#text") {
       console.warn("VText domRef not a TEXT_NODE", vtree);
       result = false;
-    } else if (vtree["text"] !== context["getTextContent"](vtree["domRef"])) {
+    } else if (vtree.text !== context.getTextContent(vtree.domRef)) {
       console.warn("VText node content differs", vtree);
       result = false;
     }
   } else {
-    if (vtree["tag"].toUpperCase() !== context["getTag"](vtree["domRef"]).toUpperCase()) {
-      console.warn("Integrity check failed, tags differ", vtree["tag"].toUpperCase(), context["getTag"](vtree["domRef"]));
+    if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
+      console.warn("Integrity check failed, tags differ", vtree.tag.toUpperCase(), context.getTag(vtree.domRef));
       result = false;
     }
-    if ("children" in vtree && vtree["children"].length !== context["children"](vtree["domRef"]).length) {
-      console.warn("Integrity check failed, children lengths differ", vtree, vtree.children, context["children"](vtree["domRef"]));
+    if ("children" in vtree && vtree.children.length !== context.children(vtree.domRef).length) {
+      console.warn("Integrity check failed, children lengths differ", vtree, vtree.children, context.children(vtree.domRef));
       result = false;
     }
-    for (const key in vtree["props"]) {
+    for (const key in vtree.props) {
       if (key === "href" || key === "src") {
-        const absolute = window.location.origin + "/" + vtree["props"][key], url = context["getAttribute"](vtree["domRef"], key), relative = vtree["props"][key];
+        const absolute = window.location.origin + "/" + vtree.props[key], url = context.getAttribute(vtree.domRef, key), relative = vtree.props[key];
         if (absolute !== url && relative !== url && relative + "/" !== url && absolute + "/" !== url) {
-          console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
+          console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
           result = false;
         }
       } else if (key === "height" || key === "width") {
-        if (parseFloat(vtree["props"][key]) !== parseFloat(context["getAttribute"](vtree["domRef"], key))) {
-          console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
+        if (parseFloat(vtree.props[key]) !== parseFloat(context.getAttribute(vtree.domRef, key))) {
+          console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
           result = false;
         }
       } else if (key === "class" || key === "className") {
-        if (vtree["props"][key] !== context["getAttribute"](vtree["domRef"], "class")) {
-          console.warn("Property class differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], "class"));
+        if (vtree.props[key] !== context.getAttribute(vtree.domRef, "class")) {
+          console.warn("Property class differs", vtree.props[key], context.getAttribute(vtree.domRef, "class"));
           result = false;
         }
-      } else if (vtree["props"][key] !== context["getAttribute"](vtree["domRef"], key)) {
-        console.warn("Property " + key + " differs", vtree["props"][key], context["getAttribute"](vtree["domRef"], key));
+      } else if (vtree.props[key] !== context.getAttribute(vtree.domRef, key)) {
+        console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
         result = false;
       }
     }
-    for (const key in vtree["css"]) {
+    for (const key in vtree.css) {
       if (key === "color") {
-        if (parseColor(context["getInlineStyle"](vtree["domRef"], key)).toString() !== parseColor(vtree["css"][key]).toString()) {
-          console.warn("Style " + key + " differs", vtree["css"][key], context["getInlineStyle"](vtree["domRef"], key));
+        if (parseColor(context.getInlineStyle(vtree.domRef, key)).toString() !== parseColor(vtree.css[key]).toString()) {
+          console.warn("Style " + key + " differs", vtree.css[key], context.getInlineStyle(vtree.domRef, key));
           result = false;
         }
-      } else if (vtree["css"][key] !== context["getInlineStyle"](vtree["domRef"], key)) {
-        console.warn("Style " + key + " differs", vtree["css"][key], context["getInlineStyle"](vtree["domRef"], key));
+      } else if (vtree.css[key] !== context.getInlineStyle(vtree.domRef, key)) {
+        console.warn("Style " + key + " differs", vtree.css[key], context.getInlineStyle(vtree.domRef, key));
         result = false;
       }
     }
-    for (const child of vtree["children"]) {
+    for (const child of vtree.children) {
       const value = check(result, child, context, drawingContext);
       result = result && value;
     }
@@ -744,33 +744,33 @@ function check(result, vtree, context, drawingContext) {
   return result;
 }
 function walk(logLevel, vtree, node, context, drawingContext) {
-  switch (vtree["type"]) {
+  switch (vtree.type) {
     case "vcomp":
-      vtree["domRef"] = node;
+      vtree.domRef = node;
       callCreated(vtree, drawingContext);
       break;
     case "vtext":
-      vtree["domRef"] = node;
+      vtree.domRef = node;
       break;
     default:
-      vtree["domRef"] = node;
-      vtree["children"] = collapseSiblingTextNodes(vtree["children"]);
+      vtree.domRef = node;
+      vtree.children = collapseSiblingTextNodes(vtree.children);
       callCreated(vtree, drawingContext);
-      for (var i = 0;i < vtree["children"].length; i++) {
-        const vdomChild = vtree["children"][i];
+      for (var i = 0;i < vtree.children.length; i++) {
+        const vdomChild = vtree.children[i];
         const domChild = node.childNodes[i];
         if (!domChild) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        switch (vdomChild["type"]) {
+        switch (vdomChild.type) {
           case "vtext":
             if (domChild.nodeType !== 3) {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;
             }
-            if (vdomChild["text"] === domChild.textContent) {
-              vdomChild["domRef"] = context["children"](node)[i];
+            if (vdomChild.text === domChild.textContent) {
+              vdomChild.domRef = context.children(node)[i];
             } else {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;
@@ -779,7 +779,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           default:
             if (domChild.nodeType !== 1)
               return false;
-            vdomChild["domRef"] = domChild;
+            vdomChild.domRef = domChild;
             walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
@@ -904,35 +904,35 @@ var drawingContext = {
 
 // ts/index.ts
 globalThis["miso"] = {};
-globalThis["miso"]["hydrationContext"] = hydrationContext;
-globalThis["miso"]["eventContext"] = eventContext;
-globalThis["miso"]["drawingContext"] = drawingContext;
-globalThis["miso"]["diff"] = diff;
-globalThis["miso"]["hydrate"] = hydrate;
-globalThis["miso"]["version"] = version;
-globalThis["miso"]["delegate"] = delegate;
-globalThis["miso"]["callBlur"] = callBlur;
-globalThis["miso"]["callFocus"] = callFocus;
-globalThis["miso"]["eventJSON"] = eventJSON;
-globalThis["miso"]["fetchCore"] = fetchCore;
-globalThis["miso"]["eventSourceConnect"] = eventSourceConnect;
-globalThis["miso"]["eventSourceClose"] = eventSourceClose;
-globalThis["miso"]["websocketConnect"] = websocketConnect;
-globalThis["miso"]["websocketClose"] = websocketClose;
-globalThis["miso"]["websocketSend"] = websocketSend;
-globalThis["miso"]["undelegate"] = undelegate;
-globalThis["miso"]["getParentComponentId"] = getParentComponentId;
-globalThis["miso"]["shouldSync"] = shouldSync;
-globalThis["miso"]["integrityCheck"] = integrityCheck;
-globalThis["miso"]["setDrawingContext"] = function(name) {
+globalThis["miso"].hydrationContext = hydrationContext;
+globalThis["miso"].eventContext = eventContext;
+globalThis["miso"].drawingContext = drawingContext;
+globalThis["miso"].diff = diff;
+globalThis["miso"].hydrate = hydrate;
+globalThis["miso"].version = version;
+globalThis["miso"].delegate = delegate;
+globalThis["miso"].callBlur = callBlur;
+globalThis["miso"].callFocus = callFocus;
+globalThis["miso"].eventJSON = eventJSON;
+globalThis["miso"].fetchCore = fetchCore;
+globalThis["miso"].eventSourceConnect = eventSourceConnect;
+globalThis["miso"].eventSourceClose = eventSourceClose;
+globalThis["miso"].websocketConnect = websocketConnect;
+globalThis["miso"].websocketClose = websocketClose;
+globalThis["miso"].websocketSend = websocketSend;
+globalThis["miso"].undelegate = undelegate;
+globalThis["miso"].getParentComponentId = getParentComponentId;
+globalThis["miso"].shouldSync = shouldSync;
+globalThis["miso"].integrityCheck = integrityCheck;
+globalThis["miso"].setDrawingContext = function(name) {
   const drawing = globalThis[name]["drawingContext"];
   const events = globalThis[name]["eventContext"];
   if (!drawing) {
-    console.warn("Custom rendering engine is not defined", name, globalThis[name]["drawingContext"]);
-  } else if (!events) {
-    console.warn("Custom event delegation is not defined", name, globalThis[name]["eventContext"]);
-  } else {
-    globalThis["miso"]["drawingContext"] = drawing;
-    globalThis["miso"]["eventContext"] = events;
+    console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
   }
+  if (!events) {
+    console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
+  }
+  globalThis["miso"]["drawingContext"] = drawing;
+  globalThis["miso"]["eventContext"] = events;
 };

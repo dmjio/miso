@@ -1,5 +1,15 @@
 import { DrawingContext, VNode, NodeId, CSS } from '../types';
 
+/*
+
+  This file is to setup a custom context for use w/ preact-based setup (like Lynx requires).
+  We used this in patch.spec.ts to test patch accumulation + application in the diff.
+
+  This is used to provide testing for miso-lynx, or other patch-based architectures
+  that us miso's diff.
+
+*/
+
 import {
   PATCH,
   CreateTextNode,

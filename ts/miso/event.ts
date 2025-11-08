@@ -12,11 +12,11 @@ export function delegate<T> (
   for (const event of events) {
    context.addEventListener (
       mount,
-      event['name'],
+      event.name,
       function (e: Event) {
         listener(e, mount, getVTree, debug, context);
       },
-      event['capture'],
+      event.capture,
     );
   }
 }
@@ -31,11 +31,11 @@ export function undelegate<T> (
   for (const event of events) {
     context.removeEventListener (
       mount,
-      event['name'],
+      event.name,
       function (e: Event) {
         listener(e, mount, getVTree, debug, context);
       },
-      event['capture'],
+      event.capture,
     );
   }
 }
@@ -109,13 +109,13 @@ function delegateEvent <T>(
   else {
     const eventObj: EventObject<T> = obj['events'][event.type];
     if (eventObj) {
-      const options: Options = eventObj['options'];
-      if (options['preventDefault']) {
+      const options: Options = eventObj.options;
+      if (options.preventDefault) {
         event.preventDefault();
       }
       /* dmj: stack[0] represents the domRef that raised the event */
-      eventObj['runEvent'](event, stack[0]);
-      if (!options['stopPropagation']) {
+      eventObj.runEvent(event, stack[0]);
+      if (!options.stopPropagation) {
         propagateWhileAble(parentStack, event);
       }
     } else {
@@ -129,10 +129,10 @@ function propagateWhileAble<T>(parentStack: Array<VTree<T>>, event: Event): void
   for (const vtree of parentStack) {
     if (vtree['events'][event.type]) {
       const eventObj = vtree['events'][event.type],
-        options = eventObj['options'];
-      if (options['preventDefault']) event.preventDefault();
-      eventObj['runEvent'](event, vtree['domRef']);
-      if (options['stopPropagation']) {
+        options = eventObj.options;
+      if (options.preventDefault) event.preventDefault();
+      eventObj.runEvent(event, vtree.domRef);
+      if (options.stopPropagation) {
         event.stopPropagation();
         break;
       }

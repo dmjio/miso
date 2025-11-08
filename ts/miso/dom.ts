@@ -62,10 +62,10 @@ function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingConte
   // check children
   if (
     n['tag'] === c['tag'] &&
-    n['key'] === c['key'] &&
-    n['type'] === c['type']
+    n.key === c.key &&
+    n.type === c.type
   ) {
-    n['domRef'] = c['domRef'];
+    n.domRef = c.domRef;
     // dmj: we will diff properties on 'vcomp' as well
     populate(c, n, context);
   } else {
@@ -83,7 +83,7 @@ function callDestroyedRecursive<T>(obj: VTree<T>): void {
 
 function callDestroyed<T>(obj: VTree<T>): void {
   if (obj['onDestroyed']) obj['onDestroyed']();
-  if (obj['type'] === 'vcomp') unmountComponent(obj);
+  if (obj.type === 'vcomp') unmountComponent(obj);
 }
 
 function callBeforeDestroyed<T>(obj: VTree<T>): void {
@@ -91,7 +91,7 @@ function callBeforeDestroyed<T>(obj: VTree<T>): void {
 }
 
 function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
-  if (obj['type'] === 'vcomp' && obj['onBeforeUnmounted']) {
+  if (obj.type === 'vcomp' && obj['onBeforeUnmounted']) {
     obj['onBeforeUnmounted']();
   }
   callBeforeDestroyed(obj);
@@ -113,9 +113,9 @@ export function callBeforeCreated<T>(obj: VTree<T>): void {
 export function populate<T>(c: VTree<T>, n: VTree<T>, context: DrawingContext<T>): void {
   if (n.type !== 'vtext') {
     if (!c) c = vnode({});
-    diffProps(c['props'], n['props'], n['domRef'], n['ns'] === 'svg', context);
-    diffCss(c['css'], n['css'], n['domRef'], context);
-    if (n['type'] === 'vnode') {
+    diffProps(c['props'], n['props'], n.domRef, n.ns === 'svg', context);
+    diffCss(c['css'], n['css'], n.domRef, context);
+    if (n.type === 'vnode') {
       diffChildren<T>(c as VNode<T>, n as VNode<T>, n.domRef, context);
     }
     drawCanvas(n as VNode<T>);
@@ -210,14 +210,14 @@ function createElement<T>(obj: VTree<T>, context: DrawingContext<T>, attach: (e:
 /* draw the canvas if you need to */
 function drawCanvas<T> (obj: VNode<T>) {
   if (obj.tag === 'canvas' && 'draw' in obj) {
-    obj.draw(obj['domRef']);
+    obj.draw(obj.domRef);
   }
 }
 
 // unmount components
 function unmountComponent<T>(obj: VTree<T>): void {
-  if ('onUnmounted' in obj) obj['onUnmounted'](obj['domRef']);
-  obj['unmount'](obj['domRef']);
+  if ('onUnmounted' in obj) obj['onUnmounted'](obj.domRef);
+  obj['unmount'](obj.domRef);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -278,7 +278,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
     if (oldFirstIndex > oldLastIndex) {
       diff(null, nFirst, parent, context);
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
-         Otherwise, it will insert node['domRef'] before oLast['domRef'].
+         Otherwise, it will insert node.domRef before oLast.domRef.
       */
       context.insertBefore(parent, nFirst.domRef, oFirst ? oFirst.domRef : null);
       os.splice(newFirstIndex, 0, nFirst);
