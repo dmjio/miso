@@ -70,6 +70,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
             case "replaceChild":
                 /* dmj: swap it in the component environemnt too */
                 context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
+                delete component.nodes[patch.current];
                 break;
 
         }
