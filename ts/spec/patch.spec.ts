@@ -638,12 +638,98 @@ describe ('Patch tests', () => {
 
     });
 
-   // test('Should process the swapDOMRefs patch', () => {
-    //     expect(2+2).toEqual(4);
-    // });
 
-    // test('Should process the insertBefore patch', () => {
-    //     expect(2+2).toEqual(4);
-    // });
+  test('Should process the InsertBefore patch', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        const nodeIdChild1 : number = 2;
+        const nodeIdChild2 : number = 3;
+        const componentId : number = 0;
+        let firstTree : VNode<NodeId> = vnode({ tag: 'p', shouldSync: true, children: [vnode({ tag: 'a', key: '1' }) ]});
+        let secondTree : VNode<NodeId> = vnode({ tag: 'p', shouldSync: true, children: [vnode({ tag: 'img', key: '2' }) ]});
+        let patchContext : DrawingContext<NodeId> = patchDrawingContext;
+        let domContext : DrawingContext<DOMRef> = drawingContext;
+        let parent : NodeId = { nodeId: parentNodeId };
+        diff (null, firstTree, parent, patchContext);
+        firstTree.shouldSync = true;
+        secondTree.shouldSync = true;
+        diff (firstTree, secondTree, parent, patchContext);
+        let expected : CreateElement = {
+            tag: 'p',
+            type : "createElement",
+            componentId,
+            nodeId,
+        };
+        let appendOperation1 : AppendChild = {
+            type : "appendChild",
+            parent: parentNodeId,
+            child: nodeId,
+            componentId
+        };
+        let expectedChild1 : CreateElement = {
+            type : "createElement",
+            tag: 'a',
+            nodeId: nodeIdChild1,
+            componentId,
+        };
+        let appendOperation2 : AppendChild = {
+            type : "appendChild",
+            parent: nodeId,
+            child: nodeIdChild1,
+            componentId
+        };
+        let expectedChild2 : CreateElement = {
+            type : "createElement",
+            tag: 'img',
+            nodeId: nodeIdChild2,
+            componentId,
+        };
+        let insertBeforeOp : InsertBefore = {
+            type : "insertBefore",
+            parent: nodeId,
+            node: nodeIdChild2,
+            child: nodeIdChild1,
+            componentId
+        };
+        let removeChildOp : RemoveChild = {
+            type : "removeChild",
+            componentId,
+            child: nodeIdChild1,
+            parent: nodeId
+        };
+        // dmj: check diff produces patch object
+      expect(getPatches()).toEqual([expected, appendOperation1, expectedChild1, appendOperation2, expectedChild2, insertBeforeOp, removeChildOp ]);
+        let components : Components<DOMRef> = {};
+        let component : Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+        };
+        components[componentId] = component;
+        patch (domContext, expected, components);
+        patch (domContext, appendOperation1, components);
+        patch (domContext, expectedChild1, components);
+        patch (domContext, appendOperation2, components);
+        // dmj: check the DOM and component env. to see if the patch applied, and env updated
+        expect(document.body.childNodes.length).toEqual(1); //dmj: appended
+        expect(component.nodes[nodeId].nodeName).toEqual('P');
+        expect(component.nodes[nodeId].childNodes[0].nodeName).toEqual('A');
+        expect(component.nodes[nodeId]['nodeId']).toEqual(nodeId);
+        expect(component.nodes[nodeId].childNodes.length).toEqual(1);
+        expect(component.nodes[nodeIdChild1].nodeName).toEqual('A');
+        expect(component.nodes[nodeIdChild1]['nodeId']).toEqual(nodeIdChild1);
+
+        patch (domContext, expectedChild2, components);
+        patch (domContext, insertBeforeOp, components);
+        expect(component.nodes[nodeId].childNodes.length).toEqual(2);
+        expect(document.body.firstChild.children[1].previousSibling.nodeName).toEqual('IMG');
+
+        patch (domContext, removeChildOp, components);
+        expect(component.nodes[nodeIdChild1]).toEqual(undefined);
+        expect(component.nodes[nodeIdChild2].nodeName).toEqual('IMG');
+    });
+
+   // test('Should process the swapDOMRefs patch', () => {
+   //     expect(2+2).toEqual(4);
+   // });
 
 });

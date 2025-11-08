@@ -116,7 +116,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return { nodeId };
   },
-  insertBefore : (parent: NodeId, child: NodeId, node: NodeId) => {
+  insertBefore : (parent: NodeId, node: NodeId, child: NodeId) => {
     const componentId: number = getComponentId ();
     let patch : InsertBefore = {
         type: "insertBefore",
