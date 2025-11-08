@@ -1,5 +1,5 @@
 /* core type for virtual DOM */
-export type Props = Record<string, string>;
+export type Props = Record<string, any>;
 export type CSS = Record<string, string>;
 export type Events<T> = Record<string, EventObject<T>>;
 
@@ -25,6 +25,7 @@ export type VComp<T> = {
   onUnmounted: (domRef: T) => void;
   mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
+  nextSibling: VNode<T>;
 };
 
 export type VNode<T> = {
@@ -43,6 +44,7 @@ export type VNode<T> = {
   onCreated: () => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
+  nextSibling: VNode<T>;
 };
 
 export type VText<T> = {
@@ -82,35 +84,35 @@ export type EventCapture = {
 export type EventContext<T> = {
   addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
   removeEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
-  isEqual : (n1, n2) => boolean;
+  isEqual : (n1: T, n2: T) => boolean;
   getTarget : (e: Event) => T;
-  parentNode : (e) => T;
+  parentNode : (node: T) => T;
 }
 
 export type HydrationContext<T> = {
   getTextContent : (node) => string;
   children : (e: T) => Array<T>;
   getInlineStyle : (e, string) => string;
-  getTag : (e) => string;
-  firstChild : (e) => T;
-  lastChild : (e) => T;
-  getAttribute : (e: T, string) => string;
+  getTag : (e: T) => string;
+  firstChild : (node: T) => T;
+  lastChild : (node: T) => T;
+  getAttribute : (node: T, string) => string;
 };
 
 export type DrawingContext<T> = {
-  nextSibling : (node) => T;
+  nextSibling : (node: VNode<T>) => T;
   createTextNode : (s: string) => T;
-  createElementNS : (ns : string, tag : string) => T;
-  appendChild : (parent : T, child : T) => void;
-  replaceChild : (parent : T, n : T, o : T) => void;
-  removeChild : (parent, child) => void;
-  createElement : (name : string) => T;
-  insertBefore : (parent : T, child, node) => void;
+  createElementNS : (ns: string, tag : string) => T;
+  appendChild : (parent: T, child: T) => void;
+  replaceChild : (parent: T, n: T, o: T) => void;
+  removeChild : (parent: T, child: T) => void;
+  createElement : (name: string) => T;
+  insertBefore : (parent: T, child: T, node: T) => void;
   swapDOMRefs: (a: T, b: T, p: T) => void;
-  setAttribute : (node, key, value) => void;
-  removeAttribute : (node, key) => void;
-  setAttributeNS : (node, ns, key, value) => void;
-  setTextContent : (node, text) => void;
+  setAttribute : (node: T, key: string, value : any) => void;
+  removeAttribute : (node: T, key :string) => void;
+  setAttributeNS : (node: T, ns: string, key: string, value: any) => void;
+  setTextContent : (node: T, text: string) => void;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
   flush : () => void;
   getRoot : () => T;

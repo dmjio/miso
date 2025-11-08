@@ -1,81 +1,81 @@
-import { DrawingContext, EventContext, HydrationContext, DOMRef } from '../types';
+import { CSS, DrawingContext, VNode, EventContext, HydrationContext, DOMRef } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
-  addEventListener : (mount, event, listener, capture) => {
+  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
       mount.addEventListener(event, listener, capture);
   },
-  removeEventListener : (mount, event, listener, capture) => {
+  removeEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
       mount.removeEventListener(event, listener, capture);
   },
-  isEqual: (x, y) => {
+  isEqual: (x: DOMRef, y: DOMRef) : boolean => {
     return x === y;
   },
-  getTarget: (e : Event) => {
+  getTarget: (e : Event) : DOMRef => {
     return e.target as DOMRef;
   },
-  parentNode : (node) => {
-    return node.parentNode;
+  parentNode : (node: DOMRef): DOMRef => {
+    return node.parentNode as DOMRef;
   },
 };
 
 export const hydrationContext : HydrationContext<DOMRef> = {
-  getInlineStyle: (node, key) => {
+  getInlineStyle: (node: DOMRef, key: string) => {
     return node.style[key];
   },
-  firstChild : (node) => {
-    return node.firstChild;
+  firstChild : (node: DOMRef) => {
+    return node.firstChild as DOMRef;
   },
-  lastChild : (node) => {
-    return node.lastChild;
+  lastChild : (node : DOMRef) => {
+    return node.lastChild as DOMRef;
   },
-  getAttribute: (node, key) => {
+  getAttribute: (node: DOMRef, key: string) => {
       if (key === 'class') return node.className;
       if (key in node) return node[key];
       return node.getAttribute(key);
   },
-  getTag: (node) => {
+  getTag: (node: DOMRef) => {
     return node.nodeName;
   },
-  getTextContent: (node) => {
+  getTextContent: (node: DOMRef) => {
     return node.textContent;
   },
-  children: (node) => {
+  children: (node: DOMRef) => {
     return node.childNodes as any;
   },
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
-  nextSibling : (node) => {
-    return node.nextSibling;
+  nextSibling : (node: VNode<DOMRef>) => {
+    return node.domRef.nextSibling as DOMRef;
   },
-  createTextNode : (s) => {
-    return document.createTextNode(s) as any;
+  createTextNode : (s: string) => {
+    return document.createTextNode(s) as any; // dmj: hrm
   },
-  createElementNS : (ns, tag) => {
+  createElementNS : (ns: string, tag: string) => {
     return document.createElementNS(ns, tag) as DOMRef;
   },
-  appendChild : (parent, child) => {
+  appendChild : (parent: DOMRef, child: DOMRef) => {
     return parent.appendChild (child);
   },
-  replaceChild : (parent, n, old) => {
+  replaceChild : (parent: DOMRef, n: DOMRef, old: DOMRef) => {
     return parent.replaceChild (n, old);
   },
-  removeChild : (parent, child) => {
+  removeChild : (parent: DOMRef, child: DOMRef) => {
     return parent.removeChild (child);
   },
-  createElement : (tag) => {
+  createElement : (tag: string) => {
     return document.createElement(tag);
   },
-  insertBefore : (parent, child, node) => {
+  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs : (a, b, p) => {
+  swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef) => {
     const tmp = a.nextSibling;
     p.insertBefore(a, b);
     p.insertBefore(b, tmp);
     return;
   },
-  setInlineStyle: (cCss, nCss, node) => {
+  setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {
      var result: string;
      /* is current attribute in new attribute list? */
      for (const key in cCss) {
@@ -94,16 +94,16 @@ export const drawingContext : DrawingContext<DOMRef> = {
      }
     return;
   },
-  setAttribute: (node, key, value) => {
+  setAttribute: (node: DOMRef, key: string, value: any) => {
     return node.setAttribute(key, value)
   },
-  setAttributeNS: (node, ns, key, value) => {
+  setAttributeNS: (node: DOMRef, ns: string, key: string, value: any) => {
     return node.setAttributeNS(ns, key, value)
   },
-  removeAttribute : (node, key) => {
+  removeAttribute : (node: DOMRef, key: string) => {
     return node.removeAttribute(key);
   },
-  setTextContent : (node, text) => {
+  setTextContent : (node: DOMRef, text: string) => {
     node.textContent = text;
     return;
   },

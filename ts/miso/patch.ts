@@ -1,7 +1,8 @@
-import { NodeId, ComponentId, EventCapture, DrawingContext, EventContext } from './types';
+import { ComponentId, EventCapture, DrawingContext, EventContext } from './types';
 import { delegate, undelegate } from './event';
 
-/* The components contains a mapping of all components and a read-only JSON rep. of its model
+/* The components contains a mapping from componentId to component and a read-only JSON rep. of its model
+
    N.B. no virtual DOM is present here.
 
    'T' is abstract over any render tree Node type.
@@ -12,7 +13,6 @@ export type Components<T> = Record <ComponentId, Component<T>>;
 export type Component<T> = {
   model: Object; /* read-only access to the model, model must be serializable */
   nodes: Record<number, T>;
-  mountPoint: T; /* acts as parent */
 };
 
 /* Convenience table to allow O(1) application of DOM references */
@@ -20,55 +20,58 @@ export type NodeMap<T> = Record <number, T>;
 
 /* Function for patch application */
 export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: Components<T>) {
-    let map: NodeMap<T> = null;
-    let newNode = null;
     withComponent (components, patch.componentId, (component) => {
-        map = component.nodeMap;
         switch (patch.type) {
-            case "insertBefore":
-                newNode = context.insertBefore(map[patch.parent.nodeId], map[patch.child.nodeId], map[patch.node.nodeId]);
-                newNode['nodeId'] = patch.node.nodeId;
-                map['nodeId'] = newNode;
-                break;
-            case "swapDOMRefs":
-                context.swapDOMRefs (map[patch.nodeA.nodeId], map[patch.nodeB.nodeId], map[patch.parent.nodeId]);
-                break;
             case "createElement":
-                newNode = context.createElement (patch.tag);
-                newNode['nodeId'] = patch.nodeId;
-                map['nodeId'] = newNode;
+                component.nodes[patch.nodeId] = context.createElement (patch.tag);
+                component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
                 break;
             case "createElementNS":
-                newNode = context.createElementNS (patch.namespace, patch.tag);
-                newNode['nodeId'] = patch.nodeId;
-                map['nodeId'] = newNode;
+                component.nodes[patch.nodeId] = context.createElementNS (patch.namespace, patch.tag);
+                component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
+                break;
                 break;
             case "createTextNode":
-                newNode = context.createTextNode (patch.text);
-                newNode['nodeId'] = patch.nodeId;
-                map['nodeId'] = newNode;
+                component.nodes[patch.nodeId] = context.createTextNode (patch.text);
+                component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
                 break;
             case "setAttribute":
-                context.setAttribute (map[patch.nodeId], patch.key, patch.value);
+                context.setAttribute (component.nodes[patch.nodeId], patch.key, patch.value);
+                break;
+            case "setAttributeNS":
+                context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value);
+                break;
+            case "removeChild":
+                context.removeChild (component.nodes[patch.parent], component.nodes[patch.child]);
                 break;
             case "appendChild":
-                context.appendChild (map[patch.parent], map[patch.child]);
-                break;
-            case "replaceChild":
-                context.replaceChild (map[patch.parent], map[patch.new], map[patch.current]);
-                break;
-            case "removeAttribute":
-                context.removeAttribute (map[patch.nodeId], patch.key);
-                break;
-            case "setTextContent":
-                context.setTextContent (map[patch.nodeId], patch.text);
+                context.appendChild (component.nodes[patch.parent], component.nodes[patch.child]);
                 break;
             case "setInlineStyle":
-                context.setInlineStyle (patch.current, patch.new, map[patch.nodeId]);
+                context.setInlineStyle (patch.current, patch.new, component.nodes[patch.nodeId]);
+                break;
+            case "removeAttribute":
+                context.removeAttribute (component.nodes[patch.nodeId], patch.key);
+                break;
+            case "setTextContent":
+                context.setTextContent (component.nodes[patch.nodeId], patch.text);
                 break;
             case "flush":
                 context.flush ();
                 break;
+            case "insertBefore":
+                /* dmj: swap it in the component environemnt too */
+                context.insertBefore(component.nodes[patch.parent], component.nodes[patch.child], component.nodes[patch.node]);
+                break;
+            case "swapDOMRefs":
+                /* dmj: swap it in the component environemnt too */
+                context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent]);
+                break;
+            case "replaceChild":
+                /* dmj: swap it in the component environemnt too */
+                context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
+                break;
+
         }
     });
 }
@@ -117,7 +120,9 @@ export type PATCH
   | CreateElementNS
   | CreateTextNode
   | SetAttribute
+  | SetAttributeNS
   | AppendChild
+  | RemoveChild
   | ReplaceChild
   | RemoveAttribute
   | SetTextContent
@@ -144,16 +149,16 @@ export type PATCHES = {
 export type InsertBefore = {
   componentId: ComponentId,
   type: "insertBefore",
-  parent: NodeId,
-  child: NodeId,
-  node: NodeId
+  parent: number,
+  child: number,
+  node: number
 };
 
 export type SwapDOMRefs = {
   componentId: ComponentId,
-  nodeA: NodeId,
-  nodeB: NodeId,
-  parent: NodeId,
+  nodeA: number,
+  nodeB: number,
+  parent: number,
   type: "swapDOMRefs"
 };
 
@@ -182,9 +187,18 @@ export type CreateTextNode = {
 export type SetAttribute = {
   componentId: ComponentId,
   key: string,
-  value: string,
+  value: any,
   nodeId: number,
   type: "setAttribute"
+};
+
+export type SetAttributeNS = {
+  componentId: ComponentId,
+  key: string,
+  value: any,
+  nodeId: number,
+  type: "setAttributeNS",
+  namespace: string,
 };
 
 export type AppendChild = {
@@ -200,6 +214,13 @@ export type ReplaceChild = {
   new: number,
   parent: number,
   type: "replaceChild"
+};
+
+export type RemoveChild = {
+  componentId: ComponentId,
+  parent: number,
+  child: number,
+  type: "removeChild"
 };
 
 export type RemoveAttribute = {

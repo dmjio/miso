@@ -1,119 +1,211 @@
-import { DrawingContext, EventContext, NodeId } from '../types';
+import { DrawingContext, VNode, NodeId, CSS } from '../types';
 
-globalThis['componentId'] = 0;
-globalThis['nodeId'] = 0;
+import {
+  PATCH,
+  CreateTextNode,
+  CreateElement,
+  InsertBefore,
+  CreateElementNS,
+  SetAttribute,
+  SetAttributeNS,
+  SwapDOMRefs,
+  AppendChild,
+  RemoveChild,
+  ReplaceChild,
+  SetTextContent,
+  SetInlineStyle,
+  RemoveAttribute,
+} from '../patch';
 
-export const eventContext : EventContext<NodeId> = {
-  addEventListener : (mount, event, listener, capture) => {
-      // mount.addEventListener(event, listener, capture);
-      // dmj: not used in dom.ts (abstract out into event context)
-  },
-  removeEventListener : (mount, event, listener, capture) => {
-      // mount.removeEventListener(event, listener, capture);
-      // dmj: not used in dom.ts (abstract out into event context)
-  },
-  isEqual: function (x, y) {
-    return x.nodeId === y.nodeId;
-    // return x === y;
-  },
-  getTarget: function (e) {
-    // return e.target as DOMRef;
-    // retrieve the root
-    return { nodeId : globalThis['nodeId']++ }
-  },
-  parentNode: function (node) {
-    // return e.target as DOMRef;
-    // retrieve the root
-    return { nodeId : 10 } //TODO: flesh
-  },
+export function addPatch (componentId: number, patch : PATCH) : void {
+  globalThis['patches'].push(patch);
 }
 
-export const drawingContext : DrawingContext<NodeId> = {
-  nextSibling : (node) => {
-    // return node.nextSibling;
-    // dmj: this is important for use in
-    return null; // TODO
+export function getPatches () : Array<PATCH> {
+  return globalThis['patches'];
+}
+
+export function nextNodeId () : number {
+  return globalThis['nodeId']++;
+}
+
+export function getComponentId () : number {
+  return globalThis['componentId'];
+}
+
+// dmj: Helper for Object equality.
+function areEqual(a: Object, b: Object) {
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every(key => a[key] === b[key]);
+}
+
+export const patchDrawingContext : DrawingContext<NodeId> = {
+  nextSibling : (node: VNode<NodeId>) => {
+    return node.nextSibling.domRef;
   },
-  createTextNode : (value) => {
-      // return document.createTextNode(s) as any;
-      // var next = globalThis['nodeId']++;
-      return { // TODO
-        nodeId: 0,
-        text : value
+  createTextNode : (value : string) => {
+      const nodeId: number = nextNodeId ();
+      const componentId: number = getComponentId ();
+      let patch : CreateTextNode = {
+          text : value,
+          type : "createTextNode",
+          nodeId,
+          componentId
       };
+      addPatch(componentId, patch);
+      return { nodeId };
   },
-  createElementNS : (ns, tag) => {
-      var next = globalThis['nodeId']++;
-      // dmj: use the typescript types here
-      // add to patch object for transfer to main thread
-      return {
-        nodeId: next,
-        ns : ns,
-        tag: tag,
-      };
+  createElementNS : (ns: string, tag: string) => {
+    const nodeId: number = nextNodeId ();
+    const componentId: number = getComponentId ();
+    let patch : CreateElementNS = {
+        type : "createElementNS",
+        namespace: ns,
+        nodeId,
+        componentId,
+        tag
+    };
+    addPatch(componentId, patch);
+    return { nodeId };
   },
-  appendChild : (parent, child) => {
-    // return parent.appendChild (child);
+  appendChild : (parent: NodeId, child: NodeId) => {
+    const componentId: number = getComponentId ();
+    let patch : AppendChild = {
+        type: "appendChild",
+        parent: parent.nodeId,
+        child: child.nodeId,
+        componentId
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  replaceChild : (parent, n, old) => {
-    // return parent.replaceChild (n, old);
+  replaceChild : (parent: NodeId, n: NodeId, old: NodeId) => {
+    const componentId: number = getComponentId ();
+    let patch : ReplaceChild = {
+        type: "replaceChild",
+        parent: parent.nodeId,
+        new: n.nodeId,
+        current: old.nodeId,
+        componentId
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  removeChild : (parent, child) => {
-    // return parent.removeChild (child);
+  removeChild : (parent: NodeId, child: NodeId) => {
+    const componentId: number = getComponentId ();
+    let patch : RemoveChild = {
+        type: "removeChild",
+        parent: parent.nodeId,
+        child: child.nodeId,
+        componentId
+    };
+    addPatch(componentId, patch);
+    return;
   },
   createElement : (tag) => {
-    // return document.createElement(tag);
-      return { nodeId : 10 };
+    const nodeId: number = nextNodeId ();
+    const componentId: number = getComponentId ();
+    let patch : CreateElement = {
+        type : "createElement",
+        nodeId,
+        componentId,
+        tag
+    };
+    addPatch(componentId, patch);
+    return { nodeId };
   },
-  insertBefore : (parent, child, node) => {
-    // return parent.insertBefore(child, node);
+  insertBefore : (parent: NodeId, child: NodeId, node: NodeId) => {
+    const componentId: number = getComponentId ();
+    let patch : InsertBefore = {
+        type: "insertBefore",
+        parent: parent.nodeId,
+        child: child.nodeId,
+        node: node.nodeId,
+        componentId
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  swapDOMRefs : (a, b, p) => {
-    // const tmp = a.nextSibling;
-    // p.insertBefore(a, b);
-    // p.insertBefore(b, tmp);
-    // return;
+  swapDOMRefs : (a: NodeId, b: NodeId, p: NodeId) => {
+    const componentId: number = getComponentId ();
+    let patch : SwapDOMRefs = {
+        type: "swapDOMRefs",
+        parent: p.nodeId,
+        nodeA: a.nodeId,
+        nodeB: b.nodeId,
+        componentId
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  setInlineStyle: (cCss, nCss, node) => {
-    //  var result: string;
-    //  /* is current attribute in new attribute list? */
-    //  for (const key in cCss) {
-    //    result = nCss[key];
-    //    if (!result) {
-    //      /* current key is not in node */
-    //      node.style[key] = '';
-    //    } else if (result !== cCss[key]) {
-    //        node.style[key] = result;
-    //    }
-    //  }
-    //  /* add remaining */
-    //  for (const n in nCss) {
-    //    if (cCss && cCss[n]) continue;
-    //    node.style[n] = nCss[n];
-    //  }
-    // return;
+  setInlineStyle: (cCss: CSS, nCss: CSS, node: NodeId) => {
+    if (areEqual(cCss, nCss)) return;
+    const componentId: number = getComponentId ();
+    let patch : SetInlineStyle = {
+        type : "setInlineStyle",
+        nodeId : node.nodeId,
+        new: nCss,
+        current: cCss,
+        componentId,
+    };
+    addPatch(componentId, patch);
+    return;
   },
-
   setAttribute: (node, key, value) => {
-    // return node.setAttribute(key, value);
+    const componentId: number = getComponentId ();
+    let patch : SetAttribute = {
+        type : "setAttribute",
+        nodeId : node.nodeId,
+        key,
+        value,
+        componentId,
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  setAttributeNS: (node, ns, key, value) => {
-    // return node.setAttributeNS(ns, key, value)
+  setAttributeNS: (node, namespace, key, value) => {
+    const componentId: number = getComponentId ();
+    let patch : SetAttributeNS = {
+        type : "setAttributeNS",
+        nodeId : node.nodeId,
+        key,
+        value,
+        namespace,
+        componentId,
+    };
+    addPatch(componentId, patch);
+    return;
   },
   removeAttribute : (node, key) => {
-    // return node.removeAttribute(key);
+    const componentId: number = getComponentId ();
+    let patch : RemoveAttribute = {
+        type : "removeAttribute",
+        nodeId : node.nodeId,
+        key,
+        componentId,
+    };
+    addPatch(componentId, patch);
+    return;
   },
-  setTextContent : (node, text) => {
-    // node.textContent = text;
-    // return;
+  setTextContent : (node: NodeId, text: string) => {
+    const componentId: number = getComponentId ();
+    let patch : SetTextContent = {
+        type : "setTextContent",
+        nodeId : node.nodeId,
+        componentId,
+        text
+    };
+    addPatch(componentId, patch);
+    return;
   },
   flush: (): void => {
+    globalThis['patches'] = [];
     return;
   },
   getRoot : function () {
-    // return document.body
-    // retrieve the root
-    return { nodeId : 0 /* globalThis['nodeId']++ */ };
+    return { nodeId : 0 };
   },
 
 };

@@ -58,7 +58,9 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
     }
 
     // Remove all children before rebuilding DOM
-    while (context['firstChild'](node)) drawingContext['removeChild'](node, context['lastChild'](node));
+    while (context['firstChild'](node as DOMRef))
+      drawingContext.removeChild(node as DOMRef, context['lastChild'](node as DOMRef));
+
     (vtree['domRef'] as Node) = node;
 
     populate(null, vtree, drawingContext);
