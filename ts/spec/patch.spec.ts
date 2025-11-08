@@ -10,6 +10,7 @@ import {
     CreateElementNS,
     CreateTextNode,
     AppendChild,
+    RemoveChild,
     SetTextContent,
     SetAttribute,
     SetAttributeNS,
@@ -566,6 +567,75 @@ describe ('Patch tests', () => {
         expect(component.nodes[nodeIdChild1]).toEqual(undefined);
         expect(component.nodes[nodeIdChild2]['nodeId']).toEqual(nodeIdChild2);
         
+    });
+
+  test('Should process the RemoveChild patch', () => {
+        const parentNodeId : number = 0;
+        const nodeId : number = 1;
+        const nodeIdChild : number = 2;
+        const componentId : number = 0;
+        let firstTree : VNode<NodeId> = vnode({ tag: 'p', children: [vnode({ tag: 'a' })]});
+        let secondTree : VNode<NodeId> = vnode({ tag: 'p' });
+        let patchContext : DrawingContext<NodeId> = patchDrawingContext;
+        let domContext : DrawingContext<DOMRef> = drawingContext;
+        let parent : NodeId = { nodeId: parentNodeId };
+        diff (null, firstTree, parent, patchContext);
+        diff (firstTree, secondTree, parent, patchContext);
+        let expected : CreateElement = {
+            tag: 'p',
+            type : "createElement",
+            componentId,
+            nodeId,
+        };
+        let appendOperation1 : AppendChild = {
+            type : "appendChild",
+            parent: parentNodeId,
+            child: nodeId,
+            componentId
+        };
+        let expectedChild : CreateElement = {
+            type : "createElement",
+            tag: 'a',
+            nodeId: nodeIdChild,
+            componentId,
+        };
+        let appendOperation2 : AppendChild = {
+            type : "appendChild",
+            parent: nodeId,
+            child: nodeIdChild,
+            componentId
+        };
+        let removeOp : RemoveChild = {
+            type : "removeChild",
+            componentId,
+            child: nodeIdChild,
+            parent: nodeId
+        };
+        // dmj: check diff produces patch object
+        expect(getPatches()).toEqual([expected, appendOperation1, expectedChild, appendOperation2, removeOp ]);
+        let components : Components<DOMRef> = {};
+        let component : Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+        };
+        components[componentId] = component;
+        patch (domContext, expected, components);
+        patch (domContext, appendOperation1, components);
+        patch (domContext, expectedChild, components);
+        patch (domContext, appendOperation2, components);
+        // dmj: check the DOM and component env. to see if the patch applied, and env updated
+        expect(document.body.childNodes.length).toEqual(1); //dmj: appended
+        expect(component.nodes[nodeId].nodeName).toEqual('P');
+        expect(component.nodes[nodeId].childNodes[0].nodeName).toEqual('A');
+        expect(component.nodes[nodeId]['nodeId']).toEqual(nodeId);
+        expect(component.nodes[nodeId].childNodes.length).toEqual(1);
+        expect(component.nodes[nodeIdChild].nodeName).toEqual('A');
+        expect(component.nodes[nodeIdChild]['nodeId']).toEqual(nodeIdChild);
+
+        patch (domContext, removeOp, components);
+        expect(component.nodes[nodeId].childNodes.length).toEqual(0);
+        expect(component.nodes[nodeIdChild]).toEqual(undefined);
+
     });
 
    // test('Should process the swapDOMRefs patch', () => {

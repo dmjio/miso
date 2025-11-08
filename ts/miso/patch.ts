@@ -43,6 +43,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 break;
             case "removeChild":
                 context.removeChild (component.nodes[patch.parent], component.nodes[patch.child]);
+                delete component.nodes[patch.child];
                 break;
             case "appendChild":
                 context.appendChild (component.nodes[patch.parent], component.nodes[patch.child]);
