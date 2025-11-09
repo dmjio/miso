@@ -104,7 +104,6 @@ import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Event (Events)
 import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
@@ -169,7 +168,6 @@ initialize hydrate Component {..} getComponentMountPoint = do
         newVTree <- buildVTree Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
-        global <# ("currentComponentId" :: MisoString) $ componentId
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
@@ -712,10 +710,11 @@ unmount
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
   undelegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   freeFunction mountCallback
-  liftIO (killThread componentMailboxThreadId)
-  liftIO (mapM_ killThread =<< readIORef componentSubThreads)
-  liftIO (mapM_ killThread componentParentToChildThreadId)
-  liftIO (mapM_ killThread componentChildToParentThreadId)
+  liftIO $ do
+    killThread componentMailboxThreadId
+    mapM_ killThread =<< readIORef componentSubThreads
+    mapM_ killThread componentParentToChildThreadId
+    mapM_ killThread componentChildToParentThreadId
   killSubscribers componentId
   drain app cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())

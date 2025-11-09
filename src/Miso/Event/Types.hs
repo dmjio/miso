@@ -42,9 +42,8 @@ module Miso.Event.Types
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (ToJSVal(..), create)
+import           Language.Javascript.JSaddle (ToJSVal(..), create, setProp)
 import           Miso.String (MisoString, ms)
-import qualified Miso.FFI as FFI
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
 data KeyInfo
@@ -129,8 +128,8 @@ stopPropagation = defaultOptions { _stopPropagation = True }
 instance ToJSVal Options where
   toJSVal Options {..} = do
     o <- create
-    FFI.set "preventDefault" _preventDefault o
-    FFI.set "stopPropagation" _stopPropagation o
+    flip (setProp "preventDefault") o =<< toJSVal _preventDefault
+    flip (setProp "stopPropagation") o =<< toJSVal _stopPropagation
     toJSVal o
 -----------------------------------------------------------------------------
 -- | Default value for @Options@.

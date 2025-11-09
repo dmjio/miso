@@ -18,33 +18,48 @@ import {
   websocketSend,
 } from './miso';
 
-import { context } from './miso/context/dom';
+import {
+  drawingContext,
+  eventContext,
+  hydrationContext,
+  componentContext,
+} from './miso/context/dom';
 
 /* export globally */
-globalThis['miso'] = {};
-globalThis['miso']['diff'] = diff;
-globalThis['miso']['hydrate'] = hydrate;
-globalThis['miso']['version'] = version;
-globalThis['miso']['delegate'] = delegate;
-globalThis['miso']['callBlur'] = callBlur;
-globalThis['miso']['callFocus'] = callFocus;
-globalThis['miso']['eventJSON'] = eventJSON;
-globalThis['miso']['fetchCore'] = fetchCore;
-globalThis['miso']['eventSourceConnect'] = eventSourceConnect;
-globalThis['miso']['eventSourceClose'] = eventSourceClose;
-globalThis['miso']['websocketConnect'] = websocketConnect;
-globalThis['miso']['websocketClose'] = websocketClose;
-globalThis['miso']['websocketSend'] = websocketSend;
-globalThis['miso']['undelegate'] = undelegate;
-globalThis['miso']['getParentComponentId'] = getParentComponentId;
-globalThis['miso']['shouldSync'] = shouldSync;
-globalThis['miso']['integrityCheck'] = integrityCheck;
-globalThis['miso']['context'] = context;
-globalThis['miso']['setDrawingContext'] = function (name) {
-    const ctx = globalThis[name];
-    if (!ctx) {
-      console.warn('Custom rendering engine is not defined', name, globalThis[name]);
-    } else {
-      globalThis['miso']['context'] = ctx;
+globalThis['miso'] = {
+    hydrationContext,
+    eventContext,
+    drawingContext,
+    componentContext,
+    diff,
+    hydrate,
+    version,
+    delegate,
+    callBlur,
+    callFocus,
+    eventJSON,
+    fetchCore,
+    eventSourceConnect,
+    eventSourceClose,
+    websocketConnect,
+    websocketClose,
+    websocketSend,
+    undelegate,
+    getParentComponentId,
+    shouldSync,
+    integrityCheck,
+    setDrawingContext : function (name) {
+      // dmj: this looks for a custom globally defined rendering / event context
+      // to be used when targetting custom renderers (e.g. lynxjs).
+      const drawing = globalThis[name]['drawingContext'];
+      const events = globalThis[name]['eventContext'];
+      if (!drawing) {
+        console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
+      }
+      if (!events) {
+       console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
+      }
+      globalThis['miso']['drawingContext'] = drawing;
+      globalThis['miso']['eventContext'] = events;
     }
-}
+};
