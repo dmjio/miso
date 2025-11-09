@@ -1,7 +1,6 @@
-import { ComponentId, EventCapture, DrawingContext, EventContext } from './types';
-import { delegate, undelegate } from './event';
+import { ComponentId, EventCapture, DrawingContext } from './types';
 
-/* The components contains a mapping from componentId to component and a read-only JSON rep. of its model
+/* The components record contains a mapping from componentId to component and a read-only JSON rep. of its model
 
    N.B. no virtual DOM is present here.
 

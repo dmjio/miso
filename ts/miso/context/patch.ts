@@ -90,7 +90,6 @@ export const componentContext : ComponentContext = {
         };
         addPatch(componentId, patch);
         return;
-        return;
     }
 };
 
