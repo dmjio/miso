@@ -1,4 +1,14 @@
-import { CSS, DrawingContext, VNode, EventContext, HydrationContext, DOMRef } from '../types';
+import
+  { CSS
+  , DrawingContext
+  , VNode
+  , EventContext
+  , EventCapture
+  , ComponentId
+  , HydrationContext
+  , DOMRef
+  , ComponentContext
+  } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
   addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
@@ -42,6 +52,18 @@ export const hydrationContext : HydrationContext<DOMRef> = {
   children: (node: DOMRef) => {
     return node.childNodes as any;
   },
+};
+
+export const componentContext : ComponentContext = {
+    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
+        return;
+    },
+    unmountComponent : function (componentId: ComponentId) : void {
+        return;
+    },
+    modelHydration : function (model: Object) : void {
+        return;
+    }
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {

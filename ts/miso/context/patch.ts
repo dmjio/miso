@@ -1,4 +1,12 @@
-import { DrawingContext, VNode, NodeId, CSS } from '../types';
+import {
+  ComponentId,
+  EventCapture,
+  DrawingContext,
+  VNode,
+  NodeId,
+  CSS,
+  ComponentContext
+} from '../types';
 
 /*
 
@@ -25,6 +33,9 @@ import {
   SetTextContent,
   SetInlineStyle,
   RemoveAttribute,
+  MountComponent,
+  UnmountComponent,
+  ModelHydration,
 } from '../patch';
 
 export function addPatch (componentId: number, patch : PATCH) : void {
@@ -50,6 +61,38 @@ function areEqual(a: Object, b: Object) {
   if (keysA.length !== keysB.length) return false;
   return keysA.every(key => a[key] === b[key]);
 }
+
+export const componentContext : ComponentContext = {
+    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) {
+        let patch : MountComponent = {
+            type: "mount",
+            componentId: componentId,
+            mountPoint : 0,
+            events,
+            model
+        };
+        addPatch(componentId, patch);
+        return;
+    },
+    unmountComponent : function (componentId: ComponentId) {
+        let patch : UnmountComponent = {
+            type: "unmount",
+            componentId,
+        };
+        addPatch(componentId, patch);
+        return;
+    },
+    modelHydration : function (componentId: ComponentId, model: Object) {
+        let patch : ModelHydration = {
+            type: "modelHydration",
+            model,
+            componentId
+        };
+        addPatch(componentId, patch);
+        return;
+        return;
+    }
+};
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VNode<NodeId>) => {

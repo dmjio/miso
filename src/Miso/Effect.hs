@@ -55,13 +55,11 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
-import           Language.Javascript.JSaddle (JSVal)
+import           Language.Javascript.JSaddle (JSVal, JSM)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
 #endif
------------------------------------------------------------------------------
-import           Miso.FFI.Internal (JSM)
 -----------------------------------------------------------------------------
 -- | Smart constructor for t'ComponentInfo'
 mkComponentInfo

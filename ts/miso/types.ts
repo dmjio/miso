@@ -99,6 +99,12 @@ export type HydrationContext<T> = {
   getAttribute : (node: T, string) => string;
 };
 
+export type ComponentContext = {
+  mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
+  unmountComponent : (componentId: ComponentId) => void,
+  modelHydration : (componentId: ComponentId, model: Object) => void
+}
+
 export type DrawingContext<T> = {
   nextSibling : (node: VNode<T>) => T;
   createTextNode : (s: string) => T;

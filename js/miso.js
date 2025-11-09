@@ -833,6 +833,17 @@ var hydrationContext = {
     return node.childNodes;
   }
 };
+var componentContext = {
+  mountComponent: function(events, componentId, model) {
+    return;
+  },
+  unmountComponent: function(componentId) {
+    return;
+  },
+  modelHydration: function(model) {
+    return;
+  }
+};
 var drawingContext = {
   nextSibling: (node) => {
     return node.domRef.nextSibling;
@@ -903,36 +914,38 @@ var drawingContext = {
 };
 
 // ts/index.ts
-globalThis["miso"] = {};
-globalThis["miso"].hydrationContext = hydrationContext;
-globalThis["miso"].eventContext = eventContext;
-globalThis["miso"].drawingContext = drawingContext;
-globalThis["miso"].diff = diff;
-globalThis["miso"].hydrate = hydrate;
-globalThis["miso"].version = version;
-globalThis["miso"].delegate = delegate;
-globalThis["miso"].callBlur = callBlur;
-globalThis["miso"].callFocus = callFocus;
-globalThis["miso"].eventJSON = eventJSON;
-globalThis["miso"].fetchCore = fetchCore;
-globalThis["miso"].eventSourceConnect = eventSourceConnect;
-globalThis["miso"].eventSourceClose = eventSourceClose;
-globalThis["miso"].websocketConnect = websocketConnect;
-globalThis["miso"].websocketClose = websocketClose;
-globalThis["miso"].websocketSend = websocketSend;
-globalThis["miso"].undelegate = undelegate;
-globalThis["miso"].getParentComponentId = getParentComponentId;
-globalThis["miso"].shouldSync = shouldSync;
-globalThis["miso"].integrityCheck = integrityCheck;
-globalThis["miso"].setDrawingContext = function(name) {
-  const drawing = globalThis[name]["drawingContext"];
-  const events = globalThis[name]["eventContext"];
-  if (!drawing) {
-    console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
+globalThis["miso"] = {
+  hydrationContext,
+  eventContext,
+  drawingContext,
+  componentContext,
+  diff,
+  hydrate,
+  version,
+  delegate,
+  callBlur,
+  callFocus,
+  eventJSON,
+  fetchCore,
+  eventSourceConnect,
+  eventSourceClose,
+  websocketConnect,
+  websocketClose,
+  websocketSend,
+  undelegate,
+  getParentComponentId,
+  shouldSync,
+  integrityCheck,
+  setDrawingContext: function(name) {
+    const drawing = globalThis[name]["drawingContext"];
+    const events = globalThis[name]["eventContext"];
+    if (!drawing) {
+      console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
+    }
+    if (!events) {
+      console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
+    }
+    globalThis["miso"]["drawingContext"] = drawing;
+    globalThis["miso"]["eventContext"] = events;
   }
-  if (!events) {
-    console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
-  }
-  globalThis["miso"]["drawingContext"] = drawing;
-  globalThis["miso"]["eventContext"] = events;
 };

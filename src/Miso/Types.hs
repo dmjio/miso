@@ -39,6 +39,7 @@ module Miso.Types
   , DOMRef
   , ROOT
   , Transition
+  , Events
   , URI (..)
   -- ** Re-exports
   , JSM

@@ -11,8 +11,10 @@ export type Components<T> = Record <ComponentId, Component<T>>;
 
 /* Information about the current component that lives on the render thread */
 export type Component<T> = {
-  model: Object; /* read-only access to the model, model must be serializable */
-  nodes: Record<number, T>;
+  model: Object, /* read-only access to the model, model must be serializable */
+  nodes: Record<number, T>,
+  events: Array<EventCapture>,
+  mountPoint: number
 };
 
 /* Convenience table to allow O(1) application of DOM references */
@@ -20,8 +22,27 @@ export type NodeMap<T> = Record <number, T>;
 
 /* Function for patch application */
 export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: Components<T>) {
+    if (patch.type === "mount") {
+        /* register events here */
+        components[patch.componentId] = {
+            model: null,
+            nodes: {},
+            events: patch.events,
+            mountPoint: patch.mountPoint
+        };
+        return;
+    }
+    if (patch.type === "unmount") {
+        /* unregister events here */
+        delete components[patch.componentId];
+        /* drop DOM node from tree? DOM patches should do this for us */
+        return;
+    }
     withComponent (components, patch.componentId, (component) => {
         switch (patch.type) {
+            case "modelHydration":
+                component.model = patch.model;
+                break;
             case "createElement":
                 component.nodes[patch.nodeId] = context.createElement (patch.tag);
                 component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
@@ -29,7 +50,6 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
             case "createElementNS":
                 component.nodes[patch.nodeId] = context.createElementNS (patch.namespace, patch.tag);
                 component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
-                break;
                 break;
             case "createTextNode":
                 component.nodes[patch.nodeId] = context.createTextNode (patch.text);
@@ -39,7 +59,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 context.setAttribute (component.nodes[patch.nodeId], patch.key, patch.value);
                 break;
             case "setAttributeNS":
-                context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value);
+                context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value)
                 break;
             case "removeChild":
                 context.removeChild (component.nodes[patch.parent], component.nodes[patch.child]);
@@ -71,34 +91,10 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
                 delete component.nodes[patch.current];
                 break;
-
+            default:
+                break;
         }
     });
-}
-
-/* addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void; */
-export function registerEvents<T> (context: EventContext<T>, e: EVENTS, components: Components<T>) {
-  withComponent (components, e.componentId, (component) => {
-      /* listener needs to be from context<T> */
-      var listener = undefined;
-      let debug = false;
-      delegate (component.mountPoint, e.events, listener, debug, context);
-  });
-}
-
-export function unregisterEvents<T> (context: EventContext<T>, e: EVENTS, components: Components<T>) {
-  withComponent (components, e.componentId, (component) => {
-      /* listener needs to be from context<T> */
-      var listener = undefined;
-      let debug = false;
-      undelegate (component.mountPoint, e.events, listener, debug, context);
-  });
-}
-
-export function hydrateModel<T> (o: HYDRATION, components: Components<T>) {
-  withComponent (components, o.componentId, (component) => {
-      component.model = o.model;
-  });
 }
 
 function withComponent (components, componentId, callback) {
@@ -111,8 +107,6 @@ function withComponent (components, componentId, callback) {
 }
 
 /* Message protocol for bidirectional synchronization between MTS / BTS */
-export type MESSAGE = EVENTS | PATCHES | HYDRATION;
-
 export type PATCH
   = InsertBefore
   | SwapDOMRefs
@@ -127,23 +121,28 @@ export type PATCH
   | RemoveAttribute
   | SetTextContent
   | SetInlineStyle
+  | MountComponent
+  | UnmountComponent
+  | ModelHydration
   | Flush;
 
-export type HYDRATION = {
-  componentId: ComponentId;
-  type: "hydration";
-  model: Object;
-};
-
-export type EVENTS = {
+export type ModelHydration = {
   componentId: ComponentId,
-  type: "events";
-  events: Array<EventCapture>;
+  model: Object,
+  type: "modelHydration"
 };
 
-export type PATCHES = {
-  type: "patches";
-  patches: Array<PATCH>;
+export type MountComponent = {
+  type: "mount",
+  componentId: ComponentId,
+  events: Array<EventCapture>,
+  model: Object,
+  mountPoint: number
+};
+
+export type UnmountComponent = {
+  type: "unmount",
+  componentId: ComponentId,
 };
 
 export type InsertBefore = {
