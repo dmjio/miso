@@ -50,8 +50,7 @@ globalThis['miso'] = {
     integrityCheck,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context
-      // to be used when targetting other devies (e.g. lynxjs).
-      // This may need to be exted to also incorporate hydrationContext for IFR.
+      // to be used when targetting custom renderers (e.g. lynxjs).
       const drawing = globalThis[name]['drawingContext'];
       const events = globalThis[name]['eventContext'];
       if (!drawing) {

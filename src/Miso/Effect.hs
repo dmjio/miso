@@ -240,8 +240,7 @@ modifyAllJSM = censor . (fmap . fmap)
 --
 -- A use-case is scheduling an 'IO' computation which creates a 3rd-party JS
 -- widget which has an associated callback. The callback can then call the sink
--- to turn events into actions. To do this without accessing a sink requires
--- going via a @'Sub'scription@ which introduces a leaky-abstraction.
+-- to turn events into actions.
 --
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
