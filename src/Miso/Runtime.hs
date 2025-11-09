@@ -686,7 +686,6 @@ drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
   let info = ComponentInfo componentId componentParentId componentDOMRef
   if S.null actions then pure () else go info actions
-  unloadScripts cs
       where
         go info actions = do
           x <- liftIO (readTVarIO componentModel)
