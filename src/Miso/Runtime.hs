@@ -154,7 +154,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  componentModel <- liftIO (newTVarIO model)
+  componentModel <- liftIO (newTVarIO initializedModel)
   let
     eventLoop = liftIO wait >> do
       currentModel <- liftIO (readTVarIO componentModel)
