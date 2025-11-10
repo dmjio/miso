@@ -124,7 +124,7 @@ module Miso.Html.Element
     , button_
     , datalist_
     , fieldset_
-    , form
+    , form_
     , input_
     , label_
     , legend_
@@ -208,13 +208,13 @@ button_ = nodeHtml "button"
 -- For usage in a real-world application with the @onSubmit@ event.
 --
 -- > view :: Model -> View model action
--- > view model = form [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
+-- > view model = form_ [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
 --
 -- Note: @onSubmit@ will use @preventDefault = True@. This will keep
 -- the form from submitting to the server.
 --
-form :: [Attribute action] -> [View model action] -> View model action
-form = nodeHtml "form"
+form_ :: [Attribute action] -> [View model action] -> View model action
+form_ = nodeHtml "form"
 -----------------------------------------------------------------------------
 -- | [\<p\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/p)
 p_ :: [Attribute action] -> [View model action] -> View model action
