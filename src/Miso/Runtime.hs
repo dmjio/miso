@@ -342,22 +342,40 @@ data Hydrate
 -- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
 data ComponentState model action
   = ComponentState
-  { componentId              :: ComponentId
-  , componentParentId        :: ComponentId
-  , componentSubThreads      :: IORef (Map MisoString ThreadId)
-  , componentDOMRef          :: DOMRef
-  , componentVTree           :: IORef VTree
-  , componentSink            :: action -> JSM ()
-  , componentModel           :: TVar model
-  , componentIsDirty         :: TVar Bool
-  , componentActions         :: IORef (Seq action)
-  , componentMailbox         :: Mailbox
-  , componentScripts         :: [DOMRef]
+  { componentId :: ComponentId
+  -- ^ The ID of the current t'Component'
+  , componentParentId :: ComponentId
+  -- ^ The ID of the t'Component''s parent
+  , componentSubThreads :: IORef (Map MisoString ThreadId)
+  -- ^ Mapping of all 'Sub' in use by t'Component'
+  , componentDOMRef :: DOMRef
+  -- ^ The DOM reference the t'Component' is mounted on
+  , componentVTree :: IORef VTree
+  -- ^ A reference to the current virtual DOM (i.e. t'VTree')
+  , componentSink :: action -> JSM ()
+  -- ^ t'Component' t'Sink' used to enter events into the system
+  , componentModel :: TVar model
+  -- ^ t'Component' state
+  , componentIsDirty :: TVar Bool
+  -- ^ Indicator if 't'Component' needs to be drawn
+  , componentActions :: IORef (Seq action)
+  -- ^ Set of actions raised by the system
+  , componentMailbox :: Mailbox
+  -- ^ t'Mailbox' for receiving messages from other t'Component'
+  , componentScripts :: [DOMRef]
+  -- ^ DOM references for \<script\> and \<style\> appended to \<head\>
   , componentMailboxThreadId :: ThreadId
-  , componentDiffs           :: Mailbox
-  , componentNotify          :: IO ()
-  , componentParentToChildThreadId  :: Maybe ThreadId
-  , componentChildToParentThreadId  :: Maybe ThreadId
+  -- ^ Thread responsible for taking actions from t'Mailbox' and
+  -- putting them into 'componentActions'
+  , componentDiffs :: Mailbox
+  -- ^ Used with t'Binding' to synchronize other t'Component' state
+  -- at the granularity of a t'Miso.Lens.Lens'
+  , componentNotify :: IO ()
+  -- ^ t'IO' action to unblock event loop thread
+  , componentParentToChildThreadId :: Maybe ThreadId
+  -- ^ Thread responsible for parent t'Binding' synchronization
+  , componentChildToParentThreadId :: Maybe ThreadId
+  -- ^ Thread responsible for child t'Binding' synchronization
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
