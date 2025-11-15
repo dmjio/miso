@@ -171,11 +171,12 @@ initialize hydrate Component {..} getComponentMountPoint = do
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
+          mounted <- IM.size <$> readIORef components
           atomically $ do
             writeTVar componentModel updatedModel
             writeTVar componentIsDirty False
             -- dmj: reset the dirty bit
-            writeTChan componentDiffs Null
+            when (mounted > 1) (writeTChan componentDiffs Null)
             -- dmj: child wake-up call for model synch.
       syncPoint
       eventLoop
