@@ -899,7 +899,7 @@ renderScripts scripts =
 --   deriving (Eq, Ord)
 --
 -- update Action =
---   startSub LoggerSub $ \sink -> forever (threadDelay (secs 1) >> consoleLog "test")
+--   startSub LoggerSub $ \\sink -> forever (threadDelay (secs 1) >> consoleLog "test")
 -- @
 --
 -- @since 1.9.0.0
@@ -1003,6 +1003,7 @@ mailParent message = do
 --   = ParsedMail Message
 --   | ErrorMail MisoString
 --
+-- main :: IO ()
 -- main = app { mailbox = checkMail ParsedMail ErrorMail }
 -- @
 --
@@ -1038,8 +1039,8 @@ parent successful errorful = do
 --
 -- @
 --
---   broadcast (String "public service announcement")
---
+-- update :: action -> Effect parent model actionx
+-- update _ = broadcast (String "public service announcement")
 -- @
 --
 -- @since 1.9.0.0
