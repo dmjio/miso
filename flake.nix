@@ -96,6 +96,37 @@
                   ];
             });
 
+          # MicroHS shell
+          microhs =
+            pkgs.mkShell {
+              name = "The micro miso ${system} shell";
+              buildInputs = with pkgs;
+                [ pkgs.microhs nodejs quickjs emscripten
+                ];
+
+              # https://github.com/NixOS/nixpkgs/issues/139943#issuecomment-930432045
+              # dmj: Fix for using emcc in Darwin shell environment
+              #
+              # dmj: to compile /only/ JS, and work w/ QuickJS:
+              # $ emcc -sENVIRONMENT=shell -sWASM=0 main.c -oout.js && qjs out.js
+              shellHook =
+                # with inputs.ghc-wasm-meta.packages.${system}.all_9_12;
+                ''
+                export MHSDIR=${pkgs.microhs}
+                export CC=${pkgs.emscripten}/bin/emcc
+                export PATH=$PATH:${pkgs.microhs}/bin
+                mkdir -p ~/.emscripten_cache
+                chmod u+rwX -R ~/.emscripten_cache
+                # cp -r ${pkgs.emscripten}/share/emscripten/cache ~/.emscripten_cache
+                export EM_CACHE=~/.emscripten_cache
+
+                function build () {
+                  mhs -temscripten Example -oout.js && qjs out.js
+                }
+
+              '';
+            };
+
           # Shell for JavaScript / TypeScript development
           typescript =
             pkgs.mkShell {
