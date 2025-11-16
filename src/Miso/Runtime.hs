@@ -139,9 +139,9 @@ initialize hydrate Component {..} getComponentMountPoint = do
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
     case hydrate of
       Draw -> do
-        Diff.diff Nothing (Just vtree) componentDOMRef
+        Diff.diff Nothing (Just vtree) componentDOMRef componentId
       Hydrate -> do
-        Hydrate.hydrate logLevel componentDOMRef vtree
+        Hydrate.hydrate logLevel componentDOMRef vtree componentId
     liftIO (newIORef vtree)
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
@@ -168,7 +168,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
         newVTree <- buildVTree Draw (view updatedModel) componentSink logLevel events
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
-        Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
+        Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef componentId
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           atomically $ do

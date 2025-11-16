@@ -43,51 +43,51 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 component.model = patch.model;
                 break;
             case "createElement":
-                component.nodes[patch.nodeId] = context.createElement (patch.tag);
+                component.nodes[patch.nodeId] = context.createElement (patch.tag, patch.componentId);
                 component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
                 break;
             case "createElementNS":
-                component.nodes[patch.nodeId] = context.createElementNS (patch.namespace, patch.tag);
+                component.nodes[patch.nodeId] = context.createElementNS (patch.namespace, patch.tag, patch.componentId);
                 component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
                 break;
             case "createTextNode":
-                component.nodes[patch.nodeId] = context.createTextNode (patch.text);
+                component.nodes[patch.nodeId] = context.createTextNode (patch.text, patch.componentId);
                 component.nodes[patch.nodeId]['nodeId'] = patch.nodeId;
                 break;
             case "setAttribute":
-                context.setAttribute (component.nodes[patch.nodeId], patch.key, patch.value);
+                context.setAttribute (component.nodes[patch.nodeId], patch.key, patch.value, patch.componentId);
                 break;
             case "setAttributeNS":
-                context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value)
+                context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value, patch.componentId)
                 break;
             case "removeChild":
-                context.removeChild (component.nodes[patch.parent], component.nodes[patch.child]);
+                context.removeChild (component.nodes[patch.parent], component.nodes[patch.child], patch.componentId);
                 delete component.nodes[patch.child];
                 break;
             case "appendChild":
-                context.appendChild (component.nodes[patch.parent], component.nodes[patch.child]);
+                context.appendChild (component.nodes[patch.parent], component.nodes[patch.child], patch.parentComponentId, patch.componentId);
                 break;
             case "setInlineStyle":
-                context.setInlineStyle (patch.current, patch.new, component.nodes[patch.nodeId]);
+                context.setInlineStyle (patch.current, patch.new, component.nodes[patch.nodeId], patch.componentId);
                 break;
             case "removeAttribute":
-                context.removeAttribute (component.nodes[patch.nodeId], patch.key);
+                context.removeAttribute (component.nodes[patch.nodeId], patch.key, patch.componentId);
                 break;
             case "setTextContent":
-                context.setTextContent (component.nodes[patch.nodeId], patch.text);
+                context.setTextContent (component.nodes[patch.nodeId], patch.text, patch.componentId);
                 break;
             case "flush":
-                context.flush ();
+                context.flush (patch.componentId);
                 break;
             case "insertBefore":
-                context.insertBefore(component.nodes[patch.parent], component.nodes[patch.node], component.nodes[patch.child]);
+                context.insertBefore(component.nodes[patch.parent], component.nodes[patch.node], component.nodes[patch.child], patch.componentId);
                 break;
             case "swapDOMRefs":
                 /* dmj: swap it in the component environemnt too */
-                context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent]);
+                context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent], patch.componentId);
                 break;
             case "replaceChild":
-                context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
+                context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current], patch.componentId);
                 delete component.nodes[patch.current];
                 break;
             default:
@@ -201,6 +201,7 @@ export type SetAttributeNS = {
 
 export type AppendChild = {
   componentId: ComponentId,
+  parentComponentId: ComponentId,
   parent: number,
   child: number,
   type: "appendChild"

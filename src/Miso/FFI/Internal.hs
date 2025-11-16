@@ -426,11 +426,13 @@ diff
   -- ^ new object
   -> JSVal
   -- ^ parent node
+  -> Int
+  -- ^ ComponentId
   -> JSM ()
-diff (Object a) (Object b) c = do
+diff (Object a) (Object b) c compId = do
   moduleMiso <- jsg "miso"
   context <- getDrawingContext
-  void $ moduleMiso # "diff" $ [a,b,c,context]
+  void $ moduleMiso # "diff" $ (a,b,c,compId,context)
 -----------------------------------------------------------------------------
 -- | Helper function for converting Integral types to JavaScript strings
 integralToJSString :: Integral a => a -> MisoString
@@ -485,13 +487,13 @@ undelegate mountPoint events debug callback ctx = do
 --
 -- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
-hydrate :: Bool -> JSVal -> JSVal -> JSM ()
-hydrate logLevel mountPoint vtree = void $ do
+hydrate :: Bool -> JSVal -> JSVal -> Int -> JSM ()
+hydrate logLevel mountPoint vtree componentId = void $ do
   ll <- toJSVal logLevel
   drawingContext <- getDrawingContext
   hydrationContext <- getHydrationContext
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree, hydrationContext, drawingContext]
+  void $ moduleMiso # "hydrate" $ (ll, mountPoint, vtree, componentId, hydrationContext, drawingContext)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -673,10 +675,13 @@ shouldSync vnode = do
 -----------------------------------------------------------------------------
 -- | Flush is used to force a draw of the render tree. This is currently
 -- only used when targeting platforms other than the browser (like mobile).
-flush :: JSM ()
-flush = do
+flush
+  :: Int
+  -- ^ ComponentId
+  -> JSM ()
+flush componentId = do
   context <- getDrawingContext
-  void $ context # "flush" $ ([] :: [JSVal])
+  void $ context # "flush" $ [componentId]
 -----------------------------------------------------------------------------
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)

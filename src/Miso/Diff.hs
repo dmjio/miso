@@ -23,19 +23,19 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
-diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
-diff current new_ mountEl =
+diff :: Maybe VTree -> Maybe VTree -> DOMRef -> ComponentId -> JSM ()
+diff current new_ mountEl componentId =
   case (current, new_) of
     (Nothing, Nothing) -> pure ()
     (Just (VTree current'), Just (VTree new')) -> do
-      FFI.diff current' new' mountEl
-      FFI.flush
+      FFI.diff current' new' mountEl componentId
+      FFI.flush componentId
     (Nothing, Just (VTree new')) -> do
-      FFI.diff (Object jsNull) new' mountEl
-      FFI.flush
+      FFI.diff (Object jsNull) new' mountEl componentId
+      FFI.flush componentId
     (Just (VTree current'), Nothing) -> do
-      FFI.diff current' (Object jsNull) mountEl
-      FFI.flush
+      FFI.diff current' (Object jsNull) mountEl componentId
+      FFI.flush componentId
 -----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body
 mountElement :: MisoString -> JSM JSVal
