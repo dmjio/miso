@@ -23,7 +23,7 @@ export type VComp<T> = {
   onMounted: (domRef: T) => void;
   onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
-  mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  mount: (domRef: T, callback: ((events: Record<string, boolean>, componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
   nextSibling: VNode<T>;
 };
@@ -100,16 +100,16 @@ export type HydrationContext<T> = {
 };
 
 export type ComponentContext = {
-  mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
   unmountComponent : (componentId: ComponentId) => void,
   modelHydration : (componentId: ComponentId, model: Object) => void
 }
 
 export type DrawingContext<T> = {
+  mountComponent : (events: Record<string, boolean>, componentId: ComponentId, model: Object) => void,
   nextSibling : (node: VNode<T>) => T;
   createTextNode : (s: string, componentId: ComponentId) => T;
   createElementNS : (ns: string, tag : string, componentId: ComponentId) => T;
-  appendChild : (parent: T, child: T, parentComponentId: ComponentId, childComponentId: ComponentId) => void;
+  appendChild : (parent: T, child: T, parentComponentId: ComponentId) => void;
   replaceChild : (parent: T, n: T, o: T, componentId: ComponentId) => void;
   removeChild : (parent: T, child: T, componentId: ComponentId) => void;
   createElement : (name: string, componentId: ComponentId) => T;

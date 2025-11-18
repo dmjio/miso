@@ -15,6 +15,7 @@
 module Miso.Event.Types
   ( -- ** Types
     Events
+  , EventCapture (..)
   , Capture
     -- *** KeyboardEvent
   , KeyInfo (..)
@@ -40,9 +41,10 @@ module Miso.Event.Types
   , touchEvents
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (ToJSVal(..), create, setProp)
+import           Language.Javascript.JSaddle (ToJSVal(..), create, setProp, Object(..))
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
@@ -144,6 +146,15 @@ defaultOptions
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
 type Events = M.Map MisoString Capture
+-----------------------------------------------------------------------------
+newtype EventCapture = EventCapture Events
+-----------------------------------------------------------------------------
+instance ToJSVal EventCapture where
+  toJSVal (EventCapture evts) = do
+    o@(Object jval) <- create
+    forM_ (M.toList evts) $ \(key,val) -> do
+      flip (setProp key) o =<< toJSVal val
+    pure jval
 -----------------------------------------------------------------------------
 -- | Type synonym to express capture mode for browser / mobile events.
 --

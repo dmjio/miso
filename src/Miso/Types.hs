@@ -40,6 +40,7 @@ module Miso.Types
   , ROOT
   , Transition
   , Events
+  , EventCapture     (..)
   , URI (..)
   -- ** Re-exports
   , JSM

@@ -225,11 +225,11 @@ function unmountComponent<T>(obj: VTree<T>): void {
 function mountComponent<T>(obj: VComp<T>, parentComponentId: ComponentId, context: DrawingContext<T>): void {
   if (obj.onBeforeMounted) obj.onBeforeMounted();
   // Call 'onBeforeMounted' before calling 'mount'
-  obj.mount(obj.domRef, (childComponentId: ComponentId, componentTree: VNode<T>) => {
+  obj.mount(obj.domRef, (events: Record<string, boolean>, childComponentId: ComponentId, componentTree: VNode<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj.children.push(componentTree);
-      context.appendChild(obj.domRef, componentTree.domRef, parentComponentId, childComponentId);
+    // context.mountComponent(obj.domRef, componentTree.domRef, parentComponentId, childComponentId);
     if (obj.onMounted) obj.onMounted(obj.domRef);
   });
 }
@@ -237,10 +237,10 @@ function mountComponent<T>(obj: VComp<T>, parentComponentId: ComponentId, contex
 function create<T>(obj: VTree<T>, parent: T, componentId : ComponentId, context: DrawingContext<T>): void {
   if (obj.type === 'vtext') {
     obj.domRef = context.createTextNode(obj.text, componentId);
-      context.appendChild(parent, obj.domRef, componentId, componentId);
+      context.appendChild(parent, obj.domRef, componentId);
   } else {
     createElement<T>(obj, componentId, context, (child: T) => {
-      context.appendChild(parent, child, componentId, componentId);
+      context.appendChild(parent, child, componentId);
     });
   }
 }

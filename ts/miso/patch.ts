@@ -12,7 +12,7 @@ export type Components<T> = Record <ComponentId, Component<T>>;
 export type Component<T> = {
   model: Object, /* read-only access to the model, model must be serializable */
   nodes: Record<number, T>,
-  events: Array<EventCapture>,
+  events: Record<string, boolean>,
   mountPoint: number
 };
 
@@ -21,13 +21,13 @@ export type NodeMap<T> = Record <number, T>;
 
 /* Function for patch application */
 export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: Components<T>) {
-    if (patch.type === "mount") {
+    if (patch.type === "mountComponent") {
         /* register events here */
         components[patch.componentId] = {
             model: null,
             nodes: {},
             events: patch.events,
-            mountPoint: patch.mountPoint
+            // mountPoint: patch.mountPoint
         };
         return;
     }
@@ -65,7 +65,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 delete component.nodes[patch.child];
                 break;
             case "appendChild":
-                context.appendChild (component.nodes[patch.parent], component.nodes[patch.child], patch.parentComponentId, patch.componentId);
+                context.appendChild (component.nodes[patch.parent], component.nodes[patch.child], patch.componentId);
                 break;
             case "setInlineStyle":
                 context.setInlineStyle (patch.current, patch.new, component.nodes[patch.nodeId], patch.componentId);
@@ -131,12 +131,14 @@ export type ModelHydration = {
   type: "modelHydration"
 };
 
+/* calls both append child and adds event listeners, init's new component w/ read-only model too  */
 export type MountComponent = {
-  type: "mount",
   componentId: ComponentId,
-  events: Array<EventCapture>,
-  model: Object,
-  mountPoint: number
+  child: number,
+  parentComponentId: ComponentId,
+  parent: number,
+  events: Record<string, boolean>,
+  type: "mountComponent"
 };
 
 export type UnmountComponent = {
@@ -201,7 +203,6 @@ export type SetAttributeNS = {
 
 export type AppendChild = {
   componentId: ComponentId,
-  parentComponentId: ComponentId,
   parent: number,
   child: number,
   type: "appendChild"

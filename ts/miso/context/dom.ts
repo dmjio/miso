@@ -55,9 +55,6 @@ export const hydrationContext : HydrationContext<DOMRef> = {
 };
 
 export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
-        return;
-    },
     unmountComponent : function (componentId: ComponentId) : void {
         return;
     },
@@ -67,6 +64,9 @@ export const componentContext : ComponentContext = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
+  mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
+     return;
+  },
   nextSibling : (node: VNode<DOMRef>) => {
     return node.domRef.nextSibling as DOMRef;
   },

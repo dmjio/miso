@@ -62,7 +62,7 @@ function areEqual(a: Object, b: Object) {
 export const componentContext : ComponentContext = {
     mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) {
         let patch : MountComponent = {
-            type: "mount",
+            type: "mountComponent",
             componentId: componentId,
             mountPoint : 0,
             events,
@@ -91,6 +91,9 @@ export const componentContext : ComponentContext = {
 };
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
+  mountComponent : (events : Record<string, boolean>, componentId: number, model: Object) => {
+    return;
+  },
   nextSibling : (node: VNode<NodeId>) => {
     return node.nextSibling.domRef;
   },
@@ -123,7 +126,6 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
         parent: parent.nodeId,
         child: child.nodeId,
         componentId,
-        parentComponentId
     };
     addPatch(componentId, patch);
     return;

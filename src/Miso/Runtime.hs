@@ -768,7 +768,7 @@ buildVTree hydrate snk logLevel events = \case
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         vcompId <- toJSVal componentId
         FFI.set "componentId" vcompId (Object domRef)
-        void $ call continuation global [vcompId, vtree]
+        void $ call continuation global (vcompId, vtree, (EventCapture events))
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \domRef -> do
         componentId <- liftJSM (FFI.getComponentId domRef)
@@ -805,7 +805,7 @@ buildVTree hydrate snk logLevel events = \case
     FFI.set "type" ("vtext" :: JSString) vtree
     FFI.set "ns" ("text" :: JSString) vtree
     FFI.set "text" t vtree
-    pure $ VTree vtree
+    pure (VTree vtree)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
