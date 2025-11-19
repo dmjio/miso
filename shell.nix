@@ -1,7 +1,5 @@
 { pkg ? "ghc" }:
-
 with (import ./default.nix {});
-
 if pkg == "ghcjs9122"
 then miso-ghcjs-9122.env.overrideAttrs (drv: {
   shellHook = ''
@@ -15,4 +13,7 @@ then miso-ghcjs-9122.env.overrideAttrs (drv: {
 else
 if pkg == "ghcjs"
 then miso-ghcjs.env
+else
+if pkg == "micro"
+then pkgs.microhs-env
 else miso-ghc-9122.env

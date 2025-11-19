@@ -1,0 +1,81 @@
+cabal-version:      3.0
+name:               miso
+version:            1.9.0.0
+synopsis:           A tasty Haskell front-end framework
+homepage:           https://haskell-miso.org
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             dmjio
+maintainer:         code@dmj.io
+copyright:          Copyright (c) 2016-2025 @dmjio
+category:           Web
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+library
+  default-language:
+    Haskell2010
+  other-modules:
+    Miso.Concurrent
+    Miso.Delegate
+    Miso.Diff
+    Miso.Effect
+    Miso.Event
+    Miso.Event.Decoder
+    Miso.Event.Types
+    Miso.Exception
+    Miso.FFI
+    Miso.FFI.History
+    Miso.FFI.SSE
+    Miso.FFI.Storage
+    Miso.FFI.WebSocket
+    Miso.FFI.Internal
+    Miso.Html
+    Miso.Html.Element
+    Miso.Html.Event
+    Miso.Html.Property
+    Miso.Html.Types
+    Miso.Internal
+    Miso.Mathml
+    Miso.Mathml.Element
+    Miso.Render
+    Miso.Router
+    Miso.Run
+    Miso.Storage
+    Miso.Subscription
+    Miso.Subscription.History
+    Miso.Subscription.Keyboard
+    Miso.Subscription.Mouse
+    Miso.Subscription.WebSocket
+    Miso.Subscription.Window
+    Miso.Subscription.SSE
+    Miso.Svg.Attribute
+    Miso.Svg.Element
+    Miso.Svg.Event
+    Miso.Types
+    Miso.Util
+    Miso.WebSocket
+  exposed-modules:
+    Miso
+    Miso.Lens
+    Miso.Svg
+    Miso.String
+  ghc-options:
+    -Wall
+  hs-source-dirs:
+    ../src, ../text-src
+  build-depends:
+    aeson         < 2.3,
+    base          < 5,
+    bytestring    < 0.13,
+    containers    < 0.9,
+    http-api-data < 0.9,
+    http-media    < 0.9,
+    http-types    < 0.13,
+    jsaddle       < 0.10,
+    mtl           < 2.4,
+    network-uri   < 2.7,
+    servant       < 0.21,
+    tagsoup       < 0.15,
+    text          < 2.2,
+    transformers  < 0.7,
