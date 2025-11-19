@@ -62,6 +62,7 @@ intercalate sep (x:xs) =
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
+renderBuilder (VFrag vs)    = mconcat $ renderBuilder <$> vs
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"

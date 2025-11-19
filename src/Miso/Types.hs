@@ -75,6 +75,8 @@ module Miso.Types
   , toMisoString
   , fromMisoString
   , ms
+  -- *** Fragment
+  , group_
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON)
@@ -253,6 +255,7 @@ data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
   | VComp NS MisoString [Attribute action] (SomeComponent model)
+  | VFrag [ View model action ]
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -500,4 +503,33 @@ prettyQueryString URI {..} = queries <> flags
         [ "?" <> k
         | (k, Nothing) <- M.toList uriQueryString
         ]
+-----------------------------------------------------------------------------
+-- | Smart constructor for working with t'View model action' fragments.
+--
+-- This is a primitive and convenience function for inlining children nodes
+-- into a t'View m a'. This is meant to avoid situations where it can be
+-- unwieldy to append child node lists together with '++'.
+--
+-- This should be used in the child list of a t'VNode', see below.
+--
+-- If 'group_' is as a top-level node in a t'Component' it will be
+-- wrapped with a `<div>`.
+--
+-- If 'group_' are nested they will be recursively flattened.
+--
+-- @
+--
+-- someView :: View m a
+-- someView =
+--   div_
+--   [ id_ "container" ]
+--   [ "text goes here"
+--   , group_ [ "test", p_ [] [ "foo" ], group_ [ "bar" ] ]
+--   , div_ [ key_ "component-id" ] +> someComponent
+--   ]
+--
+-- @
+--
+group_ :: [ View model action ] -> View model action
+group_ = VFrag
 -----------------------------------------------------------------------------

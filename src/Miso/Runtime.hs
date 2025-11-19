@@ -791,8 +791,12 @@ buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
+      -- dmj: function used to erase view fragments
+      flatten views = (views >>=) $ \case
+        VFrag vs  -> flatten vs
+        v         -> [v]
       procreate = do
-        kidsViews <- forM kids $ \kid -> do
+        kidsViews <- forM (flatten kids) $ \kid -> do
           VTree (Object vtree) <- buildVTree hydrate kid snk logLevel events
           pure vtree
         setNextSibling kidsViews
@@ -806,6 +810,12 @@ buildVTree _ (VText t) _ _ _ = do
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
+buildVTree hydrate (VFrag kids) snk logLevel events = do
+  -- dmj: Case never reached in recursive case because @flatten@ called.
+  -- This case is only possible if a user renders a fragment as the top-most node,
+  -- in which case we can't inline (as seen above with @flatten@).
+  -- So we just wrap it in a top-level <div>
+  buildVTree hydrate (node HTML "div" [] kids) snk logLevel events
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
