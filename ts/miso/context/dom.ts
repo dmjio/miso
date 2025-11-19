@@ -54,6 +54,9 @@ export const hydrationContext : HydrationContext<DOMRef> = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
+  unmountComponent : (componentId: ComponentId) => {
+      return;
+  },
   mountComponent :
     ( events: Record<string, boolean>
     , model: Object

@@ -59,14 +59,6 @@ function areEqual(a: Object, b: Object) {
 }
 
 export const componentContext : ComponentContext = {
-    unmountComponent : function (componentId: ComponentId) {
-        let patch : UnmountComponent = {
-            type: "unmountComponent",
-            componentId,
-        };
-        addPatch(componentId, patch);
-        return;
-    },
     modelHydration : function (componentId: ComponentId, model: Object) {
         let patch : ModelHydration = {
             type: "modelHydration",
@@ -79,6 +71,14 @@ export const componentContext : ComponentContext = {
 };
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
+  unmountComponent : function (componentId: ComponentId) {
+        let patch : UnmountComponent = {
+            type: "unmountComponent",
+            componentId,
+        };
+        addPatch(componentId, patch);
+        return;
+  },
   mountComponent : (events : Record<string, boolean>, componentId: number, model: Object) => {
     return;
   },

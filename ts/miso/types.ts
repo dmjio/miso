@@ -12,6 +12,7 @@ export type ComponentId = number;
 export type VComp<T> = {
   type: 'vcomp';
   domRef: T;
+  componentId: number;
   ns: 'html';
   tag: string;
   key: string;
@@ -100,11 +101,11 @@ export type HydrationContext<T> = {
 };
 
 export type ComponentContext = {
-  unmountComponent : (componentId: ComponentId) => void,
   modelHydration : (componentId: ComponentId, model: Object) => void
 }
 
 export type DrawingContext<T> = {
+  unmountComponent : (componentId: ComponentId) => void,
   mountComponent :
     ( events: Record<string, boolean>
     , model: Object

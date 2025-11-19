@@ -30,7 +30,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, componentId : Component
     });
   }
   // step 3: call destroyed hooks, call created hooks
-  callDestroyedRecursive(c);
+  callDestroyedRecursive(c, context);
 }
 
 // destroy vtext, vnode, vcomp
@@ -40,7 +40,7 @@ function destroy<T>(obj: VTree<T>, parent: T, componentId : ComponentId, context
   // step 2: destroy
   context.removeChild(parent, obj.domRef, componentId);
   // step 3: invoke post-hooks for vnode and vcomp
-  callDestroyedRecursive(obj);
+  callDestroyedRecursive(obj, context);
 }
 
 function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, componentId: ComponentId, context: DrawingContext<T>): void {
@@ -74,16 +74,16 @@ function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, componentId: Componen
   }
 }
 // ** recursive calls to hooks
-function callDestroyedRecursive<T>(obj: VTree<T>): void {
-  callDestroyed(obj);
+function callDestroyedRecursive<T>(obj: VTree<T>, context: DrawingContext<T>): void {
+  callDestroyed(obj, context);
   for (const i in obj['children']) {
-    callDestroyedRecursive(obj['children'][i]);
+    callDestroyedRecursive(obj['children'][i], context);
   }
 }
 
-function callDestroyed<T>(obj: VTree<T>): void {
+function callDestroyed<T>(obj: VTree<T>, context : DrawingContext<T>): void {
   if (obj['onDestroyed']) obj['onDestroyed']();
-  if (obj.type === 'vcomp') unmountComponent(obj);
+  if (obj.type === 'vcomp') unmountComponent(obj, context);
 }
 
 function callBeforeDestroyed<T>(obj: VTree<T>): void {
@@ -215,9 +215,12 @@ function drawCanvas<T> (obj: VNode<T>) {
 }
 
 // unmount components
-function unmountComponent<T>(obj: VTree<T>): void {
+function unmountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
   if ('onUnmounted' in obj) obj['onUnmounted'](obj.domRef);
   obj['unmount'](obj.domRef);
+  // dmj: ^ Deallocate in Haskell heap
+  context.unmountComponent(obj.componentId)
+  // dmj: ^ Deallocate in JS heap
 }
 
 // mounts vcomp by calling into Haskell side.
