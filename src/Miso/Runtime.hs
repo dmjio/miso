@@ -768,7 +768,9 @@ buildVTree hydrate snk logLevel events = \case
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         vcompId <- toJSVal componentId
         FFI.set "componentId" vcompId (Object domRef)
-        void $ call continuation global (vcompId, vtree, (EventCapture events))
+        -- dmj: for native we need a ToJSON or custom ToJSVal on `model` for main thread
+        -- CPP it out so web doesn't require these constraints
+        void $ call continuation global (EventCapture events, vcompId, vtree)
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \domRef -> do
         componentId <- liftJSM (FFI.getComponentId domRef)
