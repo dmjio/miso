@@ -22,7 +22,6 @@ import {
   drawingContext,
   eventContext,
   hydrationContext,
-  componentContext,
 } from './miso/context/dom';
 
 /* export globally */
@@ -30,7 +29,6 @@ globalThis['miso'] = {
     hydrationContext,
     eventContext,
     drawingContext,
-    componentContext,
     diff,
     hydrate,
     version,

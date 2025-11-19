@@ -105,7 +105,14 @@ export type ComponentContext = {
 }
 
 export type DrawingContext<T> = {
-  mountComponent : (events: Record<string, boolean>, componentId: ComponentId, model: Object) => void,
+  mountComponent :
+    ( events: Record<string, boolean>
+    , model: Object
+    , parentComponentId: ComponentId
+    , componentId: ComponentId
+    , parent: T
+    , child: T
+    ) => void,
   nextSibling : (node: VNode<T>) => T;
   createTextNode : (s: string, componentId: ComponentId) => T;
   createElementNS : (ns: string, tag : string, componentId: ComponentId) => T;

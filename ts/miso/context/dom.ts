@@ -55,8 +55,16 @@ export const hydrationContext : HydrationContext<DOMRef> = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
-  mountComponent : function (events: Record<string, boolean>, componentId: ComponentId, model: Object) : void {
-     return;
+  mountComponent :
+    ( events: Record<string, boolean>
+    , model: Object
+    , parentComponentId: ComponentId
+    , componentId: ComponentId
+    , parent: DOMRef
+    , child: DOMRef
+    ) => {
+     /* we ignore the events and model in the DOM context */
+     return parent.appendChild (child);
   },
   nextSibling : (node: VNode<DOMRef>) => {
     return node.domRef.nextSibling as DOMRef;
