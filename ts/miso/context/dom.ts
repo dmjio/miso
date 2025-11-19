@@ -6,7 +6,6 @@ import
   , ComponentId
   , HydrationContext
   , DOMRef
-  , ComponentContext
   } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
