@@ -63,7 +63,6 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: parentNodeId,
             child: nodeId,
-            parentComponentId: componentId,
             componentId
         };
         // dmj: check diff produces patch object
@@ -73,7 +72,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -106,7 +105,6 @@ describe ('Patch tests', () => {
         let appendOperation : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -117,7 +115,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -151,7 +149,6 @@ describe ('Patch tests', () => {
             parent: parentNodeId,
             child: nodeId,
             componentId,
-            parentComponentId: componentId
         };
         // dmj: check diff produces patch object
         expect(getPatches()).toEqual([expected, appendOperation]);
@@ -160,7 +157,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -192,7 +189,6 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: parentNodeId,
             child: nodeId,
-            parentComponentId: componentId,
             componentId
         };
         let expectedSetAttribute : SetAttribute = {
@@ -209,7 +205,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -241,7 +237,6 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: parentNodeId,
             child: nodeId,
-            parentComponentId: componentId,
             componentId
         };
         let expectedSetAttribute : SetAttributeNS = {
@@ -259,7 +254,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -290,7 +285,6 @@ describe ('Patch tests', () => {
         let appendOperation : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -308,7 +302,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -350,7 +344,6 @@ describe ('Patch tests', () => {
         let appendOperation : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -367,7 +360,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -403,7 +396,6 @@ describe ('Patch tests', () => {
         let appendOperation1 : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -416,7 +408,6 @@ describe ('Patch tests', () => {
         let appendOperation2 : AppendChild = {
             type : "appendChild",
             parent: nodeId,
-            parentComponentId: componentId,
             child: nodeIdChild,
             componentId
         };
@@ -427,7 +418,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -460,7 +451,6 @@ describe ('Patch tests', () => {
         let appendOperation : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -478,7 +468,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0 : document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -510,7 +500,6 @@ describe ('Patch tests', () => {
         let appendOperation : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -543,7 +532,6 @@ describe ('Patch tests', () => {
         let appendOperation1 : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -556,7 +544,6 @@ describe ('Patch tests', () => {
         let appendOperation2 : AppendChild = {
             type : "appendChild",
             parent: nodeId,
-            parentComponentId: componentId,
             child: nodeIdChild1,
             componentId
         };
@@ -580,7 +567,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -625,7 +612,6 @@ describe ('Patch tests', () => {
         let appendOperation1 : AppendChild = {
             type : "appendChild",
             parent: parentNodeId,
-            parentComponentId: componentId,
             child: nodeId,
             componentId
         };
@@ -637,7 +623,6 @@ describe ('Patch tests', () => {
         };
         let appendOperation2 : AppendChild = {
             type : "appendChild",
-            parentComponentId: componentId,
             parent: nodeId,
             child: nodeIdChild,
             componentId
@@ -655,7 +640,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -703,7 +688,6 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: parentNodeId,
             child: nodeId,
-            parentComponentId: componentId,
             componentId
         };
         let expectedChild1 : CreateElement = {
@@ -716,7 +700,6 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: nodeId,
             child: nodeIdChild1,
-            parentComponentId: componentId,
             componentId
         };
         let expectedChild2 : CreateElement = {
@@ -745,7 +728,7 @@ describe ('Patch tests', () => {
             model: null,
             nodes: { 0: document.body },
             events: null,
-            mountPoint: componentId
+            componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);

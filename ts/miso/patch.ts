@@ -13,7 +13,7 @@ export type Component<T> = {
   model: Object, /* read-only access to the model, model must be serializable */
   nodes: Record<number, T>,
   events: Record<string, boolean>,
-  mountPoint: number
+  componentId: number
 };
 
 /* Convenience table to allow O(1) application of DOM references */
@@ -27,7 +27,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
             model: null,
             nodes: {},
             events: patch.events,
-            // mountPoint: patch.mountPoint
+            componentId: patch.componentId
         };
         return;
     }

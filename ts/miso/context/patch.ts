@@ -60,17 +60,6 @@ function areEqual(a: Object, b: Object) {
 }
 
 export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) {
-        let patch : MountComponent = {
-            type: "mountComponent",
-            componentId: componentId,
-            mountPoint : 0,
-            events,
-            model
-        };
-        addPatch(componentId, patch);
-        return;
-    },
     unmountComponent : function (componentId: ComponentId) {
         let patch : UnmountComponent = {
             type: "unmount",
@@ -120,7 +109,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return { nodeId };
   },
-  appendChild : (parent: NodeId, child: NodeId, parentComponentId: ComponentId, componentId: ComponentId) => {
+  appendChild : (parent: NodeId, child: NodeId, componentId: ComponentId) => {
     let patch : AppendChild = {
         type: "appendChild",
         parent: parent.nodeId,
