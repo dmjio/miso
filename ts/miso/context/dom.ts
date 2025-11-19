@@ -3,7 +3,6 @@ import
   , DrawingContext
   , VNode
   , EventContext
-  , EventCapture
   , ComponentId
   , HydrationContext
   , DOMRef

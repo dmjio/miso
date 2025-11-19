@@ -30,7 +30,6 @@ import {
   SetTextContent,
   SetInlineStyle,
   RemoveAttribute,
-  MountComponent,
   UnmountComponent,
   ModelHydration,
 } from '../patch';
