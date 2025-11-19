@@ -31,7 +31,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
         };
         return;
     }
-    if (patch.type === "unmount") {
+    if (patch.type === "unmountComponent") {
         /* unregister events here */
         delete components[patch.componentId];
         /* drop DOM node from tree? DOM patches should do this for us */
@@ -142,7 +142,7 @@ export type MountComponent = {
 };
 
 export type UnmountComponent = {
-  type: "unmount",
+  type: "unmountComponent",
   componentId: ComponentId,
 };
 

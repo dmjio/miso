@@ -62,7 +62,7 @@ function areEqual(a: Object, b: Object) {
 export const componentContext : ComponentContext = {
     unmountComponent : function (componentId: ComponentId) {
         let patch : UnmountComponent = {
-            type: "unmount",
+            type: "unmountComponent",
             componentId,
         };
         addPatch(componentId, patch);
