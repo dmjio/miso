@@ -112,7 +112,7 @@ initialize
   => Hydrate
   -> Component parent model action
   -> JSM DOMRef
-  -- ^ Callback function is used for obtaining the t'Component' 'DOMRef'.
+  -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> JSM (ComponentState model action)
 initialize hydrate Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
@@ -344,32 +344,32 @@ data Hydrate
 data ComponentState model action
   = ComponentState
   { componentId :: ComponentId
-  -- ^ The ID of the current t'Component'
+  -- ^ The ID of the current t'Miso.Types.Component'
   , componentParentId :: ComponentId
-  -- ^ The ID of the t'Component''s parent
+  -- ^ The ID of the t'Miso.Types.Component''s parent
   , componentSubThreads :: IORef (Map MisoString ThreadId)
-  -- ^ Mapping of all 'Sub' in use by t'Component'
+  -- ^ Mapping of all 'Sub' in use by Component
   , componentDOMRef :: DOMRef
-  -- ^ The DOM reference the t'Component' is mounted on
+  -- ^ The DOM reference the t'Miso.Types.Component' is mounted on
   , componentVTree :: IORef VTree
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
   , componentSink :: action -> JSM ()
-  -- ^ t'Component' t'Sink' used to enter events into the system
+  -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
   , componentModel :: TVar model
-  -- ^ t'Component' state
+  -- ^ t'Miso.Types.Component' state
   , componentIsDirty :: TVar Bool
-  -- ^ Indicator if 't'Component' needs to be drawn
+  -- ^ Indicator if t'Miso.Types.Component' needs to be drawn
   , componentActions :: IORef (Seq action)
   -- ^ Set of actions raised by the system
   , componentMailbox :: Mailbox
-  -- ^ t'Mailbox' for receiving messages from other t'Component'
+  -- ^ t'Mailbox' for receiving messages from other t'Miso.Types.Component'
   , componentScripts :: [DOMRef]
   -- ^ DOM references for \<script\> and \<style\> appended to \<head\>
   , componentMailboxThreadId :: ThreadId
   -- ^ Thread responsible for taking actions from t'Mailbox' and
   -- putting them into 'componentActions'
   , componentDiffs :: Mailbox
-  -- ^ Used with t'Binding' to synchronize other t'Component' state
+  -- ^ Used with t'Binding' to synchronize other t'Miso.Types.Component' state
   -- at the granularity of a t'Miso.Lens.Lens'
   , componentNotify :: IO ()
   -- ^ t'IO' action to unblock event loop thread

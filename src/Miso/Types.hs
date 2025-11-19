@@ -212,7 +212,7 @@ component m u v = Component
   , bindings = []
   }
 -----------------------------------------------------------------------------
--- | A top-level t'Miso.Types.Component' can have no @parent@
+-- | A top-level t'Miso.Types.Component' can have no @parent@.
 --
 -- The 'ROOT' type is for disallowing a top-level mounted t'Miso.Types.Component' access
 -- into its parent state. It has no inhabitants (spiritually 'Data.Void.Void')
@@ -222,8 +222,8 @@ data ROOT
 -- | 'Eq' instance for 'ROOT'
 instance Eq ROOT where _ == _ = True
 -----------------------------------------------------------------------------
--- | A miso applicatoin is a top level t'Miso.Types.Component', which has no parent.
--- This is enforced by specializing the 'parent' type parameter to 'ROOT'.
+-- | A miso application is a top-level t'Miso.Types.Component', which has no @parent@.
+-- This is enforced by specializing the @parent@ type parameter to 'ROOT'.
 --
 type App model action = Component ROOT model action
 -----------------------------------------------------------------------------

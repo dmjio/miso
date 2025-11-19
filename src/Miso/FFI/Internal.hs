@@ -678,6 +678,7 @@ flush = do
   context <- getDrawingContext
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
+-- | Type that holds an [Image](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img).
 newtype Image = Image JSVal
   deriving (ToJSVal, MakeObject)
 -----------------------------------------------------------------------------
