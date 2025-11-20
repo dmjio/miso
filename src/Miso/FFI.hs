@@ -87,6 +87,7 @@ module Miso.FFI
   , addEventListener
   , dispatchEvent
   , newEvent
+  , Event (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

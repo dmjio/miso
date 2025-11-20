@@ -98,7 +98,7 @@ renderAttrs (Property key value) =
   , toHtmlFromJSON value
   , stringUtf8 "\""
   ]
-renderAttrs (Event _) = mempty
+renderAttrs (On _) = mempty
 renderAttrs (Styles styles) =
   mconcat
   [ "style"
