@@ -842,7 +842,7 @@ setAttrs vnode attrs snk logLevel events =
       value <- toJSVal v
       o <- getProp "props" vnode
       FFI.set k value (Object o)
-    Event callback ->
+    On callback ->
       callback snk (VTree vnode) logLevel events
     Styles styles -> do
       cssObj <- getProp "css" vnode

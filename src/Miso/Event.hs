@@ -42,7 +42,7 @@ import           Language.Javascript.JSaddle
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Attribute (Event), LogLevel(..), DOMRef, VTree(..))
+import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
@@ -73,7 +73,7 @@ onWithOptions
   -> (r -> DOMRef -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  Event $ \sink (VTree n) logLevel events ->
+  On $ \sink (VTree n) logLevel events ->
     case M.lookup eventName events of
       Nothing ->
         when (logLevel `elem` [ DebugAll, DebugEvents ]) $
@@ -104,7 +104,7 @@ onWithOptions options eventName Decoder{..} toAction =
 --
 onMounted :: action -> Attribute action
 onMounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
@@ -118,7 +118,7 @@ onMounted action =
 --
 onMountedWith :: (DOMRef -> action) -> Attribute action
 onMountedWith action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
@@ -129,7 +129,7 @@ onMountedWith action =
 --
 onBeforeMounted :: action -> Attribute action
 onBeforeMounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeMounted" callback object
 -----------------------------------------------------------------------------
@@ -140,7 +140,7 @@ onBeforeMounted action =
 --
 onCreated :: action -> Attribute action
 onCreated action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -150,7 +150,7 @@ onCreated action =
 --
 onCreatedWith :: (DOMRef -> action) -> Attribute action
 onCreatedWith action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -162,7 +162,7 @@ onCreatedWith action =
 --
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -173,7 +173,7 @@ onDestroyed action =
 --
 onUnmounted :: action -> Attribute action
 onUnmounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ onUnmounted action =
 --
 onUnmountedWith :: (DOMRef -> action) -> Attribute action
 onUnmountedWith action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
@@ -197,7 +197,7 @@ onUnmountedWith action =
 --
 onBeforeUnmounted :: action -> Attribute action
 onBeforeUnmounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
@@ -209,7 +209,7 @@ onBeforeUnmounted action =
 --
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -221,7 +221,7 @@ onBeforeDestroyed action =
 --
 onBeforeCreated :: action -> Attribute action
 onBeforeCreated action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeCreated" callback object
 -----------------------------------------------------------------------------
