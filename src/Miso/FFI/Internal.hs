@@ -73,6 +73,8 @@ module Miso.FFI.Internal
    -- * Events
    , delegateEvent
    , undelegateEvent
+   , dispatchEvent
+   , newEvent
    -- * Isomorphic
    , hydrate
    -- * Misc.
@@ -138,8 +140,10 @@ module Miso.FFI.Internal
    -- * FileReader
    , FileReader (..)
    , newFileReader
-   -- * fetch API
+   -- * Fetch API
    , Response (..)
+   -- * Event
+   , Event (..)
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (foldM)
@@ -989,4 +993,36 @@ instance FromJSVal (Map MisoString MisoString) where
       populate m k = do
         v <- fromJSValUnchecked =<< getProp k (Object o)
         pure (M.insert k v m)
+-----------------------------------------------------------------------------
+-- | [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+newtype Event = Event JSVal
+  deriving (ToJSVal)
+-----------------------------------------------------------------------------
+instance FromJSVal Event where
+  fromJSVal = pure . Just . Event
+-----------------------------------------------------------------------------
+-- | Invokes [document.dispatchEvent](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/dispatchEvent)
+--
+-- @
+--   update ChangeTheme = io_ $ do
+--     themeEvent <- newEvent "basecoat:theme"
+--     dispatchEvent themeEvent
+-- @
+--
+dispatchEvent :: Event -> JSM ()
+dispatchEvent event = do
+  doc <- getDocument
+  _ <- doc # (ms "dispatchEvent") $ [event]
+  pure ()
+-----------------------------------------------------------------------------
+-- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
+--
+-- @
+--   update ChangeTheme = io_ $ do
+--     themeEvent <- newEvent "basecoat:theme"
+--     dispatchEvent themeEvent
+-- @
+--
+newEvent :: MisoString -> JSM Event
+newEvent name = Event <$> new (jsg "Event") [name]
 -----------------------------------------------------------------------------
