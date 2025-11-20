@@ -44,6 +44,7 @@
 - [WebAssembly](#-web-assembly)
 - [JavaScript](#JavaScript)
 - [Haddocks](#haddocks)
+- [Wiki](#wiki)
 - [Architecture](#architecture)
 - [Internals](#internals-%EF%B8%8F)
 - [Examples](#examples)
@@ -541,6 +542,11 @@ Offical [Haskell](https://haskell.org) documentation of the [Miso](https://haske
 | GHCJS | [Link](https://haddocks.haskell-miso.org/) |
 | GHC | [Link](http://hackage.haskell.org/package/miso) |
 
+## Wiki
+
+See the [DeepWiki](https://deepwiki.com/dmjio/miso) entry to explore the source code.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dmjio/miso)
 
 ## Architecture
 
