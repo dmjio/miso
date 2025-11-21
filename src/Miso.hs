@@ -110,7 +110,8 @@ import           Miso.Util
 -- To get an IO action that starts the application, use 'run' on the result of this function.
 --
 -- @
--- main = run (miso (\uri -> ..))
+-- main :: IO ()
+-- main = run (miso (\\uri -> ..))
 -- @
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
@@ -122,6 +123,7 @@ miso f = withJS $ do
 -- To get an IO action that starts the application, use 'run' on the result of this function.
 --
 -- @
+-- main :: IO ()
 -- main = run (startApp app)
 -- @
 startApp :: Eq model => App model action -> JSM ()
@@ -144,6 +146,7 @@ startComponent vcomp = withJS (initComponent vcomp)
 -- To get an IO action that starts the application, use 'run' on the result of this function.
 --
 -- @
+-- main :: IO ()
 -- main = run (renderApp "my-context" app)
 -- @
 renderApp
@@ -156,7 +159,7 @@ renderApp
 renderApp renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
 ----------------------------------------------------------------------------
--- | top-level t'Component' initialization helper for `renderApp` and `startComponent`
+-- | top-level t'Miso.Types.Component' initialization helper for `renderApp` and `startComponent`
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action

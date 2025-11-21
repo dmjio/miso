@@ -3,17 +3,18 @@ import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, componentId: ComponentId, context: DrawingContext<T>): void {
-  if (!currentObj && !newObj) return;
-    else if (!currentObj && newObj) create(newObj, parent, componentId, context);
-    else if (!newObj) destroy(currentObj, parent, componentId, context);
-  else {
-    if (currentObj.type === newObj.type) {
+    if (!currentObj && !newObj)
+        return;
+    else if (!currentObj)
+        create(newObj, parent, componentId, context);
+    else if (!newObj)
+        destroy(currentObj, parent, componentId, context);
+    else if (currentObj.type === newObj.type)
         diffNodes(currentObj, newObj, parent, componentId, context);
-    } else {
+    else
         replace(currentObj, newObj, parent, componentId, context);
-    }
-  }
 }
+
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, componentId : ComponentId, context : DrawingContext<T>): void {
   // step1 : prepare to delete, unmount things

@@ -83,7 +83,7 @@
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
               buildInputs = with pkgs;
                 drv.buildInputs ++
-                  [ just bun ormolu cabal-install ghcid
+                  [ just bun ormolu cabal-install ghcid tailwindcss_4
                   ];
             });
 
@@ -92,7 +92,7 @@
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
               buildInputs = with pkgs; with haskell.packages.ghc9122;
                 drv.buildInputs ++
-                  [ just bun ormolu haskell-language-server cabal-install ghcid
+                  [ just bun ormolu haskell-language-server cabal-install ghcid tailwindcss_4
                   ];
             });
 
@@ -107,11 +107,12 @@
           wasm =
             pkgs.mkShell {
               name = "The miso ${system} GHC WASM 9.12.2 shell";
-              packages = [
+              packages = with pkgs; [
                  inputs.ghc-wasm-meta.packages.${system}.all_9_12
-                 pkgs.gnumake
-                 pkgs.http-server
-                 pkgs.cabal-install
+                 gnumake
+                 http-server
+                 cabal-install
+                 tailwindcss_4
                ];
               shellHook = ''
                 function build () {
@@ -156,6 +157,7 @@
                  cabal-install
                  nodejs
                  emscripten
+                 tailwindcss_4
               ];
             };
 
@@ -176,12 +178,13 @@
                    cabal update
                 }
               '';
-              packages = [
-                 pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
-                 pkgs.gnumake
-                 pkgs.http-server
-                 pkgs.cabal-install
-                 pkgs.emscripten
+              packages = with pkgs; [
+                 pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
+                 gnumake
+                 http-server
+                 cabal-install
+                 emscripten
+                 tailwindcss_4
               ];
             };
 

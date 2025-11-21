@@ -53,6 +53,7 @@ module Miso.Effect
   , noEff
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (void)
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
 import           Language.Javascript.JSaddle (JSVal, JSM)
@@ -194,9 +195,11 @@ io action = withSink (action >>=)
 -- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
 --
+-- Note: The result of 'JSM a' is discarded.
+--
 -- @since 1.9.0.0
-io_ :: JSM () -> Effect parent model action
-io_ action = withSink (\_ -> action)
+io_ :: JSM a -> Effect parent model action
+io_ action = withSink (\_ -> void action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
 --

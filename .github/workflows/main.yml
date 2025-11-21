@@ -44,6 +44,9 @@ jobs:
      - name: (x86) Miso GHC (GHC 8.6.5)
        run: nix-build -A miso-ghc
 
+     - name: Nix garbage collection
+       run: nix-collect-garbage -d       
+
      - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
 

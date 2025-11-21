@@ -210,17 +210,14 @@ function mkVNode() {
 function diff(currentObj, newObj, parent, context) {
   if (!currentObj && !newObj)
     return;
-  else if (!currentObj && newObj)
+  else if (!currentObj)
     create(newObj, parent, context);
   else if (!newObj)
     destroy(currentObj, parent, context);
-  else {
-    if (currentObj.type === newObj.type) {
-      diffNodes(currentObj, newObj, parent, context);
-    } else {
-      replace(currentObj, newObj, parent, context);
-    }
-  }
+  else if (currentObj.type === newObj.type)
+    diffNodes(currentObj, newObj, parent, context);
+  else
+    replace(currentObj, newObj, parent, context);
 }
 function replace(c, n, parent, context) {
   callBeforeDestroyedRecursive(c);

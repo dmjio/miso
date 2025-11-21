@@ -20,15 +20,12 @@ module Miso.Event
    -- *** Lifecycle events
    , onMounted
    , onMountedWith
-   , onMountedWith_
    , onBeforeMounted
    , onUnmounted
    , onUnmountedWith
-   , onUnmountedWith_
    , onBeforeUnmounted
    , onCreated
    , onCreatedWith
-   , onCreatedWith_
    , onBeforeCreated
    , onDestroyed
    , onBeforeDestroyed
@@ -45,7 +42,7 @@ import           Language.Javascript.JSaddle
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Attribute (Event), LogLevel(..), DOMRef, VTree(..), ComponentId)
+import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
 import           Miso.String (MisoString, unpack)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
@@ -76,7 +73,7 @@ onWithOptions
   -> (r -> DOMRef -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  Event $ \sink (VTree n) logLevel events ->
+  On $ \sink (VTree n) logLevel events ->
     case M.lookup eventName events of
       Nothing ->
         when (logLevel `elem` [ DebugAll, DebugEvents ]) $
@@ -107,7 +104,7 @@ onWithOptions options eventName Decoder{..} toAction =
 --
 onMounted :: action -> Attribute action
 onMounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
@@ -119,27 +116,9 @@ onMounted action =
 --
 -- @since 1.9.0.0
 --
-onMountedWith
-  :: (ComponentId -> action)
-  -> Attribute action
+onMountedWith :: (DOMRef -> action) -> Attribute action
 onMountedWith action =
-  Event $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback1 $ \domRef -> do
-      vcompId <- FFI.getComponentId domRef
-      sink (action vcompId)
-    FFI.set "onMounted" callback object
------------------------------------------------------------------------------
--- | @onMountedWith action@ is an event that gets called after the actual DOM
--- element is created. It returns the /componentId/ from the component.
--- Returning /componentId/ is useful when creating t'Miso.Types.Component' dynamically.
---
--- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
---
--- @since 1.9.0.0
---
-onMountedWith_ :: (DOMRef -> action) -> Attribute action
-onMountedWith_ action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onMounted" callback object
 -----------------------------------------------------------------------------
@@ -150,7 +129,7 @@ onMountedWith_ action =
 --
 onBeforeMounted :: action -> Attribute action
 onBeforeMounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeMounted" callback object
 -----------------------------------------------------------------------------
@@ -161,7 +140,7 @@ onBeforeMounted action =
 --
 onCreated :: action -> Attribute action
 onCreated action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
@@ -169,21 +148,10 @@ onCreated action =
 --
 -- @since 1.9.0.0
 --
-onCreatedWith_ :: (DOMRef -> action) -> Attribute action
-onCreatedWith_ action =
-  Event $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback1 (sink . action)
-    FFI.set "onCreated" callback object
------------------------------------------------------------------------------
--- | Like @onCreated action@ but passes along the `ComponentId`
---
--- @since 1.9.0.0
---
-onCreatedWith :: (ComponentId -> action) -> Attribute action
+onCreatedWith :: (DOMRef -> action) -> Attribute action
 onCreatedWith action =
-  Event $ \sink (VTree object) _ _ -> do
-    vcompId <- action <$> do FFI.getComponentId =<< toJSVal object
-    callback <- FFI.syncCallback (sink vcompId)
+  On $ \sink (VTree object) _ _ -> do
+    callback <- FFI.syncCallback1 (sink . action)
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
@@ -194,7 +162,7 @@ onCreatedWith action =
 --
 onDestroyed :: action -> Attribute action
 onDestroyed action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -205,7 +173,7 @@ onDestroyed action =
 --
 onUnmounted :: action -> Attribute action
 onUnmounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
@@ -216,24 +184,10 @@ onUnmounted action =
 --
 -- @since 1.9.0.0
 --
-onUnmountedWith_ :: (DOMRef -> action) -> Attribute action
-onUnmountedWith_ action =
-  Event $ \sink (VTree object) _ _ -> do
+onUnmountedWith :: (DOMRef -> action) -> Attribute action
+onUnmountedWith action =
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback1 (sink . action)
-    FFI.set "onUnmounted" callback object
------------------------------------------------------------------------------
--- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM. It returns the /componentId/ after the unmount call.
---
--- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
---
--- @since 1.9.0.0
---
-onUnmountedWith :: (ComponentId -> action) -> Attribute action
-onUnmountedWith action = do
-  Event $ \sink (VTree object) _ _ -> do
-    vcompId <- action <$> do FFI.getComponentId =<< toJSVal object
-    callback <- FFI.syncCallback (sink vcompId)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
@@ -243,7 +197,7 @@ onUnmountedWith action = do
 --
 onBeforeUnmounted :: action -> Attribute action
 onBeforeUnmounted action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
@@ -255,7 +209,7 @@ onBeforeUnmounted action =
 --
 onBeforeDestroyed :: action -> Attribute action
 onBeforeDestroyed action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
@@ -267,7 +221,7 @@ onBeforeDestroyed action =
 --
 onBeforeCreated :: action -> Attribute action
 onBeforeCreated action =
-  Event $ \sink (VTree object) _ _ -> do
+  On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onBeforeCreated" callback object
 -----------------------------------------------------------------------------

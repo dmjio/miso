@@ -11,70 +11,83 @@
 --
 ----------------------------------------------------------------------------
 module Miso.FFI
-  ( -- ** Functions
+  ( -- ** Object
     set
+    -- ** Performance
   , now
+    -- ** Logging
   , consoleLog
   , consoleLog'
   , consoleError
   , consoleWarn
+  -- ** DOM
   , getElementById
   , focus
   , blur
   , alert
-  , reload
+    -- ** Styles
   , addStyle
   , addStyleSheet
-  , addEventListener
+    -- ** Callbacks
   , syncCallback
   , syncCallback1
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
+    -- ** Drawing
   , flush
   , setDrawingContext
+    -- ** JSON
   , jsonStringify
   , jsonParse
+    -- ** Window
   , windowInnerWidth
   , windowInnerHeight
-  -- ** Image
+  , reload
+    -- ** Image
   , Image (..)
   , newImage
-  -- ** Date
+    -- ** Date
   , Date (..)
   , newDate
   , toLocaleString
   , getSeconds
   , getMilliseconds
-  -- ** 'Miso.Types.Component'
+    -- ** 'Miso.Types.Component'
   , getParentComponentId
   , getComponentId
-  -- ** DOM
+    -- ** DOM
   , nextSibling
   , previousSibling
-  -- ** Element
+    -- ** Element
   , click
+    -- ** FileReader
   , files
-   -- ** Navigator
+    -- ** Navigator
   , isOnLine
-  -- ** ArrayBuffer
+    -- ** ArrayBuffer
   , ArrayBuffer (..)
-  -- ** Blob
+    -- ** Blob
   , Blob (..)
-  -- ** Uint8Array
+    -- ** Uint8Array
   , Uint8Array (..)
-   -- ** FormData
+    -- ** FormData
   , FormData (..)
-   -- ** File
+    -- ** File
   , File (..)
-   -- ** URLSearchParams
+    -- ** URLSearchParams
   , URLSearchParams (..)
-  -- ** FileReader
+    -- ** FileReader
   , FileReader (..)
   , newFileReader
-  -- ** Fetch API
+    -- ** Fetch API
   , fetch
   , Response (..)
+    -- ** Event
+  , addEventListener
+  , dispatchEvent
+  , newEvent
+  , Event (..)
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

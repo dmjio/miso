@@ -128,14 +128,14 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
     attrs = initCallback : drawCallack : attributes
 
     initCallback :: Attribute action
-    initCallback = Event $ \_ (VTree vtree) _ _ -> do
+    initCallback = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           initialState <- initialize_ domRef
           FFI.set "state" initialState (Object domRef)
 
     drawCallack :: Attribute action
-    drawCallack = Event $ \_ (VTree vtree) _ _ -> do
+    drawCallack = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
@@ -159,7 +159,7 @@ canvas attributes initialize draw = node HTML "canvas" attrs []
     attrs = initCallback : drawCallack : attributes
 
     initCallback :: Attribute action
-    initCallback = Event $ \_ (VTree vtree) _ _ -> do
+    initCallback = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
@@ -167,7 +167,7 @@ canvas attributes initialize draw = node HTML "canvas" attrs []
           FFI.set "state" initialState (Object domRef)
 
     drawCallack :: Attribute action
-    drawCallack = Event $ \_ (VTree vtree) _ _ -> do
+    drawCallack = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
         FFI.syncCallback1 $ \domRef -> do
           jval <- domRef ! ("state" :: MisoString)
