@@ -11,12 +11,15 @@ export type ComponentId = number;
 
 export type VComp<T> = {
   type: 'vcomp';
-  domRef: T;
-  ns: 'html';
-  tag: string;
+
+  // domRef: T;
+  ns: 'html'; //dmj: shouldn't exist
+  tag: string; // dmj: shouldn't exist
+  props: Props; // always null
+  css: CSS; // always null
+
+  domRef: T; // always null
   key: string;
-  props: Props;
-  css: CSS;
   events: Events<T>;
   children: Array<VTree<T>>;
   onBeforeMounted: () => void;
@@ -25,7 +28,7 @@ export type VComp<T> = {
   onUnmounted: (domRef: T) => void;
   mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {
@@ -44,7 +47,7 @@ export type VNode<T> = {
   onCreated: () => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VText<T> = {
