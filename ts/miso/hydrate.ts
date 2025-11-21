@@ -63,7 +63,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     (vtree.domRef as Node) = node;
 
-    populate(null, vtree, drawingContext);
+    populate(null, vtree, mountPoint, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -196,7 +196,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   switch (vtree.type) {
     case 'vcomp':
       (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
+      callCreated(vtree, node, drawingContext);
       break;
     case 'vtext':
       (vtree as VText<DOMRef>).domRef = node as DOMRef;
@@ -205,8 +205,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
       (vtree as VNode<DOMRef>).domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
-      callCreated(vtree, drawingContext);
-
+      callCreated(vtree, node, drawingContext); //dmj: Is node right here?
       for (var i = 0; i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
         const domChild = node.childNodes[i];
@@ -230,7 +229,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           default:
             if (domChild.nodeType !== 1) return false;
             vdomChild.domRef = domChild as DOMRef;
-             walk(logLevel, vdomChild, domChild, context, drawingContext);
+            walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
       }
