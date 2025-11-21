@@ -92,7 +92,7 @@ export const componentContext : ComponentContext = {
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VNode<NodeId>) => {
-    return node.nextSibling.domRef;
+    return (node as VNode<NodeId>).nextSibling.domRef;
   },
   createTextNode : (value : string) => {
       const nodeId: number = nextNodeId ();

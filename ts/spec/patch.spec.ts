@@ -71,6 +71,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -112,6 +114,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -152,6 +156,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -198,6 +204,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -245,6 +253,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -291,6 +301,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -347,6 +359,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -403,6 +417,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -451,6 +467,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -548,6 +566,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -619,6 +639,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -705,6 +727,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            mountPoint: 0,
         };
         components[componentId] = component;
         patch (domContext, expected, components);

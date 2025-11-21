@@ -57,7 +57,9 @@ module Miso.Types
   , (--->)
   , (<---)
   -- ** Component mounting
-  , (+>)
+  , mount
+  -- ** Fragment
+  , fragment_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -252,7 +254,8 @@ data LogLevel
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
-  | VComp NS MisoString [Attribute action] (SomeComponent model)
+  | VComp [Attribute action] (SomeComponent model)
+  | VFrag [Attribute action] [View model action]
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper used to allow the nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -265,26 +268,42 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   div_ [ key_ "component-id" ] +\> component model noop $ \\m ->
+--   view :: model -> View model action
+--   view model = mount $ component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
-(+>)
+-----------------------------------------------------------------------------
+mount
   :: forall child model action a . Eq child
-  => ([View model a] -> View model a)
+  => [Attribute a]
   -> Component model child action
   -> View model a
-infixr 0 +>
-(+>) mkNode vcomp =
-  case mkNode [] of
-    VNode ns tag attrs _ ->
-      VComp ns tag attrs
-        (SomeComponent vcomp)
-    VComp ns tag attrs vcomp_ ->
-      VComp ns tag attrs vcomp_
-    _ ->
-      error "Impossible: cannot mount on a Text node"
+mount attrs vcomp = VComp attrs (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+-- | Smart constructor for creating a fragment of Nodes.
+--
+-- See [React Fragmemts](https://react.dev/reference/react/Fragment) for motivation.
+-- Fragments have no DOM representation.
+--
+-- When returned from a t'Component' as top-level nodes this has the effect of
+-- inlining the fragment child list into the parent t'Component' child list.
+--
+-- This means we can have children from different t'Component' living side-by-side
+-- with each other.
+-- 
+-- @
+--   view :: model -> View model action
+--   view model = div_ [ id_ "id" ] [ fragment_ [ "foo", p_ [ class_ "thing" ] [ "woz" ] ] ]
+-- @
+--
+-- @since 1.9.0.0
+fragment_
+  :: [Attribute a ]
+  -> [ View model a ]
+  -> View model a
+fragment_ = VFrag
 -----------------------------------------------------------------------------
 -- | Namespace of DOM elements.
 data NS

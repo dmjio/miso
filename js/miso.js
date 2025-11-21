@@ -214,10 +214,25 @@ function diff(currentObj, newObj, parent, context) {
     create(newObj, parent, context);
   else if (!newObj)
     destroy(currentObj, parent, context);
-  else if (currentObj.type === newObj.type)
+  else if (currentObj.type === "vtext" && newObj.type === "vtext") {
+    diffText(currentObj, newObj, context);
+  } else if (currentObj.type === "vnode" && newObj.type === "vnode") {
     diffNodes(currentObj, newObj, parent, context);
-  else
+  } else if (currentObj.type === "vcomp" && newObj.type === "vcomp") {
+    diffNodes(currentObj, newObj, parent, context);
+  } else if (currentObj.type === "vfrag" && newObj.type === "vfrag") {
+    diffNodes(currentObj, newObj, parent, context);
+  } else
     replace(currentObj, newObj, parent, context);
+}
+function diffText(c, n, context) {
+  if (c.type === "vtext" && n.type === "vtext") {
+    if (c.text !== n.text) {
+      context.setTextContent(c.domRef, n.text);
+    }
+    n.domRef = c.domRef;
+    return;
+  }
 }
 function replace(c, n, parent, context) {
   callBeforeDestroyedRecursive(c);
@@ -225,7 +240,7 @@ function replace(c, n, parent, context) {
     n.domRef = context.createTextNode(n.text);
     context.replaceChild(parent, n.domRef, c.domRef);
   } else {
-    createElement(n, context, (newChild) => {
+    createElement(n, parent, context, (newChild) => {
       context.replaceChild(parent, newChild, c.domRef);
     });
   }
@@ -237,16 +252,9 @@ function destroy(obj, parent, context) {
   callDestroyedRecursive(obj);
 }
 function diffNodes(c, n, parent, context) {
-  if (c.type === "vtext" && n.type === "vtext") {
-    if (c.text !== n.text) {
-      context.setTextContent(c.domRef, n.text);
-    }
-    n.domRef = c.domRef;
-    return;
-  }
   if (n["tag"] === c["tag"] && n.key === c.key && n.type === c.type) {
     n.domRef = c.domRef;
-    populate(c, n, context);
+    populate(c, n, parent, context);
   } else {
     replace(c, n, parent, context);
   }
@@ -276,17 +284,17 @@ function callBeforeDestroyedRecursive(obj) {
     callBeforeDestroyedRecursive(obj["children"][i]);
   }
 }
-function callCreated(obj, context) {
+function callCreated(obj, parent, context) {
   if (obj["onCreated"])
     obj["onCreated"](obj.domRef);
   if (obj.type === "vcomp")
-    mountComponent(obj, context);
+    mountComponent(obj, parent, context);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
     obj["onBeforeCreated"]();
 }
-function populate(c, n, context) {
+function populate(c, n, parent, context) {
   if (n.type !== "vtext") {
     if (!c)
       c = vnode({});
@@ -362,12 +370,12 @@ function populateDomRef(obj, context) {
     obj.domRef = context.createElement(obj["tag"]);
   }
 }
-function createElement(obj, context, attach) {
+function createElement(obj, parent, context, attach) {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
-  callCreated(obj, context);
+  callCreated(obj, parent, context);
   attach(obj.domRef);
-  populate(null, obj, context);
+  populate(null, obj, parent, context);
 }
 function drawCanvas(obj) {
   if (obj.tag === "canvas" && "draw" in obj) {
@@ -379,12 +387,30 @@ function unmountComponent(obj) {
     obj["onUnmounted"](obj.domRef);
   obj["unmount"](obj.domRef);
 }
-function mountComponent(obj, context) {
+function mountComponent(obj, parent, context) {
   if (obj.onBeforeMounted)
     obj.onBeforeMounted();
   obj.mount(obj.domRef, (componentId, componentTree) => {
-    obj.children.push(componentTree);
-    context.appendChild(obj.domRef, componentTree.domRef);
+    switch (componentTree.type) {
+      case "vnode":
+        context.appendChild(parent, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vfrag":
+        for (var child of componentTree.children) {
+          context.appendChild(parent, child.domRef);
+          obj.children.push(child);
+        }
+        break;
+      case "vtext":
+        context.appendChild(parent, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vcomp":
+        obj.children.push(componentTree);
+        mountComponent(componentTree, parent, context);
+        break;
+    }
     if (obj.onMounted)
       obj.onMounted(obj.domRef);
   });
@@ -394,7 +420,7 @@ function create(obj, parent, context) {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
   } else {
-    createElement(obj, context, (child) => {
+    createElement(obj, parent, context, (child) => {
       context.appendChild(parent, child);
     });
   }
@@ -456,7 +482,7 @@ function syncChildren(os, ns, parent, context) {
         context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
         newFirstIndex++;
       } else {
-        createElement(nFirst, context, (e) => {
+        createElement(nFirst, parent, context, (e) => {
           context.insertBefore(parent, e, oFirst.domRef);
         });
         os.splice(oldFirstIndex++, 0, nFirst);
@@ -527,8 +553,6 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
     parentStack.unshift(obj);
     for (var c in obj["children"]) {
       var child = obj["children"][c];
-      if (child["type"] === "vcomp")
-        continue;
       if (context.isEqual(child["domRef"], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
@@ -648,7 +672,7 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
     vtree.domRef = node;
-    populate(null, vtree, drawingContext);
+    populate(null, vtree, mountPoint, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -744,7 +768,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case "vcomp":
       vtree.domRef = node;
-      callCreated(vtree, drawingContext);
+      callCreated(vtree, node, drawingContext);
       break;
     case "vtext":
       vtree.domRef = node;
@@ -752,7 +776,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
     default:
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
-      callCreated(vtree, drawingContext);
+      callCreated(vtree, node, drawingContext);
       for (var i = 0;i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
         const domChild = node.childNodes[i];

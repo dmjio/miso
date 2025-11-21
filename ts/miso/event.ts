@@ -99,7 +99,8 @@ function delegateEvent <T>(
     parentStack.unshift(obj);
     for (var c in obj['children']) {
       var child = obj['children'][c];
-      if (child['type'] === 'vcomp') continue;
+      // if (child['type'] === 'vcomp') continue;
+      // dmj: allow bubbling up
       if (context.isEqual(child['domRef'], stack[1])) {
         delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
         break;
