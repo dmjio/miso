@@ -18,6 +18,8 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
+const componentId: number = 0;
+
 describe ('Event tests', () => {
 
   test('Should delegate and undelegate button click', () => {
@@ -47,7 +49,7 @@ describe ('Event tests', () => {
     });
 
     /* initial page draw */
-    diff(null, vtreeParent, document.body, drawingContext);
+    diff(null, vtreeParent, document.body, componentId, drawingContext);
 
     /* ensure structures match */
     expect(vtreeParent.domRef).toEqual(document.body.childNodes[0] as DOMRef);

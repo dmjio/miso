@@ -1,5 +1,5 @@
 import { callCreated, populate } from './dom';
-import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
+import { ComponentId, DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
@@ -16,7 +16,7 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
 
 /* function to determine if <script> tags are present in `body` top-level
    if so we work around them */
-function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): Node {
+function preamble(mountPoint: DOMRef | Text, componentId: ComponentId, context : DrawingContext<DOMRef>): Node {
   /* this needs to be abstracted out for native as well ... at some point */
   var mountChildIdx = 0,
     node: ChildNode;
@@ -25,10 +25,10 @@ function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): 
     if (root.childNodes.length > 0) {
         node = root.firstChild;
     } else {
-      node = root.appendChild(context.createElement('div'));
+      node = root.appendChild(context.createElement('div', componentId));
     }
   } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(context.createElement('div'));
+    node = mountPoint.appendChild(context.createElement('div', componentId));
   } else {
     while (
       mountPoint.childNodes[mountChildIdx] &&
@@ -38,7 +38,7 @@ function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): 
       mountChildIdx++;
     }
     if (!mountPoint.childNodes[mountChildIdx]) {
-      node = root.appendChild(context.createElement('div'));
+      node = root.appendChild(context.createElement('div', componentId));
     } else {
       node = mountPoint.childNodes[mountChildIdx];
     }
@@ -46,12 +46,12 @@ function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): 
   return node;
 }
 
-export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
+export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, componentId: ComponentId, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
   // If script tags are rendered first in body, skip them.
-  const node: Node = preamble(mountPoint, drawingContext);
+  const node: Node = preamble(mountPoint, componentId, drawingContext);
 
   // begin walking the DOM, report the result
-    if (!walk(logLevel, vtree, node, context, drawingContext)) {
+    if (!walk(logLevel, vtree, node, componentId, context, drawingContext)) {
     // If we failed to prerender because the structures were different, fallback to drawing
     if (logLevel) {
       console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
@@ -59,15 +59,15 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     // Remove all children before rebuilding DOM
     while (context.firstChild(node as DOMRef))
-      drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
+      drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef), componentId);
 
     (vtree.domRef as Node) = node;
 
-    populate(null, vtree, drawingContext);
+    populate(null, vtree, componentId, drawingContext);
     return false;
   } else {
     if (logLevel) {
-      if (!integrityCheck(vtree, context, drawingContext)) {
+      if (!integrityCheck(vtree, context)) {
         console.warn('[DEBUG_HYDRATE] Integrity check completed with errors');
       } else {
         console.info('[DEBUG_HYDRATE] Successfully prerendered page');
@@ -98,12 +98,12 @@ function parseColor(input: string): number[] {
         return +x;
       });
 }
-export function integrityCheck(vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
-    return check(true, vtree, context, drawingContext);
+export function integrityCheck(vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>): boolean {
+    return check(true, vtree, context);
 }
 
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
-function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
+function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>): boolean {
   // text nodes must be the same
   if (vtree.type == 'vtext') {
     if (context.getTag(vtree.domRef) !== '#text') {
@@ -181,14 +181,14 @@ function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<
     }
     // recursive call for `vnode` / `vcomp`
     for (const child of vtree.children) {
-       const value = check(result, child, context, drawingContext);
+       const value = check(result, child, context);
        result = result && value;
     }
   }
   return result;
 }
 
-function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
+function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, componentId: ComponentId, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
   // There can thus be fewer DOM nodes than VDOM nodes.
@@ -196,7 +196,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   switch (vtree.type) {
     case 'vcomp':
       (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
+      callCreated(vtree, componentId, drawingContext);
       break;
     case 'vtext':
       (vtree as VText<DOMRef>).domRef = node as DOMRef;
@@ -205,7 +205,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
       (vtree as VNode<DOMRef>).domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
-      callCreated(vtree, drawingContext);
+      callCreated(vtree, componentId, drawingContext);
 
       for (var i = 0; i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
@@ -230,7 +230,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           default:
             if (domChild.nodeType !== 1) return false;
             vdomChild.domRef = domChild as DOMRef;
-             walk(logLevel, vdomChild, domChild, context, drawingContext);
+            walk(logLevel, vdomChild, domChild, componentId, context, drawingContext);
             break;
         }
       }

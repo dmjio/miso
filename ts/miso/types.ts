@@ -12,6 +12,7 @@ export type ComponentId = number;
 export type VComp<T> = {
   type: 'vcomp';
   domRef: T;
+  componentId: number;
   ns: 'html';
   tag: string;
   key: string;
@@ -23,7 +24,7 @@ export type VComp<T> = {
   onMounted: (domRef: T) => void;
   onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
-  mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  mount: (domRef: T, callback: ((events: Record<string, boolean>, componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
   nextSibling: VNode<T>;
 };
@@ -100,27 +101,34 @@ export type HydrationContext<T> = {
 };
 
 export type ComponentContext = {
-  mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
-  unmountComponent : (componentId: ComponentId) => void,
   modelHydration : (componentId: ComponentId, model: Object) => void
 }
 
 export type DrawingContext<T> = {
+  unmountComponent : (componentId: ComponentId) => void,
+  mountComponent :
+    ( events: Record<string, boolean>
+    , model: Object
+    , parentComponentId: ComponentId
+    , componentId: ComponentId
+    , parent: T
+    , child: T
+    ) => void,
   nextSibling : (node: VNode<T>) => T;
-  createTextNode : (s: string) => T;
-  createElementNS : (ns: string, tag : string) => T;
-  appendChild : (parent: T, child: T) => void;
-  replaceChild : (parent: T, n: T, o: T) => void;
-  removeChild : (parent: T, child: T) => void;
-  createElement : (name: string) => T;
-  insertBefore : (parent: T, child: T, node: T) => void;
-  swapDOMRefs: (a: T, b: T, p: T) => void;
-  setAttribute : (node: T, key: string, value : any) => void;
-  removeAttribute : (node: T, key :string) => void;
-  setAttributeNS : (node: T, ns: string, key: string, value: any) => void;
-  setTextContent : (node: T, text: string) => void;
-  setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
-  flush : () => void;
+  createTextNode : (s: string, componentId: ComponentId) => T;
+  createElementNS : (ns: string, tag : string, componentId: ComponentId) => T;
+  appendChild : (parent: T, child: T, componentId: ComponentId) => void;
+  replaceChild : (parent: T, n: T, o: T, componentId: ComponentId) => void;
+  removeChild : (parent: T, child: T, componentId: ComponentId) => void;
+  createElement : (name: string, componentId: ComponentId) => T;
+  insertBefore : (parent: T, child: T, node: T, componentId: ComponentId) => void;
+  swapDOMRefs: (a: T, b: T, p: T, componentId: ComponentId) => void;
+  setAttribute : (node: T, key: string, value : any, componentId: ComponentId) => void;
+  removeAttribute : (node: T, key: string, componentId: ComponentId) => void;
+  setAttributeNS : (node: T, ns: string, key: string, value: any, componentId: ComponentId) => void;
+  setTextContent : (node: T, text: string, componentId: ComponentId) => void;
+  setInlineStyle : (cCss: CSS, nCss: CSS, node : T, componentId: ComponentId) => void;
+  flush : (componentId: ComponentId) => void;
   getRoot : () => T;
 };
 

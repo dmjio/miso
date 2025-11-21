@@ -3,11 +3,9 @@ import
   , DrawingContext
   , VNode
   , EventContext
-  , EventCapture
   , ComponentId
   , HydrationContext
   , DOMRef
-  , ComponentContext
   } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
@@ -54,50 +52,52 @@ export const hydrationContext : HydrationContext<DOMRef> = {
   },
 };
 
-export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
-        return;
-    },
-    unmountComponent : function (componentId: ComponentId) : void {
-        return;
-    },
-    modelHydration : function (model: Object) : void {
-        return;
-    }
-};
-
 export const drawingContext : DrawingContext<DOMRef> = {
+  unmountComponent : (componentId: ComponentId) => {
+      return;
+  },
+  mountComponent :
+    ( events: Record<string, boolean>
+    , model: Object
+    , parentComponentId: ComponentId
+    , componentId: ComponentId
+    , parent: DOMRef
+    , child: DOMRef
+    ) => {
+     /* we ignore the events and model in the DOM context */
+     return parent.appendChild (child);
+  },
   nextSibling : (node: VNode<DOMRef>) => {
     return node.domRef.nextSibling as DOMRef;
   },
-  createTextNode : (s: string) => {
+  createTextNode : (s: string, componentId: ComponentId) => {
     return document.createTextNode(s) as any; // dmj: hrm
   },
-  createElementNS : (ns: string, tag: string) => {
+  createElementNS : (ns: string, tag: string, componentId: ComponentId) => {
     return document.createElementNS(ns, tag) as DOMRef;
   },
-  appendChild : (parent: DOMRef, child: DOMRef) => {
+  appendChild : (parent: DOMRef, child: DOMRef, componentId: ComponentId) => {
     return parent.appendChild (child);
   },
-  replaceChild : (parent: DOMRef, n: DOMRef, old: DOMRef) => {
+  replaceChild : (parent: DOMRef, n: DOMRef, old: DOMRef, componentId: ComponentId) => {
     return parent.replaceChild (n, old);
   },
-  removeChild : (parent: DOMRef, child: DOMRef) => {
+  removeChild : (parent: DOMRef, child: DOMRef, componentId: ComponentId) => {
     return parent.removeChild (child);
   },
-  createElement : (tag: string) => {
+  createElement : (tag: string, componentId: ComponentId) => {
     return document.createElement(tag);
   },
-  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
+  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef, componentId: ComponentId) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef) => {
+  swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef, componentId: ComponentId) => {
     const tmp = a.nextSibling;
     p.insertBefore(a, b);
     p.insertBefore(b, tmp);
     return;
   },
-  setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {
+  setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef, componentId: ComponentId) => {
      var result: string;
      /* is current attribute in new attribute list? */
      for (const key in cCss) {
@@ -116,20 +116,20 @@ export const drawingContext : DrawingContext<DOMRef> = {
      }
     return;
   },
-  setAttribute: (node: DOMRef, key: string, value: any) => {
+  setAttribute: (node: DOMRef, key: string, value: any, componentId: ComponentId) => {
     return node.setAttribute(key, value)
   },
-  setAttributeNS: (node: DOMRef, ns: string, key: string, value: any) => {
+  setAttributeNS: (node: DOMRef, ns: string, key: string, value: any, componentId: ComponentId) => {
     return node.setAttributeNS(ns, key, value)
   },
-  removeAttribute : (node: DOMRef, key: string) => {
+  removeAttribute : (node: DOMRef, key: string, componentId: ComponentId) => {
     return node.removeAttribute(key);
   },
-  setTextContent : (node: DOMRef, text: string) => {
+  setTextContent : (node: DOMRef, text: string, componentId: ComponentId) => {
     node.textContent = text;
     return;
   },
-  flush: (): void => {
+  flush: (componentId: ComponentId): void => {
     return;
   },
   getRoot : function () {

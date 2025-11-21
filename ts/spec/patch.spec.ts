@@ -52,7 +52,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateTextNode = {
             text : 'foo',
             type : "createTextNode",
@@ -71,6 +71,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -93,7 +95,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -112,6 +114,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -132,7 +136,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateElementNS = {
             tag: 'svg',
             type : "createElementNS",
@@ -144,7 +148,7 @@ describe ('Patch tests', () => {
             type : "appendChild",
             parent: parentNodeId,
             child: nodeId,
-            componentId
+            componentId,
         };
         // dmj: check diff produces patch object
         expect(getPatches()).toEqual([expected, appendOperation]);
@@ -152,6 +156,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -172,7 +178,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expectedCreateElement : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -198,6 +204,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -217,7 +225,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expectedCreateElement : CreateElementNS = {
             tag: 'svg',
             type : "createElementNS",
@@ -245,6 +253,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -265,7 +275,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expectedCreateElement : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -291,6 +301,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expectedCreateElement, components);
@@ -307,7 +319,7 @@ describe ('Patch tests', () => {
             componentId,
             nodeId,
         };
-        diff (tree, newTree, parent, patchContext);
+        diff (tree, newTree, parent, componentId, patchContext);
         expect(getPatches()).toEqual([expectedCreateElement, appendOperation, expectedSetAttribute, expectedRemoveAttribute]);
         patch (domContext, expectedRemoveAttribute, components);
         expect(component.nodes[nodeId].getAttribute('foo')).toEqual(null);
@@ -321,8 +333,8 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
-        diff (tree, newTree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
+        diff (tree, newTree, parent, componentId, patchContext);
         let expected : CreateTextNode = {
             text : 'foo',
             type : "createTextNode",
@@ -347,6 +359,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -372,7 +386,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -403,6 +417,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -425,7 +441,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -451,6 +467,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0 : document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -472,7 +490,7 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, tree, parent, patchContext);
+        diff (null, tree, parent, componentId, patchContext);
         let expected : CreateTextNode = {
             text : 'foo',
             type : "createTextNode",
@@ -488,7 +506,7 @@ describe ('Patch tests', () => {
 
         // dmj: check diff produces patch object
         expect(getPatches()).toEqual([expected, appendOperation]);
-        patchContext.flush ();
+        patchContext.flush (componentId);
         expect(getPatches().length).toEqual(0);
     });
 
@@ -503,8 +521,8 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, firstTree, parent, patchContext);
-        diff (firstTree, secondTree, parent, patchContext);
+        diff (null, firstTree, parent, componentId, patchContext);
+        diff (firstTree, secondTree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -548,6 +566,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -581,8 +601,8 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, firstTree, parent, patchContext);
-        diff (firstTree, secondTree, parent, patchContext);
+        diff (null, firstTree, parent, componentId, patchContext);
+        diff (firstTree, secondTree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -619,6 +639,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId: componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);
@@ -652,10 +674,10 @@ describe ('Patch tests', () => {
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
-        diff (null, firstTree, parent, patchContext);
+        diff (null, firstTree, parent, componentId, patchContext);
         firstTree.shouldSync = true;
         secondTree.shouldSync = true;
-        diff (firstTree, secondTree, parent, patchContext);
+        diff (firstTree, secondTree, parent, componentId, patchContext);
         let expected : CreateElement = {
             tag: 'p',
             type : "createElement",
@@ -705,6 +727,8 @@ describe ('Patch tests', () => {
         let component : Component<DOMRef> = {
             model: null,
             nodes: { 0: document.body },
+            events: null,
+            componentId
         };
         components[componentId] = component;
         patch (domContext, expected, components);

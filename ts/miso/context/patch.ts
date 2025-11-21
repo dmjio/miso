@@ -1,6 +1,5 @@
 import {
   ComponentId,
-  EventCapture,
   DrawingContext,
   VNode,
   NodeId,
@@ -30,7 +29,6 @@ import {
   SetTextContent,
   SetInlineStyle,
   RemoveAttribute,
-  MountComponent,
   UnmountComponent,
   ModelHydration,
 } from '../patch';
@@ -60,25 +58,6 @@ function areEqual(a: Object, b: Object) {
 }
 
 export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) {
-        let patch : MountComponent = {
-            type: "mount",
-            componentId: componentId,
-            mountPoint : 0,
-            events,
-            model
-        };
-        addPatch(componentId, patch);
-        return;
-    },
-    unmountComponent : function (componentId: ComponentId) {
-        let patch : UnmountComponent = {
-            type: "unmount",
-            componentId,
-        };
-        addPatch(componentId, patch);
-        return;
-    },
     modelHydration : function (componentId: ComponentId, model: Object) {
         let patch : ModelHydration = {
             type: "modelHydration",
@@ -91,12 +70,22 @@ export const componentContext : ComponentContext = {
 };
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
+  unmountComponent : function (componentId: ComponentId) {
+        let patch : UnmountComponent = {
+            type: "unmountComponent",
+            componentId,
+        };
+        addPatch(componentId, patch);
+        return;
+  },
+  mountComponent : (events : Record<string, boolean>, componentId: number, model: Object) => {
+    return;
+  },
   nextSibling : (node: VNode<NodeId>) => {
     return node.nextSibling.domRef;
   },
-  createTextNode : (value : string) => {
+  createTextNode : (value : string, componentId: ComponentId) => {
       const nodeId: number = nextNodeId ();
-      const componentId: number = getComponentId ();
       let patch : CreateTextNode = {
           text : value,
           type : "createTextNode",
@@ -106,9 +95,8 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
       addPatch(componentId, patch);
       return { nodeId };
   },
-  createElementNS : (ns: string, tag: string) => {
+  createElementNS : (ns: string, tag: string, componentId: ComponentId) => {
     const nodeId: number = nextNodeId ();
-    const componentId: number = getComponentId ();
     let patch : CreateElementNS = {
         type : "createElementNS",
         namespace: ns,
@@ -119,19 +107,17 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return { nodeId };
   },
-  appendChild : (parent: NodeId, child: NodeId) => {
-    const componentId: number = getComponentId ();
+  appendChild : (parent: NodeId, child: NodeId, componentId: ComponentId) => {
     let patch : AppendChild = {
         type: "appendChild",
         parent: parent.nodeId,
         child: child.nodeId,
-        componentId
+        componentId,
     };
     addPatch(componentId, patch);
     return;
   },
-  replaceChild : (parent: NodeId, n: NodeId, old: NodeId) => {
-    const componentId: number = getComponentId ();
+  replaceChild : (parent: NodeId, n: NodeId, old: NodeId, componentId: ComponentId) => {
     let patch : ReplaceChild = {
         type: "replaceChild",
         parent: parent.nodeId,
@@ -142,8 +128,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  removeChild : (parent: NodeId, child: NodeId) => {
-    const componentId: number = getComponentId ();
+  removeChild : (parent: NodeId, child: NodeId, componentId: ComponentId) => {
     let patch : RemoveChild = {
         type: "removeChild",
         parent: parent.nodeId,
@@ -153,9 +138,8 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  createElement : (tag) => {
+  createElement : (tag, componentId: ComponentId) => {
     const nodeId: number = nextNodeId ();
-    const componentId: number = getComponentId ();
     let patch : CreateElement = {
         type : "createElement",
         nodeId,
@@ -165,8 +149,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return { nodeId };
   },
-  insertBefore : (parent: NodeId, node: NodeId, child: NodeId) => {
-    const componentId: number = getComponentId ();
+  insertBefore : (parent: NodeId, node: NodeId, child: NodeId, componentId: ComponentId) => {
     let patch : InsertBefore = {
         type: "insertBefore",
         parent: parent.nodeId,
@@ -177,8 +160,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  swapDOMRefs : (a: NodeId, b: NodeId, p: NodeId) => {
-    const componentId: number = getComponentId ();
+  swapDOMRefs : (a: NodeId, b: NodeId, p: NodeId, componentId: ComponentId) => {
     let patch : SwapDOMRefs = {
         type: "swapDOMRefs",
         parent: p.nodeId,
@@ -189,9 +171,8 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  setInlineStyle: (cCss: CSS, nCss: CSS, node: NodeId) => {
+  setInlineStyle: (cCss: CSS, nCss: CSS, node: NodeId, componentId: ComponentId) => {
     if (areEqual(cCss, nCss)) return;
-    const componentId: number = getComponentId ();
     let patch : SetInlineStyle = {
         type : "setInlineStyle",
         nodeId : node.nodeId,
@@ -202,8 +183,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  setAttribute: (node, key, value) => {
-    const componentId: number = getComponentId ();
+  setAttribute: (node: NodeId, key: string, value: any, componentId: ComponentId) => {
     let patch : SetAttribute = {
         type : "setAttribute",
         nodeId : node.nodeId,
@@ -214,8 +194,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  setAttributeNS: (node, namespace, key, value) => {
-    const componentId: number = getComponentId ();
+  setAttributeNS: (node: NodeId, namespace: string, key: string, value: any, componentId: ComponentId) => {
     let patch : SetAttributeNS = {
         type : "setAttributeNS",
         nodeId : node.nodeId,
@@ -227,8 +206,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  removeAttribute : (node, key) => {
-    const componentId: number = getComponentId ();
+  removeAttribute : (node: NodeId, key: string, componentId: ComponentId) => {
     let patch : RemoveAttribute = {
         type : "removeAttribute",
         nodeId : node.nodeId,
@@ -238,8 +216,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  setTextContent : (node: NodeId, text: string) => {
-    const componentId: number = getComponentId ();
+  setTextContent : (node: NodeId, text: string, componentId: ComponentId) => {
     let patch : SetTextContent = {
         type : "setTextContent",
         nodeId : node.nodeId,
@@ -249,7 +226,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     addPatch(componentId, patch);
     return;
   },
-  flush: (): void => {
+  flush: (componentId: ComponentId): void => {
     globalThis['patches'] = [];
     return;
   },
