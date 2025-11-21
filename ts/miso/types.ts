@@ -36,8 +36,8 @@ export type VComp<T> = {
   tag: string; // dmj: shouldn't exist
   props: Props; // always null
   css: CSS; // always null
-
   domRef: T; // always null
+
   key: string;
   events: Events<T>;
   children: Array<VTree<T>>;

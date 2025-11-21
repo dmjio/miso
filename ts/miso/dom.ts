@@ -30,13 +30,11 @@ export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, conte
 // }
 
 function diffText<T> (c: VText<T>, n: VText<T>, context: DrawingContext<T>) : void {
-  if (c.type === 'vtext' && n.type === 'vtext') {
     if (c.text !== n.text) {
       context.setTextContent(c.domRef, n.text);
     }
     n.domRef = c.domRef;
     return;
-  }
 }
 
 // replace everything function
