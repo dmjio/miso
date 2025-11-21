@@ -68,7 +68,7 @@ renderBuilder = \case
   VText s  ->
     fromMisoString s
   VNode _ "doctype" [] [] ->
-    "<!bdoctype html>"
+    "<!doctype html>"
   VNode _ tag attrs children ->
     mconcat
     [ "<"
