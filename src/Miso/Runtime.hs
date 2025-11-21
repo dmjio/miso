@@ -68,11 +68,14 @@ module Miso.Runtime
   , json
   , blob
   , arrayBuffer
+  -- ** Global mount point
+  , globalMountPoint
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad
+import           Control.Concurrent.MVar
 import           Control.Concurrent.STM
 import           Control.Exception (SomeException)
-import           Control.Monad (forM, forM_, when, void, forever, (<=<), zipWithM_)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
@@ -136,10 +139,14 @@ initialize hydrate Component {..} getComponentMountPoint = do
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
-    vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
+    vtree <- buildVTree hydrate componentSink logLevel events (view initializedModel)
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
+        liftIO $ do
+          readIORef globalVTree >>= \case
+            Nothing -> atomicWriteIORef globalVTree (Just vtree)
+            Just _ -> pure ()
       Hydrate -> do
         Hydrate.hydrate logLevel componentDOMRef vtree
     liftIO (newIORef vtree)
@@ -165,7 +172,7 @@ initialize hydrate Component {..} getComponentMountPoint = do
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree Draw (view updatedModel) componentSink logLevel events
+        newVTree <- buildVTree Draw componentSink logLevel events (view updatedModel)
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
@@ -212,13 +219,63 @@ initialize hydrate Component {..} getComponentMountPoint = do
 
   let vcomp = ComponentState
         { componentNotify = notify
+        , componentStateEvents = events
         , ..
         }
   registerComponent vcomp
-  delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
   _ <- FFI.forkJSM eventLoop
+  addToDelegatedEvents events logLevel
   pure vcomp
+-----------------------------------------------------------------------------
+addToDelegatedEvents :: Events -> LogLevel -> JSM ()
+addToDelegatedEvents newEvents logLevel = do
+  ctx <- askJSM
+  liftIO $ modifyMVar_ delegatedEvents $ \currentEvents ->
+    foldM (process ctx) currentEvents (M.toList newEvents)
+      where
+      -- dmj: If the event is already delegated, continue.
+      -- Otherwise, add it to the Map and delegate on it.
+        process ctx existingEvents (event, capture) =
+          case M.lookup event existingEvents of
+            Nothing -> do
+              let level = logLevel `elem` [DebugEvents, DebugAll]
+              mountPoint <- readIORef globalMountPoint
+              flip runJSM ctx $ delegator mountPoint globalVTree (M.singleton event capture) level
+              pure (M.insert event capture existingEvents)
+            Just _ ->
+              pure existingEvents
+-----------------------------------------------------------------------------
+removeFromDelegatedEvents
+  :: ComponentId
+  -> Events
+  -> LogLevel
+  -> JSM ()
+removeFromDelegatedEvents componentId eventsToRemove logLevel = do
+  ctx <- askJSM
+  liftIO $ modifyMVar_ delegatedEvents $ \currentEvents -> do
+    -- Get all events from all components, except the one being removed
+    requiredEvents <-
+      M.unions . fmap componentStateEvents . IM.elems . IM.delete componentId <$>
+        readIORef components
+    foldM (process ctx requiredEvents) currentEvents (M.toList eventsToRemove)
+      where
+      -- dmj: If the event is currently being delegated on,
+      -- but no other t'Component' is listening for it, then we should remove
+      -- it and call the undelegator. Otherwise, if another Component is
+      -- using it, don't remove it.
+        process ctx requiredEvents existingEvents (eventToRemove, capture) = do
+          case M.lookup eventToRemove requiredEvents of
+            Nothing -> do
+              let level = logLevel `elem` [DebugEvents, DebugAll]
+              mountPoint <- readIORef globalMountPoint
+              flip runJSM ctx $ undelegator mountPoint globalVTree (M.singleton eventToRemove capture) level
+              pure (M.delete eventToRemove existingEvents)
+            Just _ ->
+              -- dmj: this is the case where we're trying to remove an event during component unmount
+              -- but other components require that it still be delegated on, in this case we
+              -- do not remove it from delegation
+              pure existingEvents
 -----------------------------------------------------------------------------
 synchronizeChildToParent
   :: Eq parent
@@ -377,6 +434,8 @@ data ComponentState model action
   -- ^ Thread responsible for parent t'Binding' synchronization
   , componentChildToParentThreadId :: Maybe ThreadId
   -- ^ Thread responsible for child t'Binding' synchronization
+  , componentStateEvents :: Events
+  -- ^ t'Mailbox' for receiving messages from other t'Miso.Types.Component'
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -661,6 +720,24 @@ components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
+-- | The global mount point, populated on initial t'Miso.Types.Component' mount
+--
+globalMountPoint :: IORef DOMRef
+{-# NOINLINE globalMountPoint #-}
+globalMountPoint = unsafePerformIO (newIORef jsNull)
+-----------------------------------------------------------------------------
+-- | The global vtree, holds the entire virtual DOM.
+--
+globalVTree :: IORef (Maybe VTree)
+{-# NOINLINE globalVTree #-}
+globalVTree = unsafePerformIO (newIORef Nothing)
+-----------------------------------------------------------------------------
+-- | The currently active delegated events
+--
+delegatedEvents :: MVar Events
+{-# NOINLINE delegatedEvents #-}
+delegatedEvents = unsafePerformIO (newMVar mempty)
+-----------------------------------------------------------------------------
 -- | Data type to indicate if effects should be handled asynchronously
 -- or synchronously.
 --
@@ -727,7 +804,7 @@ unmount
   -> ComponentState model action
   -> JSM ()
 unmount mountCallback app@Component {..} cs@ComponentState {..} = do
-  undelegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  removeFromDelegatedEvents componentId events logLevel
   freeFunction mountCallback
   liftIO $ do
     killThread componentMailboxThreadId
@@ -756,56 +833,78 @@ killSubscribers componentId =
 buildVTree
   :: Eq model
   => Hydrate
-  -> View model action
   -> Sink action
   -> LogLevel
   -> Events
+  -> View model action
   -> JSM VTree
-buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
-  mountCallback <- do
-    FFI.asyncCallback2 $ \domRef continuation -> do
-      ComponentState {..} <- initialize hydrate app (pure domRef)
-      vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-      vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object domRef)
-      void $ call continuation global [vcompId, vtree]
-  unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
-      IM.lookup componentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> pure ()
-        Just componentState ->
-          unmount mountCallback app componentState
-  vcomp <- createNode "vcomp" ns tag
-  setAttrs vcomp attrs snk (logLevel app) (events app)
-  flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
-  flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
-  FFI.set "unmount" unmountCallback vcomp
-  pure (VTree vcomp)
-buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
-  vnode <- createNode "vnode" ns tag
-  setAttrs vnode attrs snk logLevel events
-  vchildren <- toJSVal =<< procreate
-  FFI.set "children" vchildren vnode
-  sync <- FFI.shouldSync =<< toJSVal vnode
-  FFI.set "shouldSync" sync vnode
-  pure $ VTree vnode
+buildVTree hydrate snk logLevel events = \case
+  VComp attrs (SomeComponent app) -> do
+    mountCallback <- do
+      FFI.asyncCallback2 $ \domRef continuation -> do
+        ComponentState {..} <- initialize hydrate app (pure domRef)
+        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        vcompId <- toJSVal componentId
+        FFI.set "componentId" vcompId (Object domRef)
+        void $ call continuation global [vcompId, vtree]
+    unmountCallback <- toJSVal =<< do
+      FFI.syncCallback1 $ \domRef -> do
+        componentId <- liftJSM (FFI.getComponentId domRef)
+        IM.lookup componentId <$> liftIO (readIORef components) >>= \case
+          Just componentState -> unmount mountCallback app componentState
+          Nothing -> pure ()
+    vcomp <- create
+    setKey vcomp attrs
+    flip (FFI.set "type") vcomp ("vtype" :: MisoString)
+    flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
+    flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
+    FFI.set "unmount" unmountCallback vcomp
+    pure (VTree vcomp)
+  VNode ns tag attrs kids -> do
+    vnode <- createNode "vnode" ns tag
+    setAttrs vnode attrs snk logLevel events
+    vchildren <- toJSVal =<< procreate hydrate snk logLevel events kids
+    FFI.set "children" vchildren vnode
+    sync <- FFI.shouldSync =<< toJSVal vnode
+    FFI.set "shouldSync" sync vnode
+    pure $ VTree vnode
+  VText t -> do
+    vtree <- create
+    FFI.set "type" ("vtext" :: JSString) vtree
+    FFI.set "ns" ("text" :: JSString) vtree
+    FFI.set "text" t vtree
+    pure (VTree vtree)
+  VFrag attrs kids -> do
+    vfrag <- create
+    FFI.set "type" ("vfrag" :: JSString) vfrag
+    setKey vfrag attrs
+    vchildren <- toJSVal =<< procreate hydrate snk logLevel events kids
+    FFI.set "children" vchildren vfrag
+    pure (VTree vfrag)
+  where
+    setKey vnode attrs = 
+      -- dmj: Like React, only "key" has semantic meaning on 'vfrag'.
+      case [ v | Property "key" v <- attrs ] of
+        [] -> pure ()
+        value : _ -> flip (FFI.set "key") vnode =<< toJSVal value
+-----------------------------------------------------------------------------
+procreate
+  :: Eq model
+  => Hydrate
+  -> Sink action
+  -> LogLevel
+  -> Events
+  -> [View model action]
+  -> JSM [JSVal]
+procreate hydrate snk logLevel events kids = do
+  kidsViews <- forM kids $ \kid -> do
+    VTree (Object vtree) <- buildVTree hydrate snk logLevel events kid
+    pure vtree
+  setNextSibling kidsViews
+  pure kidsViews
     where
-      procreate = do
-        kidsViews <- forM kids $ \kid -> do
-          VTree (Object vtree) <- buildVTree hydrate kid snk logLevel events
-          pure vtree
-        setNextSibling kidsViews
-        pure kidsViews
-          where
-            setNextSibling xs =
-              zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
-buildVTree _ (VText t) _ _ _ = do
-  vtree <- create
-  FFI.set "type" ("vtext" :: JSString) vtree
-  FFI.set "ns" ("text" :: JSString) vtree
-  FFI.set "text" t vtree
-  pure $ VTree vtree
+      setNextSibling xs =
+        zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)

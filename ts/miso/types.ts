@@ -9,14 +9,36 @@ export type NS = 'text' | 'html' | 'svg' | 'mathml';
 export type DOMRef = HTMLElement | MathMLElement | SVGElement;
 export type ComponentId = number;
 
+/*
+  vfrag have no domRef
+  'nextSibling' is relevant here because 'vfrag' can be keyed.
+
+ */
+
+export type VFrag<T> = {
+  type: 'vfrag';
+  children: Array<VTree<T>>;
+  key: string;
+  nextSibling: VTree<T>;
+
+  domRef: T; // shouldn't exist
+  css: CSS; // shouldn't exist
+  props: Props; // shouldn't exist
+  ns: 'html'; // shouldn't exist
+  tag: string; // dmj: shouldn't exist
+}
+
 export type VComp<T> = {
   type: 'vcomp';
-  domRef: T;
-  ns: 'html';
-  tag: string;
+
+  // domRef: T;
+  ns: 'html'; //dmj: shouldn't exist
+  tag: string; // dmj: shouldn't exist
+  props: Props; // always null
+  css: CSS; // always null
+
+  domRef: T; // always null
   key: string;
-  props: Props;
-  css: CSS;
   events: Events<T>;
   children: Array<VTree<T>>;
   onBeforeMounted: () => void;
@@ -25,7 +47,7 @@ export type VComp<T> = {
   onUnmounted: (domRef: T) => void;
   mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {
@@ -44,7 +66,7 @@ export type VNode<T> = {
   onCreated: () => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VText<T> = {
@@ -59,7 +81,7 @@ export type NodeId = {
   nodeId: number;
 }
 
-export type VTree<T> = VComp<T> | VNode<T> | VText<T>;
+export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T>;
 
 export type EventObject<T> = {
   options: Options;

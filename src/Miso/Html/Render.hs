@@ -62,33 +62,39 @@ intercalate sep (x:xs) =
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
-renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString s
-renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode _ tag attrs children) =
-  mconcat
-  [ "<"
-  , fromMisoString tag
-  , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
-            | not (Prelude.null attrs)
-            ]
-  , ">"
-  , mconcat
-    [ mconcat
-      [ foldMap renderBuilder (collapseSiblingTextNodes children)
-      , "</" <> fromMisoString tag <> ">"
+renderBuilder = \case
+  VText "" ->
+    fromMisoString " "
+  VText s  ->
+    fromMisoString s
+  VNode _ "doctype" [] [] ->
+    "<!bdoctype html>"
+  VNode _ tag attrs children ->
+    mconcat
+    [ "<"
+    , fromMisoString tag
+    , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
+              | not (Prelude.null attrs)
+              ]
+    , ">"
+    , mconcat
+      [ mconcat
+        [ foldMap renderBuilder (collapseSiblingTextNodes children)
+        , "</" <> fromMisoString tag <> ">"
+        ]
+      | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
       ]
-    | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
     ]
-  ]
-renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
-  renderBuilder (VNode ns tag attrs vkids)
-    where
+  VComp _ (SomeComponent vcomp) ->
+    mconcat $ renderBuilder <$> vkids
+      where
 #ifdef SSR
       vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
 #else
       vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
 #endif
+  VFrag _ kids ->
+    mconcat $ renderBuilder <$> kids
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (Property key value) =

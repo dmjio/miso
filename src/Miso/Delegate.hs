@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,8 +22,8 @@ module Miso.Delegate
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
-import           Miso.Types (VTree(..))
+import           Language.Javascript.JSaddle (create, JSM, ToJSVal(toJSVal), jsNull)
+import           Miso.Types (VTree(..), DOMRef)
 import           Miso.String (MisoString)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
@@ -45,27 +46,29 @@ instance ToJSVal Event where
 -----------------------------------------------------------------------------
 -- | Entry point for event delegation
 delegator
-  :: JSVal
-  -> IORef VTree
+  :: DOMRef
+  -> IORef (Maybe VTree)
   -> M.Map MisoString Bool
   -> Bool
   -> JSM ()
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
   FFI.delegateEvent mountPointElement evts debug $ do
-    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
-    pure vtree
+    liftIO (readIORef vtreeRef) >>= \case
+      Nothing -> pure jsNull
+      Just vtree -> toJSVal vtree
 -----------------------------------------------------------------------------
 -- | Entry point for deinitalizing event delegation
 undelegator
-  :: JSVal
-  -> IORef VTree
+  :: DOMRef
+  -> IORef (Maybe VTree)
   -> M.Map MisoString Bool
   -> Bool
   -> JSM ()
 undelegator mountPointElement vtreeRef es debug = do
   events <- toJSVal (M.toList es)
   FFI.undelegateEvent mountPointElement events debug $ do
-    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
-    pure vtree
+    liftIO (readIORef vtreeRef) >>= \case
+      Nothing -> pure jsNull
+      Just vtree -> toJSVal vtree
 -----------------------------------------------------------------------------
