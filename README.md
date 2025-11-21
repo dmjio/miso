@@ -666,9 +666,9 @@ Miso supports the creation of iOS and Android applications via [LynxJS](https://
 
 ## Benchmarks 🏎️
 
-[According to benchmarks](https://krausest.github.io/js-framework-benchmark/current.html), `miso` is among the fastest functional programming web frameworks, second only to [Elm](http://elm-lang.org).
+[According to benchmarks](https://krausest.github.io/js-framework-benchmark/current.html) `miso` is competitive. `miso.js` depicted below is how `miso` performs with its JS engine relative to vanilla JS. The `miso` column shows performance using the [GHC](https://www.haskell.org/ghc/) JS backend. We're currently researching [staged meta-programming](https://dl.acm.org/doi/abs/10.1145/3498723) as a way to remove excess allocations in our DSL and to increase performance when compiling from Haskell.
 
-<a target="_blank" href="https://krausest.github.io/js-framework-benchmark/current.html"><img src="https://cdn-images-1.medium.com/max/1600/1*6EjJTf1mhlTxd4QWsygCwA.png" width="500" height="600" /></a>
+<a target="_blank" href="https://krausest.github.io/js-framework-benchmark/current.html"><img width="663" height="728" alt="image" src="https://github.com/user-attachments/assets/24eea18f-d1d8-4f77-958d-e42f90a05a00" /></a>
 
 ## Nix <img src="https://raw.githubusercontent.com/NixOS/nixos-artwork/refs/heads/master/logo/nix-snowflake-colours.svg" alt="nixos-snowflake" width="25"/>
 
