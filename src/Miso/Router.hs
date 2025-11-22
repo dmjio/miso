@@ -22,11 +22,12 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module introduces a @Router@ that produces "correct-by-construction" URL
+-- This module introduces a 'Router' that produces "correct-by-construction" URL
 -- encoding and decoding from any Haskell algebraic data type. This @Router@ can be used
--- in conjunction with @uriSub@ or @routeSub@ to perform client-side routing. Further
+-- in conjunction with 'Miso.Subscription.History.uriSub' or 'Miso.Subscription.History.routerSub'
+-- to perform client-side routing. Further
 -- it also supports the construction of type-safe links in any @View model action@ via
--- the @href_@ function exported from this module.
+-- the 'href_' function exported from this module.
 --
 -- This module can be used in two ways, one is the manual construction of a @Router@
 -- as seen below.
@@ -41,7 +42,7 @@
 --   fromRoute (Widget value) = [ toPath "widget", toCapture value ]
 --
 -- main :: IO ()
--- main = print (runRouter "//widget//10" router)
+-- main = print (runRouter "\/widget\/10" router)
 --
 -- > Right (Widget "widget" 10)
 -- @
@@ -82,7 +83,7 @@
 --
 -- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
 --
--- Note: the 'Miso.Router.Index' constructor is name special, it used to encode the `"/"` path.
+-- Note: the 'Miso.Router.Index' constructor is name special, it is used to encode the `"/"` path.
 --
 -- @
 --
@@ -149,7 +150,6 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe
 import           Data.Functor
 import           Data.Proxy
-import           Data.Char
 import qualified Data.Char as C
 import           Data.String
 import           Control.Applicative
@@ -557,7 +557,7 @@ subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$&'()*+,;=" :: String)
 unreserved :: Lexer MisoString
 unreserved = ms <$> do
   L.satisfy $ \x -> or
-    [ isAlphaNum x
+    [ C.isAlphaNum x
     , x == '-'
     , x == '.'
     , x == '_'
@@ -572,11 +572,7 @@ pctEncoded = do
   pure (ms pct <> ms d1 <> ms d2)
 -----------------------------------------------------------------------------
 hexDig :: Lexer Char
-hexDig = L.satisfy $ \x -> or
-  [ x `elem` [ '0' .. '9' ]
-  , x `elem` [ 'a' .. 'f' ]
-  , x `elem` [ 'A' .. 'F' ]
-  ]
+hexDig = L.satisfy C.isHexDigit
 -----------------------------------------------------------------------------
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
