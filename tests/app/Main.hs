@@ -11,6 +11,7 @@ import Language.Javascript.JSaddle
 import System.Exit
 -----------------------------------------------------------------------------
 import Miso
+import Miso.Runtime.Internal
 -----------------------------------------------------------------------------
 initJSDOM :: JSM ()
 initJSDOM = do
@@ -40,7 +41,7 @@ it testName test = do
     liftJSM (clock test)
       `catch` (\(e :: SomeException) ->
          pure ((False, show e), 0))
-  modify (Test testName testResult msg time:)
+  modify (Test testName testResult msg time :)
 -----------------------------------------------------------------------------
 data TestResult
   = TestResult
@@ -114,6 +115,6 @@ runTests ts = do
 prettyTests :: [Test] -> JSM ()
 prettyTests tests = forM_ tests $ \Test {..} ->
   if result
-    then jsg "console" # "log" $ [ms "%c ✓ ", ms "color:green;", ms name]
-    else jsg "console" # "log" $ [ms "%c ✗ ", ms "color:red;", ms name]
+    then jsg "console" # "log" $ [ms "✅ ", ms name]
+    else jsg "console" # "log" $ [ms "❌ ", ms name]
 -----------------------------------------------------------------------------

@@ -68,6 +68,8 @@ module Miso.Runtime
   , json
   , blob
   , arrayBuffer
+  -- ** Internal Component state
+  , components
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
