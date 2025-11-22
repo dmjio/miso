@@ -32,7 +32,7 @@ import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
 -----------------------------------------------------------------------------
 -- | Captures window coordinates changes as they occur and writes them to
--- an event sink
+-- an event sink.
 windowCoordsSub :: (Coord -> action) -> Sub action
 windowCoordsSub f = windowPointerMoveSub (f . client)
 -----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
               sink (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@
--- A 'Sub' to handle @PointerEvent@s on window
+-- A 'Sub' to handle t'PointerEvent's on window.
 windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

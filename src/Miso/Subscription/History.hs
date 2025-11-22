@@ -33,27 +33,27 @@ import           Miso.String
 import           Miso.Router
 import           Miso.Effect (Sub)
 -----------------------------------------------------------------------------
--- | Pushes a new URI onto the History stack
+-- | Pushes a new URI onto the History stack.
 pushURI :: URI -> JSM ()
 pushURI uri = do
   pushState (prettyURI uri)
   liftIO (notify chan)
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack
+-- | Replaces current URI on stack.
 replaceURI :: URI -> JSM ()
 replaceURI uri = do
   replaceState (prettyURI uri)
   liftIO (notify chan)
 -----------------------------------------------------------------------------
--- | Navigates backwards
+-- | Navigates backwards.
 back :: JSM ()
 back = void $ getHistory # "back" $ ()
 -----------------------------------------------------------------------------
--- | Navigates forwards
+-- | Navigates forwards.
 forward :: JSM ()
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
--- | Jumps to a specific position in history
+-- | Jumps to a specific position in history.
 go :: Int -> JSM ()
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ chan :: Waiter
 {-# NOINLINE chan #-}
 chan = unsafePerformIO waiter
 -----------------------------------------------------------------------------
--- | Subscription for @popstate@ events, from the History API
+-- | Subscription for @popstate@ events, from the History API.
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
   void . FFI.forkJSM . forever $ do
@@ -71,7 +71,7 @@ uriSub = \f sink -> do
     sink . f =<< getURI
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
--- to a user-defined @Router@
+-- to a user-defined 'Router'.
 routerSub :: Router route => (Either RoutingError route -> action) -> Sub action
 routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------

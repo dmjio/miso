@@ -6,6 +6,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Subscriptions for external events (mouse, keyboard, window, history, etc.).
 ----------------------------------------------------------------------------
 module Miso.Subscription
   ( -- ** Mouse

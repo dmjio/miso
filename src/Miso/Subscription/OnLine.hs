@@ -18,7 +18,8 @@ import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
--- | Returns @Subscription@ for the navigator.onLine API.
+-- | Returns 'Sub' for the navigator.onLine API.
+-- Fires action with 'True' when the browser goes online, and 'False' when it goes offline.
 --
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine>
 --

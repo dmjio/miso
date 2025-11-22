@@ -54,16 +54,22 @@ module Miso
     -- | Core types for Miso applications.
   , module Miso.Types
     -- * Effect
+    -- | 'Effect', 'Sub', and 'Sink' types for defining update functions and subscriptions.
   , module Miso.Effect
     -- * Event
+    -- | Functions for specifying component lifecycle events and event handlers.
   , module Miso.Event
     -- * Property
+    -- | Construct custom properties on DOM elements.
   , module Miso.Property
     -- * PubSub
+    -- | Publish / Subscribe primitives for communication between components.
   , module Miso.PubSub
     -- * Run
+    -- | Support for running and live-reloading of miso applications.
   , module Miso.Run
     -- * Subscriptions
+    -- | Subscriptions for external events (mouse, keyboard, window, history, etc.).
   , module Miso.Subscription
     -- * Storage
   , module Miso.Storage
