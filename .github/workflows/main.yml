@@ -58,3 +58,9 @@ jobs:
 
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
+
+     - name: Nix garbage collection
+       run: nix-collect-garbage -d       
+
+     - name: (JS) Miso integration tests
+       run: nix develop .#ghcjs --command bash -c ./scripts/test-runner.sh

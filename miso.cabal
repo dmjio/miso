@@ -47,6 +47,16 @@ common cpp
     cpp-options:
       -DSSR
 
+common tests
+  if flag(tests)
+    buildable: True
+  else
+    buildable: False
+
+  if arch(javascript)
+     ld-options:
+       -sEXPORTED_RUNTIME_METHODS=HEAP8
+
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
@@ -185,6 +195,89 @@ library
     -Wall
   hs-source-dirs:
     src
+  build-depends:
+    aeson         < 2.3,
+    base          < 5,
+    bytestring    < 0.13,
+    containers    < 0.9,
+    jsaddle       < 0.10,
+    mtl           < 2.4,
+    text          < 2.2,
+    stm >= 2.4 && < 2.6
+
+executable miso-tests
+  import:
+    jsaddle,
+    client,
+    cpp,
+    tests
+  main-is:
+    Main.hs
+  ghc-options:
+    -Wall
+  js-sources:
+    js/miso.js
+    js/test.js
+  hs-source-dirs:
+    src, tests
+  cpp-options:
+    -DGHCJS_BROWSER
+  default-language:
+    Haskell2010
+  other-modules:
+    Miso.Delegate
+    Miso.Diff
+    Miso.Hydrate
+    Miso.FFI.Internal
+    Miso.Runtime
+    Miso
+    Miso.Binding
+    Miso.Canvas
+    Miso.Concurrent
+    Miso.Effect
+    Miso.Event
+    Miso.Event.Decoder
+    Miso.Event.Types
+    Miso.EventSource
+    Miso.Fetch
+    Miso.FFI
+    Miso.Html
+    Miso.Html.Element
+    Miso.Html.Event
+    Miso.Html.Property
+    Miso.Html.Render
+    Miso.Lens
+    Miso.Mathml
+    Miso.Mathml.Element
+    Miso.Mathml.Property
+    Miso.Media
+    Miso.Navigator
+    Miso.Property
+    Miso.PubSub
+    Miso.Router
+    Miso.Run
+    Miso.State
+    Miso.Subscription
+    Miso.Subscription.History
+    Miso.Subscription.Keyboard
+    Miso.Subscription.Mouse
+    Miso.Subscription.Window
+    Miso.Subscription.OnLine
+    Miso.Subscription.Util
+    Miso.Svg
+    Miso.Svg.Property
+    Miso.Svg.Element
+    Miso.Svg.Event
+    Miso.Storage
+    Miso.String
+    Miso.CSS
+    Miso.CSS.Color
+    Miso.CSS.Types
+    Miso.Types
+    Miso.Util
+    Miso.Util.Lexer
+    Miso.Util.Parser
+    Miso.WebSocket
   build-depends:
     aeson         < 2.3,
     base          < 5,
