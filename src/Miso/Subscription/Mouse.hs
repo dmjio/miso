@@ -19,7 +19,7 @@ import Miso.Subscription.Window (windowSub)
 import Miso.Effect (Sub)
 -----------------------------------------------------------------------------
 -- | Captures mouse coordinates as they occur and writes them to
--- an event sink
+-- an event sink.
 mouseSub :: (PointerEvent -> action) -> Sub action
 mouseSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

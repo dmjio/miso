@@ -9,6 +9,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Support for running and live-reloading of miso applications.
 ----------------------------------------------------------------------------
 module Miso.Run
   ( -- ** Live reload
@@ -31,15 +33,12 @@ import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 -- | Entry point for a miso application.
 --
--- When compiling with jsaddle on native platforms
--- 'run' will start a web server for live reload
--- of your miso application.
---
--- When compiling to WASM use 'jsaddle-wasm'.
---
--- When compiling to JS no special package is required (simply the 'id' function).
--- JSM becomes a type synonym for IO
-run :: JSM () -> IO ()
+-- * When compiling with GHC (native), this starts a web server for live reload, using [jsaddle](https://hackage.haskell.org/package/jsaddle).
+-- * When compiling to WASM, this uses [jsaddle-wasm](https://hackage.haskell.org/package/jsaddle-wasm).
+-- * When compiling to JS (GHCJS), this is simply 'id'.
+run ::
+    JSM () -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+    -> IO ()
 #ifdef WASM
 run = J.run
 #elif GHCJS_BOTH

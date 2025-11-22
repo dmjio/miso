@@ -12,8 +12,8 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Module for interacting with the Fetch API <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
--- manually.
+-- Interface to the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+-- for making HTTP requests.
 --
 -- Refer to the miso README if you want to automatically interact with a Servant
 -- API.
@@ -72,10 +72,11 @@ import           Miso.String (MisoString, ms)
 import           Miso.Util ((=:))
 import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, Uint8Array, Image, fetch, CONTENT_TYPE(..))
 ----------------------------------------------------------------------------
--- | See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
+-- | Retrieves JSON using the Fetch API.
+--
+-- See <https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API>
 --
 -- @
---
 -- data Action
 --  = FetchGitHub
 --  | SetGitHub GitHub
@@ -87,7 +88,6 @@ import           Miso.FFI.Internal (Response(..), Blob, FormData, ArrayBuffer, U
 --   FetchGitHub -> getJSON "https://api.github.com" [] SetGitHub ErrorHandler
 --   SetGitHub apiInfo -> info ?= apiInfo
 --   ErrorHandler msg -> io_ (consoleError msg)
---
 -- @
 --
 getJSON
@@ -128,7 +128,7 @@ getJSON url headers_ successful errorful =
             , ..
             }
 ----------------------------------------------------------------------------
--- | POST request that uses JSON encoded data
+-- | Sends a POST request with JSON encoded data.
 postJSON
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -152,7 +152,7 @@ postJSON url body_ headers_ successful errorful =
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
--- | POST request that uses JSON encoded data, and returns JSON encoded data
+-- | Sends a POST request with JSON encoded data and expects JSON response.
 postJSON'
   :: (FromJSVal error, ToJSON body, FromJSON return)
   => MisoString
@@ -194,7 +194,7 @@ postJSON' url body_ headers_ successful errorful =
             , ..
             }
 ----------------------------------------------------------------------------
--- | PUT request that uses JSON encoded data
+-- | Sends a PUT request with JSON encoded data.
 putJSON
   :: (FromJSVal error, ToJSON body)
   => MisoString
@@ -218,7 +218,7 @@ putJSON url body_ headers_ successful errorful =
   where
     jsonHeaders_ = biasHeaders headers_ [contentType =: applicationJSON]
 ----------------------------------------------------------------------------
--- | GET request that uses Text encoded data
+-- | Retrieves text using the Fetch API.
 getText
   :: FromJSVal error
   => MisoString
@@ -239,7 +239,7 @@ getText url headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [accept =: textPlain]
 ----------------------------------------------------------------------------
--- | POST request that uses Text encoded data
+-- | Sends a POST request with text data.
 postText
   :: FromJSVal error
   => MisoString
@@ -263,7 +263,7 @@ postText url body_ headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
--- | PUT request that uses Text encoded data
+-- | Sends a PUT request with text data.
 putText
   :: FromJSVal error
   => MisoString
@@ -287,7 +287,7 @@ putText url imageBody headers_ successful errorful =
   where
     textHeaders_ = biasHeaders headers_ [contentType =: textPlain]
 ----------------------------------------------------------------------------
--- | GET request that uses binary encoded data
+-- | Retrieves a Blob using the Fetch API.
 getBlob
   :: FromJSVal error
   => MisoString
@@ -308,7 +308,7 @@ getBlob url headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | POST request that uses binary encoded data
+-- | Sends a POST request with a Blob.
 postBlob
   :: FromJSVal error
   => MisoString
@@ -332,7 +332,7 @@ postBlob url body_ headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | PUT request that uses binary encoded data
+-- | Sends a PUT request with a Blob.
 putBlob
   :: FromJSVal error
   => MisoString
@@ -356,7 +356,7 @@ putBlob url imageBody headers_ successful errorful =
   where
     blobHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | GET request that uses FormData
+-- | Retrieves FormData using the Fetch API.
 getFormData
   :: FromJSVal error
   => MisoString
@@ -377,7 +377,7 @@ getFormData url headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [accept =: formData]
 ----------------------------------------------------------------------------
--- | POST request that uses FormData
+-- | Sends a POST request with FormData.
 postFormData
   :: FromJSVal error
   => MisoString
@@ -401,7 +401,7 @@ postFormData url body_ headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | PUT request that uses FormData
+-- | Sends a PUT request with FormData.
 putFormData
   :: FromJSVal error
   => MisoString
@@ -425,7 +425,7 @@ putFormData url imageBody headers_ successful errorful =
   where
     formDataHeaders_ = biasHeaders headers_ [contentType =: formData]
 ----------------------------------------------------------------------------
--- | GET request that uses ArrayBuffer
+-- | Retrieves an ArrayBuffer using the Fetch API.
 getArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -446,7 +446,7 @@ getArrayBuffer url headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | POST request that uses ArrayBuffer
+-- | Sends a POST request with an ArrayBuffer.
 postArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -470,7 +470,7 @@ postArrayBuffer url body_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | PUT request that uses ArrayBuffer
+-- | Sends a PUT request with an ArrayBuffer.
 putArrayBuffer
   :: FromJSVal error
   => MisoString
@@ -494,7 +494,7 @@ putArrayBuffer url arrayBuffer_ headers_ successful errorful =
   where
     arrayBufferHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | GET request that retrieves a byte array
+-- | Retrieves a Uint8Array using the Fetch API.
 getUint8Array
   :: FromJSVal error
   => MisoString
@@ -515,7 +515,7 @@ getUint8Array url headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [accept =: octetStream]
 ----------------------------------------------------------------------------
--- | POST request that sends a byte array
+-- | Sends a POST request with a Uint8Array.
 postUint8Array
   :: FromJSVal error
   => MisoString
@@ -539,7 +539,7 @@ postUint8Array url body_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | PUT request that sends a byte array
+-- | Sends a PUT request with a Uint8Array.
 putUint8Array
   :: FromJSVal error
   => MisoString
@@ -563,7 +563,7 @@ putUint8Array url uint8Array_ headers_ successful errorful =
   where
     uint8ArrayHeaders_ = biasHeaders headers_ [contentType =: octetStream]
 ----------------------------------------------------------------------------
--- | POST request that sends an 'Image'
+-- | Sends a POST request with an 'Image'.
 postImage
   :: FromJSVal error
   => MisoString
@@ -585,7 +585,7 @@ postImage url body_ headers_ successful errorful =
       (sink . errorful)
       NONE
 ----------------------------------------------------------------------------
--- | PUT request that sends an 'Image'
+-- | Sends a PUT request with an 'Image'.
 putImage
   :: FromJSVal error
   => MisoString
@@ -607,7 +607,7 @@ putImage url imageBody headers_ successful errorful =
       (sink . errorful)
       NONE
 ----------------------------------------------------------------------------
--- | Type synonym for Body
+-- | Type synonym for request body.
 type Body = JSVal
 ----------------------------------------------------------------------------
 -- | Value for specifying "Accept" in an HTTP header
@@ -628,7 +628,7 @@ textPlain = "text/plain"
 ----------------------------------------------------------------------------
 -- | Value for specifying "application/octet-stream" in an HTTP header
 octetStream :: MisoString
-octetStream = "application/octect-stream"
+octetStream = "application/octet-stream"
 ----------------------------------------------------------------------------
 -- | Value for specifying "multipart/form-data" in an HTTP header
 formData :: MisoString

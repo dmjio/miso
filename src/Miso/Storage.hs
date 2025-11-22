@@ -35,7 +35,7 @@ import           Language.Javascript.JSaddle hiding (obj, val)
 import           Miso.FFI.Internal (jsonParse, jsonStringify)
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
--- | Helper for retrieving either local or session storage
+-- | Helper for retrieving either local or session storage.
 getStorageCommon
   :: FromJSON b
   => (t -> JSM (Maybe JSVal))
@@ -52,7 +52,7 @@ getStorageCommon f key = do
         A.Success x -> Right x
         A.Error y -> Left y
 -----------------------------------------------------------------------------
--- | Retrieve a value stored under given key in session storage
+-- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
   :: FromJSON model
   => MisoString
@@ -63,7 +63,7 @@ getSessionStorage =
     r <- getItem s t
     fromJSVal r
 -----------------------------------------------------------------------------
--- | Retrieve a value stored under given key in local storage
+-- | Retrieves a value stored under the given key in local storage.
 getLocalStorage
   :: FromJSON model
   => MisoString
@@ -73,7 +73,7 @@ getLocalStorage = getStorageCommon $ \t -> do
     r <- getItem s t
     fromJSVal r
 -----------------------------------------------------------------------------
--- | Set the value of a key in local storage.
+-- | Sets the value of a key in local storage.
 --
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
 setLocalStorage
@@ -85,7 +85,7 @@ setLocalStorage key model = do
   s <- localStorage
   setItem s key =<< fromJSValUnchecked =<< jsonStringify model
 -----------------------------------------------------------------------------
--- | Set the value of a key in session storage.
+-- | Sets the value of a key in session storage.
 --
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
 setSessionStorage
@@ -97,7 +97,7 @@ setSessionStorage key model = do
   s <- sessionStorage
   setItem s key =<< fromJSValUnchecked =<< jsonStringify model
 -----------------------------------------------------------------------------
--- | Removes an item from local storage
+-- | Removes an item from local storage.
 --
 -- @removeLocalStorage key@ removes the value of @key@.
 removeLocalStorage
@@ -117,25 +117,25 @@ removeSessionStorage key = do
   s <- sessionStorage
   removeItem s key
 -----------------------------------------------------------------------------
--- | Clear local storage
+-- | Clears local storage.
 --
 -- @clearLocalStorage@ removes all values from local storage.
 clearLocalStorage :: JSM ()
 clearLocalStorage = clear =<< localStorage
 -----------------------------------------------------------------------------
--- | Clear session storage
+-- | Clears session storage.
 --
 -- @clearSessionStorage@ removes all values from session storage.
 clearSessionStorage :: JSM ()
 clearSessionStorage = clear =<< sessionStorage
 -----------------------------------------------------------------------------
--- | Local storage length
+-- | Returns the number of items in local storage.
 --
 -- @localStorageLength@ returns the count of items in local storage
 localStorageLength :: JSM Int
 localStorageLength = fromJSValUnchecked =<< localStorage ! (ms "length")
 -----------------------------------------------------------------------------
--- | Session storage length
+-- | Returns the number of items in session storage.
 --
 -- @sessionStorageLength@ returns the count of items in session storage
 sessionStorageLength :: JSM Int

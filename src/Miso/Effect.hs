@@ -12,8 +12,8 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines `Effect`, `Sub` and `Sink` types, which are used to define
--- `Miso.Types.update` function and `Miso.Types.subs` field of the `Miso.Types.Component`.
+-- This module defines t'Effect', t'Sub' and t'Sink' types, which are used to define
+-- 'Miso.Types.update' function and 'Miso.Types.subs' field of the t'Miso.Types.Component'.
 --
 ----------------------------------------------------------------------------
 module Miso.Effect
@@ -114,7 +114,7 @@ batch actions = sequence_
   | action <- actions
   ]
 -----------------------------------------------------------------------------
--- | Like @batch@ but action are discarded
+-- | Like @batch@ but actions are discarded
 --
 -- @since 1.9.0.0
 batch_ :: [JSM ()] -> Effect parent model action
@@ -125,19 +125,19 @@ batch_ actions = sequence_
 -----------------------------------------------------------------------------
 -- | A monad for succinctly expressing model transitions in the @update@ function.
 --
--- @Effect@ is a @RWS@, where the @State@ abstracts over manually passing the model
+-- t'Effect' is a @RWS@, where the @State@ abstracts over manually passing the model
 -- around. It's also a @Writer@ @Monad@, where the accumulator is a list of scheduled
 -- @IO@ actions. Multiple actions can be scheduled using 'Control.Monad.Writer.Class.tell'
 -- from the @mtl@ library and a single action can be scheduled using 'io_'.
 --
--- An @Effect@ represents the results of an update action.
+-- An t'Effect' represents the results of an update action.
 --
--- It consists of the updated model and a list of subscriptions. Each @Sub@ is
+-- It consists of the updated model and a list of subscriptions. Each t'Sub' is
 -- run in a new thread so there is no risk of accidentally blocking the
 -- application.
 --
--- Tip: use the @Effect@ monad in combination with the stateful
--- <http://hackage.haskell.org/package/lens-4.15.4/docs/Control-Lens-Operators.html lens>
+-- Tip: use the t'Effect' monad in combination with the stateful
+-- <https://hackage.haskell.org/package/lens/docs/Control-Lens-Operators.html lens>
 -- operators (all operators ending in "@=@"). The following example assumes
 -- the lenses @field1@, @counter@ and @field2@ are in scope and that the
 -- @LambdaCase@ language extension is enabled:
@@ -189,13 +189,13 @@ mapSub f sub = \g -> sub (g . f)
 io :: JSM action -> Effect parent model action
 io action = withSink (action >>=)
 -----------------------------------------------------------------------------
--- | Like 'io_' but doesn't cause an action to be dispatched to
+-- | Like 'io' but doesn't cause an action to be dispatched to
 -- the @update@ function.
 --
 -- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
 --
--- Note: The result of 'JSM a' is discarded.
+-- Note: The result of @JSM a@ is discarded.
 --
 -- @since 1.9.0.0
 io_ :: JSM a -> Effect parent model action

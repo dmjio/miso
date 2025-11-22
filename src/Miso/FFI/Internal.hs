@@ -146,12 +146,11 @@ module Miso.FFI.Internal
    , Event (..)
    ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (foldM)
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Control.Concurrent (ThreadId, forkIO)
-import           Control.Monad (void, forM_, (<=<), when)
+import           Control.Monad (void, foldM, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
@@ -244,10 +243,10 @@ addEventListener self name cb = do
       handle _ _ []    = error "addEventListener: no args, impossible"
       handle _ _ (x:_) = cb x
 -----------------------------------------------------------------------------
--- | Register an event listener on given target.
+-- | Removes an event listener from given target.
 removeEventListener
   :: JSVal
-  -- ^ Event target on which we want to register event listener
+  -- ^ Event target from which we want to remove event listener
   -> MisoString
   -- ^ Type of event to listen to (e.g. "click")
   -> Function
@@ -257,7 +256,7 @@ removeEventListener
 removeEventListener self name cb =
   void $ self # "removeEventListener" $ (name, cb)
 -----------------------------------------------------------------------------
--- | Registers an event listener on window
+-- | Removes an event listener from window
 windowRemoveEventListener
   :: MisoString
   -- ^ Type of event to listen to (e.g. "click")
@@ -358,7 +357,7 @@ jsonStringify j = do
   v <- toJSVal (toJSON j)
   jsg "JSON" # "stringify" $ [v]
 -----------------------------------------------------------------------------
--- | Parses a MisoString
+-- | Parses a JavaScript value into a Haskell type using JSON conversion
 jsonParse :: FromJSON json => JSVal -> JSM json
 {-# INLINE jsonParse #-}
 jsonParse jval = do

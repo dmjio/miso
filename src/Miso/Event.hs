@@ -110,7 +110,7 @@ onMounted action =
 -----------------------------------------------------------------------------
 -- | @onMountedWith action@ is an event that gets called after the actual DOM
 -- element is created. It returns the /componentId/ from the component.
--- Returning /componentId/ is useful when creating t'Miso.Types.Component' dynamically.
+-- Passes the 'DOMRef' to the action.
 --
 -- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -155,8 +155,7 @@ onCreatedWith action =
     FFI.set "onCreated" callback object
 -----------------------------------------------------------------------------
 -- | @onDestroyed action@ is an event that gets called after the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
+-- is removed from the DOM.
 --
 -- @since 1.9.0.0
 --
@@ -177,8 +176,8 @@ onUnmounted action =
     callback <- FFI.syncCallback (sink action)
     FFI.set "onUnmounted" callback object
 -----------------------------------------------------------------------------
--- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM. It returns the /componentId/ after the unmount call.
+-- | @onUnmountedWith action@ is an event that gets called after the DOM element
+-- is removed from the DOM. Passes the 'DOMRef' to the action.
 --
 -- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
 --
@@ -202,8 +201,7 @@ onBeforeUnmounted action =
     FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
--- is removed from the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
+-- is removed from the DOM.
 --
 -- @since 1.9.0.0
 --
@@ -214,8 +212,7 @@ onBeforeDestroyed action =
     FFI.set "onBeforeDestroyed" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeCreated action@ is an event that gets called before the DOM element
--- is created on the DOM. The @action@ is given the DOM element that was
--- removed from the DOM tree.
+-- is created on the DOM.
 --
 -- @since 1.9.0.0
 --

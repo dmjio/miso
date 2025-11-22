@@ -20,6 +20,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Core types for Miso applications.
 ----------------------------------------------------------------------------
 module Miso.Types
   ( -- ** Types
@@ -98,50 +100,50 @@ import           Miso.CSS.Types (StyleSheet)
 data Component parent model action
   = Component
   { model :: model
-  -- ^ initial model
+  -- ^ Initial model
 #ifdef SSR
   , hydrateModel :: Maybe (IO model)
 #else
   , hydrateModel :: Maybe (JSM model)
 #endif
-  -- ^ Perform action to load component state, such as reading data from page
+  -- ^ Action to load component state, such as reading data from page.
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
-  -- ^ Function to update model, optionally providing effects.
+  -- ^ Updates model, optionally providing effects.
   , view :: model -> View model action
-  -- ^ Function to draw t'Miso.Types.View'
+  -- ^ Draws 'View'
   , subs :: [ Sub action ]
-  -- ^ List of subscriptions to run during application lifetime
+  -- ^ Subscriptions to run during application lifetime
   , events :: Events
-  -- ^ List of delegated events that the body element will listen for.
+  -- ^ Delegated events that the body element will listen for.
   --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
-  -- ^ List of CSS styles expressed as either a URL ('Href') or as 'Style' text.
+  -- ^ CSS styles expressed as either a URL ('Href') or as 'Style' text.
   -- These styles are appended dynamically to the \<head\> section of your HTML page
   -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
   , scripts :: [JS]
-  -- ^ List of JavaScript scripts expressed as either a URL ('Src') or raw JS text.
+  -- ^ JavaScript scripts expressed as either a URL ('Src') or raw JS text.
   -- These scripts are appended dynamically to the \<head\> section of your HTML page
   -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
   , initialAction :: Maybe action
-  -- ^ Initial action that is run after the application has loaded, optional
+  -- ^ Initial action run after the application has loaded, optional
   --
   -- @since 1.9.0.0
   , mountPoint :: Maybe MountPoint
-  -- ^ Id of the root element for DOM diff.
+  -- ^ ID of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
-  -- ^ Debugging for prerendering and event delegation
+  -- ^ Debugging configuration for prerendering and event delegation
   , mailbox :: Mail -> Maybe action
-  -- ^ Used to receive mail from other t'Miso.Types.Component'
+  -- ^ Receives mail from other components
   --
   -- @since 1.9.0.0
   , bindings :: [ Binding parent model ]
-  -- ^ Data bindings between parent and child components
+  -- ^ Data bindings between parent and child t'Miso.Types.Component's
   --
   -- @since 1.9.0.0
   }
@@ -156,11 +158,11 @@ type MountPoint = MisoString
 --
 data CSS
   = Href MisoString
-  -- ^ 'Href' is a URL meant to link to hosted CSS
+  -- ^ URL linking to hosted CSS
   | Style MisoString
-  -- ^ 'Style' is meant to be raw CSS in a 'Miso.Html.Element.style_' tag
+  -- ^ Raw CSS content in a 'Miso.Html.Element.style_' tag
   | Sheet StyleSheet
-  -- ^ 'Sheet' is meant to be CSS built with 'Miso.CSS'
+  -- ^ CSS built with 'Miso.CSS'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Allow users to express JS and append it to <head> before the first draw
@@ -175,14 +177,14 @@ data CSS
 --
 data JS
   = Src MisoString
-  -- ^ v'Src' is a URL meant to link to hosted JS
+  -- ^ URL linking to hosted JS
   | Script MisoString
-  -- ^ v'Script' is meant to be raw JS that you would enter in a \<script\> tag
+  -- ^ Raw JS content that you would enter in a \<script\> tag
   | Module MisoString
-  -- ^ v'Module' is meant to be raw JS that you would enter in a \<script type="module"\> tag.
+  -- ^ Raw JS module content that you would enter in a \<script type="module"\> tag.
   -- See [script type](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type)
   | ImportMap [(MisoString,MisoString)]
-  -- ^ v'ImportMap' is meant to be an import map in a \<script type="importmap"\> tag.
+  -- ^ Import map content in a \<script type="importmap"\> tag.
   -- See [importmap](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap)
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -231,7 +233,7 @@ type App model action = Component ROOT model action
 -- when t'Miso.Types.Component's are not in use. Also for pre-1.9 'Miso.miso' applications.
 type Transition model action = Effect ROOT model action
 -----------------------------------------------------------------------------
--- | Optional logging for debugging miso internals (useful to see if prerendering is successful)
+-- | Logging configuration for debugging Miso internals (useful to see if prerendering is successful)
 data LogLevel
   = Off
   -- ^ No debug logging, the default value used in 'component'
@@ -248,24 +250,23 @@ data LogLevel
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
------------------------------------------------------------------------------
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
   | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
--- | Existential wrapper used to allow the nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
+-- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
 -----------------------------------------------------------------------------
--- | The t'Miso.Types.Component' mounting combinator
+-- | t'Miso.Types.Component' mounting combinator
 --
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   div_ [ key_ "component-id" ] +\> component model noop $ \\m ->
+--   div_ [ key_ "component-id" ] +> component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
@@ -286,14 +287,14 @@ infixr 0 +>
     _ ->
       error "Impossible: cannot mount on a Text node"
 -----------------------------------------------------------------------------
--- | Namespace of DOM elements.
+-- | DOM element namespace.
 data NS
   = HTML
-  -- ^ v'HTML' Namespace
+  -- ^ HTML Namespace
   | SVG
-  -- ^ v'SVG' Namespace
+  -- ^ SVG Namespace
   | MATHML
-  -- ^ v'MATHML' Namespace
+  -- ^ MATHML Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
@@ -301,7 +302,7 @@ instance ToJSVal NS where
   toJSVal HTML   = toJSVal ("html" :: JSString)
   toJSVal MATHML = toJSVal ("mathml" :: JSString)
 -----------------------------------------------------------------------------
--- | A unique key for a DOM node.
+-- | Unique key for a DOM node.
 --
 -- This key is only used to speed up diffing the children of a DOM
 -- node, the actual content is not important. The keys of the children
@@ -399,7 +400,7 @@ textRaw :: MisoString -> View model action
 textRaw = VText
 ----------------------------------------------------------------------------
 -- |
--- HTML-encodes the given text.
+-- HTML-encodes text.
 --
 -- N.B. This only works when not using @jsaddle@, useful for escaping HTML
 -- when delivering on the server. Naive usage of 'text' will ensure this
@@ -442,7 +443,7 @@ optionalAttrs element attrs condition opts kids =
       VNode ns name newAttrs kids
     x -> x
 ----------------------------------------------------------------------------
--- | Utility function to make it easy to specify conditional children
+-- | Conditionally adds children.
 --
 -- @
 -- view :: Bool -> View model action
@@ -464,7 +465,7 @@ optionalChildren element attrs kids condition opts =
       VNode ns name attrs newKids
     x -> x
 ----------------------------------------------------------------------------
--- | Type for dealing with t'URI'. See the official [specification](https://www.rfc-editor.org/rfc/rfc3986)
+-- | URI type. See the official [specification](https://www.rfc-editor.org/rfc/rfc3986)
 --
 data URI
   = URI
@@ -472,18 +473,18 @@ data URI
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
   } deriving (Show, Eq)
 ----------------------------------------------------------------------------
--- | An empty t'URI'
+-- | Empty t'URI'.
 emptyURI :: URI
 emptyURI = URI mempty mempty mempty
 ----------------------------------------------------------------------------
 instance ToMisoString URI where
   toMisoString = prettyURI
 ----------------------------------------------------------------------------
--- | t'URI' pretty-printing
+-- | Pretty-prints a t'URI'.
 prettyURI :: URI -> MisoString
 prettyURI uri@URI {..} = "/" <> uriPath <> prettyQueryString uri <> uriFragment
 -----------------------------------------------------------------------------
--- | t'URI' query string pretty-printing
+-- | Pretty-prints a t'URI' query string.
 prettyQueryString :: URI -> MisoString
 prettyQueryString URI {..} = queries <> flags
   where

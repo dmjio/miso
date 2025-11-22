@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Construct custom properties on DOM elements
+-- Construct custom properties on DOM elements.
 --
 -- > div_ [ prop "id" "foo" ] [ ]
 --
@@ -32,7 +32,7 @@ import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM 
+-- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM
 -- node associated with the vnode to @v@.
 prop :: ToJSON a => MisoString -> a -> Attribute action
 prop k v = Property k (toJSON v)

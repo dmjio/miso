@@ -14,6 +14,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Primitives for synchronizing parent and child models.
 ----------------------------------------------------------------------------
 module Miso.Binding
   ( -- ** Types

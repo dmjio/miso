@@ -219,7 +219,7 @@ viewModel x =
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
     , H.br_ []
     , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
-  ]
+    ]
 ----------------------------------------------------------------------------
 ```
 
@@ -715,7 +715,7 @@ Since it's launch, `miso` has been used in a variety of industries, including bu
   - Network security
   - Defense research
   - Academia
-  - SaaS companies 
+  - SaaS companies
   - Public sector
   - Non-profit sector
   - etc.
