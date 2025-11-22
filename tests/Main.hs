@@ -36,11 +36,10 @@ main = run $ do
 -----------------------------------------------------------------------------
 it :: String -> JSM (Bool, String) -> TestM ()
 it testName test = do
-  (testResult, msg, time) <- (do
-     ((x,msg),t) <- liftJSM (clock test)
-     pure (x,msg,t))
+  ((testResult, msg), time) <-
+    liftJSM (clock test)
       `catch` (\(e :: SomeException) ->
-         pure (False, show e, 0))
+         pure ((False, show e), 0))
   modify (Test testName testResult msg time:)
 -----------------------------------------------------------------------------
 data TestResult
@@ -98,8 +97,8 @@ clock action = do
 runTests :: TestM a -> JSM ()
 runTests ts = do
   summary <- toResult <$> execStateT ts []
+  prettyTests $ reverse (tests summary)
   liftIO $ do
-    prettyTests (tests summary)
     when (failed summary > 0) exitFailure
     exitSuccess
       where
@@ -115,6 +114,6 @@ runTests ts = do
 prettyTests :: [Test] -> JSM ()
 prettyTests tests = forM_ tests $ \Test {..} ->
   if result
-    then jsg "console" # "log" $ [ms "✅", ms "%c" <> ms name, ms "color:green;"]
-    else jsg "console" # "log" $ [ms "❌", ms "%c" <> ms name, ms "color:red;"]
+    then jsg "console" # "log" $ [ms "%c ✓ ", ms "color:green;", ms name]
+    else jsg "console" # "log" $ [ms "%c ✗ ", ms "color:red;", ms name]
 -----------------------------------------------------------------------------
