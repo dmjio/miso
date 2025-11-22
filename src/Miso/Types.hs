@@ -501,3 +501,4 @@ prettyQueryString URI {..} = queries <> flags
         [ "?" <> k
         | (k, Nothing) <- M.toList uriQueryString
         ]
+-----------------------------------------------------------------------------
