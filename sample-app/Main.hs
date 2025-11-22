@@ -63,5 +63,5 @@ viewModel x =
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
     , H.br_ []
     , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
-  ]
+    ]
 ----------------------------------------------------------------------------

@@ -48,8 +48,10 @@ module Miso
   , io_
   , for
     -- * Reactivity
+    -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
     -- * Types
+    -- | Core types for Miso applications.
   , module Miso.Types
     -- * Effect
   , module Miso.Effect
@@ -70,8 +72,10 @@ module Miso
     -- * Util
   , module Miso.Util
     -- * FFI
+    -- | Foreign Function Interface (FFI) utilities for interacting with JavaScript.
   , module Miso.FFI
     -- * State management
+    -- | State management for Miso applications.
   , module Miso.State
   ) where
 -----------------------------------------------------------------------------
@@ -118,7 +122,7 @@ miso f = withJS $ do
   vcomp <- f <$> getURI
   initialize Hydrate vcomp FFI.getBody
 -----------------------------------------------------------------------------
--- | Synonym 'startApp' to 'startComponent'.
+-- | Synonym for 'startComponent'.
 --
 -- To get an IO action that starts the application, use 'run' on the result of this function.
 --
@@ -159,7 +163,7 @@ renderApp
 renderApp renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
 ----------------------------------------------------------------------------
--- | top-level t'Miso.Types.Component' initialization helper for `renderApp` and `startComponent`
+-- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action

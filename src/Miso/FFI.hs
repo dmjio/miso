@@ -7,7 +7,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Module for re-exporting internal FFI functions for public consumption
+-- Foreign Function Interface (FFI) utilities for interacting with JavaScript.
 --
 ----------------------------------------------------------------------------
 module Miso.FFI
@@ -20,7 +20,7 @@ module Miso.FFI
   , consoleLog'
   , consoleError
   , consoleWarn
-  -- ** DOM
+    -- ** DOM
   , getElementById
   , focus
   , blur
@@ -56,12 +56,12 @@ module Miso.FFI
     -- ** 'Miso.Types.Component'
   , getParentComponentId
   , getComponentId
-    -- ** DOM
+    -- ** DOM Traversal
   , nextSibling
   , previousSibling
     -- ** Element
   , click
-    -- ** FileReader
+    -- ** File Input
   , files
     -- ** Navigator
   , isOnLine
