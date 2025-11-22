@@ -72,10 +72,13 @@ module Miso
     -- | Subscriptions for external events (mouse, keyboard, window, history, etc.).
   , module Miso.Subscription
     -- * Storage
+    -- | Web Storage API (Local and Session storage) interface.
   , module Miso.Storage
     -- * Fetch
+    -- | Interface to the Fetch API for making HTTP requests.
   , module Miso.Fetch
     -- * Util
+    -- | Utility functions for views, parsing, and general purpose combinators.
   , module Miso.Util
     -- * FFI
     -- | Foreign Function Interface (FFI) utilities for interacting with JavaScript.

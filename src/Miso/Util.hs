@@ -6,6 +6,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Utility functions for views, parsing, and general purpose combinators.
 ----------------------------------------------------------------------------
 module Miso.Util
   ( withFoldable
@@ -40,7 +42,8 @@ import           Prelude hiding ((.))
 withFoldable :: Foldable t => t a -> (a -> b) -> [b]
 withFoldable ta f = map f (toList ta)
 -----------------------------------------------------------------------------
--- | Hides the @View@s if the condition is False. Shows them when the condition
+-- | Conditionally includes views.
+-- Hides the 'Miso.Types.View's if the condition is False. Shows them when the condition
 -- is True.
 conditionalViews :: Bool -> [view] -> [view]
 conditionalViews condition views =
@@ -48,7 +51,7 @@ conditionalViews condition views =
     then views
     else []
 -----------------------------------------------------------------------------
--- | Select the first Alternative, analogous to @asum@.
+-- | Selects the first 'Alternative', analogous to 'Data.Foldable.asum'.
 oneOf :: Alternative f => [f a] -> f a
 oneOf = foldr (<|>) empty
 ----------------------------------------------------------------------------
@@ -110,7 +113,7 @@ sepBy sep p = sepBy1 sep p <|> pure []
 between :: Applicative f => f a -> f b -> f c -> f (b, c)
 between c l r = (,) <$> l <*> (c *> r)
 ----------------------------------------------------------------------------
--- | Smart constructor for tuple
+-- | Tuple constructor, useful for constructing key-value pairs.
 --
 (=:) :: k -> v -> (k, v)
 k =: v = (k,v)
