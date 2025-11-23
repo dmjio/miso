@@ -35,7 +35,7 @@ module Miso.Runtime
   , Topic (..)
   , topic
   -- * Component
-  , ComponentState
+  , ComponentState (..)
   -- ** Communication
   , mail
   , checkMail
@@ -70,6 +70,7 @@ module Miso.Runtime
   , arrayBuffer
   -- ** Internal Component state
   , components
+  , componentIds
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM

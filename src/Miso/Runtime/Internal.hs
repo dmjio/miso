@@ -18,7 +18,11 @@
 -- your application.
 --
 ----------------------------------------------------------------------------
-module Miso.Runtime.Internal (components) where
+module Miso.Runtime.Internal
+  ( components
+  , componentIds
+  , ComponentState(..)
+  ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components)
+import Miso.Runtime (components, ComponentState(..), componentIds)
 ----------------------------------------------------------------------------

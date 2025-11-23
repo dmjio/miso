@@ -28,7 +28,7 @@ executable component-tests
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, jsaddle
+    base, miso, miso-tests, containers, mtl, jsaddle, stm
   hs-source-dirs:
     app
   js-sources:
@@ -46,4 +46,4 @@ library
   exposed-modules:
     Miso.Test
   build-depends:
-    base, miso, containers, mtl, jsaddle
+    base, miso, containers, mtl, jsaddle, stm
