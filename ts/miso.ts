@@ -3,7 +3,6 @@ import { delegate, undelegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
-   shouldSync,
    version,
    callFocus,
    callBlur,
@@ -48,7 +47,6 @@ export {
   fetchCore,
   undelegate,
   integrityCheck,
-  shouldSync,
   getParentComponentId,
   websocketConnect,
   websocketClose,

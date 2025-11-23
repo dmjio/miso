@@ -647,14 +647,12 @@ describe ('Patch tests', () => {
         const nodeIdChild1 : number = 2;
         const nodeIdChild2 : number = 3;
         const componentId : number = 0;
-        let firstTree : VNode<NodeId> = vnode({ tag: 'p', shouldSync: true, children: [vnode({ tag: 'a', key: '1' }) ]});
-        let secondTree : VNode<NodeId> = vnode({ tag: 'p', shouldSync: true, children: [vnode({ tag: 'img', key: '2' }) ]});
+        let firstTree : VNode<NodeId> = vnode({ tag: 'p', children: [vnode({ tag: 'a', key: '1' }) ]});
+        let secondTree : VNode<NodeId> = vnode({ tag: 'p', children: [vnode({ tag: 'img', key: '2' }) ]});
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
         diff (null, firstTree, parent, patchContext);
-        firstTree.shouldSync = true;
-        secondTree.shouldSync = true;
         diff (firstTree, secondTree, parent, patchContext);
         let expected : CreateElement = {
             tag: 'p',

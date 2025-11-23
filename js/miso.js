@@ -1,186 +1,6 @@
-// ts/miso/util.ts
-var version = "1.9.0.0";
-function callFocus(id, delay) {
-  var setFocus = function() {
-    var e = document.getElementById(id);
-    if (e && e.focus)
-      e.focus();
-  };
-  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
-}
-function callBlur(id, delay) {
-  var setBlur = function() {
-    var e = document.getElementById(id);
-    if (e && e.blur)
-      e.blur();
-  };
-  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
-}
-function fetchCore(url, method, body, requestHeaders, successful, errorful, responseType) {
-  var options = { method, headers: requestHeaders };
-  if (body) {
-    options["body"] = body;
-  }
-  let headers = {};
-  let status = null;
-  try {
-    fetch(url, options).then((response) => {
-      status = response.status;
-      for (const [key, value] of response.headers) {
-        headers[key] = value;
-      }
-      if (!response.ok) {
-        throw new Error(response.statusText);
-      }
-      if (responseType == "json") {
-        return response.json();
-      } else if (responseType == "text") {
-        return response.text();
-      } else if (responseType === "arrayBuffer") {
-        return response.arrayBuffer();
-      } else if (responseType === "blob") {
-        return response.blob();
-      } else if (responseType === "bytes") {
-        return response.bytes();
-      } else if (responseType === "formData") {
-        return response.formData();
-      } else if (responseType === "none") {
-        return successful({ error: null, body: null, headers, status });
-      }
-    }).then((body2) => successful({ error: null, body: body2, headers, status })).catch((body2) => errorful({ error: null, body: body2, headers, status }));
-  } catch (err) {
-    errorful({ body: null, error: err.message, headers, status });
-  }
-}
-function shouldSync(node) {
-  if (node.children.length === 0) {
-    return false;
-  }
-  var enterSync = true;
-  for (const child of node.children) {
-    if (!child.key) {
-      enterSync = false;
-      break;
-    }
-  }
-  return enterSync;
-}
-function getParentComponentId(vcompNode) {
-  var climb = function(node) {
-    let parentComponentId = null;
-    while (node && node.parentNode) {
-      if ("componentId" in node.parentNode) {
-        parentComponentId = node.parentNode["componentId"];
-        break;
-      }
-      node = node.parentNode;
-    }
-    return parentComponentId;
-  };
-  return climb(vcompNode);
-}
-function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly) {
-  try {
-    let socket = new WebSocket(url);
-    socket.onopen = function() {
-      onOpen();
-    };
-    socket.onclose = function(e) {
-      onClose(e);
-    };
-    socket.onerror = function(error) {
-      console.error(error);
-      onError("WebSocket error received");
-    };
-    socket.onmessage = function(msg) {
-      if (typeof msg.data === "string") {
-        try {
-          if (textOnly) {
-            if (onMessageText)
-              onMessageText(msg.data);
-            return;
-          }
-          const json = JSON.parse(msg.data);
-          if (onMessageJSON)
-            onMessageJSON(json);
-        } catch (err) {
-          if (textOnly && onMessageText) {
-            onMessageText(msg.data);
-          } else {
-            onError(err.message);
-          }
-        }
-      } else if (msg.data instanceof Blob) {
-        if (onMessageBLOB)
-          onMessageBLOB(msg.data);
-      } else if (msg.data instanceof ArrayBuffer) {
-        if (onMessageArrayBuffer)
-          onMessageArrayBuffer(msg.data);
-      } else {
-        console.error("Received unknown message type from WebSocket", msg);
-        onError("Unknown message received from WebSocket");
-      }
-    };
-    return socket;
-  } catch (err) {
-    onError(err.message);
-  }
-}
-function websocketClose(socket) {
-  if (socket) {
-    socket.close();
-    socket = null;
-  }
-}
-function websocketSend(socket, message) {
-  if (message && socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(message);
-  }
-}
-function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError, textOnly) {
-  try {
-    let eventSource = new EventSource(url);
-    eventSource.onopen = function() {
-      onOpen();
-    };
-    eventSource.onerror = function() {
-      onError("EventSource error received");
-    };
-    eventSource.onmessage = function(msg) {
-      try {
-        if (textOnly) {
-          if (onMessageText)
-            onMessageText(msg.data);
-          return;
-        }
-        const json = JSON.parse(msg.data);
-        if (onMessageJSON)
-          onMessageJSON(json);
-      } catch (err) {
-        if (textOnly && onMessageText) {
-          onMessageText(msg.data);
-        } else {
-          onError(err.message);
-        }
-      }
-    };
-    return eventSource;
-  } catch (err) {
-    onError(err.message);
-  }
-}
-function eventSourceClose(eventSource) {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
-}
-
 // ts/miso/smart.ts
 function vnode(props) {
   var node = union(mkVNode(), props);
-  if (!node.shouldSync)
-    node.shouldSync = shouldSync(node);
   return node;
 }
 function union(obj, updates) {
@@ -200,7 +20,6 @@ function mkVNode() {
     onBeforeDestroyed: () => {},
     onCreated: () => {},
     onBeforeCreated: () => {},
-    shouldSync: false,
     type: "vnode",
     nextSibling: null
   };
@@ -344,8 +163,23 @@ function diffProps(cProps, nProps, node, isSvg, context) {
 function diffCss(cCss, nCss, node, context) {
   context.setInlineStyle(cCss, nCss, node);
 }
+function shouldSync(c, n) {
+  if (c.children.length === 0 || n.children.length === 0)
+    return false;
+  for (var i = 0;i < c.children.length; i++) {
+    if (c.children[i].key === null || c.children[i].key === undefined) {
+      return false;
+    }
+  }
+  for (var i = 0;i < n.children.length; i++) {
+    if (n.children[i].key === null || n.children[i].key === undefined) {
+      return false;
+    }
+  }
+  return true;
+}
 function diffChildren(c, n, parent, context) {
-  if (c.shouldSync && n.shouldSync) {
+  if (shouldSync(c, n)) {
     syncChildren(c.children, n.children, parent, context);
   } else {
     const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
@@ -785,6 +619,171 @@ function walk(logLevel, vtree, node, context, drawingContext) {
   return true;
 }
 
+// ts/miso/util.ts
+var version = "1.9.0.0";
+function callFocus(id, delay) {
+  var setFocus = function() {
+    var e = document.getElementById(id);
+    if (e && e.focus)
+      e.focus();
+  };
+  delay > 0 ? setTimeout(setFocus, delay) : setFocus();
+}
+function callBlur(id, delay) {
+  var setBlur = function() {
+    var e = document.getElementById(id);
+    if (e && e.blur)
+      e.blur();
+  };
+  delay > 0 ? setTimeout(setBlur, delay) : setBlur();
+}
+function fetchCore(url, method, body, requestHeaders, successful, errorful, responseType) {
+  var options = { method, headers: requestHeaders };
+  if (body) {
+    options["body"] = body;
+  }
+  let headers = {};
+  let status = null;
+  try {
+    fetch(url, options).then((response) => {
+      status = response.status;
+      for (const [key, value] of response.headers) {
+        headers[key] = value;
+      }
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      if (responseType == "json") {
+        return response.json();
+      } else if (responseType == "text") {
+        return response.text();
+      } else if (responseType === "arrayBuffer") {
+        return response.arrayBuffer();
+      } else if (responseType === "blob") {
+        return response.blob();
+      } else if (responseType === "bytes") {
+        return response.bytes();
+      } else if (responseType === "formData") {
+        return response.formData();
+      } else if (responseType === "none") {
+        return successful({ error: null, body: null, headers, status });
+      }
+    }).then((body2) => successful({ error: null, body: body2, headers, status })).catch((body2) => errorful({ error: null, body: body2, headers, status }));
+  } catch (err) {
+    errorful({ body: null, error: err.message, headers, status });
+  }
+}
+function getParentComponentId(vcompNode) {
+  var climb = function(node) {
+    let parentComponentId = null;
+    while (node && node.parentNode) {
+      if ("componentId" in node.parentNode) {
+        parentComponentId = node.parentNode["componentId"];
+        break;
+      }
+      node = node.parentNode;
+    }
+    return parentComponentId;
+  };
+  return climb(vcompNode);
+}
+function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly) {
+  try {
+    let socket = new WebSocket(url);
+    socket.onopen = function() {
+      onOpen();
+    };
+    socket.onclose = function(e) {
+      onClose(e);
+    };
+    socket.onerror = function(error) {
+      console.error(error);
+      onError("WebSocket error received");
+    };
+    socket.onmessage = function(msg) {
+      if (typeof msg.data === "string") {
+        try {
+          if (textOnly) {
+            if (onMessageText)
+              onMessageText(msg.data);
+            return;
+          }
+          const json = JSON.parse(msg.data);
+          if (onMessageJSON)
+            onMessageJSON(json);
+        } catch (err) {
+          if (textOnly && onMessageText) {
+            onMessageText(msg.data);
+          } else {
+            onError(err.message);
+          }
+        }
+      } else if (msg.data instanceof Blob) {
+        if (onMessageBLOB)
+          onMessageBLOB(msg.data);
+      } else if (msg.data instanceof ArrayBuffer) {
+        if (onMessageArrayBuffer)
+          onMessageArrayBuffer(msg.data);
+      } else {
+        console.error("Received unknown message type from WebSocket", msg);
+        onError("Unknown message received from WebSocket");
+      }
+    };
+    return socket;
+  } catch (err) {
+    onError(err.message);
+  }
+}
+function websocketClose(socket) {
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+function websocketSend(socket, message) {
+  if (message && socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(message);
+  }
+}
+function eventSourceConnect(url, onOpen, onMessageText, onMessageJSON, onError, textOnly) {
+  try {
+    let eventSource = new EventSource(url);
+    eventSource.onopen = function() {
+      onOpen();
+    };
+    eventSource.onerror = function() {
+      onError("EventSource error received");
+    };
+    eventSource.onmessage = function(msg) {
+      try {
+        if (textOnly) {
+          if (onMessageText)
+            onMessageText(msg.data);
+          return;
+        }
+        const json = JSON.parse(msg.data);
+        if (onMessageJSON)
+          onMessageJSON(json);
+      } catch (err) {
+        if (textOnly && onMessageText) {
+          onMessageText(msg.data);
+        } else {
+          onError(err.message);
+        }
+      }
+    };
+    return eventSource;
+  } catch (err) {
+    onError(err.message);
+  }
+}
+function eventSourceClose(eventSource) {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+}
+
 // ts/miso/context/dom.ts
 var eventContext = {
   addEventListener: (mount, event, listener2, capture) => {
@@ -931,7 +930,6 @@ globalThis["miso"] = {
   websocketSend,
   undelegate,
   getParentComponentId,
-  shouldSync,
   integrityCheck,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
