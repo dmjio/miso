@@ -63,4 +63,4 @@ jobs:
        run: nix-collect-garbage -d       
 
      - name: (JS) Miso integration tests
-       run: bun run $(nix-build -A miso-tests)/bin/*.jsexe/all.js
+       run: bun run build-test && bun run $(nix-build -A miso-tests)/bin/*.jsexe/all.js
