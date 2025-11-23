@@ -63,4 +63,4 @@ jobs:
        run: nix-collect-garbage -d       
 
      - name: (JS) Miso integration tests
-       run: nix develop .#ghcjs --command bash -c ./scripts/test-runner.sh
+       run: bun run $(nix-build -A miso-tests)/bin/*.jsexe/all.js

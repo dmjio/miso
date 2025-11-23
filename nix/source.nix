@@ -30,6 +30,7 @@ in
 {
   # local sources
   miso             = make-src-filter ../.;
+  miso-tests       = make-src-filter ../tests;
   sample-app       = make-src-filter ../sample-app;
 
   # flake sources
