@@ -8,6 +8,7 @@ self: super:
 {
   /* miso */
   miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell" {};
+  miso-tests = self.callCabal2nix "miso-tests" source.miso-tests {};
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};

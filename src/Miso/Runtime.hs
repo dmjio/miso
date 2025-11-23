@@ -35,7 +35,7 @@ module Miso.Runtime
   , Topic (..)
   , topic
   -- * Component
-  , ComponentState
+  , ComponentState (..)
   -- ** Communication
   , mail
   , checkMail
@@ -68,6 +68,10 @@ module Miso.Runtime
   , json
   , blob
   , arrayBuffer
+  -- ** Internal Component state
+  , components
+  , componentIds
+  , rootComponentId
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
@@ -641,11 +645,16 @@ freshSubId = do
   x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
   pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
--- | This is used to demarcate the ROOT of a page. This ID will never
+-- | This is used to demarcate the ROOT of a page. This ID will *never*
 -- exist in the `components` map.
 rootComponentId :: ComponentId
 rootComponentId = 0
 -----------------------------------------------------------------------------
+-- | The global store of 'ComponentId', for internal-use only.
+--
+-- Used internally @freshComponentId@ to allocate new 'ComponentId' on
+-- mount.
+--
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 1)
@@ -763,7 +772,7 @@ buildVTree
   -> JSM VTree
 buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
-    FFI.asyncCallback2 $ \domRef continuation -> do
+    FFI.syncCallback2 $ \domRef continuation -> do
       ComponentState {..} <- initialize hydrate app (pure domRef)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       vcompId <- toJSVal componentId
@@ -904,7 +913,11 @@ renderScripts scripts =
 -- @
 --
 -- @since 1.9.0.0
-startSub :: ToMisoString subKey => subKey -> Sub action -> Effect parent model action
+startSub
+  :: ToMisoString subKey
+  => subKey
+  -> Sub action
+  -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
