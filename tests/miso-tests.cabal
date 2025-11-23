@@ -1,8 +1,8 @@
 cabal-version:      2.2
 name:               miso-tests
 version:            0.1.0.0
-synopsis:           Integration tests for Haskell miso
-description:        Component-level testing for miso
+synopsis:           Integration tests for Haskell miso Components
+description:        An hspec-like library for testing miso Components w/ jsaddle
 homepage:           https://haskell-miso.org
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -19,19 +19,31 @@ common warnings
 
 common js
   if arch(javascript)
-     ld-options:
-       -sEXPORTED_RUNTIME_METHODS=HEAP8
+    ld-options:
+      -sEXPORTED_RUNTIME_METHODS=HEAP8
 
-executable miso-tests
+executable component-tests
   import:
-    warnings, js
+    js
   main-is:
     Main.hs
   build-depends:
-    base, miso, containers, mtl, jsaddle
+    base, miso, miso-tests, containers, mtl, jsaddle
   hs-source-dirs:
     app
   js-sources:
     js/test.js
   default-language:
     Haskell2010
+
+library
+  import:
+    warnings
+  hs-source-dirs:
+    src
+  default-language:
+    Haskell2010
+  exposed-modules:
+    Miso.Test
+  build-depends:
+    base, miso, containers, mtl, jsaddle
