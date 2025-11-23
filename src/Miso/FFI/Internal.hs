@@ -93,7 +93,6 @@ module Miso.FFI.Internal
    -- * XHR
    , fetch
    , CONTENT_TYPE(..)
-   , shouldSync
    -- * Drawing
    , setDrawingContext
    , flush
@@ -661,18 +660,6 @@ instance ToJSVal CONTENT_TYPE where
       toJSVal "formData"
     NONE ->
       toJSVal "none"
------------------------------------------------------------------------------
--- | shouldSync
---
--- Used to set whether or not the current VNode should enter the @syncChildren@
--- function during diffing. The criteria for entrance is that all children
--- have a populated 'Miso.Property.key_' node. We can determine this property more efficiently
--- at tree construction time rather than dynamic detection during diffing.
---
-shouldSync :: JSVal -> JSM Bool
-shouldSync vnode = do
-  returnValue <- jsg "miso" # "shouldSync" $ [vnode]
-  fromJSValUnchecked returnValue
 -----------------------------------------------------------------------------
 -- | Flush is used to force a draw of the render tree. This is currently
 -- only used when targeting platforms other than the browser (like mobile).

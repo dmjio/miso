@@ -175,8 +175,23 @@ function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: DrawingContext<T>): 
   context.setInlineStyle(cCss, nCss, node);
 }
 
+function shouldSync<T> (c: VNode<T>, n: VNode<T>) {
+    if (c.children.length === 0 || n.children.length === 0) return false;
+    for (var i = 0; i < c.children.length; i++) {
+        if (c.children[i].key === null || c.children[i].key === undefined) {
+            return false;
+        }
+    }
+    for (var i = 0; i < n.children.length; i++) {
+        if (n.children[i].key === null || n.children[i].key === undefined) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingContext<T>): void {
-  if (c.shouldSync && n.shouldSync) {
+  if (shouldSync(c,n)) {
     syncChildren(c.children, n.children, parent, context);
   } else {
     const longest: number =

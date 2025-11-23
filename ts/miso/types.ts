@@ -37,7 +37,6 @@ export type VNode<T> = {
   props: Props;
   css: CSS;
   events: Events<T>;
-  shouldSync: boolean;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;

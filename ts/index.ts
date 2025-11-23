@@ -8,7 +8,6 @@ import {
   eventJSON,
   fetchCore,
   undelegate,
-  shouldSync,
   getParentComponentId,
   integrityCheck,
   eventSourceConnect,
@@ -46,7 +45,6 @@ globalThis['miso'] = {
     websocketSend,
     undelegate,
     getParentComponentId,
-    shouldSync,
     integrityCheck,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context

@@ -1,4 +1,4 @@
-import { VNode, Response } from './types';
+import { Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -67,29 +67,6 @@ export function fetchCore (
   } catch (err) {
       errorful({ body: null, error: err.message, headers, status});
   }
-}
-
-/*
-   'shouldSync'
-   dmj: Used to determine if we should enter `syncChildren`
-
-*/
-export function shouldSync<T> (
-  node: VNode<T>
-): boolean {
-    /* cannot sync on null children */
-    if (node.children.length === 0) {
-        return false;
-    }
-    /* only sync if keys exist on all children  */
-    var enterSync = true;
-    for (const child of node.children) {
-        if (!child.key) {
-          enterSync = false;
-          break;
-        }
-    }
-    return enterSync;
 }
 
 /*

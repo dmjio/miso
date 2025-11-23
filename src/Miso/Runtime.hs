@@ -787,8 +787,6 @@ buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   setAttrs vnode attrs snk logLevel events
   vchildren <- toJSVal =<< procreate
   FFI.set "children" vchildren vnode
-  sync <- FFI.shouldSync =<< toJSVal vnode
-  FFI.set "shouldSync" sync vnode
   pure $ VTree vnode
     where
       procreate = do
