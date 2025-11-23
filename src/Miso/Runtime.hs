@@ -649,6 +649,11 @@ freshSubId = do
 rootComponentId :: ComponentId
 rootComponentId = 0
 -----------------------------------------------------------------------------
+-- | The global store of 'ComponentId', for internal-use only.
+--
+-- Used internally @freshComponentId@ to allocate new 'ComponentId' on
+-- mount.
+--
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
 componentIds = unsafePerformIO $ liftIO (newIORef 1)
