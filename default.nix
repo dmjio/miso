@@ -14,7 +14,6 @@ with pkgs.haskell.lib;
   # ghcjs9122
   miso-ghcjs-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso;
   sample-app-js-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.sample-app-js;
-  miso-tests-9122 = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests;
   miso-tests = pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests;
 
   # ghcjs86
@@ -25,6 +24,7 @@ with pkgs.haskell.lib;
   # miso x86
   miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
   miso-ghc-9122 = pkgs.haskell.packages.ghc9122.miso;
+  miso-tests-ghc = pkgs.haskell.packages.ghc9122.miso;
 
   # sample app legacy build
   inherit (legacyPkgs.haskell.packages.ghc865)

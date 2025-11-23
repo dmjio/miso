@@ -53,8 +53,8 @@ data Action = AddOne
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
-  runTests $ do
-    describe "DOM tests" $ before clearState $ do
+  runTests $ before clearState $ do
+    describe "DOM tests" $ do
       it "Should have access to document.body" $ do
         len <- nodeLength
         len `shouldBe` (0 :: Int)
