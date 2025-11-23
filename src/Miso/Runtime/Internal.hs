@@ -14,7 +14,7 @@
 -- We currently consume this module for the miso integration testing package @miso-tests@.
 --
 -- Alterations to these global variables *will* break your application. Again, do not
--- this in your main application. Only with the miso testing framework to test
+-- use these in your main application, only use with the miso testing framework to test
 -- your application.
 --
 ----------------------------------------------------------------------------
