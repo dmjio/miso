@@ -37,6 +37,7 @@ module Miso.Test
   , runTests
   -- * Utils
   , jsm
+  , choose
   -- * Types
   , Test
   ) where
@@ -332,4 +333,17 @@ initJSDOM = do
 -- | Convenience for calling 'liftJSM'
 jsm :: JSM a -> Test a
 jsm = liftJSM
+-----------------------------------------------------------------------------
+-- | Return a random integer between the first two provided (min, max]
+--
+-- The maximum is exclusive and the minimum is inclusive
+--
+choose
+  :: Int
+  -- ^ min
+  -> Int
+  -- ^ max
+  -> JSM Int
+choose x y = fromJSValUnchecked =<< do
+  global # ("getRandomNumber" :: MisoString) $ (x,y)
 -----------------------------------------------------------------------------
