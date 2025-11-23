@@ -66,11 +66,11 @@ main = do
       it "Should mount one component" $ do
         _ <- jsm (startApp testComponent)
         mountedComponents >>= (`shouldBe` 1)
-      it "Should mount 1000 components" $ do
+      it "Should mount 10,000 components" $ do
         _ <- jsm $ do
           startApp $
             component (0 :: Int) noop $ \_ ->
-              div_ [] (replicate 999 (div_ [] +> testComponent))
-        mountedComponents >>= (`shouldBe` 1000)
+              div_ [] (replicate 9999 (div_ [] +> testComponent))
+        mountedComponents >>= (`shouldBe` 10000)
 -----------------------------------------------------------------------------
 
