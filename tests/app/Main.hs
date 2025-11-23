@@ -56,12 +56,10 @@ main = do
   runTests $ before clearState $ do
     describe "DOM tests" $ do
       it "Should have access to document.body" $ do
-        len <- nodeLength
-        len `shouldBe` (0 :: Int)
+        nodeLength >>= (`shouldBe` (0 :: Int))
       it "Should append a single node to document.body" $ do
           _ <- jsm $ eval ("document.body.appendChild (document.createElement('div'));" :: MisoString)
-          len <- nodeLength
-          len `shouldBe` (1 :: Int)
+          nodeLength >>= (`shouldBe` (1 :: Int))
     describe "Component tests" $ do
       it "Should mount one component" $ do
         _ <- jsm (startApp testComponent)
