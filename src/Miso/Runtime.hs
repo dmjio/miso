@@ -71,6 +71,7 @@ module Miso.Runtime
   -- ** Internal Component state
   , components
   , componentIds
+  , rootComponentId
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
@@ -644,7 +645,7 @@ freshSubId = do
   x <- atomicModifyIORef' subIds $ \y -> (y + 1, y)
   pure ("miso-sub-id-" <> ms x)
 -----------------------------------------------------------------------------
--- | This is used to demarcate the ROOT of a page. This ID will never
+-- | This is used to demarcate the ROOT of a page. This ID will *never*
 -- exist in the `components` map.
 rootComponentId :: ComponentId
 rootComponentId = 0
@@ -912,7 +913,11 @@ renderScripts scripts =
 -- @
 --
 -- @since 1.9.0.0
-startSub :: ToMisoString subKey => subKey -> Sub action -> Effect parent model action
+startSub
+  :: ToMisoString subKey
+  => subKey
+  -> Sub action
+  -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do

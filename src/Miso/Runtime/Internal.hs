@@ -21,8 +21,9 @@
 module Miso.Runtime.Internal
   ( components
   , componentIds
+  , rootComponentId
   , ComponentState(..)
   ) where
 ----------------------------------------------------------------------------
-import Miso.Runtime (components, ComponentState(..), componentIds)
+import Miso.Runtime (components, ComponentState(..), componentIds, rootComponentId)
 ----------------------------------------------------------------------------
