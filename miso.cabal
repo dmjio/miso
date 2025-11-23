@@ -47,12 +47,6 @@ common cpp
     cpp-options:
       -DSSR
 
-common tests
-  if flag(tests)
-    buildable: True
-  else
-    buildable: False
-
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
@@ -108,14 +102,6 @@ flag template-haskell
     False
   description:
     Checks if template-haskell is enabled. If so, allows Miso.Lens.TH
-
-flag tests
-  manual:
-    True
-  default:
-    False
-  description:
-    Builds Miso's tests
 
 library
   import:
