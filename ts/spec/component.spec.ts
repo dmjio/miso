@@ -51,13 +51,13 @@ describe ('Component tests', () => {
       },
       props: { id: 'vcomp-foo' },
       css: {
-        'background-color': 'red',
+        'backgroundColor': 'red',
       },
     });
     diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(mountCount).toBe(1);
     expect(newNode.domRef.id).toBe('vcomp-foo');
-    expect(newNode.domRef.style['background-color']).toBe('red');
+    expect(newNode.domRef.style['backgroundColor']).toBe('red');
     diff<DOMRef>(newNode, null, document.body, drawingContext);
     expect(unmountCount).toBe(1);
   });
@@ -68,14 +68,14 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     diff<DOMRef>(null, compNode1, document.body, drawingContext);
     expect(mountCount).toBe(1);
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
-    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('red');
+    expect((document.body.childNodes[0] as HTMLElement).style['backgroundColor']).toBe('red');
 
     // Replace node
     mountCount = 0;
@@ -83,10 +83,10 @@ describe ('Component tests', () => {
       mount: () => {
         mountCount++;
       },
-      css: { 'background-color': 'green' },
+      css: { 'backgroundColor': 'green' },
     });
     diff<DOMRef>(compNode1, compNode2, document.body, drawingContext);
-    expect((document.body.childNodes[0] as HTMLElement).style['background-color']).toBe('green');
+    expect((document.body.childNodes[0] as HTMLElement).style['backgroundColor']).toBe('green');
   });
 
   test('Should replace Component with new Component (new because different key)', () => {

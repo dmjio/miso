@@ -226,29 +226,29 @@ describe ("Hydration tests", () => {
   test('Should fail integrity check on differing styles', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
     var tree = vnode<DOMRef>({
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.css['background-color'] = 'green';
+    tree.css['backgroundColor'] = 'green';
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles, for color', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.style['color'] = '#cccccc';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
     var tree = vnode<DOMRef>({
       children: [vtext('foo')],
-      css: { 'background-color': 'red', color: '#cccccc' },
+      css: { 'backgroundColor': 'red', color: '#cccccc' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
@@ -259,14 +259,14 @@ describe ("Hydration tests", () => {
   test('Should fail integrity check on differing props', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.className = 'something';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
     var tree = vnode<DOMRef>({
       props: { class: 'something' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
@@ -277,7 +277,7 @@ describe ("Hydration tests", () => {
   test('Should fail integrity check on differing height / width', () => {
     var child = document.createElement('img');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.className = 'something';
     child.height = 100;
     child.width = 100;
@@ -287,7 +287,7 @@ describe ("Hydration tests", () => {
       tag : 'img',
       props: { class: 'something', height: '100', width: '100' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
@@ -315,7 +315,7 @@ describe ("Hydration tests", () => {
   test('Should fail integrity check on href', () => {
     var child = document.createElement('a');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
@@ -323,7 +323,7 @@ describe ("Hydration tests", () => {
       tag : 'a',
       props: { href: 'google.com' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
@@ -335,7 +335,7 @@ describe ("Hydration tests", () => {
   test('Should fail integrity check on vtext domRef', () => {
     var child = document.createElement('a');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
@@ -343,7 +343,7 @@ describe ("Hydration tests", () => {
       tag : 'a',
       props: { href: 'google.com' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);

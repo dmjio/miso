@@ -104,15 +104,27 @@ export const drawingContext : DrawingContext<DOMRef> = {
        result = nCss[key];
        if (!result) {
          /* current key is not in node */
-         node.style[key] = '';
+         if (key in node.style) {
+           node.style[key] = '';
+         } else {
+           node.style.setProperty(key, '');
+         }
        } else if (result !== cCss[key]) {
+         if (key in node.style) {
            node.style[key] = result;
+         } else {
+           node.style.setProperty(key,result);
+         }
        }
      }
      /* add remaining */
      for (const n in nCss) {
        if (cCss && cCss[n]) continue;
-       node.style[n] = nCss[n];
+       if (n in node.style) {
+         node.style[n] = nCss[n];
+       } else {
+         node.style.setProperty(n,nCss[n]);
+       }
      }
     return;
   },
