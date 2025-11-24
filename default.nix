@@ -72,6 +72,9 @@ with pkgs.haskell.lib;
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
     cd tests
     bun run ../ts/playwright.ts
+    exit_code=$?
+    pkill http-server
+    exit "$exit_code"
   '';
 
   inherit (pkgs)
