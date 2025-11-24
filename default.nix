@@ -67,11 +67,11 @@ with pkgs.haskell.lib;
   playwright = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
-    export PATH=$PATH:${pkgs.http-server}/bin
-    ${pkgs.bun}/bin/bun install playwright@1.53
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@1.53
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
     cd tests
-    ${pkgs.bun}/bin/bun run ../ts/playwright.ts
+    bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
     exit "$exit_code"
