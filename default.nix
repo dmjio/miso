@@ -71,7 +71,7 @@ with pkgs.haskell.lib;
     ${pkgs.bun}/bin/bun install playwright@1.53
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
     cd tests
-    bun run ../ts/playwright.ts
+    ${pkgs.bun}/bin/bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server
     exit "$exit_code"
