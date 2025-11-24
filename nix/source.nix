@@ -16,6 +16,7 @@ let
          (hasSuffix ".js" baseName) ||
          (baseName == "README.md") ||
          (baseName == "LICENSE") ||
+         (type == "directory" && baseName != "tests") ||
          (type == "directory" && baseName != "dist"));
     };
 
