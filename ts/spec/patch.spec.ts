@@ -421,7 +421,7 @@ describe ('Patch tests', () => {
         const parentNodeId : number = 0;
         const nodeId : number = 1;
         const componentId : number = 0;
-        let tree : VNode<NodeId> = vnode({ tag: 'p', css : { 'background-color': 'red' }});
+        let tree : VNode<NodeId> = vnode({ tag: 'p', css : { 'backgroundColor': 'red' }});
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
         let domContext : DrawingContext<DOMRef> = drawingContext;
         let parent : NodeId = { nodeId: parentNodeId };
@@ -440,7 +440,7 @@ describe ('Patch tests', () => {
         };
         let expectedStyle : SetInlineStyle = {
             type : "setInlineStyle",
-            new : { 'background-color' : 'red' },
+            new : { 'backgroundColor' : 'red' },
             current : {},
             componentId,
             nodeId,
@@ -462,7 +462,7 @@ describe ('Patch tests', () => {
 
         // dmj: check that the style gets applied
         patch (domContext, expectedStyle, components);
-        expect(component.nodes[nodeId].style['background-color']).toEqual('red');
+        expect(component.nodes[nodeId].style['backgroundColor']).toEqual('red');
     });
     test('Should process the Flush patch', () => {
         const parentNodeId : number = 0;
