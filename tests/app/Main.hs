@@ -6,6 +6,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Control.Monad
 import           Control.Concurrent
 import           Control.Concurrent.STM
 import           Language.Javascript.JSaddle.Monad
@@ -22,12 +23,14 @@ import           Miso.Html
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
 -----------------------------------------------------------------------------
 -- | Clears the component state and DOM between each test
-clearState :: JSM ()
-clearState = do
-  _ <- eval ("document.body.innerHTML = '';" :: MisoString)
+clearComponentState :: JSM ()
+clearComponentState = do
   liftIO $ do
     writeIORef components mempty
     writeIORef componentIds initialComponentId
+-----------------------------------------------------------------------------
+clearBody :: JSM ()
+clearBody = void $ eval ("document.body.innerHTML = '';" :: MisoString)
 -----------------------------------------------------------------------------
 initialComponentId :: ComponentId
 initialComponentId = 1
@@ -53,7 +56,7 @@ data Action = AddOne
 -----------------------------------------------------------------------------
 main :: IO ()
 main = do
-  runTests $ before clearState $ do
+  runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
     describe "DOM tests" $ do
       it "Should have access to document.body" $ do
         nodeLength >>= (`shouldBe` (0 :: Int))

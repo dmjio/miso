@@ -64,16 +64,15 @@ with pkgs.haskell.lib;
   inherit (pkgs)
     bun;
 
-  # nurl
-  # $ nurl https://github.com/nix-community/nurl
-  #
-  # fetchFromGitHub {
-  #   owner = "nix-community";
-  #   repo = "nurl";
-  #   rev = "3a3ba7f0d14d92e1266395d826c6e229797d0044";
-  #   hash = "sha256-WAFqmlsShuQngk6LMFlgz7Oyc41TAQeTa/49phhRizY=";
-  # }
-  #
+  playwright = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    bun install playwright@1.53
+    http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
+    cd tests
+    bun run ../ts/playwright.ts
+  '';
+
   inherit (pkgs)
     nurl;
 

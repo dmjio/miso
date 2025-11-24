@@ -1,7 +1,8 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE OverloadedStrings         #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Test
@@ -31,7 +32,8 @@ module Miso.Test
     describe
   , it
   , expect
-  , before
+  , beforeEach
+  , afterEach
   , shouldBe
   , shouldNotBe
   , runTests
@@ -61,7 +63,7 @@ describe name tests = do
 it :: MisoString -> Test () -> Test ()
 it name action = do
   preamble <- use beforeAction
-  liftJSM preamble
+  jsm preamble
   total += 1
   currentTestName .= name
   Clocked {..} <- clock action
@@ -75,10 +77,12 @@ it name action = do
   testGroup <- use currentTestGroup
   caughtEx <- use caughtException
   when (successful || caughtEx) $ do
-    liftJSM $ prettyTest CurrentTest
+    jsm $ prettyTest CurrentTest
       { duration = time
       , ..
       }
+  conclusion <- use afterAction
+  jsm conclusion
   currentTestResult .= True
   currentErrorMessage .= mempty
   caughtException .= False
@@ -107,14 +111,18 @@ data TestState
   , _totalDuration :: Double
   , _currentTestResult :: Bool
   , _beforeAction :: JSM ()
+  , _afterAction :: JSM ()
   , _caughtException :: Bool
   }
 -----------------------------------------------------------------------------
 emptyTestState :: TestState
-emptyTestState = TestState mempty mempty mempty 0 0 0 0 0 0 True (pure ()) False
+emptyTestState = TestState mempty mempty mempty 0 0 0 0 0 0 True (pure ()) (pure ()) False
 -----------------------------------------------------------------------------
 beforeAction :: Lens TestState (JSM ())
 beforeAction = lens _beforeAction $ \r x -> r { _beforeAction = x }
+-----------------------------------------------------------------------------
+afterAction :: Lens TestState (JSM ())
+afterAction = lens _afterAction $ \r x -> r { _afterAction = x }
 -----------------------------------------------------------------------------
 expects :: Lens TestState Int
 expects = lens _expects $ \r x -> r { _expects = x }
@@ -213,12 +221,24 @@ shouldBe = expect (==)
 --
 -- This is useful for scenarios like clearing the global @Component@ state.
 --
-before
+beforeEach
   :: JSM ()
   -> Test ()
   -> Test ()
-before action x = do
+beforeEach action x = do
   beforeAction %= \f -> f >> action
+  x
+-----------------------------------------------------------------------------
+-- | Execute a JSM after each 'it' block.
+--
+-- This is useful for scenarios like clearing the global @Component@ state.
+--
+afterEach
+  :: JSM ()
+  -> Test ()
+  -> Test ()
+afterEach action x = do
+  afterAction %= \f -> f >> action
   x
 -----------------------------------------------------------------------------
 data Clocked a
@@ -240,17 +260,23 @@ clock action = do
         currentTestResult %= (&& False)
         currentTestTime .= stop - start
         pure $ Left (show e))
-  stop <- liftJSM now
+  stop <- jsm now
   let time = stop - start
   currentTestTime .= time
   pure Clocked {..}
 -----------------------------------------------------------------------------
 runTests :: Test a -> IO ()
-runTests ts = run $ initJSDOM >> do
+runTests ts = run $ do
+#ifdef JSDOM
+  _ <- global # ("initJSDOM" :: String) $ ()
+#endif
   summary <- execStateT ts emptyTestState
   printSummary summary
   liftIO $ do
-    when (summary ^. failed > 0) exitFailure
+    when (summary ^. failed > 0) $ do
+      consoleLog "ERROR"
+      exitFailure
+    consoleLog "SUCCESS"
     exitSuccess
 -----------------------------------------------------------------------------
 formatMillis :: Double -> MisoString
@@ -324,11 +350,6 @@ reset = "\x1b[0m"
 yellow = "\x1b[33m"
 cyan = "\x1b[36m"
 white = "\x1b[37m"
------------------------------------------------------------------------------
-initJSDOM :: JSM ()
-initJSDOM = do
-  _ <- global # ("initJSDOM" :: String) $ ()
-  pure ()
 -----------------------------------------------------------------------------
 -- | Convenience for calling 'liftJSM'
 jsm :: JSM a -> Test a
