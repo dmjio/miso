@@ -63,13 +63,13 @@ jobs:
        run: nix-build -A sample-app
 
      - name: Nix garbage collection
-       run: nix-collect-garbage -d
+       run: cabal clean && nix-collect-garbage -d
 
-     # - name: (JS) Miso integration tests
-     #   run: nix-build -A playwright-js && ./result/bin/playwright
+     - name: (JS) Miso integration tests
+       run: nix-build -A playwright-js && ./result/bin/playwright
 
-     # - name: Nix garbage collection
-     #   run: nix-collect-garbage
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
