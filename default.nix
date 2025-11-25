@@ -64,13 +64,27 @@ with pkgs.haskell.lib;
   inherit (pkgs)
     bun;
 
-  playwright = pkgs.writeScriptBin "playwright" ''
+  playwright-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
     http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
     cd tests
+    bun run ../ts/playwright.ts
+    exit_code=$?
+    pkill http-server
+    exit "$exit_code"
+  '';
+
+  playwright-wasm = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@1.53
+    cd tests
+    nix develop .#wasm --command bash -c 'make'
+    http-server ./public &
     bun run ../ts/playwright.ts
     exit_code=$?
     pkill http-server

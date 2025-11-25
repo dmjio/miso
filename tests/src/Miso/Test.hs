@@ -272,12 +272,11 @@ runTests ts = run $ do
 #endif
   summary <- execStateT ts emptyTestState
   printSummary summary
-  liftIO $ do
-    when (summary ^. failed > 0) $ do
-      consoleLog "ERROR"
-      exitFailure
-    consoleLog "SUCCESS"
-    exitSuccess
+  when (summary ^. failed > 0) $ do
+    consoleLog "ERROR"
+    liftIO exitFailure
+  consoleLog "SUCCESS"
+  liftIO exitSuccess
 -----------------------------------------------------------------------------
 formatMillis :: Double -> MisoString
 formatMillis duration = ms (printf "%.3f ms" duration :: String)

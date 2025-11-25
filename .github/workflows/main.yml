@@ -63,4 +63,10 @@ jobs:
        run: nix-collect-garbage -d       
 
      - name: (JS) Miso integration tests
-       run: nix-build -A playwright && ./result/bin/playwright
+       run: nix-build -A playwright-js && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: nix-collect-garbage -d       
+
+     - name: (WASM) Miso integration tests
+       run: nix-build -A playwright-wasm && ./result/bin/playwright
