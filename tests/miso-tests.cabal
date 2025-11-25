@@ -17,10 +17,16 @@ extra-source-files:
 common warnings
   ghc-options: -Wall
 
-common js
+common options
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+    cpp-options:
+      -DWASM
+
   if arch(javascript)
-    ld-options:
-      -sEXPORTED_RUNTIME_METHODS=HEAP8
+     ld-options:
+       -sEXPORTED_RUNTIME_METHODS=HEAP8
 
 flag jsdom
   manual:
@@ -32,7 +38,7 @@ flag jsdom
 
 executable component-tests
   import:
-    js
+    options
   main-is:
     Main.hs
   build-depends:

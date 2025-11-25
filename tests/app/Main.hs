@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -54,6 +55,10 @@ testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClic
 data Action = AddOne
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+-----------------------------------------------------------------------------
 main :: IO ()
 main = do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
@@ -67,11 +72,13 @@ main = do
       it "Should mount one component" $ do
         _ <- jsm (startApp testComponent)
         mountedComponents >>= (`shouldBe` 1)
+#ifndef WASM
       it "Should mount 10,000 components" $ do
         _ <- jsm $ do
           startApp $
             component (0 :: Int) noop $ \_ ->
               div_ [] (replicate 9999 (div_ [] +> testComponent))
         mountedComponents >>= (`shouldBe` 10000)
+#endif
 -----------------------------------------------------------------------------
 
