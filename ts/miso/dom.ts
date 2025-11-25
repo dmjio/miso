@@ -88,12 +88,12 @@ function callDestroyed<T>(obj: VTree<T>): void {
 }
 
 function callBeforeDestroyed<T>(obj: VTree<T>): void {
-  if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed']();
+  if (obj['onBeforeDestroyed']) obj['onBeforeDestroyed'](obj.domRef);
 }
 
 function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
   if (obj.type === 'vcomp' && obj['onBeforeUnmounted']) {
-    obj['onBeforeUnmounted']();
+    obj['onBeforeUnmounted'](obj.domRef);
   }
   callBeforeDestroyed(obj);
   for (const i in obj['children']) {

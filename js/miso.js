@@ -84,11 +84,11 @@ function callDestroyed(obj) {
 }
 function callBeforeDestroyed(obj) {
   if (obj["onBeforeDestroyed"])
-    obj["onBeforeDestroyed"]();
+    obj["onBeforeDestroyed"](obj.domRef);
 }
 function callBeforeDestroyedRecursive(obj) {
   if (obj.type === "vcomp" && obj["onBeforeUnmounted"]) {
-    obj["onBeforeUnmounted"]();
+    obj["onBeforeUnmounted"](obj.domRef);
   }
   callBeforeDestroyed(obj);
   for (const i in obj["children"]) {

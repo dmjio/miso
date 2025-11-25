@@ -15,7 +15,7 @@
     "build": "bun build --outfile=js/miso.js ./ts/index.ts --target=browser",
     "prod": "bun build --outfile=js/miso.prod.js ./ts/index.ts --target=browser --minify",
     "build-test": "bun build --outfile=./tests/js/test.js ./ts/tests.ts --target=bun",
-    "js": "bun run build && bun run prod && bun run build-test"
+    "js": "bun run build && bun run prod"
   },
   "type": "module",
   "module": "ts/miso.ts",
