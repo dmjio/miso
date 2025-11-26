@@ -12,9 +12,9 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- An hspec-like miso test framework. Meant for testing @miso@ @Component@.
--- The testing framework operates in the jsaddle JSM monad and has access
--- to the DOM courtesy of JSDOM (this is subject to change).
+-- An hspec-like [miso](https://github.com/dmjio/miso) testing framework. Meant for testing @miso@ @Component@.
+-- The testing framework operates in the jsaddle t'Language.Javascript.JSaddle.Types.JSM' monad and has access
+-- to the DOM courtesy of [JSDOM](https://github.com/jsdom/jsdom) and [Playwright](https://playwright.dev/).
 --
 -- @
 --
@@ -22,8 +22,7 @@
 -- main = runTests $ do
 --   describe "Arithmetic tests" $ do
 --     it "2 + 2 = 4" $ do
---       (2 + 2) `shouldBe` 4
---
+--       (2 + 2) \`shouldBe\` 4
 -- @
 --
 ----------------------------------------------------------------------------
@@ -42,6 +41,7 @@ module Miso.Test
   , choose
   -- * Types
   , Test
+  , TestState
   ) where
 -----------------------------------------------------------------------------
 import           Control.Exception (SomeException)
@@ -55,12 +55,26 @@ import           System.Exit
 import           Miso
 import           Miso.Lens
 -----------------------------------------------------------------------------
-describe :: MisoString -> Test () -> Test ()
+-- | Used to group a bunch of expectations using 'it'. Testing out
+-- will include the test description in its output.
+describe
+  :: MisoString
+  -- ^ Description of test group
+  -> Test ()
+  -- ^ Group of tests to run
+  -> Test ()
 describe name tests = do
   currentTestGroup .= name
   tests
 -----------------------------------------------------------------------------
-it :: MisoString -> Test () -> Test ()
+-- | Used to make multiple expectations using 'shouldBe' / 'shouldNotBe'.
+--
+it
+  :: MisoString
+  -- ^ Name of test to execute
+  -> Test ()
+  -- ^ Test holding multiple expectations
+  -> Test ()
 it name action = do
   preamble <- use beforeAction
   jsm preamble
@@ -96,8 +110,10 @@ data CurrentTest
   , duration :: Double
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | The monad that executes tests
 type Test a = StateT TestState JSM a
 -----------------------------------------------------------------------------
+-- | Internal type for managing test state
 data TestState
   = TestState
   { _currentTestGroup :: MisoString
@@ -200,15 +216,7 @@ shouldNotBe
   -> Test ()
 shouldNotBe = expect (/=)
 -----------------------------------------------------------------------------
-data Expectation
-  = Expectation
-  { expectation :: Bool
-  , expectationName :: MisoString
-  } deriving (Show, Eq)
------------------------------------------------------------------------------
--- | Perform an assertion (expect) in an 'it' block.
---
--- Performs an assertion (this calls 'expect')
+-- | Performs an expectation in an 'it' block.
 --
 shouldBe
   :: (Show a, Eq a)
@@ -217,9 +225,9 @@ shouldBe
   -> Test ()
 shouldBe = expect (==)
 -----------------------------------------------------------------------------
--- | Execute a JSM action before each 'it' block.
+-- | Execute a t'Language.Javascript.JSaddle.Types.JSM' action before each 'it' block.
 --
--- This is useful for scenarios like clearing the global @Component@ state.
+-- This is useful for scenarios like clearing the global t'Component' state.
 --
 beforeEach
   :: JSM ()
@@ -229,9 +237,9 @@ beforeEach action x = do
   beforeAction %= \f -> f >> action
   x
 -----------------------------------------------------------------------------
--- | Execute a JSM after each 'it' block.
+-- | Execute a t'Language.Javascript.JSaddle.Types.JSM' after each 'it' block.
 --
--- This is useful for scenarios like clearing the global @Component@ state.
+-- This is useful for scenarios like clearing the global t'Component' state.
 --
 afterEach
   :: JSM ()
@@ -265,6 +273,7 @@ clock action = do
   currentTestTime .= time
   pure Clocked {..}
 -----------------------------------------------------------------------------
+-- | Executes a block of tests in 'describe' blocks.
 runTests :: Test a -> IO ()
 runTests ts = run $ do
 #ifdef JSDOM
@@ -354,7 +363,7 @@ white = "\x1b[37m"
 jsm :: JSM a -> Test a
 jsm = liftJSM
 -----------------------------------------------------------------------------
--- | Return a random integer between the first two provided (min, max]
+-- | Return a random integer between the first two provided [min, max)
 --
 -- The maximum is exclusive and the minimum is inclusive
 --
