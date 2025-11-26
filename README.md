@@ -695,6 +695,15 @@ By default `miso` uses a known-to-work, pinned version of [`nixpkgs`](https://gi
 $ cachix use haskell-miso-cachix
 ```
 
+When building `miso` projects w/ GitHub workflow CI, we commend the Cachix GitHub action
+
+```yaml
+- name: Install cachix
+  uses: cachix/cachix-action@v16
+  with:
+    name: haskell-miso-cachix
+```
+
 ## Community :octocat:
 
 - [Github](https://github.com/haskell-miso)
