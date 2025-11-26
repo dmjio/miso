@@ -1051,7 +1051,7 @@ parent successful errorful = do
 --
 -- @
 --
--- update :: action -> Effect parent model actionx
+-- update :: action -> Effect parent model action
 -- update _ = broadcast (String "public service announcement")
 -- @
 --

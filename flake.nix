@@ -109,7 +109,7 @@
               name = "The miso ${system} GHC WASM 9.12.2 shell";
               packages = with pkgs; [
                  inputs.ghc-wasm-meta.packages.${system}.all_9_12
-                 gnumake
+                 gnumake bun
                  http-server
                  cabal-install
                  tailwindcss_4
@@ -152,6 +152,7 @@
               '';
               packages = with pkgs; [
                  pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
+                 bun
                  gnumake
                  http-server
                  cabal-install
