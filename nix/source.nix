@@ -36,7 +36,6 @@ in
 
   # flake sources
   jsaddle = fetchFromFlake (nodes.jsaddle);
-  servant = fetchFromFlake (nodes.servant);
 
   # non-flakified sources
   miso-from-html = fetchFromGitHub {
