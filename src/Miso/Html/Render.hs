@@ -65,8 +65,7 @@ renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode ns tag attrs children) =
-  mconcat
+renderBuilder (VNode ns tag attrs children) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -79,12 +78,13 @@ renderBuilder (VNode ns tag attrs children) =
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
-    , let selfClosing = Prelude.concat [htmls, svgs, mathmls]
-          htmls = [ [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ] | ns == HTML ]
-          svgs  = [ ["circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"] | ns == SVG ]
-          mathmls = [ ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ] | ns == MATHML ]
     ]
-  ]
+  ] where
+      selfClosing = Prelude.concat [htmls, svgs, mathmls]
+      htmls = [ [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ] | ns == HTML ]
+      svgs  = [ ["circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"] | ns == SVG ]
+      mathmls = [ ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ] | ns == MATHML ]
+      
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
     where
