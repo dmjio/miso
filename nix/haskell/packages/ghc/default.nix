@@ -16,7 +16,6 @@ self: super:
   sample-app = self.callCabal2nix "app" source.sample-app {};
   jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
   jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
-  servant = self.callCabal2nix "servant" "${source.servant}/servant" {};
 
   /* cruft */
   crypton = dontCheck super.crypton;
@@ -25,5 +24,4 @@ self: super:
   cryptonite = dontCheck super.cryptonite;
   monad-logger = doJailbreak super.monad-logger;
   string-interpolate = doJailbreak super.string-interpolate;
-  servant-server = doJailbreak super.servant-server;
 }

@@ -30,10 +30,6 @@
     jsaddle.url =
       "github:ghcjs/jsaddle?rev=0fb7260ad02592546c9f180078d770256fb1f0f6";
 
-    # Miso uses this for routing
-    servant.url =
-      "github:haskell-servant/servant?rev=e07e92abd62641fc0f199a33e5131de273140cb0";
-
     # Miso uses this compiling for WebAssembly
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
