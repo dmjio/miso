@@ -75,6 +75,7 @@ module Miso.FFI.Internal
    , undelegateEvent
    , dispatchEvent
    , newEvent
+   , newCustomEvent
    -- * Isomorphic
    , hydrate
    -- * Misc.
@@ -1011,4 +1012,15 @@ dispatchEvent event = do
 --
 newEvent :: MisoString -> JSM Event
 newEvent name = Event <$> new (jsg "Event") [name]
+-----------------------------------------------------------------------------
+-- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/CustomEvent)
+--
+-- @
+--   update ToggleSidebar = io_ $ do
+--     themeEvent <- newCustomEvent "basecoat:sidebar"
+--     dispatchEvent themeEvent
+-- @
+--
+newCustomEvent :: MisoString -> JSM Event
+newCustomEvent name = Event <$> new (jsg "CustomEvent") [name]
 -----------------------------------------------------------------------------
