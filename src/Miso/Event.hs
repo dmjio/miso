@@ -75,29 +75,29 @@ onWithOptions
   -> (r -> DOMRef -> action)
   -> Attribute action
 onWithOptions options eventName Decoder{..} toAction =
-  On $ \sink (VTree n) logLevel events ->
-    case M.lookup eventName events of
-      Nothing ->
-        when (logLevel `elem` [ DebugAll, DebugEvents ]) $
-          FFI.consoleError $ mconcat
-            [ "Event \""
-            , eventName
-            , "\" is not being listened on. To use this event, "
-            , "add to the 'events' Map in Component"
-            ]
-      Just _ -> do
-        eventObj <- getProp "events" n
-        eventHandlerObject@(Object eo) <- create
-        jsOptions <- toJSVal options
-        decodeAtVal <- toJSVal decodeAt
-        cb <- FFI.asyncCallback2 $ \e domRef -> do
-            Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
-            case parseEither decoder v of
-              Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-              Right r -> sink (toAction r domRef)
-        FFI.set "runEvent" cb eventHandlerObject
-        FFI.set "options" jsOptions eventHandlerObject
-        FFI.set eventName eo (Object eventObj)
+  On $ \sink (VTree n) logLevel events -> do
+    when (logLevel == DebugAll || logLevel == DebugEvents) $
+      case M.lookup eventName events of
+        Nothing ->
+            FFI.consoleError $ mconcat
+              [ "Event \""
+              , eventName
+              , "\" is not being listened on. To use this event, "
+              , "add to the 'events' Map in Component"
+              ]
+        _ -> pure ()
+    eventObj <- getProp "events" n
+    eventHandlerObject@(Object eo) <- create
+    jsOptions <- toJSVal options
+    decodeAtVal <- toJSVal decodeAt
+    cb <- FFI.asyncCallback2 $ \e domRef -> do
+        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
+        case parseEither decoder v of
+          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
+          Right r -> sink (toAction r domRef)
+    FFI.set "runEvent" cb eventHandlerObject
+    FFI.set "options" jsOptions eventHandlerObject
+    FFI.set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
 -- | @onMounted action@ is an event that gets called after the actual DOM
 -- element is created.
