@@ -34,6 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -80,10 +81,20 @@ renderBuilder (VNode ns tag attrs children) = mconcat
     | tag `notElem` selfClosing
     ]
   ] where
-      selfClosing = Prelude.concat [htmls, svgs, mathmls]
-      htmls = [ [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ] | ns == HTML ]
-      svgs  = [ ["circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"] | ns == SVG ]
-      mathmls = [ ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ] | ns == MATHML ]
+      selfClosing = htmls <> svgs <> mathmls
+      htmls = [ x
+              | x <- [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ]
+              , ns == HTML
+              ]
+      svgs  = [ x
+              | x <- [ "circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"]
+              , ns == SVG
+              ]
+      mathmls =
+              [ x
+              | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
+              , ns == MATHML
+              ]
       
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
