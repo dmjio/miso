@@ -34,6 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -65,8 +66,7 @@ renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode _ tag attrs children) =
-  mconcat
+renderBuilder (VNode ns tag attrs children) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
@@ -78,9 +78,24 @@ renderBuilder (VNode _ tag attrs children) =
       [ foldMap renderBuilder (collapseSiblingTextNodes children)
       , "</" <> fromMisoString tag <> ">"
       ]
-    | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
+    | tag `notElem` selfClosing
     ]
-  ]
+  ] where
+      selfClosing = htmls <> svgs <> mathmls
+      htmls = [ x
+              | x <- [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ]
+              , ns == HTML
+              ]
+      svgs  = [ x
+              | x <- [ "circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"]
+              , ns == SVG
+              ]
+      mathmls =
+              [ x
+              | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
+              , ns == MATHML
+              ]
+      
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
     where
