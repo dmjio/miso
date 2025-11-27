@@ -79,7 +79,7 @@ renderBuilder (VNode ns tag attrs children) =
       , "</" <> fromMisoString tag <> ">"
       ]
     | tag `notElem` selfClosing
-    , let selfClosing = concat [htmls, svgs, mathmls]
+    , let selfClosing = Prelude.concat [htmls, svgs, mathmls]
           htmls = [ [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ] | ns == HTML ]
           svgs  = [ ["circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"] | ns == SVG ]
           mathmls = [ ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ] | ns == MATHML ]
