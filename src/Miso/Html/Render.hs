@@ -65,7 +65,7 @@ renderBuilder :: Miso.Types.View m a -> Builder
 renderBuilder (VText "")    = fromMisoString " "
 renderBuilder (VText s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode _ tag attrs children) =
+renderBuilder (VNode ns tag attrs children) =
   mconcat
   [ "<"
   , fromMisoString tag
@@ -78,7 +78,11 @@ renderBuilder (VNode _ tag attrs children) =
       [ foldMap renderBuilder (collapseSiblingTextNodes children)
       , "</" <> fromMisoString tag <> ">"
       ]
-    | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
+    | tag `notElem` selfClosing
+    , let selfClosing = concat [htmls, svgs, mathmls]
+          htmls = [ [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ] | ns == HTML ]
+          svgs  = [ ["circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"] | ns == SVG ]
+          mathmls = [ ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ] | ns == MATHML ]
     ]
   ]
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
