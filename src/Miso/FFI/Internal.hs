@@ -1010,8 +1010,8 @@ dispatchEvent event = do
 --     dispatchEvent themeEvent
 -- @
 --
-newEvent :: MisoString -> JSM Event
-newEvent name = Event <$> new (jsg "Event") [name]
+newEvent :: MakeArgs args => args -> JSM Event
+newEvent args = Event <$> new (jsg "Event") args
 -----------------------------------------------------------------------------
 -- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/CustomEvent)
 --
@@ -1021,6 +1021,6 @@ newEvent name = Event <$> new (jsg "Event") [name]
 --     dispatchEvent themeEvent
 -- @
 --
-newCustomEvent :: MisoString -> JSM Event
-newCustomEvent name = Event <$> new (jsg "CustomEvent") [name]
+newCustomEvent :: MakeArgs args => args -> JSM Event
+newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
