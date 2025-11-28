@@ -73,7 +73,7 @@
 
 [miso](https://haskell-miso.org) began in 2016 as research in:
   - Expressing the [Elm architecture](https://elm-lang.org) in [GHCJS](https://github.com/ghcjs/ghcjs) as an [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language).
-  - Implementing modern JavaScript frontend techniques as found in [react](https://react.dev) (e.g. [reconciliation](https://legacy.reactjs.org/docs/reconciliation.html), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
+  - Implementing modern JavaScript frontend techniques as found in [react](https://react.dev) (e.g. [Reconciliation](https://legacy.reactjs.org/docs/reconciliation.html#the-diffing-algorithm), [isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript))
 
 Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) between modern JavaScript frameworks (such as [React](https://reactjs.org), [Vue.js](https://vuejs.org), etc.) and functional programming in [Haskell](https://haskell.org). It has since grown to encompass more features from the JavaScript community like [Components](https://react.dev/learn/your-first-component) and [Renderers](https://github.com/chentsulin/awesome-react-renderer). Miso also now supports [native development](https://github.com/haskell-miso/miso-lynx) for [iOS](https://www.apple.com/ios/), [Android](https://www.android.com/) and [HarmonyOS](https://device.harmonyos.com/en/) devices via [LynxJS](https://lynxjs.org) and targets additional backends like [Web Assembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html).
 
