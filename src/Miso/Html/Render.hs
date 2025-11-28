@@ -34,7 +34,6 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
-import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -72,7 +71,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
             | not (Prelude.null attrs)
             ]
-  , ">"
+  , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
       [ foldMap renderBuilder (collapseSiblingTextNodes children)
