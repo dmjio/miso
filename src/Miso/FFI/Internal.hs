@@ -508,6 +508,16 @@ focus x = do
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
+-- Analogous to @document.querySelector('#' + id).select()@.
+select :: MisoString -> JSM ()
+select x = do
+  moduleMiso <- jsg "miso"
+  el <- toJSVal x
+  delay <- toJSVal (50 :: Int)
+  void $ moduleMiso # "callSelect" $ [el,delay]
+-----------------------------------------------------------------------------
+-- | Fails silently if the element is not found.
+--
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
 blur x = do

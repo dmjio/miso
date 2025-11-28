@@ -12,6 +12,14 @@ export function callFocus(id: string, delay: number): void {
   delay > 0 ? setTimeout(setFocus, delay) : setFocus();
 }
 
+export function callSelect(id: string, delay: number): void {
+  var setSelect = function () {
+    var e : HTMLInputElement = document.querySelector('#' + id);
+    if (e && e.select) e.select();
+  };
+  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
+}
+
 export function callBlur(id: string, delay: number): void {
   var setBlur = function () {
     var e = document.getElementById(id);

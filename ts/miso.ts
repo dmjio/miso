@@ -5,6 +5,7 @@ import { hydrate, integrityCheck } from './miso/hydrate';
 import {
    version,
    callFocus,
+   callSelect,
    callBlur,
    fetchCore,
    getParentComponentId,
@@ -43,6 +44,7 @@ export {
   delegate,
   callBlur,
   callFocus,
+  callSelect,
   eventJSON,
   fetchCore,
   undelegate,

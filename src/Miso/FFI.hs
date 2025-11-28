@@ -23,6 +23,7 @@ module Miso.FFI
     -- ** DOM
   , getElementById
   , focus
+  , select
   , blur
   , alert
     -- ** Styles
