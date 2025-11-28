@@ -418,8 +418,24 @@ htmlEncode = MS.concatMap $ \case
   x -> MS.singleton x
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' containing concatenation of the given strings.
+--
+-- @
+--   view :: View model action
+--   view = div_
+--     [ className "container" ]
+--     [ text_
+--       [ "foo"
+--       , "bar"
+--       ]
+--     ]
+-- @
+--
+-- Renders as @<div class="container">foo bar</div>@
+--
+-- A single additional space is added between elements.
+--
 text_ :: [MisoString] -> View model action
-text_ = VText . MS.concat
+text_ = VText . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
