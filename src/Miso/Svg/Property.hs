@@ -24,7 +24,6 @@ module Miso.Svg.Property
   , bias_
   , by_
   , calcMode_
-  , class_'
   , clipPathUnits_
   , cx_
   , cy_
@@ -46,8 +45,6 @@ module Miso.Svg.Property
   , fy_
   , gradientTransform_
   , gradientUnits_
-  , height_
-  , id_
   , in_'
   , in2_
   , intercept_
@@ -59,7 +56,6 @@ module Miso.Svg.Property
   , keyPoints_
   , keySplines_
   , keyTimes_
-  , lang_
   , lengthAdjust_
   , limitingConeAngle_
   , markerHeight_
@@ -114,7 +110,6 @@ module Miso.Svg.Property
   , stitchTiles_
   , surfaceScale_
   , systemLanguage_
-  , tabindex_
   , tableValues_
   , target_
   , targetX_
@@ -127,7 +122,6 @@ module Miso.Svg.Property
   , values_
   , vectorEffect_
   , viewBox_
-  , width_
   , x_
   , x1_
   , x2_
@@ -241,10 +235,6 @@ by_ = attr "by"
 calcMode_ ::  MisoString -> Attribute action
 calcMode_ = attr "calcMode"
 -----------------------------------------------------------------------------
--- | [class](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/class) attribute
-class_' ::  MisoString -> Attribute action
-class_' = attr "class"
------------------------------------------------------------------------------
 -- | [clipPathUnits](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/clipPathUnits) attribute
 clipPathUnits_ ::  MisoString -> Attribute action
 clipPathUnits_ = attr "clipPathUnits"
@@ -333,14 +323,6 @@ gradientTransform_ = attr "gradientTransform"
 gradientUnits_ ::  MisoString -> Attribute action
 gradientUnits_ = attr "gradientUnits"
 -----------------------------------------------------------------------------
--- | [height](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/height) attribute
-height_ ::  MisoString -> Attribute action
-height_ = attr "height"
------------------------------------------------------------------------------
--- | [id](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/id) attribute
-id_ ::  MisoString -> Attribute action
-id_ = attr "id"
------------------------------------------------------------------------------
 -- | [in](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/in) attribute
 in_' ::  MisoString -> Attribute action
 in_' = attr "in"
@@ -384,10 +366,6 @@ keySplines_ = attr "keySplines"
 -- | [keyTimes](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/keyTimes) attribute
 keyTimes_ ::  MisoString -> Attribute action
 keyTimes_ = attr "keyTimes"
------------------------------------------------------------------------------
--- | [lang](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/lang) attribute
-lang_ ::  MisoString -> Attribute action
-lang_ = attr "lang"
 -----------------------------------------------------------------------------
 -- | [lengthAdjust](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/lengthAdjust) attribute
 lengthAdjust_ ::  MisoString -> Attribute action
@@ -609,12 +587,6 @@ surfaceScale_ = attr "surfaceScale"
 systemLanguage_ ::  MisoString -> Attribute action
 systemLanguage_ = attr "systemLanguage"
 -----------------------------------------------------------------------------
--- | [tabindex](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/tabindex) attribute
---
--- @since 1.9.0.0
-tabindex_ ::  MisoString -> Attribute action
-tabindex_ = attr "tabindex"
------------------------------------------------------------------------------
 -- | [tableValues](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/tableValues) attribute
 tableValues_ ::  MisoString -> Attribute action
 tableValues_ = attr "tableValues"
@@ -666,10 +638,6 @@ vectorEffect_ = attr "vector-effect"
 -- | [viewBox](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/viewBox) attribute
 viewBox_ ::  MisoString -> Attribute action
 viewBox_ = attr "viewBox"
------------------------------------------------------------------------------
--- | [width](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/width) attribute
-width_ ::  MisoString -> Attribute action
-width_ = attr "width"
 -----------------------------------------------------------------------------
 -- | [x](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/x) attribute
 x_ ::  MisoString -> Attribute action

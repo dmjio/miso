@@ -118,6 +118,7 @@ module Miso.Html.Property
    , draggable_
    , frameborder_
    , scrolling_
+   , tabindex_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -542,4 +543,10 @@ scrolling_ = textProp "scrolling"
 -- | @since 1.9.0.0
 frameborder_ :: MisoString -> Attribute action
 frameborder_ = textProp "frameborder"
+-----------------------------------------------------------------------------
+-- | [tabindex](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/tabindex) attribute
+--
+-- @since 1.9.0.0
+tabindex_ ::  MisoString -> Attribute action
+tabindex_ = textProp "tabindex"
 -----------------------------------------------------------------------------
