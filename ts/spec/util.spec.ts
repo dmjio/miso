@@ -1,4 +1,4 @@
-import { callFocus, callSelect, callBlur, getParentComponentId } from '../miso/util';
+import { callFocus, callBlur, callSelect, callSetSelectionRange, getParentComponentId } from '../miso/util';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -17,7 +17,7 @@ afterEach(() => {
 /* tests */
 describe ('Utils tests', () => {
 
-  test('Should call callFocus(), callSelect() and callBlur()', () => {
+  test('Should call callFocus(), callSelect(), callBlur() and callSetSelectionRange()', () => {
     var child = document.createElement('input');
     child['id'] = 'foo';
     child['value'] = 'bar';
@@ -32,6 +32,11 @@ describe ('Utils tests', () => {
     var e : HTMLInputElement = document.querySelector('#foo');
     expect(e.selectionStart).toEqual(0);
     expect(e.selectionEnd).toEqual(3);
+    callSetSelectionRange('blah', 1, 2, 0);
+    callSetSelectionRange('foo', 1, 2, 0);
+    callSetSelectionRange('foo', 1, 2, 1)
+    expect(e.selectionStart).toEqual(1);
+    expect(e.selectionEnd).toEqual(2);
     callBlur('blah', 0); /* missing case */
     callBlur('foo', 0); /* found case */
     callBlur('foo', 1); /* found case */

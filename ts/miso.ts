@@ -5,8 +5,9 @@ import { hydrate, integrityCheck } from './miso/hydrate';
 import {
    version,
    callFocus,
-   callSelect,
    callBlur,
+   callSelect,
+   callSetSelectionRange,
    fetchCore,
    getParentComponentId,
    websocketConnect,
@@ -45,6 +46,7 @@ export {
   callBlur,
   callFocus,
   callSelect,
+  callSetSelectionRange,
   eventJSON,
   fetchCore,
   undelegate,

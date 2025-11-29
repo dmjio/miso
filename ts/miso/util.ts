@@ -12,20 +12,28 @@ export function callFocus(id: string, delay: number): void {
   delay > 0 ? setTimeout(setFocus, delay) : setFocus();
 }
 
-export function callSelect(id: string, delay: number): void {
-  var setSelect = function () {
-    var e : HTMLInputElement = document.querySelector('#' + id);
-    if (e && e.select) e.select();
-  };
-  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
-}
-
 export function callBlur(id: string, delay: number): void {
   var setBlur = function () {
     var e = document.getElementById(id);
     if (e && e.blur) e.blur();
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
+}
+
+export function callSelect(id: string, delay: number): void {
+  var setSelect = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['select'] === 'function') (e as HTMLInputElement).select();
+  };
+  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
+}
+
+export function callSetSelectionRange(id: string, start: number, end: number, delay: number): void {
+  var setSetSelectionRange = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['setSelectionRange'] === 'function') (e as HTMLInputElement).setSelectionRange(start, end, 'none');
+  };
+  delay > 0 ? setTimeout(setSetSelectionRange, delay) : setSetSelectionRange();
 }
 
 export function fetchCore (

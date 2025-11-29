@@ -637,6 +637,22 @@ function callBlur(id, delay) {
   };
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
+function callSelect(id, delay) {
+  var setSelect = function() {
+    var e = document.getElementById(id);
+    if (e && typeof e["select"] === "function")
+      e.select();
+  };
+  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
+}
+function callSetSelectionRange(id, start, end, delay) {
+  var setSetSelectionRange = function() {
+    var e = document.getElementById(id);
+    if (e && typeof e["setSelectionRange"] === "function")
+      e.setSelectionRange(start, end, "none");
+  };
+  delay > 0 ? setTimeout(setSetSelectionRange, delay) : setSetSelectionRange();
+}
 function fetchCore(url, method, body, requestHeaders, successful, errorful, responseType) {
   var options = { method, headers: requestHeaders };
   if (body) {
@@ -933,6 +949,8 @@ globalThis["miso"] = {
   delegate,
   callBlur,
   callFocus,
+  callSelect,
+  callSetSelectionRange,
   eventJSON,
   fetchCore,
   eventSourceConnect,
