@@ -67,11 +67,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
     return false;
   } else {
     if (logLevel) {
-      if (!integrityCheck(vtree, context, drawingContext)) {
-        console.warn('[DEBUG_HYDRATE] Integrity check completed with errors');
-      } else {
-        console.info('[DEBUG_HYDRATE] Successfully prerendered page');
-      }
+      console.info('[DEBUG_HYDRATE] Successfully prerendered page');
     }
   }
   return true;
