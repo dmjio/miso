@@ -21,7 +21,7 @@ export type VComp<T> = {
   children: Array<VTree<T>>;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
-  onBeforeUnmounted: () => void;
+  onBeforeUnmounted: (domRef: T) => void;
   onUnmounted: (domRef: T) => void;
   mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
