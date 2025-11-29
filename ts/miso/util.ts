@@ -20,6 +20,22 @@ export function callBlur(id: string, delay: number): void {
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
 
+export function callSelect(id: string, delay: number): void {
+  var setSelect = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['select'] === 'function') (e as HTMLInputElement).select();
+  };
+  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
+}
+
+export function callSetSelectionRange(id: string, start: number, end: number, delay: number): void {
+  var setSetSelectionRange = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['setSelectionRange'] === 'function') (e as HTMLInputElement).setSelectionRange(start, end, 'none');
+  };
+  delay > 0 ? setTimeout(setSetSelectionRange, delay) : setSetSelectionRange();
+}
+
 export function fetchCore (
   url : string,
   method : string,

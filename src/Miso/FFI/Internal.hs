@@ -81,6 +81,8 @@ module Miso.FFI.Internal
    -- * Misc.
    , focus
    , blur
+   , select
+   , setSelectionRange
    , scrollIntoView
    , alert
    , reload
@@ -500,21 +502,25 @@ hydrate logLevel mountPoint vtree = void $ do
 --
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> JSM ()
-focus x = do
-  moduleMiso <- jsg "miso"
-  el <- toJSVal x
-  delay <- toJSVal (50 :: Int)
-  void $ moduleMiso # "callFocus" $ [el,delay]
+focus x = void $ jsg "miso" # "callFocus" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
-blur x = do
-  moduleMiso <- jsg "miso"
-  el <- toJSVal x
-  delay <- toJSVal (50 :: Int)
-  void $ moduleMiso # "callBlur" $ [el,delay]
+blur x = void $ jsg "miso" # "callBlur" $ (x, 50 :: Int)
+-----------------------------------------------------------------------------
+-- | Fails silently if the element is not found.
+--
+-- Analogous to @document.querySelector('#' + id).select()@.
+select :: MisoString -> JSM ()
+select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
+-----------------------------------------------------------------------------
+-- | Fails silently if the element is not found.
+--
+-- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, 'none')@.
+setSelectionRange :: MisoString -> Int -> Int -> JSM ()
+setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> JSM ()
