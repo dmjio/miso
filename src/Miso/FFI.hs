@@ -23,8 +23,9 @@ module Miso.FFI
     -- ** DOM
   , getElementById
   , focus
-  , select
   , blur
+  , select
+  , setSelectionRange
   , alert
     -- ** Styles
   , addStyle

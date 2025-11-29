@@ -508,7 +508,7 @@ focus x = void $ jsg "miso" # "callFocus" $ (x, 50 :: Int)
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> JSM ()
-blur x = void $ jsg "miso" # "callBlue" $ (x, 50 :: Int)
+blur x = void $ jsg "miso" # "callBlur" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
