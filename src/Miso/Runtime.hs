@@ -657,7 +657,10 @@ rootComponentId = 0
 --
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
-componentIds = unsafePerformIO $ liftIO (newIORef 1)
+componentIds = unsafePerformIO $ liftIO (newIORef initialComponentId)
+  where
+    initialComponentId :: Int
+    initialComponentId = 1
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
@@ -794,14 +797,15 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
 buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
-  vchildren <- toJSVal =<< procreate
+  vchildren <- toJSVal =<< procreate vnode
   FFI.set "children" vchildren vnode
   pure $ VTree vnode
     where
-      procreate = do
+      procreate parentVTree = do
         kidsViews <- forM kids $ \kid -> do
-          VTree (Object vtree) <- buildVTree hydrate kid snk logLevel events
-          pure vtree
+          VTree child <- buildVTree hydrate kid snk logLevel events
+          FFI.set "parent" parentVTree child
+          pure child
         setNextSibling kidsViews
         pure kidsViews
           where

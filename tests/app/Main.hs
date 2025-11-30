@@ -7,6 +7,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Prelude hiding ((!!))
 import           Control.Monad
 import           Control.Concurrent
 import           Control.Concurrent.STM
@@ -72,6 +73,19 @@ main = do
       it "Should mount one component" $ do
         _ <- jsm (startApp testComponent)
         mountedComponents >>= (`shouldBe` 1)
+
+      it "Should have parent field present on VDOM nodes" $ do
+        _ <- jsm (startApp testComponent)
+        ComponentState {..} <- (IM.! 1) <$> liftIO (readIORef components)
+        VTree (Object ref) <- liftIO (readIORef componentVTree)
+        parentDomRef <- jsm $ ref ! "domRef"
+        childParentField <- jsm $ ref ! "children" !! 0 ! "parent"
+        childParentFieldDOMRef <- jsm $ childParentField ! "domRef"
+        parentFieldNull <- jsm $ ghcjsPure (isNull childParentField)
+        parentFieldNull `shouldBe` False
+        parentFieldUndefined <- jsm $ ghcjsPure (isUndefined childParentField)
+        parentFieldUndefined `shouldBe` False
+
 #ifndef WASM
       it "Should mount 10,000 components" $ do
         _ <- jsm $ do

@@ -18,6 +18,7 @@ export type VComp<T> = {
   props: Props;
   css: CSS;
   events: Events<T>;
+  parent: Parent;
   children: Array<VTree<T>>;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
@@ -43,6 +44,7 @@ export type VNode<T> = {
   onCreated: () => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
+  parent: Parent;
   nextSibling: VNode<T>;
 };
 
@@ -52,7 +54,10 @@ export type VText<T> = {
   domRef: T;
   ns: NS;
   key: string;
+  parent: Parent;
 };
+
+export type Parent = VNode<T> | VComp<T>;
 
 export type NodeId = {
   nodeId: number;

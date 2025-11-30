@@ -9,6 +9,7 @@ export function vtext<T>(input: string) : VText<T> {
       type: 'vtext',
       domRef : null,
       key : null,
+      parent : null,
     };
 }
 
@@ -64,6 +65,7 @@ function mkVNode<T>() : VNode<T> {
     onBeforeCreated: () => {},
     type : 'vnode',
     nextSibling: null,
+    parent : null,
   };
 }
 
