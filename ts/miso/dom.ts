@@ -247,6 +247,7 @@ function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
 
     // we recursively mount and then travel back up the parent
     // to find the actual domRef for raw DOM stitching.
+    obj.componentId = componentId;
     switch (componentTree.type) {
       case "vnode":
         var node = obj.parent;

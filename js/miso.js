@@ -218,6 +218,7 @@ function mountComponent(obj, context) {
   if (obj.onBeforeMounted)
     obj.onBeforeMounted();
   obj.mount(obj.domRef, (componentId, componentTree) => {
+    obj.componentId = componentId;
     switch (componentTree.type) {
       case "vnode":
         var node = obj.parent;

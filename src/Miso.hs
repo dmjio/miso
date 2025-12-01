@@ -102,6 +102,7 @@ import           Language.Javascript.JSaddle (eval)
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Binding
+import           Miso.Delegate
 import           Miso.Diff
 import           Miso.Effect
 import           Miso.Event
@@ -131,8 +132,11 @@ import           Miso.Util
 -- @
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
-  vcomp <- f <$> getURI
-  initialize Hydrate isRoot vcomp FFI.getBody
+  vcomp@Component{..} <- f <$> getURI
+  body <- FFI.getBody
+  liftIO (atomicWriteIORef globalMountPoint body)
+  ComponentState {..} <- initialize Hydrate isRoot vcomp (pure body)
+  delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
 --
@@ -175,7 +179,6 @@ renderApp
 renderApp renderer vcomp = do
   withJS $ do
     FFI.setDrawingContext renderer
-    -- delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     initComponent vcomp
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
@@ -186,7 +189,9 @@ initComponent
 initComponent vcomp@Component {..} = do
   globalMount <- mountElement (getMountPoint mountPoint)
   liftIO (atomicWriteIORef globalMountPoint globalMount)
-  initialize Draw isRoot vcomp (mountElement (getMountPoint mountPoint))
+  cs@ComponentState {..} <- initialize Draw isRoot vcomp (mountElement (getMountPoint mountPoint))
+  delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  pure cs
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True

@@ -32,6 +32,7 @@ export type VComp<T> = {
   unmount: (e: T) => void;
 
   nextSibling: VNode<T>;
+  componentId: number;
 };
 
 export type VNode<T> = {

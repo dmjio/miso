@@ -90,6 +90,8 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Set as Set
+import           Data.Set (Set)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 #ifndef GHCJS_BOTH
@@ -1446,7 +1448,7 @@ globalVTree = unsafePerformIO (newIORef undefined)
 -----------------------------------------------------------------------------
 -- | The currently active delegated events
 --
-delegatedEvents :: IORef Events
+delegatedEvents :: IORef (Set (MisoString, Bool))
 {-# NOINLINE delegatedEvents #-}
 delegatedEvents = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
@@ -1455,14 +1457,11 @@ addToDelegatedEvents :: Events -> JSM ()
 addToDelegatedEvents events = liftIO $ do
   delegated <- liftIO (readIORef delegatedEvents)
   forM_ (M.assocs events) $ \(eventName, capture) ->
-    case M.lookup eventName delegated of
-      Just captured
-        | capture /= captured -> 
-            modifyIORef' delegatedEvents (M.insert eventName capture)
-        | otherwise ->
-            pure ()
-      Nothing ->
-        modifyIORef' delegatedEvents (M.insert eventName capture)
+    if Set.member (eventName, capture) delegated
+      then
+        pure ()
+      else
+        modifyIORef' delegatedEvents (Set.insert (eventName, capture))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceConnectText
