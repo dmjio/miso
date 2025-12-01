@@ -60,8 +60,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(vtreeParent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, false, eventContext);
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (vtreeChild.domRef as HTMLElement).click();
