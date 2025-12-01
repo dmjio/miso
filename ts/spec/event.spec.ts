@@ -64,7 +64,7 @@ describe ('Event tests', () => {
     delegate(body, delegatedEvents, getVTree, false, eventContext);
 
     /* initiate click event */
-    (vtreeParent.domRef as HTMLElement).click();
+    (vtreeChild.domRef as HTMLElement).click();
 
     /* check results */
     expect(count).toEqual(2);

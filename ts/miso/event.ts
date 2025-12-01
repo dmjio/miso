@@ -146,7 +146,7 @@ function propagateWhileAble<T>(obj: VTree<T>, event: Event): void {
        }
        else if (obj.type == 'vnode') {
          if (obj['events'][event.type]) {
-           const eventObj = ['events'][event.type];
+           const eventObj = obj['events'][event.type];
            const options = eventObj.options;
            if (options.preventDefault) event.preventDefault();
            eventObj.runEvent(event, obj.domRef);

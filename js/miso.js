@@ -21,7 +21,8 @@ function mkVNode() {
     onCreated: () => {},
     onBeforeCreated: () => {},
     type: "vnode",
-    nextSibling: null
+    nextSibling: null,
+    parent: null
   };
 }
 
@@ -217,6 +218,28 @@ function mountComponent(obj, context) {
   if (obj.onBeforeMounted)
     obj.onBeforeMounted();
   obj.mount(obj.domRef, (componentId, componentTree) => {
+    switch (componentTree.type) {
+      case "vnode":
+        var node = obj.parent;
+        while (node.type !== "vnode") {
+          node = node.parent;
+        }
+        context.appendChild(node.domRef, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vtext":
+        var node = obj.parent;
+        while (node.type !== "vnode") {
+          node = node.parent;
+        }
+        context.appendChild(node.domRef, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vcomp":
+        obj.children.push(componentTree);
+        mountComponent(componentTree, context);
+        break;
+    }
     obj.children.push(componentTree);
     context.appendChild(obj.domRef, componentTree.domRef);
     if (obj.onMounted)
@@ -336,7 +359,7 @@ function dispatch(ev, vtree, mount, debug, context) {
   var target = context.getTarget(ev);
   if (target) {
     var stack = buildTargetToElement(mount, target, context);
-    delegateEvent(ev, vtree, stack, [], debug, context);
+    delegateEvent(ev, vtree, stack, debug, context);
   }
 }
 function buildTargetToElement(element, target, context) {
@@ -351,20 +374,22 @@ function buildTargetToElement(element, target, context) {
   }
   return stack;
 }
-function delegateEvent(event, obj, stack, parentStack, debug, context) {
+function delegateEvent(event, obj, stack, debug, context) {
   if (!stack.length) {
     if (debug) {
       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
     }
     return;
   } else if (stack.length > 1) {
-    parentStack.unshift(obj);
     for (var c in obj["children"]) {
       var child = obj["children"][c];
-      if (child["type"] === "vcomp")
-        continue;
+      while (child["type"] === "vcomp") {
+        if (child.children.length > 0) {
+          child = child.children[0];
+        }
+      }
       if (context.isEqual(child["domRef"], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
+        delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
     }
@@ -375,26 +400,38 @@ function delegateEvent(event, obj, stack, parentStack, debug, context) {
       if (options.preventDefault) {
         event.preventDefault();
       }
-      eventObj.runEvent(event, stack[0]);
-      if (!options.stopPropagation) {
-        propagateWhileAble(parentStack, event);
+      if (context.isEqual(obj["domRef"], stack[0])) {
+        eventObj.runEvent(event, stack[0]);
       }
-    } else {
-      propagateWhileAble(parentStack, event);
+      if (!options.stopPropagation) {
+        propagateWhileAble(obj.parent, event);
+      }
     }
   }
 }
-function propagateWhileAble(parentStack, event) {
-  for (const vtree of parentStack) {
-    if (vtree["events"][event.type]) {
-      const eventObj = vtree["events"][event.type], options = eventObj.options;
-      if (options.preventDefault)
-        event.preventDefault();
-      eventObj.runEvent(event, vtree.domRef);
-      if (options.stopPropagation) {
-        event.stopPropagation();
+function propagateWhileAble(obj, event) {
+  while (obj) {
+    if (obj.type == "vcomp") {
+      if (obj.propagateEvents) {
+        obj = obj.parent;
+      } else {
         break;
       }
+    } else if (obj.type == "vnode") {
+      if (obj["events"][event.type]) {
+        const eventObj = obj["events"][event.type];
+        const options = eventObj.options;
+        if (options.preventDefault)
+          event.preventDefault();
+        eventObj.runEvent(event, obj.domRef);
+        if (options.stopPropagation) {
+          break;
+        } else {
+          obj = obj.parent;
+        }
+      }
+    } else {
+      break;
     }
   }
 }
