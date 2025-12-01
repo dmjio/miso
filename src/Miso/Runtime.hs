@@ -1457,11 +1457,8 @@ addToDelegatedEvents :: Events -> JSM ()
 addToDelegatedEvents events = liftIO $ do
   delegated <- liftIO (readIORef delegatedEvents)
   forM_ (M.assocs events) $ \(eventName, capture) ->
-    if Set.member (eventName, capture) delegated
-      then
-        pure ()
-      else
-        modifyIORef' delegatedEvents (Set.insert (eventName, capture))
+    when (Set.notMember (eventName, capture) delegated) $
+      modifyIORef' delegatedEvents (Set.insert (eventName, capture))
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceConnectText
