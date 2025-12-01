@@ -34,3 +34,4 @@ tests/public
 
 # haddocks
 haddocks/
+/sample-app/public/
