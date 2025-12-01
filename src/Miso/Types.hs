@@ -60,6 +60,7 @@ module Miso.Types
   , (<---)
   -- ** Component mounting
   , (+>)
+  , mount
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -146,6 +147,12 @@ data Component parent model action
   -- ^ Data bindings between parent and child t'Miso.Types.Component's
   --
   -- @since 1.9.0.0
+  , propagateEvents :: Bool
+  -- ^ Should event propagation cross the 'Component' boundary.
+  --
+  -- Defaults to 'False'
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -211,6 +218,7 @@ component m u v = Component
   , logLevel = Off
   , initialAction = Nothing
   , mailbox = const Nothing
+  , propagateEvents = False
   , bindings = []
   }
 -----------------------------------------------------------------------------
@@ -253,7 +261,7 @@ data LogLevel
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
-  | VComp NS MisoString [Attribute action] (SomeComponent model)
+  | VComp (Maybe Key) (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -266,26 +274,21 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   div_ [ key_ "component-id" ] +> component model noop $ \\m ->
+--   "component-id" +> component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
 (+>)
   :: forall child model action a . Eq child
-  => ([View model a] -> View model a)
+  => MisoString
   -> Component model child action
   -> View model a
 infixr 0 +>
-(+>) mkNode vcomp =
-  case mkNode [] of
-    VNode ns tag attrs _ ->
-      VComp ns tag attrs
-        (SomeComponent vcomp)
-    VComp ns tag attrs vcomp_ ->
-      VComp ns tag attrs vcomp_
-    _ ->
-      error "Impossible: cannot mount on a Text node"
+key +> vcomp = VComp (Just (Key key)) (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+mount :: Eq child => Component model child action -> View model a
+mount vcomp = VComp Nothing (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data NS
@@ -309,11 +312,7 @@ instance ToJSVal NS where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
-  deriving (Show, Eq, IsString, ToJSON, ToMisoString)
------------------------------------------------------------------------------
--- | ToJSVal instance for t'Key'
-instance ToJSVal Key where
-  toJSVal (Key x) = toJSVal x
+  deriving (Show, Eq, IsString, ToJSON, ToMisoString, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Convert custom key types to t'Key'.
 --

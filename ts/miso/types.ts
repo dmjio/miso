@@ -9,6 +9,7 @@ export type NS = 'text' | 'html' | 'svg' | 'mathml';
 export type DOMRef = HTMLElement | MathMLElement | SVGElement;
 export type ComponentId = number;
 
+/* dmj: drop the unneeded fields */
 export type VComp<T> = {
   type: 'vcomp';
   domRef: T;
@@ -18,14 +19,18 @@ export type VComp<T> = {
   props: Props;
   css: CSS;
   events: Events<T>;
-  parent: Parent;
+  parent: Parent<T>;
   children: Array<VTree<T>>;
+  propagateEvents: boolean;
+
+  /* hoist put these into Haskell Component */
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
   onBeforeUnmounted: (domRef: T) => void;
   onUnmounted: (domRef: T) => void;
   mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
+
   nextSibling: VNode<T>;
 };
 
@@ -44,7 +49,7 @@ export type VNode<T> = {
   onCreated: () => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
-  parent: Parent;
+  parent: Parent<T>;
   nextSibling: VNode<T>;
 };
 
@@ -54,10 +59,10 @@ export type VText<T> = {
   domRef: T;
   ns: NS;
   key: string;
-  parent: Parent;
+  parent: Parent<T>;
 };
 
-export type Parent = VNode<T> | VComp<T>;
+export type Parent<T> = VNode<T> | VComp<T>;
 
 export type NodeId = {
   nodeId: number;
@@ -109,6 +114,7 @@ export type ComponentContext = {
   modelHydration : (componentId: ComponentId, model: Object) => void
 }
 
+/* dmj: TODO: parent should go in here as well */
 export type DrawingContext<T> = {
   nextSibling : (node: VNode<T>) => T;
   createTextNode : (s: string) => T;

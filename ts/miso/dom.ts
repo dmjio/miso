@@ -241,15 +241,46 @@ function unmountComponent<T>(obj: VTree<T>): void {
 function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
   if (obj.onBeforeMounted) obj.onBeforeMounted();
   // Call 'onBeforeMounted' before calling 'mount'
-  obj.mount(obj.domRef, (componentId: ComponentId, componentTree: VNode<T>) => {
+  obj.mount(obj.domRef, (componentId: ComponentId, componentTree: VTree<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
+
+    // we recursively mount and then travel back up the parent
+    // to find the actual domRef for raw DOM stitching.
+    switch (componentTree.type) {
+      case "vnode":
+        var node = obj.parent;
+        while (node.type !== 'vnode') {
+          /* dmj: drill up to get the parent for stitching */
+          node = node.parent;
+        }
+        context.appendChild(node.domRef, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vtext":
+        var node = obj.parent;
+        while (node.type!== 'vnode') {
+          /* dmj: drill up to get the parent for stitching */
+          node = node.parent;
+        }
+        context.appendChild(node.domRef, componentTree.domRef);
+        obj.children.push(componentTree);
+        break;
+      case "vcomp":
+        // dmj: recursive case, keep drilling
+        // until we get to 'vnode' / 'vtext'
+        obj.children.push(componentTree);
+        mountComponent (componentTree, context);
+        break;
+    }
+
     obj.children.push(componentTree);
     context.appendChild(obj.domRef, componentTree.domRef);
     if (obj.onMounted) obj.onMounted(obj.domRef);
   });
 }
-// creates nodes on virtual and dom (vtext, vcomp, vnode)
+
+// Creates nodes on virtual and dom (vtext, vcomp, vnode)
 function create<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
   if (obj.type === 'vtext') {
     obj.domRef = context.createTextNode(obj.text);
@@ -260,6 +291,7 @@ function create<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
     });
   }
 }
+
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
 function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
   var oldFirstIndex: number = 0,

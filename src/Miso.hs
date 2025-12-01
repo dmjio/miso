@@ -27,6 +27,7 @@ module Miso
   , Component
   , startComponent
   , component
+  , mount
   , (+>)
     -- ** Sink
   , withSink
@@ -89,11 +90,13 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
 #else
 import           Data.FileEmbed (embedStringFile)
+import           Data.IORef (atomicWriteIORef)
 import           Language.Javascript.JSaddle (eval)
 #endif
 #endif
@@ -129,7 +132,7 @@ import           Miso.Util
 miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
-  initialize Hydrate vcomp FFI.getBody
+  initialize Hydrate isRoot vcomp FFI.getBody
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
 --
@@ -169,16 +172,24 @@ renderApp
   -> App model action
   -- ^ Component application
   -> JSM ()
-renderApp renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
+renderApp renderer vcomp = do
+  withJS $ do
+    FFI.setDrawingContext renderer
+    -- delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+    initComponent vcomp
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action
   -> JSM (ComponentState model action)
-initComponent vcomp@Component {..} =
-  initialize Draw vcomp (mountElement (getMountPoint mountPoint))
+initComponent vcomp@Component {..} = do
+  globalMount <- mountElement (getMountPoint mountPoint)
+  liftIO (atomicWriteIORef globalMountPoint globalMount)
+  initialize Draw isRoot vcomp (mountElement (getMountPoint mountPoint))
+----------------------------------------------------------------------------
+isRoot :: Bool
+isRoot = True
 ----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"

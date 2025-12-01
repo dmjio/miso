@@ -19,7 +19,6 @@ afterEach(() => {
 });
 
 describe ('Event tests', () => {
-
   test('Should delegate and undelegate button click', () => {
     var body = document.body;
     var count = 0;
@@ -31,7 +30,7 @@ describe ('Event tests', () => {
           count++;
         },
         options: {
-          preventDefault: true,
+          preventDefault: false,
           stopPropagation: false,
         },
       },
@@ -46,6 +45,8 @@ describe ('Event tests', () => {
       events: events,
     });
 
+    vtreeChild.parent = vtreeParent;
+
     /* initial page draw */
     diff(null, vtreeParent, document.body, drawingContext);
 
@@ -59,11 +60,11 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(vtreeParent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegate(body, delegatedEvents, getVTree, false, eventContext);
 
     /* initiate click event */
-   (vtreeChild.domRef as HTMLElement).click();
+    (vtreeParent.domRef as HTMLElement).click();
 
     /* check results */
     expect(count).toEqual(2);

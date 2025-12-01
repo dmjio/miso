@@ -56,7 +56,7 @@ function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context :
   var target = context.getTarget(ev);
   if (target) {
      var stack = buildTargetToElement(mount, target, context);
-     delegateEvent(ev, vtree, stack, [], debug, context);
+     delegateEvent(ev, vtree, stack, debug, context);
    }
 }
 
@@ -80,7 +80,6 @@ function delegateEvent <T>(
   event: Event,
   obj: VTree<T>,
   stack: Array<T>,
-  parentStack: Array<VTree<T>>,
   debug: boolean,
   context: EventContext<T>,
 ): void {
@@ -96,12 +95,21 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-    parentStack.unshift(obj);
     for (var c in obj['children']) {
       var child = obj['children'][c];
-      if (child['type'] === 'vcomp') continue;
+      while (child['type'] === 'vcomp') {
+          /* We're guaranteed to have this condition
+             because mounting has already occurred.
+           */
+          if (child.children.length > 0) {
+              /* We drill through the 
+                 component tree until
+                 we hit a 'vnode' */
+             child = child.children[0];
+          }
+      }
       if (context.isEqual(child['domRef'], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
+        delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
     }
@@ -114,30 +122,46 @@ function delegateEvent <T>(
         event.preventDefault();
       }
       /* dmj: stack[0] represents the domRef that raised the event */
-      eventObj.runEvent(event, stack[0]);
-      if (!options.stopPropagation) {
-        propagateWhileAble(parentStack, event);
+      if (context.isEqual(obj['domRef'], stack[0])) {
+        eventObj.runEvent(event, stack[0]);
       }
-    } else {
-      /* still propagate to parent handlers even if event not defined */
-      propagateWhileAble(parentStack, event);
+      if (!options.stopPropagation) {
+        propagateWhileAble(obj.parent, event);
+      }
     }
   }
 }
+
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-function propagateWhileAble<T>(parentStack: Array<VTree<T>>, event: Event): void {
-  for (const vtree of parentStack) {
-    if (vtree['events'][event.type]) {
-      const eventObj = vtree['events'][event.type],
-        options = eventObj.options;
-      if (options.preventDefault) event.preventDefault();
-      eventObj.runEvent(event, vtree.domRef);
-      if (options.stopPropagation) {
-        event.stopPropagation();
-        break;
-      }
-    }
-  }
+function propagateWhileAble<T>(obj: VTree<T>, event: Event): void {
+   while (obj) {
+       if (obj.type == 'vcomp') {
+           if (obj.propagateEvents) {
+               /* keep propagating */
+               obj = obj.parent;
+           } else {
+             /* this is the component barrier, bail out */
+             break;
+           }
+       }
+       else if (obj.type == 'vnode') {
+         if (obj['events'][event.type]) {
+           const eventObj = ['events'][event.type];
+           const options = eventObj.options;
+           if (options.preventDefault) event.preventDefault();
+           eventObj.runEvent(event, obj.domRef);
+           if (options.stopPropagation) {
+             break;
+           } else {
+             obj = obj.parent;
+           }
+         }
+       }
+       else {
+          /* 'vtext' is an impossible case */
+          break;
+       }
+   }
 }
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but
