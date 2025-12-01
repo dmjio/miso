@@ -249,7 +249,13 @@ function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
     // to find the actual domRef for raw DOM stitching.
     obj.componentId = componentId;
     switch (componentTree.type) {
-      case "vnode":
+      case "vcomp":
+        // dmj: recursive case, keep drilling
+        // until we get to 'vnode' / 'vtext'
+        obj.children.push(componentTree);
+        mountComponent (componentTree, context);
+        break;
+      default:
         var node = obj.parent;
         while (node.type !== 'vnode') {
           /* dmj: drill up to get the parent for stitching */
@@ -258,25 +264,7 @@ function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
         context.appendChild(node.domRef, componentTree.domRef);
         obj.children.push(componentTree);
         break;
-      case "vtext":
-        var node = obj.parent;
-        while (node.type!== 'vnode') {
-          /* dmj: drill up to get the parent for stitching */
-          node = node.parent;
-        }
-        context.appendChild(node.domRef, componentTree.domRef);
-        obj.children.push(componentTree);
-        break;
-      case "vcomp":
-        // dmj: recursive case, keep drilling
-        // until we get to 'vnode' / 'vtext'
-        obj.children.push(componentTree);
-        mountComponent (componentTree, context);
-        break;
     }
-
-    obj.children.push(componentTree);
-    context.appendChild(obj.domRef, componentTree.domRef);
     if (obj.onMounted) obj.onMounted(obj.domRef);
   });
 }
