@@ -238,7 +238,7 @@ addEventListener
   -- the event will be passed to it as a parameter.
   -> JSM Function
 addEventListener self name cb = do
-  cb_ <- asyncFunction handle
+  cb_ <- function handle
   void $ self # "addEventListener" $ (name, cb_)
   pure cb_
     where

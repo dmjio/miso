@@ -87,10 +87,13 @@ module Miso.FFI
   , Response (..)
     -- ** Event
   , addEventListener
+  , removeEventListener
   , dispatchEvent
   , newEvent
   , newCustomEvent
   , Event (..)
+  , eventPreventDefault
+  , eventStopPropagation
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
