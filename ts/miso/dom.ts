@@ -194,12 +194,7 @@ function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingCo
   if (shouldSync(c,n)) {
     syncChildren(c.children, n.children, parent, context);
   } else {
-    const longest: number =
-      n.children.length > c.children.length
-        ? n.children.length
-        : c.children.length;
-
-    for (let i = 0; i < longest; i++)
+    for (let i = 0; i < Math.max (n.children.length, c.children.length); i++)
       diff(c.children[i], n.children[i], parent, context);
   }
 }
