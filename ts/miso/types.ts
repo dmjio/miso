@@ -20,11 +20,13 @@ export type VComp<T> = {
   events: Events<T>;
   parent: Parent<T>;
   children: Array<VTree<T>>;
+
+  eventPropagation: boolean;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
   onBeforeUnmounted: (domRef: T) => void;
   onUnmounted: (domRef: T) => void;
-  mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  mount: (vcomp: VComp<T>, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
   nextSibling: VNode<T>;
 };
