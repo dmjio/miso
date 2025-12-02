@@ -27,36 +27,30 @@ function mkVNode() {
 }
 
 // ts/miso/dom.ts
-function diff(currentObj, newObj, parent, context) {
-  if (!currentObj && !newObj)
+function diff(c, n, parent, context) {
+  if (!c && !n)
     return;
-  else if (!currentObj)
-    create(newObj, parent, context);
-  else if (!newObj)
-    destroy(currentObj, parent, context);
-  else if (currentObj.type === newObj.type)
-    diffNodes(currentObj, newObj, parent, context);
-  else
-    replace(currentObj, newObj, parent, context);
+  else if (!c)
+    create(n, parent, context);
+  else if (!n)
+    destroy(c, parent, context);
+  else if (c.type === "vnode" && n.type === "vnode") {
+    if (c.tag === n.tag && c.key === n.key) {
+      n.domRef = c.domRef;
+      diffAttrs(c, n, context);
+    } else {
+      replace(c, n, parent, context);
+    }
+  } else if (c.type === "vcomp" && n.type === "vcomp") {
+    if (c.key !== n.key) {
+      replace(c, n, parent, context);
+    }
+  } else if (c.type === "vtext" && n.type === "vtext") {
+    diffText(c, n, context);
+  } else
+    replace(c, n, parent, context);
 }
-function replace(c, n, parent, context) {
-  callBeforeDestroyedRecursive(c);
-  if (n.type === "vtext") {
-    n.domRef = context.createTextNode(n.text);
-    context.replaceChild(parent, n.domRef, c.domRef);
-  } else {
-    createElement(n, context, (newChild) => {
-      context.replaceChild(parent, newChild, c.domRef);
-    });
-  }
-  callDestroyedRecursive(c);
-}
-function destroy(obj, parent, context) {
-  callBeforeDestroyedRecursive(obj);
-  context.removeChild(parent, obj.domRef);
-  callDestroyedRecursive(obj);
-}
-function diffNodes(c, n, parent, context) {
+function diffText(c, n, context) {
   if (c.type === "vtext" && n.type === "vtext") {
     if (c.text !== n.text) {
       context.setTextContent(c.domRef, n.text);
@@ -64,12 +58,70 @@ function diffNodes(c, n, parent, context) {
     n.domRef = c.domRef;
     return;
   }
-  if (n["tag"] === c["tag"] && n.key === c.key && n.type === c.type) {
-    n.domRef = c.domRef;
-    populate(c, n, context);
-  } else {
-    replace(c, n, parent, context);
+}
+function getVCompRef(vcomp) {
+  var ref = vcomp.children[0];
+  if (ref) {
+    while (ref.type === "vcomp") {
+      ref = ref.children[0];
+    }
+    return ref.domRef;
   }
+  return null;
+}
+function replace(c, n, parent, context) {
+  if (c.type !== "vtext")
+    callBeforeDestroyedRecursive(c);
+  if (n.type === "vtext") {
+    n.domRef = context.createTextNode(n.text);
+    switch (c.type) {
+      case "vcomp":
+        context.replaceChild(parent, n.domRef, getVCompRef(c));
+        break;
+      default:
+        context.replaceChild(parent, n.domRef, c.domRef);
+        break;
+    }
+  } else if (n.type === "vnode") {
+    let node = createElement(n, context);
+    switch (c.type) {
+      case "vcomp":
+        unmountComponent(c);
+        context.replaceChild(parent, node, getVCompRef(c));
+        break;
+      default:
+        context.replaceChild(parent, node, c.domRef);
+        break;
+    }
+  } else {
+    mountComponent(n, parent, context);
+    switch (c.type) {
+      case "vcomp":
+        unmountComponent(c);
+        context.replaceChild(parent, getVCompRef(n), getVCompRef(c));
+        break;
+      default:
+        context.replaceChild(parent, getVCompRef(n), c.domRef);
+        break;
+    }
+  }
+  if (c.type !== "vtext")
+    callDestroyedRecursive(c);
+}
+function destroy(obj, parent, context) {
+  callBeforeDestroyedRecursive(obj);
+  switch (obj.type) {
+    case "vcomp":
+      let ref = getVCompRef(obj);
+      if (ref) {
+        context.removeChild(parent, ref);
+      }
+      break;
+    default:
+      context.removeChild(parent, obj.domRef);
+      break;
+  }
+  callDestroyedRecursive(obj);
 }
 function callDestroyedRecursive(obj) {
   callDestroyed(obj);
@@ -84,12 +136,12 @@ function callDestroyed(obj) {
     unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
-  if (obj["onBeforeDestroyed"])
+  if (obj.type === "vnode" && obj["onBeforeDestroyed"])
     obj["onBeforeDestroyed"](obj.domRef);
 }
 function callBeforeDestroyedRecursive(obj) {
   if (obj.type === "vcomp" && obj["onBeforeUnmounted"]) {
-    obj["onBeforeUnmounted"](obj.domRef);
+    obj["onBeforeUnmounted"]();
   }
   callBeforeDestroyed(obj);
   for (const i in obj["children"]) {
@@ -97,26 +149,20 @@ function callBeforeDestroyedRecursive(obj) {
   }
 }
 function callCreated(obj, context) {
-  if (obj["onCreated"])
-    obj["onCreated"](obj.domRef);
-  if (obj.type === "vcomp")
-    mountComponent(obj, context);
+  if (obj.onCreated)
+    obj.onCreated(obj.domRef);
 }
 function callBeforeCreated(obj) {
   if (obj["onBeforeCreated"])
     obj["onBeforeCreated"]();
 }
-function populate(c, n, context) {
-  if (n.type !== "vtext") {
-    if (!c)
-      c = vnode({});
-    diffProps(c["props"], n["props"], n.domRef, n.ns === "svg", context);
-    diffCss(c["css"], n["css"], n.domRef, context);
-    if (n.type === "vnode") {
-      diffChildren(c, n, n.domRef, context);
-    }
-    drawCanvas(n);
-  }
+function diffAttrs(c, n, context) {
+  if (!c)
+    c = vnode({});
+  diffProps(c.props, n.props, n.domRef, n.ns === "svg", context);
+  diffCss(c.css, n.css, n.domRef, context);
+  diffChildren(c, n, n.domRef, context);
+  drawCanvas(n);
 }
 function diffProps(cProps, nProps, node, isSvg, context) {
   var newProp;
@@ -183,8 +229,7 @@ function diffChildren(c, n, parent, context) {
   if (shouldSync(c, n)) {
     syncChildren(c.children, n.children, parent, context);
   } else {
-    const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
-    for (let i = 0;i < longest; i++)
+    for (let i = 0;i < Math.max(n.children.length, c.children.length); i++)
       diff(c.children[i], n.children[i], parent, context);
   }
 }
@@ -197,64 +242,49 @@ function populateDomRef(obj, context) {
     obj.domRef = context.createElement(obj["tag"]);
   }
 }
-function createElement(obj, context, attach) {
+function createElement(obj, context) {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
   callCreated(obj, context);
-  attach(obj.domRef);
-  populate(null, obj, context);
+  diffAttrs(null, obj, context);
+  return obj.domRef;
 }
 function drawCanvas(obj) {
   if (obj.tag === "canvas" && "draw" in obj) {
     obj.draw(obj.domRef);
   }
 }
-function unmountComponent(obj) {
-  if ("onUnmounted" in obj)
-    obj["onUnmounted"](obj.domRef);
-  obj["unmount"](obj.domRef);
+function unmountComponent(vcomp) {
+  if ("onUnmounted" in vcomp)
+    vcomp.onUnmounted();
+  vcomp.unmount(vcomp.componentId);
 }
-function mountComponent(obj, context) {
-  if (obj.onBeforeMounted)
-    obj.onBeforeMounted();
-  obj.mount(obj.domRef, (componentId, componentTree) => {
-    obj.componentId = componentId;
+function mountComponent(vcomp, parent, context) {
+  if (vcomp.onBeforeMounted)
+    vcomp.onBeforeMounted();
+  vcomp.mount(parent, (componentId, componentTree) => {
+    vcomp.componentId = componentId;
     switch (componentTree.type) {
-      case "vnode":
-        var node = obj.parent;
-        while (node.type !== "vnode") {
-          node = node.parent;
-        }
-        context.appendChild(node.domRef, componentTree.domRef);
-        obj.children.push(componentTree);
-        break;
-      case "vtext":
-        var node = obj.parent;
-        while (node.type !== "vnode") {
-          node = node.parent;
-        }
-        context.appendChild(node.domRef, componentTree.domRef);
-        obj.children.push(componentTree);
-        break;
       case "vcomp":
-        obj.children.push(componentTree);
-        mountComponent(componentTree, context);
+        vcomp.children.push(componentTree);
+        mountComponent(componentTree, parent, context);
+        break;
+      default:
+        vcomp.children.push(componentTree);
         break;
     }
-    obj.children.push(componentTree);
-    context.appendChild(obj.domRef, componentTree.domRef);
-    if (obj.onMounted)
-      obj.onMounted(obj.domRef);
+    if (vcomp.onMounted)
+      vcomp.onMounted();
   });
 }
 function create(obj, parent, context) {
   if (obj.type === "vtext") {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
+  } else if (obj.type === "vcomp") {
+    mountComponent(obj, parent, context);
   } else {
-    createElement(obj, context, (child) => {
-      context.appendChild(parent, child);
-    });
+    context.appendChild(parent, createElement(obj, context));
   }
 }
 function syncChildren(os, ns, parent, context) {
@@ -314,9 +344,8 @@ function syncChildren(os, ns, parent, context) {
         context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
         newFirstIndex++;
       } else {
-        createElement(nFirst, context, (e) => {
-          context.insertBefore(parent, e, oFirst.domRef);
-        });
+        let e = createElement(nFirst, context);
+        context.insertBefore(parent, e, oFirst.domRef);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
@@ -520,7 +549,7 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
     vtree.domRef = node;
-    populate(null, vtree, drawingContext);
+    diffAttrs(null, vtree, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -611,8 +640,7 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case "vcomp":
-      vtree.domRef = node;
-      callCreated(vtree, drawingContext);
+      mountComponent(vtree, node, drawingContext);
       break;
     case "vtext":
       vtree.domRef = node;

@@ -25,11 +25,11 @@ export type VComp<T> = {
 
   /* hoist put these into Haskell Component */
   onBeforeMounted: () => void;
-  onMounted: (domRef: T) => void;
-  onBeforeUnmounted: (domRef: T) => void;
-  onUnmounted: (domRef: T) => void;
-  mount: (domRef: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
-  unmount: (e: T) => void;
+  onMounted: () => void;
+  onBeforeUnmounted: () => void;
+  onUnmounted: () => void;
+  mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  unmount: (componentId: number) => void;
 
   nextSibling: VNode<T>;
   componentId: number;
@@ -46,8 +46,8 @@ export type VNode<T> = {
   events: Events<T>;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
-  onBeforeDestroyed: () => void;
-  onCreated: () => void;
+  onBeforeDestroyed: (domRef: T) => void;
+  onCreated: (domRef: T) => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
   parent: Parent<T>;

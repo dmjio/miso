@@ -91,12 +91,12 @@ module Miso
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Control.Monad.IO.Class (liftIO)
+import           Data.IORef (atomicWriteIORef)
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
 #else
 import           Data.FileEmbed (embedStringFile)
-import           Data.IORef (atomicWriteIORef)
 import           Language.Javascript.JSaddle (eval)
 #endif
 #endif

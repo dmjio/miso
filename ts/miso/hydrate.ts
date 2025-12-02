@@ -1,4 +1,4 @@
-import { callCreated, populate } from './dom';
+import { callCreated, mountComponent, diffAttrs } from './dom';
 import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -63,13 +63,15 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     (vtree.domRef as Node) = node;
 
-    populate(null, vtree, drawingContext);
+    diffAttrs(null, vtree as VNode<DOMRef>, drawingContext);
     return false;
+
   } else {
     if (logLevel) {
       console.info('[DEBUG_HYDRATE] Successfully prerendered page');
     }
   }
+
   return true;
 }
 function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): void {
@@ -191,8 +193,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
     case 'vcomp':
-      (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
+      mountComponent(vtree, node, drawingContext);
       break;
     case 'vtext':
       (vtree as VText<DOMRef>).domRef = node as DOMRef;

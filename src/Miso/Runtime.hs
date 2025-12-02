@@ -788,9 +788,9 @@ buildVTree hydrate (VComp maybeKey (SomeComponent app)) _ _ _ = do
       FFI.set "componentId" vcompId (Object domRef)
       void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
-      IM.lookup componentId <$> liftIO (readIORef components) >>= \case
+    FFI.syncCallback1 $ \componentId -> do
+      vcompId <- fromJSValUnchecked componentId
+      IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount mountCallback app componentState
