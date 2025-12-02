@@ -31,7 +31,7 @@ jobs:
        run: nix-channel --update
 
      - name: Nix garbage collection
-       run: nix-collect-garbage -d
+       run: cabal clean && nix-collect-garbage -d
 
      - name: Bun install
        run: nix-env -iA bun -f . && bun install
@@ -48,11 +48,14 @@ jobs:
      - name: (JS) Miso GHCJS Production (GHCJS 8.6)
        run: nix-build -A miso-ghcjs-prod
 
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
      - name: (x86) Miso GHC (GHC 8.6.5)
        run: nix-build -A miso-ghc
 
      - name: Nix garbage collection
-       run: nix-collect-garbage -d
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
