@@ -157,7 +157,10 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
     liftIO (newIORef vtree)
   componentParentId <- do
     ref <- liftIO (readIORef componentVTree)
-    vcompTree <- ref ! ("parent" :: MisoString)
+    vcompTree <- 
+      if isRoot 
+        then pure ref
+        else ref ! ("parent" :: MisoString)
     FFI.getParentComponentId vcompTree >>= \case
       Nothing -> pure rootComponentId
       Just parentId -> pure parentId
