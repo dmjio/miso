@@ -728,8 +728,7 @@ getParentComponentId domRef =
     jsg "miso" # "getParentComponentId" $ [domRef]
 -----------------------------------------------------------------------------
 -- | Get access to the 'Miso.Effect.ComponentId'
--- N.B. you * must * call this on the DOMRef, otherwise, problems.
--- For use in 'Miso.Event.onMounted', etc.
+-- N.B. you * must * call this on the @VComp@, otherwise, problems.
 getComponentId :: JSVal -> JSM Int
 getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------

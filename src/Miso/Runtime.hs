@@ -146,16 +146,19 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
-    when isRoot $ liftIO (atomicWriteIORef globalVTree vtree)
+    when isRoot $ do
+      vtree <# ("componentId" :: MisoString) $ componentId
+      liftIO (atomicWriteIORef globalVTree vtree)
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
       Hydrate -> do
         Hydrate.hydrate logLevel componentDOMRef vtree
     liftIO (newIORef vtree)
-  componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
-    FFI.getParentComponentId componentDOMRef >>= \case
+    ref <- liftIO (readIORef componentVTree)
+    vcompTree <- ref ! ("parent" :: MisoString)
+    FFI.getParentComponentId vcompTree >>= \case
       Nothing -> pure rootComponentId
       Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
@@ -816,11 +819,11 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       FFI.set "parent" vcomp (Object vtree)
       vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object domRef)
+      FFI.set "componentId" vcompId (Object vcomp)
       void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
+    FFI.syncCallback1 $ \vcomp -> do
+      componentId <- liftJSM (FFI.getComponentId vcomp)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->

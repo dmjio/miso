@@ -1,4 +1,4 @@
-import { Response } from './types';
+import { VComp, VNode, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -90,24 +90,26 @@ export function fetchCore (
    dmj: Used to fetch the parent's componentId
 
    Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
-   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
+   This should be called on a VComp, otherwise it will return the current componentId.
 
 */
-export function getParentComponentId (
-  vcompNode: ParentNode
+export function getParentComponentId<T> (
+  vcompNode: VComp<T>
 ): number {
-    var climb = function (node : ParentNode) {
-      let parentComponentId = null;
-      while (node && node.parentNode) {
-          if ('componentId' in node.parentNode) {
-              parentComponentId = node.parentNode['componentId'];
-              break;
+    var climb = function (node : VNode<T> | VComp<T>) {
+      while (node) {
+          switch (node.type) {
+              case 'vnode':
+                  node = node.parent;
+                  break;
+              case 'vcomp':
+                  return node.componentId;
+                  break;
           }
-          node = node.parentNode;
       }
-      return parentComponentId;
+      return 0; // dmj: 0 is the root component
     }
-    return climb (vcompNode);
+    return climb (vcompNode.parent);
 }
 
 export function websocketConnect (
