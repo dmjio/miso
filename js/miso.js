@@ -21,7 +21,8 @@ function mkVNode() {
     onCreated: () => {},
     onBeforeCreated: () => {},
     type: "vnode",
-    nextSibling: null
+    nextSibling: null,
+    parent: null
   };
 }
 
@@ -44,9 +45,7 @@ function replace(c, n, parent, context) {
     n.domRef = context.createTextNode(n.text);
     context.replaceChild(parent, n.domRef, c.domRef);
   } else {
-    createElement(n, context, (newChild) => {
-      context.replaceChild(parent, newChild, c.domRef);
-    });
+    context.replaceChild(parent, createElement(n, context), c.domRef);
   }
   callDestroyedRecursive(c);
 }
@@ -195,12 +194,12 @@ function populateDomRef(obj, context) {
     obj.domRef = context.createElement(obj["tag"]);
   }
 }
-function createElement(obj, context, attach) {
+function createElement(obj, context) {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
   callCreated(obj, context);
-  attach(obj.domRef);
   populate(null, obj, context);
+  return obj.domRef;
 }
 function drawCanvas(obj) {
   if (obj.tag === "canvas" && "draw" in obj) {
@@ -227,9 +226,7 @@ function create(obj, parent, context) {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
   } else {
-    createElement(obj, context, (child) => {
-      context.appendChild(parent, child);
-    });
+    context.appendChild(parent, createElement(obj, context));
   }
 }
 function syncChildren(os, ns, parent, context) {
@@ -289,9 +286,7 @@ function syncChildren(os, ns, parent, context) {
         context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
         newFirstIndex++;
       } else {
-        createElement(nFirst, context, (e) => {
-          context.insertBefore(parent, e, oFirst.domRef);
-        });
+        context.insertBefore(parent, createElement(nFirst, context), oFirst.domRef);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;

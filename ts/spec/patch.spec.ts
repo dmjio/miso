@@ -50,8 +50,7 @@ describe ('Patch tests', () => {
         const componentId : number = 0;
         let tree : VText<NodeId> = vtext('foo');
         let patchContext : DrawingContext<NodeId> = patchDrawingContext;
-        let domContext : DrawingContext<DOMRef> = drawingContext;
-        let parent : NodeId = { nodeId: parentNodeId };
+        let domContext : DrawingContext<DOMRef> = drawingContext;        let parent : NodeId = { nodeId: parentNodeId };
         diff (null, tree, parent, patchContext);
         let expected : CreateTextNode = {
             text : 'foo',
@@ -199,7 +198,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expectedCreateElement, appendOperation, expectedSetAttribute]);
+        expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -248,7 +247,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expectedCreateElement, appendOperation, expectedSetAttribute]);
+        expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -296,7 +295,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expectedCreateElement, appendOperation, expectedSetAttribute]);
+        expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -320,7 +319,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         diff (tree, newTree, parent, patchContext);
-        expect(getPatches()).toEqual([expectedCreateElement, appendOperation, expectedSetAttribute, expectedRemoveAttribute]);
+        expect(getPatches()).toEqual([expectedCreateElement, expectedSetAttribute, appendOperation, expectedRemoveAttribute]);
         patch (domContext, expectedRemoveAttribute, components);
         expect(component.nodes[nodeId].getAttribute('foo')).toEqual(null);
     });
@@ -354,7 +353,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expected, appendOperation, expectedSetTextContent]);
+        expect(getPatches()).toEqual([expected, appendOperation, expectedSetTextContent ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -412,7 +411,7 @@ describe ('Patch tests', () => {
             componentId
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expected, appendOperation1, expectedChild, appendOperation2 ]);
+        expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1 ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -462,7 +461,7 @@ describe ('Patch tests', () => {
             nodeId,
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expected, appendOperation, expectedStyle]);
+        expect(getPatches()).toEqual([expected, expectedStyle, appendOperation ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -561,7 +560,7 @@ describe ('Patch tests', () => {
             componentId
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expected, appendOperation1, expectedChild, appendOperation2, newNode, replaceOp ]);
+        expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, newNode, replaceOp ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -634,7 +633,7 @@ describe ('Patch tests', () => {
             parent: nodeId
         };
         // dmj: check diff produces patch object
-        expect(getPatches()).toEqual([expected, appendOperation1, expectedChild, appendOperation2, removeOp ]);
+        expect(getPatches()).toEqual([expected, expectedChild, appendOperation2, appendOperation1, removeOp ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,
@@ -720,7 +719,7 @@ describe ('Patch tests', () => {
             parent: nodeId
         };
         // dmj: check diff produces patch object
-      expect(getPatches()).toEqual([expected, appendOperation1, expectedChild1, appendOperation2, expectedChild2, insertBeforeOp, removeChildOp ]);
+      expect(getPatches()).toEqual([expected, expectedChild1, appendOperation2, appendOperation1, expectedChild2, insertBeforeOp, removeChildOp ]);
         let components : Components<DOMRef> = {};
         let component : Component<DOMRef> = {
             model: null,

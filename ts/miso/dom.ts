@@ -26,9 +26,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
     n.domRef = context.createTextNode(n.text);
     context.replaceChild(parent, n.domRef, c.domRef);
   } else {
-    createElement(n, context, (newChild: T) => {
-      context.replaceChild(parent, newChild, c.domRef as T);
-    });
+    context.replaceChild(parent, createElement(n, context), c.domRef as T);
   }
   // step 3: call destroyed hooks, call created hooks
   callDestroyedRecursive(c);
@@ -210,12 +208,12 @@ function populateDomRef<T>(obj: VTree<T>, context: DrawingContext<T>): void {
   }
 }
 // dmj: refactor this, the callback function feels meh
-function createElement<T>(obj: VTree<T>, context: DrawingContext<T>, attach: (e: T) => void): void {
+function createElement<T>(obj: VTree<T>, context: DrawingContext<T>): T {
   callBeforeCreated(obj);
   populateDomRef(obj, context);
   callCreated(obj, context);
-  attach(obj.domRef);
   populate(null, obj, context);
+  return obj.domRef;
 }
 
 /* draw the canvas if you need to */
@@ -250,9 +248,7 @@ function create<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
   } else {
-    createElement<T>(obj, context, (child: T) => {
-      context.appendChild(parent, child);
-    });
+    context.appendChild(parent, createElement(obj, context));
   }
 }
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
@@ -407,9 +403,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-        createElement<T>(nFirst, context, (e: T) => {
-          context.insertBefore(parent, e, oFirst.domRef);
-        });
+        context.insertBefore(parent, createElement(nFirst, context), oFirst.domRef);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
