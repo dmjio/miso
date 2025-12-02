@@ -1,7 +1,7 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate, eventJSON } from '../miso/event';
 import { DOMRef, EventCapture } from '../miso/types';
-import { vnode } from '../miso/smart';
+import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, drawingContext } from '../miso/context/dom';
 
@@ -70,6 +70,145 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(2);
     expect(result).not.toEqual(null);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+
+  test('Should propagate an event between components', () => {
+    var body = document.body;
+    var count = 0;
+    var result = null;
+    var events = {
+      click: {
+        runEvent: (e : Event, o: Node) => {
+          result = eventJSON('', e);
+          count++;
+        },
+        options: {
+          preventDefault: true,
+          stopPropagation: false,
+        },
+      },
+    };
+    var child = vnode({
+      children: [ vnode({ tag: 'button' }) ],
+      events
+    });
+
+    var childVComp = vcomp({
+      children: [child],
+      eventPropagation: true,
+      mount : function (vcomp, f) {
+        diff(null, child, vcomp.domRef, drawingContext);
+        return f(0, child);
+      }
+    });
+
+    var parent = vnode({
+      children: [childVComp],
+      events: events,
+    });
+
+    var parentVComp = vcomp({
+      events: events,
+      children: [parent],
+      mount : function (vcomp, f) {
+        diff(null, parent, vcomp.domRef, drawingContext);
+        return f(1, child);
+      }
+    });
+
+    /* create hierarchy */
+    child.parent = childVComp;
+    childVComp.parent = parent;
+    parent.parent = parentVComp;
+
+    /* initial page draw */
+    diff(null, parentVComp, document.body, drawingContext);
+
+    /* setup event delegation */
+    var getVTree = (cb : any) => {
+      cb(parentVComp);
+    };
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event */
+    (child.domRef as HTMLElement).click();
+
+    /* check results */
+    expect(count).toEqual(2);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should *not* propagate an event between components', () => {
+    var body = document.body;
+    var count = 0;
+    var result = null;
+    var events = {
+      click: {
+        runEvent: (e : Event, o: Node) => {
+          result = eventJSON('', e);
+          count++;
+        },
+        options: {
+          preventDefault: true,
+          stopPropagation: false,
+        },
+      },
+    };
+    var child = vnode({
+      children: [ vnode({ tag: 'button' }) ],
+      events
+    });
+
+    var childVComp = vcomp({
+      children: [child],
+      eventPropagation: false,
+      mount : function (vcomp, f) {
+        diff(null, child, vcomp.domRef, drawingContext);
+        return f(0, child);
+      }
+    });
+
+    var parent = vnode({
+      children: [childVComp],
+      events: events,
+    });
+
+    var parentVComp = vcomp({
+      events: events,
+      children: [parent],
+      mount : function (vcomp, f) {
+        diff(null, parent, vcomp.domRef, drawingContext);
+        return f(1, child);
+      }
+    });
+
+    /* create hierarchy */
+    child.parent = childVComp;
+    childVComp.parent = parent;
+    parent.parent = parentVComp;
+
+    /* initial page draw */
+    diff(null, parentVComp, document.body, drawingContext);
+
+    /* setup event delegation */
+    var getVTree = (cb : any) => {
+      cb(parentVComp);
+    };
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event */
+    (child.domRef as HTMLElement).click();
+
+    /* check results */
+    expect(count).toEqual(1);
 
     /* unmount delegation */
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
