@@ -12,6 +12,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+     - uses: wimpysworld/nothing-but-nix@main
+       with:
+         nix-permission-edict: true
+         
      - uses: nixbuild/nix-quick-install-action@v34
      - uses: actions/checkout@v3.5.3
      - name: Cancel Previous Runs
