@@ -47,6 +47,9 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHCJS 8.6)
        run: nix-build -A miso-ghcjs
+       
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (JS) Miso GHCJS Production (GHCJS 8.6)
        run: nix-build -A miso-ghcjs-prod
@@ -62,12 +65,21 @@ jobs:
 
      - name: (JS) Miso GHCJS (GHC 9.12.2)
        run: nix-build -A miso-ghcjs-9122
+       
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (x86) Miso GHC (GHC 9.12.2)
        run: nix-build -A miso-ghc-9122
+       
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (JS) Miso sample app (GHCJS 8.6)
        run: nix-build -A sample-app-js
+       
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
 
      - name: (x86) Miso sample app jsaddle (GHC 8.6.5)
        run: nix-build -A sample-app
