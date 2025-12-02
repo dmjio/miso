@@ -182,8 +182,7 @@ function diffChildren(c, n, parent, context) {
   if (shouldSync(c, n)) {
     syncChildren(c.children, n.children, parent, context);
   } else {
-    const longest = n.children.length > c.children.length ? n.children.length : c.children.length;
-    for (let i = 0;i < longest; i++)
+    for (let i = 0;i < Math.max(n.children.length, c.children.length); i++)
       diff(c.children[i], n.children[i], parent, context);
   }
 }
