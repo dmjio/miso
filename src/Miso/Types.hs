@@ -146,6 +146,12 @@ data Component parent model action
   -- ^ Data bindings between parent and child t'Miso.Types.Component's
   --
   -- @since 1.9.0.0
+  , eventPropagation :: Bool
+  -- ^ Should events bubble up past the t'Miso.Types.Component' barrier.
+  --
+  -- Defaults to False
+  --
+  -- @since 1.9.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -212,6 +218,7 @@ component m u v = Component
   , initialAction = Nothing
   , mailbox = const Nothing
   , bindings = []
+  , eventPropagation = False
   }
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.

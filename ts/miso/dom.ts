@@ -234,7 +234,7 @@ function unmountComponent<T>(obj: VTree<T>): void {
 function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
   if (obj.onBeforeMounted) obj.onBeforeMounted();
   // Call 'onBeforeMounted' before calling 'mount'
-  obj.mount(obj.domRef, (componentId: ComponentId, componentTree: VNode<T>) => {
+  obj.mount(obj, (componentId: ComponentId, componentTree: VNode<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
     obj.children.push(componentTree);

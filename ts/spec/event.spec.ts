@@ -46,6 +46,8 @@ describe ('Event tests', () => {
       events: events,
     });
 
+    vtreeChild.parent = vtreeParent;
+
     /* initial page draw */
     diff(null, vtreeParent, document.body, drawingContext);
 

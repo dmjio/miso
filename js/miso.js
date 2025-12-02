@@ -214,7 +214,7 @@ function unmountComponent(obj) {
 function mountComponent(obj, context) {
   if (obj.onBeforeMounted)
     obj.onBeforeMounted();
-  obj.mount(obj.domRef, (componentId, componentTree) => {
+  obj.mount(obj, (componentId, componentTree) => {
     obj.children.push(componentTree);
     context.appendChild(obj.domRef, componentTree.domRef);
     if (obj.onMounted)
@@ -329,8 +329,8 @@ function listener(e, mount, getVTree, debug, context) {
 function dispatch(ev, vtree, mount, debug, context) {
   var target = context.getTarget(ev);
   if (target) {
-    var stack = buildTargetToElement(mount, target, context);
-    delegateEvent(ev, vtree, stack, [], debug, context);
+    let stack = buildTargetToElement(mount, target, context);
+    delegateEvent(ev, vtree, stack, debug, context);
   }
 }
 function buildTargetToElement(element, target, context) {
@@ -345,50 +345,56 @@ function buildTargetToElement(element, target, context) {
   }
   return stack;
 }
-function delegateEvent(event, obj, stack, parentStack, debug, context) {
+function delegateEvent(event, obj, stack, debug, context) {
   if (!stack.length) {
     if (debug) {
       console.warn('Event "' + event.type + '" did not find an event handler to dispatch on', obj, event);
     }
     return;
   } else if (stack.length > 1) {
-    parentStack.unshift(obj);
     for (var c in obj["children"]) {
       var child = obj["children"][c];
-      if (child["type"] === "vcomp")
-        continue;
       if (context.isEqual(child["domRef"], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
+        delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
     }
   } else {
     const eventObj = obj["events"][event.type];
-    if (eventObj) {
+    if (eventObj && stack[0] === obj.domRef) {
       const options = eventObj.options;
-      if (options.preventDefault) {
+      if (options.preventDefault)
         event.preventDefault();
-      }
       eventObj.runEvent(event, stack[0]);
       if (!options.stopPropagation) {
-        propagateWhileAble(parentStack, event);
+        propagateWhileAble(obj.parent, event);
       }
-    } else {
-      propagateWhileAble(parentStack, event);
     }
   }
 }
-function propagateWhileAble(parentStack, event) {
-  for (const vtree of parentStack) {
-    if (vtree["events"][event.type]) {
-      const eventObj = vtree["events"][event.type], options = eventObj.options;
-      if (options.preventDefault)
-        event.preventDefault();
-      eventObj.runEvent(event, vtree.domRef);
-      if (options.stopPropagation) {
-        event.stopPropagation();
+function propagateWhileAble(vtree, event) {
+  while (vtree) {
+    switch (vtree.type) {
+      case "vtext":
         break;
-      }
+      case "vnode":
+        const eventObj = vtree["events"][event.type];
+        if (eventObj && eventObj.options) {
+          const options = eventObj.options;
+          if (options.preventDefault)
+            event.preventDefault();
+          eventObj.runEvent(event, vtree.domRef);
+          if (options.stopPropagation) {
+            return;
+          }
+        }
+        vtree = vtree.parent;
+        break;
+      case "vcomp":
+        if (!vtree.eventPropagation)
+          return;
+        vtree = vtree.parent;
+        break;
     }
   }
 }
