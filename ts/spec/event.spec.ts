@@ -214,7 +214,7 @@ describe ('Event tests', () => {
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
-  test('Should *not* propagate an event when stopPropagtion is set', () => {
+  test('Should *not* propagate an event when stopPropagation is set', () => {
     var body = document.body;
     var count = 0;
     var result = null;
