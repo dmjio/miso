@@ -30,6 +30,9 @@ jobs:
      - name: Nix channel update
        run: nix-channel --update
 
+     - name: Cabal install
+       run: nix-env -iA pkgs.cabal-install -f .
+
      - name: Nix garbage collection
        run: cabal clean && nix-collect-garbage -d
 
