@@ -1,4 +1,5 @@
 import { callFocus, callBlur, callSelect, callSetSelectionRange, getParentComponentId } from '../miso/util';
+import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -45,18 +46,32 @@ describe ('Utils tests', () => {
 
   test('Should get parentComponentId', () => {
     /* build */
-    const grandparent = document.createElement('div');
-    grandparent['componentId'] = 100;
-    const parent = document.createElement('div');
-    grandparent.appendChild(parent);
-    const child = document.createElement('div');
-    parent.appendChild(child);
+    var child = vnode({
+      children: [ vnode({ tag: 'button' }) ],
+    });
+
+    var childVComp = vcomp({
+      children: [child],
+      componentId: 99,
+    });
+
+    var parent = vnode({
+      children: [childVComp],
+    });
+
+    var parentVComp = vcomp({
+      children: [parent],
+      componentId: 100,
+    });
+
+    /* create hierarchy */
+    child.parent = childVComp;
+    childVComp.parent = parent;
+    parent.parent = parentVComp;
+
     /* test */
-    let vcomp = child;
-    expect(getParentComponentId(vcomp)).toBe(100);
-    vcomp = parent;
-    expect(getParentComponentId(vcomp)).toBe(100);
-    expect(getParentComponentId(grandparent)).toBe(null);
+    expect(getParentComponentId(childVComp)).toBe(100);
+    expect(getParentComponentId(parentVComp)).toBe(0);
   });
 
 });

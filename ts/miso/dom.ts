@@ -226,7 +226,7 @@ function drawCanvas<T> (obj: VNode<T>) {
 // unmount components
 function unmountComponent<T>(obj: VTree<T>): void {
   if ('onUnmounted' in obj) obj['onUnmounted'](obj.domRef);
-  obj['unmount'](obj.domRef);
+  obj['unmount'](obj);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -237,6 +237,7 @@ function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
   obj.mount(obj, (componentId: ComponentId, componentTree: VNode<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
+    obj.componentId = componentId;
     obj.children.push(componentTree);
     context.appendChild(obj.domRef, componentTree.domRef);
     if (obj.onMounted) obj.onMounted(obj.domRef);
