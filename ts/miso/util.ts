@@ -1,4 +1,4 @@
-import { VComp, VNode, Response } from './types';
+import { VComp, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -96,16 +96,12 @@ export function fetchCore (
 export function getParentComponentId<T> (
   vcompNode: VComp<T>
 ): number {
-    var climb = function (node : VNode<T> | VComp<T>) {
+    var climb = function (node) {
       while (node) {
-          switch (node.type) {
-              case 'vnode':
-                  node = node.parent;
-                  break;
-              case 'vcomp':
-                  return node.componentId;
-                  break;
+          if ('componentId' in node) {
+            return node['componentId'];
           }
+          node = node.parent;
       }
       return 0; // dmj: 0 is the root component
     }
