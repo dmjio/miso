@@ -15,6 +15,7 @@ jobs:
      - uses: wimpysworld/nothing-but-nix@main
        with:
          nix-permission-edict: true
+         ️hatchet-protocol: 'rampage'
          
      - uses: nixbuild/nix-quick-install-action@v34
      - uses: actions/checkout@v3.5.3
