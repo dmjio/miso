@@ -361,14 +361,18 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
   } else {
     const eventObj = obj["events"][event.type];
-    if (eventObj && stack[0] === obj.domRef) {
+    if (eventObj) {
       const options = eventObj.options;
-      if (options.preventDefault)
-        event.preventDefault();
-      eventObj.runEvent(event, stack[0]);
-      if (!options.stopPropagation) {
-        propagateWhileAble(obj.parent, event);
+      if (stack[0] === obj.domRef) {
+        if (options.preventDefault)
+          event.preventDefault();
+        eventObj.runEvent(event, stack[0]);
+        if (!options.stopPropagation) {
+          propagateWhileAble(obj.parent, event);
+        }
       }
+    } else {
+      propagateWhileAble(obj.parent, event);
     }
   }
 }

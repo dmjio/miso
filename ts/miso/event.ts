@@ -105,14 +105,19 @@ function delegateEvent <T>(
   } /* stack.length == 1 */
   else {
     const eventObj: EventObject<T> = obj['events'][event.type];
-    if (eventObj && stack[0] === obj.domRef) {
+    if (eventObj) {
       const options: Options = eventObj.options;
-      if (options.preventDefault) event.preventDefault();
-      /* dmj: stack[0] represents the domRef that raised the event */
-      eventObj.runEvent(event, stack[0]);
-      if (!options.stopPropagation) {
-         propagateWhileAble(obj.parent, event);
+      /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
+      if (stack[0] === obj.domRef) {
+        if (options.preventDefault) event.preventDefault();
+        eventObj.runEvent(event, stack[0]);
+        if (!options.stopPropagation) {
+           propagateWhileAble(obj.parent, event);
+        }
       }
+    } else {
+       /* still propagate to parent handlers even if event not defined */
+       propagateWhileAble(obj.parent, event);
     }
   }
 }
