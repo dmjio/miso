@@ -157,14 +157,13 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
     liftIO (newIORef vtree)
   componentParentId <- do
     ref <- liftIO (readIORef componentVTree)
-    vcompTree <- 
-      if isRoot 
-        then pure rootComponentId
-        else do
-          vcompTree <- ref ! ("parent" :: MisoString)
-          FFI.getParentComponentId vcompTree >>= \case
-            Nothing -> pure rootComponentId
-            Just parentId -> pure parentId
+    if isRoot 
+      then pure rootComponentId
+      else do
+        vcompTree <- ref ! ("parent" :: MisoString)
+        FFI.getParentComponentId vcompTree >>= \case
+          Nothing -> pure rootComponentId
+          Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
