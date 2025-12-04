@@ -161,7 +161,7 @@ defaultEvents = M.fromList
   , ("click", False)
   , ("contextmenu", False)
   , ("dblclick", False)
-  , ("focus", False)
+  , ("focus", True)
   , ("input", False)
   , ("select", False)
   , ("submit", False)
