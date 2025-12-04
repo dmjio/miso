@@ -347,9 +347,10 @@ consoleError v = do
   pure ()
 -----------------------------------------------------------------------------
 -- | Console-logging of JSVal
-consoleLog' :: JSVal -> JSM ()
-consoleLog' v = do
-  _ <- jsg "console" # "log" $ [v]
+consoleLog' :: MakeArgs a => a -> JSM ()
+consoleLog' args' = do
+  args <- makeArgs args'
+  _ <- jsg "console" # "log" $ args
   pure ()
 -----------------------------------------------------------------------------
 -- | Encodes a Haskell object as a JSON string by way of a JavaScript object
