@@ -127,7 +127,7 @@ preventDefault = defaultOptions { _preventDefault = True }
 stopPropagation :: Options
 stopPropagation = defaultOptions { _stopPropagation = True }
 -----------------------------------------------------------------------------
--- | Smart constructor for specifying 'stopPropagation'
+-- | Smart constructor for specifying 'capture'
 --
 -- @since 1.9.0.0
 capture :: Options

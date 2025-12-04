@@ -355,14 +355,16 @@ function delegateEvent(event, obj, stack, debug, context) {
     for (var c in obj["children"]) {
       var child = obj["children"][c];
       if (context.isEqual(child["domRef"], stack[1])) {
-        const eventObj = obj["events"][event.type];
-        if (eventObj && eventObj.options.capture) {
-          const options = eventObj.options;
-          if (options.preventDefault)
-            event.preventDefault();
-          eventObj.runEvent(event, child["domRef"]);
-          if (options.stopPropagation) {
-            return;
+        if (!event["captureStopped"]) {
+          const eventObj = obj["events"][event.type];
+          if (eventObj && eventObj.options.capture) {
+            const options = eventObj.options;
+            if (options.preventDefault)
+              event.preventDefault();
+            eventObj.runEvent(event, child["domRef"]);
+            if (options.stopPropagation) {
+              event["captureStopped"] = true;
+            }
           }
         }
         delegateEvent(event, child, stack.slice(1), debug, context);

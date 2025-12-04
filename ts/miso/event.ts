@@ -102,12 +102,14 @@ function delegateEvent <T>(
         if (eventObj && eventObj.options.capture) {
           const options: Options = eventObj.options;
           if (options.preventDefault) event.preventDefault();
-          eventObj.runEvent(event, child['domRef']);
+          if (!event['captureStopped']) {
+             eventObj.runEvent(event, child['domRef']);
+          }
           if (options.stopPropagation) {
              /* if stop propagation set, stop capturing */
-             return;
+             event['captureStopped'] = true;
           }
-        }  
+        }
         delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
