@@ -75,6 +75,7 @@ export type EventObject<T> = {
 export type Options = {
   preventDefault: boolean;
   stopPropagation: boolean;
+  capture: boolean;
 };
 
 export type EventCapture = {

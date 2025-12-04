@@ -355,6 +355,16 @@ function delegateEvent(event, obj, stack, debug, context) {
     for (var c in obj["children"]) {
       var child = obj["children"][c];
       if (context.isEqual(child["domRef"], stack[1])) {
+        const eventObj = obj["events"][event.type];
+        if (eventObj && eventObj.options.capture) {
+          const options = eventObj.options;
+          if (options.preventDefault)
+            event.preventDefault();
+          eventObj.runEvent(event, child["domRef"]);
+          if (options.stopPropagation) {
+            return;
+          }
+        }
         delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
@@ -363,7 +373,7 @@ function delegateEvent(event, obj, stack, debug, context) {
     const eventObj = obj["events"][event.type];
     if (eventObj) {
       const options = eventObj.options;
-      if (stack[0] === obj.domRef) {
+      if (context.isEqual(stack[0], obj.domRef)) {
         if (options.preventDefault)
           event.preventDefault();
         eventObj.runEvent(event, stack[0]);
@@ -385,11 +395,13 @@ function propagateWhileAble(vtree, event) {
         const eventObj = vtree["events"][event.type];
         if (eventObj && eventObj.options) {
           const options = eventObj.options;
-          if (options.preventDefault)
-            event.preventDefault();
-          eventObj.runEvent(event, vtree.domRef);
-          if (options.stopPropagation) {
-            return;
+          if (!options.capture) {
+            if (options.preventDefault)
+              event.preventDefault();
+            eventObj.runEvent(event, vtree.domRef);
+            if (options.stopPropagation) {
+              return;
+            }
           }
         }
         vtree = vtree.parent;

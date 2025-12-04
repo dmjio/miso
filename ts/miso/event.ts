@@ -98,6 +98,16 @@ function delegateEvent <T>(
     for (var c in obj['children']) {
       var child = obj['children'][c];
       if (context.isEqual(child['domRef'], stack[1])) {
+        const eventObj: EventObject<T> = obj['events'][event.type];
+        if (eventObj && eventObj.options.capture) {
+          const options: Options = eventObj.options;
+          if (options.preventDefault) event.preventDefault();
+          eventObj.runEvent(event, child['domRef']);
+          if (options.stopPropagation) {
+             /* if stop propagation set, stop capturing */
+             return;
+          }
+        }  
         delegateEvent(event, child, stack.slice(1), debug, context);
         break;
       }
@@ -108,7 +118,7 @@ function delegateEvent <T>(
     if (eventObj) {
       const options: Options = eventObj.options;
       /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
-      if (stack[0] === obj.domRef) {
+      if (context.isEqual(stack[0], obj.domRef)) {
         if (options.preventDefault) event.preventDefault();
         eventObj.runEvent(event, stack[0]);
         if (!options.stopPropagation) {
@@ -132,12 +142,14 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
                 const eventObj = vtree['events'][event.type];
                 if (eventObj && eventObj.options) {
                     const options = eventObj.options;
-                    if (options.preventDefault) event.preventDefault();
-                    eventObj.runEvent(event, vtree.domRef);
-                    if (options.stopPropagation) {
-                        /* if stop propagation set, stop bubbling */
-                        return;
-                    }
+                    if (!options.capture) { /* dmj bubble phase */
+                      if (options.preventDefault) event.preventDefault();
+                      eventObj.runEvent(event, vtree.domRef);
+                      if (options.stopPropagation) {
+                         /* if stop propagation set, stop bubbling */
+                         return;
+                     }
+                   }
                 }
                 vtree = vtree.parent;
                 break;

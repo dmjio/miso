@@ -16,6 +16,7 @@
 module Miso.Event
    ( -- *** Smart constructors
      on
+   , onCapture
    , onWithOptions
    -- *** Lifecycle events
    , onMounted
@@ -57,6 +58,18 @@ on :: MisoString
    -> (r -> DOMRef -> action)
    -> Attribute action
 on = onWithOptions defaultOptions
+-----------------------------------------------------------------------------
+-- | Convenience wrapper for @onWithOptions capture@.
+--
+-- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+onCapture 
+   :: MisoString
+   -> Decoder r
+   -> (r -> DOMRef -> action)
+   -> Attribute action
+onCapture = onWithOptions capture
 -----------------------------------------------------------------------------
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that

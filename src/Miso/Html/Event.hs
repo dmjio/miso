@@ -13,6 +13,7 @@
 module Miso.Html.Event
   ( -- *** Mouse
     onClick
+  , onClickCapture
   , onClickWith
   , onClickWithOptions
   , onDoubleClick
@@ -157,6 +158,10 @@ onContextMenuWithOptions opts action =
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClick :: action -> Attribute action
 onClick action = on "click" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/click
+onClickCapture :: action -> Attribute action
+onClickCapture action = onCapture "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 -- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
