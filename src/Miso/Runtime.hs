@@ -72,7 +72,6 @@ module Miso.Runtime
   , components
   , componentIds
   , rootComponentId
-  , globalMountPoint
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent.STM
@@ -87,8 +86,6 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
-import qualified Data.Set as Set
-import           Data.Set (Set)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 #ifndef GHCJS_BOTH
@@ -146,7 +143,6 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
-    when isRoot $ liftIO (atomicWriteIORef globalVTree vtree)
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
@@ -222,11 +218,17 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
 
   let vcomp = ComponentState
         { componentNotify = notify
+        , componentEvents = events
         , ..
         }
 
-  addToDelegatedEvents logLevel events
   registerComponent vcomp
+  if isRoot
+    then
+      delegator componentDOMRef componentVTree
+        events (logLevel `elem` [DebugEvents, DebugAll])
+    else
+      addToDelegatedEvents logLevel events
   forM_ initialAction componentSink
   _ <- FFI.forkJSM eventLoop
   pure vcomp
@@ -261,6 +263,20 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
         liftIO $ do
           atomically $ writeTVar (componentIsDirty parentComponentState) True
           componentNotify parentComponentState
+-----------------------------------------------------------------------------
+addToDelegatedEvents :: LogLevel -> Events -> JSM ()
+addToDelegatedEvents logLevel events = do
+  root <- (IM.! topLevelComponentId) <$> liftIO (readIORef components)
+  delegated <- M.unions . fmap componentEvents . IM.elems <$>
+    liftIO (readIORef components)
+  forM_ (M.assocs events) $ \(eventName, capture) ->
+    case M.lookup eventName delegated of
+      Just delegatedCapture
+        | delegatedCapture == capture -> pure ()
+      _ ->
+        delegator (componentDOMRef root) (componentVTree root)
+          (M.singleton eventName capture)
+          (logLevel `elem` [DebugEvents, DebugAll])
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -388,6 +404,8 @@ data ComponentState model action
   -- ^ Thread responsible for parent t'Binding' synchronization
   , componentChildToParentThreadId :: Maybe ThreadId
   -- ^ Thread responsible for child t'Binding' synchronization
+  , componentEvents :: Events
+  -- ^ List of events a Component listens on
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -657,6 +675,10 @@ freshSubId = do
 rootComponentId :: ComponentId
 rootComponentId = 0
 -----------------------------------------------------------------------------
+-- | This is the top-level ComponentId, hardcoded
+topLevelComponentId :: ComponentId
+topLevelComponentId = 1
+-----------------------------------------------------------------------------
 -- | The global store of 'ComponentId', for internal-use only.
 --
 -- Used internally @freshComponentId@ to allocate new 'ComponentId' on
@@ -668,35 +690,6 @@ componentIds = unsafePerformIO $ liftIO (newIORef initialComponentId)
   where
     initialComponentId :: Int
     initialComponentId = 1
------------------------------------------------------------------------------
--- | The global mount point, populated on initial t'Miso.Types.Component' mount
---
-globalMountPoint :: IORef DOMRef
-{-# NOINLINE globalMountPoint #-}
-globalMountPoint = unsafePerformIO (newIORef jsNull)
------------------------------------------------------------------------------
--- | The global t'Miso.Types.VTree', holds the entire virtual DOM.
---
-globalVTree :: IORef VTree
-{-# NOINLINE globalVTree #-}
-globalVTree = unsafePerformIO (newIORef (VTree (Object jsNull)))
------------------------------------------------------------------------------
--- | The currently active delegated events
---
-delegatedEvents :: IORef (Set (MisoString, Bool))
-{-# NOINLINE delegatedEvents #-}
-delegatedEvents = unsafePerformIO (newIORef mempty)
------------------------------------------------------------------------------
--- | Append-only list of delegated events
-addToDelegatedEvents :: LogLevel -> Events -> JSM ()
-addToDelegatedEvents logLevel events = do
-  delegated <- liftIO (readIORef delegatedEvents)
-  forM_ (M.assocs events) $ \(eventName, capture) ->
-    when (Set.notMember (eventName, capture) delegated) $ do
-      mount <- liftIO $ readIORef globalMountPoint
-      delegator mount globalVTree (M.singleton eventName capture)
-        (logLevel `elem` [DebugEvents, DebugAll])
-      liftIO $ modifyIORef' delegatedEvents (Set.insert (eventName, capture))
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)

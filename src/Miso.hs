@@ -89,8 +89,6 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef (atomicWriteIORef)
 #ifndef GHCJS_BOTH
 #ifdef WASM
 import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
@@ -132,7 +130,6 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
   body <- FFI.getBody
-  liftIO (atomicWriteIORef globalMountPoint body)
   initialize Hydrate isRoot vcomp (pure body)
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
@@ -183,7 +180,6 @@ initComponent
   -> JSM (ComponentState model action)
 initComponent vcomp@Component {..} = do
   mount <- mountElement (getMountPoint mountPoint)
-  liftIO (atomicWriteIORef globalMountPoint mount)
   initialize Draw isRoot vcomp (pure mount)
 ----------------------------------------------------------------------------
 isRoot :: Bool
