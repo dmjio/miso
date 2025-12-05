@@ -196,7 +196,8 @@ runEffect = execRWS
 mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
 -----------------------------------------------------------------------------
--- | Schedule a single 'IO' action, executed synchronously. Also, see 'async'.
+-- | Schedule a single 'IO' action, executed synchronously. For asynchronous
+-- execution, see 'io'.
 --
 -- Please use this with caution because it will block the render thread.
 --
