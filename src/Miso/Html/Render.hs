@@ -105,11 +105,11 @@ renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
-renderAttrs (Property key value) =
+renderAttrs (Property key prop) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , toHtmlProperty prop
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -141,14 +141,24 @@ collapseSiblingTextNodes (x:xs) =
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
-toHtmlFromJSON :: Value -> Builder
-toHtmlFromJSON (String t)   = fromMisoString (ms t)
-toHtmlFromJSON (Number t)   = fromMisoString $ ms (show t)
-toHtmlFromJSON (Bool True)  = "true"
-toHtmlFromJSON (Bool False) = "false"
-toHtmlFromJSON Null         = "null"
-toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
-toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+toHtmlProperty :: Property -> Builder
+toHtmlProperty = \case
+  TextProp v -> fromMisoString v
+  BoolProp x
+    | x -> "true"
+    | otherwise -> "false"
+  IntProp x -> fromMisoString (ms x)
+  DoubleProp x -> fromMisoString (ms x)
+  JSONProp value -> toHtmlFromJSON value
+    where
+      toHtmlFromJSON = \case
+        String t   -> fromMisoString (ms t)
+        Number t   -> fromMisoString $ ms (show t)
+        Bool True  -> "true"
+        Bool False -> "false"
+        Object o   -> fromMisoString $ ms (show o)
+        Array a    -> fromMisoString $ ms (show a)
+        Null       -> "null"
 -----------------------------------------------------------------------------
 #ifdef SSR
 -- | Used for server-side model hydration, internally only in 'renderView'.

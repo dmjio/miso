@@ -28,26 +28,26 @@ module Miso.Property
   , key_
   ) where
 -----------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
+import           Data.Aeson (ToJSON(..), Object)
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM
 -- node associated with the vnode to @v@.
-prop :: ToJSVal a => MisoString -> a -> Attribute action
-prop k v = Property k (toJSVal v)
+prop :: ToJSON value => MisoString -> value -> Attribute action
+prop k v = Property k (JSONProp (toJSON v))
 -----------------------------------------------------------------------------
 -- | Set field to 'Bool' value
 boolProp :: MisoString -> Bool -> Attribute action
-boolProp = prop
+boolProp k v = Property k (BoolProp v)
 -----------------------------------------------------------------------------
 -- | Set field to 'String' value
 stringProp ::  MisoString -> String -> Attribute action
-stringProp = prop
+stringProp k v = Property k (TextProp (ms v))
 -----------------------------------------------------------------------------
 -- | Set field to 'MisoString' value
 textProp ::  MisoString -> MisoString -> Attribute action
-textProp = prop
+textProp k v = Property k (TextProp v)
 -----------------------------------------------------------------------------
 -- | Set field to t'Object' value
 objectProp ::  MisoString -> Object -> Attribute action
@@ -55,7 +55,7 @@ objectProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'Int' value
 intProp ::  MisoString -> Int -> Attribute action
-intProp = prop
+intProp k v = Property k (IntProp v)
 -----------------------------------------------------------------------------
 -- | Set field to 'Integer' value
 integerProp ::  MisoString -> Integer -> Attribute action
@@ -63,11 +63,11 @@ integerProp k v = doubleProp k (fromIntegral v)
 -----------------------------------------------------------------------------
 -- | Set field to 'Double' value
 doubleProp ::  MisoString -> Double -> Attribute action
-doubleProp = prop
+doubleProp k v = Property k (DoubleProp v)
 -----------------------------------------------------------------------------
 -- | Set 'Miso.Types.Key' on 'VNode'.
 keyProp :: ToKey key => key -> Attribute action
-keyProp key = prop "key" (toKey key)
+keyProp key = textProp "key" (ms (toKey key))
 -----------------------------------------------------------------------------
 -- | Synonym for 'keyProp'
 -- Allows a user to specify a t'Key' inside of an '[Attribute action]'
