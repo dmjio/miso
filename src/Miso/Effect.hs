@@ -172,6 +172,17 @@ batch_ actions = sequence_
 -- @
 type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
 -----------------------------------------------------------------------------
+-- | Represents a scheduled 'Effect' that is executed either synchronously
+-- or asynchronously.
+--
+-- All t'IO' is by default asynchronous, use the 'sync' function for synchronous
+-- execution. Beware 'sync' can block the render thread for a specific
+-- 'Component'.
+--
+-- N.B. During 'Miso.Types.Component' unmounting, all effects are evaluated
+-- synchronously.
+--
+-- @since 1.9.0.0
 data Schedule action = Schedule Synchronicity (Sink action -> JSM ())
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
