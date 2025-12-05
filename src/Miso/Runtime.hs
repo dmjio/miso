@@ -89,9 +89,9 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 #ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle hiding (Sync, Result, Success, eval)
+import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
 #else
-import           Language.Javascript.JSaddle hiding (eval)
+import           Language.Javascript.JSaddle
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
 import           Prelude hiding (null)
@@ -704,9 +704,10 @@ components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
-eval :: Synchronicity -> JSM () -> JSM ()
-eval Sync x = x
-eval Async x = void (FFI.forkJSM x)
+-- | This function evaluates effects according to 'Synchronicity'.
+evalScheduled :: Synchronicity -> JSM () -> JSM ()
+evalScheduled Sync x = x
+evalScheduled Async x = void (FFI.forkJSM x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
@@ -726,8 +727,8 @@ foldEffects update drainSink info snk (e:es) o =
         let
           action = sub snk `catch` (void . exception)
         if drainSink
-          then eval Sync action
-          else eval synchronicity action
+          then evalScheduled Sync action
+          else evalScheduled synchronicity action
       foldEffects update drainSink info snk es n
   where
     exception :: SomeException -> JSM ()
