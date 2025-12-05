@@ -18,6 +18,7 @@ module Miso.Event
      on
    , onCapture
    , onWithOptions
+   , Phase (..)
    -- *** Lifecycle events
    , onMounted
    , onMountedWith
@@ -46,7 +47,7 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
-import           Miso.String (MisoString, unpack)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
@@ -60,7 +61,12 @@ on :: MisoString
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-on = onWithOptions False defaultOptions
+on = onWithOptions BUBBLE defaultOptions
+-----------------------------------------------------------------------------
+-- | Phase during which event listener is invoked.
+--
+-- @since 1.9.0.0
+data Phase = CAPTURE | BUBBLE deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions (True :: Capture)@.
 --
@@ -75,7 +81,7 @@ onCapture
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-onCapture = onWithOptions True defaultOptions
+onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
@@ -88,13 +94,13 @@ onCapture = onWithOptions True defaultOptions
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
-  :: Capture
+  :: Phase
   -> Options
   -> MisoString
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions capture options eventName Decoder{..} toAction =
+onWithOptions phase options eventName Decoder{..} toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -109,17 +115,17 @@ onWithOptions capture options eventName Decoder{..} toAction =
     eventsVal <-
       getProp "events" n
     eventObj <-
-      if capture
-      then getProp "captures" (Object eventsVal)
-      else getProp "bubbles" (Object eventsVal)
+      case phase of
+        CAPTURE -> getProp "captures" (Object eventsVal)
+        BUBBLE -> getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
     cb <- FFI.syncCallback2 $ \e domRef -> do
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
-          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-          Right r -> sink (toAction r domRef)
+          Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
+          Right event -> sink (toAction event domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)
