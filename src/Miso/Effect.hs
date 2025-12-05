@@ -27,6 +27,10 @@ module Miso.Effect
   , ComponentId
   , mkComponentInfo
     -- *** Combinators
+  , getProperty
+  , setProperty
+  , callFunction
+  , fromDOMRef
   , (<#)
   , (#>)
   , batch
@@ -57,6 +61,8 @@ import           Control.Monad (void)
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
 import           Language.Javascript.JSaddle (JSVal, JSM)
+import qualified Language.Javascript.JSaddle as JS
+import           GHCJS.Marshal (fromJSVal)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
@@ -94,6 +100,35 @@ type Sub action = Sink action -> JSM ()
 -----------------------------------------------------------------------------
 -- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
 type Sink action = action -> JSM ()
+-----------------------------------------------------------------------------
+-- | Get a property of a `DOMRef`
+--
+-- Example usage:
+--
+-- > value :: String <<= fromDOMRef =<< getProperty domRef "value"
+getProperty :: DOMRef -> MisoString -> JSM DOMRef
+getProperty = JS.(!)
+-----------------------------------------------------------------------------
+-- | Set a property of a `DOMRef`
+--
+-- Example usage:
+-- 
+-- > setProperty domRef "hidden" True
+setProperty :: DOMRef -> MisoString -> DOMRef -> JSM ()
+setProperty = JS.(<#)
+-----------------------------------------------------------------------------
+-- | Calls a function on a DOMRef
+--
+-- Example usage:
+-- 
+-- > callFunction domRef "focus" ()
+-- > callFunction domRef "setSelectionRange" (0, 3, "none")
+callFunction :: (MakeArgs args) => DOMRef -> MisoString -> args -> JSM DOMRef
+callFunction = JS.(#)
+-----------------------------------------------------------------------------
+-- | Marshalling of DOMRef, useful for `getProperty`
+fromDOMRef :: DOMRef -> JSM (Maybe a)
+fromDOMRef = fromJSVal
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
