@@ -60,8 +60,7 @@ module Miso.Effect
 import           Control.Monad (void)
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
-import           GHCJS.Marshal (fromJSVal, ToJSVal, FromJSVal)
-import           Language.Javascript.JSaddle (JSVal, JSM, MakeArgs)
+import           Language.Javascript.JSaddle (JSVal, JSM, MakeArgs, ToJSVal, FromJSVal, fromJSVal)
 import qualified Language.Javascript.JSaddle as JS
 import           Miso.String (MisoString)
 #if __GLASGOW_HASKELL__ <= 881
