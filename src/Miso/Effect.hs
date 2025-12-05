@@ -37,6 +37,7 @@ module Miso.Effect
   , io
   , io_
   , sync
+  , sync_
   , for
   , issue
   , withSink
@@ -203,6 +204,12 @@ mapSub f sub = \g -> sub (g . f)
 sync :: JSM action -> Effect parent model action
 sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
+-- | Like 'sync', except discards the result.
+--
+-- @since 1.9.0.0
+sync_ :: JSM () -> Effect parent model action
+sync_ action = tell [ Schedule Sync $ \_ -> action ]
+-----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
 --
 -- Note that multiple 'IO' action can be scheduled using
@@ -262,8 +269,8 @@ modifyAllJSM
   -> Effect parent model action
   -> Effect parent model action
 modifyAllJSM f = censor $ \actions ->
-  [ Schedule sync_ (f <$> action)
-  | Schedule sync_ action <- actions
+  [ Schedule x (f <$> action)
+  | Schedule x action <- actions
   ]
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the t'Miso.Types.Component' or top-level
