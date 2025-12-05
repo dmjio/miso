@@ -108,7 +108,7 @@ type Sink action = action -> JSM ()
 --
 -- > Just (value :: String) <- fromDOMRef =<< getProperty domRef "value"
 getProperty :: DOMRef -> MisoString -> JSM DOMRef
-getProperty = JS.(!)
+getProperty = (JS.!)
 -----------------------------------------------------------------------------
 -- | Set a property of a 'DOMRef'
 --
@@ -116,7 +116,7 @@ getProperty = JS.(!)
 -- 
 -- > setProperty domRef "hidden" True
 setProperty :: (ToJSVal val) => DOMRef -> MisoString -> val -> JSM ()
-setProperty = JS.(<#)
+setProperty = (JS.<#)
 -----------------------------------------------------------------------------
 -- | Calls a function on a 'DOMRef'
 --
@@ -125,7 +125,7 @@ setProperty = JS.(<#)
 -- > callFunction domRef "focus" ()
 -- > callFunction domRef "setSelectionRange" (0, 3, "none")
 callFunction :: (MakeArgs args) => DOMRef -> MisoString -> args -> JSM DOMRef
-callFunction = JS.(#)
+callFunction = (JS.#)
 -----------------------------------------------------------------------------
 -- | Marshalling of 'DOMRef', useful for 'getProperty'
 fromDOMRef :: DOMRef -> JSM (Maybe a)
