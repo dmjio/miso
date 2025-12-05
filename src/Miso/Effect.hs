@@ -60,7 +60,7 @@ module Miso.Effect
 import           Control.Monad (void)
 import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
-import           GHCJS.Marshal (fromJSVal, ToJSVal)
+import           GHCJS.Marshal (fromJSVal, ToJSVal, FromJSVal)
 import           Language.Javascript.JSaddle (JSVal, JSM, MakeArgs)
 import qualified Language.Javascript.JSaddle as JS
 import           Miso.String (MisoString)
@@ -128,7 +128,7 @@ callFunction :: (MakeArgs args) => DOMRef -> MisoString -> args -> JSM DOMRef
 callFunction = (JS.#)
 -----------------------------------------------------------------------------
 -- | Marshalling of 'DOMRef', useful for 'getProperty'
-fromDOMRef :: DOMRef -> JSM (Maybe a)
+fromDOMRef :: (FromJSVal a) => DOMRef -> JSM (Maybe a)
 fromDOMRef = fromJSVal
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
