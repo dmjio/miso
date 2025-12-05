@@ -156,8 +156,8 @@ toHtmlProperty = \case
         Number t   -> fromMisoString $ ms (show t)
         Bool True  -> "true"
         Bool False -> "false"
-        Object o   -> fromMisoString $ ms (show o)
-        Array a    -> fromMisoString $ ms (show a)
+        Object o   -> lazyByteString (encode o)
+        Array a    -> lazyByteString (encode a)
         Null       -> "null"
 -----------------------------------------------------------------------------
 #ifdef SSR
