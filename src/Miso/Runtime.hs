@@ -108,7 +108,9 @@ import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, Action(..), runEffect, io_, withSink, Synchronicity(..))
+import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+                             , io_, withSink, Synchronicity(..)
+                             )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -720,8 +722,9 @@ foldEffects _ _ _ _ [] m = pure m
 foldEffects update drainSink info snk (e:es) o =
   case runEffect (update e) info o of
     (n, subs) -> do
-      forM_ subs $ \(Action synchronicity sub) -> do
-        let action = sub snk `catch` (void . exception)
+      forM_ subs $ \(Schedule synchronicity sub) -> do
+        let
+          action = sub snk `catch` (void . exception)
         if drainSink
           then eval Sync action
           else eval synchronicity action

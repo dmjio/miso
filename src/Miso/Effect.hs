@@ -27,7 +27,7 @@ module Miso.Effect
   , ComponentId
   , mkComponentInfo
   -- ** I/O
-  , Action (..)
+  , Schedule (..)
   , Synchronicity (..)
     -- *** Combinators
   , (<#)
@@ -110,8 +110,8 @@ infixl 0 <#
 -- This is an internal method only. See 'withSink' and 'io' for usage.
 --
 -- @since 1.9.0.0
-async :: (Sink action -> JSM ()) -> Action action
-async = Action Async
+async :: (Sink action -> JSM ()) -> Schedule action
+async = Schedule Async
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
@@ -169,9 +169,9 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect parent model action = RWS (ComponentInfo parent) [Action action] model ()
+type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
 -----------------------------------------------------------------------------
-data Action action = Action Synchronicity (Sink action -> JSM ())
+data Schedule action = Schedule Synchronicity (Sink action -> JSM ())
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
@@ -187,7 +187,7 @@ runEffect
     :: Effect parent model action
     -> ComponentInfo parent
     -> model
-    -> (model, [Action action])
+    -> (model, [Schedule action])
 runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
@@ -201,7 +201,7 @@ mapSub f sub = \g -> sub (g . f)
 --
 -- @since 1.9.0.0
 sync :: JSM action -> Effect parent model action
-sync action = tell [ Action Sync $ \f -> f =<< action ]
+sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
 --
@@ -262,8 +262,8 @@ modifyAllJSM
   -> Effect parent model action
   -> Effect parent model action
 modifyAllJSM f = censor $ \actions ->
-  [ Action sync_ (f <$> action)
-  | Action sync_ action <- actions
+  [ Schedule sync_ (f <$> action)
+  | Schedule sync_ action <- actions
   ]
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the t'Miso.Types.Component' or top-level
@@ -283,6 +283,7 @@ withSink f = tell [ async f ]
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
 -- > data Action = HelloWorld
+-- > type Model  = Int
 -- >
 -- > update :: Action -> Effect Model Action
 -- > update = \case
