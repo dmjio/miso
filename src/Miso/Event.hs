@@ -1,6 +1,10 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE BlockArguments      #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE MultilineStrings    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Event
@@ -38,14 +42,13 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
-import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
-import           Miso.String (MisoString, unpack)
+import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
@@ -74,7 +77,7 @@ onWithOptions
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions options eventName Decoder{..} toAction =
+onWithOptions options eventName decoder toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -89,12 +92,9 @@ onWithOptions options eventName Decoder{..} toAction =
     eventObj <- getProp "events" n
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
-    decodeAtVal <- toJSVal decodeAt
     cb <- FFI.asyncCallback2 $ \e domRef -> do
-        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
-        case parseEither decoder v of
-          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-          Right r -> sink (toAction r domRef)
+        executeDecoder decoder eventName e $ \r -> 
+          sink (toAction r domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)

@@ -990,7 +990,7 @@ instance FromJSVal (Map MisoString MisoString) where
 -----------------------------------------------------------------------------
 -- | [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
 newtype Event = Event JSVal
-  deriving (ToJSVal)
+  deriving (ToJSVal, MakeArgs, MakeObject)
 -----------------------------------------------------------------------------
 instance FromJSVal Event where
   fromJSVal = pure . Just . Event

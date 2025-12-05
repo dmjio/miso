@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,8 +22,6 @@ module Miso.Subscription.Window
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Language.Javascript.JSaddle
-import           Data.Aeson.Types (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.Event
 import           Miso.Effect
@@ -49,22 +48,17 @@ windowSubWithOptions
   -> Decoder result
   -> (result -> action)
   -> Sub action
-windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
+windowSubWithOptions Options{..} eventName decoder toAction sink =
   createSub acquire release sink
     where
       release =
         FFI.windowRemoveEventListener eventName
       acquire =
         FFI.windowAddEventListener eventName $ \e -> do
-          decodeAtVal <- toJSVal decodeAt
-          v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
-          case parseEither decoder v of
-            Left s ->
-              FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)
-            Right r -> do
-              when _stopPropagation (FFI.eventStopPropagation e)
-              when _preventDefault (FFI.eventPreventDefault e)
-              sink (toAction r)
+          executeDecoder decoder eventName e $ \r -> do
+            when _stopPropagation (FFI.eventStopPropagation e)
+            when _preventDefault (FFI.eventPreventDefault e)
+            sink (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@
 -- A 'Sub' to handle t'PointerEvent's on window.
