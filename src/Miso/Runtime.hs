@@ -877,11 +877,11 @@ setAttrs
   -> JSM ()
 setAttrs vnode attrs snk logLevel events =
   forM_ attrs $ \case
-    Property "key" v -> do
-      value <- toJSVal v
+    Property "key" buildProp -> do
+      value <- buildProp
       FFI.set "key" value vnode
-    Property k v -> do
-      value <- toJSVal v
+    Property k buildProp -> do
+      value <- buildProp
       o <- getProp "props" vnode
       FFI.set k value (Object o)
     On callback ->

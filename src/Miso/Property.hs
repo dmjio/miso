@@ -28,14 +28,14 @@ module Miso.Property
   , key_
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (ToJSON(..), Object)
+import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
 -- | @prop k v@ is an attribute that will set the attribute @k@ of the DOM
 -- node associated with the vnode to @v@.
-prop :: ToJSON a => MisoString -> a -> Attribute action
-prop k v = Property k (toJSON v)
+prop :: ToJSVal a => MisoString -> a -> Attribute action
+prop k v = Property k (toJSVal v)
 -----------------------------------------------------------------------------
 -- | Set field to 'Bool' value
 boolProp :: MisoString -> Bool -> Attribute action
@@ -59,7 +59,7 @@ intProp = prop
 -----------------------------------------------------------------------------
 -- | Set field to 'Integer' value
 integerProp ::  MisoString -> Integer -> Attribute action
-integerProp = prop
+integerProp k v = doubleProp k (fromIntegral v)
 -----------------------------------------------------------------------------
 -- | Set field to 'Double' value
 doubleProp ::  MisoString -> Double -> Attribute action

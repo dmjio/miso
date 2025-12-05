@@ -79,13 +79,13 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON)
+import           Data.Aeson (ToJSON)
 import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM, JSVal)
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
@@ -358,7 +358,7 @@ instance ToKey Word where toKey = Key . toMisoString
 -- | Attribute of a vnode in a t'View'.
 --
 data Attribute action
-  = Property MisoString Value
+  = Property MisoString (JSM JSVal)
   | On (Sink action -> VTree -> LogLevel -> Events -> JSM ())
   -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
   -- the @update@ function. This is especially useful for event handlers
