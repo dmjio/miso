@@ -62,7 +62,7 @@ import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
 import           Language.Javascript.JSaddle (JSVal, JSM)
 import qualified Language.Javascript.JSaddle as JS
-import           GHCJS.Marshal (fromJSVal)
+import           GHCJS.Marshal (fromJSVal, ToJSVal)
 #if __GLASGOW_HASKELL__ <= 881
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
@@ -114,7 +114,7 @@ getProperty = JS.(!)
 -- Example usage:
 -- 
 -- > setProperty domRef "hidden" True
-setProperty :: DOMRef -> MisoString -> DOMRef -> JSM ()
+setProperty :: (ToJSVal val) => DOMRef -> MisoString -> val -> JSM ()
 setProperty = JS.(<#)
 -----------------------------------------------------------------------------
 -- | Calls a function on a 'DOMRef'
