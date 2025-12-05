@@ -95,8 +95,12 @@ data DecodeFailure
 at :: [MisoString] -> (Event -> Parser a) -> Decoder a
 at decodeAt decoder = Decoder { decodeAt = DecodeTarget decodeAt, .. }
 -----------------------------------------------------------------------------
-withObject :: (Event -> Parser a) -> Event -> Parser a
-withObject f x = f x
+-- | Combinator for parsing an t'Event'
+--
+-- Keeps interface at parity with `aeson`.
+--
+withObject :: MisoString -> (Event -> Parser a) -> Event -> Parser a
+withObject _ f x = f x
 -----------------------------------------------------------------------------
 -- | Parser combinator for decoding values out of JSM in t'Parser'
 (.:) :: FromJSVal a => Event -> MisoString -> Parser a
@@ -139,14 +143,14 @@ withObject f x = f x
 emptyDecoder :: Decoder ()
 emptyDecoder = mempty `at` go
   where
-    go = withObject $ \_ -> pure ()
+    go = withObject "emptyDecoder" $ \_ -> pure ()
 -----------------------------------------------------------------------------
 -- | Retrieves either "keyCode", "which" or "charCode" field in t'Decoder'
 keycodeDecoder :: Decoder KeyCode
 keycodeDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget mempty
-    decoder = withObject $ \o ->
+    decoder = withObject "keycodeDecoder" $ \o ->
        KeyCode <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
 -----------------------------------------------------------------------------
 -- | Retrieves either "keyCode", "which" or "charCode" field in t'Decoder',
@@ -157,7 +161,7 @@ keyInfoDecoder = Decoder {..}
     decodeAt =
       DecodeTarget mempty
     decoder =
-      withObject $ \o ->
+      withObject "keyInfoDecoder" $ \o ->
         KeyInfo
           <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
           <*> o .: "shiftKey"
@@ -170,14 +174,14 @@ valueDecoder :: Decoder MisoString
 valueDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget ["target"]
-    decoder = withObject $ \o -> o .: "value"
+    decoder = withObject "valueDecoder" $ \o -> o .: "value"
 -----------------------------------------------------------------------------
 -- | Retrieves "checked" field in t'Decoder'
 checkedDecoder :: Decoder Checked
 checkedDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget ["target"]
-    decoder = withObject $ \o ->
+    decoder = withObject "checkedDecoder" $ \o ->
       Checked <$> (o .: "checked")
 -----------------------------------------------------------------------------
 -- | Pointer t'Decoder' for use with events like "onpointerover"
@@ -186,7 +190,7 @@ pointerDecoder = Decoder {..}
   where
     pair o x y = liftA2 (,) (o .: x) (o .: y)
     decodeAt = DecodeTarget mempty
-    decoder = withObject $ \o ->
+    decoder = withObject "pointerDecoder" $ \o ->
       PointerEvent
         <$> o .: "pointerType"
         <*> o .: "pointerId"
