@@ -74,7 +74,12 @@ data Decoder a
   }
 -----------------------------------------------------------------------------
 newtype Parser a = Parser { runParser :: ExceptT [DecodeFailure] JSM a }
-  deriving (Applicative, Monad, MonadError [DecodeFailure], Functor, Alternative, MonadJSM, MonadIO)
+  deriving ( Functor, Applicative, Monad
+           , MonadError [DecodeFailure], Alternative, MonadIO
+#ifndef GHCJS_BOTH
+           , MonadJSM
+#endif
+           )
 -----------------------------------------------------------------------------
 parseEither :: Event -> Decoder a -> JSM (Either [DecodeFailure] a)
 parseEither event Decoder {..} | Parser m <- decoder event = runExceptT m
