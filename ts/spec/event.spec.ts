@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { delegate, undelegate, eventJSON } from '../miso/event';
+import { delegate, undelegate } from '../miso/event';
 import { DOMRef, EventCapture } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
