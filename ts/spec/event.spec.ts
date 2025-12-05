@@ -151,7 +151,7 @@ describe ('Event tests', () => {
     var count = 0;
     var events = {
       captures : {},
-      bubbles: {     
+      bubbles: {
         click: {
           runEvent: (e : Event, o: Node) => {
             count++;
@@ -221,7 +221,7 @@ describe ('Event tests', () => {
     var count = 0;
     var events = {
       captures : {},
-      bubbles: { 
+      bubbles: {
         click: {
           runEvent: (e : Event, o: Node) => {
             count++;
@@ -281,6 +281,187 @@ describe ('Event tests', () => {
 
     /* check results */
     expect(count).toEqual(1);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should call capture, bubble and target handlers in order', () => {
+    var body = document.body;
+    var counts = [];
+    var events = {
+      captures: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(1);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: false,
+          },
+        },
+      },
+      bubbles: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(2);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: false,
+          },
+        },
+      }
+    };
+    var child = vnode({
+      tag: 'button',
+      events
+    });
+
+    var parent = vnode({
+      children: [child],
+      events,
+    });
+
+    /* create hierarchy */
+    child.parent = parent;
+
+    /* initial page draw */
+    diff(null, parent, document.body, drawingContext);
+
+    /* setup event delegation */
+    var getVTree = (cb : any) => {
+      cb(parent);
+    };
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event */
+    (child.domRef as HTMLElement).click();
+
+    /* check results */
+    expect(counts).toEqual([1,1,2,2]);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+
+  test('If stopPropagation called during capture phase, no target nor bubble phase should occur', () => {
+    var body = document.body;
+    var counts = [];
+    var events = {
+      captures: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(1);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: true,
+          },
+        },
+      },
+      bubbles: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(2);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: false,
+          },
+        },
+      }
+    };
+    var child = vnode({
+      tag: 'button',
+      events
+    });
+
+    var parent = vnode({
+      children: [child],
+      events,
+    });
+
+    /* create hierarchy */
+    child.parent = parent;
+
+    /* initial page draw */
+    diff(null, parent, document.body, drawingContext);
+
+    /* setup event delegation */
+    var getVTree = (cb : any) => {
+      cb(parent);
+    };
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event */
+    (child.domRef as HTMLElement).click();
+
+    /* check results */
+    expect(counts).toEqual([1]);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('If stopPropagation called during bubble phase, capture and target still get executed', () => {
+    var body = document.body;
+    var counts = [];
+    var events = {
+      captures: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(1);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: false,
+          },
+        },
+      },
+      bubbles: {
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            counts.push(2);
+          },
+          options: {
+            preventDefault: false,
+            stopPropagation: true,
+          },
+        },
+      }
+    };
+    var child = vnode({
+      tag: 'button',
+      events
+    });
+
+    var parent = vnode({
+      children: [child],
+      events,
+    });
+
+    /* create hierarchy */
+    child.parent = parent;
+
+    /* initial page draw */
+    diff(null, parent, document.body, drawingContext);
+
+    /* setup event delegation */
+    var getVTree = (cb : any) => {
+      cb(parent);
+    };
+    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event */
+    (child.domRef as HTMLElement).click();
+
+    /* check results */
+    expect(counts).toEqual([1,1,2]);
 
     /* unmount delegation */
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);

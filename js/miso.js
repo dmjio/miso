@@ -377,24 +377,24 @@ function delegateEvent(event, obj, stack, debug, context) {
   } else {
     if (obj.type === "vnode") {
       const eventCaptureObj = obj.events.captures[event.type];
-      if (eventCaptureObj) {
+      if (eventCaptureObj && !event["captureStopped"]) {
         const options = eventCaptureObj.options;
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault)
             event.preventDefault();
+          eventCaptureObj.runEvent(event, stack[0]);
           if (options.stopPropagation)
             event["captureStopped"] = true;
-          eventCaptureObj.runEvent(event, stack[0]);
         }
       }
       const eventObj = obj.events.bubbles[event.type];
-      if (eventObj) {
+      if (eventObj && !event["captureStopped"]) {
         const options = eventObj.options;
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault)
             event.preventDefault();
           eventObj.runEvent(event, stack[0]);
-          if (!options.stopPropagation && !event["captureStopped"]) {
+          if (!options.stopPropagation) {
             propagateWhileAble(obj.parent, event);
           }
         }

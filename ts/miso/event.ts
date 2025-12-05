@@ -105,7 +105,7 @@ function delegateEvent <T>(
               eventObj.runEvent(event, obj.domRef);
             }
             if (options.stopPropagation) {
-               /* if stop propagation set, stop capturing */
+               /* if stopPropagation set, stop capturing */
                event['captureStopped'] = true;
             }
           }
@@ -122,24 +122,24 @@ function delegateEvent <T>(
     /* captures run first */
     if (obj.type === 'vnode') {
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
-      if (eventCaptureObj) {
+      if (eventCaptureObj && !event['captureStopped']) {
         const options: Options = eventCaptureObj.options;
         /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault) event.preventDefault();
-          if (options.stopPropagation) event['captureStopped'] = true;
           eventCaptureObj.runEvent(event, stack[0]);
+          if (options.stopPropagation) event['captureStopped'] = true;
         }
       }
       /* bubble runs second, and propagates */
       const eventObj: EventObject<T> = obj.events.bubbles[event.type];
-      if (eventObj) {
+      if (eventObj && !event['captureStopped']) {
         const options: Options = eventObj.options;
         /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
         if (context.isEqual(stack[0], obj.domRef)) {
           if (options.preventDefault) event.preventDefault();
           eventObj.runEvent(event, stack[0]);
-          if (!options.stopPropagation && !event['captureStopped']) {
+          if (!options.stopPropagation) {
             propagateWhileAble(obj.parent, event);
           }
         }
