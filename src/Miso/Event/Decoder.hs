@@ -34,10 +34,13 @@ module Miso.Event.Decoder
     -- ** Utils
   , withObject
   , (.:)
+  , (.:?)
+  , (.!=)
     -- ** Internal
   , executeDecoder
   ) where
 -----------------------------------------------------------------------------
+import           Data.Maybe
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO(..))
 import           Control.Monad.Except
@@ -95,6 +98,7 @@ at decodeAt decoder = Decoder { decodeAt = DecodeTarget decodeAt, .. }
 withObject :: (Event -> Parser a) -> Event -> Parser a
 withObject f x = f x
 -----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser'
 (.:) :: FromJSVal a => Event -> MisoString -> Parser a
 (.:) (Event event) key = do
   result <- liftJSM $ do
@@ -109,6 +113,26 @@ withObject f x = f x
           throwError [DecodeFailure key]
         Just x ->
           pure x
+-----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser', optionally.
+(.:?) :: FromJSVal a => Event -> MisoString -> Parser (Maybe a)
+(.:?) (Event event) key = do
+  result <- liftJSM $ do
+    result <- unsafeGetProp key (Object event)
+    maybeNullOrUndefined result
+  case result of
+    Nothing -> do
+      pure Nothing
+    Just jsvalue ->
+      liftJSM (fromJSVal jsvalue) >>= \case
+        Nothing ->
+          throwError [DecodeFailure key]
+        Just x ->
+          pure (Just x)
+-----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser', optionally.
+(.!=) :: FromJSVal a => Parser (Maybe a) -> a -> Parser a
+(.!=) parser def = fromMaybe def <$> parser
 -----------------------------------------------------------------------------
 -- | Empty t'Decoder' for use with events like "click" that do not
 -- return any meaningful values
