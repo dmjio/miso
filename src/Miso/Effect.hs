@@ -105,12 +105,6 @@ infixl 0 <#
 (<#) :: model -> JSM action -> Effect parent model action
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
--- | The default method used to schedule t'IO'. See 'sync' for synchronous
--- 'IO' scheduling.
---
--- This is an internal method only. See 'withSink' and 'io' for usage.
---
--- @since 1.9.0.0
 async :: (Sink action -> JSM ()) -> Schedule action
 async = Schedule Async
 -----------------------------------------------------------------------------
