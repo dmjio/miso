@@ -352,52 +352,56 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
     return;
   } else if (stack.length > 1) {
-    for (var child of obj["children"]) {
-      if (context.isEqual(child.domRef, stack[1])) {
-        if (child.type === "vnode" || child.type === "vcomp") {
-          const eventObj = child.events.captures[event.type];
-          if (eventObj) {
-            const options = eventObj.options;
-            if (options.preventDefault)
-              event.preventDefault();
-            if (!event["captureStopped"]) {
-              eventObj.runEvent(event, child.domRef);
-            }
-            if (options.stopPropagation) {
-              event["captureStopped"] = true;
-            }
+    if (context.isEqual(obj.domRef, stack[0])) {
+      if (obj.type === "vnode") {
+        const eventObj = obj.events.captures[event.type];
+        if (eventObj) {
+          const options = eventObj.options;
+          if (options.preventDefault)
+            event.preventDefault();
+          if (!event["captureStopped"]) {
+            eventObj.runEvent(event, obj.domRef);
+          }
+          if (options.stopPropagation) {
+            event["captureStopped"] = true;
           }
         }
-        delegateEvent(event, child, stack.slice(1), debug, context);
+      }
+      stack.splice(0, 1);
+    }
+    for (const child of obj["children"]) {
+      if (context.isEqual(child.domRef, stack[0])) {
+        delegateEvent(event, child, stack, debug, context);
       }
     }
   } else {
-    const eventCaptureObj = obj["events"].captures[event.type];
-    if (eventCaptureObj) {
-      const options = eventCaptureObj.options;
-      if (context.isEqual(stack[0], obj.domRef)) {
-        if (options.preventDefault)
-          event.preventDefault();
-        if (options.stopPropagation) {
-          event["captureStopped"] = true;
+    if (obj.type === "vnode") {
+      const eventCaptureObj = obj.events.captures[event.type];
+      if (eventCaptureObj) {
+        const options = eventCaptureObj.options;
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault)
+            event.preventDefault();
+          if (options.stopPropagation)
+            event["captureStopped"] = true;
+          eventCaptureObj.runEvent(event, stack[0]);
         }
-        eventCaptureObj.runEvent(event, stack[0]);
       }
-    }
-    const eventObj = obj["events"].bubbles[event.type];
-    if (eventObj) {
-      const options = eventObj.options;
-      if (context.isEqual(stack[0], obj.domRef)) {
-        if (options.preventDefault)
-          event.preventDefault();
-        eventObj.runEvent(event, stack[0]);
-        if (!options.stopPropagation && !event["captureStopped"]) {
+      const eventObj = obj.events.bubbles[event.type];
+      if (eventObj) {
+        const options = eventObj.options;
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault)
+            event.preventDefault();
+          eventObj.runEvent(event, stack[0]);
+          if (!options.stopPropagation && !event["captureStopped"]) {
+            propagateWhileAble(obj.parent, event);
+          }
+        }
+      } else {
+        if (!event["captureStopped"]) {
           propagateWhileAble(obj.parent, event);
         }
-      }
-    } else {
-      if (!event["captureStopped"]) {
-        propagateWhileAble(obj.parent, event);
       }
     }
   }

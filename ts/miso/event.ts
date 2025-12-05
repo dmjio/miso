@@ -52,7 +52,7 @@ function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, de
   });
 }
 
-function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
+function dispatch <T> (ev: Event, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
   var target = context.getTarget(ev);
   if (target) {
      let stack = buildTargetToElement(mount, target, context);
@@ -95,15 +95,14 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-    for (var child of obj['children']) {
-      if (context.isEqual(child.domRef, stack[1])) {
-        if (child.type === 'vnode' || child.type === 'vcomp') {
-          const eventObj: EventObject<T> = child.events.captures[event.type];
+      if (context.isEqual(obj.domRef, stack[0])) {
+        if (obj.type === 'vnode') {
+          const eventObj: EventObject<T> = obj.events.captures[event.type];
           if (eventObj) {
             const options: Options = eventObj.options;
             if (options.preventDefault) event.preventDefault();
             if (!event['captureStopped']) {
-              eventObj.runEvent(event, child.domRef);
+              eventObj.runEvent(event, obj.domRef);
             }
             if (options.stopPropagation) {
                /* if stop propagation set, stop capturing */
@@ -111,13 +110,17 @@ function delegateEvent <T>(
             }
           }
         }
-        delegateEvent(event, child, stack.slice(1), debug, context);
+        stack.splice(0,1);
       }
-    }
+      for (const child of obj['children']) {
+        if (context.isEqual(child.domRef, stack[0])) {
+           delegateEvent(event, child, stack, debug, context);
+        }
+      }
   } /* stack.length == 1 */
   else {
     /* captures run first */
-    if (obj.type === 'vnode' || obj.type === 'vcomp') {
+    if (obj.type === 'vnode') {
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
       if (eventCaptureObj) {
         const options: Options = eventCaptureObj.options;
