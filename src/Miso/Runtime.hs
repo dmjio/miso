@@ -166,7 +166,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
       currentModel <- liftIO (readTVarIO componentModel)
       let info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update Sync info componentSink (toList as) currentModel
+      updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
