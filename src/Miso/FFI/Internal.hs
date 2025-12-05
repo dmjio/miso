@@ -66,6 +66,10 @@ module Miso.FFI.Internal
    , diff
    , nextSibling
    , previousSibling
+   , setProperty
+   , getProperty
+   , callFunction
+   , fromJSVal
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -158,10 +162,11 @@ import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
-import           Language.Javascript.JSaddle
+import           Language.Javascript.JSaddle hiding (fromJSVal)
 #else
-import           Language.Javascript.JSaddle hiding (Success)
+import           Language.Javascript.JSaddle hiding (Success, fromJSVal)
 #endif
+import qualified Language.Javascript.JSaddle as JS
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
@@ -226,6 +231,35 @@ set (unpack -> "class") v o = do
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
+-----------------------------------------------------------------------------
+-- | Get a property of a 'JSVal'
+--
+-- Example usage:
+--
+-- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
+getProperty :: JSVal -> MisoString -> JSM JSVal
+getProperty = (!)
+-----------------------------------------------------------------------------
+-- | Set a property of a 'JSVal'
+--
+-- Example usage:
+-- 
+-- > setProperty domRef "hidden" True
+setProperty :: (ToJSVal val) => JSVal -> MisoString -> val -> JSM ()
+setProperty = (<#)
+-----------------------------------------------------------------------------
+-- | Calls a function on a 'JSVal'
+--
+-- Example usage:
+-- 
+-- > callFunction domRef "focus" ()
+-- > callFunction domRef "setSelectionRange" (0, 3, "none")
+callFunction :: (MakeArgs args) => JSVal -> MisoString -> args -> JSM JSVal
+callFunction = (#)
+-----------------------------------------------------------------------------
+-- | Marshalling of 'JSVal', useful for 'getProperty'
+fromJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
+fromJSVal = JS.fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
 addEventListener
