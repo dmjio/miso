@@ -2,7 +2,6 @@
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE BlockArguments      #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE MultilineStrings    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------

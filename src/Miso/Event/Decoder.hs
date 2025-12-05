@@ -2,7 +2,6 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE MultilineStrings           #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -183,10 +182,10 @@ executeDecoder decode@Decoder {..} eventName e callback = do
   syntheticEvent <- fromJSVal =<< FFI.eventJSON decodeAtVal e
   case (syntheticEvent :: Maybe FFI.Event) of
     Nothing ->
-      FFI.consoleError """
-       Internal error: Could not create synthetic event. Please
-       check your 'Decoder' and the `decodeAtVal` field.
-      """
+      FFI.consoleError $ mconcat
+       [ "Internal error: Could not create synthetic event. Please "
+       , "check your 'Decoder' and the `decodeAtVal` field."
+       ]
     Just (event :: FFI.Event) ->
       parseEither event decode >>= \case
         Left errors ->
