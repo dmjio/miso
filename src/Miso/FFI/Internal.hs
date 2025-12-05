@@ -519,7 +519,7 @@ select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
--- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, 'none')@.
+-- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, \'none\')@.
 setSelectionRange :: MisoString -> Int -> Int -> JSM ()
 setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------

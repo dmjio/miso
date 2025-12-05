@@ -13,6 +13,7 @@
 module Miso.Html.Event
   ( -- *** Mouse
     onClick
+  , onClickCapture
   , onClickWith
   , onClickWithOptions
   , onDoubleClick
@@ -152,11 +153,15 @@ onChecked f = on "change" checkedDecoder (\action _ -> f action)
 -- @since 1.9.0.0
 onContextMenuWithOptions :: Options -> action -> Attribute action
 onContextMenuWithOptions opts action =
-  onWithOptions opts "contextmenu" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE opts "contextmenu" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClick :: action -> Attribute action
 onClick action = on "click" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/click
+onClickCapture :: action -> Attribute action
+onClickCapture action = onCapture "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 -- Like 'onClick', but passes the DOM reference along (akin to @getElementById@).
@@ -165,7 +170,7 @@ onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClickWithOptions :: Options -> action -> Attribute action
-onClickWithOptions options action = onWithOptions options "click" emptyDecoder $ \() _ -> action
+onClickWithOptions options action = onWithOptions BUBBLE options "click" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
 onFocus :: action -> Attribute action
@@ -182,7 +187,7 @@ onDoubleClickWith f = on "dblclick" emptyDecoder $ \() domRef -> f domRef
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dblclick
 onDoubleClickWithOptions :: Options -> action -> Attribute action
 onDoubleClickWithOptions options action =
-  onWithOptions options "dblclick" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dblclick" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/input
 onInput :: (MisoString -> action) -> Attribute action
@@ -270,7 +275,7 @@ onDragStart action = on "dragstart" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragstart
 onDragStartWithOptions :: Options -> action -> Attribute action
 onDragStartWithOptions options action =
-  onWithOptions options "dragstart" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
 onDragOver :: action -> Attribute action
@@ -279,7 +284,7 @@ onDragOver action = on "dragover" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragover
 onDragOverWithOptions :: Options -> action -> Attribute action
 onDragOverWithOptions options action =
-  onWithOptions options "dragover" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragover" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
 onDragEnd :: action -> Attribute action
@@ -288,7 +293,7 @@ onDragEnd action = on "dragend" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragend
 onDragEndWithOptions :: Options -> action -> Attribute action
 onDragEndWithOptions options action =
-  onWithOptions options "dragend" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
 onDragEnter :: action -> Attribute action
@@ -297,7 +302,7 @@ onDragEnter action = on "dragenter" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragenter
 onDragEnterWithOptions :: Options -> action -> Attribute action
 onDragEnterWithOptions options action =
-  onWithOptions options "dragenter" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragenter" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
 onDragLeave :: action -> Attribute action
@@ -306,7 +311,7 @@ onDragLeave action = on "dragleave" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/dragleave
 onDragLeaveWithOptions :: Options -> action -> Attribute action
 onDragLeaveWithOptions options action =
-  onWithOptions options "dragleave" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "dragleave" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
 onDrag :: action -> Attribute action
@@ -315,17 +320,17 @@ onDrag action = on "drag" emptyDecoder $ \() _ -> action
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drag
 onDragWithOptions :: Options -> action -> Attribute action
 onDragWithOptions options action =
-  onWithOptions options "drag" emptyDecoder $ \() _ -> action
+  onWithOptions BUBBLE options "drag" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
 onDrop :: Options -> action -> Attribute action
 onDrop options action =
-  onWithOptions options "drop" emptyDecoder (\() _ -> action)
+  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/drop
 onDropWithOptions :: Options -> action -> Attribute action
 onDropWithOptions options action =
-  onWithOptions options "drop" emptyDecoder (\() _ -> action)
+  onWithOptions BUBBLE options "drop" emptyDecoder (\() _ -> action)
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/submit
 --
@@ -333,7 +338,7 @@ onDropWithOptions options action =
 --
 onSubmit :: action -> Attribute action
 onSubmit action =
-  onWithOptions preventDefault
+  onWithOptions BUBBLE preventDefault
     "submit" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/pointerup
@@ -550,7 +555,7 @@ onTouchStart action = on "touchstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchstart
 onTouchStartWithOptions :: Options -> action -> Attribute action
-onTouchStartWithOptions options action = onWithOptions options "touchstart" emptyDecoder $ \() _ -> action
+onTouchStartWithOptions options action = onWithOptions BUBBLE options "touchstart" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
 onTouchEnd :: action -> Attribute action
@@ -558,7 +563,7 @@ onTouchEnd action = on "touchend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchend
 onTouchEndWithOptions :: Options -> action -> Attribute action
-onTouchEndWithOptions options action = onWithOptions options "touchend" emptyDecoder $ \() _ -> action
+onTouchEndWithOptions options action = onWithOptions BUBBLE options "touchend" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
 onTouchMove :: action -> Attribute action
@@ -566,7 +571,7 @@ onTouchMove action = on "touchmove" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchmove
 onTouchMoveWithOptions :: Options -> action -> Attribute action
-onTouchMoveWithOptions options action = onWithOptions options "touchmove" emptyDecoder $ \() _ -> action
+onTouchMoveWithOptions options action = onWithOptions BUBBLE options "touchmove" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
 onTouchCancel :: action -> Attribute action
@@ -574,5 +579,5 @@ onTouchCancel action = on "touchcancel" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/touchcancel
 onTouchCancelWithOptions :: Options -> action -> Attribute action
-onTouchCancelWithOptions options action = onWithOptions options "touchcancel" emptyDecoder $ \() _ -> action
+onTouchCancelWithOptions options action = onWithOptions BUBBLE options "touchcancel" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------

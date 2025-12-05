@@ -52,7 +52,7 @@ function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, de
   });
 }
 
-function dispatch <T> (ev, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
+function dispatch <T> (ev: Event, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
   var target = context.getTarget(ev);
   if (target) {
      let stack = buildTargetToElement(mount, target, context);
@@ -95,29 +95,60 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-    for (var c in obj['children']) {
-      var child = obj['children'][c];
-      if (context.isEqual(child['domRef'], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), debug, context);
-        break;
+      if (context.isEqual(obj.domRef, stack[0])) {
+        if (obj.type === 'vnode') {
+          const eventObj: EventObject<T> = obj.events.captures[event.type];
+          if (eventObj) {
+            const options: Options = eventObj.options;
+            if (options.preventDefault) event.preventDefault();
+            if (!event['captureStopped']) {
+              eventObj.runEvent(event, obj.domRef);
+            }
+            if (options.stopPropagation) {
+               /* if stopPropagation set, stop capturing */
+               event['captureStopped'] = true;
+            }
+          }
+        }
+        stack.splice(0,1);
       }
-    }
-  } /* stack.length == 1 */
-  else {
-    const eventObj: EventObject<T> = obj['events'][event.type];
-    if (eventObj) {
-      const options: Options = eventObj.options;
-      /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
-      if (stack[0] === obj.domRef) {
-        if (options.preventDefault) event.preventDefault();
-        eventObj.runEvent(event, stack[0]);
-        if (!options.stopPropagation) {
-           propagateWhileAble(obj.parent, event);
+      for (const child of obj['children']) {
+        if (context.isEqual(child.domRef, stack[0])) {
+           delegateEvent(event, child, stack, debug, context);
         }
       }
-    } else {
-       /* still propagate to parent handlers even if event not defined */
-       propagateWhileAble(obj.parent, event);
+  } /* stack.length == 1 */
+  else {
+    /* captures run first */
+    if (obj.type === 'vnode') {
+      const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
+      if (eventCaptureObj && !event['captureStopped']) {
+        const options: Options = eventCaptureObj.options;
+        /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault) event.preventDefault();
+          eventCaptureObj.runEvent(event, stack[0]);
+          if (options.stopPropagation) event['captureStopped'] = true;
+        }
+      }
+      /* bubble runs second, and propagates */
+      const eventObj: EventObject<T> = obj.events.bubbles[event.type];
+      if (eventObj && !event['captureStopped']) {
+        const options: Options = eventObj.options;
+        /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault) event.preventDefault();
+          eventObj.runEvent(event, stack[0]);
+          if (!options.stopPropagation) {
+            propagateWhileAble(obj.parent, event);
+          }
+        }
+      } else {
+         /* still propagate to parent handlers even if event not defined */
+          if (!event['captureStopped']) {
+            propagateWhileAble(obj.parent, event);
+          }
+      }
     }
   }
 }
@@ -129,15 +160,15 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
                 /* impossible case */
                 break;
             case "vnode":
-                const eventObj = vtree['events'][event.type];
-                if (eventObj && eventObj.options) {
+                const eventObj = vtree.events.bubbles[event.type];
+                if (eventObj) {
                     const options = eventObj.options;
                     if (options.preventDefault) event.preventDefault();
                     eventObj.runEvent(event, vtree.domRef);
                     if (options.stopPropagation) {
-                        /* if stop propagation set, stop bubbling */
-                        return;
-                    }
+                       /* if stop propagation set, stop bubbling */
+                       return;
+                   }
                 }
                 vtree = vtree.parent;
                 break;
