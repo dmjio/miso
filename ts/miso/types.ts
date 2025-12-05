@@ -1,7 +1,7 @@
 /* core type for virtual DOM */
 export type Props = Record<string, any>;
 export type CSS = Record<string, string>;
-export type Events<T> = Record<string, EventObject<T>>;
+export type Events<T> = Record<string, Record<string, EventObject<T>>>;
 
 /* element name spacing */
 export type NS = 'text' | 'html' | 'svg' | 'mathml';
@@ -68,8 +68,8 @@ export type NodeId = {
 export type VTree<T> = VComp<T> | VNode<T> | VText<T>;
 
 export type EventObject<T> = {
-  options: Options;
-  runEvent: (e: Event, node: T) => void;
+   options: Options;
+   runEvent: (e: Event, node: T) => void;
 };
 
 export type Options = {

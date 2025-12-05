@@ -53,23 +53,29 @@ import           Miso.String (MisoString, unpack)
 -- > let clickHandler = on "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
+-- This is used to define events that are triggered during the browser
+-- bubble phase.
+--
 on :: MisoString
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-on = onWithOptions defaultOptions
+on = onWithOptions False defaultOptions
 -----------------------------------------------------------------------------
--- | Convenience wrapper for @onWithOptions capture@.
+-- | Convenience wrapper for @onWithOptions (True :: Capture)@.
 --
 -- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+-- This is used to define events that are triggered during the browser
+-- capture phase.
 --
 onCapture 
    :: MisoString
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-onCapture = onWithOptions capture
+onCapture = onWithOptions True defaultOptions
 -----------------------------------------------------------------------------
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
@@ -82,12 +88,13 @@ onCapture = onWithOptions capture
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
-  :: Options
+  :: Capture
+  -> Options
   -> MisoString
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions options eventName Decoder{..} toAction =
+onWithOptions capture options eventName Decoder{..} toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -99,11 +106,16 @@ onWithOptions options eventName Decoder{..} toAction =
               , "add to the 'events' Map in Component"
               ]
         _ -> pure ()
-    eventObj <- getProp "events" n
+    eventsVal <-
+      getProp "events" n
+    eventObj <-
+      if capture
+      then getProp "captures" (Object eventsVal)
+      else getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
-    cb <- FFI.asyncCallback2 $ \e domRef -> do
+    cb <- FFI.syncCallback2 $ \e domRef -> do
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
           Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s

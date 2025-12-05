@@ -858,10 +858,14 @@ createNode typ ns tag = do
   cssObj <- create
   propsObj <- create
   eventsObj <- create
+  captures <- create
+  bubbles <- create
   FFI.set "css" cssObj vnode
   FFI.set "type" typ vnode
   FFI.set "props" propsObj vnode
   FFI.set "events" eventsObj vnode
+  FFI.set "captures" captures eventsObj
+  FFI.set "bubbles" bubbles eventsObj
   FFI.set "ns" ns vnode
   FFI.set "tag" tag vnode
   pure vnode

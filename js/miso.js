@@ -352,39 +352,53 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
     return;
   } else if (stack.length > 1) {
-    for (var c in obj["children"]) {
-      var child = obj["children"][c];
-      if (context.isEqual(child["domRef"], stack[1])) {
-        if (!event["captureStopped"]) {
-          const eventObj = obj["events"][event.type];
-          if (eventObj && eventObj.options.capture) {
+    for (var child of obj["children"]) {
+      if (context.isEqual(child.domRef, stack[1])) {
+        if (child.type === "vnode" || child.type === "vcomp") {
+          const eventObj = child.events.captures[event.type];
+          if (eventObj) {
             const options = eventObj.options;
             if (options.preventDefault)
               event.preventDefault();
-            eventObj.runEvent(event, child["domRef"]);
+            if (!event["captureStopped"]) {
+              eventObj.runEvent(event, child.domRef);
+            }
             if (options.stopPropagation) {
               event["captureStopped"] = true;
             }
           }
         }
         delegateEvent(event, child, stack.slice(1), debug, context);
-        break;
       }
     }
   } else {
-    const eventObj = obj["events"][event.type];
+    const eventCaptureObj = obj["events"].captures[event.type];
+    if (eventCaptureObj) {
+      const options = eventCaptureObj.options;
+      if (context.isEqual(stack[0], obj.domRef)) {
+        if (options.preventDefault)
+          event.preventDefault();
+        if (options.stopPropagation) {
+          event["captureStopped"] = true;
+        }
+        eventCaptureObj.runEvent(event, stack[0]);
+      }
+    }
+    const eventObj = obj["events"].bubbles[event.type];
     if (eventObj) {
       const options = eventObj.options;
       if (context.isEqual(stack[0], obj.domRef)) {
         if (options.preventDefault)
           event.preventDefault();
         eventObj.runEvent(event, stack[0]);
-        if (!options.stopPropagation) {
+        if (!options.stopPropagation && !event["captureStopped"]) {
           propagateWhileAble(obj.parent, event);
         }
       }
     } else {
-      propagateWhileAble(obj.parent, event);
+      if (!event["captureStopped"]) {
+        propagateWhileAble(obj.parent, event);
+      }
     }
   }
 }
@@ -394,16 +408,14 @@ function propagateWhileAble(vtree, event) {
       case "vtext":
         break;
       case "vnode":
-        const eventObj = vtree["events"][event.type];
-        if (eventObj && eventObj.options) {
+        const eventObj = vtree.events.bubbles[event.type];
+        if (eventObj) {
           const options = eventObj.options;
-          if (!options.capture) {
-            if (options.preventDefault)
-              event.preventDefault();
-            eventObj.runEvent(event, vtree.domRef);
-            if (options.stopPropagation) {
-              return;
-            }
+          if (options.preventDefault)
+            event.preventDefault();
+          eventObj.runEvent(event, vtree.domRef);
+          if (options.stopPropagation) {
+            return;
           }
         }
         vtree = vtree.parent;

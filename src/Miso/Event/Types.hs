@@ -29,7 +29,6 @@ module Miso.Event.Types
   , defaultOptions
   , preventDefault
   , stopPropagation
-  , capture
     -- *** Events
   , defaultEvents
   , keyboardEvents
@@ -106,14 +105,13 @@ data Options
   = Options
   { _preventDefault :: Bool
   , _stopPropagation :: Bool
-  , _capture :: Bool
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance Monoid Options where
   mempty = defaultOptions
 -----------------------------------------------------------------------------
 instance Semigroup Options where
-  Options p1 s1 c1 <> Options p2 s2 c2 = Options (p1 || p2) (s1 || s2) (c1 || c2)
+  Options p1 s1 <> Options p2 s2 = Options (p1 || p2) (s1 || s2)
 -----------------------------------------------------------------------------
 -- | Smart constructor for specifying 'preventDefault'
 --
@@ -127,18 +125,11 @@ preventDefault = defaultOptions { _preventDefault = True }
 stopPropagation :: Options
 stopPropagation = defaultOptions { _stopPropagation = True }
 -----------------------------------------------------------------------------
--- | Smart constructor for specifying 'capture'
---
--- @since 1.9.0.0
-capture :: Options
-capture = defaultOptions { _capture = True }
------------------------------------------------------------------------------
 instance ToJSVal Options where
   toJSVal Options {..} = do
     o <- create
     flip (setProp "preventDefault") o =<< toJSVal _preventDefault
     flip (setProp "stopPropagation") o =<< toJSVal _stopPropagation
-    flip (setProp "capture") o =<< toJSVal _capture
     toJSVal o
 -----------------------------------------------------------------------------
 -- | Default value for @Options@.
@@ -149,7 +140,6 @@ defaultOptions
   = Options
   { _preventDefault = False
   , _stopPropagation = False
-  , _capture = False
   }
 -----------------------------------------------------------------------------
 -- | Convenience type for Events

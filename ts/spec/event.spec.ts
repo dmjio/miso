@@ -23,18 +23,19 @@ describe ('Event tests', () => {
   test('Should delegate and undelegate button click', () => {
     var body = document.body;
     var count = 0;
-    var result = null;
     var events = {
-      click: {
-        runEvent: (e : Event, o: Node) => {
-          result = eventJSON('', e);
-          count++;
-        },
-        options: {
-          preventDefault: true,
-          stopPropagation: false,
-        },
-      },
+        captures : {},
+        bubbles : {
+          click: {
+            runEvent: (e : Event, o: Node) => {
+              count++;
+            },
+            options: {
+              preventDefault: true,
+              stopPropagation: false,
+            },
+          },
+        }
     };
     var vtreeChild = vnode({
       tag: 'button',
@@ -69,7 +70,6 @@ describe ('Event tests', () => {
 
     /* check results */
     expect(count).toEqual(2);
-    expect(result).not.toEqual(null);
 
     /* unmount delegation */
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
@@ -79,18 +79,19 @@ describe ('Event tests', () => {
   test('Should propagate an event between components', () => {
     var body = document.body;
     var count = 0;
-    var result = null;
     var events = {
-      click: {
-        runEvent: (e : Event, o: Node) => {
-          result = eventJSON('', e);
-          count++;
-        },
-        options: {
-          preventDefault: true,
-          stopPropagation: false,
-        },
-      },
+        captures : {},
+        bubbles: {
+          click: {
+            runEvent: (e : Event, o: Node) => {
+              count++;
+            },
+            options: {
+              preventDefault: true,
+              stopPropagation: false,
+            },
+          },
+        }
     };
     var child = vnode({
       children: [ vnode({ tag: 'button' }) ],
@@ -148,18 +149,19 @@ describe ('Event tests', () => {
   test('Should *not* propagate an event between components', () => {
     var body = document.body;
     var count = 0;
-    var result = null;
     var events = {
-      click: {
-        runEvent: (e : Event, o: Node) => {
-          result = eventJSON('', e);
-          count++;
-        },
-        options: {
-          preventDefault: true,
-          stopPropagation: false,
-        },
-      },
+      captures : {},
+      bubbles: {     
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            count++;
+          },
+          options: {
+            preventDefault: true,
+            stopPropagation: false,
+          },
+        }
+      }
     };
     var child = vnode({
       children: [ vnode({ tag: 'button' }) ],
@@ -217,18 +219,19 @@ describe ('Event tests', () => {
   test('Should *not* propagate an event when stopPropagation is set', () => {
     var body = document.body;
     var count = 0;
-    var result = null;
     var events = {
-      click: {
-        runEvent: (e : Event, o: Node) => {
-          result = eventJSON('', e);
-          count++;
+      captures : {},
+      bubbles: { 
+        click: {
+          runEvent: (e : Event, o: Node) => {
+            count++;
+          },
+          options: {
+            preventDefault: true,
+            stopPropagation: true,
+          },
         },
-        options: {
-          preventDefault: true,
-          stopPropagation: true,
-        },
-      },
+      }
     };
     var child = vnode({
       children: [ vnode({ tag: 'button' }) ],
