@@ -101,15 +101,15 @@ type Sub action = Sink action -> JSM ()
 -- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
 type Sink action = action -> JSM ()
 -----------------------------------------------------------------------------
--- | Get a property of a `DOMRef`
+-- | Get a property of a 'DOMRef'
 --
 -- Example usage:
 --
--- > value :: String <<= fromDOMRef =<< getProperty domRef "value"
+-- > Just (value :: String) <- fromDOMRef =<< getProperty domRef "value"
 getProperty :: DOMRef -> MisoString -> JSM DOMRef
 getProperty = JS.(!)
 -----------------------------------------------------------------------------
--- | Set a property of a `DOMRef`
+-- | Set a property of a 'DOMRef'
 --
 -- Example usage:
 -- 
@@ -117,7 +117,7 @@ getProperty = JS.(!)
 setProperty :: DOMRef -> MisoString -> DOMRef -> JSM ()
 setProperty = JS.(<#)
 -----------------------------------------------------------------------------
--- | Calls a function on a DOMRef
+-- | Calls a function on a 'DOMRef'
 --
 -- Example usage:
 -- 
@@ -126,7 +126,7 @@ setProperty = JS.(<#)
 callFunction :: (MakeArgs args) => DOMRef -> MisoString -> args -> JSM DOMRef
 callFunction = JS.(#)
 -----------------------------------------------------------------------------
--- | Marshalling of DOMRef, useful for `getProperty`
+-- | Marshalling of 'DOMRef', useful for 'getProperty'
 fromDOMRef :: DOMRef -> JSM (Maybe a)
 fromDOMRef = fromJSVal
 -----------------------------------------------------------------------------
