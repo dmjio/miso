@@ -19,7 +19,9 @@
 module Miso.Event
    ( -- *** Smart constructors
      on
+   , onCapture
    , onWithOptions
+   , Phase (..)
    -- *** Lifecycle events
    , onMounted
    , onMountedWith
@@ -47,18 +49,41 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
-import           Miso.String (MisoString)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
 -- > let clickHandler = on "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
+-- This is used to define events that are triggered during the browser
+-- bubble phase.
+--
 on :: MisoString
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-on = onWithOptions defaultOptions
+on = onWithOptions BUBBLE defaultOptions
+-----------------------------------------------------------------------------
+-- | Phase during which event listener is invoked.
+--
+-- @since 1.9.0.0
+data Phase = CAPTURE | BUBBLE deriving (Eq, Show)
+-----------------------------------------------------------------------------
+-- | Convenience wrapper for @onWithOptions (True :: Capture)@.
+--
+-- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+-- This is used to define events that are triggered during the browser
+-- capture phase.
+--
+onCapture 
+   :: MisoString
+   -> Decoder r
+   -> (r -> DOMRef -> action)
+   -> Attribute action
+onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
@@ -71,12 +96,13 @@ on = onWithOptions defaultOptions
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
-  :: Options
+  :: Phase
+  -> Options
   -> MisoString
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions options eventName decoder toAction =
+onWithOptions phase options eventName decoder toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -88,10 +114,15 @@ onWithOptions options eventName decoder toAction =
               , "add to the 'events' Map in Component"
               ]
         _ -> pure ()
-    eventObj <- getProp "events" n
+    eventsVal <-
+      getProp "events" n
+    eventObj <-
+      case phase of
+        CAPTURE -> getProp "captures" (Object eventsVal)
+        BUBBLE -> getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
-    cb <- FFI.asyncCallback2 $ \e domRef -> do
+    cb <- FFI.syncCallback2 $ \e domRef -> do
         executeDecoder decoder eventName e $ \r -> 
           sink (toAction r domRef)
     FFI.set "runEvent" cb eventHandlerObject

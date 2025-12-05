@@ -352,27 +352,57 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
     return;
   } else if (stack.length > 1) {
-    for (var c in obj["children"]) {
-      var child = obj["children"][c];
-      if (context.isEqual(child["domRef"], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), debug, context);
-        break;
+    if (context.isEqual(obj.domRef, stack[0])) {
+      if (obj.type === "vnode") {
+        const eventObj = obj.events.captures[event.type];
+        if (eventObj) {
+          const options = eventObj.options;
+          if (options.preventDefault)
+            event.preventDefault();
+          if (!event["captureStopped"]) {
+            eventObj.runEvent(event, obj.domRef);
+          }
+          if (options.stopPropagation) {
+            event["captureStopped"] = true;
+          }
+        }
+      }
+      stack.splice(0, 1);
+    }
+    for (const child of obj["children"]) {
+      if (context.isEqual(child.domRef, stack[0])) {
+        delegateEvent(event, child, stack, debug, context);
       }
     }
   } else {
-    const eventObj = obj["events"][event.type];
-    if (eventObj) {
-      const options = eventObj.options;
-      if (stack[0] === obj.domRef) {
-        if (options.preventDefault)
-          event.preventDefault();
-        eventObj.runEvent(event, stack[0]);
-        if (!options.stopPropagation) {
+    if (obj.type === "vnode") {
+      const eventCaptureObj = obj.events.captures[event.type];
+      if (eventCaptureObj && !event["captureStopped"]) {
+        const options = eventCaptureObj.options;
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault)
+            event.preventDefault();
+          eventCaptureObj.runEvent(event, stack[0]);
+          if (options.stopPropagation)
+            event["captureStopped"] = true;
+        }
+      }
+      const eventObj = obj.events.bubbles[event.type];
+      if (eventObj && !event["captureStopped"]) {
+        const options = eventObj.options;
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault)
+            event.preventDefault();
+          eventObj.runEvent(event, stack[0]);
+          if (!options.stopPropagation) {
+            propagateWhileAble(obj.parent, event);
+          }
+        }
+      } else {
+        if (!event["captureStopped"]) {
           propagateWhileAble(obj.parent, event);
         }
       }
-    } else {
-      propagateWhileAble(obj.parent, event);
     }
   }
 }
@@ -382,8 +412,8 @@ function propagateWhileAble(vtree, event) {
       case "vtext":
         break;
       case "vnode":
-        const eventObj = vtree["events"][event.type];
-        if (eventObj && eventObj.options) {
+        const eventObj = vtree.events.bubbles[event.type];
+        if (eventObj) {
           const options = eventObj.options;
           if (options.preventDefault)
             event.preventDefault();

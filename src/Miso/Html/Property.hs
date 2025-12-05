@@ -23,6 +23,7 @@ module Miso.Html.Property
    , id_
    , title_
    , hidden_
+   , inert_
    , lang_
    , type_
    , value_
@@ -152,6 +153,10 @@ selected_ = boolProp "selected"
 hidden_ :: Bool -> Attribute action
 hidden_ = boolProp "hidden"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inert>
+inert_ :: Bool -> Attribute action
+inert_ = boolProp "inert"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/lang>
 lang_ :: MisoString -> Attribute action
 lang_ = textProp "lang"
@@ -172,7 +177,7 @@ accept_  = textProp "accept"
 acceptCharset_ :: MisoString -> Attribute action
 acceptCharset_   = textProp "acceptCharset"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/action>
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/action>
 action_ :: MisoString -> Attribute action
 action_  = textProp "action"
 -----------------------------------------------------------------------------
