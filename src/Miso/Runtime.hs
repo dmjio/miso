@@ -108,7 +108,9 @@ import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
+import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+                             , io_, withSink, Synchronicity(..)
+                             )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -166,7 +168,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
       currentModel <- liftIO (readTVarIO componentModel)
       let info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
+      updatedModel <- foldEffects update False info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
@@ -702,35 +704,32 @@ components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Data type to indicate if effects should be handled asynchronously
--- or synchronously.
---
-data Synchronicity
-  = Async
-  | Sync
-  deriving (Show, Eq)
------------------------------------------------------------------------------
-syncWith :: Synchronicity -> JSM () -> JSM ()
-syncWith Sync  x = x
-syncWith Async x = void (FFI.forkJSM x)
+-- | This function evaluates effects according to 'Synchronicity'.
+evalScheduled :: Synchronicity -> JSM () -> JSM ()
+evalScheduled Sync x = x
+evalScheduled Async x = void (FFI.forkJSM x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
   :: (action -> Effect parent model action)
-  -> Synchronicity
+  -> Bool
+  -- ^ Whether or not the Component is unmounting
   -> ComponentInfo parent
   -> Sink action
   -> [action]
   -> model
   -> JSM model
 foldEffects _ _ _ _ [] m = pure m
-foldEffects update synchronicity info snk (e:es) o =
+foldEffects update drainSink info snk (e:es) o =
   case runEffect (update e) info o of
     (n, subs) -> do
-      forM_ subs $ \sub -> do
-        syncWith synchronicity $
-          sub snk `catch` (void . exception)
-      foldEffects update synchronicity info snk es n
+      forM_ subs $ \(Schedule synchronicity sub) -> do
+        let
+          action = sub snk `catch` (void . exception)
+        if drainSink
+          then evalScheduled Sync action
+          else evalScheduled synchronicity action
+      foldEffects update drainSink info snk es n
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
@@ -747,7 +746,7 @@ drain app@Component{..} cs@ComponentState {..} = do
       where
         go info actions = do
           x <- liftIO (readTVarIO componentModel)
-          y <- foldEffects update Sync info componentSink (toList actions) x
+          y <- foldEffects update True info componentSink (toList actions) x
           liftIO $ atomically (writeTVar componentModel y)
           drain app cs
 -----------------------------------------------------------------------------

@@ -46,6 +46,8 @@ module Miso
   , batch
   , io
   , io_
+  , sync
+  , sync_
   , for
     -- * Reactivity
     -- | Primitives for synchronizing parent and child models.
