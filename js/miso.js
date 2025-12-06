@@ -10,6 +10,7 @@ function mkVNode() {
   return {
     props: {},
     css: {},
+    classList: null,
     children: [],
     ns: "html",
     domRef: null,
@@ -109,12 +110,41 @@ function populate(c, n, context) {
     if (!c)
       c = vnode({});
     diffProps(c["props"], n["props"], n.domRef, n.ns === "svg", context);
+    diffClass(c["classList"], n["classList"], n.domRef, context);
     diffCss(c["css"], n["css"], n.domRef, context);
     if (n.type === "vnode") {
       diffChildren(c, n, n.domRef, context);
     }
     drawCanvas(n);
   }
+}
+function diffClass(c, n, domRef, context) {
+  if (!c && !n) {
+    return;
+  }
+  if (!c) {
+    for (const className of n) {
+      context.addClass(className, domRef);
+    }
+    return;
+  }
+  if (!n) {
+    for (const className of c) {
+      context.removeClass(className, domRef);
+    }
+    return;
+  }
+  for (const className of c) {
+    if (!n.has(className)) {
+      context.removeClass(className, domRef);
+    }
+  }
+  for (const className of n) {
+    if (!c.has(className)) {
+      context.addClass(className, domRef);
+    }
+  }
+  return;
 }
 function diffProps(cProps, nProps, node, isSvg, context) {
   var newProp;
@@ -829,6 +859,17 @@ function eventSourceClose(eventSource) {
     eventSource = null;
   }
 }
+function populateClass(vnode2, classes) {
+  if (!vnode2.classList) {
+    vnode2.classList = new Set;
+  }
+  for (const str of classes) {
+    for (const c of str.trim().split(" ")) {
+      if (c)
+        vnode2.classList.add(c);
+    }
+  }
+}
 
 // ts/miso/context/dom.ts
 var eventContext = {
@@ -907,6 +948,14 @@ var drawingContext = {
   },
   createElement: (tag) => {
     return document.createElement(tag);
+  },
+  addClass: (className, domRef) => {
+    if (className)
+      domRef.classList.add(className);
+  },
+  removeClass: (className, domRef) => {
+    if (className)
+      domRef.classList.remove(className);
   },
   insertBefore: (parent, child, node) => {
     return parent.insertBefore(child, node);
@@ -989,6 +1038,7 @@ globalThis["miso"] = {
   websocketClose,
   websocketSend,
   undelegate,
+  populateClass,
   getParentComponentId,
   integrityCheck,
   setDrawingContext: function(name) {

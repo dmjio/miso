@@ -1,4 +1,4 @@
-import { DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
+import { Class, DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
 import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
@@ -113,12 +113,50 @@ export function populate<T>(c: VTree<T>, n: VTree<T>, context: DrawingContext<T>
   if (n.type !== 'vtext') {
     if (!c) c = vnode({});
     diffProps(c['props'], n['props'], n.domRef, n.ns === 'svg', context);
+    diffClass(c['classList'], n['classList'], n.domRef, context);
     diffCss(c['css'], n['css'], n.domRef, context);
     if (n.type === 'vnode') {
       diffChildren<T>(c as VNode<T>, n as VNode<T>, n.domRef, context);
     }
     drawCanvas(n as VNode<T>);
   }
+}
+
+export function diffClass<T> (c: Class, n: Class, domRef: T, context: DrawingContext<T>): void {
+    /* base case */
+    if (!c && !n) {
+      return;
+    }
+
+    /* add-only case */
+    if (!c) {
+        for (const className of n) {
+            context.addClass(className, domRef);
+        }
+        return;
+    }
+
+    /* remove-only case */
+    if (!n) {
+        for (const className of c) {
+            context.removeClass(className, domRef);
+        }
+        return;
+    }
+
+    /* diff case */
+    for (const className of c) {
+        if (!(n.has(className))) {
+            context.removeClass(className, domRef);
+        }
+    }
+
+    for (const className of n) {
+        if (!(c.has(className))) {
+            context.addClass(className, domRef);
+        }
+    }
+    return;
 }
 
 function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSvg: boolean, context: DrawingContext<T>): void {

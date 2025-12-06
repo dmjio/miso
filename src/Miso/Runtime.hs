@@ -97,6 +97,9 @@ import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, k
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
+#ifdef BENCH
+import           Text.Printf
+#endif
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator)
@@ -144,7 +147,14 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
+#ifdef BENCH
+    start <- if isRoot then FFI.now else pure 0
+#endif
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
+#ifdef BENCH
+    end <- if isRoot then FFI.now else pure 0
+    when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
+#endif
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
@@ -878,11 +888,13 @@ setAttrs
   -> LogLevel
   -> Events
   -> JSM ()
-setAttrs vnode attrs snk logLevel events =
+setAttrs vnode@(Object jval) attrs snk logLevel events =
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
       FFI.set "key" value vnode
+    ClassList classes ->
+      FFI.populateClass jval classes
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode

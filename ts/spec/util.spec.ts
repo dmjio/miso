@@ -1,4 +1,6 @@
-import { callFocus, callBlur, callSelect, callSetSelectionRange, getParentComponentId } from '../miso/util';
+import { populateClass, callFocus, callBlur, callSelect, callSetSelectionRange, getParentComponentId } from '../miso/util';
+import { vnode } from '../miso/smart';
+import { VNode } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 
 /* silence */
@@ -57,6 +59,19 @@ describe ('Utils tests', () => {
     vcomp = parent;
     expect(getParentComponentId(vcomp)).toBe(100);
     expect(getParentComponentId(grandparent)).toBe(null);
+  });
+
+  test('Should populate class', () => {
+      let node : VNode<number> = vnode({});
+      expect(node.classList).toBe(null);
+      var expected = new Set(["foo", "bar", "baz", "lol", "some-long-tailwind-class"]);
+      populateClass(node, ["some-long-tailwind-class foo", "bar", "lol baz"]);
+      populateClass(node, ["baz", "foo", "bar"]);
+      populateClass(node, [" "]);
+      for (const elem of expected) {
+          expect(node.classList.has(elem)).toBe(true);
+      }
+      expect(expected.size).toBe(node.classList.size);
   });
 
 });
