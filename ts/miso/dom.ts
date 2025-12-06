@@ -129,7 +129,7 @@ export function diffClass<T> (c: Class, n: Class, domRef: T, context: DrawingCon
     }
 
     /* add-only case */
-    if (!c && n.size > 0) {
+    if (!c) {
         for (const className of n) {
             context.addClass(className, domRef);
         }
@@ -137,7 +137,7 @@ export function diffClass<T> (c: Class, n: Class, domRef: T, context: DrawingCon
     }
 
     /* remove-only case */
-    if (!n && c.size > 0) {
+    if (!n) {
         for (const className of c) {
             context.removeClass(className, domRef);
         }

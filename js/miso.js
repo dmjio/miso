@@ -122,13 +122,13 @@ function diffClass(c, n, domRef, context) {
   if (!c && !n) {
     return;
   }
-  if (!c && n.size > 0) {
+  if (!c) {
     for (const className of n) {
       context.addClass(className, domRef);
     }
     return;
   }
-  if (!n && c.size > 0) {
+  if (!n) {
     for (const className of c) {
       context.removeClass(className, domRef);
     }
