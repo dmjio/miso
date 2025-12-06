@@ -865,7 +865,8 @@ function populateClass(vnode2, classes) {
   }
   for (const str of classes) {
     for (const c of str.trim().split(" ")) {
-      vnode2.classList.add(c);
+      if (c)
+        vnode2.classList.add(c);
     }
   }
 }

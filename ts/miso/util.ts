@@ -240,7 +240,7 @@ export function populateClass<T> (
     }
     for (const str of classes) {
         for (const c of str.trim().split(' ')) {
-           vnode.classList.add(c);
+           if (c) vnode.classList.add(c);
         }
     }
 }

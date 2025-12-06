@@ -67,6 +67,7 @@ describe ('Utils tests', () => {
       var expected = new Set(["foo", "bar", "baz", "baz", "lol", "some-long-tailwind-class"]);
       populateClass(node, ["some-long-tailwind-class foo", "bar", "lol baz"]);
       populateClass(node, ["baz", "foo", "bar"]);
+      populateClass(node, [" "]);
       for (const elem of expected) {
           expect(node.classList.has(elem)).toBe(true);
       }
