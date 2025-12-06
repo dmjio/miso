@@ -17,6 +17,7 @@
 module Miso.Property
   ( -- *** Smart constructors
     prop
+  , classList
   , textProp
   , stringProp
   , boolProp
@@ -73,4 +74,10 @@ keyProp key = prop "key" (toKey key)
 -- Allows a user to specify a t'Key' inside of an '[Attribute action]'
 key_ :: ToKey key => key -> Attribute action
 key_ = keyProp
+-----------------------------------------------------------------------------
+-- | Smart constructor for specifying 'class'
+--
+-- @since 1.9.0.0
+classList :: [MisoString] -> Attribute action
+classList = ClassList
 -----------------------------------------------------------------------------

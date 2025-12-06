@@ -1,4 +1,4 @@
-import { Response } from './types';
+import { VNode, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -226,4 +226,21 @@ export function eventSourceClose (
     eventSource.close();
     eventSource = null;
   }
+}
+
+/* Initializes the classList field to an Empty Set
+   Populates with the contents of 'classes'
+ */
+export function populateClass<T> (
+  vnode: VNode<T>,
+  classes: Array<string>
+): void {
+    if (!(vnode.classList)) {
+      vnode.classList = new Set();
+    }
+    for (const str of classes) {
+        for (const c of str.trim().split(' ')) {
+           if (c) vnode.classList.add(c);
+        }
+    }
 }

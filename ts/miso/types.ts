@@ -1,6 +1,7 @@
 /* core type for virtual DOM */
 export type Props = Record<string, any>;
 export type CSS = Record<string, string>;
+export type Class = Set<string>;
 export type Events<T> = Record<string, Record<string, EventObject<T>>>;
 
 /* element name spacing */
@@ -17,6 +18,7 @@ export type VComp<T> = {
   key: string;
   props: Props;
   css: CSS;
+  classList: Class;
   events: Events<T>;
   parent: Parent<T>;
   children: Array<VTree<T>>;
@@ -39,6 +41,7 @@ export type VNode<T> = {
   key: string;
   props: Props;
   css: CSS;
+  classList: Class;
   events: Events<T>;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
@@ -126,6 +129,8 @@ export type DrawingContext<T> = {
   setAttributeNS : (node: T, ns: string, key: string, value: any) => void;
   setTextContent : (node: T, text: string) => void;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
+  addClass : (c: string, domRef: T) => void;
+  removeClass : (c: string, domRef: T) => void;
   flush : () => void;
   getRoot : () => T;
 };

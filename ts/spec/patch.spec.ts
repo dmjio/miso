@@ -18,6 +18,8 @@ import {
     SetAttributeNS,
     SetInlineStyle,
     RemoveAttribute,
+    AddClass,
+    RemoveClass,
     Components,
     Component
 } from '../miso/patch';
@@ -750,5 +752,122 @@ describe ('Patch tests', () => {
         expect(component.nodes[nodeIdChild1]).toEqual(undefined);
         expect(component.nodes[nodeIdChild2].nodeName).toEqual('IMG');
     });
+
+  test('Should process the AddClass patch', () => {
+        const parentNodeId : number = 0;
+        const componentId : number = 0;
+        const nodeId : number = 1;
+        let vtree = vnode({});
+        vtree.classList = new Set(["foo", "bar"]);
+        let patchContext : DrawingContext<NodeId> = patchDrawingContext;
+        let domContext : DrawingContext<DOMRef> = drawingContext;
+        let parent : NodeId = { nodeId: parentNodeId };
+        diff (null, vtree, parent, patchContext);
+        let child : CreateElement = {
+            type : "createElement",
+            tag: 'div',
+            nodeId,
+            componentId,
+        };
+        let patch1 : AddClass = {
+            key: 'foo',
+            type : "addClass",
+            componentId,
+            nodeId,
+        };
+        let patch2 : AddClass = {
+            key: 'bar',
+            type : "addClass",
+            componentId,
+            nodeId,
+        };
+        let appendPatch : AppendChild = {
+           child: 1,
+           componentId: 0,
+           parent: 0,
+           type: "appendChild",
+        };
+        // dmj: check diff produces patch object
+        expect(getPatches()).toEqual([child, patch1, patch2, appendPatch]);
+        let components : Components<DOMRef> = {};
+        let component : Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        patch (domContext, child, components);
+        patch (domContext, patch1, components);
+        patch (domContext, patch2, components);
+        patch (domContext, appendPatch, components);
+        // dmj: check the DOM and component env. to see if the patch applied, and env updated
+        expect(document.body.childNodes[0]['className']).toEqual("foo bar");
+        expect(component.nodes[nodeId].nodeName).toEqual('DIV');
+    });
+
+  test('Should process the RemoveClass patch', () => {
+        const parentNodeId : number = 0;
+        const componentId : number = 0;
+        const nodeId : number = 1;
+        let vtree1 = vnode({});
+        vtree1.classList = new Set(["foo", "bar"]);
+        let vtree2 = vnode({});
+        vtree2.classList = new Set(["foo"]);
+        let patchContext : DrawingContext<NodeId> = patchDrawingContext;
+        let domContext : DrawingContext<DOMRef> = drawingContext;
+        let parent : NodeId = { nodeId: parentNodeId };
+        diff (null, vtree1, parent, patchContext);
+        diff (vtree1, vtree2, parent, patchContext);
+        let child : CreateElement = {
+            type : "createElement",
+            tag: 'div',
+            nodeId,
+            componentId,
+        };
+        let patch1 : AddClass = {
+            key: 'foo',
+            type : "addClass",
+            componentId,
+            nodeId,
+        };
+        let patch2 : AddClass = {
+            key: 'bar',
+            type : "addClass",
+            componentId,
+            nodeId,
+        };
+        let appendPatch : AppendChild = {
+           child: 1,
+           componentId: 0,
+           parent: 0,
+           type: "appendChild",
+        };
+        let patch3 : RemoveClass = {
+            key: 'bar',
+            type : "removeClass",
+            componentId,
+            nodeId,
+        };
+        // dmj: check diff produces patch object
+        expect(getPatches()).toEqual([child, patch1, patch2, appendPatch, patch3]);
+        let components : Components<DOMRef> = {};
+        let component : Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        patch (domContext, child, components);
+        patch (domContext, patch1, components);
+        patch (domContext, patch2, components);
+        patch (domContext, appendPatch, components);
+        patch (domContext, patch3, components);
+        // dmj: check the DOM and component env. to see if the patch applied, and env updated
+        expect(document.body.childNodes[0]['className']).toEqual("foo");
+        expect(component.nodes[nodeId].nodeName).toEqual('DIV');
+    });
+
 
 });

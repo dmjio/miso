@@ -57,6 +57,12 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
             case "setAttribute":
                 context.setAttribute (component.nodes[patch.nodeId], patch.key, patch.value);
                 break;
+            case "addClass":
+                context.addClass (patch.key, component.nodes[patch.nodeId]);
+                break;
+            case "removeClass":
+                context.removeClass (patch.key, component.nodes[patch.nodeId]);
+                break;
             case "setAttributeNS":
                 context.setAttributeNS (component.nodes[patch.nodeId], patch.namespace, patch.key, patch.value)
                 break;
@@ -123,6 +129,8 @@ export type PATCH
   | MountComponent
   | UnmountComponent
   | ModelHydration
+  | AddClass
+  | RemoveClass
   | Flush;
 
 export type ModelHydration = {
@@ -224,6 +232,20 @@ export type RemoveChild = {
 export type RemoveAttribute = {
   componentId: ComponentId,
   type: "removeAttribute",
+  nodeId: number,
+  key: string,
+};
+
+export type RemoveClass = {
+  componentId: ComponentId,
+  type: "removeClass",
+  nodeId: number,
+  key: string,
+};
+
+export type AddClass = {
+  componentId: ComponentId,
+  type: "addClass",
   nodeId: number,
   key: string,
 };

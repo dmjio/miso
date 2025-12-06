@@ -124,22 +124,20 @@ module Miso.Html.Property
 -----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.Property
-import           Miso.String (intercalate)
 -----------------------------------------------------------------------------
 -- | Define multiple classes conditionally
 --
 -- > div_ [ classList_ [ ("empty", null items) ] [ ]
 --
 classList_ :: [(MisoString, Bool)] -> Attribute action
-classList_ xs =
-  textProp "class" $ intercalate (" " :: MisoString) [ t | (t, True) <- xs ]
+classList_ xs = classList [ t | (t, True) <- xs ]
 -----------------------------------------------------------------------------
 -- | Define multiple classes
 --
 -- > div_ [ classes_ [ "red", "warning" ] ] []
 --
 classes_ :: [MisoString] -> Attribute action
-classes_ xs = classList_ [ (x, True) | x <- xs ]
+classes_ = classList
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title>
 title_ :: MisoString -> Attribute action
@@ -513,12 +511,12 @@ autofocus_ = boolProp "autofocus"
 -- | Set "className" property
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 class_ :: MisoString -> Attribute action
-class_ = textProp "class"
+class_ = className
 -----------------------------------------------------------------------------
 -- | Set "className" property
 -- <https://developer.mozilla.org/en-US/docs/Web/API/Element/className>
 className :: MisoString -> Attribute action
-className = class_
+className name = classList [name]
 -----------------------------------------------------------------------------
 -- | Set "data-*" property
 -- https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/data-*
