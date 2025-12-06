@@ -146,6 +146,8 @@ module Miso.FFI.Internal
    , Response (..)
    -- * Event
    , Event (..)
+   -- * Class
+   , populateClass
    ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -156,7 +158,6 @@ import           Control.Monad (void, foldM, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
-import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
@@ -212,17 +213,6 @@ syncCallback2 f = function handle
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
-set (unpack -> "class") v o = do
-  classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps o
-  if classSet
-    then do
-      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") o
-      vStr <- fromJSValUnchecked =<< toJSVal v
-      v' <- toJSVal (classStr <> JSS.pack " " <> vStr)
-      setProp (JSS.pack "class") v' o
-    else do
-      v' <- toJSVal v
-      setProp (JSS.pack "class") v' o
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
@@ -378,6 +368,17 @@ eventJSON
 eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
+-----------------------------------------------------------------------------
+-- | Populate the `classList` Set on the virtual DOM.
+populateClass
+    :: JSVal
+    -- ^ Node
+    -> [MisoString]
+    -- ^ classes
+    -> JSM ()
+populateClass domRef classes = do
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "populateClass" $ (domRef, classes)
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to document body.
 --

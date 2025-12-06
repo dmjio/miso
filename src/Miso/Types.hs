@@ -359,6 +359,7 @@ instance ToKey Word where toKey = Key . toMisoString
 --
 data Attribute action
   = Property MisoString Value
+  | ClassList [MisoString]
   | On (Sink action -> VTree -> LogLevel -> Events -> JSM ())
   -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
   -- the @update@ function. This is especially useful for event handlers

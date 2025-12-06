@@ -47,6 +47,10 @@ common cpp
     cpp-options:
       -DSSR
 
+  if flag(benchmark)
+    cpp-options:
+      -DBENCH
+
 common jsaddle
   if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
@@ -76,6 +80,15 @@ common client
     else
       js-sources:
         js/miso.js
+
+flag benchmark
+  manual:
+    True
+  default:
+    False
+  description:
+    When enabled this outputs (in milliseconds) the time it
+    takes to build the virtual DOM on page load.
 
 flag production
   manual:

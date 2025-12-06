@@ -34,6 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -94,7 +95,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               , ns == MATHML
               ]
-      
+
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
     where
@@ -105,6 +106,13 @@ renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
+renderAttrs (ClassList classes) =
+  mconcat
+  [ "class"
+  , stringUtf8 "=\""
+  , fromMisoString (MS.unwords classes)
+  , stringUtf8 "\""
+  ]
 renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key

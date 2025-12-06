@@ -53,6 +53,7 @@ function mkVNode<T>() : VNode<T> {
   return {
     props: {},
     css: {},
+    classList: null,
     children: [],
     ns: 'html',
     domRef: null,
