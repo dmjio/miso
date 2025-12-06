@@ -66,10 +66,9 @@ module Miso.FFI.Internal
    , diff
    , nextSibling
    , previousSibling
-   , setProperty
    , getProperty
    , callFunction
-   , fromJSVal
+   , castJSVal
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -162,11 +161,10 @@ import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
 import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
-import           Language.Javascript.JSaddle hiding (fromJSVal)
+import           Language.Javascript.JSaddle
 #else
-import           Language.Javascript.JSaddle hiding (Success, fromJSVal)
+import           Language.Javascript.JSaddle hiding (Success)
 #endif
-import qualified Language.Javascript.JSaddle as JS
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
@@ -240,14 +238,6 @@ set k v o = do
 getProperty :: JSVal -> MisoString -> JSM JSVal
 getProperty = (!)
 -----------------------------------------------------------------------------
--- | Set a property of a 'JSVal'
---
--- Example usage:
--- 
--- > setProperty domRef "hidden" True
-setProperty :: (ToJSVal val) => JSVal -> MisoString -> val -> JSM ()
-setProperty = (<#)
------------------------------------------------------------------------------
 -- | Calls a function on a 'JSVal'
 --
 -- Example usage:
@@ -258,8 +248,8 @@ callFunction :: (MakeArgs args) => JSVal -> MisoString -> args -> JSM JSVal
 callFunction = (#)
 -----------------------------------------------------------------------------
 -- | Marshalling of 'JSVal', useful for 'getProperty'
-fromJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
-fromJSVal = JS.fromJSVal
+castJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
+castJSVal = fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
 addEventListener
