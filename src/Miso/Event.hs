@@ -1,6 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE BlockArguments      #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Event
@@ -40,7 +43,6 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
-import           Data.Aeson.Types (parseEither)
 import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
 import           Miso.Event.Decoder
@@ -100,7 +102,7 @@ onWithOptions
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions phase options eventName Decoder{..} toAction =
+onWithOptions phase options eventName decoder toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -120,12 +122,9 @@ onWithOptions phase options eventName Decoder{..} toAction =
         BUBBLE -> getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
-    decodeAtVal <- toJSVal decodeAt
     cb <- FFI.syncCallback2 $ \e domRef -> do
-        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
-        case parseEither decoder v of
-          Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
-          Right event -> sink (toAction event domRef)
+        executeDecoder decoder eventName e $ \r -> 
+          sink (toAction r domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)

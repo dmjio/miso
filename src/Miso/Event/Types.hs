@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -42,7 +43,7 @@ module Miso.Event.Types
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (ToJSVal(..), create, setProp)
+import           Language.Javascript.JSaddle (FromJSVal(..), ToJSVal(..), create, setProp)
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.
@@ -57,6 +58,9 @@ data KeyInfo
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#Browser_compatibility>
 newtype KeyCode = KeyCode Int
   deriving (Show, Eq, Ord, FromJSON, Num)
+-----------------------------------------------------------------------------
+instance FromJSVal KeyCode where
+  fromJSVal x = fmap KeyCode <$> fromJSVal x
 -----------------------------------------------------------------------------
 -- | Type used for Checkbox events.
 newtype Checked = Checked Bool
@@ -99,6 +103,19 @@ instance FromJSON PointerType where
     "touch" -> pure TouchPointerType
     "pen"   -> pure PenPointerType
     x       -> pure (UnknownPointerType (ms x))
+-----------------------------------------------------------------------------
+instance FromJSVal PointerType where
+  fromJSVal jsval = do
+    fromJSVal @MisoString jsval >>= \case
+      Just "mount" ->
+        pure (Just MousePointerType)
+      Just "touch" ->
+        pure (Just TouchPointerType)
+      Just "pen" ->
+        pure (Just PenPointerType)
+      Just x ->
+        pure (Just (UnknownPointerType (ms x)))
+      Nothing -> pure Nothing
 -----------------------------------------------------------------------------
 -- | t'Options' for handling event propagation.
 data Options
