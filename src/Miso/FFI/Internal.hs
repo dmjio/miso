@@ -66,6 +66,9 @@ module Miso.FFI.Internal
    , diff
    , nextSibling
    , previousSibling
+   , getProperty
+   , callFunction
+   , castJSVal
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -226,6 +229,27 @@ set (unpack -> "class") v o = do
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
+-----------------------------------------------------------------------------
+-- | Get a property of a 'JSVal'
+--
+-- Example usage:
+--
+-- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
+getProperty :: JSVal -> MisoString -> JSM JSVal
+getProperty = (!)
+-----------------------------------------------------------------------------
+-- | Calls a function on a 'JSVal'
+--
+-- Example usage:
+-- 
+-- > callFunction domRef "focus" ()
+-- > callFunction domRef "setSelectionRange" (0, 3, "none")
+callFunction :: (MakeArgs args) => JSVal -> MisoString -> args -> JSM JSVal
+callFunction = (#)
+-----------------------------------------------------------------------------
+-- | Marshalling of 'JSVal', useful for 'getProperty'
+castJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
+castJSVal = fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
 addEventListener
