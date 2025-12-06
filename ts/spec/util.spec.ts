@@ -64,7 +64,7 @@ describe ('Utils tests', () => {
   test('Should populate class', () => {
       let node : VNode<number> = vnode({});
       expect(node.classList).toBe(null);
-      var expected = new Set(["foo", "bar", "baz", "baz", "lol", "some-long-tailwind-class"]);
+      var expected = new Set(["foo", "bar", "baz", "lol", "some-long-tailwind-class"]);
       populateClass(node, ["some-long-tailwind-class foo", "bar", "lol baz"]);
       populateClass(node, ["baz", "foo", "bar"]);
       populateClass(node, [" "]);
