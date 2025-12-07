@@ -27,6 +27,7 @@ module Miso.FFI.Internal
    , syncCallback
    , syncCallback1
    , syncCallback2
+   , syncCallback3
    , asyncCallback
    , asyncCallback1
    , asyncCallback2
@@ -176,10 +177,6 @@ forkJSM a = do
   ctx <- askJSM
   liftIO (forkIO (runJSM a ctx))
 -----------------------------------------------------------------------------
--- | Creates a synchronous callback function (no return value)
-syncCallback :: JSM () -> JSM Function
-syncCallback a = function (\_ _ _ -> a)
------------------------------------------------------------------------------
 -- | Creates an asynchronous callback function
 asyncCallback :: JSM () -> JSM Function
 asyncCallback a = asyncFunction (\_ _ _ -> a)
@@ -195,9 +192,13 @@ asyncCallback1 f = asyncFunction handle
 asyncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
 asyncCallback2 f = asyncFunction handle
   where
-    handle _ _ []    = error "asyncCallback2: no args, impossible"
-    handle _ _ [_]   = error "asyncCallback2: 1 arg, impossible"
+    handle _ _ []      = error "asyncCallback2: no args, impossible"
+    handle _ _ [_]     = error "asyncCallback2: 1 arg, impossible"
     handle _ _ (x:y:_) = f x y
+-----------------------------------------------------------------------------
+-- | Creates a synchronous callback function (no return value)
+syncCallback :: JSM () -> JSM Function
+syncCallback a = function (\_ _ _ -> a)
 -----------------------------------------------------------------------------
 -- | Creates a synchronous callback function with one argument
 syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
@@ -210,9 +211,18 @@ syncCallback1 f = function handle
 syncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
 syncCallback2 f = function handle
   where
-    handle _ _ []    = error "syncCallback2: no args, impossible"
-    handle _ _ [_]   = error "syncCallback2: 1 arg, impossible"
+    handle _ _ []      = error "syncCallback2: no args, impossible"
+    handle _ _ [_]     = error "syncCallback2: 1 arg, impossible"
     handle _ _ (x:y:_) = f x y
+-----------------------------------------------------------------------------
+-- | Creates an asynchronous callback function with two arguments
+syncCallback3 :: (JSVal -> JSVal -> JSVal -> JSM ()) -> JSM Function
+syncCallback3 f = function handle
+  where
+    handle _ _ []        = error "syncCallback3: no args, impossible"
+    handle _ _ [_]       = error "syncCallback3: 1 arg, impossible"
+    handle _ _ [_,_]     = error "syncCallback3: 2 args, impossible"
+    handle _ _ (x:y:z:_) = f x y z
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> JSM ()

@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate } from '../miso/event';
-import { DOMRef, EventCapture } from '../miso/types';
+import { VNode, DOMRef, EventCapture } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, drawingContext } from '../miso/context/dom';
@@ -99,7 +99,7 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
+      child: [child],
       eventPropagation: true,
       mount : function (vcomp, f) {
         diff(null, child, vcomp.domRef, drawingContext);
@@ -114,7 +114,7 @@ describe ('Event tests', () => {
 
     var parentVComp = vcomp({
       events: events,
-      children: [parent],
+      child: [parent],
       mount : function (vcomp, f) {
         diff(null, parent, vcomp.domRef, drawingContext);
         return f(1, child);
@@ -169,7 +169,7 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
+      child,
       eventPropagation: false,
       mount : function (vcomp, f) {
         diff(null, child, vcomp.domRef, drawingContext);
@@ -184,7 +184,7 @@ describe ('Event tests', () => {
 
     var parentVComp = vcomp({
       events: events,
-      children: [parent],
+      child: parent,
       mount : function (vcomp, f) {
         diff(null, parent, vcomp.domRef, drawingContext);
         return f(1, child);
@@ -233,13 +233,14 @@ describe ('Event tests', () => {
         },
       }
     };
+
     var child = vnode({
       children: [ vnode({ tag: 'button' }) ],
       events
     });
 
     var childVComp = vcomp({
-      children: [child],
+      child,
       eventPropagation: true,
       mount : function (vcomp, f) {
         diff(null, child, vcomp.domRef, drawingContext);
@@ -254,8 +255,8 @@ describe ('Event tests', () => {
 
     var parentVComp = vcomp({
       events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
+      child: parent,
+      mount : function (vcomp : VNode<DOMRef>, f) {
         diff(null, parent, vcomp.domRef, drawingContext);
         return f(1, child);
       }

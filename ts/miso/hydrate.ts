@@ -1,4 +1,4 @@
-import { callCreated, populate } from './dom';
+import { mountComponent, callCreated, populate } from './dom';
 import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -47,30 +47,42 @@ function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): 
 }
 
 export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
-  // If script tags are rendered first in body, skip them.
-  const node: Node = preamble(mountPoint, drawingContext);
+    // If script tags are rendered first in body, skip them.
+    const node: Node = preamble(mountPoint, drawingContext);
 
-  // begin walking the DOM, report the result
+    // begin walking the DOM, report the result
     if (!walk(logLevel, vtree, node, context, drawingContext)) {
-    // If we failed to prerender because the structures were different, fallback to drawing
-    if (logLevel) {
-      console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
+
+      // If we failed to prerender because the structures were different, fallback to drawing
+      if (logLevel) {
+          console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
+      }
+
+        // Remove all children before rebuilding DOM
+      while (context.firstChild(node as DOMRef))
+        drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
+
+      switch (vtree.type) {
+        case 'vnode':
+          (vtree.domRef as Node) = node;
+          populate(null, vtree, drawingContext);
+          break;
+        case 'vtext':
+          break;
+        case 'vcomp':
+          mountComponent (node, vtree, null, drawingContext, false);
+          break;
+      }
+      return false;
+
+    } else {
+
+      if (logLevel) {
+        console.info('[DEBUG_HYDRATE] Successfully prerendered page');
+      }
     }
 
-    // Remove all children before rebuilding DOM
-    while (context.firstChild(node as DOMRef))
-      drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
-
-    (vtree.domRef as Node) = node;
-
-    populate(null, vtree, drawingContext);
-    return false;
-  } else {
-    if (logLevel) {
-      console.info('[DEBUG_HYDRATE] Successfully prerendered page');
-    }
-  }
-  return true;
+    return true;
 }
 function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): void {
   if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
@@ -109,7 +121,9 @@ function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<
       console.warn('VText node content differs', vtree);
       result = false;
     }
-  } // if vnode / vcomp, must be the same
+  } else if (vtree.type === 'vcomp') {
+    check (result, vtree.child, context, drawingContext);
+  }
   else {
     // tags must be identical
     if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
@@ -191,8 +205,8 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
     case 'vcomp':
-      (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
+      // (vtree as VComp<DOMRef>).domRef = node as DOMRef;
+      mountComponent(node, vtree, null, drawingContext, false);
       break;
     case 'vtext':
       (vtree as VText<DOMRef>).domRef = node as DOMRef;

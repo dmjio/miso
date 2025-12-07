@@ -826,26 +826,26 @@ buildVTree
   -> LogLevel
   -> Events
   -> JSM VTree
-buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
+buildVTree hydrate (VComp maybeKey attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
-    FFI.syncCallback2 $ \vcomp continuation -> do
-      domRef <- vcomp ! ("domRef" :: MisoString)
-      ComponentState {..} <- initialize hydrate False app (pure domRef)
+    FFI.syncCallback2 $ \parent_ continuation -> do
+      ComponentState {..} <- initialize hydrate False app (pure parent_)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-      FFI.set "parent" vcomp (Object vtree)
       vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object domRef)
-      void $ call continuation global [vcompId, vtree]
+      void $ call continuation global (vcompId, vtree)
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
+    FFI.syncCallback1 $ \vcomp -> do
+      componentId <- liftJSM $ fromJSValUnchecked =<< vcomp ! ("componentId" :: MisoString)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
           unmount app componentState
+  vcomp <- create
+  FFI.set "type" ("vcomp" :: MisoString) vcomp
+  forM_ maybeKey (flip (FFI.set "key") vcomp)
   vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
-  flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
+  flip (FFI.set "child") vcomp jsNull
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   FFI.set "eventPropagation" (eventPropagation app) vcomp

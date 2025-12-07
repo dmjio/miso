@@ -40,7 +40,7 @@ export function undelegate<T> (
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: EventContext<T>): void {
+function listener<T>(e: Event | [Event], mount: T, getVTree: (a: VTree<T>) => void, debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {
       if (Array.isArray(e)) {
           for (const key of e) {

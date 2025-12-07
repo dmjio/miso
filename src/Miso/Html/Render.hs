@@ -96,8 +96,8 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
-  renderBuilder (VNode ns tag attrs vkids)
+renderBuilder (VComp _ _ (SomeComponent vcomp)) =
+  foldMap renderBuilder vkids
     where
 #ifdef SSR
       vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]

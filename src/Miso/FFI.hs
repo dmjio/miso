@@ -36,6 +36,7 @@ module Miso.FFI
     -- ** Callbacks
   , syncCallback
   , syncCallback1
+  , syncCallback3
   , asyncCallback
   , asyncCallback1
   , asyncCallback2

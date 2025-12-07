@@ -12,24 +12,18 @@ export type ComponentId = number;
 
 export type VComp<T> = {
   type: 'vcomp';
-  domRef: T;
-  ns: 'html';
-  tag: string;
   key: string;
-  props: Props;
-  css: CSS;
-  classList: Class;
-  events: Events<T>;
   parent: Parent<T>;
-  children: Array<VTree<T>>;
 
+  child: VTree<T>; /* drop children field */
+  componentId: ComponentId;
   eventPropagation: boolean;
   onBeforeMounted: () => void;
-  onMounted: (domRef: T) => void;
-  onBeforeUnmounted: (domRef: T) => void;
-  onUnmounted: (domRef: T) => void;
-  mount: (vcomp: VComp<T>, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
-  unmount: (e: T) => void;
+  onMounted: () => void;
+  onBeforeUnmounted: () => void;
+  onUnmounted: () => void;
+  mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  unmount: (e: ComponentId) => void;
   nextSibling: VNode<T>;
 };
 
@@ -48,7 +42,7 @@ export type VNode<T> = {
   onBeforeDestroyed: () => void;
   onCreated: () => void;
   onBeforeCreated: () => void;
-  draw?: (T) => void;
+  draw?: (c:T) => void;
   parent: Parent<T>;
   nextSibling: VNode<T>;
 };
