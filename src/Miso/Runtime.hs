@@ -102,7 +102,7 @@ import           Text.Printf
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
-import           Miso.Delegate (delegator)
+import           Miso.Delegate (delegator, undelegator)
 import qualified Miso.Diff as Diff
 import qualified Miso.Hydrate as Hydrate
 import qualified Miso.FFI.Internal as FFI
@@ -119,13 +119,12 @@ import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..
 initialize
   :: (Eq parent, Eq model)
   => Hydrate
-  -> Bool
   -- ^ Is the root node being rendered?
   -> Component parent model action
   -> JSM DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> JSM (ComponentState model action)
-initialize hydrate isRoot Component {..} getComponentMountPoint = do
+initialize hydrate Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -148,12 +147,12 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
 #ifdef BENCH
-    start <- if isRoot then FFI.now else pure 0
+    start <- FFI.now
 #endif
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
 #ifdef BENCH
-    end <- if isRoot then FFI.now else pure 0
-    when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
+    end <- FFI.now
+    FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
 #endif
     case hydrate of
       Draw -> do
@@ -230,17 +229,12 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
 
   let vcomp = ComponentState
         { componentNotify = notify
-        , componentEvents = events
         , ..
         }
 
   registerComponent vcomp
-  if isRoot
-    then
-      delegator componentDOMRef componentVTree
-        events (logLevel `elem` [DebugEvents, DebugAll])
-    else
-      addToDelegatedEvents logLevel events
+  delegator componentDOMRef componentVTree
+    events (logLevel `elem` [DebugEvents, DebugAll])
   forM_ initialAction componentSink
   _ <- FFI.forkJSM eventLoop
   pure vcomp
@@ -275,20 +269,6 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
         liftIO $ do
           atomically $ writeTVar (componentIsDirty parentComponentState) True
           componentNotify parentComponentState
------------------------------------------------------------------------------
-addToDelegatedEvents :: LogLevel -> Events -> JSM ()
-addToDelegatedEvents logLevel events = do
-  root <- (IM.! topLevelComponentId) <$> liftIO (readIORef components)
-  delegated <- M.unions . fmap componentEvents . IM.elems <$>
-    liftIO (readIORef components)
-  forM_ (M.assocs events) $ \(eventName, capture) ->
-    case M.lookup eventName delegated of
-      Just delegatedCapture
-        | delegatedCapture == capture -> pure ()
-      _ ->
-        delegator (componentDOMRef root) (componentVTree root)
-          (M.singleton eventName capture)
-          (logLevel `elem` [DebugEvents, DebugAll])
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -416,8 +396,6 @@ data ComponentState model action
   -- ^ Thread responsible for parent t'Binding' synchronization
   , componentChildToParentThreadId :: Maybe ThreadId
   -- ^ Thread responsible for child t'Binding' synchronization
-  , componentEvents :: Events
-  -- ^ List of events a Component listens on
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -687,10 +665,6 @@ freshSubId = do
 rootComponentId :: ComponentId
 rootComponentId = 0
 -----------------------------------------------------------------------------
--- | This is the top-level ComponentId, hardcoded
-topLevelComponentId :: ComponentId
-topLevelComponentId = 1
------------------------------------------------------------------------------
 -- | The global store of 'ComponentId', for internal-use only.
 --
 -- Used internally @freshComponentId@ to allocate new 'ComponentId' on
@@ -778,6 +752,8 @@ unmount
   -> JSM ()
 unmount mountCallback app cs@ComponentState {..} = do
   freeFunction mountCallback
+  undelegator componentDOMRef componentVTree
+    (events app) (logLevel app `elem` [DebugEvents, DebugAll])
   liftIO $ do
     killThread componentMailboxThreadId
     mapM_ killThread =<< readIORef componentSubThreads
@@ -814,7 +790,7 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \vcomp continuation -> do
       domRef <- vcomp ! ("domRef" :: MisoString)
-      ComponentState {..} <- initialize hydrate False app (pure domRef)
+      ComponentState {..} <- initialize hydrate app (pure domRef)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
       FFI.set "parent" vcomp (Object vtree)
       vcompId <- toJSVal componentId

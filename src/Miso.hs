@@ -132,7 +132,7 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
   body <- FFI.getBody
-  initialize Hydrate isRoot vcomp (pure body)
+  initialize Hydrate vcomp (pure body)
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
 --
@@ -182,10 +182,7 @@ initComponent
   -> JSM (ComponentState model action)
 initComponent vcomp@Component {..} = do
   mount <- mountElement (getMountPoint mountPoint)
-  initialize Draw isRoot vcomp (pure mount)
-----------------------------------------------------------------------------
-isRoot :: Bool
-isRoot = True
+  initialize Draw vcomp (pure mount)
 ----------------------------------------------------------------------------
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
