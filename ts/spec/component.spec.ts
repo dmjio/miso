@@ -49,53 +49,18 @@ describe ('Component tests', () => {
       unmount: () => {
         unmountCount++;
       },
-      props: { id: 'vcomp-foo' },
-      css: {
-        'backgroundColor': 'red',
-      },
     });
     diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(mountCount).toBe(1);
-    expect(newNode.domRef.id).toBe('vcomp-foo');
-    expect(newNode.domRef.style['backgroundColor']).toBe('red');
     diff<DOMRef>(newNode, null, document.body, drawingContext);
     expect(unmountCount).toBe(1);
   });
-
-  // test('Should Diff attrs of two Components', () => {
-  //   // populate DOM
-  //   var mountCount = 0;
-  //   var compNode1 = vcomp<DOMRef>({
-  //     mount: () => {
-  //       mountCount++;
-  //     },
-  //     css: { 'backgroundColor': 'red' },
-  //   });
-  //   diff<DOMRef>(null, compNode1, document.body, drawingContext);
-  //   expect(mountCount).toBe(1);
-
-  //   // Test node was populated
-  //   expect(document.body.childNodes.length).toBe(1);
-  //   expect((document.body.childNodes[0] as HTMLElement).style['backgroundColor']).toBe('red');
-
-  //   // Replace node
-  //   mountCount = 0;
-  //   var compNode2 = vcomp<DOMRef>({
-  //     mount: () => {
-  //       mountCount++;
-  //     },
-  //     css: { 'backgroundColor': 'green' },
-  //   });
-  //   diff<DOMRef>(compNode1, compNode2, document.body, drawingContext);
-  //   expect((document.body.childNodes[0] as HTMLElement).style['backgroundColor']).toBe('green');
-  // });
 
   test('Should replace Component with new Component (new because different key)', () => {
     // populate DOM
     var unmountCount = 0, mountCount = 0;
     var comp1 = vcomp<DOMRef>({
         key : 'a',
-        tag: 'a',
         unmount: () => {
             unmountCount++
         },
