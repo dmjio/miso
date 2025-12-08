@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
 import { vnode, vcomp, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
-import { VNode, VTree, DOMRef } from '../miso/types';
+import { VText, VNode, VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { drawingContext } from '../miso/context/dom';
 
@@ -576,8 +576,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-      expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-      expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -596,8 +598,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -616,8 +620,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -636,8 +642,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -656,8 +664,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -733,8 +743,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -765,8 +777,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -795,8 +809,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -815,8 +831,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -848,8 +866,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -867,8 +887,10 @@ describe('DOM tests', () => {
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-      expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-      expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+      const nChild = newNode.children[i] as VNode<DOMRef>;
+      const cChild = currentNode.children[i] as VNode<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
   });
 
@@ -893,8 +915,10 @@ describe('DOM tests', () => {
     diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
-        expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-        expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+      const nChild = newNode.children[i] as VText<DOMRef>;
+      const cChild = currentNode.children[i] as VText<DOMRef>;
+      expect(nChild.key).toBe(cChild.key);
+      expect(nChild.domRef).toBe(cChild.domRef);
     }
   });
 
