@@ -834,8 +834,8 @@ buildVTree hydrate (VComp maybeKey attrs (SomeComponent app)) snk _ _ = do
       vcompId <- toJSVal componentId
       void $ call continuation global (vcompId, vtree)
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \vcomp -> do
-      componentId <- liftJSM $ fromJSValUnchecked =<< vcomp ! ("componentId" :: MisoString)
+    FFI.syncCallback1 $ \vcompId -> do
+      componentId <- liftJSM (fromJSValUnchecked vcompId)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
@@ -843,7 +843,6 @@ buildVTree hydrate (VComp maybeKey attrs (SomeComponent app)) snk _ _ = do
   vcomp <- create
   FFI.set "type" ("vcomp" :: MisoString) vcomp
   forM_ maybeKey (flip (FFI.set "key") vcomp)
-  vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "child") vcomp jsNull
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
