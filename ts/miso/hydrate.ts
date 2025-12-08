@@ -1,4 +1,4 @@
-import { mountComponent, callCreated, populate } from './dom';
+import { diffAttrs, mountComponent, callCreated } from './dom';
 import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -65,7 +65,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
       switch (vtree.type) {
         case 'vnode':
           (vtree.domRef as Node) = node;
-          populate(null, vtree, drawingContext);
+          diffAttrs(null, vtree, drawingContext);
           break;
         case 'vtext':
           break;
@@ -240,10 +240,10 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           case 'vnode':
             if (domChild.nodeType !== 1) return false;
             vdomChild.domRef = domChild as DOMRef;
-             walk(logLevel, vdomChild, domChild, context, drawingContext);
+            walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
           case 'vcomp':
-            walk(logLevel, vdomChild, domChild, context, drawingContext);
+            walk(logLevel, vdomChild.child, domChild, context, drawingContext);
             break;
         }
       }

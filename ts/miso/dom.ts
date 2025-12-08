@@ -43,7 +43,7 @@ function diffVText<T>(c: VText<T>, n: VText<T>, parent: T, context: DrawingConte
 function diffVNode<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingContext<T>): void {
   if (n.tag === c.tag && n.key === c.key) {
     n.domRef = c.domRef;
-    populate(c, n, context);
+    diffAttrs(c, n, context);
   } else {
     replace(c, n, parent, context);
   }
@@ -184,8 +184,9 @@ export function callBeforeCreated<T>(vnode: VNode<T>): void {
   if (vnode.onBeforeCreated) vnode.onBeforeCreated();
 }
 
-export function populate<T>(c: VNode<T>, n: VNode<T>, context: DrawingContext<T>): void {
-  if (!c) c = vnode({}); // dmj: get rid of this
+export function diffAttrs<T>(c: VNode<T>, n: VNode<T>, context: DrawingContext<T>): void {
+  // dmj: get rid of this
+  if (!c) c = vnode({});
   diffProps(c.props, n.props, n.domRef, n.ns === 'svg', context);
   diffClass(c.classList, n.classList, n.domRef, context);
   diffCss(c.css, n.css, n.domRef, context);
@@ -324,7 +325,7 @@ function createVNode<T>(vnode: VNode<T>, context: DrawingContext<T>): T {
   callBeforeCreated(vnode);
   populateDomRef(vnode, context);
   callCreated(vnode, context);
-  populate(null, vnode, context);
+  diffAttrs(null, vnode, context);
   return vnode.domRef;
 }
 

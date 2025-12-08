@@ -99,10 +99,10 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      child: [child],
+      child,
       eventPropagation: true,
       mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+        diff(null, child, vcomp, drawingContext);
         return f(0, child);
       }
     });
@@ -113,10 +113,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      child: [parent],
+      child: parent,
       mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
+        diff(null, parent, vcomp, drawingContext);
         return f(1, child);
       }
     });
@@ -172,7 +171,7 @@ describe ('Event tests', () => {
       child,
       eventPropagation: false,
       mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+        diff(null, child, vcomp, drawingContext);
         return f(0, child);
       }
     });
@@ -183,10 +182,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
       child: parent,
       mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
+        diff(null, parent, vcomp, drawingContext);
         return f(1, child);
       }
     });
@@ -243,7 +241,7 @@ describe ('Event tests', () => {
       child,
       eventPropagation: true,
       mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+        diff(null, child, vcomp, drawingContext);
         return f(0, child);
       }
     });
@@ -254,7 +252,6 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
       child: parent,
       mount : function (vcomp : VNode<DOMRef>, f) {
         diff(null, parent, vcomp.domRef, drawingContext);
