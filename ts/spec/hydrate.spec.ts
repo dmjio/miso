@@ -348,7 +348,7 @@ describe ("Hydration tests", () => {
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.children[0].domRef = document.createElement('div');
+    (tree.children[0] as VText<Node>).domRef = document.createElement('div');
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
