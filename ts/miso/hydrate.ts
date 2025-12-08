@@ -237,10 +237,13 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
               return false;
             }
             break;
-          default:
+          case 'vnode':
             if (domChild.nodeType !== 1) return false;
             vdomChild.domRef = domChild as DOMRef;
              walk(logLevel, vdomChild, domChild, context, drawingContext);
+            break;
+          case 'vcomp':
+            walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
       }

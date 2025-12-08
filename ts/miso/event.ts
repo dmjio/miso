@@ -40,7 +40,7 @@ export function undelegate<T> (
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener<T>(e: Event | [Event], mount: T, getVTree: (a: VTree<T>) => void, debug: boolean, context: EventContext<T>): void {
+function listener<T>(e: Event | [Event], mount: T, getVTree: (tree) => void, debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {
       if (Array.isArray(e)) {
           for (const key of e) {
@@ -95,27 +95,34 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-      if (context.isEqual(obj.domRef, stack[0])) {
-        if (obj.type === 'vnode') {
-          const eventObj: EventObject<T> = obj.events.captures[event.type];
-          if (eventObj) {
-            const options: Options = eventObj.options;
-            if (options.preventDefault) event.preventDefault();
-            if (!event['captureStopped']) {
-              eventObj.runEvent(event, obj.domRef);
-            }
-            if (options.stopPropagation) {
-               /* if stopPropagation set, stop capturing */
-               event['captureStopped'] = true;
-            }
-          }
-        }
-        stack.splice(0,1);
-      }
-      for (const child of obj['children']) {
-        if (context.isEqual(child.domRef, stack[0])) {
-           delegateEvent(event, child, stack, debug, context);
-        }
+      switch (obj.type) {
+          case 'vtext':
+              return;
+              break;
+          case 'vcomp':
+              /* should we check eventPropagation here? */
+              delegateEvent (event, obj.child, stack, debug, context);
+              break;
+          case 'vnode':
+             /* should we check eventPropagation here? */
+             if (context.isEqual(obj.domRef, stack[0])) {
+                 const eventObj: EventObject<T> = obj.events.captures[event.type];
+                 if (eventObj) {
+                   const options: Options = eventObj.options;
+                   if (options.preventDefault) event.preventDefault();
+                   if (!event['captureStopped']) {
+                     eventObj.runEvent(event, obj.domRef);
+                   }
+                   if (options.stopPropagation) {
+                      /* if stopPropagation set, stop capturing */
+                      event['captureStopped'] = true;
+                   }
+                 }
+             }
+             stack.splice(0,1);
+             for (const child of obj.children) {
+               delegateEvent(event, child, stack, debug, context);
+             }
       }
   } /* stack.length == 1 */
   else {

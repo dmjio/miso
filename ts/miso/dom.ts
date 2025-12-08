@@ -4,6 +4,7 @@ import { Class, DrawingContext, VNode
        }
 from './types';
 import { vnode } from './smart';
+import { drill } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -45,21 +46,6 @@ function diffVNode<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingConte
     populate(c, n, context);
   } else {
     replace(c, n, parent, context);
-  }
-}
-
-/* Get the first physical node being wrapped by vcomp
-   This /has/ to operate on the current node, this
-   guarantees that 'child' is present (mounting has occurred)
- */
-function drill<T>(c: VTree<T>) : T {
-  switch (c.type) {
-      case 'vcomp':
-          return drill (c.child);
-          break;
-      default:
-          return c.domRef;
-          break;
   }
 }
 
@@ -161,8 +147,16 @@ function callDestroyedRecursive<T>(obj: VTree<T>): void {
 }
 
 function callDestroyed<T>(obj: VTree<T>): void {
-  if (obj['onDestroyed']) obj.onDestroyed();
-  if (obj.type === 'vcomp') unmountComponent(obj);
+  switch (obj.type) {
+      case 'vcomp':
+          unmountComponent(obj);
+          break;
+      case 'vnode':
+          if (obj['onDestroyed']) obj.onDestroyed();
+          break;
+      case 'vtext':
+          break;
+  }
 }
 
 function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
@@ -183,7 +177,7 @@ function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
 
 // ** </> recursive calls to hooks
 export function callCreated<T>(obj: VNode<T>, context: DrawingContext<T>): void {
-  if (obj.onCreated) obj.onCreated(obj.domRef);
+  if (obj.onCreated) obj.onCreated();
 }
 
 export function callBeforeCreated<T>(vnode: VNode<T>): void {
@@ -344,7 +338,7 @@ function drawCanvas<T> (obj: VNode<T>) {
 // unmount components
 function unmountComponent<T>(obj: VComp<T>): void {
   if ('onUnmounted' in obj) obj.onUnmounted();
-  obj.unmount(obj);
+  obj.unmount(obj.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -434,7 +428,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
       /* insertBefore's semantics will append a node if the second argument provided is `null` or `undefined`.
          Otherwise, it will insert node.domRef before oLast.domRef.
       */
-      context.insertBefore(parent, nFirst.domRef, oFirst ? drill(oFirst) : null);
+      context.insertBefore(parent, drill(nFirst), oFirst ? drill(oFirst) : null);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } /* No more new nodes, delete all remaining nodes in old list
@@ -466,7 +460,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                -> [ c b a ] <- new children
       */
      else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-      context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
+      context.swapDOMRefs(drill(oLast), drill(oFirst), parent);
       swap<VTree<T>>(os, oldFirstIndex, oldLastIndex);
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
@@ -482,7 +476,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         and now we happy path */
     else if (oFirst.key === nLast.key) {
       /* insertAfter */
-      context.insertBefore(parent, oFirst.domRef, context.nextSibling(oLast as VNode<T>));
+      context.insertBefore(parent, drill(oFirst), context.nextSibling(oLast));
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
@@ -496,7 +490,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
          and now we happy path */
     else if (oLast.key === nFirst.key) {
       /* insertAfter */
-      context.insertBefore(parent, oLast.domRef, oFirst.domRef);
+      context.insertBefore(parent, drill(oLast), drill(oFirst));
       /* swap positions in old vdom */
       os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
       diff(os[oldFirstIndex++], nFirst, parent, context);
@@ -537,7 +531,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         /* optionally perform `diff` here */
         diff(os[oldFirstIndex++], nFirst, parent, context);
         /* Swap DOM references */
-        context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
+        context.insertBefore(parent, drill(node), drill(os[oldFirstIndex]));
         /* increment counters */
         newFirstIndex++;
       } /* If new key was *not* found in the old map this means it must now be created, example below

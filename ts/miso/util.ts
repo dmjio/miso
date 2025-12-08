@@ -1,4 +1,4 @@
-import { VNode, Response } from './types';
+import { VNode, Response, VTree } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -243,4 +243,15 @@ export function populateClass<T> (
            if (c) vnode.classList.add(c);
         }
     }
+}
+
+export function drill<T>(c: VTree<T>) : T {
+  switch (c.type) {
+      case 'vcomp':
+          return drill (c.child);
+          break;
+      default:
+          return c.domRef;
+          break;
+  }
 }

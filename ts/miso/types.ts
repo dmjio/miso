@@ -24,7 +24,7 @@ export type VComp<T> = {
   onUnmounted: () => void;
   mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: ComponentId) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {
@@ -44,7 +44,7 @@ export type VNode<T> = {
   onBeforeCreated: () => void;
   draw?: (c:T) => void;
   parent: Parent<T>;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VText<T> = {
@@ -54,6 +54,7 @@ export type VText<T> = {
   ns: NS;
   key: string;
   parent: Parent<T>;
+  nextSibling: VTree<T>;
 };
 
 export type Parent<T> = VNode<T> | VComp<T>;
@@ -109,7 +110,7 @@ export type ComponentContext = {
 }
 
 export type DrawingContext<T> = {
-  nextSibling : (node: VNode<T>) => T;
+  nextSibling : (node: VTree<T>) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns: string, tag : string) => T;
   appendChild : (parent: T, child: T) => void;

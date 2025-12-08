@@ -2,6 +2,7 @@ import
   { CSS
   , DrawingContext
   , VNode
+  , VTree
   , EventContext
   , EventCapture
   , ComponentId
@@ -9,6 +10,8 @@ import
   , DOMRef
   , ComponentContext
   } from '../types';
+
+import { drill } from '../util';
 
 export const eventContext : EventContext<DOMRef> = {
   addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
@@ -67,8 +70,8 @@ export const componentContext : ComponentContext = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
-  nextSibling : (node: VNode<DOMRef>) => {
-    return node.domRef.nextSibling as DOMRef;
+  nextSibling : (node: VTree<DOMRef>) : DOMRef => {
+     return drill(node).nextSibling as DOMRef;
   },
   createTextNode : (s: string) => {
     return document.createTextNode(s) as any; // dmj: hrm

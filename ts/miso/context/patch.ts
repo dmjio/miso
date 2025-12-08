@@ -2,11 +2,14 @@ import {
   ComponentId,
   EventCapture,
   DrawingContext,
+  VTree,
   VNode,
   NodeId,
   CSS,
   ComponentContext
 } from '../types';
+
+import { drill } from '../util';
 
 /*
 
@@ -93,8 +96,18 @@ export const componentContext : ComponentContext = {
 };
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
-  nextSibling : (node: VNode<NodeId>) => {
-    return node.nextSibling.domRef;
+  nextSibling : (node: VTree<NodeId>) => {
+      switch (node.type) {
+          case 'vtext':
+            return drill(node.nextSibling);
+            break;
+          case 'vcomp':
+            return drill(node.nextSibling);
+            break;
+          case 'vnode':
+            return drill(node.nextSibling);
+            break;
+      }
   },
   createTextNode : (value : string) => {
       const nodeId: number = nextNodeId ();

@@ -10,6 +10,7 @@ export function vtext<T>(input: string) : VText<T> {
       domRef : null,
       key : null,
       parent : null,
+      nextSibling : null,
     };
 }
 
