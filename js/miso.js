@@ -1,32 +1,3 @@
-// ts/miso/smart.ts
-function vnode(props) {
-  var node = union(mkVNode(), props);
-  return node;
-}
-function union(obj, updates) {
-  return Object.assign({}, obj, updates);
-}
-function mkVNode() {
-  return {
-    props: {},
-    css: {},
-    classList: null,
-    children: [],
-    ns: "html",
-    domRef: null,
-    tag: "div",
-    key: null,
-    events: {},
-    onDestroyed: () => {},
-    onBeforeDestroyed: () => {},
-    onCreated: () => {},
-    onBeforeCreated: () => {},
-    type: "vnode",
-    nextSibling: null,
-    parent: null
-  };
-}
-
 // ts/miso/dom.ts
 function diff(currentObj, newObj, parent, context) {
   if (!currentObj && !newObj)
@@ -107,13 +78,11 @@ function callBeforeCreated(obj) {
 }
 function populate(c, n, context) {
   if (n.type !== "vtext") {
-    if (!c)
-      c = vnode({});
-    diffProps(c["props"], n["props"], n.domRef, n.ns === "svg", context);
-    diffClass(c["classList"], n["classList"], n.domRef, context);
-    diffCss(c["css"], n["css"], n.domRef, context);
+    diffProps(c ? c["props"] : {}, n["props"], n.domRef, n.ns === "svg", context);
+    diffClass(c ? c["classList"] : null, n["classList"], n.domRef, context);
+    diffCss(c ? c["css"] : {}, n["css"], n.domRef, context);
     if (n.type === "vnode") {
-      diffChildren(c, n, n.domRef, context);
+      diffChildren(c ? c["children"] : [], n.children, n.domRef, context);
     }
     drawCanvas(n);
   }
@@ -192,27 +161,27 @@ function diffProps(cProps, nProps, node, isSvg, context) {
 function diffCss(cCss, nCss, node, context) {
   context.setInlineStyle(cCss, nCss, node);
 }
-function shouldSync(c, n) {
-  if (c.children.length === 0 || n.children.length === 0)
+function shouldSync(cs, ns) {
+  if (cs.length === 0 || ns.length === 0)
     return false;
-  for (var i = 0;i < c.children.length; i++) {
-    if (c.children[i].key === null || c.children[i].key === undefined) {
+  for (var i = 0;i < cs.length; i++) {
+    if (cs[i].key === null || cs[i].key === undefined) {
       return false;
     }
   }
-  for (var i = 0;i < n.children.length; i++) {
-    if (n.children[i].key === null || n.children[i].key === undefined) {
+  for (var i = 0;i < ns.length; i++) {
+    if (ns[i].key === null || ns[i].key === undefined) {
       return false;
     }
   }
   return true;
 }
-function diffChildren(c, n, parent, context) {
-  if (shouldSync(c, n)) {
-    syncChildren(c.children, n.children, parent, context);
+function diffChildren(cs, ns, parent, context) {
+  if (shouldSync(cs, ns)) {
+    syncChildren(cs, ns, parent, context);
   } else {
-    for (let i = 0;i < Math.max(n.children.length, c.children.length); i++)
-      diff(c.children[i], n.children[i], parent, context);
+    for (let i = 0;i < Math.max(ns.length, cs.length); i++)
+      diff(cs[i], ns[i], parent, context);
   }
 }
 function populateDomRef(obj, context) {
@@ -859,14 +828,14 @@ function eventSourceClose(eventSource) {
     eventSource = null;
   }
 }
-function populateClass(vnode2, classes) {
-  if (!vnode2.classList) {
-    vnode2.classList = new Set;
+function populateClass(vnode, classes) {
+  if (!vnode.classList) {
+    vnode.classList = new Set;
   }
   for (const str of classes) {
     for (const c of str.trim().split(" ")) {
       if (c)
-        vnode2.classList.add(c);
+        vnode.classList.add(c);
     }
   }
 }
