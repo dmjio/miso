@@ -218,7 +218,7 @@ instance MakeArgs StyleArg where
   makeArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal StyleArg where
-  toJSVal = toJSVal . renderStyleArg
+  toJSVal = renderStyleArg
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
