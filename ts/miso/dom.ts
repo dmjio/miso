@@ -1,5 +1,4 @@
 import { Class, DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
-import { vnode } from './smart';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, context: DrawingContext<T>): void {
