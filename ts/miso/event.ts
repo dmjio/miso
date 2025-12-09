@@ -1,4 +1,4 @@
-import { EventContext, VTree, EventCapture, EventObject, Options } from './types';
+import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
 
 /* event delegation algorithm */
 export function delegate<T> (
@@ -96,7 +96,7 @@ function delegateEvent <T>(
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
       if (context.isEqual(obj.domRef, stack[0])) {
-        if (obj.type === 'vnode') {
+        if (obj.type === VTreeType.VNode) {
           const eventObj: EventObject<T> = obj.events.captures[event.type];
           if (eventObj) {
             const options: Options = eventObj.options;
@@ -120,7 +120,7 @@ function delegateEvent <T>(
   } /* stack.length == 1 */
   else {
     /* captures run first */
-    if (obj.type === 'vnode') {
+    if (obj.type === VTreeType.VNode) {
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
       if (eventCaptureObj && !event['captureStopped']) {
         const options: Options = eventCaptureObj.options;
@@ -154,31 +154,31 @@ function delegateEvent <T>(
 }
 /* Propagate the event up the chain, invoking other event handlers as encountered */
 function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
-    while (vtree) {
-        switch (vtree.type) {
-            case "vtext":
-                /* impossible case */
-                break;
-            case "vnode":
-                const eventObj = vtree.events.bubbles[event.type];
-                if (eventObj) {
-                    const options = eventObj.options;
-                    if (options.preventDefault) event.preventDefault();
-                    eventObj.runEvent(event, vtree.domRef);
-                    if (options.stopPropagation) {
-                       /* if stop propagation set, stop bubbling */
-                       return;
-                   }
-                }
-                vtree = vtree.parent;
-                break;
-            case "vcomp":
-                /* We've reached the Component barrier, bail if disallowed */
-                if (!vtree.eventPropagation) return;
-                vtree = vtree.parent;
-                break;
+  while (vtree) {
+    switch (vtree.type) {
+      case VTreeType.VText:
+        /* impossible case */
+        break;
+      case VTreeType.VNode:
+        const eventObj = vtree.events.bubbles[event.type];
+        if (eventObj) {
+          const options = eventObj.options;
+          if (options.preventDefault) event.preventDefault();
+          eventObj.runEvent(event, vtree.domRef);
+          if (options.stopPropagation) {
+             /* if stop propagation set, stop bubbling */
+             return;
+           }
         }
+        vtree = vtree.parent;
+        break;
+      case VTreeType.VComp:
+        /* We've reached the Component barrier, bail if disallowed */
+        if (!vtree.eventPropagation) return;
+        vtree = vtree.parent;
+        break;
     }
+  }
 }
 /* Walks down obj following the path described by `at`, then filters primitive
        values (string, numbers and booleans). Sort of like JSON.stringify(), but

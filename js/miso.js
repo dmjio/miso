@@ -13,7 +13,7 @@ function diff(currentObj, newObj, parent, context) {
 }
 function replace(c, n, parent, context) {
   callBeforeDestroyedRecursive(c);
-  if (n.type === "vtext") {
+  if (n.type === 2 /* VText */) {
     n.domRef = context.createTextNode(n.text);
     context.replaceChild(parent, n.domRef, c.domRef);
   } else {
@@ -27,7 +27,7 @@ function destroy(obj, parent, context) {
   callDestroyedRecursive(obj);
 }
 function diffNodes(c, n, parent, context) {
-  if (c.type === "vtext" && n.type === "vtext") {
+  if (c.type === 2 /* VText */ && n.type === 2 /* VText */) {
     if (c.text !== n.text) {
       context.setTextContent(c.domRef, n.text);
     }
@@ -50,7 +50,7 @@ function callDestroyedRecursive(obj) {
 function callDestroyed(obj) {
   if (obj["onDestroyed"])
     obj["onDestroyed"]();
-  if (obj.type === "vcomp")
+  if (obj.type === 0 /* VComp */)
     unmountComponent(obj);
 }
 function callBeforeDestroyed(obj) {
@@ -58,7 +58,7 @@ function callBeforeDestroyed(obj) {
     obj["onBeforeDestroyed"](obj.domRef);
 }
 function callBeforeDestroyedRecursive(obj) {
-  if (obj.type === "vcomp" && obj["onBeforeUnmounted"]) {
+  if (obj.type === 0 /* VComp */ && obj["onBeforeUnmounted"]) {
     obj["onBeforeUnmounted"](obj.domRef);
   }
   callBeforeDestroyed(obj);
@@ -69,7 +69,7 @@ function callBeforeDestroyedRecursive(obj) {
 function callCreated(obj, context) {
   if (obj["onCreated"])
     obj["onCreated"](obj.domRef);
-  if (obj.type === "vcomp")
+  if (obj.type === 0 /* VComp */)
     mountComponent(obj, context);
 }
 function callBeforeCreated(obj) {
@@ -77,11 +77,11 @@ function callBeforeCreated(obj) {
     obj["onBeforeCreated"]();
 }
 function populate(c, n, context) {
-  if (n.type !== "vtext") {
+  if (n.type !== 2 /* VText */) {
     diffProps(c ? c["props"] : {}, n["props"], n.domRef, n.ns === "svg", context);
     diffClass(c ? c["classList"] : null, n["classList"], n.domRef, context);
     diffCss(c ? c["css"] : {}, n["css"], n.domRef, context);
-    if (n.type === "vnode") {
+    if (n.type === 1 /* VNode */) {
       diffChildren(c ? c["children"] : [], n.children, n.domRef, context);
     }
     drawCanvas(n);
@@ -221,7 +221,7 @@ function mountComponent(obj, context) {
   });
 }
 function create(obj, parent, context) {
-  if (obj.type === "vtext") {
+  if (obj.type === 2 /* VText */) {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
   } else {
@@ -352,7 +352,7 @@ function delegateEvent(event, obj, stack, debug, context) {
     return;
   } else if (stack.length > 1) {
     if (context.isEqual(obj.domRef, stack[0])) {
-      if (obj.type === "vnode") {
+      if (obj.type === 1 /* VNode */) {
         const eventObj = obj.events.captures[event.type];
         if (eventObj) {
           const options = eventObj.options;
@@ -374,7 +374,7 @@ function delegateEvent(event, obj, stack, debug, context) {
       }
     }
   } else {
-    if (obj.type === "vnode") {
+    if (obj.type === 1 /* VNode */) {
       const eventCaptureObj = obj.events.captures[event.type];
       if (eventCaptureObj && !event["captureStopped"]) {
         const options = eventCaptureObj.options;
@@ -408,9 +408,9 @@ function delegateEvent(event, obj, stack, debug, context) {
 function propagateWhileAble(vtree, event) {
   while (vtree) {
     switch (vtree.type) {
-      case "vtext":
+      case 2 /* VText */:
         break;
-      case "vnode":
+      case 1 /* VNode */:
         const eventObj = vtree.events.bubbles[event.type];
         if (eventObj) {
           const options = eventObj.options;
@@ -423,7 +423,7 @@ function propagateWhileAble(vtree, event) {
         }
         vtree = vtree.parent;
         break;
-      case "vcomp":
+      case 0 /* VComp */:
         if (!vtree.eventPropagation)
           return;
         vtree = vtree.parent;
@@ -475,7 +475,7 @@ function getAllPropertyNames(obj) {
 function collapseSiblingTextNodes(vs) {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1;ix < vs.length; ix++) {
-    if (adjusted[ax].type === "vtext" && vs[ix].type === "vtext") {
+    if (adjusted[ax].type === 2 /* VText */ && vs[ix].type === 2 /* VText */) {
       adjusted[ax].text += vs[ix].text;
       continue;
     }
@@ -546,7 +546,7 @@ function integrityCheck(vtree, context, drawingContext) {
   return check(true, vtree, context, drawingContext);
 }
 function check(result, vtree, context, drawingContext) {
-  if (vtree.type == "vtext") {
+  if (vtree.type == 2 /* VText */) {
     if (context.getTag(vtree.domRef) !== "#text") {
       console.warn("VText domRef not a TEXT_NODE", vtree);
       result = false;
@@ -605,11 +605,11 @@ function check(result, vtree, context, drawingContext) {
 }
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
-    case "vcomp":
+    case 0 /* VComp */:
       vtree.domRef = node;
       callCreated(vtree, drawingContext);
       break;
-    case "vtext":
+    case 2 /* VText */:
       vtree.domRef = node;
       break;
     default:
@@ -624,7 +624,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           return false;
         }
         switch (vdomChild.type) {
-          case "vtext":
+          case 2 /* VText */:
             if (domChild.nodeType !== 3) {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;

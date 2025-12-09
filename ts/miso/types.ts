@@ -10,8 +10,14 @@ export type NS = 'text' | 'html' | 'svg' | 'mathml';
 export type DOMRef = HTMLElement | MathMLElement | SVGElement;
 export type ComponentId = number;
 
+export enum VTreeType {
+  VComp = 0,
+  VNode = 1,
+  VText = 2
+}
+
 export type VComp<T> = {
-  type: 'vcomp';
+  type: VTreeType;
   domRef: T;
   ns: 'html';
   tag: string;
@@ -34,7 +40,7 @@ export type VComp<T> = {
 };
 
 export type VNode<T> = {
-  type: 'vnode';
+  type: VTreeType;
   ns: NS;
   domRef: T;
   tag: string;
@@ -54,7 +60,7 @@ export type VNode<T> = {
 };
 
 export type VText<T> = {
-  type: 'vtext';
+  type: VTreeType;
   text: string;
   domRef: T;
   ns: NS;
