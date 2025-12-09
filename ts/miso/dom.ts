@@ -111,12 +111,11 @@ export function callBeforeCreated<T>(obj: VTree<T>): void {
 
 export function populate<T>(c: VTree<T>, n: VTree<T>, context: DrawingContext<T>): void {
   if (n.type !== 'vtext') {
-    if (!c) c = vnode({});
-    diffProps(c['props'], n['props'], n.domRef, n.ns === 'svg', context);
-    diffClass(c['classList'], n['classList'], n.domRef, context);
-    diffCss(c['css'], n['css'], n.domRef, context);
+    diffProps(c ? c['props'] : {}, n['props'], n.domRef, n.ns === 'svg', context);
+    diffClass(c ? c['classList'] : null, n['classList'], n.domRef, context);
+    diffCss(c ? c['css'] : {}, n['css'], n.domRef, context);
     if (n.type === 'vnode') {
-      diffChildren<T>(c as VNode<T>, n as VNode<T>, n.domRef, context);
+      diffChildren<T>(c ? c['children'] : [], n.children, n.domRef, context);
     }
     drawCanvas(n as VNode<T>);
   }
@@ -211,27 +210,27 @@ function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: DrawingContext<T>): 
   context.setInlineStyle(cCss, nCss, node);
 }
 
-function shouldSync<T> (c: VNode<T>, n: VNode<T>) {
-    if (c.children.length === 0 || n.children.length === 0) return false;
-    for (var i = 0; i < c.children.length; i++) {
-        if (c.children[i].key === null || c.children[i].key === undefined) {
+function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {
+    if (cs.length === 0 || ns.length === 0) return false;
+    for (var i = 0; i < cs.length; i++) {
+        if (cs[i].key === null || cs[i].key === undefined) {
             return false;
         }
     }
-    for (var i = 0; i < n.children.length; i++) {
-        if (n.children[i].key === null || n.children[i].key === undefined) {
+    for (var i = 0; i < ns.length; i++) {
+        if (ns[i].key === null || ns[i].key === undefined) {
             return false;
         }
     }
     return true;
 }
 
-function diffChildren<T>(c: VNode<T>, n: VNode<T>, parent: T, context: DrawingContext<T>): void {
-  if (shouldSync(c,n)) {
-    syncChildren(c.children, n.children, parent, context);
+function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
+  if (shouldSync(cs,ns)) {
+    syncChildren(cs, ns, parent, context);
   } else {
-    for (let i = 0; i < Math.max (n.children.length, c.children.length); i++)
-      diff(c.children[i], n.children[i], parent, context);
+    for (let i = 0; i < Math.max (ns.length, cs.length); i++)
+      diff(cs[i], ns[i], parent, context);
   }
 }
 
