@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -770,14 +772,22 @@ unloadScripts ComponentState {..} = do
       # ("removeChild" :: MisoString)
       $ [domRef]
 -----------------------------------------------------------------------------
+-- | Helper to drop all lifecycle and mounting hooks if defined.
+freeLifecycleHooks :: ComponentState model action -> JSM ()
+freeLifecycleHooks ComponentState {..} = do
+  VTree (Object vcomp) <- liftIO (readIORef componentVTree)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
+-----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
-  :: Function
-  -> Component parent model action
+  :: Component parent model action
   -> ComponentState model action
   -> JSM ()
-unmount mountCallback app cs@ComponentState {..} = do
-  freeFunction mountCallback
+unmount app cs@ComponentState {..} = do
   liftIO $ do
     killThread componentMailboxThreadId
     mapM_ killThread =<< readIORef componentSubThreads
@@ -789,6 +799,7 @@ unmount mountCallback app cs@ComponentState {..} = do
   finalizeWebSockets componentId
   finalizeEventSources componentId
   unloadScripts cs
+  freeLifecycleHooks cs
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId =
@@ -826,7 +837,7 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
-          unmount mountCallback app componentState
+          unmount app componentState
   vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
@@ -1603,4 +1614,7 @@ blob = BLOB
 -- | Smart constructor for sending an @ArrayBuffer@ via an t'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
+-----------------------------------------------------------------------------
+instance FromJSVal Function where
+  fromJSVal = pure . Just . Function . Object
 -----------------------------------------------------------------------------
