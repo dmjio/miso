@@ -849,12 +849,14 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   FFI.set "eventPropagation" (eventPropagation app) vcomp
+  flip (FFI.set "type") vcomp =<< toJSVal VCompType
   pure (VTree vcomp)
 buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- toJSVal =<< procreate vnode
-  FFI.set "children" vchildren vnode
+  flip (FFI.set "children") vnode vchildren
+  flip (FFI.set "type") vnode =<< toJSVal VNodeType
   pure $ VTree vnode
     where
       procreate parentVTree = do
@@ -869,7 +871,7 @@ buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
               zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
 buildVTree _ (VText t) _ _ _ = do
   vtree <- create
-  FFI.set "type" ("vtext" :: JSString) vtree
+  flip (FFI.set "type") vtree =<< toJSVal VTextType
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree

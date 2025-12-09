@@ -1,11 +1,11 @@
 import { callCreated, populate } from './dom';
-import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef } from './types';
+import { DrawingContext, HydrationContext, VTree, VComp, VNode, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
   var ax = 0, adjusted = vs.length > 0 ? [vs[0]] : [];
   for (var ix = 1; ix < vs.length; ix++) {
-    if (adjusted[ax].type === 'vtext' && vs[ix].type === 'vtext') {
+    if (adjusted[ax].type === VTreeType.VText && vs[ix].type === VTreeType.VText) {
       (adjusted[ax] as VText<DOMRef>).text += (vs[ix] as VText<DOMRef>).text;
       continue;
     }
@@ -101,7 +101,7 @@ export function integrityCheck(vtree: VTree<DOMRef>, context: HydrationContext<D
 // dmj: Does deep equivalence check, spine and leaves of virtual DOM to DOM.
 function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
   // text nodes must be the same
-  if (vtree.type == 'vtext') {
+  if (vtree.type == VTreeType.VText) {
     if (context.getTag(vtree.domRef) !== '#text') {
       console.warn('VText domRef not a TEXT_NODE', vtree);
       result = false;
@@ -190,11 +190,11 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
-    case 'vcomp':
+    case VTreeType.VComp:
       (vtree as VComp<DOMRef>).domRef = node as DOMRef;
       callCreated(vtree, drawingContext);
       break;
-    case 'vtext':
+    case VTreeType.VText:
       (vtree as VText<DOMRef>).domRef = node as DOMRef;
       break;
     default:
@@ -211,7 +211,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           return false;
         }
         switch (vdomChild.type) {
-          case 'vtext':
+          case VTreeType.VText:
             if (domChild.nodeType !== 3) {
               diagnoseError(logLevel, vdomChild, domChild);
               return false;

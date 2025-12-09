@@ -37,6 +37,7 @@ module Miso.Types
   , JS            (..)
   , LogLevel      (..)
   , VTree         (..)
+  , VTreeType     (..)
   , MountPoint
   , DOMRef
   , ROOT
@@ -526,4 +527,14 @@ prettyQueryString URI {..} = queries <> flags
         [ "?" <> k
         | (k, Nothing) <- M.toList uriQueryString
         ]
+-----------------------------------------------------------------------------
+-- | VTreeType ADT for matching TypeScript enum
+data VTreeType = VCompType | VNodeType | VTextType
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal VTreeType where
+  toJSVal = \case 
+    VCompType -> toJSVal (0 :: Int)
+    VNodeType -> toJSVal (1 :: Int)
+    VTextType -> toJSVal (2 :: Int)
 -----------------------------------------------------------------------------

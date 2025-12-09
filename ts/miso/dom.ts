@@ -1,4 +1,4 @@
-import { Class, DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS } from './types';
+import { Class, DrawingContext, VNode, VComp, ComponentId, VTree, Props, CSS, VTreeType } from './types';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(currentObj: VTree<T>, newObj: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -21,7 +21,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   // ^ this will unmount sub components before we replace the child
   // and will recursively call hooks on nodes
   // step2 : create new things, replace old things with new things
-  if (n.type === 'vtext') {
+  if (n.type === VTreeType.VText) {
     n.domRef = context.createTextNode(n.text);
     context.replaceChild(parent, n.domRef, c.domRef);
   } else {
@@ -43,7 +43,7 @@ function destroy<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void 
 
 function diffNodes<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // bail out on easy vtext case
-  if (c.type === 'vtext' && n.type === 'vtext') {
+  if (c.type === VTreeType.VText && n.type === VTreeType.VText) {
     if (c.text !== n.text) {
       context.setTextContent(c.domRef, n.text);
     }
@@ -81,7 +81,7 @@ function callDestroyedRecursive<T>(obj: VTree<T>): void {
 
 function callDestroyed<T>(obj: VTree<T>): void {
   if (obj['onDestroyed']) obj['onDestroyed']();
-  if (obj.type === 'vcomp') unmountComponent(obj);
+  if (obj.type === VTreeType.VComp) unmountComponent(obj);
 }
 
 function callBeforeDestroyed<T>(obj: VTree<T>): void {
@@ -89,7 +89,7 @@ function callBeforeDestroyed<T>(obj: VTree<T>): void {
 }
 
 function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
-  if (obj.type === 'vcomp' && obj['onBeforeUnmounted']) {
+  if (obj.type === VTreeType.VComp && obj['onBeforeUnmounted']) {
     obj['onBeforeUnmounted'](obj.domRef);
   }
   callBeforeDestroyed(obj);
@@ -101,7 +101,7 @@ function callBeforeDestroyedRecursive<T>(obj: VTree<T>): void {
 // ** </> recursive calls to hooks
 export function callCreated<T>(obj: VTree<T>, context: DrawingContext<T>): void {
   if (obj['onCreated']) obj['onCreated'](obj.domRef);
-  if (obj.type === 'vcomp') mountComponent(obj, context);
+  if (obj.type === VTreeType.VComp) mountComponent(obj, context);
 }
 
 export function callBeforeCreated<T>(obj: VTree<T>): void {
@@ -109,11 +109,11 @@ export function callBeforeCreated<T>(obj: VTree<T>): void {
 }
 
 export function populate<T>(c: VTree<T>, n: VTree<T>, context: DrawingContext<T>): void {
-  if (n.type !== 'vtext') {
+  if (n.type !== VTreeType.VText) {
     diffProps(c ? c['props'] : {}, n['props'], n.domRef, n.ns === 'svg', context);
     diffClass(c ? c['classList'] : null, n['classList'], n.domRef, context);
     diffCss(c ? c['css'] : {}, n['css'], n.domRef, context);
-    if (n.type === 'vnode') {
+    if (n.type === VTreeType.VNode) {
       diffChildren<T>(c ? c['children'] : [], n.children, n.domRef, context);
     }
     drawCanvas(n as VNode<T>);
@@ -280,7 +280,7 @@ function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
 }
 // creates nodes on virtual and dom (vtext, vcomp, vnode)
 function create<T>(obj: VTree<T>, parent: T, context: DrawingContext<T>): void {
-  if (obj.type === 'vtext') {
+  if (obj.type === VTreeType.VText) {
     obj.domRef = context.createTextNode(obj.text);
     context.appendChild(parent, obj.domRef);
   } else {
