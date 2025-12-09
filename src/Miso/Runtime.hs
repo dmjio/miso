@@ -775,12 +775,16 @@ unloadScripts ComponentState {..} = do
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState model action -> JSM ()
 freeLifecycleHooks ComponentState {..} = do
+#ifndef GHCJS_BOTH
   VTree (Object vcomp) <- liftIO (readIORef componentVTree)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
+#else
+  pure ()
+#endif
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
@@ -795,11 +799,11 @@ unmount app cs@ComponentState {..} = do
     mapM_ killThread componentChildToParentThreadId
   killSubscribers componentId
   drain app cs
-  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
   finalizeWebSockets componentId
   finalizeEventSources componentId
   unloadScripts cs
   freeLifecycleHooks cs
+  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId =
@@ -1615,6 +1619,8 @@ blob = BLOB
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
+#ifndef GHCJS_BOTH
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function . Object
+#endif
 -----------------------------------------------------------------------------
