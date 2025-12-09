@@ -26,29 +26,30 @@
 module Miso.Types
   ( -- ** Types
     App
-  , Component        (..)
+  , Component     (..)
   , ComponentId
-  , SomeComponent    (..)
-  , View             (..)
-  , Key              (..)
-  , Attribute        (..)
-  , NS               (..)
-  , CSS              (..)
-  , JS               (..)
-  , LogLevel         (..)
-  , VTree            (..)
+  , SomeComponent (..)
+  , View          (..)
+  , Key           (..)
+  , Attribute     (..)
+  , NS            (..)
+  , CSS           (..)
+  , JS            (..)
+  , LogLevel      (..)
+  , VTree         (..)
   , MountPoint
   , DOMRef
   , ROOT
   , Transition
   , Events
-  , URI (..)
+  , Phase         (..)
+  , URI           (..)
   -- ** Re-exports
   , JSM
   -- ** Classes
-  , ToKey            (..)
+  , ToKey         (..)
   -- ** Data Bindings
-  , Binding (..)
+  , Binding       (..)
   -- ** Smart Constructors
   , emptyURI
   , component

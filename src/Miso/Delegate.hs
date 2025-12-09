@@ -22,7 +22,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
-import           Miso.Types (VTree(..))
+import           Miso.Types (VTree(..), Events, Phase)
 import           Miso.String (MisoString)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
@@ -31,7 +31,7 @@ data Event
   = Event
   { name :: MisoString
   -- ^ Event name
-  , capture :: Bool
+  , capture :: Phase
   -- ^ Capture settings for event
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ instance ToJSVal Event where
 delegator
   :: JSVal
   -> IORef VTree
-  -> M.Map MisoString Bool
+  -> Events
   -> Bool
   -> JSM ()
 delegator mountPointElement vtreeRef es debug = do

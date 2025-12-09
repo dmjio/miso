@@ -63,11 +63,6 @@ on :: MisoString
    -> Attribute action
 on = onWithOptions BUBBLE defaultOptions
 -----------------------------------------------------------------------------
--- | Phase during which event listener is invoked.
---
--- @since 1.9.0.0
-data Phase = CAPTURE | BUBBLE deriving (Eq, Show)
------------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions (True :: Capture)@.
 --
 -- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
