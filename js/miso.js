@@ -9,12 +9,11 @@ function diff(c, n, parent, context) {
   else if (c.type === 2 /* VText */ && n.type === 2 /* VText */) {
     diffVText(c, n, context);
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
-    if (n.tag === c.tag && n.key === c.key) {
-      n.domRef = c.domRef;
-      diffAttrs(c, n, context);
-    } else {
-      replace(c, n, parent, context);
+    if (n.key === c.key) {
+      n.child = c.child;
+      return;
     }
+    replace(c, n, parent, context);
   } else if (c.type === 1 /* VNode */ && n.type === 1 /* VNode */) {
     if (n.tag === c.tag && n.key === c.key) {
       n.domRef = c.domRef;
@@ -31,6 +30,17 @@ function diffVText(c, n, context) {
   n.domRef = c.domRef;
   return;
 }
+function drill(c) {
+  while (c.type === 0 /* VComp */ && c.child) {
+    switch (c.child.type) {
+      case 0 /* VComp */:
+        c = c.child;
+        break;
+      default:
+        return c.child.domRef;
+    }
+  }
+}
 function replace(c, n, parent, context) {
   switch (c.type) {
     case 2 /* VText */:
@@ -42,14 +52,34 @@ function replace(c, n, parent, context) {
   switch (n.type) {
     case 2 /* VText */:
       switch (c.type) {
+        case 0 /* VComp */:
+          context.replaceChild(parent, context.createTextNode(n.text), drill(c));
+          break;
         default:
           n.domRef = context.createTextNode(n.text);
           context.replaceChild(parent, n.domRef, c.domRef);
           break;
       }
       break;
-    default:
-      context.replaceChild(parent, createElement(n, context), c.domRef);
+    case 0 /* VComp */:
+      switch (c.type) {
+        case 0 /* VComp */:
+          createElement(parent, 1 /* REPLACE */, drill(c), n, context);
+          break;
+        default:
+          createElement(parent, 1 /* REPLACE */, c.domRef, n, context);
+          break;
+      }
+      break;
+    case 1 /* VNode */:
+      switch (c.type) {
+        case 0 /* VComp */:
+          createElement(parent, 1 /* REPLACE */, drill(c), n, context);
+          break;
+        default:
+          createElement(parent, 1 /* REPLACE */, c.domRef, n, context);
+          break;
+      }
       break;
   }
   switch (c.type) {
@@ -68,7 +98,14 @@ function destroy(c, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  context.removeChild(parent, c.domRef);
+  switch (c.type) {
+    case 0 /* VComp */:
+      context.removeChild(parent, drill(c));
+      break;
+    default:
+      context.removeChild(parent, c.domRef);
+      break;
+  }
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -115,10 +152,8 @@ function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
   diffCss(c ? c.css : {}, n.css, n.domRef, context);
-  if (n.type === 1 /* VNode */) {
-    diffChildren(c ? c.children : [], n.children, n.domRef, context);
-    drawCanvas(n);
-  }
+  diffChildren(c ? c.children : [], n.children, n.domRef, context);
+  drawCanvas(n);
 }
 function diffClass(c, n, domRef, context) {
   if (!c && !n) {
@@ -226,27 +261,27 @@ function populateDomRef(c, context) {
     c.domRef = context.createElement(c.tag);
   }
 }
-function callCreated(n, context) {
+function callCreated(parent, n, context) {
   switch (n.type) {
     case 0 /* VComp */:
       if (n.onBeforeMounted)
         n.onBeforeMounted();
-      mountComponent(n, context);
+      mountComponent(0 /* APPEND */, parent, n, null, context);
+      if (n.onMounted)
+        n.onMounted(drill(n));
       break;
     case 1 /* VNode */:
       if (n.onCreated)
         n.onCreated(n.domRef);
       break;
   }
-  return n.domRef;
 }
-function createElement(n, context) {
+function createElement(parent, op, replacing, n, context) {
   switch (n.type) {
     case 0 /* VComp */:
       if (n.onBeforeMounted)
         n.onBeforeMounted();
-      populateDomRef(n, context);
-      mountComponent(n, context);
+      mountComponent(op, parent, n, replacing, context);
       break;
     case 1 /* VNode */:
       if (n.onBeforeCreated)
@@ -254,10 +289,20 @@ function createElement(n, context) {
       populateDomRef(n, context);
       if (n.onCreated)
         n.onCreated(n.domRef);
+      diffAttrs(null, n, context);
+      switch (op) {
+        case 2 /* INSERT_BEFORE */:
+          context.insertBefore(parent, n.domRef, replacing);
+          break;
+        case 0 /* APPEND */:
+          context.appendChild(parent, n.domRef);
+          break;
+        case 1 /* REPLACE */:
+          context.replaceChild(parent, n.domRef, replacing);
+          break;
+      }
       break;
   }
-  diffAttrs(null, n, context);
-  return n.domRef;
 }
 function drawCanvas(c) {
   if (c.tag === "canvas" && c.draw)
@@ -265,23 +310,99 @@ function drawCanvas(c) {
 }
 function unmountComponent(c) {
   if (c.onUnmounted)
-    c.onUnmounted(c.domRef);
-  c.unmount(c.domRef);
+    c.onUnmounted(drill(c));
+  c.unmount(drill(c));
 }
-function mountComponent(obj, context) {
-  obj.mount(obj, (componentId, componentTree) => {
-    obj.children.push(componentTree);
-    context.appendChild(obj.domRef, componentTree.domRef);
-    if (obj.onMounted)
-      obj.onMounted(obj.domRef);
+function mountComponent(op, parent, n, replacing, context) {
+  n.mount(parent, (componentId, componentTree) => {
+    n.componentId = componentId;
+    n.child = componentTree;
+    if (n.onMounted)
+      n.onMounted(drill(n));
+    switch (op) {
+      case 2 /* INSERT_BEFORE */:
+        context.insertBefore(parent, drill(n), replacing);
+        break;
+      case 0 /* APPEND */:
+        context.appendChild(parent, drill(n));
+        break;
+      case 1 /* REPLACE */:
+        context.replaceChild(parent, drill(n), replacing);
+        break;
+    }
   });
 }
-function create(obj, parent, context) {
-  if (obj.type === 2 /* VText */) {
-    obj.domRef = context.createTextNode(obj.text);
-    context.appendChild(parent, obj.domRef);
+function create(n, parent, context) {
+  if (n.type === 2 /* VText */) {
+    n.domRef = context.createTextNode(n.text);
+    context.appendChild(parent, n.domRef);
   } else {
-    context.appendChild(parent, createElement(obj, context));
+    createElement(parent, 0 /* APPEND */, null, n, context);
+  }
+}
+function insertBefore(parent, n, o, context) {
+  switch (n.type) {
+    case 0 /* VComp */:
+      if (!o) {
+        context.insertBefore(parent, drill(n), null);
+      } else {
+        switch (o.type) {
+          case 0 /* VComp */:
+            context.insertBefore(parent, drill(n), drill(o));
+            break;
+          default:
+            context.insertBefore(parent, drill(n), o.domRef);
+            break;
+        }
+      }
+      break;
+    default:
+      if (!o) {
+        context.insertBefore(parent, n.domRef, null);
+      } else {
+        switch (o.type) {
+          case 0 /* VComp */:
+            context.insertBefore(parent, n.domRef, drill(o));
+            break;
+          default:
+            context.insertBefore(parent, n.domRef, o.domRef);
+            break;
+        }
+      }
+  }
+}
+function removeChild(parent, n, context) {
+  switch (n.type) {
+    case 0 /* VComp */:
+      context.removeChild(parent, drill(n));
+      break;
+    default:
+      context.removeChild(parent, n.domRef);
+      break;
+  }
+}
+function swapDOMRef(oFirst, oLast, parent, context) {
+  switch (oLast.type) {
+    case 0 /* VComp */:
+      switch (oFirst.type) {
+        case 0 /* VComp */:
+          context.swapDOMRefs(drill(oLast), drill(oFirst), parent);
+          break;
+        default:
+          context.swapDOMRefs(drill(oLast), oFirst.domRef, parent);
+          break;
+      }
+      break;
+    default:
+      switch (oFirst.type) {
+        case 0 /* VComp */:
+          context.swapDOMRefs(oLast.domRef, drill(oFirst), parent);
+          break;
+        default:
+          context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
+          break;
+      }
+      break;
   }
 }
 function syncChildren(os, ns, parent, context) {
@@ -296,13 +417,13 @@ function syncChildren(os, ns, parent, context) {
     oLast = os[oldLastIndex];
     if (oldFirstIndex > oldLastIndex) {
       diff(null, nFirst, parent, context);
-      context.insertBefore(parent, nFirst.domRef, oFirst ? oFirst.domRef : null);
+      insertBefore(parent, nFirst, oFirst, context);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        context.removeChild(parent, os[oldLastIndex--].domRef);
+        removeChild(parent, os[oldLastIndex--], context);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
@@ -311,16 +432,16 @@ function syncChildren(os, ns, parent, context) {
     } else if (oLast.key === nLast.key) {
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-      context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
+      swapDOMRef(oLast, oFirst, parent, context);
       swap(os, oldFirstIndex, oldLastIndex);
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key) {
-      context.insertBefore(parent, oFirst.domRef, context.nextSibling(oLast));
+      insertBefore(parent, oFirst, oLast.nextSibling, context);
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast.key === nFirst.key) {
-      context.insertBefore(parent, oLast.domRef, oFirst.domRef);
+      insertBefore(parent, oLast, oFirst, context);
       os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
       diff(os[oldFirstIndex++], nFirst, parent, context);
       newFirstIndex++;
@@ -338,16 +459,30 @@ function syncChildren(os, ns, parent, context) {
       if (found) {
         os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
         diff(os[oldFirstIndex++], nFirst, parent, context);
-        context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
+        insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
         switch (nFirst.type) {
           case 2 /* VText */:
             nFirst.domRef = context.createTextNode(nFirst.text);
-            context.insertBefore(parent, nFirst.domRef, oFirst.domRef);
+            switch (oFirst.type) {
+              case 0 /* VComp */:
+                context.insertBefore(parent, nFirst.domRef, drill(oFirst));
+                break;
+              default:
+                context.insertBefore(parent, nFirst.domRef, oFirst.domRef);
+                break;
+            }
             break;
           default:
-            context.insertBefore(parent, createElement(nFirst, context), oFirst.domRef);
+            switch (oFirst.type) {
+              case 0 /* VComp */:
+                createElement(parent, 2 /* INSERT_BEFORE */, drill(oFirst), nFirst, context);
+                break;
+              case 1 /* VNode */:
+                createElement(parent, 2 /* INSERT_BEFORE */, oFirst.domRef, nFirst, context);
+                break;
+            }
             break;
         }
         os.splice(oldFirstIndex++, 0, nFirst);
@@ -415,7 +550,17 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
     return;
   } else if (stack.length > 1) {
-    if (obj.type === 0 /* VComp */ || obj.type === 1 /* VNode */) {
+    if (obj.type === 2 /* VText */) {
+      return;
+    } else if (obj.type === 0 /* VComp */) {
+      if (!obj.child) {
+        if (debug) {
+          console.warn("VComp has no child property set during event delegation", obj);
+        }
+        return;
+      }
+      return delegateEvent(event, obj.child, stack, debug, context);
+    } else if (obj.type === 1 /* VNode */) {
       if (context.isEqual(obj.domRef, stack[0])) {
         const eventObj = obj.events.captures[event.type];
         if (eventObj) {
@@ -432,7 +577,12 @@ function delegateEvent(event, obj, stack, debug, context) {
         stack.splice(0, 1);
       }
       for (const child of obj.children) {
-        if (child.type === 0 /* VComp */ || child.type === 1 /* VNode */) {
+        if (child.type === 0 /* VComp */) {
+          const childDomRef = drill(child);
+          if (childDomRef && context.isEqual(childDomRef, stack[0])) {
+            delegateEvent(event, child, stack, debug, context);
+          }
+        } else if (child.type === 1 /* VNode */) {
           if (context.isEqual(child.domRef, stack[0])) {
             delegateEvent(event, child, stack, debug, context);
           }
@@ -440,7 +590,11 @@ function delegateEvent(event, obj, stack, debug, context) {
       }
     }
   } else {
-    if (obj.type === 1 /* VNode */) {
+    if (obj.type === 0 /* VComp */) {
+      if (obj.child) {
+        delegateEvent(event, obj.child, stack, debug, context);
+      }
+    } else if (obj.type === 1 /* VNode */) {
       const eventCaptureObj = obj.events.captures[event.type];
       if (eventCaptureObj && !event["captureStopped"]) {
         const options = eventCaptureObj.options;
@@ -549,6 +703,13 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
+function setVCompRef(vtree, node) {
+  if (vtree.type === 0 /* VComp */) {
+    setVCompRef(vtree.child, node);
+  } else {
+    vtree.domRef = node;
+  }
+}
 function preamble(mountPoint, context) {
   var mountChildIdx = 0, node;
   var root = context.getRoot();
@@ -580,12 +741,15 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     }
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
-    vtree.domRef = node;
     switch (vtree.type) {
+      case 1 /* VNode */:
+        diffAttrs(null, vtree, drawingContext);
+        vtree.domRef = node;
+        break;
       case 2 /* VText */:
+        vtree.domRef = node;
         break;
       default:
-        diffAttrs(null, vtree, drawingContext);
         break;
     }
     return false;
@@ -626,7 +790,7 @@ function check(result, vtree, context, drawingContext) {
       console.warn("VText node content differs", vtree);
       result = false;
     }
-  } else {
+  } else if (vtree.type === 1 /* VNode */) {
     if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
       console.warn("Integrity check failed, tags differ", vtree.tag.toUpperCase(), context.getTag(vtree.domRef));
       result = false;
@@ -678,8 +842,8 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
-      vtree.domRef = node;
-      callCreated(vtree, drawingContext);
+      setVCompRef(vtree, node);
+      callCreated(node, vtree, drawingContext);
       break;
     case 2 /* VText */:
       vtree.domRef = node;
@@ -687,7 +851,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
     case 1 /* VNode */:
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
-      callCreated(vtree, drawingContext);
+      callCreated(node, vtree, drawingContext);
       for (var i = 0;i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
         const domChild = node.childNodes[i];
@@ -711,7 +875,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           default:
             if (domChild.nodeType !== 1)
               return false;
-            vdomChild.domRef = domChild;
+            setVCompRef(vdomChild, domChild);
             walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
@@ -970,7 +1134,12 @@ var componentContext = {
 };
 var drawingContext = {
   nextSibling: (node) => {
-    return node.domRef.nextSibling;
+    switch (node.type) {
+      case 0 /* VComp */:
+        return drill(node).nextSibling;
+      default:
+        return node.domRef.nextSibling;
+    }
   },
   createTextNode: (s) => {
     return document.createTextNode(s);
