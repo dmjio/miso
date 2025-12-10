@@ -41,8 +41,13 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
   // step1 : prepare to delete, unmount things
-  if (c.type === VTreeType.VNode || c.type === VTreeType.VComp)
-     callBeforeDestroyedRecursive(c);
+  switch (c.type) {
+      case VTreeType.VText:
+          break;
+      default:
+          callBeforeDestroyedRecursive(c);
+          break;
+  }
   switch (n.type) {
       case VTreeType.VText:
           switch (c.type) {
@@ -98,18 +103,35 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   }
 
   // step 3: call destroyed hooks, call created hooks
-  if (c.type === VTreeType.VNode || c.type === VTreeType.VComp)
-    callDestroyedRecursive(c);
+  switch (c.type) {
+      case VTreeType.VText:
+          break;
+      default:
+          callDestroyedRecursive(c);
+          break;
+  }
 }
 
 // destroy vtext, vnode, vcomp
 function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // step 1: invoke destroy pre-hooks on vnode and vcomp
-  if (!(c.type === VTreeType.VText)) callBeforeDestroyedRecursive(c);
+  switch (c.type) {
+      case VTreeType.VText:
+          break;
+      default:
+          callBeforeDestroyedRecursive(c);
+          break;
+  }
   // step 2: destroy
   context.removeChild(parent, c.domRef);
   // step 3: invoke post-hooks for vnode and vcomp
-  if (!(c.type === VTreeType.VText)) callDestroyedRecursive(c);
+  switch (c.type) {
+      case VTreeType.VText:
+          break;
+      default:
+          callDestroyedRecursive(c);
+          break;
+  }
 }
 
 // ** recursive calls to hooks

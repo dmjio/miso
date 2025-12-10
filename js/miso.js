@@ -32,8 +32,13 @@ function diffVText(c, n, context) {
   return;
 }
 function replace(c, n, parent, context) {
-  if (c.type === 1 /* VNode */ || c.type === 0 /* VComp */)
-    callBeforeDestroyedRecursive(c);
+  switch (c.type) {
+    case 2 /* VText */:
+      break;
+    default:
+      callBeforeDestroyedRecursive(c);
+      break;
+  }
   switch (n.type) {
     case 2 /* VText */:
       switch (c.type) {
@@ -78,15 +83,30 @@ function replace(c, n, parent, context) {
       }
       break;
   }
-  if (c.type === 1 /* VNode */ || c.type === 0 /* VComp */)
-    callDestroyedRecursive(c);
+  switch (c.type) {
+    case 2 /* VText */:
+      break;
+    default:
+      callDestroyedRecursive(c);
+      break;
+  }
 }
 function destroy(c, parent, context) {
-  if (!(c.type === 2 /* VText */))
-    callBeforeDestroyedRecursive(c);
+  switch (c.type) {
+    case 2 /* VText */:
+      break;
+    default:
+      callBeforeDestroyedRecursive(c);
+      break;
+  }
   context.removeChild(parent, c.domRef);
-  if (!(c.type === 2 /* VText */))
-    callDestroyedRecursive(c);
+  switch (c.type) {
+    case 2 /* VText */:
+      break;
+    default:
+      callDestroyedRecursive(c);
+      break;
+  }
 }
 function callDestroyedRecursive(c) {
   callDestroyed(c);
