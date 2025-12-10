@@ -1,5 +1,5 @@
 import { callCreated, diffAttrs } from './dom';
-import { VNode, DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
+import { DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
