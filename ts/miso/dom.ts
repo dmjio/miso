@@ -122,16 +122,10 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
 }
 
 function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
-  switch (c.type) {
-      case VTreeType.VText:
-          break;
-      default:
-          callBeforeDestroyed(c);
-          for (const child of c.children)
-            if (child.type === VTreeType.VNode || child.type === VTreeType.VComp)
-              callBeforeDestroyedRecursive(child);
-          break;
-  }
+  callBeforeDestroyed(c);
+  for (const child of c.children)
+    if (child.type === VTreeType.VNode || child.type === VTreeType.VComp)
+       callBeforeDestroyedRecursive(child);
 }
 
 export function diffAttrs<T>(c: VNode<T> | VComp<T> | null, n: VNode<T> | VComp<T>, context: DrawingContext<T>): void {

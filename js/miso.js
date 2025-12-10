@@ -106,16 +106,10 @@ function callBeforeDestroyed(c) {
   }
 }
 function callBeforeDestroyedRecursive(c) {
-  switch (c.type) {
-    case 2 /* VText */:
-      break;
-    default:
-      callBeforeDestroyed(c);
-      for (const child of c.children)
-        if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */)
-          callBeforeDestroyedRecursive(child);
-      break;
-  }
+  callBeforeDestroyed(c);
+  for (const child of c.children)
+    if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */)
+      callBeforeDestroyedRecursive(child);
 }
 function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
