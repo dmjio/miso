@@ -32,11 +32,11 @@ export type VComp<T> = {
   eventPropagation: boolean;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
-  onBeforeUnmounted: (domRef: T) => void;
+  onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
   mount: (vcomp: VComp<T>, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {
@@ -52,11 +52,11 @@ export type VNode<T> = {
   children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
-  onCreated: () => void;
+  onCreated: (domRef: T) => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
   parent: Parent<T>;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VText<T> = {
@@ -66,6 +66,7 @@ export type VText<T> = {
   ns: NS;
   key: string;
   parent: Parent<T>;
+  nextSibling: VTree<T>;
 };
 
 export type Parent<T> = VNode<T> | VComp<T>;
@@ -121,7 +122,7 @@ export type ComponentContext = {
 }
 
 export type DrawingContext<T> = {
-  nextSibling : (node: VNode<T>) => T;
+  nextSibling : (node: VTree<T>) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns: string, tag : string) => T;
   appendChild : (parent: T, child: T) => void;

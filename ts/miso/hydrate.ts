@@ -1,4 +1,4 @@
-import { callCreated, populate } from './dom';
+import { callCreated, diffAttrs } from './dom';
 import { DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -63,7 +63,14 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     (vtree.domRef as Node) = node;
 
-    populate(null, vtree, drawingContext);
+     switch (vtree.type) {
+         case VTreeType.VText:
+             break;
+         default:
+             diffAttrs(null, vtree, drawingContext);
+             break;
+     }
+
     return false;
   } else {
     if (logLevel) {

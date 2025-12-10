@@ -95,8 +95,8 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-      if (context.isEqual(obj.domRef, stack[0])) {
-        if (obj.type === VTreeType.VNode) {
+      if (obj.type === VTreeType.VComp || obj.type === VTreeType.VNode) {
+        if (context.isEqual(obj.domRef, stack[0])) {
           const eventObj: EventObject<T> = obj.events.captures[event.type];
           if (eventObj) {
             const options: Options = eventObj.options;
@@ -105,20 +105,21 @@ function delegateEvent <T>(
               eventObj.runEvent(event, obj.domRef);
             }
             if (options.stopPropagation) {
-               /* if stopPropagation set, stop capturing */
+               /* If stopPropagation set, stop capturing */
                event['captureStopped'] = true;
             }
           }
+          stack.splice(0,1);
         }
-        stack.splice(0,1);
-      }
-      for (const child of obj['children']) {
-        if (context.isEqual(child.domRef, stack[0])) {
-           delegateEvent(event, child, stack, debug, context);
+      for (const child of obj.children) {
+          if (child.type === VTreeType.VComp || child.type === VTreeType.VNode) {
+            if (context.isEqual(child.domRef, stack[0])) {
+              delegateEvent(event, child, stack, debug, context);
+            }
+          }
         }
       }
-  } /* stack.length == 1 */
-  else {
+    } else {
     /* captures run first */
     if (obj.type === VTreeType.VNode) {
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
