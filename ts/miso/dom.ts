@@ -9,7 +9,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     else if (!n)
         destroy(c, parent, context);
     else if (c.type === VTreeType.VText && n.type === VTreeType.VText) {
-        diffVText(c, n, parent, context);
+        diffVText(c, n, context);
     }
     else if (c.type === VTreeType.VComp && n.type === VTreeType.VComp) {
         if (n.tag === c.tag && n.key === c.key) {
@@ -31,7 +31,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
         replace(c, n, parent, context);
 }
 
-function diffVText<T>(c: VText<T>, n: VText<T>, parent: T, context : DrawingContext<T>): void {
+function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): void {
   if (c.text !== n.text) context.setTextContent(c.domRef, n.text);
   n.domRef = c.domRef;
   return;

@@ -7,7 +7,7 @@ function diff(c, n, parent, context) {
   else if (!n)
     destroy(c, parent, context);
   else if (c.type === 2 /* VText */ && n.type === 2 /* VText */) {
-    diffVText(c, n, parent, context);
+    diffVText(c, n, context);
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
     if (n.tag === c.tag && n.key === c.key) {
       n.domRef = c.domRef;
@@ -25,7 +25,7 @@ function diff(c, n, parent, context) {
   } else
     replace(c, n, parent, context);
 }
-function diffVText(c, n, parent, context) {
+function diffVText(c, n, context) {
   if (c.text !== n.text)
     context.setTextContent(c.domRef, n.text);
   n.domRef = c.domRef;
