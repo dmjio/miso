@@ -266,6 +266,7 @@ function populateDomRef<T>(c: VComp<T> | VNode<T>, context: DrawingContext<T>): 
 export function callCreated<T>(n: VComp<T> | VNode<T>, context: DrawingContext<T>): T {
   switch (n.type) {
       case VTreeType.VComp:
+          if (n.onBeforeMounted) n.onBeforeMounted();
           mountComponent(n, context);
           break;
       case VTreeType.VNode:

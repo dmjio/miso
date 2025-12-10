@@ -229,6 +229,8 @@ function populateDomRef(c, context) {
 function callCreated(n, context) {
   switch (n.type) {
     case 0 /* VComp */:
+      if (n.onBeforeMounted)
+        n.onBeforeMounted();
       mountComponent(n, context);
       break;
     case 1 /* VNode */:
