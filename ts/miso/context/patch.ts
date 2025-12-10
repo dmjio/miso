@@ -2,7 +2,6 @@ import {
   ComponentId,
   EventCapture,
   DrawingContext,
-  VNode,
   NodeId,
   CSS,
   ComponentContext,
