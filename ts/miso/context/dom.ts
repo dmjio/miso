@@ -1,7 +1,6 @@
 import
   { CSS
   , DrawingContext
-  , VNode
   , EventContext
   , EventCapture
   , ComponentId
