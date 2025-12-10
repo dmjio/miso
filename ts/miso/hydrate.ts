@@ -128,7 +128,7 @@ function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<
       result = false;
     }
   } // if vnode / vcomp, must be the same
-  else {
+  else if (vtree.type === VTreeType.VNode) {
     // tags must be identical
     if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
       console.warn(
