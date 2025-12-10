@@ -147,7 +147,7 @@ function callBeforeCreated(c) {
 function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
-  diffCss(c, n, n.domRef, context);
+  diffCss(c ? c.css : {}, n.css, n.domRef, context);
   if (n.type === 1 /* VNode */) {
     diffChildren(c ? c.children : [], n.children, n.domRef, context);
     drawCanvas(n);
@@ -224,15 +224,8 @@ function diffProps(cProps, nProps, node, isSvg, context) {
     }
   }
 }
-function diffCss(c, n, node, context) {
-  if (!c && !n)
-    return;
-  else if (!c && n)
-    context.setInlineStyle({}, n.css, node);
-  else if (c && !n)
-    context.setInlineStyle(c.css, {}, node);
-  else
-    context.setInlineStyle(c.css, n.css, node);
+function diffCss(css, nss, node, context) {
+  context.setInlineStyle(css, nss, node);
 }
 function shouldSync(cs, ns) {
   if (cs.length === 0 || ns.length === 0)

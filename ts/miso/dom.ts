@@ -1,4 +1,4 @@
-import { Class, DrawingContext, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType } from './types';
+import { Class, DrawingContext, CSS, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType } from './types';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -174,7 +174,7 @@ export function callBeforeCreated<T>(c: VNode<T>): void {
 export function diffAttrs<T>(c: VNode<T> | VComp<T>, n: VNode<T> | VComp<T>, context: DrawingContext<T>): void {
     diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === 'svg', context);
     diffClass(c ? c.classList : null, n.classList, n.domRef, context);
-    diffCss(c, n, n.domRef, context);
+    diffCss(c ? c.css : {}, n.css, n.domRef, context);
     if (n.type === VTreeType.VNode) {
       diffChildren(c ? c.children : [], n.children, n.domRef, context);
       drawCanvas(n);
@@ -267,11 +267,8 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
   }
 }
 
-function diffCss<T>(c: VComp<T> | VNode<T>, n: VComp<T> | VNode<T>, node: T, context: DrawingContext<T>): void {
-  if (!c && !n) return;
-  else if (!c && n) context.setInlineStyle({}, n.css, node);
-  else if (c && !n) context.setInlineStyle(c.css, {}, node);
-  else context.setInlineStyle(c.css, n.css, node);
+function diffCss<T>(css: CSS, nss: CSS, node: T, context: DrawingContext<T>): void {
+  context.setInlineStyle(css, nss, node);
 }
 
 function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {
