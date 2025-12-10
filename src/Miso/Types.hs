@@ -62,6 +62,8 @@ module Miso.Types
   , (<---)
   -- ** Component mounting
   , (+>)
+  , mount
+  , mount_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -81,7 +83,7 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON)
+import           Data.Aeson (Value, ToJSON(..))
 import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
@@ -262,7 +264,7 @@ data LogLevel
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText MisoString
-  | VComp NS MisoString [Attribute action] (SomeComponent model)
+  | VComp [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -275,26 +277,51 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   div_ [ key_ "component-id" ] +> component model noop $ \\m ->
+--   "component-id" +> component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
 (+>)
   :: forall child model action a . Eq child
-  => ([View model a] -> View model a)
+  => MisoString
   -> Component model child action
   -> View model a
 infixr 0 +>
-(+>) mkNode vcomp =
-  case mkNode [] of
-    VNode ns tag attrs _ ->
-      VComp ns tag attrs
-        (SomeComponent vcomp)
-    VComp ns tag attrs vcomp_ ->
-      VComp ns tag attrs vcomp_
-    _ ->
-      error "Impossible: cannot mount on a Text node"
+key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+-- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
+--
+-- @
+--   mount [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mount
+  :: Eq m
+  => [Attribute a]
+  -> Component p m a
+  -> View p a
+mount attrs vcomp = VComp attrs (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+-- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
+--
+-- Note: only use this if you're certain you won't be diffing two 'Component'
+-- against each other. Otherwise, you will need a key to distinguish between
+-- the two 'Component', to ensure unmounting and mounting occurs.
+--
+-- @
+--   mount_ $ component model noop $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mount_
+  :: Eq m
+  => Component p m a
+  -> View p a
+mount_ = mount []
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data NS

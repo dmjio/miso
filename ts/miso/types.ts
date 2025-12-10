@@ -28,14 +28,6 @@ export type VComp<T> = {
   componentId: ComponentId;
   key: string;
 
-  // domRef: T;
-  // ns: 'html';
-  // tag: string;
-  // props: Props;
-  // css: CSS;
-  // classList: Class;
-  // events: Events<T>;
-
   parent: Parent<T>;
   nextSibling: VTree<T>;
   children: Array<VTree<T>>;

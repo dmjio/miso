@@ -826,7 +826,7 @@ buildVTree
   -> LogLevel
   -> Events
   -> JSM VTree
-buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
+buildVTree hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
     FFI.syncCallback2 $ \vcomp continuation -> do
       domRef <- vcomp ! ("domRef" :: MisoString)
@@ -843,9 +843,9 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
         Nothing -> pure ()
         Just componentState ->
           unmount app componentState
-  vcomp <- createNode "vcomp" ns tag
+  vcomp <- create
   setAttrs vcomp attrs snk (logLevel app) (events app)
-  flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
+  FFI.set "child" jsNull vcomp
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   FFI.set "eventPropagation" (eventPropagation app) vcomp

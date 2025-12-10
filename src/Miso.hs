@@ -181,8 +181,8 @@ initComponent
   => Component parent model action
   -> JSM (ComponentState model action)
 initComponent vcomp@Component {..} = do
-  mount <- mountElement (getMountPoint mountPoint)
-  initialize Draw isRoot vcomp (pure mount)
+  root <- mountElement (getMountPoint mountPoint)
+  initialize Draw isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True
