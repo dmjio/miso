@@ -109,10 +109,6 @@ function callBeforeDestroyedRecursive(c) {
       break;
   }
 }
-function callBeforeCreated(c) {
-  if (c.onBeforeCreated)
-    c.onBeforeCreated();
-}
 function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
@@ -219,13 +215,13 @@ function diffChildren(cs, ns, parent, context) {
       diff(cs[i], ns[i], parent, context);
   }
 }
-function populateDomRef(obj, context) {
-  if (obj.ns === "svg") {
-    obj.domRef = context.createElementNS("http://www.w3.org/2000/svg", obj["tag"]);
-  } else if (obj.ns === "mathml") {
-    obj.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", obj["tag"]);
+function populateDomRef(c, context) {
+  if (c.ns === "svg") {
+    c.domRef = context.createElementNS("http://www.w3.org/2000/svg", c.tag);
+  } else if (c.ns === "mathml") {
+    c.domRef = context.createElementNS("http://www.w3.org/1998/Math/MathML", c.tag);
   } else {
-    obj.domRef = context.createElement(obj["tag"]);
+    c.domRef = context.createElement(c.tag);
   }
 }
 function callCreated(n, context) {
@@ -243,18 +239,20 @@ function callCreated(n, context) {
 function createElement(n, context) {
   switch (n.type) {
     case 0 /* VComp */:
+      if (n.onBeforeMounted)
+        n.onBeforeMounted();
       populateDomRef(n, context);
       mountComponent(n, context);
-      diffAttrs(null, n, context);
       break;
     case 1 /* VNode */:
-      callBeforeCreated(n);
+      if (n.onBeforeCreated)
+        n.onBeforeCreated();
       populateDomRef(n, context);
       if (n.onCreated)
         n.onCreated(n.domRef);
-      diffAttrs(null, n, context);
       break;
   }
+  diffAttrs(null, n, context);
   return n.domRef;
 }
 function drawCanvas(c) {
@@ -267,8 +265,6 @@ function unmountComponent(c) {
   c.unmount(c.domRef);
 }
 function mountComponent(obj, context) {
-  if (obj.onBeforeMounted)
-    obj.onBeforeMounted();
   obj.mount(obj, (componentId, componentTree) => {
     obj.children.push(componentTree);
     context.appendChild(obj.domRef, componentTree.domRef);

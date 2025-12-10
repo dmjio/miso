@@ -127,10 +127,6 @@ function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
   }
 }
 
-export function callBeforeCreated<T>(c: VNode<T>): void {
-  if (c.onBeforeCreated) c.onBeforeCreated();
-}
-
 export function diffAttrs<T>(c: VNode<T> | VComp<T>, n: VNode<T> | VComp<T>, context: DrawingContext<T>): void {
     diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === 'svg', context);
     diffClass(c ? c.classList : null, n.classList, n.domRef, context);
@@ -255,14 +251,14 @@ function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
   }
 }
 
-function populateDomRef<T>(obj: VTree<T>, context: DrawingContext<T>): void {
-  if (obj.ns === 'svg') {
-    (obj.domRef as T) = context.createElementNS('http://www.w3.org/2000/svg', obj['tag']);
-  } else if (obj.ns === 'mathml') {
-    (obj.domRef as T)= context.createElementNS('http://www.w3.org/1998/Math/MathML', obj['tag']);
+function populateDomRef<T>(c: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
+  if (c.ns === 'svg') {
+    c.domRef = context.createElementNS('http://www.w3.org/2000/svg', c.tag);
+  } else if (c.ns === 'mathml') {
+    c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag);
   } else {
     /* calling createElement on doucment */
-    (obj.domRef as T) = context.createElement(obj['tag']);
+    c.domRef = context.createElement(c.tag);
   }
 }
 
@@ -282,17 +278,17 @@ export function callCreated<T>(n: VComp<T> | VNode<T>, context: DrawingContext<T
 function createElement<T>(n: VComp<T> | VNode<T>, context: DrawingContext<T>): T {
   switch (n.type) {
     case VTreeType.VComp:
+      if (n.onBeforeMounted) n.onBeforeMounted();
       populateDomRef(n, context);
       mountComponent(n, context);
-      diffAttrs(null, n, context);
       break;
     case VTreeType.VNode:
-      callBeforeCreated(n);
+      if (n.onBeforeCreated) n.onBeforeCreated();
       populateDomRef(n, context);
       if (n.onCreated) n.onCreated(n.domRef);
-      diffAttrs(null, n, context);
       break;
   }
+  diffAttrs(null, n, context);
   return n.domRef;
 }
 
@@ -311,8 +307,6 @@ function unmountComponent<T>(c: VComp<T>): void {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(obj: VComp<T>, context: DrawingContext<T>): void {
-  if (obj.onBeforeMounted) obj.onBeforeMounted();
-  // Call 'onBeforeMounted' before calling 'mount'
   obj.mount(obj, (componentId: ComponentId, componentTree: VNode<T>) => {
     // mount() gives us the VTree from the Haskell side, so we just attach it here
     // to tie the knot (attach to both vdom and real dom).
