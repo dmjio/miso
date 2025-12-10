@@ -344,7 +344,7 @@ function drawCanvas<T> (c: VNode<T>) {
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
   if (c.onUnmounted) c.onUnmounted((drill(c)));
-  c.unmount(drill(c));
+  c.unmount(c.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -355,6 +355,7 @@ function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, contex
     // to tie the knot (attach to both vdom and real dom).
     n.componentId = componentId;
     n.child = componentTree;
+    componentTree.parent = n;
       if (n.onMounted) n.onMounted(drill(n));          
       switch (op) { 
         case OP.INSERT_BEFORE:

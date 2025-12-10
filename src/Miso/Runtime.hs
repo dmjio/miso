@@ -828,17 +828,15 @@ buildVTree
   -> JSM VTree
 buildVTree hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
   mountCallback <- do
-    FFI.syncCallback2 $ \vcomp continuation -> do
-      domRef <- vcomp ! ("domRef" :: MisoString)
-      ComponentState {..} <- initialize hydrate False app (pure domRef)
+    FFI.syncCallback2 $ \parent_ continuation -> do
+      ComponentState {..} <- initialize hydrate False app (pure parent_)
       vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-      FFI.set "parent" vcomp (Object vtree)
       vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object domRef)
+      FFI.set "componentId" vcompId (Object parent_)
       void $ call continuation global [vcompId, vtree]
   unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \domRef -> do
-      componentId <- liftJSM (FFI.getComponentId domRef)
+    FFI.syncCallback1 $ \vcompId -> do
+      componentId <- liftJSM (fromJSValUnchecked vcompId)
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->

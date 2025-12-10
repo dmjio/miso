@@ -311,12 +311,13 @@ function drawCanvas(c) {
 function unmountComponent(c) {
   if (c.onUnmounted)
     c.onUnmounted(drill(c));
-  c.unmount(drill(c));
+  c.unmount(c.componentId);
 }
 function mountComponent(op, parent, n, replacing, context) {
   n.mount(parent, (componentId, componentTree) => {
     n.componentId = componentId;
     n.child = componentTree;
+    componentTree.parent = n;
     if (n.onMounted)
       n.onMounted(drill(n));
     switch (op) {

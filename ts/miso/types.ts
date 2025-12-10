@@ -37,7 +37,7 @@ export type VComp<T> = {
   onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
   mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
-  unmount: (e: T) => void;
+  unmount: (componentId: ComponentId) => void;
 };
 
 export type VNode<T> = {
