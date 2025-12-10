@@ -227,8 +227,8 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
   }
 }
 
-function diffCss<T>(css: CSS, nss: CSS, node: T, context: DrawingContext<T>): void {
-  context.setInlineStyle(css, nss, node);
+function diffCss<T>(cCss: CSS, nCss: CSS, node: T, context: DrawingContext<T>): void {
+  context.setInlineStyle(cCss, nCss, node);
 }
 
 function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {

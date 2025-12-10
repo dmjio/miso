@@ -193,8 +193,8 @@ function diffProps(cProps, nProps, node, isSvg, context) {
     }
   }
 }
-function diffCss(css, nss, node, context) {
-  context.setInlineStyle(css, nss, node);
+function diffCss(cCss, nCss, node, context) {
+  context.setInlineStyle(cCss, nCss, node);
 }
 function shouldSync(cs, ns) {
   if (cs.length === 0 || ns.length === 0)
