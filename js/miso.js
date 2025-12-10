@@ -425,8 +425,8 @@ function delegateEvent(event, obj, stack, debug, context) {
             event["captureStopped"] = true;
           }
         }
+        stack.splice(0, 1);
       }
-      stack.splice(0, 1);
       for (const child of obj.children) {
         if (child.type === 0 /* VComp */ || child.type === 1 /* VNode */) {
           if (context.isEqual(child.domRef, stack[0])) {
