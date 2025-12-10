@@ -234,7 +234,6 @@ function callCreated(n, context) {
       mountComponent(n, context);
       break;
     case 1 /* VNode */:
-      callBeforeCreated(n);
       if (n.onCreated)
         n.onCreated(n.domRef);
       break;
