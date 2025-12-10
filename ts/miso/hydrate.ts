@@ -63,7 +63,14 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     (vtree.domRef as Node) = node;
 
-    diffAttrs(null, vtree as VNode<DOMRef>, drawingContext);
+     switch (vtree.type) {
+         case VTreeType.VText:
+             break;
+         default:
+             diffAttrs(null, vtree as VNode<DOMRef>, drawingContext);
+             break;
+     }
+
     return false;
   } else {
     if (logLevel) {

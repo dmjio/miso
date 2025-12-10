@@ -581,7 +581,13 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
     vtree.domRef = node;
-    diffAttrs(null, vtree, drawingContext);
+    switch (vtree.type) {
+      case 2 /* VText */:
+        break;
+      default:
+        diffAttrs(null, vtree, drawingContext);
+        break;
+    }
     return false;
   } else {
     if (logLevel) {
