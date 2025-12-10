@@ -32,7 +32,7 @@ function diffVText(c, n, context) {
   return;
 }
 function replace(c, n, parent, context) {
-  if (!(c.type === 2 /* VText */))
+  if (c.type === 1 /* VNode */ || c.type === 0 /* VComp */)
     callBeforeDestroyedRecursive(c);
   switch (n.type) {
     case 2 /* VText */:
@@ -78,7 +78,7 @@ function replace(c, n, parent, context) {
       }
       break;
   }
-  if (!(c.type === 2 /* VText */))
+  if (c.type === 1 /* VNode */ || c.type === 0 /* VComp */)
     callDestroyedRecursive(c);
 }
 function destroy(c, parent, context) {

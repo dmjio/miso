@@ -41,7 +41,8 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
   // step1 : prepare to delete, unmount things
-  if (!(c.type === VTreeType.VText)) callBeforeDestroyedRecursive(c);
+  if (c.type === VTreeType.VNode || c.type === VTreeType.VComp)
+     callBeforeDestroyedRecursive(c);
   switch (n.type) {
       case VTreeType.VText:
           switch (c.type) {
@@ -97,7 +98,8 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   }
 
   // step 3: call destroyed hooks, call created hooks
-  if (!(c.type === VTreeType.VText)) callDestroyedRecursive(c);
+  if (c.type === VTreeType.VNode || c.type === VTreeType.VComp)
+    callDestroyedRecursive(c);
 }
 
 // destroy vtext, vnode, vcomp
