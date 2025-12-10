@@ -300,9 +300,9 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -- @since 1.9.0.0
 mount
   :: Eq m
-  => [Attribute a]
+  => [Attribute action]
   -> Component p m a
-  -> View p a
+  -> View p action
 mount attrs vcomp = VComp attrs (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
@@ -320,7 +320,7 @@ mount attrs vcomp = VComp attrs (SomeComponent vcomp)
 mount_
   :: Eq m
   => Component p m a
-  -> View p a
+  -> View p action
 mount_ = mount []
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
