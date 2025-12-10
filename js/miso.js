@@ -42,45 +42,14 @@ function replace(c, n, parent, context) {
   switch (n.type) {
     case 2 /* VText */:
       switch (c.type) {
-        case 2 /* VText */:
-          n.domRef = context.createTextNode(n.text);
-          context.replaceChild(parent, n.domRef, c.domRef);
-          break;
-        case 0 /* VComp */:
-          n.domRef = context.createTextNode(n.text);
-          context.replaceChild(parent, n.domRef, c.domRef);
-          break;
-        case 1 /* VNode */:
+        default:
           n.domRef = context.createTextNode(n.text);
           context.replaceChild(parent, n.domRef, c.domRef);
           break;
       }
       break;
-    case 0 /* VComp */:
-      switch (c.type) {
-        case 2 /* VText */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-        case 0 /* VComp */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-        case 1 /* VNode */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-      }
-      break;
-    case 1 /* VNode */:
-      switch (c.type) {
-        case 2 /* VText */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-        case 0 /* VComp */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-        case 1 /* VNode */:
-          context.replaceChild(parent, createElement(n, context), c.domRef);
-          break;
-      }
+    default:
+      context.replaceChild(parent, createElement(n, context), c.domRef);
       break;
   }
   switch (c.type) {

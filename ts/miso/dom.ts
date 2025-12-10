@@ -52,56 +52,16 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
       case VTreeType.VText:
           switch (c.type) {
               /* replace vtext w/ vtext */
-              case VTreeType.VText:
-                  n.domRef = context.createTextNode(n.text);
-                  context.replaceChild(parent, n.domRef, c.domRef);
-                  break;
-              /* replace vcomp w/ vtext */
-              case VTreeType.VComp:
-                  n.domRef = context.createTextNode(n.text);
-                  context.replaceChild(parent, n.domRef, c.domRef);
-                  break;
-              /* replace vnode w/ vtext */
-              case VTreeType.VNode:
-                  n.domRef = context.createTextNode(n.text);
-                  context.replaceChild(parent, n.domRef, c.domRef);
-                  break;
+              default:
+                n.domRef = context.createTextNode(n.text);
+                context.replaceChild(parent, n.domRef, c.domRef);
+                break;
           }
           break;
-      case VTreeType.VComp:
-          switch (c.type) {
-              /* replace vtext w/ vcomp */
-              case VTreeType.VText:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-              /* replace vtext w/ vcomp */
-              case VTreeType.VComp:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-              /* replace vtext w/ vcomp */
-              case VTreeType.VNode:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-          }
-          break;
-      case VTreeType.VNode:
-          switch (c.type) {
-              /* replace vtext w/ vnode */
-              case VTreeType.VText:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-              /* replace vtext w/ vnode */
-              case VTreeType.VComp:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-              /* replace vtext w/ vnode */
-              case VTreeType.VNode:
-                  context.replaceChild(parent, createElement(n, context), c.domRef as T);
-                  break;
-          }
-          break;
+      default:
+        context.replaceChild(parent, createElement(n, context), c.domRef as T);
+        break;
   }
-
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
       case VTreeType.VText:
