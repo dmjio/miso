@@ -5,8 +5,12 @@ import {
   VNode,
   NodeId,
   CSS,
-  ComponentContext
+  ComponentContext,
+  VTree,
+  VTreeType,
 } from '../types';
+
+import { drill } from '../dom'; 
 
 /*
 
@@ -93,8 +97,13 @@ export const componentContext : ComponentContext = {
 };
 
 export const patchDrawingContext : DrawingContext<NodeId> = {
-  nextSibling : (node: VNode<NodeId>) => {
-    return node.nextSibling.domRef;
+  nextSibling : (node: VTree<NodeId>) => {
+    switch (node.nextSibling.type) {
+      case VTreeType.VComp:
+        return drill(node.nextSibling) as NodeId;
+      default:
+        return node.nextSibling.domRef as NodeId;
+    }
   },
   createTextNode : (value : string) => {
       const nodeId: number = nextNodeId ();

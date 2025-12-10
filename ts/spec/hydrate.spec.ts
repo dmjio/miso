@@ -1,7 +1,7 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
 import { vnode, vtext, vnodeKids } from '../miso/smart';
-import { VText, DOMRef } from '../miso/types';
+import { VText, VNode, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { hydrationContext, drawingContext } from '../miso/context/dom';
 
@@ -348,7 +348,7 @@ describe ("Hydration tests", () => {
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.children[0].domRef = document.createElement('div');
+    (tree.children[0] as VNode<DOMRef>).domRef = document.createElement('div');
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 

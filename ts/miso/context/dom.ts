@@ -7,8 +7,11 @@ import
   , HydrationContext
   , DOMRef
   , ComponentContext
-  , VTree
+  , VTree,
+  VTreeType
   } from '../types';
+
+import { drill } from '../dom'; 
 
 export const eventContext : EventContext<DOMRef> = {
   addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
@@ -68,7 +71,12 @@ export const componentContext : ComponentContext = {
 
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
-    return node.domRef.nextSibling as DOMRef;
+    switch (node.type) {
+      case VTreeType.VComp:
+        return drill(node).nextSibling as DOMRef;
+      default:
+        return node.domRef.nextSibling as DOMRef;
+    }
   },
   createTextNode : (s: string) => {
     return document.createTextNode(s) as any; // dmj: hrm

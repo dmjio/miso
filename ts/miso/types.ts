@@ -16,27 +16,36 @@ export enum VTreeType {
   VText = 2
 }
 
+export enum OP {
+  APPEND = 0,
+  REPLACE = 1,
+  INSERT_BEFORE = 2
+}
+
 export type VComp<T> = {
   type: VTreeType.VComp;
-  domRef: T;
-  ns: 'html';
-  tag: string;
+  child: VTree<T>;
+  componentId: ComponentId;
   key: string;
-  props: Props;
-  css: CSS;
-  classList: Class;
-  events: Events<T>;
-  parent: Parent<T>;
-  children: Array<VTree<T>>;
 
+  // domRef: T;
+  // ns: 'html';
+  // tag: string;
+  // props: Props;
+  // css: CSS;
+  // classList: Class;
+  // events: Events<T>;
+
+  parent: Parent<T>;
+  nextSibling: VTree<T>;
+  children: Array<VTree<T>>;
   eventPropagation: boolean;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
   onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
-  mount: (vcomp: VComp<T>, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
+  mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
-  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {

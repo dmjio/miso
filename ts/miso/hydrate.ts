@@ -1,4 +1,4 @@
-import { callCreated, diffAttrs } from './dom';
+import { drill, callCreated, diffAttrs } from './dom';
 import { DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -12,6 +12,14 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
     adjusted[++ax] = vs[ix];
   }
   return adjusted;
+}
+
+function setVCompRef(vtree: VTree<DOMRef>, node: Node): void {
+  if (vtree.type === VTreeType.VComp) {
+    setVCompRef(vtree.child, node);
+  } else {
+    vtree.domRef = node as DOMRef;
+  }
 }
 
 /* function to determine if <script> tags are present in `body` top-level
@@ -61,14 +69,17 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
     while (context.firstChild(node as DOMRef))
       drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
 
-    (vtree.domRef as Node) = node;
-
      switch (vtree.type) {
+         case VTreeType.VNode:
+            diffAttrs(null, vtree, drawingContext);
+            (vtree.domRef as Node) = node;
+            break;
          case VTreeType.VText:
-             break;
+            (vtree.domRef as Node) = node;
+            break;
          default:
-             diffAttrs(null, vtree, drawingContext);
-             break;
+            // drill(vtree) = node as DOMRef; (dmj: set vcomp here)
+            break;
      }
 
     return false;
@@ -186,7 +197,7 @@ function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<
     for (const child of vtree.children) {
        const value = check(result, child, context, drawingContext);
        result = result && value;
-    }
+  }
   }
   return result;
 }
@@ -198,8 +209,8 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
     case VTreeType.VComp:
-      (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
+      setVCompRef(vtree, node);
+      callCreated(node, vtree, drawingContext);
       break;
     case VTreeType.VText:
       (vtree as VText<DOMRef>).domRef = node as DOMRef;
@@ -208,7 +219,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
       vtree.domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
-      callCreated(vtree, drawingContext);
+      callCreated(node, vtree, drawingContext);
 
       for (var i = 0; i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
@@ -232,7 +243,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
             break;
           default:
             if (domChild.nodeType !== 1) return false;
-            vdomChild.domRef = domChild as DOMRef;
+            setVCompRef(vdomChild, domChild);
              walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }

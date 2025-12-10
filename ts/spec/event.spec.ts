@@ -99,10 +99,9 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
       mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+        diff(null, child, vcomp, drawingContext);
         return f(0, child);
       }
     });
@@ -113,11 +112,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
+      mount : function (p, f) {
+        diff(null, parent, p, drawingContext);
+        return f(1, parent);
       }
     });
 
@@ -172,7 +169,7 @@ describe ('Event tests', () => {
       children: [child],
       eventPropagation: false,
       mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+        diff(null, child, vcomp, drawingContext);
         return f(0, child);
       }
     });
@@ -183,10 +180,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
       children: [parent],
       mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
+        diff(null, parent, vcomp, drawingContext);
         return f(1, child);
       }
     });
@@ -241,8 +237,8 @@ describe ('Event tests', () => {
     var childVComp = vcomp({
       children: [child],
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+      mount : function (p: DOMRef, f) {
+        diff(null, child, p, drawingContext);
         return f(0, child);
       }
     });
@@ -253,10 +249,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
       children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
+      mount : function (p: DOMRef, f) {
+        diff(null, parent, p, drawingContext);
         return f(1, child);
       }
     });
