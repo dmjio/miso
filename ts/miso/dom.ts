@@ -127,7 +127,7 @@ function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
   }
 }
 
-export function diffAttrs<T>(c: VNode<T> | VComp<T>, n: VNode<T> | VComp<T>, context: DrawingContext<T>): void {
+export function diffAttrs<T>(c: VNode<T> | VComp<T> | null, n: VNode<T> | VComp<T>, context: DrawingContext<T>): void {
     diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === 'svg', context);
     diffClass(c ? c.classList : null, n.classList, n.domRef, context);
     diffCss(c ? c.css : {}, n.css, n.domRef, context);
