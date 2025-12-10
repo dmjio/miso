@@ -273,7 +273,6 @@ export function callCreated<T>(n: VComp<T> | VNode<T>, context: DrawingContext<T
           mountComponent(n, context);
           break;
       case VTreeType.VNode:
-          callBeforeCreated(n);
           if (n.onCreated) n.onCreated(n.domRef);
           break;
   }
