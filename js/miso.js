@@ -612,7 +612,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
     case 2 /* VText */:
       vtree.domRef = node;
       break;
-    default:
+    case 1 /* VNode */:
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       callCreated(vtree, drawingContext);

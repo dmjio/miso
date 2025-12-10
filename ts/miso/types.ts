@@ -17,7 +17,7 @@ export enum VTreeType {
 }
 
 export type VComp<T> = {
-  type: VTreeType;
+  type: VTreeType.VComp;
   domRef: T;
   ns: 'html';
   tag: string;
@@ -40,7 +40,7 @@ export type VComp<T> = {
 };
 
 export type VNode<T> = {
-  type: VTreeType;
+  type: VTreeType.VNode;
   ns: NS;
   domRef: T;
   tag: string;
@@ -60,7 +60,7 @@ export type VNode<T> = {
 };
 
 export type VText<T> = {
-  type: VTreeType;
+  type: VTreeType.VText;
   text: string;
   domRef: T;
   ns: NS;

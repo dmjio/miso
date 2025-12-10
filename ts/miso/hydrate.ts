@@ -197,8 +197,8 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
     case VTreeType.VText:
       (vtree as VText<DOMRef>).domRef = node as DOMRef;
       break;
-    default:
-      (vtree as VNode<DOMRef>).domRef = node as DOMRef;
+    case VTreeType.VNode:
+      vtree.domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
       callCreated(vtree, drawingContext);
