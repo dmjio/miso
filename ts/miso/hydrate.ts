@@ -67,7 +67,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
          case VTreeType.VText:
              break;
          default:
-             diffAttrs(null, vtree as VNode<DOMRef>, drawingContext);
+             diffAttrs(null, vtree, drawingContext);
              break;
      }
 
