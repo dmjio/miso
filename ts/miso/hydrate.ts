@@ -1,5 +1,5 @@
-import { callCreated, populate } from './dom';
-import { DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
+import { callCreated, diffAttrs } from './dom';
+import { VNode, DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
@@ -63,7 +63,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 
     (vtree.domRef as Node) = node;
 
-    populate(null, vtree, drawingContext);
+    diffAttrs(null, vtree as VNode<DOMRef>, drawingContext);
     return false;
   } else {
     if (logLevel) {
