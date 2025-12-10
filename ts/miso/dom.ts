@@ -51,7 +51,6 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   switch (n.type) {
       case VTreeType.VText:
           switch (c.type) {
-              /* replace vtext w/ vtext */
               default:
                 n.domRef = context.createTextNode(n.text);
                 context.replaceChild(parent, n.domRef, c.domRef);
@@ -257,7 +256,6 @@ function populateDomRef<T>(c: VComp<T> | VNode<T>, context: DrawingContext<T>): 
   } else if (c.ns === 'mathml') {
     c.domRef = context.createElementNS('http://www.w3.org/1998/Math/MathML', c.tag);
   } else {
-    /* calling createElement on doucment */
     c.domRef = context.createElement(c.tag);
   }
 }
