@@ -108,16 +108,24 @@ function callDestroyed<T>(c: VNode<T> | VComp<T>): void {
   if (c.type === VTreeType.VComp) unmountComponent(c);
 }
 
-function callBeforeDestroyed<T>(c: VNode<T>): void {
-  if (c.onBeforeDestroyed) c.onBeforeDestroyed();
-}
-
-function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
+function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   switch (c.type) {
       case VTreeType.VComp:
           if (c.onBeforeUnmounted) c.onBeforeUnmounted();
           break;
       case VTreeType.VNode:
+          if (c.onBeforeDestroyed) c.onBeforeDestroyed();
+          break;
+      default:
+          break;
+  }
+}
+
+function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
+  switch (c.type) {
+      case VTreeType.VText:
+          break;
+      default:
           callBeforeDestroyed(c);
           for (const child of c.children)
             if (child.type === VTreeType.VNode || child.type === VTreeType.VComp)

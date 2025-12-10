@@ -92,16 +92,24 @@ function callDestroyed(c) {
     unmountComponent(c);
 }
 function callBeforeDestroyed(c) {
-  if (c.onBeforeDestroyed)
-    c.onBeforeDestroyed();
-}
-function callBeforeDestroyedRecursive(c) {
   switch (c.type) {
     case 0 /* VComp */:
       if (c.onBeforeUnmounted)
         c.onBeforeUnmounted();
       break;
     case 1 /* VNode */:
+      if (c.onBeforeDestroyed)
+        c.onBeforeDestroyed();
+      break;
+    default:
+      break;
+  }
+}
+function callBeforeDestroyedRecursive(c) {
+  switch (c.type) {
+    case 2 /* VText */:
+      break;
+    default:
       callBeforeDestroyed(c);
       for (const child of c.children)
         if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */)
