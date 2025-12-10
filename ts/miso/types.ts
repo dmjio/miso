@@ -122,7 +122,7 @@ export type ComponentContext = {
 }
 
 export type DrawingContext<T> = {
-  nextSibling : (node: VNode<T>) => T;
+  nextSibling : (node: VTree<T>) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns: string, tag : string) => T;
   appendChild : (parent: T, child: T) => void;

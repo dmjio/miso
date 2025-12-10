@@ -407,7 +407,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         and now we happy path */
     else if (oFirst.key === nLast.key) {
       /* insertAfter */
-      context.insertBefore(parent, oFirst.domRef, context.nextSibling(oLast as VNode<T>));
+      context.insertBefore(parent, oFirst.domRef, context.nextSibling(oLast));
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);

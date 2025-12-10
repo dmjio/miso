@@ -8,6 +8,7 @@ import
   , HydrationContext
   , DOMRef
   , ComponentContext
+  , VTree
   } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
@@ -67,7 +68,7 @@ export const componentContext : ComponentContext = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
-  nextSibling : (node: VNode<DOMRef>) => {
+  nextSibling : (node: VTree<DOMRef>) => {
     return node.domRef.nextSibling as DOMRef;
   },
   createTextNode : (s: string) => {
