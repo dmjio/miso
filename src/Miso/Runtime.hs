@@ -867,9 +867,10 @@ buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
           where
             setNextSibling xs =
               zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
-buildVTree _ (VText t) _ _ _ = do
+buildVTree _ (VText key t) _ _ _ = do
   vtree <- create
   flip (FFI.set "type") vtree =<< toJSVal VTextType
+  forM_ key $ \k -> FFI.set "key" (ms k) vtree
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
