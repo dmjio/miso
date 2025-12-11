@@ -76,7 +76,7 @@ export const drawingContext : DrawingContext<DOMRef> = {
         case VTreeType.VComp:
           return drill(node.nextSibling) as DOMRef;
         default:
-          return node.domRef.nextSibling as DOMRef;
+          return node.nextSibling.domRef as DOMRef;
       }
     }
   },
