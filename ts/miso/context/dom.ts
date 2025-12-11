@@ -42,9 +42,9 @@ export const hydrationContext : HydrationContext<DOMRef> = {
     return node.lastChild as DOMRef;
   },
   getAttribute: (node: DOMRef, key: string) => {
-      if (key === 'class') return node.className;
-      if (key in node) return node[key];
-      return node.getAttribute(key);
+    if (key === 'class') return node.className;
+    if (key in node) return node[key];
+    return node.getAttribute(key);
   },
   getTag: (node: DOMRef) => {
     return node.nodeName;
@@ -72,10 +72,9 @@ export const componentContext : ComponentContext = {
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
     if (node.nextSibling) {
-      switch (node.type) {
+      switch (node.nextSibling.type) {
         case VTreeType.VComp:
-          const drilled = drill(node);
-          return drilled ? drilled.nextSibling as DOMRef : null;
+          return drill(node.nextSibling) as DOMRef;
         default:
           return node.domRef.nextSibling as DOMRef;
       }

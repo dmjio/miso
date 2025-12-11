@@ -1175,10 +1175,9 @@ var componentContext = {
 var drawingContext = {
   nextSibling: (node) => {
     if (node.nextSibling) {
-      switch (node.type) {
+      switch (node.nextSibling.type) {
         case 0 /* VComp */:
-          const drilled = drill(node);
-          return drilled ? drilled.nextSibling : null;
+          return drill(node.nextSibling);
         default:
           return node.domRef.nextSibling;
       }
