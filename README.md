@@ -32,7 +32,7 @@
 **Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
 > [!IMPORTANT]
-> Check out the new [Haskell Miso Organization](https://github.com/haskell-miso) 🍜
+> Check out the new [Haskell miso Organization](https://github.com/haskell-miso) 🍜
 
 ## Table of Contents
 - [History](#history-)
