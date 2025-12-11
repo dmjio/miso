@@ -117,7 +117,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlFromJSON value
+  , toHtmlProperty value
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
@@ -149,14 +149,24 @@ collapseSiblingTextNodes (x:xs) =
 ----------------------------------------------------------------------------
 -- | Helper for turning JSON into Text
 -- Object, Array and Null are kind of non-sensical here
-toHtmlFromJSON :: Value -> Builder
-toHtmlFromJSON (String t)   = fromMisoString (ms t)
-toHtmlFromJSON (Number t)   = fromMisoString $ ms (show t)
-toHtmlFromJSON (Bool True)  = "true"
-toHtmlFromJSON (Bool False) = "false"
-toHtmlFromJSON Null         = "null"
-toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
-toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+toHtmlProperty :: Property -> Builder
+toHtmlProperty = \case
+  TextProp v -> fromMisoString v
+  BoolProp x
+    | x -> "true"
+    | otherwise -> "false"
+  IntProp x -> fromMisoString (ms x)
+  DoubleProp x -> fromMisoString (ms x)
+  JSONProp value -> toHtmlFromJSON value
+    where
+      toHtmlFromJSON = \case
+        String t   -> fromMisoString (ms t)
+        Number t   -> fromMisoString $ ms (show t)
+        Bool True  -> "true"
+        Bool False -> "false"
+        Object o   -> lazyByteString (encode o)
+        Array a    -> lazyByteString (encode a)
+        Null       -> "null"
 -----------------------------------------------------------------------------
 #ifdef SSR
 -- | Used for server-side model hydration, internally only in 'renderView'.

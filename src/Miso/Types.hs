@@ -28,16 +28,17 @@ module Miso.Types
     App
   , Component     (..)
   , ComponentId
-  , SomeComponent (..)
-  , View          (..)
-  , Key           (..)
-  , Attribute     (..)
-  , NS            (..)
-  , CSS           (..)
-  , JS            (..)
-  , LogLevel      (..)
-  , VTree         (..)
-  , VTreeType     (..)
+  , SomeComponent    (..)
+  , View             (..)
+  , Key              (..)
+  , Attribute        (..)
+  , Property         (..)
+  , NS               (..)
+  , CSS              (..)
+  , JS               (..)
+  , LogLevel         (..)
+  , VTree            (..)
+  , VTreeType        (..)  
   , MountPoint
   , DOMRef
   , ROOT
@@ -83,7 +84,7 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON)
+import           Data.Aeson (ToJSON, Value)
 import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
@@ -359,10 +360,26 @@ instance ToKey Float where toKey = Key . toMisoString
 -- | Convert 'Word' to t'Key'
 instance ToKey Word where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
+data Property
+  = IntProp Int
+  | BoolProp Bool
+  | TextProp MisoString
+  | DoubleProp Double
+  | JSONProp Value
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+instance ToJSVal Property where
+  toJSVal = \case
+    IntProp x -> toJSVal x
+    BoolProp x -> toJSVal x
+    TextProp x -> toJSVal x
+    DoubleProp x -> toJSVal x
+    JSONProp x -> toJSVal x
+-----------------------------------------------------------------------------
 -- | Attribute of a vnode in a t'View'.
 --
 data Attribute action
-  = Property MisoString Value
+  = Property MisoString Property
   | ClassList [MisoString]
   | On (Sink action -> VTree -> LogLevel -> Events -> JSM ())
   -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
