@@ -116,10 +116,20 @@ function destroy(c, parent, context) {
 }
 function callDestroyedRecursive(c) {
   callDestroyed(c);
-  for (const child of c.children) {
-    if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */) {
-      callDestroyedRecursive(child);
-    }
+  switch (c.type) {
+    case 1 /* VNode */:
+      for (const child of c.children) {
+        if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */) {
+          callDestroyedRecursive(child);
+        }
+      }
+      break;
+    case 0 /* VComp */:
+      if (c.child) {
+        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */)
+          callDestroyedRecursive(c.child);
+      }
+      break;
   }
 }
 function callDestroyed(c) {
@@ -144,9 +154,21 @@ function callBeforeDestroyed(c) {
 }
 function callBeforeDestroyedRecursive(c) {
   callBeforeDestroyed(c);
-  for (const child of c.children)
-    if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */)
-      callBeforeDestroyedRecursive(child);
+  switch (c.type) {
+    case 1 /* VNode */:
+      for (const child of c.children) {
+        if (child.type === 2 /* VText */)
+          continue;
+        callBeforeDestroyedRecursive(child);
+      }
+      break;
+    case 0 /* VComp */:
+      if (c.child) {
+        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */)
+          callBeforeDestroyedRecursive(c.child);
+      }
+      break;
+  }
 }
 function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);

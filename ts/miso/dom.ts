@@ -131,10 +131,20 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
 // ** recursive calls to hooks
 function callDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
   callDestroyed(c);
-  for (const child of c.children) {
-    if (child.type === VTreeType.VNode || child.type === VTreeType.VComp) {
-       callDestroyedRecursive(child);
-    }
+  switch (c.type) {
+    case VTreeType.VNode:
+      for (const child of c.children) {
+        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp) {
+           callDestroyedRecursive(child);
+        }
+      }
+      break;
+    case VTreeType.VComp:
+      if (c.child) {
+        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
+          callDestroyedRecursive(c.child);
+      }
+      break;
   }
 }
 
@@ -158,9 +168,20 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
 
 function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
   callBeforeDestroyed(c);
-  for (const child of c.children)
-    if (child.type === VTreeType.VNode || child.type === VTreeType.VComp)
-       callBeforeDestroyedRecursive(child);
+  switch (c.type) {
+    case VTreeType.VNode:
+      for (const child of c.children) {
+         if (child.type === VTreeType.VText) continue;
+         callBeforeDestroyedRecursive(child);
+      }
+      break;
+    case VTreeType.VComp:
+      if (c.child) { 
+        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
+          callBeforeDestroyedRecursive(c.child);
+      }
+      break;
+  }
 }
 
 export function diffAttrs<T>(c: VNode<T> | null, n: VNode<T>, context: DrawingContext<T>): void {

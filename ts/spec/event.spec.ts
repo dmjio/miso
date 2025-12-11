@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate } from '../miso/event';
-import { DOMRef, EventCapture } from '../miso/types';
+import { DOMRef, EventCapture, VNode } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, drawingContext } from '../miso/context/dom';
@@ -166,7 +166,6 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: false,
       mount : function (vcomp, f) {
         diff(null, child, vcomp, drawingContext);
@@ -180,10 +179,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      children: [parent],
       mount : function (vcomp, f) {
         diff(null, parent, vcomp, drawingContext);
-        return f(1, child);
+        return f(1, parent);
       }
     });
 
@@ -235,11 +233,10 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
       mount : function (p: DOMRef, f) {
         diff(null, child, p, drawingContext);
-        return f(0, child);
+        return f(0, child as VNode<DOMRef>);
       }
     });
 
@@ -249,16 +246,15 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      children: [parent],
       mount : function (p: DOMRef, f) {
         diff(null, parent, p, drawingContext);
-        return f(1, child);
+        return f(1, parent as VNode<DOMRef>);
       }
     });
 
     /* create hierarchy */
     child.parent = childVComp;
-    childVComp.parent = parent;
+    childVComp.parent = parent as VNode<DOMRef>;
     parent.parent = parentVComp;
 
     /* initial page draw */

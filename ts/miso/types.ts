@@ -30,7 +30,6 @@ export type VComp<T> = {
 
   parent: Parent<T>;
   nextSibling: VTree<T>;
-  children: Array<VTree<T>>;
   eventPropagation: boolean;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;

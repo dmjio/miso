@@ -23,12 +23,11 @@ describe ('Component tests', () => {
     test('Should unmount recursively in order', () => {
     let unmounts = [];
     const build = (name, children) => {
-        return vcomp<DOMRef> ({
-          children: children,
+        return vcomp<DOMRef> ({ 
           mount: (domRef, callback) => {
-            const child = vnode<DOMRef>({ tag: 'div' });
-            diff<DOMRef>(null, child, domRef, drawingContext);
-            callback(0, child);
+            const childVNode = vnode<DOMRef>({ tag: 'div', children });
+            diff<DOMRef>(null, childVNode, domRef, drawingContext);
+            callback(0, childVNode);
           },
           unmount: () => {
             unmounts.push(name);
