@@ -1,7 +1,10 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Event.Decoder
@@ -15,6 +18,10 @@ module Miso.Event.Decoder
   ( -- ** Types
     Decoder (..)
   , DecodeTarget (..)
+  , Parser (..)
+  , DecodeFailure (..)
+    -- ** Parser
+  , parseEither
     -- ** Combinators
   , at
     -- ** Decoders
@@ -24,18 +31,27 @@ module Miso.Event.Decoder
   , checkedDecoder
   , valueDecoder
   , pointerDecoder
+    -- ** Utils
+  , withObject
+  , (.:)
+  , (.:?)
+  , (.!=)
+    -- ** Internal
+  , executeDecoder
   ) where
 -----------------------------------------------------------------------------
-import Control.Applicative
-import Data.Aeson.Types
-#ifdef GHCJS_OLD
-import GHCJS.Marshal (ToJSVal(toJSVal))
-#else
-import Language.Javascript.JSaddle (ToJSVal(toJSVal))
-#endif
+import           Data.Maybe
+import           Control.Monad
+import           Control.Monad.IO.Class (MonadIO(..))
+import           Control.Monad.Except
+import           Control.Applicative
+import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
-import Miso.Event.Types
-import Miso.String
+import qualified Miso.String as MS
+import           Miso.Event.Types
+import           Miso.String
+import           Miso.FFI (Event (..))
+import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 -- | Data type representing path (consisting of field names) within event object
 -- where a decoder should be applied.
@@ -47,21 +63,80 @@ data DecodeTarget
 -----------------------------------------------------------------------------
 -- | `ToJSVal` instance for t'DecodeTarget'.
 instance ToJSVal DecodeTarget where
-  toJSVal (DecodeTarget xs) = toJSVal xs
-  toJSVal (DecodeTargets xs) = toJSVal xs
+  toJSVal = \case
+    DecodeTarget xs -> toJSVal xs
+    DecodeTargets xs -> toJSVal xs
 -----------------------------------------------------------------------------
 -- | t'Decoder' data type for parsing events
 data Decoder a
   = Decoder
-  { decoder :: Value -> Parser a
+  { decoder :: Event -> Parser a
     -- ^ FromJSON-based Event decoder
   , decodeAt :: DecodeTarget
     -- ^ Location in DOM of where to decode
   }
 -----------------------------------------------------------------------------
+newtype Parser a = Parser { runParser :: ExceptT [DecodeFailure] JSM a }
+  deriving ( Functor, Applicative, Monad
+           , MonadError [DecodeFailure], Alternative, MonadIO
+#ifndef GHCJS_BOTH
+           , MonadJSM
+#endif
+           )
+-----------------------------------------------------------------------------
+parseEither :: Event -> Decoder a -> JSM (Either [DecodeFailure] a)
+parseEither event Decoder {..} | Parser m <- decoder event = runExceptT m
+-----------------------------------------------------------------------------
+data DecodeFailure
+  = PropertyNotFound MisoString
+  | DecodeFailure MisoString
+-----------------------------------------------------------------------------
 -- | Smart constructor for building a t'Decoder'.
-at :: [MisoString] -> (Value -> Parser a) -> Decoder a
-at decodeAt decoder = Decoder {decodeAt = DecodeTarget decodeAt, ..}
+at :: [MisoString] -> (Event -> Parser a) -> Decoder a
+at decodeAt decoder = Decoder { decodeAt = DecodeTarget decodeAt, .. }
+-----------------------------------------------------------------------------
+-- | Combinator for parsing an t'Event'
+--
+-- Keeps interface at parity with `aeson`.
+--
+withObject :: MisoString -> (Event -> Parser a) -> Event -> Parser a
+withObject _ f x = f x
+-----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser'
+(.:) :: FromJSVal a => Event -> MisoString -> Parser a
+(.:) (Event event) key = do
+  result <- liftJSM $ do
+    result <- unsafeGetProp key (Object event)
+    maybeNullOrUndefined result
+  case result of
+    Nothing -> do
+      throwError [PropertyNotFound key]
+    Just jsvalue ->
+      liftJSM (fromJSVal jsvalue) >>= \case
+        Nothing ->
+          throwError [DecodeFailure key]
+        Just x ->
+          pure x
+-----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser', optionally.
+(.:?) :: FromJSVal a => Event -> MisoString -> Parser (Maybe a)
+(.:?) (Event event) key = do
+  result <- liftJSM $ do
+    result <- unsafeGetProp key (Object event)
+    maybeNullOrUndefined result
+  case result of
+    Nothing -> do
+      pure Nothing
+    Just jsvalue ->
+      liftJSM (fromJSVal jsvalue) >>= \case
+        Nothing ->
+          throwError [DecodeFailure key]
+        Just x ->
+          pure (Just x)
+-----------------------------------------------------------------------------
+-- | Parser combinator for decoding values out of JSM in t'Parser', optionally.
+(.!=) :: FromJSVal a => Parser (Maybe a) -> a -> Parser a
+(.!=) parser def = fromMaybe def <$> parser
 -----------------------------------------------------------------------------
 -- | Empty t'Decoder' for use with events like "click" that do not
 -- return any meaningful values
@@ -75,7 +150,7 @@ keycodeDecoder :: Decoder KeyCode
 keycodeDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget mempty
-    decoder = withObject "event" $ \o ->
+    decoder = withObject "keycodeDecoder" $ \o ->
        KeyCode <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
 -----------------------------------------------------------------------------
 -- | Retrieves either "keyCode", "which" or "charCode" field in t'Decoder',
@@ -86,7 +161,7 @@ keyInfoDecoder = Decoder {..}
     decodeAt =
       DecodeTarget mempty
     decoder =
-      withObject "event" $ \o ->
+      withObject "keyInfoDecoder" $ \o ->
         KeyInfo
           <$> (o .: "keyCode" <|> o .: "which" <|> o .: "charCode")
           <*> o .: "shiftKey"
@@ -99,14 +174,14 @@ valueDecoder :: Decoder MisoString
 valueDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget ["target"]
-    decoder = withObject "target" $ \o -> o .: "value"
+    decoder = withObject "valueDecoder" $ \o -> o .: "value"
 -----------------------------------------------------------------------------
 -- | Retrieves "checked" field in t'Decoder'
 checkedDecoder :: Decoder Checked
 checkedDecoder = Decoder {..}
   where
     decodeAt = DecodeTarget ["target"]
-    decoder = withObject "target" $ \o ->
+    decoder = withObject "checkedDecoder" $ \o ->
       Checked <$> (o .: "checked")
 -----------------------------------------------------------------------------
 -- | Pointer t'Decoder' for use with events like "onpointerover"
@@ -127,4 +202,41 @@ pointerDecoder = Decoder {..}
         <*> pair o "tiltX" "tiltY"
         <*> o .: "pressure"
         <*> o .: "button"
+-----------------------------------------------------------------------------
+-- | Helper function used internall to execute a t'Decoder'
+executeDecoder
+  :: Decoder a
+  -> MisoString
+  -> JSVal
+  -> (a -> JSM ())
+  -> JSM ()
+executeDecoder decode@Decoder {..} eventName e callback = do
+  decodeAtVal <- toJSVal decodeAt
+  syntheticEvent <- fromJSVal =<< FFI.eventJSON decodeAtVal e
+  case (syntheticEvent :: Maybe FFI.Event) of
+    Nothing ->
+      FFI.consoleError $ mconcat
+       [ "Internal error: Could not create synthetic event. Please "
+       , "check your 'Decoder' and the `decodeAtVal` field."
+       ]
+    Just (event :: FFI.Event) ->
+      parseEither event decode >>= \case
+        Left errors ->
+          forM_ errors $ \case
+            PropertyNotFound key -> do
+              FFI.consoleError $ MS.intercalate " "
+                [ "Property"
+                , "\"" <> key <> "\" "
+                , "not found on event: "
+                , eventName
+                ]
+            DecodeFailure key -> do
+              FFI.consoleError $ MS.intercalate " "
+                [ "Property"
+                , "\"" <> key <> "\" "
+                , "failed to decode on event: "
+                , eventName
+                ]
+        Right r ->
+          callback r
 -----------------------------------------------------------------------------
