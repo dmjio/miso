@@ -301,6 +301,20 @@ function callCreated(parent, n, context) {
 }
 function createElement(parent, op, replacing, n, context) {
   switch (n.type) {
+    case 2 /* VText */:
+      n.domRef = context.createTextNode(n.text);
+      switch (op) {
+        case 2 /* INSERT_BEFORE */:
+          context.insertBefore(parent, n.domRef, replacing);
+          break;
+        case 0 /* APPEND */:
+          context.appendChild(parent, n.domRef);
+          break;
+        case 1 /* REPLACE */:
+          context.replaceChild(parent, n.domRef, replacing);
+          break;
+      }
+      break;
     case 0 /* VComp */:
       if (n.onBeforeMounted)
         n.onBeforeMounted();
@@ -503,7 +517,7 @@ function syncChildren(os, ns, parent, context) {
               case 0 /* VComp */:
                 createElement(parent, 2 /* INSERT_BEFORE */, drill(oFirst), nFirst, context);
                 break;
-              case 1 /* VNode */:
+              default:
                 createElement(parent, 2 /* INSERT_BEFORE */, oFirst.domRef, nFirst, context);
                 break;
             }
@@ -729,7 +743,8 @@ function collapseSiblingTextNodes(vs) {
 }
 function setVCompRef(vtree, node) {
   if (vtree.type === 0 /* VComp */) {
-    setVCompRef(vtree.child, node);
+    if (vtree.child)
+      setVCompRef(vtree.child, node);
   } else {
     vtree.domRef = node;
   }
@@ -774,6 +789,7 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
         vtree.domRef = node;
         break;
       default:
+        setVCompRef(vtree, node);
         break;
     }
     return false;
@@ -1160,7 +1176,8 @@ var drawingContext = {
   nextSibling: (node) => {
     switch (node.type) {
       case 0 /* VComp */:
-        return drill(node).nextSibling;
+        const drilled = drill(node);
+        return drilled ? drilled.nextSibling : null;
       default:
         return node.domRef.nextSibling;
     }
