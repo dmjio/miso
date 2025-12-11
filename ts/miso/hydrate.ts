@@ -78,7 +78,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
             (vtree.domRef as Node) = node;
             break;
          default:
-            // drill(vtree) = node as DOMRef; (dmj: set vcomp here)
+            setVCompRef(vtree, node as DOMRef);
             break;
      }
 
