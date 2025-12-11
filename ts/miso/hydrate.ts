@@ -16,7 +16,7 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
 
 function setVCompRef(vtree: VTree<DOMRef>, node: Node): void {
   if (vtree.type === VTreeType.VComp) {
-    setVCompRef(vtree.child, node);
+    if (vtree.child) setVCompRef(vtree.child, node);
   } else {
     vtree.domRef = node as DOMRef;
   }
