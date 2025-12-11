@@ -451,11 +451,21 @@ text_ = VText Nothing . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Like 'text', but allow the node to be keyed for efficient diffing.
 --
+-- @
+-- view :: model -> View model action
+-- view = \x -> div_ [] [ textKey (1 :: Int) "text here" ]
+-- @
+--
 -- @since 1.9.0.0
 textKey :: ToKey key => key -> MisoString -> View model action
 textKey k = VText (Just (toKey k))
 -----------------------------------------------------------------------------
 -- | Like 'text_', but allow the node to be keyed for efficient diffing.
+--
+-- @
+-- view :: model -> View model action
+-- view = \x -> div_ [] [ textKey (1 :: Int) [ "text", "goes", "here" ] ]
+-- @
 --
 -- @since 1.9.0.0
 textKey_ :: ToKey key => key -> [MisoString] -> View model action
