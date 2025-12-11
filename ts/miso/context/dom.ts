@@ -7,8 +7,8 @@ import
   , HydrationContext
   , DOMRef
   , ComponentContext
-  , VTree,
-  VTreeType
+  , VTree
+  , VTreeType
   } from '../types';
 
 import { drill } from '../dom'; 
@@ -73,7 +73,8 @@ export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
     switch (node.type) {
       case VTreeType.VComp:
-        return drill(node).nextSibling as DOMRef;
+        const drilled = drill(node);
+        return drilled ? drilled.nextSibling as DOMRef : null;
       default:
         return node.domRef.nextSibling as DOMRef;
     }
