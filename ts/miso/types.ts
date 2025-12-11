@@ -24,8 +24,8 @@ export enum OP {
 
 export type VComp<T> = {
   type: VTreeType.VComp;
-  child: VTree<T>;
-  componentId: ComponentId;
+  child?: VTree<T>;
+  componentId?: ComponentId;
   key: string;
 
   parent: Parent<T>;
