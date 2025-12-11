@@ -295,17 +295,17 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
 --
 -- @
---   mount [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
+--   mount_ [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
-mount
+mount_
   :: Eq m
   => [Attribute action]
   -> Component p m a
   -> View p action
-mount attrs vcomp = VComp attrs (SomeComponent vcomp)
+mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
 --
@@ -314,16 +314,16 @@ mount attrs vcomp = VComp attrs (SomeComponent vcomp)
 -- the two 'Component', to ensure unmounting and mounting occurs.
 --
 -- @
---   mount_ $ component model noop $ \\m ->
+--   mount $ component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
-mount_
+mount
   :: Eq m
   => Component p m a
   -> View p action
-mount_ = mount []
+mount = mount_ []
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data NS

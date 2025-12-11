@@ -91,7 +91,7 @@ main = do
         _ <- jsm $ do
           startApp $
             component (0 :: Int) noop $ \_ ->
-              div_ [] (replicate 9999 (mount_ testComponent))
+              div_ [] (replicate 9999 (mount testComponent))
         mountedComponents >>= (`shouldBe` 10000)
 #endif
 -----------------------------------------------------------------------------
