@@ -73,6 +73,8 @@ module Miso.Types
   , text
   , text_
   , textRaw
+  , textKey
+  , textKey_
   , htmlEncode
   -- *** MisoString
   , MisoString
@@ -261,7 +263,7 @@ data LogLevel
 -- | Core type for constructing a virtual DOM in Haskell
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
-  | VText MisoString
+  | VText (Maybe Key) MisoString
   | VComp NS MisoString [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
@@ -372,7 +374,7 @@ data Attribute action
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
 instance IsString (View model action) where
-  fromString = VText . fromString
+  fromString = VText Nothing . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
 --   Used for diffing, patching and event delegation.
@@ -397,9 +399,9 @@ node = VNode
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
 #ifdef SSR
-text = VText . htmlEncode
+text = VText Nothing . htmlEncode
 #else
-text = VText
+text = VText Nothing
 #endif
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
@@ -407,7 +409,7 @@ text = VText
 -- Like 'text', except will not escape HTML when used on the server.
 --
 textRaw :: MisoString -> View model action
-textRaw = VText
+textRaw = VText Nothing
 ----------------------------------------------------------------------------
 -- |
 -- HTML-encodes text.
@@ -445,7 +447,29 @@ htmlEncode = MS.concatMap $ \case
 -- A single additional space is added between elements.
 --
 text_ :: [MisoString] -> View model action
-text_ = VText . MS.intercalate " "
+text_ = VText Nothing . MS.intercalate " "
+-----------------------------------------------------------------------------
+-- | Like 'text', but allow the node to be keyed for efficient diffing.
+--
+-- @
+-- view :: model -> View model action
+-- view = \x -> div_ [] [ textKey (1 :: Int) "text here" ]
+-- @
+--
+-- @since 1.9.0.0
+textKey :: ToKey key => key -> MisoString -> View model action
+textKey k = VText (Just (toKey k))
+-----------------------------------------------------------------------------
+-- | Like 'text_', but allow the node to be keyed for efficient diffing.
+--
+-- @
+-- view :: model -> View model action
+-- view = \x -> div_ [] [ textKey_ (1 :: Int) [ "text", "goes", "here" ] ]
+-- @
+--
+-- @since 1.9.0.0
+textKey_ :: ToKey key => key -> [MisoString] -> View model action
+textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
