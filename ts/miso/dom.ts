@@ -33,6 +33,8 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
   return;
 }
 
+// should only be called on a mounted component
+// c.child should never be null
 export function drill<T>(c: VComp<T>): T {
   while (c.type === VTreeType.VComp && c.child) {
     switch (c.child.type) {
@@ -43,7 +45,8 @@ export function drill<T>(c: VComp<T>): T {
         return c.child.domRef;
     }
   }
-  return null;
+  /* impossible condition */
+  // return null;
 }
 
 // replace everything function
