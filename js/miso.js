@@ -1179,7 +1179,7 @@ var drawingContext = {
         case 0 /* VComp */:
           return drill(node.nextSibling);
         default:
-          return node.domRef.nextSibling;
+          return node.nextSibling.domRef;
       }
     }
   },
