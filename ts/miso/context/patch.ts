@@ -9,7 +9,7 @@ import {
   VTreeType,
 } from '../types';
 
-import { drill } from '../dom'; 
+import { drill } from '../dom';
 
 /*
 
@@ -99,7 +99,8 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VTree<NodeId>) => {
     switch (node.nextSibling.type) {
       case VTreeType.VComp:
-        return drill(node.nextSibling) as NodeId;
+        const drilled = drill (node.nextSibling);
+        return drilled ? drilled : null;
       default:
         return node.nextSibling.domRef as NodeId;
     }
