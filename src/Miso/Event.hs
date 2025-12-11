@@ -16,7 +16,9 @@
 module Miso.Event
    ( -- *** Smart constructors
      on
+   , onCapture
    , onWithOptions
+   , Phase (..)
    -- *** Lifecycle events
    , onMounted
    , onMountedWith
@@ -45,18 +47,36 @@ import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Attribute (On), LogLevel(..), DOMRef, VTree(..))
-import           Miso.String (MisoString, unpack)
+import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Convenience wrapper for @onWithOptions defaultOptions@.
 --
 -- > let clickHandler = on "click" emptyDecoder $ \() -> Action
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
+-- This is used to define events that are triggered during the browser
+-- bubble phase.
+--
 on :: MisoString
    -> Decoder r
    -> (r -> DOMRef -> action)
    -> Attribute action
-on = onWithOptions defaultOptions
+on = onWithOptions BUBBLE defaultOptions
+-----------------------------------------------------------------------------
+-- | Convenience wrapper for @onWithOptions (True :: Capture)@.
+--
+-- > let clickHandler = onCapture "click" emptyDecoder $ \() -> Action
+-- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
+--
+-- This is used to define events that are triggered during the browser
+-- capture phase.
+--
+onCapture 
+   :: MisoString
+   -> Decoder r
+   -> (r -> DOMRef -> action)
+   -> Attribute action
+onCapture = onWithOptions CAPTURE defaultOptions
 -----------------------------------------------------------------------------
 -- | @onWithOptions opts eventName decoder toAction@ is an attribute
 -- that will set the event handler of the associated DOM node to a function that
@@ -69,12 +89,13 @@ on = onWithOptions defaultOptions
 -- > in button_ [ clickHandler, class_ "add" ] [ text_ "+" ]
 --
 onWithOptions
-  :: Options
+  :: Phase
+  -> Options
   -> MisoString
   -> Decoder r
   -> (r -> DOMRef -> action)
   -> Attribute action
-onWithOptions options eventName Decoder{..} toAction =
+onWithOptions phase options eventName Decoder{..} toAction =
   On $ \sink (VTree n) logLevel events -> do
     when (logLevel == DebugAll || logLevel == DebugEvents) $
       case M.lookup eventName events of
@@ -86,15 +107,20 @@ onWithOptions options eventName Decoder{..} toAction =
               , "add to the 'events' Map in Component"
               ]
         _ -> pure ()
-    eventObj <- getProp "events" n
+    eventsVal <-
+      getProp "events" n
+    eventObj <-
+      case phase of
+        CAPTURE -> getProp "captures" (Object eventsVal)
+        BUBBLE -> getProp "bubbles" (Object eventsVal)
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
-    cb <- FFI.asyncCallback2 $ \e domRef -> do
+    cb <- FFI.syncCallback2 $ \e domRef -> do
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
-          Left s -> error $ "Parse error on " <> unpack eventName <> ": " <> s
-          Right r -> sink (toAction r domRef)
+          Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
+          Right event -> sink (toAction event domRef)
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)

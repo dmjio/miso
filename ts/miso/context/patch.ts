@@ -33,6 +33,8 @@ import {
   MountComponent,
   UnmountComponent,
   ModelHydration,
+  AddClass,
+  RemoveClass,
 } from '../patch';
 
 export function addPatch (componentId: number, patch : PATCH) : void {
@@ -52,7 +54,7 @@ export function getComponentId () : number {
 }
 
 // dmj: Helper for Object equality.
-function areEqual(a: Object, b: Object) {
+function areEqual(a: Object, b: Object) : boolean {
   const keysA = Object.keys(a);
   const keysB = Object.keys(b);
   if (keysA.length !== keysB.length) return false;
@@ -234,6 +236,28 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
         nodeId : node.nodeId,
         key,
         componentId,
+    };
+    addPatch(componentId, patch);
+    return;
+  },
+  addClass : (key, node) => {
+    const componentId: number = getComponentId ();
+    let patch : AddClass = {
+        type : "addClass",
+        nodeId : node.nodeId,
+        componentId,
+        key
+    };
+    addPatch(componentId, patch);
+    return;
+  },
+  removeClass : (key, node) => {
+    const componentId: number = getComponentId ();
+    let patch : RemoveClass = {
+        type : "removeClass",
+        nodeId : node.nodeId,
+        componentId,
+        key
     };
     addPatch(componentId, patch);
     return;

@@ -27,6 +27,9 @@ module Miso.FFI
   , select
   , setSelectionRange
   , alert
+  , getProperty
+  , callFunction
+  , castJSVal
     -- ** Styles
   , addStyle
   , addStyleSheet

@@ -15,8 +15,7 @@
 -- data IntAction = Add | Subtract
 --
 -- intView :: Int -> View IntAction
--- intView n
---  = div_
+-- intView n = div_
 --  [ class_ "main"
 --  ]
 --  [ btn_

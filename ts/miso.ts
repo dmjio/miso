@@ -14,7 +14,8 @@ import {
    websocketClose,
    websocketSend,
    eventSourceConnect,
-   eventSourceClose
+   eventSourceClose,
+   populateClass,
 } from './miso/util';
 
 import {
@@ -58,6 +59,7 @@ export {
   eventSourceConnect,
   eventSourceClose,
   patch,
+  populateClass,
 
   /* Types */
   VTree,

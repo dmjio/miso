@@ -26,6 +26,9 @@ module Miso.Effect
   , ComponentInfo (..)
   , ComponentId
   , mkComponentInfo
+  -- ** I/O
+  , Schedule (..)
+  , Synchronicity (..)
     -- *** Combinators
   , (<#)
   , (#>)
@@ -33,6 +36,8 @@ module Miso.Effect
   , batch_
   , io
   , io_
+  , sync
+  , sync_
   , for
   , issue
   , withSink
@@ -98,7 +103,10 @@ type Sink action = action -> JSM ()
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
 (<#) :: model -> JSM action -> Effect parent model action
-(<#) m action = put m >> tell [ \f -> f =<< action ]
+(<#) m action = put m >> tell [ async $ \f -> f =<< action ]
+-----------------------------------------------------------------------------
+async :: (Sink action -> JSM ()) -> Schedule action
+async = Schedule Async
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
@@ -110,7 +118,7 @@ infixr 0 #>
 -- @since 1.9.0.0
 batch :: [JSM action] -> Effect parent model action
 batch actions = sequence_
-  [ tell [ \f -> f =<< action ]
+  [ tell [ async $ \f -> f =<< action ]
   | action <- actions
   ]
 -----------------------------------------------------------------------------
@@ -119,7 +127,7 @@ batch actions = sequence_
 -- @since 1.9.0.0
 batch_ :: [JSM ()] -> Effect parent model action
 batch_ actions = sequence_
-  [ tell [ const action ]
+  [ tell [ async (const action) ]
   | action <- actions
   ]
 -----------------------------------------------------------------------------
@@ -156,7 +164,20 @@ batch_ actions = sequence_
 --   , ...
 --   }
 -- @
-type Effect parent model action = RWS (ComponentInfo parent) [Sink action -> JSM ()] model ()
+type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
+-----------------------------------------------------------------------------
+-- | Represents a scheduled 'Effect' that is executed either synchronously
+-- or asynchronously.
+--
+-- All t'IO' is by default asynchronous, use the 'sync' function for synchronous
+-- execution. Beware 'sync' can block the render thread for a specific
+-- 'Component'.
+--
+-- N.B. During 'Miso.Types.Component' unmounting, all effects are evaluated
+-- synchronously.
+--
+-- @since 1.9.0.0
+data Schedule action = Schedule Synchronicity (Sink action -> JSM ())
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
@@ -172,13 +193,28 @@ runEffect
     :: Effect parent model action
     -> ComponentInfo parent
     -> model
-    -> (model, [Sink action -> JSM ()])
+    -> (model, [Schedule action])
 runEffect = execRWS
 -----------------------------------------------------------------------------
 -- | Turn a 'Sub' that consumes actions of type @a@ into a 'Sub' that consumes
 -- actions of type @b@ using the supplied function of type @a -> b@.
 mapSub :: (a -> b) -> Sub a -> Sub b
 mapSub f sub = \g -> sub (g . f)
+-----------------------------------------------------------------------------
+-- | Schedule a single 'IO' action, executed synchronously. For asynchronous
+-- execution, see 'io'.
+--
+-- Please use this with caution because it will block the render thread.
+--
+-- @since 1.9.0.0
+sync :: JSM action -> Effect parent model action
+sync action = tell [ Schedule Sync $ \f -> f =<< action ]
+-----------------------------------------------------------------------------
+-- | Like 'sync', except discards the result.
+--
+-- @since 1.9.0.0
+sync_ :: JSM () -> Effect parent model action
+sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
 --
@@ -231,11 +267,19 @@ afterAll = modifyAllJSM . (<*)
 -----------------------------------------------------------------------------
 -- | Modifies all JSM collected by the given Effect.
 --
--- All JSM expressions collected by Effect are evaluated asynchronously.
--- This function can be used to adjoin synchronous actions to all JSM
--- expressions in an effect. For examples see 'beforeAll' and 'afterAll'.
-modifyAllJSM :: (JSM () -> JSM ()) -> Effect parent model action -> Effect parent model action
-modifyAllJSM = censor . (fmap . fmap)
+-- All 'JSM' expressions collected by 'Effect' can be evaluated either
+-- synchronously or asynchronously (the default).
+--
+-- This function can be used to adjoin additional actions to all 'JSM'
+-- expressions in an 'Effect'. For examples see 'beforeAll' and 'afterAll'.
+modifyAllJSM
+  :: (JSM () -> JSM ())
+  -> Effect parent model action
+  -> Effect parent model action
+modifyAllJSM f = censor $ \actions ->
+  [ Schedule x (f <$> action)
+  | Schedule x action <- actions
+  ]
 -----------------------------------------------------------------------------
 -- | @withSink@ allows users to access the sink of the t'Miso.Types.Component' or top-level
 -- t'Miso.Types.Component' in their application. This is useful for introducing 'IO' into the system.
@@ -249,11 +293,12 @@ modifyAllJSM = censor . (fmap . fmap)
 --
 -- @since 1.9.0.0
 withSink :: (Sink action -> JSM ()) -> Effect parent model action
-withSink f = tell [ f ]
+withSink f = tell [ async f ]
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
 -- > data Action = HelloWorld
+-- > type Model  = Int
 -- >
 -- > update :: Action -> Effect Model Action
 -- > update = \case
@@ -261,7 +306,7 @@ withSink f = tell [ f ]
 --
 -- @since 1.9.0.0
 issue :: action -> Effect parent model action
-issue action = tell [ \f -> f action ]
+issue action = tell [ async $ \f -> f action ]
 -----------------------------------------------------------------------------
 -- | See 'io'
 {-# DEPRECATED scheduleIO "Please use 'io' instead" #-}
@@ -306,4 +351,12 @@ batchEff model actions = do
 -- @since 1.9.0.0
 noop :: action -> Effect parent model action
 noop = const (pure ())
+-----------------------------------------------------------------------------
+-- | Data type to indicate if effects should be handled asynchronously
+-- or synchronously.
+--
+data Synchronicity
+  = Async
+  | Sync
+  deriving (Show, Eq)
 -----------------------------------------------------------------------------

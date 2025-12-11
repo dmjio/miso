@@ -218,7 +218,7 @@ instance MakeArgs StyleArg where
   makeArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal StyleArg where
-  toJSVal = toJSVal . renderStyleArg
+  toJSVal = renderStyleArg
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
@@ -494,8 +494,10 @@ textBaseline :: TextBaselineType -> Canvas ()
 textBaseline = set "textBaseline"
 -----------------------------------------------------------------------------
 -- | [gradient.addColorStop(stop,color)](https://www.w3schools.com/tags/canvas_addcolorstop.asp)
-addColorStop :: (Gradient, Double, Color) -> Canvas ()
-addColorStop = call "addColorStop"
+addColorStop :: (Double, Color) -> Gradient -> Canvas ()
+addColorStop args (Gradient g) = do
+  _ <- liftJSM $ g # ("addColorStop" :: MisoString) $ args
+  pure ()
 -----------------------------------------------------------------------------
 -- | [ctx.createLinearGradient(x0,y0,x1,y1)](https://www.w3schools.com/tags/canvas_createlineargradient.asp)
 createLinearGradient :: (Double, Double, Double, Double) -> Canvas Gradient

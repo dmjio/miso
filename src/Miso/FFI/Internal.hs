@@ -66,6 +66,9 @@ module Miso.FFI.Internal
    , diff
    , nextSibling
    , previousSibling
+   , getProperty
+   , callFunction
+   , castJSVal
    -- * Conversions
    , integralToJSString
    , realFloatToJSString
@@ -146,6 +149,8 @@ module Miso.FFI.Internal
    , Response (..)
    -- * Event
    , Event (..)
+   -- * Class
+   , populateClass
    ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -156,7 +161,6 @@ import           Control.Monad (void, foldM, forM_, (<=<), when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson hiding (Object)
 import qualified Data.Aeson as A
-import qualified Data.JSString as JSS
 #ifdef GHCJS_BOTH
 import           Language.Javascript.JSaddle
 #else
@@ -212,20 +216,30 @@ syncCallback2 f = function handle
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
-set (unpack -> "class") v o = do
-  classSet <- ((JSS.pack "class") `Prelude.elem`) <$> listProps o
-  if classSet
-    then do
-      classStr <- fromJSValUnchecked =<< getProp (JSS.pack "class") o
-      vStr <- fromJSValUnchecked =<< toJSVal v
-      v' <- toJSVal (classStr <> JSS.pack " " <> vStr)
-      setProp (JSS.pack "class") v' o
-    else do
-      v' <- toJSVal v
-      setProp (JSS.pack "class") v' o
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
+-----------------------------------------------------------------------------
+-- | Get a property of a 'JSVal'
+--
+-- Example usage:
+--
+-- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
+getProperty :: JSVal -> MisoString -> JSM JSVal
+getProperty = (!)
+-----------------------------------------------------------------------------
+-- | Calls a function on a 'JSVal'
+--
+-- Example usage:
+-- 
+-- > callFunction domRef "focus" ()
+-- > callFunction domRef "setSelectionRange" (0, 3, "none")
+callFunction :: (MakeArgs args) => JSVal -> MisoString -> args -> JSM JSVal
+callFunction = (#)
+-----------------------------------------------------------------------------
+-- | Marshalling of 'JSVal', useful for 'getProperty'
+castJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
+castJSVal = fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
 addEventListener
@@ -379,6 +393,17 @@ eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
+-- | Populate the `classList` Set on the virtual DOM.
+populateClass
+    :: JSVal
+    -- ^ Node
+    -> [MisoString]
+    -- ^ classes
+    -> JSM ()
+populateClass domRef classes = do
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "populateClass" $ (domRef, classes)
+-----------------------------------------------------------------------------
 -- | Retrieves a reference to document body.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
@@ -519,7 +544,7 @@ select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
--- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, 'none')@.
+-- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, \'none\')@.
 setSelectionRange :: MisoString -> Int -> Int -> JSM ()
 setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------

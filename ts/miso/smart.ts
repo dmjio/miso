@@ -1,15 +1,16 @@
 /* smart constructors for VTree */
-import { VText, VTree, VNode, VComp } from './types';
+import { VText, VTree, VNode, VComp, VTreeType } from './types';
 
 /* vtext factory */
 export function vtext<T>(input: string) : VText<T> {
     return {
       ns : 'text',
       text: input,
-      type: 'vtext',
+      type: VTreeType.VText,
       domRef : null,
       key : null,
       parent : null,
+      nextSibling: null,
     };
 }
 
@@ -53,6 +54,7 @@ function mkVNode<T>() : VNode<T> {
   return {
     props: {},
     css: {},
+    classList: null,
     children: [],
     ns: 'html',
     domRef: null,
@@ -63,7 +65,7 @@ function mkVNode<T>() : VNode<T> {
     onBeforeDestroyed: () => {},
     onCreated: () => {},
     onBeforeCreated: () => {},
-    type : 'vnode',
+    type : VTreeType.VNode,
     nextSibling: null,
     parent : null,
   };
@@ -71,7 +73,7 @@ function mkVNode<T>() : VNode<T> {
 
 function mkVComp<T>() : VComp<T> {
   return union(mkVNode<T>() as any, {
-    type : 'vcomp',
+    type : VTreeType.VComp,
     mount: () => {},
     unmount: () => {},
     onUnmounted: () => {},

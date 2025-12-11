@@ -34,6 +34,7 @@ import System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
@@ -62,8 +63,8 @@ intercalate sep (x:xs) =
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
-renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString s
+renderBuilder (VText _ "")    = fromMisoString " "
+renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
 renderBuilder (VNode ns tag attrs children) = mconcat
   [ "<"
@@ -94,7 +95,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
               , ns == MATHML
               ]
-      
+
 renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
   renderBuilder (VNode ns tag attrs vkids)
     where
@@ -105,7 +106,14 @@ renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
-renderAttrs (Property key prop) =
+renderAttrs (ClassList classes) =
+  mconcat
+  [ "class"
+  , stringUtf8 "=\""
+  , fromMisoString (MS.unwords classes)
+  , stringUtf8 "\""
+  ]
+renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
@@ -134,8 +142,8 @@ renderAttrs (Styles styles) =
 -- this means we must collapse adjacent text nodes during hydration.
 collapseSiblingTextNodes :: [View m a] -> [View m a]
 collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (VText x : VText y : xs) =
-  collapseSiblingTextNodes (VText (x <> y) : xs)
+collapseSiblingTextNodes (VText _ x : VText k y : xs) =
+  collapseSiblingTextNodes (VText k (x <> y) : xs)
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 ----------------------------------------------------------------------------

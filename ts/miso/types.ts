@@ -1,7 +1,8 @@
 /* core type for virtual DOM */
 export type Props = Record<string, any>;
 export type CSS = Record<string, string>;
-export type Events<T> = Record<string, EventObject<T>>;
+export type Class = Set<string>;
+export type Events<T> = Record<string, Record<string, EventObject<T>>>;
 
 /* element name spacing */
 export type NS = 'text' | 'html' | 'svg' | 'mathml';
@@ -9,14 +10,21 @@ export type NS = 'text' | 'html' | 'svg' | 'mathml';
 export type DOMRef = HTMLElement | MathMLElement | SVGElement;
 export type ComponentId = number;
 
+export enum VTreeType {
+  VComp = 0,
+  VNode = 1,
+  VText = 2
+}
+
 export type VComp<T> = {
-  type: 'vcomp';
+  type: VTreeType.VComp;
   domRef: T;
   ns: 'html';
   tag: string;
   key: string;
   props: Props;
   css: CSS;
+  classList: Class;
   events: Events<T>;
   parent: Parent<T>;
   children: Array<VTree<T>>;
@@ -24,39 +32,41 @@ export type VComp<T> = {
   eventPropagation: boolean;
   onBeforeMounted: () => void;
   onMounted: (domRef: T) => void;
-  onBeforeUnmounted: (domRef: T) => void;
+  onBeforeUnmounted: () => void;
   onUnmounted: (domRef: T) => void;
   mount: (vcomp: VComp<T>, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (e: T) => void;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VNode<T> = {
-  type: 'vnode';
+  type: VTreeType.VNode;
   ns: NS;
   domRef: T;
   tag: string;
   key: string;
   props: Props;
   css: CSS;
+  classList: Class;
   events: Events<T>;
   children: Array<VTree<T>>;
   onDestroyed: () => void;
   onBeforeDestroyed: () => void;
-  onCreated: () => void;
+  onCreated: (domRef: T) => void;
   onBeforeCreated: () => void;
   draw?: (T) => void;
   parent: Parent<T>;
-  nextSibling: VNode<T>;
+  nextSibling: VTree<T>;
 };
 
 export type VText<T> = {
-  type: 'vtext';
+  type: VTreeType.VText;
   text: string;
   domRef: T;
   ns: NS;
   key: string;
   parent: Parent<T>;
+  nextSibling: VTree<T>;
 };
 
 export type Parent<T> = VNode<T> | VComp<T>;
@@ -68,8 +78,8 @@ export type NodeId = {
 export type VTree<T> = VComp<T> | VNode<T> | VText<T>;
 
 export type EventObject<T> = {
-  options: Options;
-  runEvent: (e: Event, node: T) => void;
+   options: Options;
+   runEvent: (e: Event, node: T) => void;
 };
 
 export type Options = {
@@ -112,7 +122,7 @@ export type ComponentContext = {
 }
 
 export type DrawingContext<T> = {
-  nextSibling : (node: VNode<T>) => T;
+  nextSibling : (node: VTree<T>) => T;
   createTextNode : (s: string) => T;
   createElementNS : (ns: string, tag : string) => T;
   appendChild : (parent: T, child: T) => void;
@@ -126,6 +136,8 @@ export type DrawingContext<T> = {
   setAttributeNS : (node: T, ns: string, key: string, value: any) => void;
   setTextContent : (node: T, text: string) => void;
   setInlineStyle : (cCss: CSS, nCss: CSS, node : T) => void;
+  addClass : (c: string, domRef: T) => void;
+  removeClass : (c: string, domRef: T) => void;
   flush : () => void;
   getRoot : () => T;
 };

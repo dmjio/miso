@@ -15,7 +15,7 @@
 module Miso.Event.Types
   ( -- ** Types
     Events
-  , Capture
+  , Phase (..)
     -- *** KeyboardEvent
   , KeyInfo (..)
   , KeyCode (..)
@@ -143,73 +143,65 @@ defaultOptions
   }
 -----------------------------------------------------------------------------
 -- | Convenience type for Events
-type Events = M.Map MisoString Capture
------------------------------------------------------------------------------
--- | Type synonym to express capture mode for browser / mobile events.
---
--- Used to determine if *capture* should be set when using /addEventListener/
---
--- <https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#capture>
---
-type Capture = Bool
+type Events = M.Map MisoString Phase
 -----------------------------------------------------------------------------
 -- | Default delegated events
 defaultEvents :: Events
 defaultEvents = M.fromList
-  [ ("blur", True)
-  , ("change", False)
-  , ("click", False)
-  , ("contextmenu", False)
-  , ("dblclick", False)
-  , ("focus", True)
-  , ("input", False)
-  , ("select", False)
-  , ("submit", False)
+  [ ("blur", CAPTURE)
+  , ("change", BUBBLE)
+  , ("click", BUBBLE)
+  , ("contextmenu", BUBBLE)
+  , ("dblclick", BUBBLE)
+  , ("focus", CAPTURE)
+  , ("input", BUBBLE)
+  , ("select", BUBBLE)
+  , ("submit", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Keyboard events
 keyboardEvents :: Events
 keyboardEvents = M.fromList
-  [ ("keydown", False)
-  , ("keypress", False)
-  , ("keyup", False)
+  [ ("keydown", BUBBLE)
+  , ("keypress", BUBBLE)
+  , ("keyup", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Mouse events
 mouseEvents :: Events
 mouseEvents = M.fromList
-  [ ("mouseup", False)
-  , ("mousedown", False)
-  , ("mouseenter", True)
-  , ("mouseleave", False)
-  , ("mouseover", False)
-  , ("mouseout", False)
-  , ("contextmenu", False)
+  [ ("mouseup", BUBBLE)
+  , ("mousedown", BUBBLE)
+  , ("mouseenter", CAPTURE)
+  , ("mouseleave", BUBBLE)
+  , ("mouseover", BUBBLE)
+  , ("mouseout", BUBBLE)
+  , ("contextmenu", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Drag events
 dragEvents :: Events
 dragEvents = M.fromList
-  [ ("dragstart", False)
-  , ("dragover", False)
-  , ("dragend", False)
-  , ("dragenter", False)
-  , ("dragleave", False)
-  , ("drag", False)
-  , ("drop", False)
+  [ ("dragstart", BUBBLE)
+  , ("dragover", BUBBLE)
+  , ("dragend", BUBBLE)
+  , ("dragenter", BUBBLE)
+  , ("dragleave", BUBBLE)
+  , ("drag", BUBBLE)
+  , ("drop", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Pointer events
 pointerEvents :: Events
 pointerEvents = M.fromList
-  [ ("pointerup", False)
-  , ("pointerdown", False)
-  , ("pointerenter", True)
-  , ("pointercancel", False)
-  , ("pointerleave", False)
-  , ("pointerover", False)
-  , ("pointerout", False)
-  , ("contextmenu", False)
+  [ ("pointerup", BUBBLE)
+  , ("pointerdown", BUBBLE)
+  , ("pointerenter", CAPTURE)
+  , ("pointercancel", BUBBLE)
+  , ("pointerleave", BUBBLE)
+  , ("pointerover", BUBBLE)
+  , ("pointerout", BUBBLE)
+  , ("contextmenu", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Audio video events
@@ -221,44 +213,54 @@ pointerEvents = M.fromList
 -- @
 mediaEvents :: Events
 mediaEvents = M.fromList
-  [ ("abort", True)
-  , ("canplay", True)
-  , ("canplaythrough", True)
-  , ("durationchange", False)
-  , ("emptied", True)
-  , ("ended", True)
-  , ("error", True)
-  , ("loadeddata", False)
-  , ("loadedmetadata", False)
-  , ("loadstart", False)
-  , ("pause", True)
-  , ("play", True)
-  , ("playing", True)
-  , ("progress", True)
-  , ("ratechange", True)
-  , ("seeked", True)
-  , ("seeking", True)
-  , ("stalled", True)
-  , ("suspend", True)
-  , ("timeupdate", True)
-  , ("volumechange", True)
-  , ("waiting", True)
+  [ ("abort", CAPTURE)
+  , ("canplay", CAPTURE)
+  , ("canplaythrough", CAPTURE)
+  , ("durationchange", BUBBLE)
+  , ("emptied", CAPTURE)
+  , ("ended", CAPTURE)
+  , ("error", CAPTURE)
+  , ("loadeddata", BUBBLE)
+  , ("loadedmetadata", BUBBLE)
+  , ("loadstart", BUBBLE)
+  , ("pause", CAPTURE)
+  , ("play", CAPTURE)
+  , ("playing", CAPTURE)
+  , ("progress", CAPTURE)
+  , ("ratechange", CAPTURE)
+  , ("seeked", CAPTURE)
+  , ("seeking", CAPTURE)
+  , ("stalled", CAPTURE)
+  , ("suspend", CAPTURE)
+  , ("timeupdate", CAPTURE)
+  , ("volumechange", CAPTURE)
+  , ("waiting", CAPTURE)
   ]
 -----------------------------------------------------------------------------
 -- | Clipboard events
 clipboardEvents :: Events
 clipboardEvents = M.fromList
-  [ ("cut", False)
-  , ("copy", False)
-  , ("paste", False)
+  [ ("cut", BUBBLE)
+  , ("copy", BUBBLE)
+  , ("paste", BUBBLE)
   ]
 -----------------------------------------------------------------------------
 -- | Touch events
 touchEvents :: Events
 touchEvents = M.fromList
-  [ ("touchstart", False)
-  , ("touchcancel", False)
-  , ("touchmove", False)
-  , ("touchend", False)
+  [ ("touchstart", BUBBLE)
+  , ("touchcancel", BUBBLE)
+  , ("touchmove", BUBBLE)
+  , ("touchend", BUBBLE)
   ]
+-----------------------------------------------------------------------------
+-- | Phase during which event listener is invoked.
+--
+-- @since 1.9.0.0
+data Phase = CAPTURE | BUBBLE deriving (Eq, Show)
+-----------------------------------------------------------------------------
+instance ToJSVal Phase where
+  toJSVal = \case
+    CAPTURE -> toJSVal True
+    BUBBLE -> toJSVal False
 -----------------------------------------------------------------------------

@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -97,6 +99,9 @@ import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, k
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
+#ifdef BENCH
+import           Text.Printf
+#endif
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator)
@@ -108,7 +113,9 @@ import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect (ComponentInfo(..), Sub, Sink, Effect, runEffect, io_, withSink)
+import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+                             , io_, withSink, Synchronicity(..)
+                             )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -142,7 +149,14 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
   componentVTree <- do
+#ifdef BENCH
+    start <- if isRoot then FFI.now else pure 0
+#endif
     vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
+#ifdef BENCH
+    end <- if isRoot then FFI.now else pure 0
+    when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
+#endif
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
@@ -166,7 +180,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
       currentModel <- liftIO (readTVarIO componentModel)
       let info = ComponentInfo componentId componentParentId componentDOMRef
       as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update Async info componentSink (toList as) currentModel
+      updatedModel <- foldEffects update False info componentSink (toList as) currentModel
       currentName <- liftIO $ currentModel `seq` makeStableName currentModel
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
@@ -702,35 +716,32 @@ components :: IORef (IntMap (ComponentState model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
--- | Data type to indicate if effects should be handled asynchronously
--- or synchronously.
---
-data Synchronicity
-  = Async
-  | Sync
-  deriving (Show, Eq)
------------------------------------------------------------------------------
-syncWith :: Synchronicity -> JSM () -> JSM ()
-syncWith Sync  x = x
-syncWith Async x = void (FFI.forkJSM x)
+-- | This function evaluates effects according to 'Synchronicity'.
+evalScheduled :: Synchronicity -> JSM () -> JSM ()
+evalScheduled Sync x = x
+evalScheduled Async x = void (FFI.forkJSM x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
   :: (action -> Effect parent model action)
-  -> Synchronicity
+  -> Bool
+  -- ^ Whether or not the Component is unmounting
   -> ComponentInfo parent
   -> Sink action
   -> [action]
   -> model
   -> JSM model
 foldEffects _ _ _ _ [] m = pure m
-foldEffects update synchronicity info snk (e:es) o =
+foldEffects update drainSink info snk (e:es) o =
   case runEffect (update e) info o of
     (n, subs) -> do
-      forM_ subs $ \sub -> do
-        syncWith synchronicity $
-          sub snk `catch` (void . exception)
-      foldEffects update synchronicity info snk es n
+      forM_ subs $ \(Schedule synchronicity sub) -> do
+        let
+          action = sub snk `catch` (void . exception)
+        if drainSink
+          then evalScheduled Sync action
+          else evalScheduled synchronicity action
+      foldEffects update drainSink info snk es n
   where
     exception :: SomeException -> JSM ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
@@ -747,7 +758,7 @@ drain app@Component{..} cs@ComponentState {..} = do
       where
         go info actions = do
           x <- liftIO (readTVarIO componentModel)
-          y <- foldEffects update Sync info componentSink (toList actions) x
+          y <- foldEffects update True info componentSink (toList actions) x
           liftIO $ atomically (writeTVar componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
@@ -761,14 +772,27 @@ unloadScripts ComponentState {..} = do
       # ("removeChild" :: MisoString)
       $ [domRef]
 -----------------------------------------------------------------------------
+-- | Helper to drop all lifecycle and mounting hooks if defined.
+freeLifecycleHooks :: ComponentState model action -> JSM ()
+freeLifecycleHooks ComponentState {..} = do
+#ifndef GHCJS_BOTH
+  VTree (Object vcomp) <- liftIO (readIORef componentVTree)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onUnmounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
+#else
+  pure ()
+#endif
+-----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
-  :: Function
-  -> Component parent model action
+  :: Component parent model action
   -> ComponentState model action
   -> JSM ()
-unmount mountCallback app cs@ComponentState {..} = do
-  freeFunction mountCallback
+unmount app cs@ComponentState {..} = do
   liftIO $ do
     killThread componentMailboxThreadId
     mapM_ killThread =<< readIORef componentSubThreads
@@ -776,10 +800,11 @@ unmount mountCallback app cs@ComponentState {..} = do
     mapM_ killThread componentChildToParentThreadId
   killSubscribers componentId
   drain app cs
-  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
   finalizeWebSockets componentId
   finalizeEventSources componentId
   unloadScripts cs
+  freeLifecycleHooks cs
+  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> JSM ()
 killSubscribers componentId =
@@ -817,19 +842,21 @@ buildVTree hydrate (VComp ns tag attrs (SomeComponent app)) snk _ _ = do
       IM.lookup componentId <$> liftIO (readIORef components) >>= \case
         Nothing -> pure ()
         Just componentState ->
-          unmount mountCallback app componentState
+          unmount app componentState
   vcomp <- createNode "vcomp" ns tag
   setAttrs vcomp attrs snk (logLevel app) (events app)
   flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
   flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
   FFI.set "unmount" unmountCallback vcomp
   FFI.set "eventPropagation" (eventPropagation app) vcomp
+  flip (FFI.set "type") vcomp =<< toJSVal VCompType
   pure (VTree vcomp)
 buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
   vnode <- createNode "vnode" ns tag
   setAttrs vnode attrs snk logLevel events
   vchildren <- toJSVal =<< procreate vnode
-  FFI.set "children" vchildren vnode
+  flip (FFI.set "children") vnode vchildren
+  flip (FFI.set "type") vnode =<< toJSVal VNodeType
   pure $ VTree vnode
     where
       procreate parentVTree = do
@@ -842,9 +869,10 @@ buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
           where
             setNextSibling xs =
               zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
-buildVTree _ (VText t) _ _ _ = do
+buildVTree _ (VText key t) _ _ _ = do
   vtree <- create
-  FFI.set "type" ("vtext" :: JSString) vtree
+  flip (FFI.set "type") vtree =<< toJSVal VTextType
+  forM_ key $ \k -> FFI.set "key" (ms k) vtree
   FFI.set "ns" ("text" :: JSString) vtree
   FFI.set "text" t vtree
   pure $ VTree vtree
@@ -858,10 +886,14 @@ createNode typ ns tag = do
   cssObj <- create
   propsObj <- create
   eventsObj <- create
+  captures <- create
+  bubbles <- create
   FFI.set "css" cssObj vnode
   FFI.set "type" typ vnode
   FFI.set "props" propsObj vnode
   FFI.set "events" eventsObj vnode
+  FFI.set "captures" captures eventsObj
+  FFI.set "bubbles" bubbles eventsObj
   FFI.set "ns" ns vnode
   FFI.set "tag" tag vnode
   pure vnode
@@ -875,11 +907,13 @@ setAttrs
   -> LogLevel
   -> Events
   -> JSM ()
-setAttrs vnode attrs snk logLevel events =
+setAttrs vnode@(Object jval) attrs snk logLevel events =
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
       FFI.set "key" value vnode
+    ClassList classes ->
+      FFI.populateClass jval classes
     Property k v -> do
       value <- toJSVal v
       o <- getProp "props" vnode
@@ -1588,4 +1622,9 @@ blob = BLOB
 -- | Smart constructor for sending an @ArrayBuffer@ via an t'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
+-----------------------------------------------------------------------------
+#ifndef GHCJS_BOTH
+instance FromJSVal Function where
+  fromJSVal = pure . Just . Function . Object
+#endif
 -----------------------------------------------------------------------------

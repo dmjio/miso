@@ -1,13 +1,13 @@
 import
   { CSS
   , DrawingContext
-  , VNode
   , EventContext
   , EventCapture
   , ComponentId
   , HydrationContext
   , DOMRef
   , ComponentContext
+  , VTree
   } from '../types';
 
 export const eventContext : EventContext<DOMRef> = {
@@ -67,7 +67,7 @@ export const componentContext : ComponentContext = {
 };
 
 export const drawingContext : DrawingContext<DOMRef> = {
-  nextSibling : (node: VNode<DOMRef>) => {
+  nextSibling : (node: VTree<DOMRef>) => {
     return node.domRef.nextSibling as DOMRef;
   },
   createTextNode : (s: string) => {
@@ -87,6 +87,12 @@ export const drawingContext : DrawingContext<DOMRef> = {
   },
   createElement : (tag: string) => {
     return document.createElement(tag);
+  },
+  addClass : (className: string, domRef: DOMRef) => {
+    if (className) domRef.classList.add(className);
+  },
+  removeClass : (className: string, domRef: DOMRef) => {
+    if (className) domRef.classList.remove(className);
   },
   insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
