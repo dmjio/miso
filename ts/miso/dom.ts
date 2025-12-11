@@ -118,7 +118,6 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
         context.removeChild(parent, c.domRef);
         break;
   }
-  // step 2: destroy
   // step 3: invoke post-hooks for vnode and vcomp
   switch (c.type) {
       case VTreeType.VText:
