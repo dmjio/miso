@@ -438,9 +438,11 @@ describe('DOM tests', () => {
       onBeforeMounted: () => {
         beforeMounted++;
       },
+      onMounted : () => {
+        mounted++;
+      },
       mount: (domRef, callback) => {
         mount++;
-        mounted++; //dmj : 'onMounted' is called inside of 'mount' callback in dom.ts
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
         callback(0, child);
