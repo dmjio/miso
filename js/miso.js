@@ -1174,12 +1174,14 @@ var componentContext = {
 };
 var drawingContext = {
   nextSibling: (node) => {
-    switch (node.type) {
-      case 0 /* VComp */:
-        const drilled = drill(node);
-        return drilled ? drilled.nextSibling : null;
-      default:
-        return node.domRef.nextSibling;
+    if (node.nextSibling) {
+      switch (node.type) {
+        case 0 /* VComp */:
+          const drilled = drill(node);
+          return drilled ? drilled.nextSibling : null;
+        default:
+          return node.domRef.nextSibling;
+      }
     }
   },
   createTextNode: (s) => {

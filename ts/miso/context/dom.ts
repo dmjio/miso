@@ -71,12 +71,14 @@ export const componentContext : ComponentContext = {
 
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
-    switch (node.type) {
-      case VTreeType.VComp:
-        const drilled = drill(node);
-        return drilled ? drilled.nextSibling as DOMRef : null;
-      default:
-        return node.domRef.nextSibling as DOMRef;
+    if (node.nextSibling) {
+      switch (node.type) {
+        case VTreeType.VComp:
+          const drilled = drill(node);
+          return drilled ? drilled.nextSibling as DOMRef : null;
+        default:
+          return node.domRef.nextSibling as DOMRef;
+      }
     }
   },
   createTextNode : (s: string) => {
