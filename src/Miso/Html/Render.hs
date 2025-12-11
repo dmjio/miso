@@ -117,7 +117,7 @@ renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
   , stringUtf8 "=\""
-  , toHtmlProperty prop
+  , toHtmlProperty value
   , stringUtf8 "\""
   ]
 renderAttrs (On _) = mempty
