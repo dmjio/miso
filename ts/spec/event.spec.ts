@@ -100,8 +100,8 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp, drawingContext);
+      mount : function (parent, f) {
+        diff(null, child, parent, drawingContext);
         return f(0, child);
       }
     });
