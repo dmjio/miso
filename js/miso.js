@@ -40,6 +40,7 @@ function drill(c) {
         return c.child.domRef;
     }
   }
+  return null;
 }
 function replace(c, n, parent, context) {
   switch (c.type) {

@@ -43,6 +43,7 @@ export function drill<T>(c: VComp<T>): T {
         return c.child.domRef;
     }
   }
+  return null;
 }
 
 // replace everything function
