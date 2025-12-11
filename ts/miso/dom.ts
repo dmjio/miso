@@ -330,8 +330,22 @@ export function callCreated<T>(parent: T, n: VComp<T> | VNode<T>, context: Drawi
   }
 }
 
-function createElement<T>(parent : T, op: OP, replacing : T | null, n: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
+function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>, context: DrawingContext<T>): void {
   switch (n.type) {
+    case VTreeType.VText:
+      n.domRef = context.createTextNode(n.text);
+      switch (op) {
+        case OP.INSERT_BEFORE:
+          context.insertBefore(parent, n.domRef, replacing);
+          break;
+        case OP.APPEND:
+          context.appendChild(parent, n.domRef);
+          break;
+        case OP.REPLACE:
+          context.replaceChild(parent, n.domRef, replacing);
+          break;
+      }
+      break;
     case VTreeType.VComp:
       if (n.onBeforeMounted) n.onBeforeMounted();
       mountComponent(op, parent, n, replacing, context);
@@ -639,7 +653,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
                   case VTreeType.VComp:
                     createElement(parent, OP.INSERT_BEFORE, drill(oFirst), nFirst, context);
                     break;
-                  case VTreeType.VNode:
+                  default:
                     createElement(parent, OP.INSERT_BEFORE, oFirst.domRef, nFirst, context);
                     break;
             }
