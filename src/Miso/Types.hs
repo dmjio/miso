@@ -464,7 +464,7 @@ textKey k = VText (Just (toKey k))
 --
 -- @
 -- view :: model -> View model action
--- view = \x -> div_ [] [ textKey (1 :: Int) [ "text", "goes", "here" ] ]
+-- view = \x -> div_ [] [ textKey_ (1 :: Int) [ "text", "goes", "here" ] ]
 -- @
 --
 -- @since 1.9.0.0
