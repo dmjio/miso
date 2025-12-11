@@ -100,8 +100,8 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: true,
-      mount : function (parent, f) {
-        diff(null, child, parent, drawingContext);
+      mount : function (p, f) {
+        diff(null, child, p, drawingContext);
         return f(0, child);
       }
     });
@@ -167,8 +167,8 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: false,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp, drawingContext);
+      mount : function (p, f) {
+        diff(null, child, p, drawingContext);
         return f(0, child);
       }
     });
@@ -179,8 +179,8 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp, drawingContext);
+      mount : function (p, f) {
+        diff(null, parent, p, drawingContext);
         return f(1, parent);
       }
     });
