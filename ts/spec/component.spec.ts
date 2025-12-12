@@ -312,9 +312,33 @@ describe ('Component tests', () => {
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
+    expect(document.body.children.length).toBe(1);
     expect(unmountCount).toBe(0);
     expect(mountCount).toBe(1);
   });
 
+  test('Should allow recursive Component mounting', () => {
+    // populate DOM
+    let component = vcomp<DOMRef>({
+      mount: (domRef, callback) => {
+        const childVComp = vcomp<DOMRef>({
+          mount: (ref, cb) => {
+            const child1 = vnode<DOMRef>({ tag: 'div' });
+            diff<DOMRef>(null, child1, ref, drawingContext);
+            cb(1, child1);
+          }
+        });
+        diff<DOMRef>(null, childVComp, domRef, drawingContext);
+        callback(0, childVComp);
+      }
+    });
+
+    diff<DOMRef>(null, component, document.body, drawingContext);
+
+    // Test component was populated
+    expect(document.childNodes.length).toBe(1);
+    expect(document.childNodes.length).toBe(1);
+    expect(document.body.children[0].tagName).toBe('DIV');
+  });
 
 })

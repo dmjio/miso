@@ -102,7 +102,9 @@ function delegateEvent <T>(
       else if (obj.type === VTreeType.VComp) {
         if (!obj.child) {
           if (debug) {
-            console.warn('VComp has no child property set during event delegation', obj);
+            console.error('VComp has no child property set during event delegation', obj);
+            console.error('This means the Component has not been fully mounted, this should never happen');
+            throw new Error('VComp has no .child property set during event delegation');
           }
           return;
         }

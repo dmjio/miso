@@ -33,21 +33,18 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
   return;
 }
 
-// should only be called on a mounted component
 // c.child should never be null
 export function drill<T>(c: VComp<T>): T {
-  while (c.type === VTreeType.VComp && c.child) {
-    switch (c.child.type) {
-      case VTreeType.VComp:
-        c = c.child;
-        break;
-      default:
-        return c.child.domRef;
-    }
+  if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
+  switch (c.child.type) {
+    case VTreeType.VComp:
+      drill (c.child)
+      break;
+    default:
+      return c.child.domRef;
   }
-  /* impossible condition */
-  // return null;
 }
+
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
@@ -323,9 +320,7 @@ function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
 export function callCreated<T>(parent: T, n: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
   switch (n.type) {
       case VTreeType.VComp:
-          if (n.onBeforeMounted) n.onBeforeMounted();
           mountComponent(OP.APPEND, parent, n, null, context);
-          if (n.onMounted) n.onMounted(drill(n));          
           break;
       case VTreeType.VNode:
           if (n.onCreated) n.onCreated(n.domRef);
@@ -350,7 +345,6 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
       }
       break;
     case VTreeType.VComp:
-      if (n.onBeforeMounted) n.onBeforeMounted();
       mountComponent(op, parent, n, replacing, context);
       break;
     case VTreeType.VNode:
@@ -388,25 +382,24 @@ function unmountComponent<T>(c: VComp<T>): void {
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, context: DrawingContext<T>): void {
-  n.mount(parent, (componentId: ComponentId, componentTree: VNode<T>) => {
-    // mount() gives us the VTree from the Haskell side, so we just attach it here
-    // to tie the knot (attach to both vdom and real dom).
+  if (n.onBeforeMounted) n.onBeforeMounted();
+
+  // 'mount()' should be executed synchronously, including its callback function argumnet.
+  n.mount(parent, (componentId: ComponentId, componentTree: VTree<T>) => {
+    // mount() gives us the VTree from the Haskell side
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-      if (n.onMounted) n.onMounted(drill(n));          
-      switch (op) { 
-        case OP.INSERT_BEFORE:
-          context.insertBefore(parent, drill(n), replacing);
-          break;
-        case OP.APPEND:
-          context.appendChild(parent, drill(n));
-          break;
-        case OP.REPLACE:
-          context.replaceChild(parent, drill(n), replacing);
-          break;
-      }
+    switch (componentTree.type) {
+      case VTreeType.VComp:
+        // dmj: Recursive mounting case
+        mountComponent (op, parent, componentTree, replacing, context);
+        break;
+      default:
+        break;
+    }
   });
+  if (n.onMounted) n.onMounted(drill(n));
 }
 
 // Creates nodes on virtual dom (vtext, vcomp, vnode)

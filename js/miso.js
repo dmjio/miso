@@ -31,14 +31,14 @@ function diffVText(c, n, context) {
   return;
 }
 function drill(c) {
-  while (c.type === 0 /* VComp */ && c.child) {
-    switch (c.child.type) {
-      case 0 /* VComp */:
-        c = c.child;
-        break;
-      default:
-        return c.child.domRef;
-    }
+  if (!c.child)
+    throw new Error("'drill' called on an unmounted Component. This should never happen, please make an issue.");
+  switch (c.child.type) {
+    case 0 /* VComp */:
+      drill(c.child);
+      break;
+    default:
+      return c.child.domRef;
   }
 }
 function replace(c, n, parent, context) {
@@ -286,11 +286,7 @@ function populateDomRef(c, context) {
 function callCreated(parent, n, context) {
   switch (n.type) {
     case 0 /* VComp */:
-      if (n.onBeforeMounted)
-        n.onBeforeMounted();
       mountComponent(0 /* APPEND */, parent, n, null, context);
-      if (n.onMounted)
-        n.onMounted(drill(n));
       break;
     case 1 /* VNode */:
       if (n.onCreated)
@@ -315,8 +311,6 @@ function createElement(parent, op, replacing, n, context) {
       }
       break;
     case 0 /* VComp */:
-      if (n.onBeforeMounted)
-        n.onBeforeMounted();
       mountComponent(op, parent, n, replacing, context);
       break;
     case 1 /* VNode */:
@@ -350,24 +344,22 @@ function unmountComponent(c) {
   c.unmount(c.componentId);
 }
 function mountComponent(op, parent, n, replacing, context) {
+  if (n.onBeforeMounted)
+    n.onBeforeMounted();
   n.mount(parent, (componentId, componentTree) => {
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-    if (n.onMounted)
-      n.onMounted(drill(n));
-    switch (op) {
-      case 2 /* INSERT_BEFORE */:
-        context.insertBefore(parent, drill(n), replacing);
+    switch (componentTree.type) {
+      case 0 /* VComp */:
+        mountComponent(op, parent, componentTree, replacing, context);
         break;
-      case 0 /* APPEND */:
-        context.appendChild(parent, drill(n));
-        break;
-      case 1 /* REPLACE */:
-        context.replaceChild(parent, drill(n), replacing);
+      default:
         break;
     }
   });
+  if (n.onMounted)
+    n.onMounted(drill(n));
 }
 function create(n, parent, context) {
   if (n.type === 2 /* VText */) {
@@ -592,7 +584,9 @@ function delegateEvent(event, obj, stack, debug, context) {
     } else if (obj.type === 0 /* VComp */) {
       if (!obj.child) {
         if (debug) {
-          console.warn("VComp has no child property set during event delegation", obj);
+          console.error("VComp has no child property set during event delegation", obj);
+          console.error("This means the Component has not been fully mounted, this should never happen");
+          throw new Error("VComp has no .child property set during event delegation");
         }
         return;
       }
