@@ -2,7 +2,7 @@
 import { hydrate, integrityCheck } from '../miso/hydrate';
 import { vnode, vtext, vcomp, vnodeKids } from '../miso/smart';
 import { VText, VNode, DOMRef, VComp } from '../miso/types';
-import { test, expect, describe, afterEach, beforeAll, mock } from 'bun:test';
+import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { hydrationContext, drawingContext } from '../miso/context/dom';
 
 /* silence */
