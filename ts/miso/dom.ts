@@ -33,7 +33,7 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
   return;
 }
 
-// c.child should never be null
+//c.child should never be null
 export function drill<T>(c: VComp<T>): T {
   if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
   switch (c.child.type) {
@@ -42,6 +42,16 @@ export function drill<T>(c: VComp<T>): T {
       break;
     default:
       return c.child.domRef;
+  }
+}
+
+// Extract DOM reference from any VTree (handles VComp drilling)
+function getDOMRef<T>(tree: VTree<T>): T {
+  switch (tree.type) {
+    case VTreeType.VComp:
+      return drill(tree);
+    default:
+      return tree.domRef;
   }
 }
 
@@ -390,20 +400,18 @@ function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, contex
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-    switch (componentTree.type) {
-      case VTreeType.VComp:
-        // dmj: Recursive mounting case
-        mountComponent (op, parent, componentTree, replacing, context);
-        break;
-      default:
-        // Handle DOM placement for non-VComp child nodes
-        if (op === OP.REPLACE && replacing) {
-          context.replaceChild(parent, componentTree.domRef, replacing);
-        } else if (op === OP.INSERT_BEFORE) {
-          context.insertBefore(parent, componentTree.domRef, replacing);
-        }
-        // For OP.APPEND, the mount function should have already appended
-        break;
+    if (componentTree.type === VTreeType.VComp) {
+      // Recursive mounting case
+      mountComponent(op, parent, componentTree, replacing, context);
+    } else {
+      // Handle DOM placement for non-VComp child nodes
+      const childDomRef = getDOMRef(componentTree);
+      if (op === OP.REPLACE && replacing) {
+        context.replaceChild(parent, childDomRef, replacing);
+      } else if (op === OP.INSERT_BEFORE) {
+        context.insertBefore(parent, childDomRef, replacing);
+      }
+      // For OP.APPEND, the mount function should have already appended
     }
   });
 
@@ -421,72 +429,16 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
-  switch (n.type) {
-    case VTreeType.VComp:
-      if (!o) {
-        context.insertBefore(parent, drill(n), null);
-      } else {
-        switch (o.type) {
-          case VTreeType.VComp:
-            context.insertBefore(parent, drill(n), drill(o));
-            break;
-          default:
-            context.insertBefore(parent, drill(n), o.domRef);
-            break;
-        }
-      }
-      break;
-    default:
-      if (!o) {
-        context.insertBefore(parent, n.domRef, null);
-      } else {
-        switch (o.type) {
-          case VTreeType.VComp:
-            context.insertBefore(parent, n.domRef, drill(o));
-            break;
-          default:
-            context.insertBefore(parent, n.domRef, o.domRef);
-            break;
-        }
-      }
-   }
+  context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
 } 
 
 function removeChild<T>(parent: T, n: VTree<T>, context: DrawingContext<T>): void {
-  switch (n.type) {
-    case VTreeType.VComp:
-      context.removeChild(parent, drill(n));
-      break;
-    default:
-      context.removeChild(parent, n.domRef);
-      break;
-  }
+  context.removeChild(parent, getDOMRef(n));
 }
 
 function swapDOMRef<T>(oFirst: VTree<T>, oLast: VTree<T>, parent: T, context: DrawingContext<T>): void {
-   switch (oLast.type) {
-       case VTreeType.VComp:
-          switch (oFirst.type) {
-            case VTreeType.VComp:
-              context.swapDOMRefs(drill(oLast), drill(oFirst), parent);
-              break;
-            default:
-              context.swapDOMRefs(drill(oLast), oFirst.domRef, parent);
-              break;              
-          } 
-          break;
-        default:
-          switch (oFirst.type) {
-            case VTreeType.VComp:
-              context.swapDOMRefs(oLast.domRef, drill(oFirst), parent);
-              break;
-            default:
-              context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
-              break;              
-          }
-          break;  
-      }
-  }
+  context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
+}
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */
 function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
@@ -640,14 +592,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-            switch (oFirst.type) {
-               case VTreeType.VComp:
-                 createElement(parent, OP.INSERT_BEFORE, drill(oFirst), nFirst, context);
-                 break;
-               default:
-                 createElement(parent, OP.INSERT_BEFORE, oFirst.domRef, nFirst, context);
-                 break;
-            }
+            createElement(parent, OP.INSERT_BEFORE, getDOMRef(oFirst), nFirst, context);
             os.splice(oldFirstIndex++, 0, nFirst);
             newFirstIndex++;
             oldLastIndex++;
