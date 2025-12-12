@@ -336,8 +336,7 @@ describe ('Component tests', () => {
     diff<DOMRef>(null, component, document.body, drawingContext);
 
     // Test component was populated
-    expect(document.childNodes.length).toBe(1);
-    expect(document.childNodes.length).toBe(1);
+    expect(document.body.childNodes.length).toBe(1);
     expect(document.body.children[0].tagName).toBe('DIV');
   });
 

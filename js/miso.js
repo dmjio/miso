@@ -330,9 +330,7 @@ function mountComponent(parent, op, replacing, n, context) {
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-    if (componentTree.type === 0 /* VComp */) {
-      mountComponent(parent, op, replacing, componentTree, context);
-    } else {
+    if (componentTree.type !== 0 /* VComp */) {
       const childDomRef = getDOMRef(componentTree);
       if (op === 1 /* REPLACE */ && replacing) {
         context.replaceChild(parent, childDomRef, replacing);

@@ -372,10 +372,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-    if (componentTree.type === VTreeType.VComp) {
-      // Recursive mounting case
-      mountComponent(parent, op, replacing, componentTree, context);
-    } else {
+    if (componentTree.type !== VTreeType.VComp) {
       // Handle DOM placement for non-VComp child nodes
       const childDomRef = getDOMRef(componentTree);
       if (op === OP.REPLACE && replacing) {
