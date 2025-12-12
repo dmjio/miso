@@ -307,7 +307,7 @@ mount_
   -> View p action
 mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
 -----------------------------------------------------------------------------
--- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
+-- | 'Component' mounting combinator.
 --
 -- Note: only use this if you're certain you won't be diffing two 'Component'
 -- against each other. Otherwise, you will need a key to distinguish between
