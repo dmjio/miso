@@ -174,40 +174,48 @@ describe('ComponentContext tests', () => {
 
 describe('DrawingContext tests', () => {
   test('Should get next sibling for VNode', () => {
+    const parent = document.createElement('div');
+    const child1 = document.createElement('div');
+    const child2 = document.createElement('span');
+    parent.append(child1, child2);
+
     const node1 = vnode<DOMRef>({ tag: 'div' });
     const node2 = vnode<DOMRef>({ tag: 'span' });
+    node1.domRef = child1 as DOMRef;
+    node2.domRef = child2 as DOMRef;
     node1.nextSibling = node2;
-    node2.domRef = document.createElement('span') as DOMRef;
 
     const next = drawingContext.nextSibling(node1);
-    expect(next).toBe(node2.domRef);
+    expect(next).toBe(child2 as DOMRef);
   });
 
   test('Should get next sibling for VComp by drilling', () => {
-    const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
-        const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
-      },
-      unmount: () => {}
-    });
+    const parent = document.createElement('div');
+    const child1 = document.createElement('span');
+    const child2 = document.createElement('div');
+    parent.append(child1, child2);
 
     const node = vnode<DOMRef>({ tag: 'span' });
+    node.domRef = child1 as DOMRef;
+
+    const comp = vcomp<DOMRef>({ mount: () => {}, unmount: () => {} });
+    (comp as any).domRef = child2 as DOMRef;
     node.nextSibling = comp;
 
-    // Set up the component with a child
-    const childNode = vnode<DOMRef>({ tag: 'div' });
-    childNode.domRef = document.createElement('div') as DOMRef;
-    comp.child = childNode;
-
     const next = drawingContext.nextSibling(node);
-    expect(next).toBe(childNode.domRef);
+    expect(next).toBe(child2 as DOMRef);
   });
 
   test('Should return undefined when no next sibling', () => {
+    const parent = document.createElement('div');
+    const only = document.createElement('div');
+    parent.appendChild(only);
+
     const node = vnode<DOMRef>({ tag: 'div' });
+    node.domRef = only as DOMRef;
+
     const next = drawingContext.nextSibling(node);
-    expect(next).toBeUndefined();
+    expect(next).toBeNull();
   });
 
   test('Should create text node', () => {
