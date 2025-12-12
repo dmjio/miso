@@ -458,4 +458,82 @@ describe ('Event tests', () => {
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
+  test('Should delegate events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
+    var body = document.body;
+    var count = 0;
+    var events = {
+      captures: {},
+      bubbles: {
+        click: {
+          runEvent: (e: Event, o: Node) => {
+            count++;
+          },
+          options: {
+            preventDefault: true,
+            stopPropagation: false,
+          },
+        }
+      }
+    };
+
+    // Innermost vnode with button that has click event
+    var innerNode = vnode({
+      tag: 'div',
+      children: [vnode({ tag: 'button', events })],
+      events
+    });
+
+    // Middle vcomp wrapping the vnode
+    var middleVComp = vcomp({
+      eventPropagation: true,
+      mount: function (p, f) {
+        diff(null, innerNode, p, drawingContext);
+        return f(1, innerNode);
+      }
+    });
+
+    // Outer vcomp wrapping the middle vcomp
+    var outerVComp = vcomp({
+      eventPropagation: true,
+      mount: function (p, f) {
+        diff(null, middleVComp, p, drawingContext);
+        return f(0, middleVComp);
+      }
+    });
+
+    // Set up parent hierarchy
+    const buttonNode = innerNode.children[0] as VNode<DOMRef>;
+    (buttonNode as any).parent = innerNode;
+    (innerNode as any).parent = middleVComp;
+    (middleVComp as any).parent = outerVComp;
+
+    /* initial page draw */
+    diff(null, outerVComp, document.body, drawingContext);
+
+    /* verify DOM structure is correct - recursively mounted components create the inner div */
+    expect(document.body.childNodes.length).toBeGreaterThanOrEqual(1);
+    const divElement = Array.from(document.body.childNodes).find(
+      node => (node as Element).tagName === 'DIV'
+    ) as Element;
+    expect(divElement).toBeDefined();
+    expect(divElement.tagName).toBe('DIV');
+
+    /* setup event delegation */
+    var getVTree = (cb: any) => {
+      cb(outerVComp);
+    };
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event on the button inside nested components */
+    const button = buttonNode.domRef as HTMLElement;
+    button.click();
+
+    /* check results - event should propagate through the component hierarchy */
+    expect(count).toEqual(2);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
 });
