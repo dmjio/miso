@@ -365,7 +365,7 @@ function unmountComponent<T>(c: VComp<T>): void {
 function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>, context: DrawingContext<T>): void {
   if (n.onBeforeMounted) n.onBeforeMounted();
 
-  // 'mount()' should be executed synchronously, including its callback function argumnet.
+  // 'mount()' should be executed synchronously, including its callback function argument.
   n.mount(parent, (componentId: ComponentId, componentTree: VTree<T>) => {
     // mount() gives us the VTree from the Haskell side
     n.componentId = componentId;
