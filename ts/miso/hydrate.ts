@@ -1,4 +1,4 @@
-import { callCreated, diffAttrs } from './dom';
+import { callCreated, diff } from './dom';
 import { DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -59,7 +59,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   const node: Node = preamble(mountPoint, drawingContext);
 
   // begin walking the DOM, report the result
-    if (!walk(logLevel, vtree, node, context, drawingContext)) {
+  if (!walk(logLevel, vtree, node, context, drawingContext)) {
     // If we failed to prerender because the structures were different, fallback to drawing
     if (logLevel) {
       console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
@@ -69,19 +69,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
     while (context.firstChild(node as DOMRef))
       drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
 
-     switch (vtree.type) {
-         case VTreeType.VNode:
-            diffAttrs(null, vtree, drawingContext);
-            (vtree.domRef as Node) = node;
-            break;
-         case VTreeType.VText:
-            (vtree.domRef as Node) = node;
-            break;
-         default:
-            setVCompRef(vtree, node as DOMRef);
-            break;
-     }
-
+    diff (null, vtree, node, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -209,7 +197,6 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
     case VTreeType.VComp:
-      setVCompRef(vtree, node);
       callCreated(node, vtree, drawingContext);
       break;
     case VTreeType.VText:
