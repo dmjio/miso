@@ -396,6 +396,13 @@ function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, contex
         mountComponent (op, parent, componentTree, replacing, context);
         break;
       default:
+        // Handle DOM placement for non-VComp child nodes
+        if (op === OP.REPLACE && replacing) {
+          context.replaceChild(parent, componentTree.domRef, replacing);
+        } else if (op === OP.INSERT_BEFORE) {
+          context.insertBefore(parent, componentTree.domRef, replacing);
+        }
+        // For OP.APPEND, the mount function should have already appended
         break;
     }
   });
