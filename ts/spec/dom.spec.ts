@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
 import { vnode, vcomp, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
-import { VNode, VTree, DOMRef } from '../miso/types';
+import { VNode, VText, VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { drawingContext } from '../miso/context/dom';
 
@@ -971,8 +971,8 @@ describe('DOM tests', () => {
     var updated = vnode<DOMRef>({
       children: [vtext<DOMRef>('x'), vtext<DOMRef>('a')]
     });
-    (updated as any).domRef = container.domRef;
-    updated.children[1].domRef = container.children[0].domRef;
+    (updated as VNode<DOMRef>).domRef = (container as VNode<DOMRef>).domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = ((container as VNode<DOMRef>).children[0] as VText<DOMRef>).domRef;
     diff<DOMRef>(container, updated, document.body, drawingContext);
     
     expect(document.body.children[0].childNodes.length).toBe(2);
@@ -1002,8 +1002,8 @@ describe('DOM tests', () => {
     var updated = vnode<DOMRef>({
       children: [newFirst, first]
     });
-    (updated as any).domRef = container.domRef;
-    updated.children[1].domRef = container.children[0].domRef;
+    (updated as VNode<DOMRef>).domRef = (container as VNode<DOMRef>).domRef;
+    (updated.children[1] as VNode<DOMRef>).domRef = ((container as VNode<DOMRef>).children[0] as VNode<DOMRef>).domRef;
     diff<DOMRef>(container, updated, document.body, drawingContext);
     
     expect(document.body.children[0].children.length).toBe(2);
@@ -1232,9 +1232,9 @@ describe('DOM tests', () => {
     const updated = vnode<DOMRef>({
       children: [newFirst, first]
     });
-    (updated as any).domRef = parentDom;
-    updated.children[1].domRef = first.domRef;
-    updated.children[1].key = first.key;
+    (updated as VNode<DOMRef>).domRef = parentDom;
+    (updated.children[1] as VNode<DOMRef>).domRef = (first as VNode<DOMRef>).domRef;
+    (updated.children[1] as VNode<DOMRef>).key = (first as VNode<DOMRef>).key;
     
     diff<DOMRef>(parent, updated, document.body, drawingContext);
     
@@ -1386,9 +1386,9 @@ describe('DOM tests', () => {
     const updated = vnode<DOMRef>({
       children: [newFirst, first, second]
     });
-    (updated as any).domRef = parent.domRef;
-    updated.children[1].domRef = first.domRef;
-    updated.children[2].domRef = second.domRef;
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = (first as VText<DOMRef>).domRef;
+    (updated.children[2] as VText<DOMRef>).domRef = (second as VText<DOMRef>).domRef;
     
     diff<DOMRef>(parent, updated, document.body, drawingContext);
     
@@ -1411,8 +1411,8 @@ describe('DOM tests', () => {
     const updated = vnode<DOMRef>({
       children: [vtext<DOMRef>('replaced'), second]
     });
-    (updated as any).domRef = parent.domRef;
-    updated.children[1].domRef = second.domRef;
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = (second as VText<DOMRef>).domRef;
     
     diff<DOMRef>(parent, updated, document.body, drawingContext);
     
@@ -1436,8 +1436,8 @@ describe('DOM tests', () => {
     const updated = vnode<DOMRef>({
       children: [newFirst, second]
     });
-    (updated as any).domRef = parent.domRef;
-    updated.children[1].domRef = second.domRef;
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VNode<DOMRef>).domRef = (second as VNode<DOMRef>).domRef;
     
     diff<DOMRef>(parent, updated, document.body, drawingContext);
     
