@@ -59,35 +59,14 @@ function replace(c, n, parent, context) {
   }
   switch (n.type) {
     case 2 /* VText */:
-      switch (c.type) {
-        case 0 /* VComp */:
-          context.replaceChild(parent, context.createTextNode(n.text), drill(c));
-          break;
-        default:
-          n.domRef = context.createTextNode(n.text);
-          context.replaceChild(parent, n.domRef, c.domRef);
-          break;
-      }
+      n.domRef = context.createTextNode(n.text);
+      context.replaceChild(parent, n.domRef, getDOMRef(c));
       break;
     case 0 /* VComp */:
-      switch (c.type) {
-        case 0 /* VComp */:
-          createElement(parent, 1 /* REPLACE */, drill(c), n, context);
-          break;
-        default:
-          createElement(parent, 1 /* REPLACE */, c.domRef, n, context);
-          break;
-      }
+      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
       break;
     case 1 /* VNode */:
-      switch (c.type) {
-        case 0 /* VComp */:
-          createElement(parent, 1 /* REPLACE */, drill(c), n, context);
-          break;
-        default:
-          createElement(parent, 1 /* REPLACE */, c.domRef, n, context);
-          break;
-      }
+      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
       break;
   }
   switch (c.type) {
@@ -106,14 +85,7 @@ function destroy(c, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  switch (c.type) {
-    case 0 /* VComp */:
-      context.removeChild(parent, drill(c));
-      break;
-    default:
-      context.removeChild(parent, c.domRef);
-      break;
-  }
+  context.removeChild(parent, getDOMRef(c));
   switch (c.type) {
     case 2 /* VText */:
       break;
