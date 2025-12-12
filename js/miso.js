@@ -41,6 +41,14 @@ function drill(c) {
       return c.child.domRef;
   }
 }
+function getDOMRef(tree) {
+  switch (tree.type) {
+    case 0 /* VComp */:
+      return drill(tree);
+    default:
+      return tree.domRef;
+  }
+}
 function replace(c, n, parent, context) {
   switch (c.type) {
     case 2 /* VText */:
@@ -350,12 +358,15 @@ function mountComponent(op, parent, n, replacing, context) {
     n.componentId = componentId;
     n.child = componentTree;
     componentTree.parent = n;
-    switch (componentTree.type) {
-      case 0 /* VComp */:
-        mountComponent(op, parent, componentTree, replacing, context);
-        break;
-      default:
-        break;
+    if (componentTree.type === 0 /* VComp */) {
+      mountComponent(op, parent, componentTree, replacing, context);
+    } else {
+      const childDomRef = getDOMRef(componentTree);
+      if (op === 1 /* REPLACE */ && replacing) {
+        context.replaceChild(parent, childDomRef, replacing);
+      } else if (op === 2 /* INSERT_BEFORE */) {
+        context.insertBefore(parent, childDomRef, replacing);
+      }
     }
   });
   if (n.onMounted)
@@ -370,69 +381,13 @@ function create(n, parent, context) {
   }
 }
 function insertBefore(parent, n, o, context) {
-  switch (n.type) {
-    case 0 /* VComp */:
-      if (!o) {
-        context.insertBefore(parent, drill(n), null);
-      } else {
-        switch (o.type) {
-          case 0 /* VComp */:
-            context.insertBefore(parent, drill(n), drill(o));
-            break;
-          default:
-            context.insertBefore(parent, drill(n), o.domRef);
-            break;
-        }
-      }
-      break;
-    default:
-      if (!o) {
-        context.insertBefore(parent, n.domRef, null);
-      } else {
-        switch (o.type) {
-          case 0 /* VComp */:
-            context.insertBefore(parent, n.domRef, drill(o));
-            break;
-          default:
-            context.insertBefore(parent, n.domRef, o.domRef);
-            break;
-        }
-      }
-  }
+  context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
 }
 function removeChild(parent, n, context) {
-  switch (n.type) {
-    case 0 /* VComp */:
-      context.removeChild(parent, drill(n));
-      break;
-    default:
-      context.removeChild(parent, n.domRef);
-      break;
-  }
+  context.removeChild(parent, getDOMRef(n));
 }
 function swapDOMRef(oFirst, oLast, parent, context) {
-  switch (oLast.type) {
-    case 0 /* VComp */:
-      switch (oFirst.type) {
-        case 0 /* VComp */:
-          context.swapDOMRefs(drill(oLast), drill(oFirst), parent);
-          break;
-        default:
-          context.swapDOMRefs(drill(oLast), oFirst.domRef, parent);
-          break;
-      }
-      break;
-    default:
-      switch (oFirst.type) {
-        case 0 /* VComp */:
-          context.swapDOMRefs(oLast.domRef, drill(oFirst), parent);
-          break;
-        default:
-          context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
-          break;
-      }
-      break;
-  }
+  context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
 }
 function syncChildren(os, ns, parent, context) {
   var oldFirstIndex = 0, newFirstIndex = 0, oldLastIndex = os.length - 1, newLastIndex = ns.length - 1, tmp, nFirst, nLast, oLast, oFirst, found, node;
@@ -491,14 +446,7 @@ function syncChildren(os, ns, parent, context) {
         insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
-        switch (oFirst.type) {
-          case 0 /* VComp */:
-            createElement(parent, 2 /* INSERT_BEFORE */, drill(oFirst), nFirst, context);
-            break;
-          default:
-            createElement(parent, 2 /* INSERT_BEFORE */, oFirst.domRef, nFirst, context);
-            break;
-        }
+        createElement(parent, 2 /* INSERT_BEFORE */, getDOMRef(oFirst), nFirst, context);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
