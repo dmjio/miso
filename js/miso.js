@@ -491,27 +491,12 @@ function syncChildren(os, ns, parent, context) {
         insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
-        switch (nFirst.type) {
-          case 2 /* VText */:
-            nFirst.domRef = context.createTextNode(nFirst.text);
-            switch (oFirst.type) {
-              case 0 /* VComp */:
-                context.insertBefore(parent, nFirst.domRef, drill(oFirst));
-                break;
-              default:
-                context.insertBefore(parent, nFirst.domRef, oFirst.domRef);
-                break;
-            }
+        switch (oFirst.type) {
+          case 0 /* VComp */:
+            createElement(parent, 2 /* INSERT_BEFORE */, drill(oFirst), nFirst, context);
             break;
           default:
-            switch (oFirst.type) {
-              case 0 /* VComp */:
-                createElement(parent, 2 /* INSERT_BEFORE */, drill(oFirst), nFirst, context);
-                break;
-              default:
-                createElement(parent, 2 /* INSERT_BEFORE */, oFirst.domRef, nFirst, context);
-                break;
-            }
+            createElement(parent, 2 /* INSERT_BEFORE */, oFirst.domRef, nFirst, context);
             break;
         }
         os.splice(oldFirstIndex++, 0, nFirst);

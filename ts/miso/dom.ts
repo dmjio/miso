@@ -399,6 +399,7 @@ function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, contex
         break;
     }
   });
+
   if (n.onMounted) n.onMounted(drill(n));
 }
 
@@ -632,32 +633,17 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-            switch (nFirst.type) {
-              case VTreeType.VText:
-                nFirst.domRef = context.createTextNode(nFirst.text);
-                switch (oFirst.type) {
-                  case VTreeType.VComp:
-                    context.insertBefore(parent, nFirst.domRef, drill(oFirst));
-                    break;
-                  default:
-                    context.insertBefore(parent, nFirst.domRef, oFirst.domRef);
-                    break;
-                }
-                break;
-              default:
-                switch (oFirst.type) {
-                  case VTreeType.VComp:
-                    createElement(parent, OP.INSERT_BEFORE, drill(oFirst), nFirst, context);
-                    break;
-                  default:
-                    createElement(parent, OP.INSERT_BEFORE, oFirst.domRef, nFirst, context);
-                    break;
+            switch (oFirst.type) {
+               case VTreeType.VComp:
+                 createElement(parent, OP.INSERT_BEFORE, drill(oFirst), nFirst, context);
+                 break;
+               default:
+                 createElement(parent, OP.INSERT_BEFORE, oFirst.domRef, nFirst, context);
+                 break;
             }
-            break;
-          }
-        os.splice(oldFirstIndex++, 0, nFirst);
-        newFirstIndex++;
-        oldLastIndex++;
+            os.splice(oldFirstIndex++, 0, nFirst);
+            newFirstIndex++;
+            oldLastIndex++;
       }
     }
   }
