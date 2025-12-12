@@ -39,7 +39,6 @@ export function drill<T>(c: VComp<T>): T {
   switch (c.child.type) {
     case VTreeType.VComp:
       return drill (c.child)
-      break;
     default:
       return c.child.domRef;
   }

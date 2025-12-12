@@ -36,7 +36,6 @@ function drill(c) {
   switch (c.child.type) {
     case 0 /* VComp */:
       return drill(c.child);
-      break;
     default:
       return c.child.domRef;
   }
