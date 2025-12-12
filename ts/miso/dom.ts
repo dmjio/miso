@@ -68,36 +68,15 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
   }
   switch (n.type) {
       case VTreeType.VText:
-          switch (c.type) {
-              case VTreeType.VComp:
-                context.replaceChild(parent, context.createTextNode(n.text), drill(c));
-                break;
-              default:
-                n.domRef = context.createTextNode(n.text);
-                context.replaceChild(parent, n.domRef, c.domRef);
-                break;
-          }
+          n.domRef = context.createTextNode(n.text);
+          context.replaceChild(parent, n.domRef, getDOMRef(c));
           break;
       case VTreeType.VComp:
-          switch (c.type) {
-            case VTreeType.VComp:
-              createElement(parent, OP.REPLACE, drill(c), n, context);
-              break;
-           default:
-             createElement(parent, OP.REPLACE, c.domRef, n, context);
-             break;
-          }
+          createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
           break;
       case VTreeType.VNode:
-        switch (c.type) {
-          case VTreeType.VComp:
-            createElement(parent, OP.REPLACE, drill(c), n, context);
-            break;
-          default:
-            createElement(parent, OP.REPLACE, c.domRef, n, context);
-            break;
-        }
-        break;    
+          createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
+          break;    
   }
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
@@ -120,14 +99,7 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
           break;
   }
   // step 2: destroy
-  switch (c.type) {
-      case VTreeType.VComp:
-          context.removeChild(parent, drill(c));
-          break;
-      default:
-        context.removeChild(parent, c.domRef);
-        break;
-  }
+  context.removeChild(parent, getDOMRef(c));
   // step 3: invoke post-hooks for vnode and vcomp
   switch (c.type) {
       case VTreeType.VText:
