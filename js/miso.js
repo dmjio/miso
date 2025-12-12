@@ -35,7 +35,7 @@ function drill(c) {
     throw new Error("'drill' called on an unmounted Component. This should never happen, please make an issue.");
   switch (c.child.type) {
     case 0 /* VComp */:
-      drill(c.child);
+      return drill(c.child);
       break;
     default:
       return c.child.domRef;

@@ -38,7 +38,7 @@ export function drill<T>(c: VComp<T>): T {
   if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
   switch (c.child.type) {
     case VTreeType.VComp:
-      drill (c.child)
+      return drill (c.child)
       break;
     default:
       return c.child.domRef;
