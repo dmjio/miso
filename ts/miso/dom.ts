@@ -302,7 +302,7 @@ function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
 export function callCreated<T>(parent: T, n: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
   switch (n.type) {
       case VTreeType.VComp:
-          mountComponent(OP.APPEND, parent, n, null, context);
+          mountComponent(parent, OP.APPEND, null, n, context);
           break;
       case VTreeType.VNode:
           if (n.onCreated) n.onCreated(n.domRef);
@@ -327,7 +327,7 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
       }
       break;
     case VTreeType.VComp:
-      mountComponent(op, parent, n, replacing, context);
+      mountComponent(parent, op, replacing, n as VComp<T>, context);
       break;
     case VTreeType.VNode:
       if (n.onBeforeCreated) n.onBeforeCreated();
@@ -363,7 +363,7 @@ function unmountComponent<T>(c: VComp<T>): void {
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
-function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, context: DrawingContext<T>): void {
+function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>, context: DrawingContext<T>): void {
   if (n.onBeforeMounted) n.onBeforeMounted();
 
   // 'mount()' should be executed synchronously, including its callback function argumnet.
@@ -374,7 +374,7 @@ function mountComponent<T>(op : OP, parent: T, n: VComp<T>, replacing: T, contex
     componentTree.parent = n;
     if (componentTree.type === VTreeType.VComp) {
       // Recursive mounting case
-      mountComponent(op, parent, componentTree, replacing, context);
+      mountComponent(parent, op, replacing, componentTree, context);
     } else {
       // Handle DOM placement for non-VComp child nodes
       const childDomRef = getDOMRef(componentTree);

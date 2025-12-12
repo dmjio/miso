@@ -266,7 +266,7 @@ function populateDomRef(c, context) {
 function callCreated(parent, n, context) {
   switch (n.type) {
     case 0 /* VComp */:
-      mountComponent(0 /* APPEND */, parent, n, null, context);
+      mountComponent(parent, 0 /* APPEND */, null, n, context);
       break;
     case 1 /* VNode */:
       if (n.onCreated)
@@ -291,7 +291,7 @@ function createElement(parent, op, replacing, n, context) {
       }
       break;
     case 0 /* VComp */:
-      mountComponent(op, parent, n, replacing, context);
+      mountComponent(parent, op, replacing, n, context);
       break;
     case 1 /* VNode */:
       if (n.onBeforeCreated)
@@ -323,7 +323,7 @@ function unmountComponent(c) {
     c.onUnmounted(drill(c));
   c.unmount(c.componentId);
 }
-function mountComponent(op, parent, n, replacing, context) {
+function mountComponent(parent, op, replacing, n, context) {
   if (n.onBeforeMounted)
     n.onBeforeMounted();
   n.mount(parent, (componentId, componentTree) => {
@@ -331,7 +331,7 @@ function mountComponent(op, parent, n, replacing, context) {
     n.child = componentTree;
     componentTree.parent = n;
     if (componentTree.type === 0 /* VComp */) {
-      mountComponent(op, parent, componentTree, replacing, context);
+      mountComponent(parent, op, replacing, componentTree, context);
     } else {
       const childDomRef = getDOMRef(componentTree);
       if (op === 1 /* REPLACE */ && replacing) {
