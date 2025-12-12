@@ -270,7 +270,7 @@ describe ('Component tests', () => {
     diff<DOMRef>(null, component, document.body, drawingContext);
 
     // Test component was populated
-    expect(document.childNodes.length).toBe(1);
+    expect(document.body.childNodes.length).toBe(1);
     expect(mountCount).toBe(1);
     expect(unmountCount).toBe(0);
 
@@ -303,7 +303,7 @@ describe ('Component tests', () => {
     diff<DOMRef>(null, node, document.body, drawingContext);
 
     // Test component was populated
-    expect(document.childNodes.length).toBe(1);
+    expect(document.body.childNodes.length).toBe(1);
     expect(mountCount).toBe(0);
     expect(unmountCount).toBe(0);
 
