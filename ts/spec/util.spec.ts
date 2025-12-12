@@ -86,8 +86,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map([['content-type', 'application/json']]),
         json: async () => mockResponse
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
     let error = null;
@@ -119,8 +119,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map([['content-type', 'text/plain']]),
         text: async () => mockText
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -149,8 +149,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map(),
         arrayBuffer: async () => mockBuffer
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -179,8 +179,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map(),
         blob: async () => mockBlob
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -209,8 +209,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map(),
         bytes: async () => mockBytes
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -240,8 +240,8 @@ describe('Fetch tests', () => {
         statusText: 'OK',
         headers: new Map(),
         formData: async () => mockFormData
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -275,7 +275,7 @@ describe('Fetch tests', () => {
           }
         },
       } as any)
-    );
+    ) as any;
 
     fetchCore(
       'https://api.example.com/test',
@@ -305,8 +305,8 @@ describe('Fetch tests', () => {
         statusText: 'Created',
         headers: new Map(),
         json: async () => ({ id: 1 })
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let result = null;
 
@@ -332,8 +332,8 @@ describe('Fetch tests', () => {
         status: 404,
         statusText: 'Not Found',
         headers: new Map(),
-      } as Response)
-    );
+      } as any)
+    ) as any;
 
     let error = null;
 
@@ -353,7 +353,7 @@ describe('Fetch tests', () => {
   });
 
   test('Should handle network error', async () => {
-    global.fetch = mock(() => Promise.reject(new Error('Network error')));
+    global.fetch = mock(() => Promise.reject(new Error('Network error'))) as any;
 
     let error = null;
 
