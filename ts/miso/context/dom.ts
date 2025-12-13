@@ -98,9 +98,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
     return parent.insertBefore(child, node);
   },
   swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+    // swap positions of siblings a and b under the same parent p
+    const nextB = b.nextSibling;
+    p.insertBefore(b, a);      // place b before a
+    p.insertBefore(a, nextB);  // place a before what was originally after b
     return;
   },
   setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {

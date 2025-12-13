@@ -46,6 +46,198 @@ afterEach(() => {
 
 /* tests */
 describe ('Patch tests', () => {
+    test('Should process Mount and Unmount patches', () => {
+        const componentId: number = 0;
+        const mountPoint: number = 0;
+        const events: any[] = [];
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const mountPatch = {
+            type: "mount" as const,
+            componentId,
+            events,
+            model: {},
+            mountPoint
+        };
+        const unmountPatch = {
+            type: "unmount" as const,
+            componentId
+        };
+        patch(domContext, mountPatch, components);
+        expect(components[componentId].mountPoint).toEqual(mountPoint);
+        expect(Array.isArray(components[componentId].events)).toBeTrue();
+        patch(domContext, unmountPatch, components);
+        expect(components[componentId]).toEqual(undefined);
+    });
+
+    test('Should process ModelHydration patch', () => {
+        const componentId: number = 0;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        // mount component first
+        patch(domContext, { type: "mount", componentId, events: [], model: {}, mountPoint: 0 }, components);
+        const hydration = {
+            type: "modelHydration" as const,
+            componentId,
+            model: { foo: 'bar' }
+        };
+        patch(domContext, hydration, components);
+        expect(components[componentId].model).toEqual({ foo: 'bar' });
+    });
+
+    test('Should process SwapDOMRefs patch', () => {
+        const componentId: number = 0;
+        const parentNodeId: number = 0;
+        const nodeAId: number = 1;
+        const nodeBId: number = 2;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const component: Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        // create two child nodes and append in order A, B
+        const createA: CreateElement = { type: "createElement", tag: 'div', nodeId: nodeAId, componentId };
+        const createB: CreateElement = { type: "createElement", tag: 'span', nodeId: nodeBId, componentId };
+        const appendA: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeAId, componentId };
+        const appendB: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeBId, componentId };
+        patch(domContext, createA, components);
+        patch(domContext, createB, components);
+        patch(domContext, appendA, components);
+        patch(domContext, appendB, components);
+        expect(document.body.childNodes[0].nodeName).toEqual('DIV');
+        expect(document.body.childNodes[1].nodeName).toEqual('SPAN');
+        const swapPatch = { type: "swapDOMRefs" as const, componentId, nodeA: nodeAId, nodeB: nodeBId, parent: parentNodeId };
+        patch(domContext, swapPatch, components);
+        // ensure function executes and children remain present
+        expect(document.body.children.length).toEqual(2);
+        // ensure component nodes still reference correct elements
+        expect(component.nodes[nodeAId].nodeName).toEqual('DIV');
+        expect(component.nodes[nodeBId].nodeName).toEqual('SPAN');
+    });
+
+    test('SwapDOMRefs with adjacent siblings', () => {
+        const componentId: number = 0;
+        const parentNodeId: number = 0;
+        const nodeAId: number = 1;
+        const nodeBId: number = 2;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const component: Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        const createA: CreateElement = { type: "createElement", tag: 'div', nodeId: nodeAId, componentId };
+        const createB: CreateElement = { type: "createElement", tag: 'span', nodeId: nodeBId, componentId };
+        const appendA: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeAId, componentId };
+        const appendB: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeBId, componentId };
+        patch(domContext, createA, components);
+        patch(domContext, createB, components);
+        patch(domContext, appendA, components);
+        patch(domContext, appendB, components);
+        expect(document.body.childNodes[0].nodeName).toEqual('DIV');
+        expect(document.body.childNodes[1].nodeName).toEqual('SPAN');
+        const swapPatch = { type: "swapDOMRefs" as const, componentId, nodeA: nodeAId, nodeB: nodeBId, parent: parentNodeId };
+        patch(domContext, swapPatch, components);
+        expect(document.body.childNodes[0].nodeName).toEqual('SPAN');
+        expect(document.body.childNodes[1].nodeName).toEqual('DIV');
+    });
+
+    test('SwapDOMRefs with non-adjacent siblings', () => {
+        const componentId: number = 0;
+        const parentNodeId: number = 0;
+        const nodeAId: number = 1;
+        const nodeMidId: number = 2;
+        const nodeBId: number = 3;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const component: Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        const createA: CreateElement = { type: "createElement", tag: 'div', nodeId: nodeAId, componentId };
+        const createMid: CreateElement = { type: "createElement", tag: 'em', nodeId: nodeMidId, componentId };
+        const createB: CreateElement = { type: "createElement", tag: 'span', nodeId: nodeBId, componentId };
+        const appendA: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeAId, componentId };
+        const appendMid: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeMidId, componentId };
+        const appendB: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeBId, componentId };
+        patch(domContext, createA, components);
+        patch(domContext, createMid, components);
+        patch(domContext, createB, components);
+        patch(domContext, appendA, components);
+        patch(domContext, appendMid, components);
+        patch(domContext, appendB, components);
+        expect(Array.from(document.body.childNodes).map(n => n.nodeName)).toEqual(['DIV','EM','SPAN']);
+        const swapPatch = { type: "swapDOMRefs" as const, componentId, nodeA: nodeAId, nodeB: nodeBId, parent: parentNodeId };
+        patch(domContext, swapPatch, components);
+        expect(Array.from(document.body.childNodes).map(n => n.nodeName)).toEqual(['SPAN','EM','DIV']);
+    });
+
+    test('Patch.ts swapDOMRefs branch executes', () => {
+        const componentId: number = 0;
+        const parentNodeId: number = 0;
+        const aId: number = 1;
+        const bId: number = 2;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const component: Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        const createA: CreateElement = { type: "createElement", tag: 'div', nodeId: aId, componentId };
+        const createB: CreateElement = { type: "createElement", tag: 'span', nodeId: bId, componentId };
+        const appendA: AppendChild = { type: "appendChild", parent: parentNodeId, child: aId, componentId };
+        const appendB: AppendChild = { type: "appendChild", parent: parentNodeId, child: bId, componentId };
+        patch(domContext, createA, components);
+        patch(domContext, createB, components);
+        patch(domContext, appendA, components);
+        patch(domContext, appendB, components);
+        const op = { type: "swapDOMRefs" as const, componentId, nodeA: aId, nodeB: bId, parent: parentNodeId };
+        patch(domContext, op, components);
+        // ensure executed and order changed
+        expect(document.body.firstChild.nodeName).toEqual('SPAN');
+        expect(document.body.childNodes[1].nodeName).toEqual('DIV');
+    });
+
+    test('SetInlineStyle handles updates and removals', () => {
+        const componentId: number = 0;
+        const parentNodeId: number = 0;
+        const nodeId: number = 1;
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        let components: Components<DOMRef> = {};
+        const component: Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        const create: CreateElement = { type: "createElement", tag: 'p', nodeId, componentId };
+        const append: AppendChild = { type: "appendChild", parent: parentNodeId, child: nodeId, componentId };
+        patch(domContext, create, components);
+        patch(domContext, append, components);
+        const initialStyle: SetInlineStyle = { type: "setInlineStyle", current: {}, new: { color: 'red', backgroundColor: 'white' }, nodeId, componentId };
+        patch(domContext, initialStyle, components);
+        expect(component.nodes[nodeId].style['color']).toEqual('red');
+        expect(component.nodes[nodeId].style['backgroundColor']).toEqual('white');
+        // Update color, remove backgroundColor
+        const updateStyle: SetInlineStyle = { type: "setInlineStyle", current: { color: 'red', backgroundColor: 'white' }, new: { color: 'blue' }, nodeId, componentId };
+        patch(domContext, updateStyle, components);
+        expect(component.nodes[nodeId].style['color']).toEqual('blue');
+        expect(component.nodes[nodeId].style['backgroundColor']).toEqual('');
+    });
     test('Should process the CreateTextNode patch', () => {
         const nodeId : number = 1;
         const parentNodeId : number = 0;
@@ -509,6 +701,34 @@ describe ('Patch tests', () => {
         expect(getPatches()).toEqual([expected, appendOperation]);
         patchContext.flush ();
         expect(getPatches().length).toEqual(0);
+
+        // also exercise flush branch in patch.ts
+        const components : Components<DOMRef> = {};
+        const component : Component<DOMRef> = {
+            model: null,
+            nodes: { 0: document.body },
+            events: null,
+            mountPoint: null
+        };
+        components[componentId] = component;
+        const flushPatch = { type: "flush" as const, componentId };
+        // Before calling flush via patch.ts, add something to DOM to verify it remains intact
+        const textCreate : CreateTextNode = { type: "createTextNode", text: 'bar', nodeId: 2, componentId };
+        const textAppend : AppendChild = { type: "appendChild", parent: 0, child: 2, componentId };
+        patch(domContext, textCreate, components);
+        patch(domContext, textAppend, components);
+        expect(document.body.childNodes.length).toBeGreaterThan(0);
+        patch(domContext, flushPatch, components);
+        // flush has no DOM effect; ensure still intact
+        expect(document.body.childNodes.length).toBeGreaterThan(0);
+    });
+
+    test('Patch.ts should handle missing component (withComponent else branch)', () => {
+        const domContext: DrawingContext<DOMRef> = drawingContext;
+        const components: Components<DOMRef> = {};
+        const badComponentId = 1234;
+        const op = { type: "flush" as const, componentId: badComponentId };
+        expect(() => patch(domContext, op, components)).not.toThrow();
     });
 
      test('Should process the ReplaceChild patch', () => {
