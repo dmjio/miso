@@ -79,6 +79,7 @@ export const drawingContext : DrawingContext<DOMRef> = {
           return node.nextSibling.domRef as DOMRef;
       }
     }
+    return null;
   },
   createTextNode : (s: string) => {
     return document.createTextNode(s) as any; // dmj: hrm

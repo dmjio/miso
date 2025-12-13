@@ -675,18 +675,7 @@ function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
     }
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
-    switch (vtree.type) {
-      case 1 /* VNode */:
-        diffAttrs(null, vtree, drawingContext);
-        vtree.domRef = node;
-        break;
-      case 2 /* VText */:
-        vtree.domRef = node;
-        break;
-      default:
-        setVCompRef(vtree, node);
-        break;
-    }
+    diff(null, vtree, node, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -777,7 +766,6 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
-      setVCompRef(vtree, node);
       callCreated(node, vtree, drawingContext);
       break;
     case 2 /* VText */:
@@ -1077,6 +1065,7 @@ var drawingContext = {
           return node.nextSibling.domRef;
       }
     }
+    return null;
   },
   createTextNode: (s) => {
     return document.createTextNode(s);
