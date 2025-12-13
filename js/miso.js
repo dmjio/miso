@@ -1002,9 +1002,9 @@ var drawingContext = {
     return parent.insertBefore(child, node);
   },
   swapDOMRefs: (a, b, p) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+    const nextB = b.nextSibling;
+    p.insertBefore(b, a);
+    p.insertBefore(a, nextB);
     return;
   },
   setInlineStyle: (cCss, nCss, node) => {

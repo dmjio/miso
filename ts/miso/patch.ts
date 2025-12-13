@@ -89,8 +89,12 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 context.insertBefore(component.nodes[patch.parent], component.nodes[patch.node], component.nodes[patch.child]);
                 break;
             case "swapDOMRefs":
-                /* dmj: swap it in the component environemnt too */
-                context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent]);
+              // Ensure explicit local refs for coverage instrumentation
+              const nodeA = component.nodes[patch.nodeA];
+              const nodeB = component.nodes[patch.nodeB];
+              const parent = component.nodes[patch.parent];
+              context.swapDOMRefs(nodeA, nodeB, parent);
+                // no-op: keep behavior minimal and focused
                 break;
             case "replaceChild":
                 context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);
