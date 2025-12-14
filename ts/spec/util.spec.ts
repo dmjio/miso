@@ -73,6 +73,22 @@ describe ('Utils tests', () => {
       }
       expect(expected.size).toBe(node.classList.size);
   });
+  
+    test('websocketSend guards: do not send when not open', () => {
+      const sent: any[] = [];
+      const dummySocket: any = { readyState: 0, send: (m) => sent.push(m) };
+      websocketSend(dummySocket, 'hello');
+      expect(sent.length).toBe(0);
+      dummySocket.readyState = WebSocket.OPEN;
+      websocketSend(dummySocket, 'world');
+      expect(sent).toEqual(['world']);
+    });
+  
+    test('populateClass handles empty strings and trims', () => {
+      const vnode = { classList: undefined } as any;
+      populateClass(vnode, [' foo  bar ', '', 'baz qux']);
+      expect(Array.from(vnode.classList)).toEqual(['foo', 'bar', 'baz', 'qux']);
+    });
 
 });
 
