@@ -956,8 +956,7 @@ describe('DOM tests', () => {
   test('Should create VText with INSERT_BEFORE operation', () => {
     var first = vnode<DOMRef>({});
     diff<DOMRef>(null, first, document.body, drawingContext);
-    
-    var textNode = vtext<DOMRef>('hello');
+
     var second = vnode<DOMRef>({});
     diff<DOMRef>(null, second, document.body, drawingContext);
     
