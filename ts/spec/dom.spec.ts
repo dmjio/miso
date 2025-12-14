@@ -1307,7 +1307,6 @@ describe('DOM tests', () => {
     });
     
     diff<DOMRef>(null, first, document.body, drawingContext);
-    const firstChild = first.child;
     
     const second = vcomp<DOMRef>({
       mount: (parent, callback) => {
