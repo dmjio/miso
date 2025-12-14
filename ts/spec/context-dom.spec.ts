@@ -324,18 +324,15 @@ describe('DrawingContext tests', () => {
     const parent = document.createElement('div');
     const a = document.createElement('span');
     const b = document.createElement('p');
-    const c = document.createElement('div');
     parent.appendChild(a);
     parent.appendChild(b);
-    parent.appendChild(c);
 
     // Just verify the function executes without error
-    expect(() => {
-      drawingContext.swapDOMRefs(a as DOMRef, b as DOMRef, parent as DOMRef);
-    }).not.toThrow();
+    drawingContext.swapDOMRefs(b, a as DOMRef, parent as DOMRef);
 
     // Verify all children are still in parent
-    expect(parent.children.length).toBe(3);
+    expect(parent.childNodes[0].tagName).toBe('P');
+    expect(parent.childNodes[1].tagName).toBe('SPAN');
   });
 
   test('Should set inline style - remove style when not in new CSS', () => {
