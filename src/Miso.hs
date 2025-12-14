@@ -179,7 +179,7 @@ renderApp renderer vcomp =
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action
-  -> JSM (ComponentState model action)
+  -> JSM (ComponentState parent model action)
 initComponent vcomp@Component {..} = do
   mount <- mountElement (getMountPoint mountPoint)
   initialize Draw isRoot vcomp (pure mount)
