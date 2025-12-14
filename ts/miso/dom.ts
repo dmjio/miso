@@ -404,7 +404,7 @@ function removeChild<T>(parent: T, n: VTree<T>, context: DrawingContext<T>): voi
   context.removeChild(parent, getDOMRef(n));
 }
 
-function swapDOMRef<T>(oFirst: VTree<T>, oLast: VTree<T>, parent: T, context: DrawingContext<T>): void {
+function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
   context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
 }
 
