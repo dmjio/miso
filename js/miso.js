@@ -355,7 +355,7 @@ function insertBefore(parent, n, o, context) {
 function removeChild(parent, n, context) {
   context.removeChild(parent, getDOMRef(n));
 }
-function swapDOMRef(oFirst, oLast, parent, context) {
+function swapDOMRef(oLast, oFirst, parent, context) {
   context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
 }
 function syncChildren(os, ns, parent, context) {
@@ -1096,10 +1096,10 @@ var drawingContext = {
   insertBefore: (parent, child, node) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs: (a, b, p) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+  swapDOMRefs: (oLast, oFirst, p) => {
+    const tmp = oLast.nextSibling;
+    p.insertBefore(oLast, oFirst);
+    p.insertBefore(oFirst, tmp);
     return;
   },
   setInlineStyle: (cCss, nCss, node) => {
