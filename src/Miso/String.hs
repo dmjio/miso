@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                  #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE FlexibleInstances    #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -82,8 +83,9 @@ ms :: ToMisoString str => str -> MisoString
 ms = toMisoString
 ----------------------------------------------------------------------------
 instance ToMisoString a => ToMisoString (Maybe a) where
-  toMisoString Nothing = mempty
-  toMisoString (Just x) = toMisoString x
+  toMisoString = \case
+    Nothing -> mempty
+    Just x -> toMisoString x
 ----------------------------------------------------------------------------
 instance ToMisoString Char where
   toMisoString = JS.singleton

@@ -11,24 +11,16 @@
 --
 -- @
 -- import Miso
+-- import Miso.String
 --
 -- data IntAction = Add | Subtract
 --
--- intView :: Int -> View IntAction
--- intView n = div_
---  [ class_ "main"
---  ]
---  [ btn_
---    [ onClick Add
---    ]
---    [ text_ "+"
---    ]
---  , text_ $ pack (show n)
---  , btn_
---    [ onClick Subtract
---    ]
---    [ text_ "-"
---    ]
+-- counterView :: Int -> View IntAction
+-- counterView n = div_
+--  [ class_ "main" ]
+--  [ btn_ [ onClick Add ] [ text_ "+" ]
+--  , text_ (ms n)
+--  , btn_ [ onClick Subtract ] [ text_ "-" ]
 --  ]
 -- @
 --
