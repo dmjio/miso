@@ -28,6 +28,8 @@ module Miso
   , startComponent
   , component
   , (+>)
+  , mount
+  , mount_
     -- ** Sink
   , withSink
   , Sink
