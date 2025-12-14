@@ -1260,7 +1260,6 @@ describe('DOM tests', () => {
   });
 
   test('Should handle nested VComp with final VNode', () => {
-    let innerMounted = false;
     let outerMounted = false;
     
     const outerComp = vcomp<DOMRef>({
