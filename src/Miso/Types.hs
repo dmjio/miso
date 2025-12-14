@@ -336,9 +336,10 @@ data NS
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
-  toJSVal SVG    = toJSVal ("svg" :: JSString)
-  toJSVal HTML   = toJSVal ("html" :: JSString)
-  toJSVal MATHML = toJSVal ("mathml" :: JSString)
+  toJSVal = \case
+    SVG -> toJSVal ("svg" :: JSString)
+    HTML -> toJSVal ("html" :: JSString)
+    MATHML -> toJSVal ("mathml" :: JSString)
 -----------------------------------------------------------------------------
 -- | Unique key for a DOM node.
 --
@@ -416,11 +417,12 @@ instance ToJSVal VTree where
 -- @node ns tag attrs children@ creates a new node with tag @tag@
 -- in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
-node :: NS
-     -> MisoString
-     -> [Attribute action]
-     -> [View model action]
-     -> View model action
+node
+  :: NS
+  -> MisoString
+  -> [Attribute action]
+  -> [View model action]
+  -> View model action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
@@ -580,7 +582,10 @@ prettyQueryString URI {..} = queries <> flags
         ]
 -----------------------------------------------------------------------------
 -- | VTreeType ADT for matching TypeScript enum
-data VTreeType = VCompType | VNodeType | VTextType
+data VTreeType
+  = VCompType
+  | VNodeType
+  | VTextType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where

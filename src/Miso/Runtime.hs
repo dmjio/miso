@@ -152,7 +152,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
 #ifdef BENCH
     start <- if isRoot then FFI.now else pure 0
 #endif
-    vtree <- buildVTree hydrate (view initializedModel) componentSink logLevel events
+    vtree <- buildVTree hydrate componentSink logLevel events (view initializedModel)
 #ifdef BENCH
     end <- if isRoot then FFI.now else pure 0
     when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -185,7 +185,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree Draw (view updatedModel) componentSink logLevel events
+        newVTree <- buildVTree Draw componentSink logLevel events (view updatedModel)
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
@@ -821,59 +821,60 @@ killSubscribers componentId =
 buildVTree
   :: Eq model
   => Hydrate
-  -> View model action
   -> Sink action
   -> LogLevel
   -> Events
+  -> View model action
   -> JSM VTree
-buildVTree hydrate (VComp attrs (SomeComponent app)) snk _ _ = do
-  mountCallback <- do
-    FFI.syncCallback2 $ \parent_ continuation -> do
-      ComponentState {..} <- initialize hydrate False app (pure parent_)
-      vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-      vcompId <- toJSVal componentId
-      FFI.set "componentId" vcompId (Object parent_)
-      void $ call continuation global [vcompId, vtree]
-  unmountCallback <- toJSVal =<< do
-    FFI.syncCallback1 $ \vcompId -> do
-      componentId <- liftJSM (fromJSValUnchecked vcompId)
-      IM.lookup componentId <$> liftIO (readIORef components) >>= \case
-        Nothing -> pure ()
-        Just componentState ->
-          unmount app componentState
-  vcomp <- create
-  setAttrs vcomp attrs snk (logLevel app) (events app)
-  FFI.set "child" jsNull vcomp
-  flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
-  FFI.set "unmount" unmountCallback vcomp
-  FFI.set "eventPropagation" (eventPropagation app) vcomp
-  flip (FFI.set "type") vcomp =<< toJSVal VCompType
-  pure (VTree vcomp)
-buildVTree hydrate (VNode ns tag attrs kids) snk logLevel events = do
-  vnode <- createNode "vnode" ns tag
-  setAttrs vnode attrs snk logLevel events
-  vchildren <- toJSVal =<< procreate vnode
-  flip (FFI.set "children") vnode vchildren
-  flip (FFI.set "type") vnode =<< toJSVal VNodeType
-  pure $ VTree vnode
-    where
-      procreate parentVTree = do
-        kidsViews <- forM kids $ \kid -> do
-          VTree child <- buildVTree hydrate kid snk logLevel events
-          FFI.set "parent" parentVTree child
-          pure child
-        setNextSibling kidsViews
-        pure kidsViews
-          where
-            setNextSibling xs =
-              zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
-buildVTree _ (VText key t) _ _ _ = do
-  vtree <- create
-  flip (FFI.set "type") vtree =<< toJSVal VTextType
-  forM_ key $ \k -> FFI.set "key" (ms k) vtree
-  FFI.set "ns" ("text" :: JSString) vtree
-  FFI.set "text" t vtree
-  pure $ VTree vtree
+buildVTree hydrate snk logLevel_ events_ = \case
+  VComp attrs (SomeComponent app) -> do
+    mountCallback <- do
+      FFI.syncCallback2 $ \parent_ continuation -> do
+        ComponentState {..} <- initialize hydrate False app (pure parent_)
+        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        vcompId <- toJSVal componentId
+        FFI.set "componentId" vcompId (Object parent_)
+        void $ call continuation global [vcompId, vtree]
+    unmountCallback <- toJSVal =<< do
+      FFI.syncCallback1 $ \vcompId -> do
+        componentId <- liftJSM (fromJSValUnchecked vcompId)
+        IM.lookup componentId <$> liftIO (readIORef components) >>= \case
+          Nothing -> pure ()
+          Just componentState ->
+            unmount app componentState
+    vcomp <- create
+    setAttrs vcomp attrs snk (logLevel app) (events app)
+    FFI.set "child" jsNull vcomp
+    flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
+    FFI.set "unmount" unmountCallback vcomp
+    FFI.set "eventPropagation" (eventPropagation app) vcomp
+    flip (FFI.set "type") vcomp =<< toJSVal VCompType
+    pure (VTree vcomp)
+  VNode ns tag attrs kids -> do
+    vnode <- createNode "vnode" ns tag
+    setAttrs vnode attrs snk logLevel_ events_
+    vchildren <- toJSVal =<< procreate vnode
+    flip (FFI.set "children") vnode vchildren
+    flip (FFI.set "type") vnode =<< toJSVal VNodeType
+    pure (VTree vnode)
+      where
+        procreate parentVTree = do
+          kidsViews <- forM kids $ \kid -> do
+            VTree child <- buildVTree hydrate snk logLevel_ events_ kid
+            FFI.set "parent" parentVTree child
+            pure child
+          setNextSibling kidsViews
+          pure kidsViews
+            where
+              setNextSibling xs =
+                zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
+  VText key t -> do
+    vtree <- create
+    flip (FFI.set "type") vtree =<< toJSVal VTextType
+    forM_ key $ \k -> FFI.set "key" (ms k) vtree
+    FFI.set "ns" ("text" :: JSString) vtree
+    FFI.set "text" t vtree
+    pure (VTree vtree)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
@@ -1382,23 +1383,22 @@ socketState socketId callback = do
         sink (callback CLOSED)
 -----------------------------------------------------------------------------
 codeToCloseCode :: Int -> CloseCode
-codeToCloseCode = go
-  where
-    go 1000 = CLOSE_NORMAL
-    go 1001 = CLOSE_GOING_AWAY
-    go 1002 = CLOSE_PROTOCOL_ERROR
-    go 1003 = CLOSE_UNSUPPORTED
-    go 1005 = CLOSE_NO_STATUS
-    go 1006 = CLOSE_ABNORMAL
-    go 1007 = Unsupported_Data
-    go 1008 = Policy_Violation
-    go 1009 = CLOSE_TOO_LARGE
-    go 1010 = Missing_Extension
-    go 1011 = Internal_Error
-    go 1012 = Service_Restart
-    go 1013 = Try_Again_Later
-    go 1015 = TLS_Handshake
-    go n    = OtherCode n
+codeToCloseCode = \case
+  1000 -> CLOSE_NORMAL
+  1001 -> CLOSE_GOING_AWAY
+  1002 -> CLOSE_PROTOCOL_ERROR
+  1003 -> CLOSE_UNSUPPORTED
+  1005 -> CLOSE_NO_STATUS
+  1006 -> CLOSE_ABNORMAL
+  1007 -> Unsupported_Data
+  1008 -> Policy_Violation
+  1009 -> CLOSE_TOO_LARGE
+  1010 -> Missing_Extension
+  1011 -> Internal_Error
+  1012 -> Service_Restart
+  1013 -> Try_Again_Later
+  1015 -> TLS_Handshake
+  n    -> OtherCode n
 -----------------------------------------------------------------------------
 -- | Closed message is sent when a t'WebSocket' has closed
 data Closed

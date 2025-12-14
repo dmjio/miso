@@ -210,9 +210,10 @@ pattern_ = PatternArg
 -----------------------------------------------------------------------------
 -- | Renders a t'StyleArg' to a 'JSVal'
 renderStyleArg :: StyleArg -> JSM JSVal
-renderStyleArg (ColorArg c)    = toJSVal (renderColor c)
-renderStyleArg (GradientArg g) = toJSVal g
-renderStyleArg (PatternArg p)  = toJSVal p
+renderStyleArg = \case
+  ColorArg c -> toJSVal (renderColor c)
+  GradientArg g -> toJSVal g
+  PatternArg p -> toJSVal p
 -----------------------------------------------------------------------------
 instance MakeArgs StyleArg where
   makeArgs arg = (:[]) <$> toJSVal arg
@@ -222,10 +223,11 @@ instance ToJSVal StyleArg where
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
-renderPattern Repeat   = "repeat"
-renderPattern RepeatX  = "repeat-x"
-renderPattern RepeatY  = "repeat-y"
-renderPattern NoRepeat = "no-repeat"
+renderPattern = \case
+  Repeat -> "repeat"
+  RepeatX -> "repeat-x"
+  RepeatY -> "repeat-y"
+  NoRepeat -> "no-repeat"
 -----------------------------------------------------------------------------
 -- | [LineCap](https://www.w3schools.com/tags/canvas_linecap.asp)
 data LineCapType
@@ -242,12 +244,16 @@ instance ToJSVal LineCapType where
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'LineCapType'
 renderLineCapType :: LineCapType -> MisoString
-renderLineCapType LineCapButt = "butt"
-renderLineCapType LineCapRound = "round"
-renderLineCapType LineCapSquare = "square"
+renderLineCapType = \case
+  LineCapButt -> "butt"
+  LineCapRound -> "round"
+  LineCapSquare -> "square"
 -----------------------------------------------------------------------------
 -- | [LineJoin](https://www.w3schools.com/tags/canvas_linejoin.asp)
-data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
+data LineJoinType
+  = LineJoinBevel
+  | LineJoinRound
+  | LineJoinMiter
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance MakeArgs LineJoinType where
@@ -258,12 +264,16 @@ instance ToJSVal LineJoinType where
 -----------------------------------------------------------------------------
 -- | Pretty-print a 'LineJoinType'
 renderLineJoinType :: LineJoinType -> MisoString
-renderLineJoinType LineJoinBevel = "bevel"
-renderLineJoinType LineJoinRound = "round"
-renderLineJoinType LineJoinMiter = "miter"
+renderLineJoinType = \case
+ LineJoinBevel -> "bevel"
+ LineJoinRound -> "round"
+ LineJoinMiter -> "miter"
 -----------------------------------------------------------------------------
 -- | Left-to-right, right-to-left, or inherit direction type.
-data DirectionType = LTR | RTL | Inherit
+data DirectionType
+  = LTR
+  | RTL
+  | Inherit
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance MakeArgs DirectionType where
@@ -274,9 +284,10 @@ instance ToJSVal DirectionType where
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'DirectionType'
 renderDirectionType :: DirectionType -> MisoString
-renderDirectionType LTR = "ltr"
-renderDirectionType RTL = "rtl"
-renderDirectionType Inherit = "inherit"
+renderDirectionType = \case
+  LTR -> "ltr"
+  RTL -> "rtl"
+  Inherit -> "inherit"
 -----------------------------------------------------------------------------
 -- | Text alignment type
 data TextAlignType
@@ -295,11 +306,12 @@ instance ToJSVal TextAlignType where
 -----------------------------------------------------------------------------
 -- | Pretty-print 'TextAlignType'
 renderTextAlignType :: TextAlignType -> MisoString
-renderTextAlignType TextAlignCenter = "center"
-renderTextAlignType TextAlignEnd    = "end"
-renderTextAlignType TextAlignLeft   = "left"
-renderTextAlignType TextAlignRight  = "right"
-renderTextAlignType TextAlignStart  = "start"
+renderTextAlignType = \case
+  TextAlignCenter -> "center"
+  TextAlignEnd -> "end"
+  TextAlignLeft -> "left"
+  TextAlignRight -> "right"
+  TextAlignStart -> "start"
 -----------------------------------------------------------------------------
 -- | TextBaselineType
 data TextBaselineType
@@ -319,12 +331,13 @@ instance ToJSVal TextBaselineType where
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'TextBaselineType'
 renderTextBaselineType :: TextBaselineType -> MisoString
-renderTextBaselineType TextBaselineAlphabetic = "alphabetic"
-renderTextBaselineType TextBaselineTop = "top"
-renderTextBaselineType TextBaselineHanging = "hanging"
-renderTextBaselineType TextBaselineMiddle = "middle"
-renderTextBaselineType TextBaselineIdeographic = "ideographic"
-renderTextBaselineType TextBaselineBottom = "bottom"
+renderTextBaselineType = \case
+  TextBaselineAlphabetic -> "alphabetic"
+  TextBaselineTop -> "top"
+  TextBaselineHanging -> "hanging"
+  TextBaselineMiddle -> "middle"
+  TextBaselineIdeographic -> "ideographic"
+  TextBaselineBottom -> "bottom"
 -----------------------------------------------------------------------------
 -- | CompositeOperation
 data CompositeOperation
@@ -349,17 +362,18 @@ instance ToJSVal CompositeOperation where
 -----------------------------------------------------------------------------
 -- | Pretty-print a 'CompositeOperation'
 renderCompositeOperation :: CompositeOperation -> MisoString
-renderCompositeOperation SourceOver      = "source-over"
-renderCompositeOperation SourceAtop      = "source-atop"
-renderCompositeOperation SourceIn        = "source-in"
-renderCompositeOperation SourceOut       = "source-out"
-renderCompositeOperation DestinationOver = "destination-over"
-renderCompositeOperation DestinationAtop = "destination-atop"
-renderCompositeOperation DestinationIn   = "destination-in"
-renderCompositeOperation DestinationOut  = "destination-out"
-renderCompositeOperation Lighter         = "lighter"
-renderCompositeOperation Copy            = "copy"
-renderCompositeOperation Xor             = "xor"
+renderCompositeOperation = \case
+  SourceOver -> "source-over"
+  SourceAtop -> "source-atop"
+  SourceIn -> "source-in"
+  SourceOut -> "source-out"
+  DestinationOver -> "destination-over"
+  DestinationAtop -> "destination-atop"
+  DestinationIn -> "destination-in"
+  DestinationOut -> "destination-out"
+  Lighter -> "lighter"
+  Copy -> "copy"
+  Xor -> "xor"
 -----------------------------------------------------------------------------
 -- | Type used to hold a canvas Pattern
 newtype Pattern = Pattern JSVal deriving (ToJSVal)

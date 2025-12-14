@@ -28,11 +28,7 @@ module Miso.Event.Decoder
 -----------------------------------------------------------------------------
 import Control.Applicative
 import Data.Aeson.Types
-#ifdef GHCJS_OLD
-import GHCJS.Marshal (ToJSVal(toJSVal))
-#else
 import Language.Javascript.JSaddle (ToJSVal(toJSVal))
-#endif
 -----------------------------------------------------------------------------
 import Miso.Event.Types
 import Miso.String

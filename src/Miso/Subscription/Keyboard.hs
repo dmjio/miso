@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.Keyboard
