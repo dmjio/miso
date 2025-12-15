@@ -94,16 +94,16 @@ export function fetchCore (
 
 */
 export function getParentComponentId (
-  vcompNode: ParentNode
+  vcompNode
 ): number {
-    var climb = function (node : ParentNode) {
+    var climb = function (node) {
       let parentComponentId = null;
-      while (node && node.parentNode) {
-          if ('componentId' in node.parentNode) {
-              parentComponentId = node.parentNode['componentId'];
+      while (node && node.parent) {
+          if ('componentId' in node.parent) {
+              parentComponentId = node.parent['componentId'];
               break;
           }
-          node = node.parentNode;
+          node = node.parent;
       }
       return parentComponentId;
     }

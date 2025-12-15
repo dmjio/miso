@@ -516,13 +516,13 @@ undelegate mountPoint events debug callback ctx = do
 --
 -- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
-hydrate :: Bool -> JSVal -> JSVal -> JSM ()
-hydrate logLevel mountPoint vtree = void $ do
+hydrate :: Bool -> JSVal -> JSVal -> JSM JSVal
+hydrate logLevel mountPoint vtree = do
   ll <- toJSVal logLevel
   drawingContext <- getDrawingContext
   hydrationContext <- getHydrationContext
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree, hydrationContext, drawingContext]
+  moduleMiso # "hydrate" $ (ll, mountPoint, vtree, hydrationContext, drawingContext)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --

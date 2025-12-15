@@ -88,77 +88,6 @@ describe ("Hydration tests", () => {
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
   });
 
-  test('Should copy DOM into VTree with multiple consecutive text nodes and collapse them without mount point', () => {
-    const div = document.createElement('div');
-    document.body.appendChild(div);
-    const txt1 = document.createTextNode('foobarbaz');
-    div.appendChild(txt1);
-    const mid = document.createElement('div');
-    div.appendChild(mid);
-    const txt2 = document.createTextNode('foobarbaz');
-    div.appendChild(txt2);
-    const currentNode = vnode<DOMRef>({
-      children: [
-        vtext('foo'),
-        vtext('bar'),
-        vtext('baz'),
-        vnode<DOMRef>({}),
-        vtext('foo'),
-        vtext('bar'),
-        vtext('baz'),
-      ],
-    });
-    const result = hydrate(false, null, currentNode, hydrationContext, drawingContext);
-    //Expect "foobarbaz" to be split up into three nodes in the DOM
-    expect(result).toBe(true);
-    expect(div.childNodes[0].textContent).toEqual('foobarbaz');
-    expect(div.childNodes[2].textContent).toEqual('foobarbaz');
-  });
-
-  test('Should copy DOM into VTree at mountPoint', () => {
-    var unrelatedDiv = document.createElement('div');
-    document.body.appendChild(document.createElement('script'));
-    document.body.appendChild(document.createTextNode('test'));
-    document.body.appendChild(unrelatedDiv);
-    var unrelatedTxt = document.createTextNode('Not part of Miso app');
-    unrelatedDiv.appendChild(unrelatedTxt);
-    var misoDiv = document.createElement('div');
-    document.body.appendChild(misoDiv);
-    var nestedDiv1 = document.createElement('div');
-    misoDiv.appendChild(nestedDiv1);
-    var nestedDiv2 = document.createElement('div');
-    nestedDiv1.appendChild(nestedDiv2);
-    var txt = document.createTextNode('foo');
-    nestedDiv2.appendChild(txt);
-    var tree:any = vnode<DOMRef>({ children: [vnode<DOMRef>({ children: [vtext('foo')] })] });
-    var succeeded = hydrate(false, misoDiv, tree, hydrationContext, drawingContext);
-    expect(tree.children[0].children[0].domRef).toEqual(txt);
-    expect(succeeded).toEqual(true);
-  });
-
-  test('Should copy DOM into VTree at body w/ script / text siblings', () => {
-    var unrelatedDiv = document.createElement('div');
-    document.body.appendChild(document.createElement('script'));
-    document.body.appendChild(document.createTextNode('test'));
-    document.body.appendChild(unrelatedDiv);
-    var unrelatedTxt = document.createTextNode('Not part of Miso app');
-    unrelatedDiv.appendChild(unrelatedTxt);
-    var misoDiv = document.createElement('div');
-    document.body.appendChild(misoDiv);
-    var nestedDiv1 = document.createElement('div');
-    misoDiv.appendChild(nestedDiv1);
-    var nestedDiv2 = document.createElement('div');
-    nestedDiv1.appendChild(nestedDiv2);
-    var txt = document.createTextNode('foo');
-    nestedDiv2.appendChild(txt);
-    var currentNode : any = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    var succeeded = hydrate(true, document.body, currentNode, hydrationContext, drawingContext);
-    expect(currentNode.children[0].children[0].domRef.textContent).toEqual(
-        new Text('foo').textContent
-    );
-    expect(succeeded).toEqual(false);
-  });
-
   test('Should fail to mount on a text node', () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(misoTxt);
@@ -375,7 +304,7 @@ describe ("Hydration tests", () => {
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
-  test('Should call mountComponent when hydrating VComp', () => {
+  test('Should not call mountComponent when hydrating VComp', () => {
     const txt = document.createTextNode('component content');
     const div = document.createElement('div');
     div.appendChild(txt);
@@ -387,11 +316,10 @@ describe ("Hydration tests", () => {
 
     const comp = vcomp<DOMRef>({
       key: 'test-comp',
+      componentId : 1,
+      child: vnode({ children: [vtext<DOMRef>('component content')] }),
       mount: (parent: any, callback: any) => {
         mountCalled = true;
-        componentId = 1;
-        componentTree = vnode({ children: [vtext<DOMRef>('component content')] });
-        hydrate(false, parent, componentTree, hydrationContext, drawingContext);
         callback(componentId, componentTree);
       },
       unmount: () => {},
@@ -400,13 +328,12 @@ describe ("Hydration tests", () => {
     const result = hydrate(false, document.body, comp, hydrationContext, drawingContext);
 
     expect(result).toBe(true);
-    expect(mountCalled).toBe(true);
-    expect(componentId).toBe(1);
+    expect(mountCalled).toBe(false);
     expect(comp.componentId).toBe(1);
-    expect(comp.child).toBe(componentTree);
+    expect(comp.child).toBeTruthy();
   });
 
-  test('Should call mountComponent with onBeforeMounted hook', () => {
+  test('Should not call mountComponent with onBeforeMounted hook', () => {
     const div = document.createElement('div');
     document.body.appendChild(div);
 
@@ -434,8 +361,8 @@ describe ("Hydration tests", () => {
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
 
     expect(result).toBe(false); // Hydration fails, falls back to mounting
-    expect(beforeMountedCalled).toBe(true);
-    expect(onMountedCalled).toBe(true);
+    expect(beforeMountedCalled).toBe(false);
+    expect(onMountedCalled).toBe(false);
   });
 
   test('Should handle VComp with nested child VTree', () => {
@@ -446,12 +373,12 @@ describe ("Hydration tests", () => {
 
     const comp = vcomp<DOMRef>({
       key: 'nested-comp',
+      child: vnode<DOMRef>({
+        tag: 'span',
+        children: [vtext<DOMRef>('nested child')],
+      }),
       mount: (parent: any, callback: any) => {
-        childComponentTree = vnode<DOMRef>({
-          tag: 'span',
-          children: [vtext<DOMRef>('nested child')],
-        });
-        callback(3, childComponentTree);
+
       },
       unmount: () => {},
     }) as VComp<DOMRef>;
@@ -461,9 +388,7 @@ describe ("Hydration tests", () => {
     });
 
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-
     expect(result).toBe(false); // Hydration fails, falls back to mounting
-    expect(comp.child).toBe(childComponentTree);
     expect((comp.child as VNode<DOMRef>).tag).toBe('span');
   });
 
@@ -536,8 +461,9 @@ describe ("Hydration tests", () => {
 
     const comp = vcomp<DOMRef>({
       key: 'walk-comp',
+      componentId: 6,
+      child: vnode<DOMRef>({ tag: 'span' }),
       mount: (parent: any, callback: any) => {
-        callback(6, vnode<DOMRef>({ tag: 'span' }));
       },
       unmount: () => {},
     }) as VComp<DOMRef>;

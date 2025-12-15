@@ -127,17 +127,7 @@ function delegateEvent <T>(
           stack.splice(0,1);
         }
         for (const child of obj.children) {
-           if (child.type === VTreeType.VComp) {
-             // For VComp, we need to drill to get the actual domRef
-             const childDomRef = drill(child as VComp<T>);
-             if (childDomRef && context.isEqual(childDomRef, stack[0])) {
-               delegateEvent(event, child, stack, debug, context);
-             }
-           } else if (child.type === VTreeType.VNode) {
-             if (context.isEqual(child.domRef, stack[0])) {
-               delegateEvent(event, child, stack, debug, context);
-             }
-           }
+          delegateEvent(event, child, stack, debug, context);
         }
       }
     } else {

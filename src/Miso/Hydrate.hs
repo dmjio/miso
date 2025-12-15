@@ -20,8 +20,9 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
 -----------------------------------------------------------------------------
 -- | Hydration of a t'VTree'
-hydrate :: LogLevel -> DOMRef -> VTree -> JSM ()
+hydrate :: LogLevel -> DOMRef -> VTree -> JSM Bool
 hydrate loggingLevel domRef vtree = do
   jval <- toJSVal vtree
-  FFI.hydrate (loggingLevel `elem` [DebugHydrate, DebugAll]) domRef jval
+  fromJSValUnchecked =<<
+    FFI.hydrate (loggingLevel `elem` [DebugHydrate, DebugAll]) domRef jval
 -----------------------------------------------------------------------------

@@ -335,7 +335,7 @@ function mountComponent(parent, op, replacing, n, context) {
         context.replaceChild(parent, childDomRef, replacing);
       } else if (op === 2 /* INSERT_BEFORE */) {
         context.insertBefore(parent, childDomRef, replacing);
-      }
+      } else if (op === 0 /* APPEND */) {}
     }
   });
   if (n.onMounted)
@@ -510,16 +510,7 @@ function delegateEvent(event, obj, stack, debug, context) {
         stack.splice(0, 1);
       }
       for (const child of obj.children) {
-        if (child.type === 0 /* VComp */) {
-          const childDomRef = drill(child);
-          if (childDomRef && context.isEqual(childDomRef, stack[0])) {
-            delegateEvent(event, child, stack, debug, context);
-          }
-        } else if (child.type === 1 /* VNode */) {
-          if (context.isEqual(child.domRef, stack[0])) {
-            delegateEvent(event, child, stack, debug, context);
-          }
-        }
+        delegateEvent(event, child, stack, debug, context);
       }
     }
   } else {
@@ -636,38 +627,16 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
-function preamble(mountPoint, context) {
-  var mountChildIdx = 0, node;
-  var root = context.getRoot();
-  if (!mountPoint) {
-    if (root.childNodes.length > 0) {
-      node = root.firstChild;
-    } else {
-      node = root.appendChild(context.createElement("div"));
-    }
-  } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(context.createElement("div"));
-  } else {
-    while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === 3 || mountPoint.childNodes[mountChildIdx].localName === "script")) {
-      mountChildIdx++;
-    }
-    if (!mountPoint.childNodes[mountChildIdx]) {
-      node = root.appendChild(context.createElement("div"));
-    } else {
-      node = mountPoint.childNodes[mountChildIdx];
-    }
-  }
-  return node;
-}
 function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
-  const node = preamble(mountPoint, drawingContext);
+  if (!vtree || !mountPoint)
+    return false;
+  let node = drawingContext.getRoot() === mountPoint ? mountPoint.firstChild : mountPoint;
   if (!walk(logLevel, vtree, node, context, drawingContext)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
-    diff(null, vtree, node, drawingContext);
     return false;
   } else {
     if (logLevel) {
@@ -758,15 +727,12 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
-      callCreated(node, vtree, drawingContext);
-      if (!vtree.child) {
-        diagnoseError(logLevel, vtree, node);
+      if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
         return false;
       }
-      return walk(logLevel, vtree.child, node, context, drawingContext);
       break;
     case 2 /* VText */:
-      if (node.nodeType !== 3 || vtree.text !== node.textContent) {
+      if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
         diagnoseError(logLevel, vtree, node);
         return false;
       }
@@ -791,6 +757,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           return false;
         }
       }
+      break;
   }
   return true;
 }
@@ -868,12 +835,12 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
 function getParentComponentId(vcompNode) {
   var climb = function(node) {
     let parentComponentId = null;
-    while (node && node.parentNode) {
-      if ("componentId" in node.parentNode) {
-        parentComponentId = node.parentNode["componentId"];
+    while (node && node.parent) {
+      if ("componentId" in node.parent) {
+        parentComponentId = node.parent["componentId"];
         break;
       }
-      node = node.parentNode;
+      node = node.parent;
     }
     return parentComponentId;
   };

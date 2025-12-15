@@ -157,15 +157,25 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
     end <- if isRoot then FFI.now else pure 0
     when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
 #endif
+    ref <- liftIO (newIORef vtree)
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
+        pure ref
       Hydrate -> do
-        Hydrate.hydrate logLevel componentDOMRef vtree
-    liftIO (newIORef vtree)
-  componentDOMRef <# ("componentId" :: MisoString) $ componentId
+        when isRoot $ do
+          hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
+          when (not hydrated) $ do
+            newTree <- buildVTree Draw componentSink logLevel events (view initializedModel)
+            liftIO (atomicWriteIORef ref newTree)
+            Diff.diff Nothing (Just newTree) componentDOMRef
+        pure ref
+
+  vtree <- liftIO (readIORef componentVTree)
+  vtree <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
-    FFI.getParentComponentId componentDOMRef >>= \case
+    ref <- toJSVal vtree
+    FFI.getParentComponentId ref >>= \case
       Nothing -> pure rootComponentId
       Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
@@ -239,8 +249,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   registerComponent vcomp
   if isRoot
     then
-      delegator componentDOMRef componentVTree
-        events (logLevel `elem` [DebugEvents, DebugAll])
+      delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     else
       addToDelegatedEvents logLevel events
   forM_ initialAction componentSink
@@ -828,13 +837,17 @@ buildVTree
   -> JSM VTree
 buildVTree hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
+    vcomp <- create
+
     mountCallback <- do
       FFI.syncCallback2 $ \parent_ continuation -> do
-        ComponentState {..} <- initialize hydrate False app (pure parent_)
+        ComponentState {..} <- initialize Draw False app (pure parent_)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        FFI.set "parent" vcomp (Object vtree)
         vcompId <- toJSVal componentId
         FFI.set "componentId" vcompId (Object parent_)
         void $ call continuation global [vcompId, vtree]
+
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \vcompId -> do
         componentId <- liftJSM (fromJSValUnchecked vcompId)
@@ -842,9 +855,19 @@ buildVTree hydrate snk logLevel_ events_ = \case
           Nothing -> pure ()
           Just componentState ->
             unmount app componentState
-    vcomp <- create
+
+    case hydrate of
+      Hydrate -> do
+        ComponentState {..} <- initialize hydrate False app (pure jsNull)
+        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        FFI.set "parent" vcomp (Object vtree)
+        vcompId <- toJSVal componentId
+        FFI.set "componentId" vcompId (Object vtree)
+        FFI.set "child" vtree vcomp
+      Draw -> do
+        FFI.set "child" jsNull vcomp        
+      
     setAttrs vcomp attrs snk (logLevel app) (events app)
-    FFI.set "child" jsNull vcomp
     flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
     FFI.set "unmount" unmountCallback vcomp
     FFI.set "eventPropagation" (eventPropagation app) vcomp
