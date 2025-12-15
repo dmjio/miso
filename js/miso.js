@@ -335,7 +335,7 @@ function mountComponent(parent, op, replacing, n, context) {
         context.replaceChild(parent, childDomRef, replacing);
       } else if (op === 2 /* INSERT_BEFORE */) {
         context.insertBefore(parent, childDomRef, replacing);
-      } else if (op === 0 /* APPEND */) {}
+      }
     }
   });
   if (n.onMounted)

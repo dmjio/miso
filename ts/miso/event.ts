@@ -1,5 +1,4 @@
-import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType, VComp } from './types';
-import { drill } from './dom';
+import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
 
 /* event delegation algorithm */
 export function delegate<T> (
