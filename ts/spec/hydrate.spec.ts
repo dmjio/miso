@@ -377,7 +377,9 @@ describe ("Hydration tests", () => {
 
   test('Should call mountComponent when hydrating VComp', () => {
     const txt = document.createTextNode('component content');
-    document.body.appendChild(txt);
+    const div = document.createElement('div');
+    div.appendChild(txt);
+    document.body.appendChild(div);
 
     let mountCalled = false;
     let componentId: any = null;
@@ -388,7 +390,7 @@ describe ("Hydration tests", () => {
       mount: (parent: any, callback: any) => {
         mountCalled = true;
         componentId = 1;
-        componentTree = vtext<DOMRef>('component content');
+        componentTree = vnode({ children: [vtext<DOMRef>('component content')] });
         hydrate(false, parent, componentTree, hydrationContext, drawingContext);
         callback(componentId, componentTree);
       },
