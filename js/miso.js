@@ -759,6 +759,11 @@ function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
       callCreated(node, vtree, drawingContext);
+      if (!vtree.child) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
+      return walk(logLevel, vtree.child, node, context, drawingContext);
       break;
     case 2 /* VText */:
       if (node.nodeType !== 3 || vtree.text !== node.textContent) {
@@ -782,7 +787,9 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        return walk(logLevel, vdomChild, domChild, context, drawingContext);
+        if (!walk(logLevel, vdomChild, domChild, context, drawingContext)) {
+          return false;
+        }
       }
   }
   return true;
