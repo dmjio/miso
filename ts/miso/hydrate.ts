@@ -190,6 +190,11 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   switch (vtree.type) {
     case VTreeType.VComp:
       callCreated(node, vtree, drawingContext);
+      if (!vtree.child) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
+      return walk (logLevel, vtree.child, node, context, drawingContext);
       break;
     case VTreeType.VText:
        if (node.nodeType !== 3 || vtree.text !== node.textContent) {
@@ -215,7 +220,9 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        return walk(logLevel, vdomChild, domChild, context, drawingContext);
+        if (!walk(logLevel, vdomChild, domChild, context, drawingContext)) {
+          return false;
+        }
       }
   }
   return true;
