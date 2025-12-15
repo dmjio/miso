@@ -582,7 +582,7 @@ describe ("Hydration tests", () => {
     });
 
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-
+    expect(result).toBe(true);
     expect(comp.componentId).toBe(6);
     expect(comp.child).toBeDefined();
   });
