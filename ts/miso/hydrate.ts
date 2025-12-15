@@ -190,11 +190,20 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   switch (vtree.type) {
     case VTreeType.VComp:
       callCreated(node, vtree, drawingContext);
+      return walk (logLevel, vtree.child, node, context, drawingContext);
       break;
     case VTreeType.VText:
-      (vtree as VText<DOMRef>).domRef = node as DOMRef;
+       if (node.nodeType !== 3 || vtree.text !== node.textContent) {
+         diagnoseError(logLevel, vtree, node);
+         return false;
+       }
+      vtree.domRef = node as DOMRef;
       break;
     case VTreeType.VNode:
+      if (node.nodeType !== 1) {
+         diagnoseError(logLevel, vtree, node);
+         return false;
+      }
       vtree.domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
@@ -207,24 +216,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        switch (vdomChild.type) {
-          case VTreeType.VText:
-            if (domChild.nodeType !== 3) {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            if (vdomChild.text === domChild.textContent) {
-              vdomChild.domRef = context.children(node as DOMRef)[i];
-            } else {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            break;
-          default:
-            if (domChild.nodeType !== 1) return false;
-            walk(logLevel, vdomChild, domChild, context, drawingContext);
-            break;
-        }
+        return walk(logLevel, vdomChild, domChild, context, drawingContext);
       }
   }
   return true;

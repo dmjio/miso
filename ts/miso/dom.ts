@@ -379,7 +379,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
       } else if (op === OP.INSERT_BEFORE) {
         context.insertBefore(parent, childDomRef, replacing);
       }
-      // For OP.APPEND, the mount function should have already appended
+      // For OP.APPEND, this happens naturally in mount()
     }
   });
 

@@ -28,10 +28,12 @@ describe ("Hydration tests", () => {
     div.appendChild(nestedDiv);
     var txt = document.createTextNode('foo');
     nestedDiv.appendChild(txt);
-    var currentNode : any = vnode<DOMRef>({
+
+    const currentNode : VNode<DOMRef> = vnode<DOMRef>({
       children: [vnode<DOMRef>({ children: [vtext('foo')] })],
     });
-    hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
+    const result = hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
+    expect(result).toBe(true);
     expect(currentNode.children[0].children[0].text).toEqual('foo');
   });
 
@@ -387,6 +389,7 @@ describe ("Hydration tests", () => {
         mountCalled = true;
         componentId = 1;
         componentTree = vtext<DOMRef>('component content');
+        hydrate(false, parent, componentTree, hydrationContext, drawingContext);
         callback(componentId, componentTree);
       },
       unmount: () => {},
@@ -489,20 +492,6 @@ describe ("Hydration tests", () => {
     expect(result).toBe(true);
   });
 
-  test('Should handle VText in fallback path when hydration fails', () => {
-    // Create a DOM structure that will fail hydration for VText
-    const div = document.createElement('div');
-    document.body.appendChild(div);
-
-    const tree = vtext<DOMRef>('fallback text');
-
-    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-
-    // Hydration should fail because DOM structure doesn't match
-    // VText fallback case (line 81) is executed
-    expect((tree as VText<DOMRef>).domRef).toBeDefined();
-  });
-
   test('Should handle preamble with no mount point children after scripts', () => {
     // Create mount point with only script tags
     const mountDiv = document.createElement('div');
@@ -531,7 +520,8 @@ describe ("Hydration tests", () => {
       css: { color: 'rgb(255, 128, 64)' },
     });
 
-    hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    const hydrated = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(hydrated).toBe(true);      
 
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
   });

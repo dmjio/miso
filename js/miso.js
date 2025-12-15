@@ -759,11 +759,20 @@ function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
       callCreated(node, vtree, drawingContext);
+      return walk(logLevel, vtree.child, node, context, drawingContext);
       break;
     case 2 /* VText */:
+      if (node.nodeType !== 3 || vtree.text !== node.textContent) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
       vtree.domRef = node;
       break;
     case 1 /* VNode */:
+      if (node.nodeType !== 1) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       callCreated(node, vtree, drawingContext);
@@ -774,25 +783,7 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        switch (vdomChild.type) {
-          case 2 /* VText */:
-            if (domChild.nodeType !== 3) {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            if (vdomChild.text === domChild.textContent) {
-              vdomChild.domRef = context.children(node)[i];
-            } else {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            break;
-          default:
-            if (domChild.nodeType !== 1)
-              return false;
-            walk(logLevel, vdomChild, domChild, context, drawingContext);
-            break;
-        }
+        return walk(logLevel, vdomChild, domChild, context, drawingContext);
       }
   }
   return true;
