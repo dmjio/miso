@@ -374,8 +374,8 @@ describe ("Hydration tests", () => {
   });
 
   test('Should call mountComponent when hydrating VComp', () => {
-    const div = document.createElement('div');
-    document.body.appendChild(div);
+    const txt = document.createTextNode('component content');
+    document.body.appendChild(txt);
 
     let mountCalled = false;
     let componentId: any = null;
@@ -392,13 +392,9 @@ describe ("Hydration tests", () => {
       unmount: () => {},
     }) as VComp<DOMRef>;
 
-    const tree = vnode<DOMRef>({
-      children: [comp],
-    });
+    const result = hydrate(false, document.body, comp, hydrationContext, drawingContext);
 
-    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-
-    expect(result).toBe(false); // Hydration fails, falls back to mounting
+    expect(result).toBe(true);
     expect(mountCalled).toBe(true);
     expect(componentId).toBe(1);
     expect(comp.componentId).toBe(1);
