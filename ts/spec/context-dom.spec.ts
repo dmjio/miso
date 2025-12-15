@@ -1,7 +1,7 @@
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, hydrationContext, componentContext, drawingContext } from '../miso/context/dom';
 import { vnode, vcomp } from '../miso/smart';
-import { DOMRef } from '../miso/types';
+import { VNode, DOMRef } from '../miso/types';
 import { diff } from '../miso/dom';
 
 /* silence */
@@ -168,7 +168,7 @@ describe('ComponentContext tests', () => {
 
   test('Should call modelHydration without errors', () => {
     expect(() => {
-      componentContext.modelHydration({});
+      componentContext.modelHydration(0, {});
     }).not.toThrow();
   });
 });
@@ -184,7 +184,7 @@ describe('DrawingContext tests', () => {
   });
 
   test('Should get next sibling for VComp by drilling', () => {
-    const comp = vcomp<DOMRef>({ tag: 'div', mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
       cb (0, node1);
@@ -199,7 +199,7 @@ describe('DrawingContext tests', () => {
     node1.nextSibling = comp;
     p = vnode<DOMRef>({ tag: 'span', children: [ node1, comp ] });
     diff (null, p, document.body, drawingContext);
-    expect(drawingContext.nextSibling(node1)).toBe(comp.child.domRef);
+    expect(drawingContext.nextSibling(node1)).toBe((comp.child as VNode<DOMRef>).domRef);
   });
 
    test('Should return undefined when no next sibling', () => {
@@ -215,7 +215,7 @@ describe('DrawingContext tests', () => {
    });
 
   test('Should return undefined when no next sibling', () => {
-    const comp = vcomp<DOMRef>({ tag: 'div', mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
       cb (0, node1);
@@ -331,8 +331,8 @@ describe('DrawingContext tests', () => {
     drawingContext.swapDOMRefs(b, a as DOMRef, parent as DOMRef);
 
     // Verify all children are still in parent
-    expect(parent.childNodes[0].tagName).toBe('P');
-    expect(parent.childNodes[1].tagName).toBe('SPAN');
+    expect((parent.childNodes[0] as HTMLElement).tagName).toBe('P');
+    expect((parent.childNodes[1] as HTMLElement).tagName).toBe('SPAN');
   });
 
   test('Should set inline style - remove style when not in new CSS', () => {
