@@ -113,6 +113,7 @@ renderAttrs (ClassList classes) =
   , fromMisoString (MS.unwords classes)
   , stringUtf8 "\""
   ]
+renderAttrs (Property "key" _) = mempty
 renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
