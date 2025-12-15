@@ -292,7 +292,7 @@ data SomeComponent parent
 infixr 0 +>
 key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
--- | 'Component' mounting combinator. Takes '[Attribute a]' as arguments.
+-- | t'Miso.Types.Component' mounting combinator. Takes '[Attribute a]' as arguments.
 --
 -- @
 --   mount_ [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
@@ -307,11 +307,11 @@ mount_
   -> View p action
 mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
 -----------------------------------------------------------------------------
--- | 'Component' mounting combinator.
+-- | t'Miso.Types.Component' mounting combinator.
 --
--- Note: only use this if you're certain you won't be diffing two 'Component'
+-- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
 -- against each other. Otherwise, you will need a key to distinguish between
--- the two 'Component', to ensure unmounting and mounting occurs.
+-- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- @
 --   mount $ component model noop $ \\m ->

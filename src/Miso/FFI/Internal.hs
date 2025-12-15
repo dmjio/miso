@@ -393,7 +393,7 @@ eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
--- | Populate the `classList` Set on the virtual DOM.
+-- | Populate the 'Miso.Html.Property.classList' Set on the virtual DOM.
 populateClass
     :: JSVal
     -- ^ Node
