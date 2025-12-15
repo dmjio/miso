@@ -486,6 +486,7 @@ describe ("Hydration tests", () => {
     });
 
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(result).toBe(true); // Hydration fails, falls back to mounting
 
     // setVCompRef was called and child is set
     expect(comp.child).toBeDefined();
