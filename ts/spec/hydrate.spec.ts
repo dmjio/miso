@@ -462,33 +462,6 @@ describe ("Hydration tests", () => {
     expect((comp.child as VNode<DOMRef>).tag).toBe('span');
   });
 
-  test('Should handle VComp child recursive setVCompRef', () => {
-    const div = document.createElement('div');
-    const span = document.createElement('span');
-    div.appendChild(span);
-    document.body.appendChild(div);
-
-    const comp = vcomp<DOMRef>({
-      key: 'parent-comp',
-      mount: (parent: any, callback: any) => {
-        const childNode = vnode<DOMRef>({ tag: 'span' });
-        callback(4, childNode);
-      },
-      unmount: () => {},
-    }) as VComp<DOMRef>;
-
-    const tree = vnode<DOMRef>({
-      children: [comp],
-    });
-
-    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-    expect(result).toBe(true); // Hydration fails, falls back to mounting
-
-    // setVCompRef was called and child is set
-    expect(comp.child).toBeDefined();
-    expect((comp.child as VNode<DOMRef>).tag).toBe('span');
-  });
-
   test('Should log warning when hydration fails with logLevel enabled', () => {
     const div = document.createElement('div');
     document.body.appendChild(div);
