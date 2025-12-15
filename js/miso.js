@@ -759,7 +759,6 @@ function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
       callCreated(node, vtree, drawingContext);
-      return walk(logLevel, vtree.child, node, context, drawingContext);
       break;
     case 2 /* VText */:
       if (node.nodeType !== 3 || vtree.text !== node.textContent) {

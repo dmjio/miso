@@ -190,7 +190,6 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   switch (vtree.type) {
     case VTreeType.VComp:
       callCreated(node, vtree, drawingContext);
-      return walk (logLevel, vtree.child, node, context, drawingContext);
       break;
     case VTreeType.VText:
        if (node.nodeType !== 3 || vtree.text !== node.textContent) {
