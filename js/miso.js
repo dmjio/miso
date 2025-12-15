@@ -636,14 +636,6 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
-function setVCompRef(vtree, node) {
-  if (vtree.type === 0 /* VComp */) {
-    if (vtree.child)
-      setVCompRef(vtree.child, node);
-  } else {
-    vtree.domRef = node;
-  }
-}
 function preamble(mountPoint, context) {
   var mountChildIdx = 0, node;
   var root = context.getRoot();
@@ -798,7 +790,6 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           default:
             if (domChild.nodeType !== 1)
               return false;
-            setVCompRef(vdomChild, domChild);
             walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }

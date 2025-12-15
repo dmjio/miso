@@ -14,14 +14,6 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
   return adjusted;
 }
 
-function setVCompRef(vtree: VTree<DOMRef>, node: Node): void {
-  if (vtree.type === VTreeType.VComp) {
-    if (vtree.child) setVCompRef(vtree.child, node);
-  } else {
-    vtree.domRef = node as DOMRef;
-  }
-}
-
 /* function to determine if <script> tags are present in `body` top-level
    if so we work around them */
 function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): Node {
@@ -230,8 +222,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
             break;
           default:
             if (domChild.nodeType !== 1) return false;
-            setVCompRef(vdomChild, domChild);
-             walk(logLevel, vdomChild, domChild, context, drawingContext);
+            walk(logLevel, vdomChild, domChild, context, drawingContext);
             break;
         }
       }
