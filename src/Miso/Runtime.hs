@@ -841,7 +841,6 @@ buildVTree parentId hydrate snk logLevel_ events_ = \case
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId <- toJSVal componentId
-        FFI.set "componentId" vcompId (Object parent_)
         void $ call continuation global [vcompId, vtree]
 
     unmountCallback <- toJSVal =<< do
@@ -860,7 +859,7 @@ buildVTree parentId hydrate snk logLevel_ events_ = \case
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId <- toJSVal componentId
-        FFI.set "componentId" vcompId (Object vtree)
+        FFI.set "componentId" vcompId vcomp
         FFI.set "child" vtree vcomp
       Draw -> do
         FFI.set "child" jsNull vcomp        
