@@ -845,7 +845,7 @@ buildVTree parentId hydrate snk logLevel_ events_ = \case
 
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \vcompId -> do
-        componentId <- liftJSM (fromJSValUnchecked vcompId)
+        componentId <- fromJSValUnchecked vcompId
         IM.lookup componentId <$> liftIO (readIORef components) >>= \case
           Nothing -> pure ()
           Just componentState ->
