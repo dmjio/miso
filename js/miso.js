@@ -832,20 +832,6 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
     errorful({ body: null, error: err.message, headers, status });
   }
 }
-function getParentComponentId(vcompNode) {
-  var climb = function(node) {
-    let parentComponentId = null;
-    while (node && node.parentNode) {
-      if ("componentId" in node.parentNode) {
-        parentComponentId = node.parentNode["componentId"];
-        break;
-      }
-      node = node.parentNode;
-    }
-    return parentComponentId;
-  };
-  return climb(vcompNode);
-}
 function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly) {
   try {
     let socket = new WebSocket(url);
@@ -1130,7 +1116,6 @@ globalThis["miso"] = {
   websocketSend,
   undelegate,
   populateClass,
-  getParentComponentId,
   integrityCheck,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];

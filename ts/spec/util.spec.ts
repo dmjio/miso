@@ -1,4 +1,4 @@
-import { populateClass, callFocus, callBlur, callSelect, callSetSelectionRange, getParentComponentId, fetchCore, websocketConnect, websocketClose, websocketSend, eventSourceConnect, eventSourceClose } from '../miso/util';
+import { populateClass, callFocus, callBlur, callSelect, callSetSelectionRange, fetchCore, websocketConnect, websocketClose, websocketSend, eventSourceConnect, eventSourceClose } from '../miso/util';
 import { vnode } from '../miso/smart';
 import { VNode } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll, mock } from 'bun:test';
@@ -43,22 +43,6 @@ describe ('Utils tests', () => {
     callBlur('foo', 0); /* found case */
     callBlur('foo', 1); /* found case */
     expect(document.activeElement).toEqual(document.body);
-  });
-
-  test('Should get parentComponentId', () => {
-    /* build */
-    const grandparent = document.createElement('div');
-    grandparent['componentId'] = 100;
-    const parent = document.createElement('div');
-    grandparent.appendChild(parent);
-    const child = document.createElement('div');
-    parent.appendChild(child);
-    /* test */
-    let vcomp = child;
-    expect(getParentComponentId(vcomp)).toBe(100);
-    vcomp = parent;
-    expect(getParentComponentId(vcomp)).toBe(100);
-    expect(getParentComponentId(grandparent)).toBe(null);
   });
 
   test('Should populate class', () => {

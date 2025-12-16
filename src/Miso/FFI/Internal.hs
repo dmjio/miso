@@ -112,9 +112,6 @@ module Miso.FFI.Internal
    -- * Utils
    , getMilliseconds
    , getSeconds
-   -- * 'Miso.Types.Component'
-   , getParentComponentId
-   , getComponentId
    -- * Element
    , files
    , click
@@ -746,18 +743,6 @@ getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
     date # "getSeconds" $ ([] :: [MisoString])
------------------------------------------------------------------------------
--- | Climb the tree, get the parent.
-getParentComponentId :: JSVal -> JSM (Maybe Int)
-getParentComponentId domRef =
-  fromJSVal =<< do
-    jsg "miso" # "getParentComponentId" $ [domRef]
------------------------------------------------------------------------------
--- | Get access to the 'Miso.Effect.ComponentId'
--- N.B. you * must * call this on the DOMRef, otherwise, problems.
--- For use in 'Miso.Event.onMounted', etc.
-getComponentId :: JSVal -> JSM Int
-getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
 -- | Fetch next sibling DOM node
 --
