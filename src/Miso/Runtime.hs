@@ -170,12 +170,9 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
             liftIO (atomicWriteIORef ref newTree)
             Diff.diff Nothing (Just newTree) componentDOMRef
         pure ref
-
-  vtree <- liftIO (readIORef componentVTree)
-  vtree <# ("componentId" :: MisoString) $ componentId
+  componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentParentId <- do
-    ref <- toJSVal vtree
-    FFI.getParentComponentId ref >>= \case
+    FFI.getParentComponentId componentDOMRef >>= \case
       Nothing -> pure rootComponentId
       Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
@@ -858,7 +855,9 @@ buildVTree hydrate snk logLevel_ events_ = \case
 
     case hydrate of
       Hydrate -> do
-        ComponentState {..} <- initialize hydrate False app (pure jsNull)
+        -- Mock .domRef for use during hydration
+        domRef <- toJSVal =<< create
+        ComponentState {..} <- initialize hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId <- toJSVal componentId

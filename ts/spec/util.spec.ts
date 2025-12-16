@@ -47,11 +47,12 @@ describe ('Utils tests', () => {
 
   test('Should get parentComponentId', () => {
     /* build */
-    const grandparent = { componentId : 100 };
-    let parent = {};
-    parent['parent'] = grandparent;
-    let child = {};
-    child['parent'] = parent;
+    const grandparent = document.createElement('div');
+    grandparent['componentId'] = 100;
+    const parent = document.createElement('div');
+    grandparent.appendChild(parent);
+    const child = document.createElement('div');
+    parent.appendChild(child);
     /* test */
     let vcomp = child;
     expect(getParentComponentId(vcomp)).toBe(100);

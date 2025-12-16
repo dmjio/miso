@@ -835,12 +835,12 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
 function getParentComponentId(vcompNode) {
   var climb = function(node) {
     let parentComponentId = null;
-    while (node && node.parent) {
-      if ("componentId" in node.parent) {
-        parentComponentId = node.parent["componentId"];
+    while (node && node.parentNode) {
+      if ("componentId" in node.parentNode) {
+        parentComponentId = node.parentNode["componentId"];
         break;
       }
-      node = node.parent;
+      node = node.parentNode;
     }
     return parentComponentId;
   };
