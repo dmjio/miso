@@ -90,7 +90,7 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, components: 
                 break;
             case "swapDOMRefs":
                 /* dmj: swap it in the component environemnt too */
-                context.swapDOMRefs (component.nodes[patch.nodeA], component.nodes[patch.nodeB], component.nodes[patch.parent]);
+                context.swapDOMRefs (component.nodes[patch.nodeB], component.nodes[patch.nodeA], component.nodes[patch.parent]);
                 break;
             case "replaceChild":
                 context.replaceChild (component.nodes[patch.parent], component.nodes[patch.new], component.nodes[patch.current]);

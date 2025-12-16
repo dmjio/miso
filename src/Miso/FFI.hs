@@ -58,9 +58,6 @@ module Miso.FFI
   , toLocaleString
   , getSeconds
   , getMilliseconds
-    -- ** 'Miso.Types.Component'
-  , getParentComponentId
-  , getComponentId
     -- ** DOM Traversal
   , nextSibling
   , previousSibling

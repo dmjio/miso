@@ -112,9 +112,6 @@ module Miso.FFI.Internal
    -- * Utils
    , getMilliseconds
    , getSeconds
-   -- * 'Miso.Types.Component'
-   , getParentComponentId
-   , getComponentId
    -- * Element
    , files
    , click
@@ -393,7 +390,7 @@ eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
 -----------------------------------------------------------------------------
--- | Populate the `classList` Set on the virtual DOM.
+-- | Populate the 'Miso.Html.Property.classList' Set on the virtual DOM.
 populateClass
     :: JSVal
     -- ^ Node
@@ -516,13 +513,13 @@ undelegate mountPoint events debug callback ctx = do
 --
 -- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
-hydrate :: Bool -> JSVal -> JSVal -> JSM ()
-hydrate logLevel mountPoint vtree = void $ do
+hydrate :: Bool -> JSVal -> JSVal -> JSM JSVal
+hydrate logLevel mountPoint vtree = do
   ll <- toJSVal logLevel
   drawingContext <- getDrawingContext
   hydrationContext <- getHydrationContext
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "hydrate" $ [ll, mountPoint, vtree, hydrationContext, drawingContext]
+  moduleMiso # "hydrate" $ (ll, mountPoint, vtree, hydrationContext, drawingContext)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
@@ -746,18 +743,6 @@ getSeconds :: Date -> JSM Double
 getSeconds date =
   fromJSValUnchecked =<< do
     date # "getSeconds" $ ([] :: [MisoString])
------------------------------------------------------------------------------
--- | Climb the tree, get the parent.
-getParentComponentId :: JSVal -> JSM (Maybe Int)
-getParentComponentId domRef =
-  fromJSVal =<< do
-    jsg "miso" # "getParentComponentId" $ [domRef]
------------------------------------------------------------------------------
--- | Get access to the 'Miso.Effect.ComponentId'
--- N.B. you * must * call this on the DOMRef, otherwise, problems.
--- For use in 'Miso.Event.onMounted', etc.
-getComponentId :: JSVal -> JSM Int
-getComponentId vtree = fromJSValUnchecked =<< vtree ! "componentId"
 -----------------------------------------------------------------------------
 -- | Fetch next sibling DOM node
 --

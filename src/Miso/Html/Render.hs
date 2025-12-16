@@ -96,8 +96,8 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
-  renderBuilder (VNode ns tag attrs vkids)
+renderBuilder (VComp _ (SomeComponent vcomp)) =
+  foldMap renderBuilder vkids
     where
 #ifdef SSR
       vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
@@ -113,6 +113,7 @@ renderAttrs (ClassList classes) =
   , fromMisoString (MS.unwords classes)
   , stringUtf8 "\""
   ]
+renderAttrs (Property "key" _) = mempty
 renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key

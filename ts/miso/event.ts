@@ -95,7 +95,21 @@ function delegateEvent <T>(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-      if (obj.type === VTreeType.VComp || obj.type === VTreeType.VNode) {
+      if (obj.type === VTreeType.VText) {
+        return;
+      }
+      else if (obj.type === VTreeType.VComp) {
+        if (!obj.child) {
+          if (debug) {
+            console.error('VComp has no child property set during event delegation', obj);
+            console.error('This means the Component has not been fully mounted, this should never happen');
+            throw new Error('VComp has no .child property set during event delegation');
+          }
+          return;
+        }
+        return delegateEvent(event, obj.child, stack, debug, context);
+      }
+      else if (obj.type === VTreeType.VNode) {
         if (context.isEqual(obj.domRef, stack[0])) {
           const eventObj: EventObject<T> = obj.events.captures[event.type];
           if (eventObj) {
@@ -111,17 +125,19 @@ function delegateEvent <T>(
           }
           stack.splice(0,1);
         }
-      for (const child of obj.children) {
-          if (child.type === VTreeType.VComp || child.type === VTreeType.VNode) {
-            if (context.isEqual(child.domRef, stack[0])) {
-              delegateEvent(event, child, stack, debug, context);
-            }
-          }
+        for (const child of obj.children) {
+          delegateEvent(event, child, stack, debug, context);
         }
       }
     } else {
+    /* stack.length === 1, we're at the target */
+    if (obj.type === VTreeType.VComp) {
+      /* VComp doesn't have events directly, delegate to its child */
+      if (obj.child) {
+        delegateEvent(event, obj.child, stack, debug, context);
+      }
+    } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
-    if (obj.type === VTreeType.VNode) {
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
       if (eventCaptureObj && !event['captureStopped']) {
         const options: Options = eventCaptureObj.options;

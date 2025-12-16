@@ -171,9 +171,9 @@ type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] m
 --
 -- All t'IO' is by default asynchronous, use the 'sync' function for synchronous
 -- execution. Beware 'sync' can block the render thread for a specific
--- 'Component'.
+-- t'Miso.Types.Component'.
 --
--- N.B. During 'Miso.Types.Component' unmounting, all effects are evaluated
+-- N.B. During t'Miso.Types.Component' unmounting, all effects are evaluated
 -- synchronously.
 --
 -- @since 1.9.0.0

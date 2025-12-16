@@ -9,12 +9,11 @@ function diff(c, n, parent, context) {
   else if (c.type === 2 /* VText */ && n.type === 2 /* VText */) {
     diffVText(c, n, context);
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
-    if (n.tag === c.tag && n.key === c.key) {
-      n.domRef = c.domRef;
-      diffAttrs(c, n, context);
-    } else {
-      replace(c, n, parent, context);
+    if (n.key === c.key) {
+      n.child = c.child;
+      return;
     }
+    replace(c, n, parent, context);
   } else if (c.type === 1 /* VNode */ && n.type === 1 /* VNode */) {
     if (n.tag === c.tag && n.key === c.key) {
       n.domRef = c.domRef;
@@ -31,6 +30,24 @@ function diffVText(c, n, context) {
   n.domRef = c.domRef;
   return;
 }
+function drill(c) {
+  if (!c.child)
+    throw new Error("'drill' called on an unmounted Component. This should never happen, please make an issue.");
+  switch (c.child.type) {
+    case 0 /* VComp */:
+      return drill(c.child);
+    default:
+      return c.child.domRef;
+  }
+}
+function getDOMRef(tree) {
+  switch (tree.type) {
+    case 0 /* VComp */:
+      return drill(tree);
+    default:
+      return tree.domRef;
+  }
+}
 function replace(c, n, parent, context) {
   switch (c.type) {
     case 2 /* VText */:
@@ -41,15 +58,14 @@ function replace(c, n, parent, context) {
   }
   switch (n.type) {
     case 2 /* VText */:
-      switch (c.type) {
-        default:
-          n.domRef = context.createTextNode(n.text);
-          context.replaceChild(parent, n.domRef, c.domRef);
-          break;
-      }
+      n.domRef = context.createTextNode(n.text);
+      context.replaceChild(parent, n.domRef, getDOMRef(c));
       break;
-    default:
-      context.replaceChild(parent, createElement(n, context), c.domRef);
+    case 0 /* VComp */:
+      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
+      break;
+    case 1 /* VNode */:
+      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
       break;
   }
   switch (c.type) {
@@ -68,7 +84,7 @@ function destroy(c, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  context.removeChild(parent, c.domRef);
+  context.removeChild(parent, getDOMRef(c));
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -79,10 +95,20 @@ function destroy(c, parent, context) {
 }
 function callDestroyedRecursive(c) {
   callDestroyed(c);
-  for (const child of c.children) {
-    if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */) {
-      callDestroyedRecursive(child);
-    }
+  switch (c.type) {
+    case 1 /* VNode */:
+      for (const child of c.children) {
+        if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */) {
+          callDestroyedRecursive(child);
+        }
+      }
+      break;
+    case 0 /* VComp */:
+      if (c.child) {
+        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */)
+          callDestroyedRecursive(c.child);
+      }
+      break;
   }
 }
 function callDestroyed(c) {
@@ -107,18 +133,28 @@ function callBeforeDestroyed(c) {
 }
 function callBeforeDestroyedRecursive(c) {
   callBeforeDestroyed(c);
-  for (const child of c.children)
-    if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */)
-      callBeforeDestroyedRecursive(child);
+  switch (c.type) {
+    case 1 /* VNode */:
+      for (const child of c.children) {
+        if (child.type === 2 /* VText */)
+          continue;
+        callBeforeDestroyedRecursive(child);
+      }
+      break;
+    case 0 /* VComp */:
+      if (c.child) {
+        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */)
+          callBeforeDestroyedRecursive(c.child);
+      }
+      break;
+  }
 }
 function diffAttrs(c, n, context) {
   diffProps(c ? c.props : {}, n.props, n.domRef, n.ns === "svg", context);
   diffClass(c ? c.classList : null, n.classList, n.domRef, context);
   diffCss(c ? c.css : {}, n.css, n.domRef, context);
-  if (n.type === 1 /* VNode */) {
-    diffChildren(c ? c.children : [], n.children, n.domRef, context);
-    drawCanvas(n);
-  }
+  diffChildren(c ? c.children : [], n.children, n.domRef, context);
+  drawCanvas(n);
 }
 function diffClass(c, n, domRef, context) {
   if (!c && !n) {
@@ -226,27 +262,35 @@ function populateDomRef(c, context) {
     c.domRef = context.createElement(c.tag);
   }
 }
-function callCreated(n, context) {
+function callCreated(parent, n, context) {
   switch (n.type) {
     case 0 /* VComp */:
-      if (n.onBeforeMounted)
-        n.onBeforeMounted();
-      mountComponent(n, context);
+      mountComponent(parent, 0 /* APPEND */, null, n, context);
       break;
     case 1 /* VNode */:
       if (n.onCreated)
         n.onCreated(n.domRef);
       break;
   }
-  return n.domRef;
 }
-function createElement(n, context) {
+function createElement(parent, op, replacing, n, context) {
   switch (n.type) {
+    case 2 /* VText */:
+      n.domRef = context.createTextNode(n.text);
+      switch (op) {
+        case 2 /* INSERT_BEFORE */:
+          context.insertBefore(parent, n.domRef, replacing);
+          break;
+        case 0 /* APPEND */:
+          context.appendChild(parent, n.domRef);
+          break;
+        case 1 /* REPLACE */:
+          context.replaceChild(parent, n.domRef, replacing);
+          break;
+      }
+      break;
     case 0 /* VComp */:
-      if (n.onBeforeMounted)
-        n.onBeforeMounted();
-      populateDomRef(n, context);
-      mountComponent(n, context);
+      mountComponent(parent, op, replacing, n, context);
       break;
     case 1 /* VNode */:
       if (n.onBeforeCreated)
@@ -254,10 +298,20 @@ function createElement(n, context) {
       populateDomRef(n, context);
       if (n.onCreated)
         n.onCreated(n.domRef);
+      diffAttrs(null, n, context);
+      switch (op) {
+        case 2 /* INSERT_BEFORE */:
+          context.insertBefore(parent, n.domRef, replacing);
+          break;
+        case 0 /* APPEND */:
+          context.appendChild(parent, n.domRef);
+          break;
+        case 1 /* REPLACE */:
+          context.replaceChild(parent, n.domRef, replacing);
+          break;
+      }
       break;
   }
-  diffAttrs(null, n, context);
-  return n.domRef;
 }
 function drawCanvas(c) {
   if (c.tag === "canvas" && c.draw)
@@ -265,24 +319,44 @@ function drawCanvas(c) {
 }
 function unmountComponent(c) {
   if (c.onUnmounted)
-    c.onUnmounted(c.domRef);
-  c.unmount(c.domRef);
+    c.onUnmounted(drill(c));
+  c.unmount(c.componentId);
 }
-function mountComponent(obj, context) {
-  obj.mount(obj, (componentId, componentTree) => {
-    obj.children.push(componentTree);
-    context.appendChild(obj.domRef, componentTree.domRef);
-    if (obj.onMounted)
-      obj.onMounted(obj.domRef);
+function mountComponent(parent, op, replacing, n, context) {
+  if (n.onBeforeMounted)
+    n.onBeforeMounted();
+  n.mount(parent, (componentId, componentTree) => {
+    n.componentId = componentId;
+    n.child = componentTree;
+    componentTree.parent = n;
+    if (componentTree.type !== 0 /* VComp */) {
+      const childDomRef = getDOMRef(componentTree);
+      if (op === 1 /* REPLACE */ && replacing) {
+        context.replaceChild(parent, childDomRef, replacing);
+      } else if (op === 2 /* INSERT_BEFORE */) {
+        context.insertBefore(parent, childDomRef, replacing);
+      }
+    }
   });
+  if (n.onMounted)
+    n.onMounted(drill(n));
 }
-function create(obj, parent, context) {
-  if (obj.type === 2 /* VText */) {
-    obj.domRef = context.createTextNode(obj.text);
-    context.appendChild(parent, obj.domRef);
+function create(n, parent, context) {
+  if (n.type === 2 /* VText */) {
+    n.domRef = context.createTextNode(n.text);
+    context.appendChild(parent, n.domRef);
   } else {
-    context.appendChild(parent, createElement(obj, context));
+    createElement(parent, 0 /* APPEND */, null, n, context);
   }
+}
+function insertBefore(parent, n, o, context) {
+  context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
+}
+function removeChild(parent, n, context) {
+  context.removeChild(parent, getDOMRef(n));
+}
+function swapDOMRef(oLast, oFirst, parent, context) {
+  context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
 }
 function syncChildren(os, ns, parent, context) {
   var oldFirstIndex = 0, newFirstIndex = 0, oldLastIndex = os.length - 1, newLastIndex = ns.length - 1, tmp, nFirst, nLast, oLast, oFirst, found, node;
@@ -296,13 +370,13 @@ function syncChildren(os, ns, parent, context) {
     oLast = os[oldLastIndex];
     if (oldFirstIndex > oldLastIndex) {
       diff(null, nFirst, parent, context);
-      context.insertBefore(parent, nFirst.domRef, oFirst ? oFirst.domRef : null);
+      insertBefore(parent, nFirst, oFirst, context);
       os.splice(newFirstIndex, 0, nFirst);
       newFirstIndex++;
     } else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        context.removeChild(parent, os[oldLastIndex--].domRef);
+        removeChild(parent, os[oldLastIndex--], context);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
@@ -311,16 +385,16 @@ function syncChildren(os, ns, parent, context) {
     } else if (oLast.key === nLast.key) {
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key && nFirst.key === oLast.key) {
-      context.swapDOMRefs(oLast.domRef, oFirst.domRef, parent);
+      swapDOMRef(oLast, oFirst, parent, context);
       swap(os, oldFirstIndex, oldLastIndex);
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key) {
-      context.insertBefore(parent, oFirst.domRef, context.nextSibling(oLast));
+      insertBefore(parent, oFirst, oLast.nextSibling, context);
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast.key === nFirst.key) {
-      context.insertBefore(parent, oLast.domRef, oFirst.domRef);
+      insertBefore(parent, oLast, oFirst, context);
       os.splice(oldFirstIndex, 0, os.splice(oldLastIndex, 1)[0]);
       diff(os[oldFirstIndex++], nFirst, parent, context);
       newFirstIndex++;
@@ -338,18 +412,10 @@ function syncChildren(os, ns, parent, context) {
       if (found) {
         os.splice(oldFirstIndex, 0, os.splice(tmp, 1)[0]);
         diff(os[oldFirstIndex++], nFirst, parent, context);
-        context.insertBefore(parent, node.domRef, os[oldFirstIndex].domRef);
+        insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
-        switch (nFirst.type) {
-          case 2 /* VText */:
-            nFirst.domRef = context.createTextNode(nFirst.text);
-            context.insertBefore(parent, nFirst.domRef, oFirst.domRef);
-            break;
-          default:
-            context.insertBefore(parent, createElement(nFirst, context), oFirst.domRef);
-            break;
-        }
+        createElement(parent, 2 /* INSERT_BEFORE */, getDOMRef(oFirst), nFirst, context);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
@@ -415,7 +481,19 @@ function delegateEvent(event, obj, stack, debug, context) {
     }
     return;
   } else if (stack.length > 1) {
-    if (obj.type === 0 /* VComp */ || obj.type === 1 /* VNode */) {
+    if (obj.type === 2 /* VText */) {
+      return;
+    } else if (obj.type === 0 /* VComp */) {
+      if (!obj.child) {
+        if (debug) {
+          console.error("VComp has no child property set during event delegation", obj);
+          console.error("This means the Component has not been fully mounted, this should never happen");
+          throw new Error("VComp has no .child property set during event delegation");
+        }
+        return;
+      }
+      return delegateEvent(event, obj.child, stack, debug, context);
+    } else if (obj.type === 1 /* VNode */) {
       if (context.isEqual(obj.domRef, stack[0])) {
         const eventObj = obj.events.captures[event.type];
         if (eventObj) {
@@ -432,15 +510,15 @@ function delegateEvent(event, obj, stack, debug, context) {
         stack.splice(0, 1);
       }
       for (const child of obj.children) {
-        if (child.type === 0 /* VComp */ || child.type === 1 /* VNode */) {
-          if (context.isEqual(child.domRef, stack[0])) {
-            delegateEvent(event, child, stack, debug, context);
-          }
-        }
+        delegateEvent(event, child, stack, debug, context);
       }
     }
   } else {
-    if (obj.type === 1 /* VNode */) {
+    if (obj.type === 0 /* VComp */) {
+      if (obj.child) {
+        delegateEvent(event, obj.child, stack, debug, context);
+      }
+    } else if (obj.type === 1 /* VNode */) {
       const eventCaptureObj = obj.events.captures[event.type];
       if (eventCaptureObj && !event["captureStopped"]) {
         const options = eventCaptureObj.options;
@@ -549,45 +627,16 @@ function collapseSiblingTextNodes(vs) {
   }
   return adjusted;
 }
-function preamble(mountPoint, context) {
-  var mountChildIdx = 0, node;
-  var root = context.getRoot();
-  if (!mountPoint) {
-    if (root.childNodes.length > 0) {
-      node = root.firstChild;
-    } else {
-      node = root.appendChild(context.createElement("div"));
-    }
-  } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(context.createElement("div"));
-  } else {
-    while (mountPoint.childNodes[mountChildIdx] && (mountPoint.childNodes[mountChildIdx].nodeType === 3 || mountPoint.childNodes[mountChildIdx].localName === "script")) {
-      mountChildIdx++;
-    }
-    if (!mountPoint.childNodes[mountChildIdx]) {
-      node = root.appendChild(context.createElement("div"));
-    } else {
-      node = mountPoint.childNodes[mountChildIdx];
-    }
-  }
-  return node;
-}
 function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
-  const node = preamble(mountPoint, drawingContext);
+  if (!vtree || !mountPoint)
+    return false;
+  let node = drawingContext.getRoot() === mountPoint ? mountPoint.firstChild : mountPoint;
   if (!walk(logLevel, vtree, node, context, drawingContext)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
     while (context.firstChild(node))
       drawingContext.removeChild(node, context.lastChild(node));
-    vtree.domRef = node;
-    switch (vtree.type) {
-      case 2 /* VText */:
-        break;
-      default:
-        diffAttrs(null, vtree, drawingContext);
-        break;
-    }
     return false;
   } else {
     if (logLevel) {
@@ -626,7 +675,7 @@ function check(result, vtree, context, drawingContext) {
       console.warn("VText node content differs", vtree);
       result = false;
     }
-  } else {
+  } else if (vtree.type === 1 /* VNode */) {
     if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
       console.warn("Integrity check failed, tags differ", vtree.tag.toUpperCase(), context.getTag(vtree.domRef));
       result = false;
@@ -678,16 +727,25 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
-      vtree.domRef = node;
-      callCreated(vtree, drawingContext);
+      if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
+        return false;
+      }
       break;
     case 2 /* VText */:
+      if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
       vtree.domRef = node;
       break;
     case 1 /* VNode */:
+      if (node.nodeType !== 1) {
+        diagnoseError(logLevel, vtree, node);
+        return false;
+      }
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
-      callCreated(vtree, drawingContext);
+      callCreated(node, vtree, drawingContext);
       for (var i = 0;i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
         const domChild = node.childNodes[i];
@@ -695,27 +753,11 @@ function walk(logLevel, vtree, node, context, drawingContext) {
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        switch (vdomChild.type) {
-          case 2 /* VText */:
-            if (domChild.nodeType !== 3) {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            if (vdomChild.text === domChild.textContent) {
-              vdomChild.domRef = context.children(node)[i];
-            } else {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            break;
-          default:
-            if (domChild.nodeType !== 1)
-              return false;
-            vdomChild.domRef = domChild;
-            walk(logLevel, vdomChild, domChild, context, drawingContext);
-            break;
+        if (!walk(logLevel, vdomChild, domChild, context, drawingContext)) {
+          return false;
         }
       }
+      break;
   }
   return true;
 }
@@ -789,20 +831,6 @@ function fetchCore(url, method, body, requestHeaders, successful, errorful, resp
   } catch (err) {
     errorful({ body: null, error: err.message, headers, status });
   }
-}
-function getParentComponentId(vcompNode) {
-  var climb = function(node) {
-    let parentComponentId = null;
-    while (node && node.parentNode) {
-      if ("componentId" in node.parentNode) {
-        parentComponentId = node.parentNode["componentId"];
-        break;
-      }
-      node = node.parentNode;
-    }
-    return parentComponentId;
-  };
-  return climb(vcompNode);
 }
 function websocketConnect(url, onOpen, onClose, onMessageText, onMessageJSON, onMessageBLOB, onMessageArrayBuffer, onError, textOnly) {
   try {
@@ -970,7 +998,15 @@ var componentContext = {
 };
 var drawingContext = {
   nextSibling: (node) => {
-    return node.domRef.nextSibling;
+    if (node.nextSibling) {
+      switch (node.nextSibling.type) {
+        case 0 /* VComp */:
+          return drill(node.nextSibling);
+        default:
+          return node.nextSibling.domRef;
+      }
+    }
+    return null;
   },
   createTextNode: (s) => {
     return document.createTextNode(s);
@@ -1001,10 +1037,10 @@ var drawingContext = {
   insertBefore: (parent, child, node) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs: (a, b, p) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+  swapDOMRefs: (oLast, oFirst, p) => {
+    const tmp = oLast.nextSibling;
+    p.insertBefore(oLast, oFirst);
+    p.insertBefore(oFirst, tmp);
     return;
   },
   setInlineStyle: (cCss, nCss, node) => {
@@ -1080,7 +1116,6 @@ globalThis["miso"] = {
   websocketSend,
   undelegate,
   populateClass,
-  getParentComponentId,
   integrityCheck,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];

@@ -120,14 +120,15 @@ import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
   :: (Eq parent, Eq model)
-  => Hydrate
+  => ComponentId
+  -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
   -> Component parent model action
   -> JSM DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> JSM (ComponentState model action)
-initialize hydrate isRoot Component {..} getComponentMountPoint = do
+initialize componentParentId hydrate isRoot Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -152,22 +153,25 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
 #ifdef BENCH
     start <- if isRoot then FFI.now else pure 0
 #endif
-    vtree <- buildVTree hydrate componentSink logLevel events (view initializedModel)
+    vtree <- buildVTree componentId hydrate componentSink logLevel events (view initializedModel)
 #ifdef BENCH
     end <- if isRoot then FFI.now else pure 0
     when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
 #endif
+    ref <- liftIO (newIORef vtree)
     case hydrate of
       Draw -> do
         Diff.diff Nothing (Just vtree) componentDOMRef
+        pure ref
       Hydrate -> do
-        Hydrate.hydrate logLevel componentDOMRef vtree
-    liftIO (newIORef vtree)
+        when isRoot $ do
+          hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
+          when (not hydrated) $ do
+            newTree <- buildVTree componentId Draw componentSink logLevel events (view initializedModel)
+            liftIO (atomicWriteIORef ref newTree)
+            Diff.diff Nothing (Just newTree) componentDOMRef
+        pure ref
   componentDOMRef <# ("componentId" :: MisoString) $ componentId
-  componentParentId <- do
-    FFI.getParentComponentId componentDOMRef >>= \case
-      Nothing -> pure rootComponentId
-      Just parentId -> pure parentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -185,7 +189,7 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree Draw componentSink logLevel events (view updatedModel)
+        newVTree <- buildVTree componentId Draw componentSink logLevel events (view updatedModel)
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
@@ -233,14 +237,14 @@ initialize hydrate isRoot Component {..} getComponentMountPoint = do
   let vcomp = ComponentState
         { componentNotify = notify
         , componentEvents = events
+        , componentParentId = componentParentId
         , ..
         }
 
   registerComponent vcomp
   if isRoot
     then
-      delegator componentDOMRef componentVTree
-        events (logLevel `elem` [DebugEvents, DebugAll])
+      delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     else
       addToDelegatedEvents logLevel events
   forM_ initialAction componentSink
@@ -820,33 +824,47 @@ killSubscribers componentId =
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
   :: Eq model
-  => Hydrate
+  => ComponentId
+  -> Hydrate
   -> Sink action
   -> LogLevel
   -> Events
   -> View model action
   -> JSM VTree
-buildVTree hydrate snk logLevel_ events_ = \case
-  VComp ns tag attrs (SomeComponent app) -> do
+buildVTree parentId hydrate snk logLevel_ events_ = \case
+  VComp attrs (SomeComponent app) -> do
+    vcomp <- create
+
     mountCallback <- do
-      FFI.syncCallback2 $ \vcomp continuation -> do
-        domRef <- vcomp ! ("domRef" :: MisoString)
-        ComponentState {..} <- initialize hydrate False app (pure domRef)
+      FFI.syncCallback2 $ \parent_ continuation -> do
+        ComponentState {..} <- initialize parentId Draw False app (pure parent_)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId <- toJSVal componentId
-        FFI.set "componentId" vcompId (Object domRef)
         void $ call continuation global [vcompId, vtree]
+
     unmountCallback <- toJSVal =<< do
-      FFI.syncCallback1 $ \domRef -> do
-        componentId <- liftJSM (FFI.getComponentId domRef)
+      FFI.syncCallback1 $ \vcompId -> do
+        componentId <- fromJSValUnchecked vcompId
         IM.lookup componentId <$> liftIO (readIORef components) >>= \case
           Nothing -> pure ()
           Just componentState ->
             unmount app componentState
-    vcomp <- createNode "vcomp" ns tag
+
+    case hydrate of
+      Hydrate -> do
+        -- Mock .domRef for use during hydration
+        domRef <- toJSVal =<< create
+        ComponentState {..} <- initialize parentId hydrate False app (pure domRef)
+        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        FFI.set "parent" vcomp (Object vtree)
+        vcompId <- toJSVal componentId
+        FFI.set "componentId" vcompId vcomp
+        FFI.set "child" vtree vcomp
+      Draw -> do
+        FFI.set "child" jsNull vcomp        
+      
     setAttrs vcomp attrs snk (logLevel app) (events app)
-    flip (FFI.set "children") vcomp =<< toJSVal ([] :: [MisoString])
     flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
     FFI.set "unmount" unmountCallback vcomp
     FFI.set "eventPropagation" (eventPropagation app) vcomp
@@ -858,11 +876,11 @@ buildVTree hydrate snk logLevel_ events_ = \case
     vchildren <- toJSVal =<< procreate vnode
     flip (FFI.set "children") vnode vchildren
     flip (FFI.set "type") vnode =<< toJSVal VNodeType
-    pure $ VTree vnode
+    pure (VTree vnode)
       where
         procreate parentVTree = do
           kidsViews <- forM kids $ \kid -> do
-            VTree child <- buildVTree hydrate snk logLevel_ events_ kid
+            VTree child <- buildVTree parentId hydrate snk logLevel_ events_ kid
             FFI.set "parent" parentVTree child
             pure child
           setNextSibling kidsViews
@@ -876,7 +894,7 @@ buildVTree hydrate snk logLevel_ events_ = \case
     forM_ key $ \k -> FFI.set "key" (ms k) vtree
     FFI.set "ns" ("text" :: JSString) vtree
     FFI.set "text" t vtree
-    pure $ VTree vtree
+    pure (VTree vtree)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)

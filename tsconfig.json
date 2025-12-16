@@ -6,6 +6,7 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "exclude": ["out-tsc/*"]
   }
 }

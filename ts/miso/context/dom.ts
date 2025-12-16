@@ -8,7 +8,10 @@ import
   , DOMRef
   , ComponentContext
   , VTree
+  , VTreeType
   } from '../types';
+
+import { drill } from '../dom'; 
 
 export const eventContext : EventContext<DOMRef> = {
   addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
@@ -39,9 +42,9 @@ export const hydrationContext : HydrationContext<DOMRef> = {
     return node.lastChild as DOMRef;
   },
   getAttribute: (node: DOMRef, key: string) => {
-      if (key === 'class') return node.className;
-      if (key in node) return node[key];
-      return node.getAttribute(key);
+    if (key === 'class') return node.className;
+    if (key in node) return node[key];
+    return node.getAttribute(key);
   },
   getTag: (node: DOMRef) => {
     return node.nodeName;
@@ -68,7 +71,15 @@ export const componentContext : ComponentContext = {
 
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
-    return node.domRef.nextSibling as DOMRef;
+    if (node.nextSibling) {
+      switch (node.nextSibling.type) {
+        case VTreeType.VComp:
+          return drill(node.nextSibling) as DOMRef;
+        default:
+          return node.nextSibling.domRef as DOMRef;
+      }
+    }
+    return null;
   },
   createTextNode : (s: string) => {
     return document.createTextNode(s) as any; // dmj: hrm
@@ -97,10 +108,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+  swapDOMRefs : (oLast: DOMRef, oFirst: DOMRef, p: DOMRef) => {
+    const tmp = oLast.nextSibling;
+    p.insertBefore(oLast, oFirst);
+    p.insertBefore(oFirst, tmp);
     return;
   },
   setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {

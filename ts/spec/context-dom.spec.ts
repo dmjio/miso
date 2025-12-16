@@ -1,7 +1,8 @@
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, hydrationContext, componentContext, drawingContext } from '../miso/context/dom';
 import { vnode, vcomp } from '../miso/smart';
-import { DOMRef } from '../miso/types';
+import { VNode, DOMRef } from '../miso/types';
+import { diff } from '../miso/dom';
 
 /* silence */
 beforeAll(() => {
@@ -167,46 +168,41 @@ describe('ComponentContext tests', () => {
 
   test('Should call modelHydration without errors', () => {
     expect(() => {
-      componentContext.modelHydration({});
+      componentContext.modelHydration(0, {});
     }).not.toThrow();
   });
 });
 
 describe('DrawingContext tests', () => {
   test('Should get next sibling for VNode', () => {
-    const parent = document.createElement('div');
-    const child1 = document.createElement('div');
-    const child2 = document.createElement('span');
-    parent.append(child1, child2);
-
     const node1 = vnode<DOMRef>({ tag: 'div' });
     const node2 = vnode<DOMRef>({ tag: 'span' });
-    node1.domRef = child1 as DOMRef;
-    node2.domRef = child2 as DOMRef;
     node1.nextSibling = node2;
-
-    const next = drawingContext.nextSibling(node1);
-    expect(next).toBe(child2 as DOMRef);
+    const p = vnode<DOMRef>({ tag: 'span', children: [ node1, node2] });
+    diff (null, p, document.body, drawingContext);
+    expect(drawingContext.nextSibling(node1)).toBe(node2.domRef);
   });
 
   test('Should get next sibling for VComp by drilling', () => {
-    const parent = document.createElement('div');
-    const child1 = document.createElement('span');
-    const child2 = document.createElement('div');
-    parent.append(child1, child2);
+    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+      const node1 = vnode<DOMRef>({ tag: 'div' });
+      diff (null, node1, p, drawingContext);
+      cb (0, node1);
+    }});
 
-    const node = vnode<DOMRef>({ tag: 'span' });
-    node.domRef = child1 as DOMRef;
+    const node1 = vnode<DOMRef>({ tag: 'div' });
+    comp.nextSibling = node1;
+    let p = vnode<DOMRef>({ tag: 'span', children: [ comp, node1 ] });
+    diff (null, p, document.body, drawingContext);
+    expect(drawingContext.nextSibling(comp)).toBe(node1.domRef);
 
-    const comp = vcomp<DOMRef>({ mount: () => {}, unmount: () => {} });
-    (comp as any).domRef = child2 as DOMRef;
-    node.nextSibling = comp;
-
-    const next = drawingContext.nextSibling(node);
-    expect(next).toBe(child2 as DOMRef);
+    node1.nextSibling = comp;
+    p = vnode<DOMRef>({ tag: 'span', children: [ node1, comp ] });
+    diff (null, p, document.body, drawingContext);
+    expect(drawingContext.nextSibling(node1)).toBe((comp.child as VNode<DOMRef>).domRef);
   });
 
-  test('Should return undefined when no next sibling', () => {
+   test('Should return undefined when no next sibling', () => {
     const parent = document.createElement('div');
     const only = document.createElement('div');
     parent.appendChild(only);
@@ -216,6 +212,26 @@ describe('DrawingContext tests', () => {
 
     const next = drawingContext.nextSibling(node);
     expect(next).toBeNull();
+   });
+
+  test('Should return undefined when no next sibling', () => {
+    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+      const node1 = vnode<DOMRef>({ tag: 'div' });
+      diff (null, node1, p, drawingContext);
+      cb (0, node1);
+    }});
+
+    const node1 = vnode<DOMRef>({ tag: 'div' });
+    // comp.nextSibling = node1; -- dmj: intentional
+    let p = vnode<DOMRef>({ tag: 'span', children: [ comp, node1 ] });
+    diff (null, p, document.body, drawingContext);
+
+    expect(drawingContext.nextSibling(comp)).toBe(null);
+
+    p = vnode<DOMRef>({ tag: 'span', children: [ node1, comp ] });
+    diff (null, p, document.body, drawingContext);
+
+    expect(drawingContext.nextSibling(comp)).toBe(null);
   });
 
   test('Should create text node', () => {
@@ -308,18 +324,15 @@ describe('DrawingContext tests', () => {
     const parent = document.createElement('div');
     const a = document.createElement('span');
     const b = document.createElement('p');
-    const c = document.createElement('div');
     parent.appendChild(a);
     parent.appendChild(b);
-    parent.appendChild(c);
 
     // Just verify the function executes without error
-    expect(() => {
-      drawingContext.swapDOMRefs(a as DOMRef, b as DOMRef, parent as DOMRef);
-    }).not.toThrow();
+    drawingContext.swapDOMRefs(b, a as DOMRef, parent as DOMRef);
 
     // Verify all children are still in parent
-    expect(parent.children.length).toBe(3);
+    expect((parent.childNodes[0] as HTMLElement).tagName).toBe('P');
+    expect((parent.childNodes[1] as HTMLElement).tagName).toBe('SPAN');
   });
 
   test('Should set inline style - remove style when not in new CSS', () => {

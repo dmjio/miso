@@ -28,6 +28,8 @@ module Miso
   , startComponent
   , component
   , (+>)
+  , mount
+  , mount_
     -- ** Sink
   , withSink
   , Sink
@@ -132,7 +134,7 @@ miso :: Eq model => (URI -> App model action) -> JSM ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
   body <- FFI.getBody
-  initialize Hydrate isRoot vcomp (pure body)
+  initialize rootComponentId Hydrate isRoot vcomp (pure body)
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
 --
@@ -181,8 +183,8 @@ initComponent
   => Component parent model action
   -> JSM (ComponentState model action)
 initComponent vcomp@Component {..} = do
-  mount <- mountElement (getMountPoint mountPoint)
-  initialize Draw isRoot vcomp (pure mount)
+  root <- mountElement (getMountPoint mountPoint)
+  initialize rootComponentId Draw isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True

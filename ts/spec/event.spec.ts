@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
 import { delegate, undelegate } from '../miso/event';
-import { DOMRef, EventCapture } from '../miso/types';
+import { DOMRef, EventCapture, VNode } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, drawingContext } from '../miso/context/dom';
@@ -99,10 +99,9 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+      mount : function (p, f) {
+        diff(null, child, p, drawingContext);
         return f(0, child);
       }
     });
@@ -113,11 +112,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
+      mount : function (p, f) {
+        diff(null, parent, p, drawingContext);
+        return f(1, parent);
       }
     });
 
@@ -169,10 +166,9 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: false,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
+      mount : function (p, f) {
+        diff(null, child, p, drawingContext);
         return f(0, child);
       }
     });
@@ -183,11 +179,9 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
+      mount : function (p, f) {
+        diff(null, parent, p, drawingContext);
+        return f(1, parent);
       }
     });
 
@@ -239,11 +233,10 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
-        return f(0, child);
+      mount : function (p: DOMRef, f) {
+        diff(null, child, p, drawingContext);
+        return f(0, child as VNode<DOMRef>);
       }
     });
 
@@ -253,17 +246,15 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
+      mount : function (p: DOMRef, f) {
+        diff(null, parent, p, drawingContext);
+        return f(1, parent as VNode<DOMRef>);
       }
     });
 
     /* create hierarchy */
     child.parent = childVComp;
-    childVComp.parent = parent;
+    childVComp.parent = parent as VNode<DOMRef>;
     parent.parent = parentVComp;
 
     /* initial page draw */
@@ -462,6 +453,84 @@ describe ('Event tests', () => {
 
     /* check results */
     expect(counts).toEqual([1,1,2]);
+
+    /* unmount delegation */
+    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should delegate events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
+    var body = document.body;
+    var count = 0;
+    var events = {
+      captures: {},
+      bubbles: {
+        click: {
+          runEvent: (e: Event, o: Node) => {
+            count++;
+          },
+          options: {
+            preventDefault: true,
+            stopPropagation: false,
+          },
+        }
+      }
+    };
+
+    // Innermost vnode with button that has click event
+    var innerNode = vnode({
+      tag: 'div',
+      children: [vnode({ tag: 'button', events })],
+      events
+    });
+
+    // Middle vcomp wrapping the vnode
+    var middleVComp = vcomp({
+      eventPropagation: true,
+      mount: function (p, f) {
+        diff(null, innerNode, p, drawingContext);
+        return f(1, innerNode);
+      }
+    });
+
+    // Outer vcomp wrapping the middle vcomp
+    var outerVComp = vcomp({
+      eventPropagation: true,
+      mount: function (p, f) {
+        diff(null, middleVComp, p, drawingContext);
+        return f(0, middleVComp);
+      }
+    });
+
+    // Set up parent hierarchy
+    const buttonNode = innerNode.children[0] as VNode<DOMRef>;
+    (buttonNode as any).parent = innerNode;
+    (innerNode as any).parent = middleVComp;
+    (middleVComp as any).parent = outerVComp;
+
+    /* initial page draw */
+    diff(null, outerVComp, document.body, drawingContext);
+
+    /* verify DOM structure is correct - recursively mounted components create the inner div */
+    expect(document.body.childNodes.length).toBeGreaterThanOrEqual(1);
+    const divElement = Array.from(document.body.childNodes).find(
+      node => (node as Element).tagName === 'DIV'
+    ) as Element;
+    expect(divElement).toBeDefined();
+    expect(divElement.tagName).toBe('DIV');
+
+    /* setup event delegation */
+    var getVTree = (cb: any) => {
+      cb(outerVComp);
+    };
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    /* initiate click event on the button inside nested components */
+    const button = buttonNode.domRef as HTMLElement;
+    button.click();
+
+    /* check results - event should propagate through the component hierarchy */
+    expect(count).toEqual(2);
 
     /* unmount delegation */
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);

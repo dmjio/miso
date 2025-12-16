@@ -62,6 +62,8 @@ module Miso.Types
   , (<---)
   -- ** Component mounting
   , (+>)
+  , mount
+  , mount_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -83,13 +85,13 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON)
+import           Data.Aeson (Value, ToJSON(..))
 import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM)
+import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM, MakeObject)
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
@@ -264,7 +266,7 @@ data LogLevel
 data View model action
   = VNode NS MisoString [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
-  | VComp NS MisoString [Attribute action] (SomeComponent model)
+  | VComp [Attribute action] (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -277,26 +279,51 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   div_ [ key_ "component-id" ] +> component model noop $ \\m ->
+--   "component-id" +> component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
 (+>)
   :: forall child model action a . Eq child
-  => ([View model a] -> View model a)
+  => MisoString
   -> Component model child action
   -> View model a
 infixr 0 +>
-(+>) mkNode vcomp =
-  case mkNode [] of
-    VNode ns tag attrs _ ->
-      VComp ns tag attrs
-        (SomeComponent vcomp)
-    VComp ns tag attrs vcomp_ ->
-      VComp ns tag attrs vcomp_
-    _ ->
-      error "Impossible: cannot mount on a Text node"
+key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator. Takes '[Attribute a]' as arguments.
+--
+-- @
+--   mount_ [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mount_
+  :: Eq m
+  => [Attribute action]
+  -> Component p m a
+  -> View p action
+mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
+-----------------------------------------------------------------------------
+-- | t'Miso.Types.Component' mounting combinator.
+--
+-- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
+-- against each other. Otherwise, you will need a key to distinguish between
+-- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
+--
+-- @
+--   mount $ component model noop $ \\m ->
+--     div_ [ id_ "foo" ] [ text (ms m) ]
+-- @
+--
+-- @since 1.9.0.0
+mount
+  :: Eq m
+  => Component p m a
+  -> View p action
+mount = mount_ []
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data NS
@@ -381,6 +408,7 @@ instance IsString (View model action) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see t'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
+  deriving (MakeObject)
 -----------------------------------------------------------------------------
 instance ToJSVal VTree where
   toJSVal (VTree (Object vtree)) = pure vtree

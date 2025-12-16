@@ -85,31 +85,6 @@ export function fetchCore (
   }
 }
 
-/*
-   'getParentComponentId'
-   dmj: Used to fetch the parent's componentId
-
-   Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
-   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
-
-*/
-export function getParentComponentId (
-  vcompNode: ParentNode
-): number {
-    var climb = function (node : ParentNode) {
-      let parentComponentId = null;
-      while (node && node.parentNode) {
-          if ('componentId' in node.parentNode) {
-              parentComponentId = node.parentNode['componentId'];
-              break;
-          }
-          node = node.parentNode;
-      }
-      return parentComponentId;
-    }
-    return climb (vcompNode);
-}
-
 export function websocketConnect (
     url: string,
     onOpen,
