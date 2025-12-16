@@ -65,18 +65,9 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
           callBeforeDestroyedRecursive(c);
           break;
   }
-  switch (n.type) {
-      case VTreeType.VText:
-          n.domRef = context.createTextNode(n.text);
-          context.replaceChild(parent, n.domRef, getDOMRef(c));
-          break;
-      case VTreeType.VComp:
-          createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
-          break;
-      case VTreeType.VNode:
-          createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
-          break;    
-  }
+
+  createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
+
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
       case VTreeType.VText:
@@ -388,12 +379,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
 
 // Creates nodes on virtual dom (vtext, vcomp, vnode)
 function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
-  if (n.type === VTreeType.VText) {
-    n.domRef = context.createTextNode(n.text);
-    context.appendChild(parent, n.domRef);
-  } else {
-    createElement(parent, OP.APPEND, null, n, context);
-  }
+  createElement(parent, OP.APPEND, null, n, context);
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
