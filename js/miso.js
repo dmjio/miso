@@ -56,18 +56,7 @@ function replace(c, n, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  switch (n.type) {
-    case 2 /* VText */:
-      n.domRef = context.createTextNode(n.text);
-      context.replaceChild(parent, n.domRef, getDOMRef(c));
-      break;
-    case 0 /* VComp */:
-      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
-      break;
-    case 1 /* VNode */:
-      createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
-      break;
-  }
+  createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -342,12 +331,7 @@ function mountComponent(parent, op, replacing, n, context) {
     n.onMounted(drill(n));
 }
 function create(n, parent, context) {
-  if (n.type === 2 /* VText */) {
-    n.domRef = context.createTextNode(n.text);
-    context.appendChild(parent, n.domRef);
-  } else {
-    createElement(parent, 0 /* APPEND */, null, n, context);
-  }
+  createElement(parent, 0 /* APPEND */, null, n, context);
 }
 function insertBefore(parent, n, o, context) {
   context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
