@@ -508,10 +508,11 @@ function delegateEvent(event, obj, stack, debug, context) {
           }
         }
         stack.splice(0, 1);
+        for (const child of obj.children) {
+          delegateEvent(event, child, stack, debug, context);
+        }
       }
-      for (const child of obj.children) {
-        delegateEvent(event, child, stack, debug, context);
-      }
+      return;
     }
   } else {
     if (obj.type === 0 /* VComp */) {
