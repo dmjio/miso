@@ -95,7 +95,6 @@ import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM,
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
-import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
 import qualified Miso.String as MS
@@ -159,6 +158,8 @@ data Component parent model action
   --
   -- @since 1.9.0.0
   }
+-----------------------------------------------------------------------------
+type Mail = Value
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
 type MountPoint = MisoString

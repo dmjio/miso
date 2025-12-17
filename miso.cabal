@@ -198,5 +198,4 @@ library
     containers    < 0.9,
     jsaddle       < 0.10,
     mtl           < 2.4,
-    text          < 2.2,
-    stm >= 2.4 && < 2.6
+    text          < 2.2
