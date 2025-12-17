@@ -83,9 +83,9 @@ mkComponentInfo = ComponentInfo
 -- @parent@ function, and using 'Miso.Property.prop'.
 data ComponentInfo parent
   = ComponentInfo
-  { _componentId :: ComponentId
-  , _componentParentId :: ComponentId
-  , _componentDOMRef :: DOMRef
+  { _componentInfoId :: ComponentId
+  , _componentInfoParentId :: ComponentId
+  , _componentInfoDOMRef :: DOMRef
   }
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
