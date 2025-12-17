@@ -493,7 +493,9 @@ function delegateEvent(event, obj, stack, debug, context) {
         }
         stack.splice(0, 1);
         for (const child of obj.children) {
-          delegateEvent(event, child, stack, debug, context);
+          if (context.isEqual(getDOMRef(child), stack[0])) {
+            delegateEvent(event, child, stack, debug, context);
+          }
         }
       }
       return;
