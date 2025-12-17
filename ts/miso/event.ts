@@ -1,4 +1,5 @@
 import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
+import { getDOMRef } from './dom';
 
 /* event delegation algorithm */
 export function delegate<T> (
@@ -124,10 +125,13 @@ function delegateEvent <T>(
             }
           }
           stack.splice(0,1);
+          for (const child of obj.children) {
+            if (context.isEqual(getDOMRef(child), stack[0])) {
+              delegateEvent(event, child, stack, debug, context);
+            }
+          }
         }
-        for (const child of obj.children) {
-          delegateEvent(event, child, stack, debug, context);
-        }
+        return;
       }
     } else {
     /* stack.length === 1, we're at the target */

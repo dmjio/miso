@@ -45,7 +45,7 @@ export function drill<T>(c: VComp<T>): T {
 }
 
 // Extract DOM reference from any VTree (handles VComp drilling)
-function getDOMRef<T>(tree: VTree<T>): T {
+export function getDOMRef<T>(tree: VTree<T>): T {
   switch (tree.type) {
     case VTreeType.VComp:
       return drill(tree);
