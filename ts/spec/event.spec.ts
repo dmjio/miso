@@ -75,6 +75,52 @@ describe ('Event tests', () => {
     undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
+  test('Should warn when clicking mount with no target handler (empty stack)', () => {
+    const body = document.body;
+    const parent = vnode({ tag: 'div', children: [vnode({ tag: 'span' })], events: { captures: {}, bubbles: {} } });
+    (parent.children[0] as any).parent = parent;
+    diff(null, parent, body, drawingContext);
+
+    const getVTree = (cb: any) => cb(parent);
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    // Click on the mount itself to produce an empty stack in delegateEvent
+    (body as HTMLElement).click();
+
+    undelegate(body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should propagate to parent when target has no bubble handler', () => {
+    const body = document.body;
+    let count = 0;
+    const childEvents = { captures: {}, bubbles: {} };
+    const parentEvents = {
+      captures: {},
+      bubbles: {
+        click: {
+          runEvent: () => { count++; },
+          options: { preventDefault: false, stopPropagation: false }
+        }
+      }
+    };
+
+    const child = vnode({ tag: 'button', events: childEvents });
+    const parent = vnode({ children: [child], events: parentEvents });
+    (child as any).parent = parent;
+    diff(null, parent, body, drawingContext);
+
+    const getVTree = (cb: any) => cb(parent);
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegate(body, delegatedEvents, getVTree, true, eventContext);
+
+    (child.domRef as HTMLElement).click();
+
+    expect(count).toBe(1);
+
+    undelegate(body, delegatedEvents, getVTree, true, eventContext);
+  });
+
 
   test('Should propagate an event between components', () => {
     var body = document.body;
