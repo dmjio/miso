@@ -193,6 +193,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
+        FFI.updateRef oldVTree newVTree
         liftIO $ do
           atomicWriteIORef componentVTree newVTree
           mounted <- IM.size <$> readIORef components

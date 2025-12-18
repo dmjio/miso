@@ -926,6 +926,9 @@ function populateClass(vnode, classes) {
     }
   }
 }
+function updateRef(current, latest) {
+  current.parent.child = latest;
+}
 
 // ts/miso/context/dom.ts
 var eventContext = {
@@ -1102,6 +1105,7 @@ globalThis["miso"] = {
   websocketClose,
   websocketSend,
   undelegate,
+  updateRef,
   populateClass,
   integrityCheck,
   setDrawingContext: function(name) {
