@@ -835,6 +835,11 @@ buildVTree
 buildVTree parentId hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
+    IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+      Nothing -> pure ()
+      Just ComponentState {..} -> do
+        tree <- toJSVal =<< liftIO (readIORef componentVTree)
+        FFI.set "parent" tree vcomp
 
     mountCallback <- do
       FFI.syncCallback2 $ \parent_ continuation -> do
