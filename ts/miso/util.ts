@@ -221,5 +221,7 @@ export function populateClass<T> (
 }
 
 export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
-  current.parent.child = latest;
+  if (current.parent) {
+     current.parent.child = latest;
+  }
 }

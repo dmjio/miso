@@ -927,7 +927,9 @@ function populateClass(vnode, classes) {
   }
 }
 function updateRef(current, latest) {
-  current.parent.child = latest;
+  if (current.parent) {
+    current.parent.child = latest;
+  }
 }
 
 // ts/miso/context/dom.ts
