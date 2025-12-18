@@ -11,12 +11,14 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     else if (c.type === VTreeType.VComp && n.type === VTreeType.VComp) {
         if (n.key === c.key) {
           n.child = c.child;
+          n.parent = c.parent;
           return;
         }
         replace(c, n, parent, context);
     }
     else if (c.type === VTreeType.VNode && n.type === VTreeType.VNode) {
         if (n.tag === c.tag && n.key === c.key) {
+          n.parent = c.parent;
           n.domRef = c.domRef;
           diffAttrs(c, n, context);
         } else {
@@ -30,6 +32,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
 function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): void {
   if (c.text !== n.text) context.setTextContent(c.domRef, n.text);
   n.domRef = c.domRef;
+  n.parent = c.parent;
   return;
 }
 
@@ -76,6 +79,8 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
           callDestroyedRecursive(c);
           break;
   }
+
+  n.parent = c.parent;
 }
 
 // destroy vtext, vnode, vcomp

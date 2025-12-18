@@ -11,11 +11,13 @@ function diff(c, n, parent, context) {
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
     if (n.key === c.key) {
       n.child = c.child;
+      n.parent = c.parent;
       return;
     }
     replace(c, n, parent, context);
   } else if (c.type === 1 /* VNode */ && n.type === 1 /* VNode */) {
     if (n.tag === c.tag && n.key === c.key) {
+      n.parent = c.parent;
       n.domRef = c.domRef;
       diffAttrs(c, n, context);
     } else {
@@ -28,6 +30,7 @@ function diffVText(c, n, context) {
   if (c.text !== n.text)
     context.setTextContent(c.domRef, n.text);
   n.domRef = c.domRef;
+  n.parent = c.parent;
   return;
 }
 function drill(c) {
@@ -64,6 +67,7 @@ function replace(c, n, parent, context) {
       callDestroyedRecursive(c);
       break;
   }
+  n.parent = c.parent;
 }
 function destroy(c, parent, context) {
   switch (c.type) {
@@ -927,9 +931,11 @@ function populateClass(vnode, classes) {
   }
 }
 function updateRef(current, latest) {
-  if (current.parent) {
-    current.parent.child = latest;
+  if (!current.parent) {
+    current = latest;
+    return;
   }
+  current.parent.child = latest;
 }
 
 // ts/miso/context/dom.ts
