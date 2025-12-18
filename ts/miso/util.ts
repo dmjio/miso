@@ -1,4 +1,4 @@
-import { VNode, Response } from './types';
+import { VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -218,4 +218,11 @@ export function populateClass<T> (
            if (c) vnode.classList.add(c);
         }
     }
+}
+
+export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
+  if (!(current.parent)) {
+     return; // at root, do nothing
+  }
+  current.parent.child = latest;
 }
