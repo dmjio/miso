@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
@@ -153,7 +154,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
 #ifdef BENCH
     start <- if isRoot then FFI.now else pure 0
 #endif
-    vtree <- buildVTree componentId hydrate componentSink logLevel events (view initializedModel)
+    vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
 #ifdef BENCH
     end <- if isRoot then FFI.now else pure 0
     when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -167,7 +168,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
         when isRoot $ do
           hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
           when (not hydrated) $ do
-            newTree <- buildVTree componentId Draw componentSink logLevel events (view initializedModel)
+            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
             liftIO (atomicWriteIORef ref newTree)
             Diff.diff Nothing (Just newTree) componentDOMRef
         pure ref
@@ -189,7 +190,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree componentId Draw componentSink logLevel events (view updatedModel)
+        newVTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view updatedModel)
         oldVTree <- liftIO (readIORef componentVTree)
         void waitForAnimationFrame
         Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
@@ -826,33 +827,34 @@ killSubscribers componentId =
 buildVTree
   :: Eq model
   => ComponentId
+  -> ComponentId
   -> Hydrate
   -> Sink action
   -> LogLevel
   -> Events
   -> View model action
   -> JSM VTree
-buildVTree parentId hydrate snk logLevel_ events_ = \case
+buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
     IM.lookup parentId <$> liftIO (readIORef components) >>= \case
       Nothing -> pure ()
-      Just ComponentState {..} -> do
+      Just ComponentState { componentVTree } -> do
         tree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" tree vcomp
 
     mountCallback <- do
       FFI.syncCallback2 $ \parent_ continuation -> do
-        ComponentState {..} <- initialize parentId Draw False app (pure parent_)
+        ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
-        vcompId <- toJSVal componentId
-        void $ call continuation global [vcompId, vtree]
+        vcompId_ <- toJSVal componentId
+        void $ call continuation global [vcompId_, vtree]
 
     unmountCallback <- toJSVal =<< do
-      FFI.syncCallback1 $ \vcompId -> do
-        componentId <- fromJSValUnchecked vcompId
-        IM.lookup componentId <$> liftIO (readIORef components) >>= \case
+      FFI.syncCallback1 $ \vcompId_ -> do
+        componentId_ <- fromJSValUnchecked vcompId_
+        IM.lookup componentId_ <$> liftIO (readIORef components) >>= \case
           Nothing -> pure ()
           Just componentState ->
             unmount app componentState
@@ -861,11 +863,11 @@ buildVTree parentId hydrate snk logLevel_ events_ = \case
       Hydrate -> do
         -- Mock .domRef for use during hydration
         domRef <- toJSVal =<< create
-        ComponentState {..} <- initialize parentId hydrate False app (pure domRef)
+        ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
-        vcompId <- toJSVal componentId
-        FFI.set "componentId" vcompId vcomp
+        vcompId_ <- toJSVal componentId
+        FFI.set "componentId" vcompId_ vcomp
         FFI.set "child" vtree vcomp
       Draw -> do
         FFI.set "child" jsNull vcomp        
@@ -886,7 +888,7 @@ buildVTree parentId hydrate snk logLevel_ events_ = \case
       where
         procreate parentVTree = do
           kidsViews <- forM kids $ \kid -> do
-            VTree child <- buildVTree parentId hydrate snk logLevel_ events_ kid
+            VTree child <- buildVTree parentId vcompId hydrate snk logLevel_ events_ kid
             FFI.set "parent" parentVTree child
             pure child
           setNextSibling kidsViews
