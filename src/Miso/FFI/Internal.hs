@@ -395,9 +395,7 @@ eventJSON x y = do
 updateRef
     :: ToJSVal val
     => val
-    -- ^ Node
     -> val
-    -- ^ clas
     -> JSM ()
 updateRef jsval1 jsval2 = do
   moduleMiso <- jsg "miso"
