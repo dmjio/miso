@@ -360,6 +360,28 @@ commit vcompId events = do
           evalScheduled Sync (action _componentSink)
       dirty <- _componentModelDirty _componentModel updated
       modifyComponent _componentId (isDirty .= dirty)
+      when dirty undefined
+-----------------------------------------------------------------------------
+-- | Propagate bindings out to all the other Component.
+crawl :: ComponentId -> IO ()
+crawl compId = evalStateT go [compId]
+  where
+    go :: StateT [ComponentId] IO ()
+    go = get >>= \case
+      [] -> pure ()
+      compId : xs -> do
+        ComponentState {..} <- (IM.! compId) <$> liftIO (readIORef components)
+        pure ()
+-----------------------------------------------------------------------------        
+pop :: StateT [s] IO (Maybe s)
+pop = get >>= \case
+  [] -> pure Nothing
+  (x:xs) -> do
+    put xs
+    pure (Just x)
+-----------------------------------------------------------------------------
+push :: s -> StateT [s] IO ()
+push s = modify (s:)
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
 -- communication between t'Miso.Types.Component'. t'Miso.Types.Component' can 'subscribe' to or 'publish' to any @Topic@,
