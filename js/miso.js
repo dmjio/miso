@@ -931,6 +931,9 @@ function populateClass(vnode, classes) {
   }
 }
 function updateRef(current, latest) {
+  if (!current.parent) {
+    return;
+  }
   current.parent.child = latest;
 }
 
