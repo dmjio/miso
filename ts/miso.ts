@@ -15,6 +15,7 @@ import {
    eventSourceConnect,
    eventSourceClose,
    populateClass,
+   updateRef,
 } from './miso/util';
 
 import {
@@ -58,6 +59,7 @@ export {
   eventSourceClose,
   patch,
   populateClass,
+  updateRef,
 
   /* Types */
   VTree,

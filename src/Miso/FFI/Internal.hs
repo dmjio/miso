@@ -148,6 +148,7 @@ module Miso.FFI.Internal
    , Event (..)
    -- * Class
    , populateClass
+   , updateRef
    ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -389,6 +390,16 @@ eventJSON
 eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
+-----------------------------------------------------------------------------
+-- | Used to update the JavaScript reference post-diff.
+updateRef
+    :: ToJSVal val
+    => val
+    -> val
+    -> JSM ()
+updateRef jsval1 jsval2 = do
+  moduleMiso <- jsg "miso"
+  void $ moduleMiso # "updateRef" $ (jsval1, jsval2)
 -----------------------------------------------------------------------------
 -- | Populate the 'Miso.Html.Property.classList' Set on the virtual DOM.
 populateClass
