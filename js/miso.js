@@ -615,15 +615,16 @@ function collapseSiblingTextNodes(vs) {
   return adjusted;
 }
 function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
+  if (mountPoint && mountPoint.nodeType === 3)
+    return false;
   if (!vtree || !mountPoint)
     return false;
-  let node = drawingContext.getRoot() === mountPoint ? mountPoint.firstChild : mountPoint;
-  if (!walk(logLevel, vtree, node, context, drawingContext)) {
+  if (!walk(logLevel, vtree, mountPoint.firstChild, context, drawingContext)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }
-    while (context.firstChild(node))
-      drawingContext.removeChild(node, context.lastChild(node));
+    while (context.firstChild(mountPoint))
+      drawingContext.removeChild(mountPoint, context.lastChild(mountPoint));
     return false;
   } else {
     if (logLevel) {
