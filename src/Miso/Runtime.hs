@@ -172,7 +172,6 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
             liftIO (atomicWriteIORef ref newTree)
             Diff.diff Nothing (Just newTree) componentDOMRef
         pure ref
-  componentDOMRef <# ("componentId" :: MisoString) $ componentId
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
