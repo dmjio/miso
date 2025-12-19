@@ -46,9 +46,13 @@ module Miso.Effect
   , beforeAll
   , afterAll
   , modifyAllJSM
-  -- * Internal
+  -- *** Lens
+  , componentDOMRef
+  , componentParentId
+  , componentId
+  -- *** Internal
   , runEffect
-  -- * Deprecated
+  -- *** Deprecated
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
@@ -66,6 +70,8 @@ import           Language.Javascript.JSaddle (JSVal, JSM)
 import qualified Control.Monad.Fail as Fail
 import           Data.Functor.Identity (Identity(..))
 #endif
+-----------------------------------------------------------------------------
+import           Miso.Lens
 -----------------------------------------------------------------------------
 -- | Smart constructor for t'ComponentInfo'
 mkComponentInfo
@@ -87,6 +93,46 @@ data ComponentInfo parent
   , _componentParentId :: ComponentId
   , _componentDOMRef :: DOMRef
   }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the t'ComponentId' from t'ComponentInfo'.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       compId <- view componentId
+--       someAction compId
+-- @
+--
+-- @since 1.9.0.0
+componentId :: Lens (ComponentInfo parent) ComponentId
+componentId = lens _componentId $ \r x -> r { _componentId = x }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the parents's  t'ComponentId' from t'ComponentInfo'.
+--
+-- @
+--
+-- update = \case
+--   SomeAction -> do
+--     compParentId <- view componentParentId
+--     someAction compParentId
+-- @
+--
+-- @since 1.9.0.0
+componentParentId :: Lens (ComponentInfo parent) ComponentId
+componentParentId = lens _componentParentId $ \r x -> r { _componentParentId = x }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the underlying 'Component' t'DOMRef'.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       domRef <- view componentDOMRef
+--       someAction domRef
+-- @
+--
+-- @since 1.9.0.0
+componentDOMRef :: Lens (ComponentInfo parent) DOMRef
+componentDOMRef = lens _componentDOMRef $ \r x -> r { _componentDOMRef = x }
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
 type ComponentId = Int
