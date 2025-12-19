@@ -615,11 +615,11 @@ function collapseSiblingTextNodes(vs) {
   return adjusted;
 }
 function hydrate(logLevel, mountPoint, vtree, context, drawingContext) {
-  if (mountPoint && mountPoint.nodeType === 3)
-    return false;
   if (!vtree || !mountPoint)
     return false;
-  if (!walk(logLevel, vtree, mountPoint.firstChild, context, drawingContext)) {
+  if (mountPoint.nodeType === 3)
+    return false;
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext)) {
     if (logLevel) {
       console.warn("[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff");
     }

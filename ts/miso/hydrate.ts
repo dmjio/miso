@@ -17,12 +17,13 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
 export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
 
   /* hydration mountPoint must be the root */
-  if (mountPoint && mountPoint.nodeType === 3) return false;
-
   if (!vtree || !mountPoint) return false;
 
+  /* Don't hydrate on text mountPoint */
+  if (mountPoint.nodeType === 3) return false;
+
   // begin walking the DOM, report the result
-  if (!walk(logLevel, vtree, mountPoint.firstChild, context, drawingContext)) {
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext)) {
     // If we failed to prerender because the structures were different, fallback to drawing
       if (logLevel) {
         console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
