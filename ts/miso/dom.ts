@@ -347,7 +347,7 @@ function drawCanvas<T> (c: VNode<T>) {
 
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
-  if (c.onUnmounted) c.onUnmounted((drill(c)));
+  if (c.onUnmounted) c.onUnmounted();
   c.unmount(c.componentId);
 }
 
@@ -374,7 +374,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
     }
   });
 
-  if (n.onMounted) n.onMounted(drill(n));
+  if (n.onMounted) n.onMounted();
 }
 
 // Creates nodes on virtual dom (vtext, vcomp, vnode)

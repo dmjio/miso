@@ -34,9 +34,9 @@ export type VComp<T> = {
   nextSibling: VTree<T>;
   eventPropagation: boolean;
   onBeforeMounted: () => void;
-  onMounted: (domRef: T) => void;
+  onMounted: () => void;
   onBeforeUnmounted: () => void;
-  onUnmounted: (domRef: T) => void;
+  onUnmounted: () => void;
   mount: (parent: T, callback: ((componentId : ComponentId, component: VTree<T>) => void)) => void;
   unmount: (componentId: ComponentId) => void;
 };
