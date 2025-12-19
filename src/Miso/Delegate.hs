@@ -18,8 +18,6 @@ module Miso.Delegate
   , undelegator
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad.IO.Class (liftIO)
-import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
 import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
 import           Miso.Types (VTree(..), Events, Phase)
@@ -46,26 +44,26 @@ instance ToJSVal Event where
 -- | Entry point for event delegation
 delegator
   :: JSVal
-  -> IORef VTree
+  -> VTree
   -> Events
   -> Bool
   -> JSM ()
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
   FFI.delegateEvent mountPointElement evts debug $ do
-    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
+    VTree (Object vtree) <- pure vtreeRef
     pure vtree
 -----------------------------------------------------------------------------
 -- | Entry point for deinitalizing event delegation
 undelegator
   :: JSVal
-  -> IORef VTree
+  -> VTree
   -> M.Map MisoString Bool
   -> Bool
   -> JSM ()
 undelegator mountPointElement vtreeRef es debug = do
   events <- toJSVal (M.toList es)
   FFI.undelegateEvent mountPointElement events debug $ do
-    VTree (Object vtree) <- liftIO (readIORef vtreeRef)
+    VTree (Object vtree) <- pure vtreeRef
     pure vtree
 -----------------------------------------------------------------------------
