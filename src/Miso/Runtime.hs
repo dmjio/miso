@@ -816,6 +816,15 @@ killSubscribers componentId =
   mapM_ (flip unsubscribe_ componentId) =<<
     M.keys <$> liftIO (readIORef mailboxes)
 -----------------------------------------------------------------------------
+setParentRef :: Object -> IM.Key -> JSM ()
+setParentRef vtree parentId = do
+  IM.lookup parentId <$> liftIO (readIORef components) >>= \case
+    Nothing ->
+      pure ()
+    Just ComponentState { componentVTree } ->
+      flip (FFI.set "parent") vtree =<<
+        liftIO (readIORef componentVTree)
+-----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
 -- Component mounting should be synchronous.
@@ -836,7 +845,7 @@ buildVTree
 buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
-
+    setParentRef vcomp parentId
     mountCallback <- do
       FFI.syncCallback2 $ \parent_ continuation -> do
         ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
@@ -859,7 +868,6 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         domRef <- toJSVal =<< create
         ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-        FFI.set "parent" vcomp (Object vtree)
         vcompId_ <- toJSVal componentId
         FFI.set "componentId" vcompId_ vcomp
         FFI.set "child" vtree vcomp
@@ -874,6 +882,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     pure (VTree vcomp)
   VNode ns tag attrs kids -> do
     vnode <- createNode "vnode" ns tag
+    setParentRef vnode parentId
     setAttrs vnode attrs snk logLevel_ events_
     vchildren <- toJSVal =<< procreate vnode
     flip (FFI.set "children") vnode vchildren
@@ -892,6 +901,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
                 zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
   VText key t -> do
     vtree <- create
+    setParentRef vtree parentId
     flip (FFI.set "type") vtree =<< toJSVal VTextType
     forM_ key $ \k -> FFI.set "key" (ms k) vtree
     FFI.set "ns" ("text" :: JSString) vtree
