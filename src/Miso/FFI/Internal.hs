@@ -56,6 +56,7 @@ module Miso.FFI.Internal
    , eventJSON
    -- * Object
    , set
+   , setValue
    -- * DOM
    , getBody
    , getDocument
@@ -167,6 +168,7 @@ import           Language.Javascript.JSaddle hiding (Success)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.String
+import           Miso.Effect (DOMRef)
 ----------------------------------------------------------------------------
 -- | Run given t'JSM' action asynchronously, in a separate thread.
 forkJSM :: JSM () -> JSM ThreadId
@@ -593,6 +595,17 @@ addScript useModule js_ = do
   when useModule $ (script <# "type") "module"
   (script <# "innerHTML") js_
   jsg "document" ! "head" # "appendChild" $ [script]
+-----------------------------------------------------------------------------
+-- | Sets the @.value@ property on a 'DOMRef'.
+--
+-- Useful for resetting the @value@ property on an input element.
+--
+-- @
+--   setValue domRef ("" :: MisoString)
+-- @
+--
+setValue :: DOMRef -> MisoString -> JSM ()
+setValue domRef = domRef <# "value"
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
 --

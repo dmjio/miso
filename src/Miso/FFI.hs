@@ -63,6 +63,7 @@ module Miso.FFI
   , previousSibling
     -- ** Element
   , click
+  , setValue
     -- ** File Input
   , files
     -- ** Navigator
