@@ -333,7 +333,7 @@ describe ("Hydration tests", () => {
     expect(comp.child).toBeTruthy();
   });
 
-  test('Should not call mountComponent with onBeforeMounted hook', () => {
+  test('Should call mountComponent with onBeforeMounted hook', () => {
     const div = document.createElement('div');
     document.body.appendChild(div);
 
@@ -345,24 +345,18 @@ describe ("Hydration tests", () => {
       onBeforeMounted: () => {
         beforeMountedCalled = true;
       },
-      onMounted: (domRef: any) => {
+      onMounted: () => {
         onMountedCalled = true;
       },
       mount: (parent: any, callback: any) => {
-        callback(2, vtext<DOMRef>('mounted component'));
       },
+      child : vnode<DOMRef> ({}),
       unmount: () => {},
     }) as VComp<DOMRef>;
 
-    const tree = vnode<DOMRef>({
-      children: [comp],
-    });
-
-    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
-
-    expect(result).toBe(false); // Hydration fails, falls back to mounting
-    expect(beforeMountedCalled).toBe(false);
-    expect(onMountedCalled).toBe(false);
+    expect(hydrate(false, document.body, comp, hydrationContext, drawingContext)).toBe(true);
+    expect(beforeMountedCalled).toBe(true);
+    expect(onMountedCalled).toBe(true);
   });
 
   test('Should handle VComp with nested child VTree', () => {
