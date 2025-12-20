@@ -1,4 +1,4 @@
-import { VNode, VTree, Response } from './types';
+import { VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -224,6 +224,7 @@ export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
   if (!(current.parent)) {
      return; // at root, do nothing
   }
+  latest.nextSibling = current.nextSibling ? null : current.nextSibling;
   latest.parent = current.parent;
-  current.parent.child = latest;
+  (current.parent as VComp<T>).child = latest;
 }
