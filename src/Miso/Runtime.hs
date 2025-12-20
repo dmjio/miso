@@ -225,6 +225,7 @@ initialize _componentParentId hydrate isRoot Component {..} getComponentMountPoi
     else
       addToDelegatedEvents logLevel events
   forM_ initialAction _componentSink
+  when isRoot $ void (FFI.forkJSM scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
 addToDelegatedEvents :: LogLevel -> Events -> JSM ()
@@ -288,6 +289,8 @@ inbox = lens _componentInbox $ \record field -> record { _componentInbox = field
 -----------------------------------------------------------------------------
 isDirty :: Lens (ComponentState parent model action) Bool
 isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty = field } 
+componentModel :: Lens (ComponentState parent model action) model
+componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
 data ComponentState parent model action
@@ -359,8 +362,10 @@ commit vcompId events = do
         Schedule Sync  action ->
           evalScheduled Sync (action _componentSink)
       dirty <- _componentModelDirty _componentModel updated
-      modifyComponent _componentId (isDirty .= dirty)
-      when dirty undefined
+      modifyComponent _componentId $ do
+        isDirty .= dirty
+        inbox .= mempty
+        componentModel .= updated
 -----------------------------------------------------------------------------
 -- | Propagate bindings out to all the other Component.
 crawl :: ComponentId -> IO ()
