@@ -715,9 +715,13 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
+      if (vtree.onBeforeMounted)
+        vtree.onBeforeMounted();
       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
         return false;
       }
+      if (vtree.onMounted)
+        vtree.onMounted();
       break;
     case 2 /* VText */:
       if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
