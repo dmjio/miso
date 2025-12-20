@@ -105,7 +105,7 @@ data ComponentInfo parent
 --
 -- @since 1.9.0.0
 componentId :: Lens (ComponentInfo parent) ComponentId
-componentId = lens _componentId $ \r x -> r { _componentId = x }
+componentId = lens _componentInfoId $ \r x -> r { _componentInfoId = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the parents's  t'ComponentId' from t'ComponentInfo'.
 --
@@ -119,7 +119,7 @@ componentId = lens _componentId $ \r x -> r { _componentId = x }
 --
 -- @since 1.9.0.0
 componentParentId :: Lens (ComponentInfo parent) ComponentId
-componentParentId = lens _componentParentId $ \r x -> r { _componentParentId = x }
+componentParentId = lens _componentInfoParentId $ \r x -> r { _componentInfoParentId = x }
 -----------------------------------------------------------------------------
 -- | Lens for accessing the underlying 'Component' t'DOMRef'.
 --
@@ -132,7 +132,7 @@ componentParentId = lens _componentParentId $ \r x -> r { _componentParentId = x
 --
 -- @since 1.9.0.0
 componentDOMRef :: Lens (ComponentInfo parent) DOMRef
-componentDOMRef = lens _componentDOMRef $ \r x -> r { _componentDOMRef = x }
+componentDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMRef = x }
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
 type ComponentId = Int
