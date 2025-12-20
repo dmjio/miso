@@ -23,12 +23,12 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   if (mountPoint.nodeType === 3) return false;
 
   // begin walking the DOM, report the result
-  if (!walk(logLevel, vtree, context.firstChild(mountPoint), context, drawingContext)) {
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint as DOMRef), context, drawingContext)) {
     // If we failed to prerender because the structures were different, fallback to drawing
       if (logLevel) {
         console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
       }
-      while (context.firstChild(mountPoint))
+      while (context.firstChild(mountPoint as DOMRef))
         drawingContext.removeChild(mountPoint as DOMRef, context.lastChild(mountPoint as DOMRef));
 
      return false;
