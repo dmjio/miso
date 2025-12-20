@@ -158,10 +158,12 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
-    case VTreeType.VComp:
+      case VTreeType.VComp:
+       if (vtree.onBeforeMounted) vtree.onBeforeMounted ();
        if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
           return false;
        }
+       if (vtree.onMounted) vtree.onMounted ();
        break;
     case VTreeType.VText:
        if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
