@@ -288,6 +288,7 @@ inbox = lens _componentInbox $ \record field -> record { _componentInbox = field
 -----------------------------------------------------------------------------
 isDirty :: Lens (ComponentState parent model action) Bool
 isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty = field } 
+-----------------------------------------------------------------------------
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
