@@ -34,7 +34,7 @@ describe ("Hydration tests", () => {
     });
     const result = hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect(currentNode.children[0].children[0].text).toEqual('foo');
+    expect(((currentNode.children[0] as VNode<DOMRef>).children[0] as VText<DOMRef>).text).toEqual('foo');
   });
 
   test('Should fail because of expecting text node', () => {
