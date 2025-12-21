@@ -15,9 +15,7 @@
 module Miso.Run
   ( -- ** Live reload
     run
-#ifdef VANILLA
   , reload
-#endif
   ) where
 -----------------------------------------------------------------------------
 #ifdef WASM
@@ -33,6 +31,8 @@ import           Network.WebSockets (defaultConnectionOptions)
 import           Language.Javascript.JSaddle.WebSockets (debugWrapper, jsaddleOr, jsaddleAppWithJs, jsaddleJs)
 #endif
 import           Language.Javascript.JSaddle
+-----------------------------------------------------------------------------
+import           Miso.String
 -----------------------------------------------------------------------------
 -- | Entry point for a miso application.
 --
@@ -58,22 +58,6 @@ run action = do
       runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
         jsaddleOr defaultConnectionOptions (action >> syncPoint)
         (static J.jsaddleApp)
-#ifdef VANILLA
------------------------------------------------------------------------------
--- | Like 'run', but clears the <body> and <head> on each reload.
---
--- Meant to be used with WASM browser mode
---
--- @since 1.9.0.0
-reload
-  :: JSM ()
-  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
-  -> IO ()
-reload action = do
-  clearBody
-  clearHead
-  action
-#endif
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static Middleware policy.
 --
@@ -92,4 +76,22 @@ debugMiso port f = do
         (registerContext >> f >> syncPoint)
         (static $ withRefresh $ jsaddleAppWithJs $ jsaddleJs True)
 #endif
+-----------------------------------------------------------------------------
+-- | Like 'run', but clears the <body> and <head> on each reload.
+--
+-- Meant to be used with WASM browser mode
+--
+-- @since 1.9.0.0
+reload
+  :: JSM ()
+  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+  -> IO ()
+reload action = run (clear >> action)
+  where
+    clear :: JSM ()
+    clear = do
+      body_ <- jsg ("document" :: MisoString) ! ("body" :: MisoString)
+      (body_ <# ("innerHTML" :: MisoString)) ("" :: MisoString)
+      head_ <- jsg ("document" :: MisoString) ! ("head" :: MisoString)
+      (head_ <# ("innerHTML" :: MisoString)) ("" :: MisoString)
 -----------------------------------------------------------------------------

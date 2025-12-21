@@ -6,6 +6,7 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Miso
+import           Miso.Run
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
@@ -28,11 +29,17 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
+#ifdef INTERACTIVE
+main = reload (startApp app)
+#else
 main = run (startApp app)
+#endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
+#ifndef INTERACTIVE
 foreign export javascript "hs_start" main :: IO ()
+#endif
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function

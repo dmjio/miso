@@ -4,6 +4,14 @@ version: 0.1.0.0
 synopsis: Sample miso app
 category: Web
 
+flag interactive
+  default:
+    False
+  manual:
+    True
+  description:
+   Enable features for interactive use (e.g., in GHCi)
+
 common options
   if arch(wasm32)
     ghc-options:
@@ -12,6 +20,10 @@ common options
       "-optl-Wl,--export=hs_start"
     cpp-options:
       -DWASM
+
+    if flag(interactive)
+      cpp-options:
+        -DINTERACTIVE
 
   if arch(javascript)
      ld-options:
