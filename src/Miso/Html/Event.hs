@@ -13,6 +13,7 @@
 module Miso.Html.Event
   ( -- *** Mouse
     onClick
+  , onClickPrevent
   , onClickCapture
   , onClickWith
   , onClickWithOptions
@@ -171,6 +172,10 @@ onClickWith action = on "click" emptyDecoder $ \() domRef -> action domRef
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/click
 onClickWithOptions :: Options -> action -> Attribute action
 onClickWithOptions options action = onWithOptions BUBBLE options "click" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | https://developer.mozilla.org/en-US/docs/Web/Events/click
+onClickPrevent :: action -> Attribute action
+onClickPrevent = onClickWithOptions preventDefault
 -----------------------------------------------------------------------------
 -- | https://developer.mozilla.org/en-US/docs/Web/Events/focus
 onFocus :: action -> Attribute action
