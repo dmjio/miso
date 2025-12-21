@@ -120,6 +120,10 @@
                 function update () {
                    wasm32-wasi-cabal update
                 }
+                function repl () {
+                   wasm32-wasi-cabal repl $1 -finteractive \
+                     --repl-options='-fghci-browser -fghci-browser-port=8080'
+                }
               '';
             };
 
@@ -184,7 +188,6 @@
                  tailwindcss_4
               ];
             };
-
-        };
+          };
       });
 }

@@ -49,7 +49,7 @@ module Miso.FFI
     -- ** Window
   , windowInnerWidth
   , windowInnerHeight
-  , reload
+  , locationReload
     -- ** Image
   , Image (..)
   , newImage

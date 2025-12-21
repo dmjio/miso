@@ -91,7 +91,7 @@ module Miso.FFI.Internal
    , setSelectionRange
    , scrollIntoView
    , alert
-   , reload
+   , locationReload
    -- * CSS
    , addStyle
    , addStyleSheet
@@ -594,8 +594,8 @@ alert :: MisoString -> JSM ()
 alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Calls the @location.reload()@ function.
-reload :: JSM ()
-reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
+locationReload :: JSM ()
+locationReload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.style_' element containing CSS to 'Miso.Html.Element.head_'
 --
