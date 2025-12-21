@@ -161,6 +161,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   flush: (): void => {
     return;
   },
+  /** @since 1.9.0.0 */
+  getHead : function () {
+    return document.head;
+  },
   getRoot : function () {
     return document.body
   },

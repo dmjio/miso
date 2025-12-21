@@ -30,6 +30,7 @@ module Miso.FFI
   , getProperty
   , callFunction
   , castJSVal
+  , removeChild
     -- ** Styles
   , addStyle
   , addStyleSheet

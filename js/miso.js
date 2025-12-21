@@ -1088,6 +1088,9 @@ var drawingContext = {
   flush: () => {
     return;
   },
+  getHead: function() {
+    return document.head;
+  },
   getRoot: function() {
     return document.body;
   }
