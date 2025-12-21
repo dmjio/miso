@@ -770,12 +770,9 @@ drain app@Component{..} cs@ComponentState {..} = do
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState model action -> JSM ()
 unloadScripts ComponentState {..} = do
+  head_ <- FFI.getHead
   forM_ componentScripts $ \domRef ->
-    -- dmj: abstract this out into context
-    jsg @MisoString "document"
-      ! ("head" :: MisoString)
-      # ("removeChild" :: MisoString)
-      $ [domRef]
+    FFI.removeChild head_ domRef
 -----------------------------------------------------------------------------
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState model action -> JSM ()

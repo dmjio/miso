@@ -64,6 +64,8 @@ module Miso.FFI.Internal
    , getHydrationContext
    , getEventContext
    , getElementById
+  , removeChild
+  , getHead
    , diff
    , nextSibling
    , previousSibling
@@ -459,6 +461,28 @@ getHydrationContext = jsg "miso" ! "hydrationContext"
 getElementById :: MisoString -> JSM JSVal
 getElementById e = getDocument # "getElementById" $ [e]
 -----------------------------------------------------------------------------
+-- | Retrieves a reference to the renderer's "head" mount.
+--
+-- Calls @miso.drawingContext.getHead()@.
+--
+-- Note: custom renderers should implement this method.
+--
+-- @since 1.9.0.0
+getHead :: JSM DOMRef
+getHead = do
+  context <- getDrawingContext
+  context # "getHead" $ ()
+-----------------------------------------------------------------------------
+-- | Removes a child node from a parent node.
+--
+-- Calls @miso.drawingContext.removeChild(parent, child)@.
+--
+-- @since 1.9.0.0
+removeChild :: DOMRef -> DOMRef -> JSM ()
+removeChild parent child = do
+  context <- getDrawingContext
+  void $ context # "removeChild" $ (parent, child)
+-----------------------------------------------------------------------------
 -- | Diff two virtual DOMs
 diff
   :: Object
@@ -581,9 +605,12 @@ reload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 --
 addStyle :: MisoString -> JSM JSVal
 addStyle css = do
-  style <- jsg "document" # "createElement" $ ["style"]
+  context <- getDrawingContext
+  head_ <- getHead
+  style <- context # "createElement" $ ["style"]
   (style <# "innerHTML") css
-  jsg "document" ! "head" # "appendChild" $ [style]
+  void $ context # "appendChild" $ (head_, style)
+  pure style
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing JS to 'Miso.Html.Element.head_'
 --
@@ -591,10 +618,13 @@ addStyle css = do
 --
 addScript :: Bool -> MisoString -> JSM JSVal
 addScript useModule js_ = do
-  script <- jsg "document" # "createElement" $ ["script"]
+  context <- getDrawingContext
+  head_ <- getHead
+  script <- context # "createElement" $ ["script"]
   when useModule $ (script <# "type") "module"
   (script <# "innerHTML") js_
-  jsg "document" ! "head" # "appendChild" $ [script]
+  void $ context # "appendChild" $ (head_, script)
+  pure script
 -----------------------------------------------------------------------------
 -- | Sets the @.value@ property on a 'DOMRef'.
 --
@@ -613,10 +643,13 @@ setValue domRef = domRef <# "value"
 --
 addScriptImportMap :: MisoString -> JSM JSVal
 addScriptImportMap impMap = do
-  script <- jsg "document" # "createElement" $ ["script"]
+  context <- getDrawingContext
+  head_ <- getHead
+  script <- context # "createElement" $ ["script"]
   (script <# "type") "importmap"
   (script <# "innerHTML") impMap
-  jsg "document" ! "head" # "appendChild" $ [script]
+  void $ context # "appendChild" $ (head_, script)
+  pure script
 -----------------------------------------------------------------------------
 -- | Appends a \<script\> element to 'Miso.Html.Element.head_'
 --
@@ -624,9 +657,12 @@ addScriptImportMap impMap = do
 --
 addSrc :: MisoString -> JSM JSVal
 addSrc url = do
-  link <- jsg "document" # "createElement" $ ["script"]
+  context <- getDrawingContext
+  head_ <- getHead
+  link <- context # "createElement" $ ["script"]
   _ <- link # "setAttribute" $ ["src", fromMisoString url]
-  jsg "document" ! "head" # "appendChild" $ [link]
+  void $ context # "appendChild" $ (head_, link)
+  pure link
 -----------------------------------------------------------------------------
 -- | Appends a StyleSheet 'Miso.Html.Element.link_' element to 'Miso.Html.Element.head_'
 -- The 'Miso.Html.Element.link_' tag will contain a URL to a CSS file.
@@ -637,10 +673,13 @@ addSrc url = do
 --
 addStyleSheet :: MisoString -> JSM JSVal
 addStyleSheet url = do
-  link <- jsg "document" # "createElement" $ ["link"]
+  context <- getDrawingContext
+  head_ <- getHead
+  link <- context # "createElement" $ ["link"]
   _ <- link # "setAttribute" $ ["rel","stylesheet"]
   _ <- link # "setAttribute" $ ["href", fromMisoString url]
-  jsg "document" ! "head" # "appendChild" $ [link]
+  void $ context # "appendChild" $ (head_, link)
+  pure link
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --

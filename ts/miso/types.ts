@@ -141,6 +141,8 @@ export type DrawingContext<T> = {
   addClass : (c: string, domRef: T) => void;
   removeClass : (c: string, domRef: T) => void;
   flush : () => void;
+  /** @since 1.9.0.0 */
+  getHead : () => T;
   getRoot : () => T;
 };
 

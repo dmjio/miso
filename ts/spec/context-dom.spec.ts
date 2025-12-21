@@ -174,6 +174,10 @@ describe('ComponentContext tests', () => {
 });
 
 describe('DrawingContext tests', () => {
+  test('Should get head', () => {
+    expect(drawingContext.getHead()).toBe(document.head);
+  });
+
   test('Should get next sibling for VNode', () => {
     const node1 = vnode<DOMRef>({ tag: 'div' });
     const node2 = vnode<DOMRef>({ tag: 'span' });

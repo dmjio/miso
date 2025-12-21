@@ -46,6 +46,10 @@ afterEach(() => {
 
 /* tests */
 describe ('Patch tests', () => {
+    test('Should expose getHead for patch drawing context', () => {
+        expect(patchDrawingContext.getHead()).toEqual({ nodeId: 0 });
+    });
+
     test('Should process the CreateTextNode patch', () => {
         const nodeId : number = 1;
         const parentNodeId : number = 0;

@@ -288,6 +288,10 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
     globalThis['patches'] = [];
     return;
   },
+  /** @since 1.9.0.0 */
+  getHead : function () {
+    return { nodeId : 0 };
+  },
   getRoot : function () {
     return { nodeId : 0 };
   },
