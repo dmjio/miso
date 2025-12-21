@@ -15,7 +15,9 @@
 module Miso.Run
   ( -- ** Live reload
     run
+#ifdef VANILLA
   , reload
+#endif
   ) where
 -----------------------------------------------------------------------------
 #ifdef WASM
@@ -56,6 +58,7 @@ run action = do
       runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
         jsaddleOr defaultConnectionOptions (action >> syncPoint)
         (static J.jsaddleApp)
+#ifdef VANILLA
 -----------------------------------------------------------------------------
 -- | Like 'run', but clears the <body> and <head> on each reload.
 --
@@ -70,6 +73,7 @@ reload action = do
   clearBody
   clearHead
   action
+#endif
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static Middleware policy.
 --
