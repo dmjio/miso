@@ -15,6 +15,7 @@
 module Miso.Run
   ( -- ** Live reload
     run
+  , reload
   ) where
 -----------------------------------------------------------------------------
 #ifdef WASM
@@ -36,9 +37,10 @@ import           Language.Javascript.JSaddle
 -- * When compiling with GHC (native), this starts a web server for live reload, using [jsaddle](https://hackage.haskell.org/package/jsaddle).
 -- * When compiling to WASM, this uses [jsaddle-wasm](https://hackage.haskell.org/package/jsaddle-wasm).
 -- * When compiling to JS (GHCJS), this is simply 'id'.
-run ::
-    JSM () -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
-    -> IO ()
+run
+  :: JSM ()
+  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+  -> IO ()
 #ifdef WASM
 run = J.run
 #elif GHCJS_BOTH
@@ -54,6 +56,20 @@ run action = do
       runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
         jsaddleOr defaultConnectionOptions (action >> syncPoint)
         (static J.jsaddleApp)
+-----------------------------------------------------------------------------
+-- | Like 'run', but clears the <body> and <head> on each reload.
+--
+-- Meant to be used with WASM browser mode
+--
+-- @since 1.9.0.0
+reload
+  :: JSM ()
+  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+  -> IO ()
+reload action = do
+  clearBody
+  clearHead
+  action
 -----------------------------------------------------------------------------
 -- | Start or restart the server, with a static Middleware policy.
 --
