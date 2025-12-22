@@ -289,15 +289,8 @@ function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
 }
 
 /* used in hydrate.ts */
-export function callCreated<T>(parent: T, n: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
-  switch (n.type) {
-      case VTreeType.VComp:
-          mountComponent(parent, OP.APPEND, null, n, context);
-          break;
-      case VTreeType.VNode:
-          if (n.onCreated) n.onCreated(n.domRef);
-          break;
-  }
+export function callCreated<T>(parent: T, n: VNode<T>, context: DrawingContext<T>): void {
+   if (n.onCreated) n.onCreated(n.domRef);
 }
 
 function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>, context: DrawingContext<T>): void {

@@ -1199,22 +1199,6 @@ describe('DOM tests', () => {
     expect(createdCalled).toBe(true);
   });
 
-  test('Should mount VComp in callCreated', () => {
-    let mounted = false;
-    const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
-        mounted = true;
-        const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
-      },
-      unmount: () => {}
-    });
-    
-    const { callCreated } = require('../miso/dom');
-    callCreated(document.body, comp, drawingContext);
-    expect(mounted).toBe(true);
-  });
-
   test('Should handle VNode createElement with INSERT_BEFORE', () => {
     // Create a parent with first child
     const first = vnode<DOMRef>({ tag: 'span', key: 'first' });
