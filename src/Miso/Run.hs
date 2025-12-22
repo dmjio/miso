@@ -18,64 +18,16 @@ module Miso.Run
   , reload
   ) where
 -----------------------------------------------------------------------------
-#ifdef WASM
-import qualified Language.Javascript.JSaddle.Wasm as J
-#elif !GHCJS_BOTH
-import           Data.Maybe
-import           System.Environment
-import           Text.Read
-import qualified Language.Javascript.JSaddle.Warp as J
-import           Network.Wai.Middleware.Static (static)
-import           Network.Wai.Handler.Warp (defaultSettings, setTimeout, setPort, runSettings)
-import           Network.WebSockets (defaultConnectionOptions)
-import           Language.Javascript.JSaddle.WebSockets (debugWrapper, jsaddleOr, jsaddleAppWithJs, jsaddleJs)
-#endif
-import           Language.Javascript.JSaddle
------------------------------------------------------------------------------
 import           Miso.String
+import           Miso.DSL
 -----------------------------------------------------------------------------
 -- | Entry point for a miso application.
 --
--- * When compiling with GHC (native), this starts a web server for live reload, using [jsaddle](https://hackage.haskell.org/package/jsaddle).
--- * When compiling to WASM, this uses [jsaddle-wasm](https://hackage.haskell.org/package/jsaddle-wasm).
--- * When compiling to JS (GHCJS), this is simply 'id'.
 run
-  :: JSM ()
-  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+  :: IO ()
+  -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-#ifdef WASM
-run = J.run
-#elif GHCJS_BOTH
 run = id
-#else
-run action = do
-  port <- fromMaybe 8008 . (readMaybe =<<) <$> lookupEnv "PORT"
-  isGhci <- (== "<interactive>") <$> getProgName
-  putStrLn $ "Running on port " <> show port <> "..."
-  if isGhci
-    then debugMiso port action
-    else
-      runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
-        jsaddleOr defaultConnectionOptions (action >> syncPoint)
-        (static J.jsaddleApp)
------------------------------------------------------------------------------
--- | Start or restart the server, with a static Middleware policy.
---
--- dmj: This is like @debug@ from `jsaddle-warp`, except it uses a static
--- middleware for static file hosting.
---
--- This means that usage of `url('mario.png')` will "just work" when developing
--- from GHCi.
---
-debugMiso :: Int -> JSM () -> IO ()
-debugMiso port f = do
-  debugWrapper $ \withRefresh registerContext ->
-    runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
-      jsaddleOr
-        defaultConnectionOptions
-        (registerContext >> f >> syncPoint)
-        (static $ withRefresh $ jsaddleAppWithJs $ jsaddleJs True)
-#endif
 -----------------------------------------------------------------------------
 -- | Like 'run', but clears the <body> and <head> on each reload.
 --
@@ -83,15 +35,15 @@ debugMiso port f = do
 --
 -- @since 1.9.0.0
 reload
-  :: JSM ()
+  :: IO ()
   -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
 reload action = run (clear >> action)
   where
-    clear :: JSM ()
+    clear :: IO ()
     clear = do
-      body_ <- jsg ("document" :: MisoString) ! ("body" :: MisoString)
-      (body_ <# ("innerHTML" :: MisoString)) ("" :: MisoString)
-      head_ <- jsg ("document" :: MisoString) ! ("head" :: MisoString)
-      (head_ <# ("innerHTML" :: MisoString)) ("" :: MisoString)
+      body_ <- jsg "document" ! ("body" :: MisoString)
+      setField body_ "innerHTML" ("" :: MisoString)
+      head_ <- jsg "document" ! ("head" :: MisoString)
+      setField head_ "innerHTML" ("" :: MisoString)
 -----------------------------------------------------------------------------

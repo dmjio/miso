@@ -13,43 +13,42 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
-module Miso.String (
-    ToMisoString (..)
+module Miso.String
+  ( ToMisoString (..)
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-  , module Data.JSString
   , module Data.Monoid
+#ifdef VANILLA
+  , module Data.Text
+#endif
   , ms
   ) where
 ----------------------------------------------------------------------------
-import           Control.Exception (SomeException)
+#ifndef VANILLA
 import           Data.Aeson
-import qualified Data.ByteString         as B
+#endif
+import           Data.Text hiding (show)
+import           Control.Exception
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as B
-import qualified Data.ByteString.Lazy    as BL
+import qualified Data.ByteString.Lazy as BL
 import           Data.Char
-import           Data.JSString
-import qualified Data.JSString as JS
-import           Data.JSString.Text
 import           Data.Monoid
-import qualified Data.Text               as T
-import qualified Data.Text.Encoding      as T
-import qualified Data.Text.Lazy          as LT
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
-import           Language.Javascript.JSaddle (MakeArgs (..), toJSVal)
-import           Prelude                 hiding (foldr)
+----------------------------------------------------------------------------
+import           Miso.DSL.JSString
 ----------------------------------------------------------------------------
 -- | String type swappable based on compiler
-type MisoString = JS.JSString
+type MisoString = T.Text
 ----------------------------------------------------------------------------
-instance MakeArgs JS.JSString where
-  makeArgs arg = (:[]) <$> toJSVal arg
-----------------------------------------------------------------------------
+#ifndef VANILLA
 instance ToJSONKey MisoString
 instance FromJSONKey MisoString
 ----------------------------------------------------------------------------
-#ifdef GHCJS_BOTH
 -- | `ToJSON` for `MisoString`
 instance ToJSON MisoString where
   toJSON = String . textFromJSString
@@ -88,7 +87,10 @@ instance ToMisoString a => ToMisoString (Maybe a) where
     Just x -> toMisoString x
 ----------------------------------------------------------------------------
 instance ToMisoString Char where
-  toMisoString = JS.singleton
+  toMisoString = T.singleton
+----------------------------------------------------------------------------
+instance ToMisoString IOException where
+  toMisoString = undefined
 ----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
@@ -97,13 +99,11 @@ instance ToMisoString SomeException where
   toMisoString = toMisoString . show
 ----------------------------------------------------------------------------
 instance ToMisoString String where
-  toMisoString = JS.pack
-----------------------------------------------------------------------------
-instance ToMisoString T.Text where
-  toMisoString = textToJSString
+  toMisoString = T.pack
 ----------------------------------------------------------------------------
 instance ToMisoString LT.Text where
-  toMisoString = lazyTextToJSString
+  toMisoString = LT.toStrict
+----------------------------------------------------------------------------
 instance ToMisoString B.ByteString where
   toMisoString = toMisoString . T.decodeUtf8
 ----------------------------------------------------------------------------
@@ -114,28 +114,25 @@ instance ToMisoString B.Builder where
   toMisoString = toMisoString . B.toLazyByteString
 ----------------------------------------------------------------------------
 instance ToMisoString Float where
-  toMisoString = JS.pack . show
+  toMisoString = T.pack . show
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
-  toMisoString = JS.pack . show
+  toMisoString = T.pack . show
 ----------------------------------------------------------------------------
 instance ToMisoString Int where
-  toMisoString = JS.pack . show
+  toMisoString = T.pack . show
 ----------------------------------------------------------------------------
 instance ToMisoString Word where
-  toMisoString = JS.pack . show
+  toMisoString = T.pack . show
 ----------------------------------------------------------------------------
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
 ----------------------------------------------------------------------------
 instance FromMisoString String where
-  fromMisoStringEither = Right . JS.unpack
-----------------------------------------------------------------------------
-instance FromMisoString T.Text where
-  fromMisoStringEither = Right . textFromJSString
+  fromMisoStringEither = Right . T.unpack
 ----------------------------------------------------------------------------
 instance FromMisoString LT.Text where
-  fromMisoStringEither = Right . lazyTextFromJSString
+  fromMisoStringEither = Right . LT.fromStrict
 ----------------------------------------------------------------------------
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
@@ -158,22 +155,22 @@ instance FromMisoString Int where
 instance FromMisoString Word where
   fromMisoStringEither = parseWord
 ----------------------------------------------------------------------------
-jsStringToDoubleEither :: JS.JSString -> Either String Double
-jsStringToDoubleEither s = let d = read $ JS.unpack s
+jsStringToDoubleEither :: JSString -> Either String Double
+jsStringToDoubleEither s = let d = read $ T.unpack s
                            in if isNaN d then Left "jsStringToDoubleEither: parse failed"
                                          else Right d
 ----------------------------------------------------------------------------
 parseWord :: MisoString -> Either String Word
-parseWord s = case JS.uncons s of
+parseWord s = case T.uncons s of
                 Nothing     -> Left "parseWord: parse error"
-                Just (c,s') -> JS.foldl' k (pDigit c) s'
+                Just (c, s') -> T.foldl' k (pDigit c) s'
   where
     pDigit c | isDigit c = Right . fromIntegral . digitToInt $ c
              | otherwise = Left "parseWord: parse error"
-    k ea c = (\a x -> 10*a + x) <$> ea <*> pDigit c
+    k ea c = (\a x -> 10 * a + x) <$> ea <*> pDigit c
 ----------------------------------------------------------------------------
 parseInt   :: MisoString -> Either String Int
-parseInt s = case JS.uncons s of
+parseInt s = case T.uncons s of
                Just ('-',s') -> ((-1)*) . fromIntegral <$> parseWord s'
                _             ->           fromIntegral <$> parseWord s
 ----------------------------------------------------------------------------

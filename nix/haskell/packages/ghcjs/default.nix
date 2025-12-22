@@ -12,7 +12,6 @@ self: super:
 
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
-  jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
 
   /* cruft */
   crypton = dontCheck super.crypton;

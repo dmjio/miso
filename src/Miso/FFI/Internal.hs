@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE ViewPatterns               #-}
 {-# LANGUAGE LambdaCase                 #-}
@@ -20,19 +21,13 @@
 --
 ----------------------------------------------------------------------------
 module Miso.FFI.Internal
-   ( JSM
-   -- * Concurrency
-   , forkJSM
-   -- * Callbacks
-   , syncCallback
+   ( -- * Callbacks
+     syncCallback
    , syncCallback1
    , syncCallback2
    , asyncCallback
    , asyncCallback1
    , asyncCallback2
-   , ghcjsPure
-   -- * JSAddle
-   , syncPoint
    -- * Events
    , addEventListener
    , removeEventListener
@@ -157,44 +152,32 @@ module Miso.FFI.Internal
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
-import           Control.Concurrent (ThreadId, forkIO)
 import           Control.Monad (void, foldM, forM_, (<=<), when)
-import           Control.Monad.IO.Class (liftIO)
-import           Data.Aeson hiding (Object)
+import           Data.Aeson hiding (Object, ToArgs)
 import qualified Data.Aeson as A
-#ifdef GHCJS_BOTH
-import           Language.Javascript.JSaddle
-#else
-import           Language.Javascript.JSaddle hiding (Success)
-#endif
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.String
 import           Miso.Effect (DOMRef)
-----------------------------------------------------------------------------
--- | Run given t'JSM' action asynchronously, in a separate thread.
-forkJSM :: JSM () -> JSM ThreadId
-forkJSM a = do
-  ctx <- askJSM
-  liftIO (forkIO (runJSM a ctx))
 -----------------------------------------------------------------------------
 -- | Creates a synchronous callback function (no return value)
-syncCallback :: JSM () -> JSM Function
+syncCallback :: IO () -> IO Function
 syncCallback a = function (\_ _ _ -> a)
 -----------------------------------------------------------------------------
 -- | Creates an asynchronous callback function
-asyncCallback :: JSM () -> JSM Function
+asyncCallback :: IO () -> IO Function
 asyncCallback a = asyncFunction (\_ _ _ -> a)
 -----------------------------------------------------------------------------
 -- | Creates an asynchronous callback function with a single argument
-asyncCallback1 :: (JSVal -> JSM ()) -> JSM Function
+asyncCallback1 :: (JSVal -> IO ()) -> IO Function
 asyncCallback1 f = asyncFunction handle
   where
     handle _ _ []    = error "asyncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
 -----------------------------------------------------------------------------
 -- | Creates an asynchronous callback function with two arguments
-asyncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
+asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO Function
 asyncCallback2 f = asyncFunction handle
   where
     handle _ _ []    = error "asyncCallback2: no args, impossible"
@@ -202,14 +185,14 @@ asyncCallback2 f = asyncFunction handle
     handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
 -- | Creates a synchronous callback function with one argument
-syncCallback1 :: (JSVal -> JSM ()) -> JSM Function
+syncCallback1 :: (JSVal -> IO ()) -> IO Function
 syncCallback1 f = function handle
   where
     handle _ _ []    = error "syncCallback1: no args, impossible"
     handle _ _ (x:_) = f x
 -----------------------------------------------------------------------------
 -- | Creates a synchronous callback function with two arguments
-syncCallback2 :: (JSVal -> JSVal -> JSM ()) -> JSM Function
+syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO Function
 syncCallback2 f = function handle
   where
     handle _ _ []    = error "syncCallback2: no args, impossible"
@@ -217,7 +200,7 @@ syncCallback2 f = function handle
     handle _ _ (x:y:_) = f x y
 -----------------------------------------------------------------------------
 -- | Set property on object
-set :: ToJSVal v => MisoString -> v -> Object -> JSM ()
+set :: ToJSVal v => MisoString -> v -> Object -> IO ()
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
@@ -227,7 +210,7 @@ set k v o = do
 -- Example usage:
 --
 -- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
-getProperty :: JSVal -> MisoString -> JSM JSVal
+getProperty :: JSVal -> MisoString -> IO JSVal
 getProperty = (!)
 -----------------------------------------------------------------------------
 -- | Calls a function on a 'JSVal'
@@ -236,11 +219,11 @@ getProperty = (!)
 -- 
 -- > callFunction domRef "focus" ()
 -- > callFunction domRef "setSelectionRange" (0, 3, "none")
-callFunction :: (MakeArgs args) => JSVal -> MisoString -> args -> JSM JSVal
+callFunction :: (ToArgs args) => JSVal -> MisoString -> args -> IO JSVal
 callFunction = (#)
 -----------------------------------------------------------------------------
 -- | Marshalling of 'JSVal', useful for 'getProperty'
-castJSVal :: (FromJSVal a) => JSVal -> JSM (Maybe a)
+castJSVal :: (FromJSVal a) => JSVal -> IO (Maybe a)
 castJSVal = fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
@@ -249,10 +232,10 @@ addEventListener
   -- ^ Event target on which we want to register event listener
   -> MisoString
   -- ^ Type of event to listen to (e.g. "click")
-  -> (JSVal -> JSM ())
+  -> (JSVal -> IO ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM Function
+  -> IO Function
 addEventListener self name cb = do
   cb_ <- function handle
   void $ self # "addEventListener" $ (name, cb_)
@@ -270,7 +253,7 @@ removeEventListener
   -> Function
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> IO ()
 removeEventListener self name cb =
   void $ self # "removeEventListener" $ (name, cb)
 -----------------------------------------------------------------------------
@@ -281,7 +264,7 @@ windowRemoveEventListener
   -> Function
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM ()
+  -> IO ()
 windowRemoveEventListener name cb = do
   win <- jsg "window"
   removeEventListener win name cb
@@ -290,22 +273,22 @@ windowRemoveEventListener name cb = do
 windowAddEventListener
   :: MisoString
   -- ^ Type of event to listen to (e.g. "click")
-  -> (JSVal -> JSM ())
+  -> (JSVal -> IO ())
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
-  -> JSM Function
+  -> IO Function
 windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
 -----------------------------------------------------------------------------
 -- | Stop propagation of events
-eventStopPropagation :: JSVal -> JSM ()
+eventStopPropagation :: JSVal -> IO ()
 eventStopPropagation e = do
   _ <- e # "stopPropagation" $ ()
   pure ()
 -----------------------------------------------------------------------------
 -- | Prevent default event behavior
-eventPreventDefault :: JSVal -> JSM ()
+eventPreventDefault :: JSVal -> IO ()
 eventPreventDefault e = do
   _ <- e # "preventDefault" $ ()
   pure ()
@@ -314,22 +297,21 @@ eventPreventDefault e = do
 -- if rendered, the horizontal scrollbar.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerHeight>
-windowInnerHeight :: JSM Int
-windowInnerHeight =
-  fromJSValUnchecked =<< jsg "window" ! "innerHeight"
+windowInnerHeight :: IO Int
+windowInnerHeight = fromJSValUnchecked =<< jsg "window" ! "innerHeight"
 -----------------------------------------------------------------------------
 -- | Retrieves the width (in pixels) of the browser window viewport including
 -- if rendered, the vertical scrollbar.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth>
-windowInnerWidth :: JSM Int
+windowInnerWidth :: IO Int
 windowInnerWidth =
   fromJSValUnchecked =<< jsg "window" ! "innerWidth"
 -----------------------------------------------------------------------------
 -- | Retrieve high resolution time stamp
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
-now :: JSM Double
+now :: IO Double
 now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -----------------------------------------------------------------------------
 -- | Outputs a message to the web console
@@ -337,9 +319,9 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/log>
 --
 -- Console logging of JavaScript strings.
-consoleLog :: MisoString -> JSM ()
+consoleLog :: MisoString -> IO ()
 consoleLog v = do
-  _ <- jsg "console" # "log" $ [toJSString v]
+  _ <- jsg "console" # "log" $ [ms v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Outputs a warning message to the web console
@@ -347,9 +329,9 @@ consoleLog v = do
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/warn>
 --
 -- Console logging of JavaScript strings.
-consoleWarn :: MisoString -> JSM ()
+consoleWarn :: MisoString -> IO ()
 consoleWarn v = do
-  _ <- jsg "console" # "warn" $ [toJSString v]
+  _ <- jsg "console" # "warn" $ [ms v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Outputs an error message to the web console
@@ -357,27 +339,27 @@ consoleWarn v = do
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Console/error>
 --
 -- Console logging of JavaScript strings.
-consoleError :: MisoString -> JSM ()
+consoleError :: MisoString -> IO ()
 consoleError v = do
-  _ <- jsg "console" # "error" $ [toJSString v]
+  _ <- jsg "console" # "error" $ [ms v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Console-logging of JSVal
-consoleLog' :: MakeArgs a => a -> JSM ()
+consoleLog' :: ToArgs a => a -> IO ()
 consoleLog' args' = do
   args <- makeArgs args'
   _ <- jsg "console" # "log" $ args
   pure ()
 -----------------------------------------------------------------------------
 -- | Encodes a Haskell object as a JSON string by way of a JavaScript object
-jsonStringify :: ToJSON json => json -> JSM JSVal
+jsonStringify :: ToJSON json => json -> IO JSVal
 {-# INLINE jsonStringify #-}
 jsonStringify j = do
   v <- toJSVal (toJSON j)
   jsg "JSON" # "stringify" $ [v]
 -----------------------------------------------------------------------------
 -- | Parses a JavaScript value into a Haskell type using JSON conversion
-jsonParse :: FromJSON json => JSVal -> JSM json
+jsonParse :: FromJSON json => JSVal -> IO json
 {-# INLINE jsonParse #-}
 jsonParse jval = do
   v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
@@ -390,7 +372,7 @@ jsonParse jval = do
 eventJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
-    -> JSM JSVal
+    -> IO JSVal
 eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
@@ -400,7 +382,7 @@ updateRef
     :: ToJSVal val
     => val
     -> val
-    -> JSM ()
+    -> IO ()
 updateRef jsval1 jsval2 = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "updateRef" $ (jsval1, jsval2)
@@ -411,7 +393,7 @@ populateClass
     -- ^ Node
     -> [MisoString]
     -- ^ classes
-    -> JSM ()
+    -> IO ()
 populateClass domRef classes = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "populateClass" $ (domRef, classes)
@@ -419,7 +401,7 @@ populateClass domRef classes = do
 -- | Retrieves a reference to document body.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
-getBody :: JSM JSVal
+getBody :: IO JSVal
 getBody = do
   ctx <- getDrawingContext
   ctx # "getRoot" $ ()
@@ -427,7 +409,7 @@ getBody = do
 -- | Retrieves a reference to the document.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document>
-getDocument :: JSM JSVal
+getDocument :: IO JSVal
 getDocument = jsg "document"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the drawing context.
@@ -435,7 +417,7 @@ getDocument = jsg "document"
 -- This is a miso specific construct used to provide an identical interface
 -- for both native (iOS / Android, etc.) and browser environments.
 --
-getDrawingContext :: JSM JSVal
+getDrawingContext :: IO JSVal
 getDrawingContext = jsg "miso" ! "drawingContext"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the event context.
@@ -443,7 +425,7 @@ getDrawingContext = jsg "miso" ! "drawingContext"
 -- This is a miso specific construct used to provide an identical interface
 -- for both native (iOS / Android, etc.) and browser environments.
 --
-getEventContext :: JSM JSVal
+getEventContext :: IO JSVal
 getEventContext = jsg "miso" ! "eventContext"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the hydration context.
@@ -451,14 +433,14 @@ getEventContext = jsg "miso" ! "eventContext"
 -- This is a miso specific construct used to provide an identical interface
 -- for both native (iOS / Android, etc.) and browser environments.
 --
-getHydrationContext :: JSM JSVal
+getHydrationContext :: IO JSVal
 getHydrationContext = jsg "miso" ! "hydrationContext"
 -----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
-getElementById :: MisoString -> JSM JSVal
+getElementById :: MisoString -> IO JSVal
 getElementById e = getDocument # "getElementById" $ [e]
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the renderer's "head" mount.
@@ -468,7 +450,7 @@ getElementById e = getDocument # "getElementById" $ [e]
 -- Note: custom renderers should implement this method.
 --
 -- @since 1.9.0.0
-getHead :: JSM DOMRef
+getHead :: IO DOMRef
 getHead = do
   context <- getDrawingContext
   context # "getHead" $ ()
@@ -478,7 +460,7 @@ getHead = do
 -- Calls @miso.drawingContext.removeChild(parent, child)@.
 --
 -- @since 1.9.0.0
-removeChild :: DOMRef -> DOMRef -> JSM ()
+removeChild :: DOMRef -> DOMRef -> IO ()
 removeChild parent child = do
   context <- getDrawingContext
   void $ context # "removeChild" $ (parent, child)
@@ -491,7 +473,7 @@ diff
   -- ^ new object
   -> JSVal
   -- ^ parent node
-  -> JSM ()
+  -> IO ()
 diff (Object a) (Object b) c = do
   moduleMiso <- jsg "miso"
   context <- getDrawingContext
@@ -510,7 +492,7 @@ jsStringToDouble :: MisoString -> Double
 jsStringToDouble = read . unpack
 -----------------------------------------------------------------------------
 -- | Initialize event delegation from a mount point.
-delegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
+delegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 delegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
   cb <- function handler
@@ -521,7 +503,7 @@ delegateEvent mountPoint events debug getVTree = do
         void (call continuation global =<< getVTree)
 -----------------------------------------------------------------------------
 -- | Deinitialize event delegation from a mount point.
-undelegateEvent :: JSVal -> JSVal -> Bool -> JSM JSVal -> JSM ()
+undelegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 undelegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
   cb <- function handler
@@ -532,14 +514,14 @@ undelegateEvent mountPoint events debug getVTree = do
         void (call continuation global =<< getVTree)
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
-delegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> JSM ()
+delegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> IO ()
 delegate mountPoint events debug callback ctx = do
   d <- toJSVal debug
   cb <- toJSVal callback
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "delegate" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
-undelegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> JSM ()
+undelegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> IO ()
 undelegate mountPoint events debug callback ctx = do
   d <- toJSVal debug
   cb <- toJSVal callback
@@ -550,7 +532,7 @@ undelegate mountPoint events debug callback ctx = do
 --
 -- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
-hydrate :: Bool -> JSVal -> JSVal -> JSM JSVal
+hydrate :: Bool -> JSVal -> JSVal -> IO JSVal
 hydrate logLevel mountPoint vtree = do
   ll <- toJSVal logLevel
   drawingContext <- getDrawingContext
@@ -561,40 +543,40 @@ hydrate logLevel mountPoint vtree = do
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).focus()@.
-focus :: MisoString -> JSM ()
+focus :: MisoString -> IO ()
 focus x = void $ jsg "miso" # "callFocus" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
-blur :: MisoString -> JSM ()
+blur :: MisoString -> IO ()
 blur x = void $ jsg "miso" # "callBlur" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.querySelector('#' + id).select()@.
-select :: MisoString -> JSM ()
+select :: MisoString -> IO ()
 select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, \'none\')@.
-setSelectionRange :: MisoString -> Int -> Int -> JSM ()
+setSelectionRange :: MisoString -> Int -> Int -> IO ()
 setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
-scrollIntoView :: MisoString -> JSM ()
+scrollIntoView :: MisoString -> IO ()
 scrollIntoView elId = do
   el <- jsg "document" # "getElementById" $ [elId]
   _ <- el # "scrollIntoView" $ ()
   pure ()
 -----------------------------------------------------------------------------
 -- | Calls the @alert()@ function.
-alert :: MisoString -> JSM ()
+alert :: MisoString -> IO ()
 alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Calls the @location.reload()@ function.
-locationReload :: JSM ()
+locationReload :: IO ()
 locationReload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.style_' element containing CSS to 'Miso.Html.Element.head_'
@@ -603,12 +585,12 @@ locationReload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 --
 -- > <head><style>body { background-color: green; }</style></head>
 --
-addStyle :: MisoString -> JSM JSVal
+addStyle :: MisoString -> IO JSVal
 addStyle css = do
   context <- getDrawingContext
   head_ <- getHead
-  style <- context # "createElement" $ ["style"]
-  (style <# "innerHTML") css
+  style <- context # "createElement" $ ["style" :: MisoString]
+  setField style "innerHTML" css
   void $ context # "appendChild" $ (head_, style)
   pure style
 -----------------------------------------------------------------------------
@@ -616,13 +598,13 @@ addStyle css = do
 --
 -- > addScript False "function () { alert('hi'); }"
 --
-addScript :: Bool -> MisoString -> JSM JSVal
+addScript :: Bool -> MisoString -> IO JSVal
 addScript useModule js_ = do
   context <- getDrawingContext
   head_ <- getHead
-  script <- context # "createElement" $ ["script"]
-  when useModule $ (script <# "type") "module"
-  (script <# "innerHTML") js_
+  script <- context # "createElement" $ ["script" :: MisoString]
+  when useModule $ setField script "type" ("module" :: MisoString)
+  setField script "innerHTML" js_
   void $ context # "appendChild" $ (head_, script)
   pure script
 -----------------------------------------------------------------------------
@@ -634,20 +616,20 @@ addScript useModule js_ = do
 --   setValue domRef ("" :: MisoString)
 -- @
 --
-setValue :: DOMRef -> MisoString -> JSM ()
-setValue domRef = domRef <# "value"
+setValue :: DOMRef -> MisoString -> IO ()
+setValue domRef value = setField domRef "value" value
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
 --
 -- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
 --
-addScriptImportMap :: MisoString -> JSM JSVal
+addScriptImportMap :: MisoString -> IO JSVal
 addScriptImportMap impMap = do
   context <- getDrawingContext
   head_ <- getHead
-  script <- context # "createElement" $ ["script"]
-  (script <# "type") "importmap"
-  (script <# "innerHTML") impMap
+  script <- context # "createElement" $ ["script" :: MisoString]
+  setField script "type" ("importmap" :: MisoString)
+  setField script "innerHTML" impMap
   void $ context # "appendChild" $ (head_, script)
   pure script
 -----------------------------------------------------------------------------
@@ -655,12 +637,12 @@ addScriptImportMap impMap = do
 --
 -- > addSrc "https://example.com/script.js"
 --
-addSrc :: MisoString -> JSM JSVal
+addSrc :: MisoString -> IO JSVal
 addSrc url = do
   context <- getDrawingContext
   head_ <- getHead
-  link <- context # "createElement" $ ["script"]
-  _ <- link # "setAttribute" $ ["src", fromMisoString url]
+  link <- context # "createElement" $ ["script" :: MisoString]
+  _ <- link # "setAttribute" $ ["src", url]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
@@ -671,13 +653,13 @@ addSrc url = do
 --
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
-addStyleSheet :: MisoString -> JSM JSVal
+addStyleSheet :: MisoString -> IO JSVal
 addStyleSheet url = do
   context <- getDrawingContext
   head_ <- getHead
-  link <- context # "createElement" $ ["link"]
-  _ <- link # "setAttribute" $ ["rel","stylesheet"]
-  _ <- link # "setAttribute" $ ["href", fromMisoString url]
+  link <- context # "createElement" $ ["link" :: MisoString]
+  _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
+  _ <- link # "setAttribute" $ ["href", url]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
@@ -697,13 +679,13 @@ fetch
   -- ^ body
   -> [(MisoString, MisoString)]
   -- ^ headers
-  -> (Response success -> JSM ())
+  -> (Response success -> IO ())
   -- ^ successful callback
-  -> (Response error -> JSM ())
+  -> (Response error -> IO ())
   -- ^ errorful callback
   -> CONTENT_TYPE
   -- ^ content type
-  -> JSM ()
+  -> IO ()
 fetch url method maybeBody requestHeaders successful errorful type_ = do
   successful_ <- toJSVal =<< asyncCallback1 (successful <=< fromJSValUnchecked)
   errorful_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
@@ -740,69 +722,69 @@ data CONTENT_TYPE
 instance ToJSVal CONTENT_TYPE where
   toJSVal = \case
     JSON ->
-      toJSVal "json"
+      toJSVal ("json" :: MisoString)
     ARRAY_BUFFER ->
-      toJSVal "arrayBuffer"
+      toJSVal ("arrayBuffer" :: MisoString)
     TEXT ->
-      toJSVal "text"
+      toJSVal ("text" :: MisoString)
     BLOB ->
-      toJSVal "blob"
+      toJSVal ("blob" :: MisoString)
     BYTES ->
-      toJSVal "bytes"
+      toJSVal ("bytes" :: MisoString)
     FORM_DATA ->
-      toJSVal "formData"
+      toJSVal ("formData" :: MisoString)
     NONE ->
-      toJSVal "none"
+      toJSVal ("none" :: MisoString)
 -----------------------------------------------------------------------------
 -- | Flush is used to force a draw of the render tree. This is currently
 -- only used when targeting platforms other than the browser (like mobile).
-flush :: JSM ()
+flush :: IO ()
 flush = do
   context <- getDrawingContext
   void $ context # "flush" $ ([] :: [JSVal])
 -----------------------------------------------------------------------------
 -- | Type that holds an [Image](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img).
 newtype Image = Image JSVal
-  deriving (ToJSVal, MakeObject)
+  deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 instance FromJSVal Image where
   fromJSVal = pure . pure . Image
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' 'Miso.Types.Attribute'.
-newImage :: MisoString -> JSM Image
+newImage :: MisoString -> IO Image
 newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
-  img <# "src" $ url
+  setField img "src" url
   pure (Image img)
 -----------------------------------------------------------------------------
 -- | Used to select a drawing context. Users can override the default DOM renderer
 -- by implementing their own Context, and exporting it to the global scope. This
 -- opens the door to different rendering engines, ala [miso-lynx](https://github.com/haskell-miso/miso-lynx).
-setDrawingContext :: MisoString -> JSM ()
+setDrawingContext :: MisoString -> IO ()
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
 -----------------------------------------------------------------------------
 -- | The [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) type
 newtype Date = Date JSVal
-  deriving (ToJSVal, MakeObject)
+  deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 -- | Smart constructor for a t'Date'
-newDate :: JSM Date
+newDate :: IO Date
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Date conversion function to produce a locale
-toLocaleString :: Date -> JSM MisoString
+toLocaleString :: Date -> IO MisoString
 toLocaleString date = fromJSValUnchecked =<< do
   date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
 -- | Retrieves current milliseconds from t'Date'
-getMilliseconds :: Date -> JSM Double
+getMilliseconds :: Date -> IO Double
 getMilliseconds date =
   fromJSValUnchecked =<< do
     date # "getMilliseconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Retrieves current seconds from t'Date'
-getSeconds :: Date -> JSM Double
+getSeconds :: Date -> IO Double
 getSeconds date =
   fromJSValUnchecked =<< do
     date # "getSeconds" $ ([] :: [MisoString])
@@ -810,13 +792,13 @@ getSeconds date =
 -- | Fetch next sibling DOM node
 --
 -- @since 1.9.0.0
-nextSibling :: JSVal -> JSM JSVal
+nextSibling :: JSVal -> IO JSVal
 nextSibling domRef = domRef ! "nextSibling"
 -----------------------------------------------------------------------------
 -- | Fetch previous sibling DOM node
 --
 -- @since 1.9.0.0
-previousSibling :: JSVal -> JSM JSVal
+previousSibling :: JSVal -> IO JSVal
 previousSibling domRef = domRef ! "previousSibling"
 -----------------------------------------------------------------------------
 -- | When working with @\<input type="file"\>@, this is useful for
@@ -832,7 +814,7 @@ previousSibling domRef = domRef ! "previousSibling"
 -- @
 --
 -- @since 1.9.0.0
-files :: JSVal -> JSM [JSVal]
+files :: JSVal -> IO [JSVal]
 files domRef = fromJSValUnchecked =<< domRef ! "files"
 -----------------------------------------------------------------------------
 -- | Simulates a click event
@@ -840,7 +822,7 @@ files domRef = fromJSValUnchecked =<< domRef ! "files"
 -- > button & click ()
 --
 -- @since 1.9.0.0
-click :: () -> JSVal -> JSM ()
+click :: () -> JSVal -> IO ()
 click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Get Camera on user's device
@@ -852,15 +834,15 @@ getUserMedia
   -- ^ video
   -> Bool
   -- ^ audio
-  -> (JSVal -> JSM ())
+  -> (JSVal -> IO ())
   -- ^ successful
-  -> (JSVal -> JSM ())
+  -> (JSVal -> IO ())
   -- ^ errorful
-  -> JSM ()
+  -> IO ()
 getUserMedia video audio successful errorful = do
   params <- create
-  set (ms "video") video params
-  set (ms "audio") audio params
+  set "video" video params
+  set "audio" audio params
   devices <- jsg "navigator" ! "mediaDevices"
   promise <- devices # "getUserMedia" $ [params]
   successfulCallback <- asyncCallback1 successful
@@ -875,11 +857,11 @@ getUserMedia video audio successful errorful = do
 copyClipboard
   :: MisoString
   -- ^ Text to copy
-  -> JSM ()
+  -> IO ()
   -- ^ successful
-  -> (JSVal -> JSM ())
+  -> (JSVal -> IO ())
   -- ^ errorful
-  -> JSM ()
+  -> IO ()
 copyClipboard txt successful errorful = do
   clipboard <- jsg "navigator" ! "clipboard"
   promise <- clipboard # "writeText" $ [txt]
@@ -891,15 +873,15 @@ copyClipboard txt successful errorful = do
 -- | Establishes a @WebSocket@ connection
 websocketConnect
   :: MisoString
-  -> JSM ()
-  -> (JSVal -> JSM ())
-  -> Maybe (JSVal -> JSM ())
-  -> Maybe (JSVal -> JSM ())
-  -> Maybe (JSVal -> JSM ())
-  -> Maybe (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
+  -> IO ()
+  -> (JSVal -> IO ())
+  -> Maybe (JSVal -> IO ())
+  -> Maybe (JSVal -> IO ())
+  -> Maybe (JSVal -> IO ())
+  -> Maybe (JSVal -> IO ())
+  -> (JSVal -> IO ())
   -> Bool
-  -> JSM JSVal
+  -> IO JSVal
 websocketConnect
   url onOpen onClose
   onMessageText onMessageJSON
@@ -929,22 +911,22 @@ websocketConnect
     withMaybe Nothing = pure jsNull
     withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
-websocketClose :: JSVal -> JSM ()
+websocketClose :: JSVal -> IO ()
 websocketClose websocket = void $ do
   jsg "miso" # "websocketClose" $ [websocket]
 -----------------------------------------------------------------------------
-websocketSend :: JSVal -> JSVal -> JSM ()
+websocketSend :: JSVal -> JSVal -> IO ()
 websocketSend websocket message = void $ do
   jsg "miso" # "websocketSend" $ [websocket, message]
 -----------------------------------------------------------------------------
 eventSourceConnect
   :: MisoString
-  -> JSM ()
-  -> Maybe (JSVal -> JSM ())
-  -> Maybe (JSVal -> JSM ())
-  -> (JSVal -> JSM ())
+  -> IO ()
+  -> Maybe (JSVal -> IO ())
+  -> Maybe (JSVal -> IO ())
+  -> (JSVal -> IO ())
   -> Bool
-  -> JSM JSVal
+  -> IO JSVal
 eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
   onOpen_ <- asyncCallback onOpen
   onMessageText_ <- withMaybe onMessageText
@@ -957,7 +939,7 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
       withMaybe Nothing = pure jsNull
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
-eventSourceClose :: JSVal -> JSM ()
+eventSourceClose :: JSVal -> IO ()
 eventSourceClose eventSource = void $ do
   jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------
@@ -965,7 +947,7 @@ eventSourceClose eventSource = void $ do
 --
 -- See [navigator.onLine](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine)
 --
-isOnLine :: JSM Bool
+isOnLine :: IO Bool
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 -- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
@@ -989,7 +971,7 @@ instance FromJSVal ArrayBuffer where
 newtype ArrayBuffer = ArrayBuffer JSVal
   deriving ToJSVal
 -----------------------------------------------------------------------------
-geolocation :: (JSVal -> JSM ()) -> (JSVal -> JSM ()) -> JSM ()
+geolocation :: (JSVal -> IO ()) -> (JSVal -> IO ()) -> IO ()
 geolocation successful errorful = do
   geo <- jsg "navigator" ! "geolocation"
   cb1 <- asyncCallback1 successful
@@ -998,7 +980,7 @@ geolocation successful errorful = do
 -----------------------------------------------------------------------------
 -- | [File](https://developer.mozilla.org/en-US/docs/Web/API/File)
 newtype File = File JSVal
-  deriving (ToJSVal, MakeObject)
+  deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 instance FromJSVal File where
   fromJSVal = pure . pure . File
@@ -1012,20 +994,20 @@ instance FromJSVal Uint8Array where
 -----------------------------------------------------------------------------
 -- | [FileReader](https://developer.mozilla.org/en-US/docs/Web/API/FileReader)
 newtype FileReader = FileReader JSVal
-  deriving (ToJSVal, MakeObject)
+  deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 instance FromJSVal FileReader where
   fromJSVal = pure . pure . FileReader
 -----------------------------------------------------------------------------
 -- | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
 newtype URLSearchParams = URLSearchParams JSVal
-  deriving (ToJSVal, MakeObject)
+  deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 instance FromJSVal URLSearchParams where
   fromJSVal = pure . pure . URLSearchParams
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a t'FileReader'
-newFileReader :: JSM FileReader
+newFileReader :: IO FileReader
 newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
@@ -1048,10 +1030,10 @@ instance Functor Response where
 -----------------------------------------------------------------------------
 instance FromJSVal body => FromJSVal (Response body) where
   fromJSVal o = do
-    status_ <- fromJSVal =<< getProp (ms "status") (Object o)
-    headers_ <- fromJSVal =<< getProp (ms "headers") (Object o)
-    errorMessage_ <- fromJSVal =<< getProp (ms "error") (Object o)
-    body_ <- fromJSVal =<< getProp (ms "body") (Object o)
+    status_ <- fromJSVal =<< getProp "status" (Object o)
+    headers_ <- fromJSVal =<< getProp "headers" (Object o)
+    errorMessage_ <- fromJSVal =<< getProp "error" (Object o)
+    body_ <- fromJSVal =<< getProp "body" (Object o)
     pure (Response <$> status_ <*> headers_ <*> errorMessage_ <*> body_)
 -----------------------------------------------------------------------------
 instance FromJSVal (Map MisoString MisoString) where
@@ -1076,10 +1058,10 @@ instance FromJSVal Event where
 --     dispatchEvent themeEvent
 -- @
 --
-dispatchEvent :: Event -> JSM ()
+dispatchEvent :: Event -> IO ()
 dispatchEvent event = do
   doc <- getDocument
-  _ <- doc # (ms "dispatchEvent") $ [event]
+  _ <- doc # "dispatchEvent" $ [event]
   pure ()
 -----------------------------------------------------------------------------
 -- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
@@ -1090,7 +1072,7 @@ dispatchEvent event = do
 --     dispatchEvent themeEvent
 -- @
 --
-newEvent :: MakeArgs args => args -> JSM Event
+newEvent :: ToArgs args => args -> IO Event
 newEvent args = Event <$> new (jsg "Event") args
 -----------------------------------------------------------------------------
 -- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/CustomEvent)
@@ -1101,6 +1083,6 @@ newEvent args = Event <$> new (jsg "Event") args
 --     dispatchEvent themeEvent
 -- @
 --
-newCustomEvent :: MakeArgs args => args -> JSM Event
+newCustomEvent :: ToArgs args => args -> IO Event
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------

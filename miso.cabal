@@ -51,27 +51,10 @@ common cpp
     cpp-options:
       -DBENCH
 
-common jsaddle
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
-    build-depends:
-      jsaddle-warp < 0.10,
-      wai-middleware-static < 0.10,
-      wai < 3.3,
-      warp < 3.5,
-      websockets < 0.14
-
-  if !(impl(ghcjs) || arch(javascript))
-    build-depends:
-      file-embed < 0.1
-
+common client
   if arch(wasm32)
     build-depends:
-      jsaddle-wasm >= 0.1.2 && < 0.2
-
-common client
-  if impl(ghcjs) || arch(javascript)
-    build-depends:
-      ghcjs-base -any
+      file-embed < 0.1
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(production)
@@ -118,7 +101,6 @@ flag template-haskell
 
 library
   import:
-    jsaddle,
     client,
     cpp
   default-language:
@@ -134,6 +116,9 @@ library
     Miso.Binding
     Miso.Canvas
     Miso.Concurrent
+    Miso.DSL
+    Miso.DSL.JSVal
+    Miso.DSL.JSString
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -196,7 +181,6 @@ library
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,
-    jsaddle       < 0.10,
     mtl           < 2.4,
     text          < 2.2,
     stm >= 2.4 && < 2.6

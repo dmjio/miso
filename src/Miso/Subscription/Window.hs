@@ -21,9 +21,9 @@ module Miso.Subscription.Window
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Language.Javascript.JSaddle
 import           Data.Aeson.Types (parseEither)
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI

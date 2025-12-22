@@ -1,8 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ScopedTypeVariables        #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE LambdaCase          #-}
+{-# LANGUAGE CPP                 #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Navigator
@@ -30,9 +31,9 @@ module Miso.Navigator
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad ((<=<))
-import           Language.Javascript.JSaddle
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.String
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI

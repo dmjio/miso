@@ -184,7 +184,7 @@ import qualified Miso.String as MS
 import           Data.Proxy
 import           GHC.TypeLits
 import           GHC.OverloadedLabels
-import           Language.Javascript.JSaddle (ToJSVal(..), MakeArgs(..))
+import           Miso.DSL (ToJSVal(..), ToArgs(..))
 import           Prelude hiding (tan)
 -----------------------------------------------------------------------------
 -- | Data type for expressing Color
@@ -223,8 +223,8 @@ instance KnownSymbol color => IsLabel color Color where
 instance KnownSymbol hex => IsLabel hex MisoString where
   fromLabel = ms ("#" <> symbolVal (Proxy @hex))
 -----------------------------------------------------------------------------
--- | 'MakeArgs' instance for 'Color'
-instance MakeArgs Color where
+-- | 'ToArgs' instance for 'Color'
+instance ToArgs Color where
   makeArgs color = (:[]) <$> toJSVal color
 -----------------------------------------------------------------------------
 -- | 'ToJSVal' instance for 'Color'

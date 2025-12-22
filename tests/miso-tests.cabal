@@ -2,7 +2,7 @@ cabal-version:      2.2
 name:               miso-tests
 version:            0.1.0.0
 synopsis:           Integration tests for Haskell miso Components
-description:        An hspec-like library for testing miso Components w/ jsaddle
+description:        An hspec-like library for testing miso Components
 homepage:           https://haskell-miso.org
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -28,30 +28,17 @@ common options
      ld-options:
        -sEXPORTED_RUNTIME_METHODS=HEAP8
 
-flag jsdom
-  manual:
-    True
-  default:
-    False
-  description:
-    Uses to indicate if jsdom should be used
-
 executable component-tests
   import:
     options
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, jsaddle, stm
+    base, miso, miso-tests, containers, mtl, stm
   hs-source-dirs:
     app
 
-  if flag (jsdom)
-    js-sources:
-      js/jsdom.js
-    cpp-options:
-      -DJSDOM
-  else
+  if arch(javascript) || impl(ghcjs)
     cpp-options:
       -DGHCJS_BROWSER
 
@@ -60,7 +47,7 @@ executable component-tests
 
 library
   import:
-    warnings
+    warnings, options
   hs-source-dirs:
     src
   default-language:
@@ -68,4 +55,4 @@ library
   exposed-modules:
     Miso.Test
   build-depends:
-    base, miso, containers, mtl, jsaddle, stm
+    base, miso, containers, mtl, stm

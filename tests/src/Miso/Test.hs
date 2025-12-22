@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
@@ -13,8 +14,8 @@
 -- Portability :  non-portable
 --
 -- An hspec-like [miso](https://github.com/dmjio/miso) testing framework. Meant for testing @miso@ @Component@.
--- The testing framework operates in the jsaddle t'Language.Javascript.JSaddle.Types.JSM' monad and has access
--- to the DOM courtesy of [JSDOM](https://github.com/jsdom/jsdom) and [Playwright](https://playwright.dev/).
+-- The testing framework operates in the t'IO' monad and has access
+-- to the DOM courtesy of [Playwright](https://playwright.dev/).
 --
 -- @
 --
@@ -37,19 +38,17 @@ module Miso.Test
   , shouldNotBe
   , runTests
   -- * Utils
-  , jsm
   , choose
   -- * Types
   , Test
   , TestState
   ) where
 -----------------------------------------------------------------------------
-import           Control.Exception (SomeException)
-import           Language.Javascript.JSaddle.Monad
+import           Control.Exception (IOException)
+import           Control.Monad.Except (catchError)
 import           Text.Printf
 import           Control.Monad.State
 import           Control.Monad
-import           Language.Javascript.JSaddle
 import           System.Exit
 -----------------------------------------------------------------------------
 import           Miso
@@ -77,7 +76,7 @@ it
   -> Test ()
 it name action = do
   preamble <- use beforeAction
-  jsm preamble
+  liftIO preamble
   total += 1
   currentTestName .= name
   Clocked {..} <- clock action
@@ -91,12 +90,12 @@ it name action = do
   testGroup <- use currentTestGroup
   caughtEx <- use caughtException
   when (successful || caughtEx) $ do
-    jsm $ prettyTest CurrentTest
+    liftIO $ prettyTest CurrentTest
       { duration = time
       , ..
       }
   conclusion <- use afterAction
-  jsm conclusion
+  liftIO conclusion
   currentTestResult .= True
   currentErrorMessage .= mempty
   caughtException .= False
@@ -111,7 +110,7 @@ data CurrentTest
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | The monad that executes tests
-type Test a = StateT TestState JSM a
+type Test a = StateT TestState IO a
 -----------------------------------------------------------------------------
 -- | Internal type for managing test state
 data TestState
@@ -126,18 +125,18 @@ data TestState
   , _total :: Int
   , _totalDuration :: Double
   , _currentTestResult :: Bool
-  , _beforeAction :: JSM ()
-  , _afterAction :: JSM ()
+  , _beforeAction :: IO ()
+  , _afterAction :: IO ()
   , _caughtException :: Bool
   }
 -----------------------------------------------------------------------------
 emptyTestState :: TestState
 emptyTestState = TestState mempty mempty mempty 0 0 0 0 0 0 True (pure ()) (pure ()) False
 -----------------------------------------------------------------------------
-beforeAction :: Lens TestState (JSM ())
+beforeAction :: Lens TestState (IO ())
 beforeAction = lens _beforeAction $ \r x -> r { _beforeAction = x }
 -----------------------------------------------------------------------------
-afterAction :: Lens TestState (JSM ())
+afterAction :: Lens TestState (IO ())
 afterAction = lens _afterAction $ \r x -> r { _afterAction = x }
 -----------------------------------------------------------------------------
 expects :: Lens TestState Int
@@ -187,7 +186,7 @@ expect f x y = do
   groupName <- use currentTestGroup
   expects += 1
   currentTestResult %= (&& succeeded)
-  when (not succeeded) $ jsm $ do
+  when (not succeeded) $ liftIO $ do
     stop <- now
     prettyTest (CurrentTest groupName name succeeded expectationMessage (stop - start))
       where
@@ -225,24 +224,24 @@ shouldBe
   -> Test ()
 shouldBe = expect (==)
 -----------------------------------------------------------------------------
--- | Execute a t'Language.Javascript.JSaddle.Types.JSM' action before each 'it' block.
+-- | Execute a t'IO' action before each 'it' block.
 --
 -- This is useful for scenarios like clearing the global t'Component' state.
 --
 beforeEach
-  :: JSM ()
+  :: IO ()
   -> Test ()
   -> Test ()
 beforeEach action x = do
   beforeAction %= \f -> f >> action
   x
 -----------------------------------------------------------------------------
--- | Execute a t'Language.Javascript.JSaddle.Types.JSM' after each 'it' block.
+-- | Execute a t'IO' after each 'it' block.
 --
 -- This is useful for scenarios like clearing the global t'Component' state.
 --
 afterEach
-  :: JSM ()
+  :: IO ()
   -> Test ()
   -> Test ()
 afterEach action x = do
@@ -257,25 +256,26 @@ data Clocked a
 -----------------------------------------------------------------------------
 clock :: Test a -> Test (Clocked a)
 clock action = do
-  start <- jsm now
+  start <- liftIO now
   currentTestTime .= start
   -- dmj: ^ we set current to start here for use w/ expect() failures
-  result <- (Right <$> action) `catch`
-    (\(e :: SomeException) -> do
-        stop <- jsm now
+  result <- (Right <$> action) `catchError` errorHandler start
+  stop <- liftIO now
+  let time = stop - start
+  currentTestTime .= time
+  pure Clocked {..}
+    where
+      errorHandler start (e :: IOException) = do
+        stop <- liftIO now
         currentErrorMessage .= ms e
         caughtException .= True
         currentTestResult %= (&& False)
         currentTestTime .= stop - start
-        pure $ Left (show e))
-  stop <- jsm now
-  let time = stop - start
-  currentTestTime .= time
-  pure Clocked {..}
+        pure $ Left (show e)
 -----------------------------------------------------------------------------
 -- | Executes a block of tests in 'describe' blocks.
 runTests :: Test a -> IO ()
-runTests ts = run $ do
+runTests ts = do
 #ifdef JSDOM
   _ <- global # ("initJSDOM" :: String) $ ()
 #endif
@@ -290,7 +290,7 @@ runTests ts = run $ do
 formatMillis :: Double -> MisoString
 formatMillis duration = ms (printf "%.3f ms" duration :: String)
 -----------------------------------------------------------------------------
-prettyTest :: CurrentTest -> JSM ()
+prettyTest :: CurrentTest -> IO ()
 prettyTest CurrentTest {..} = void $
   if successful
     then
@@ -323,7 +323,7 @@ prettyTest CurrentTest {..} = void $
              <> errorMessage
          ]
 -----------------------------------------------------------------------------
-printSummary :: TestState -> JSM ()
+printSummary :: TestState -> IO ()
 printSummary TestState {..} = void $
   jsg ("console" :: MisoString) # ("log" :: MisoString) $
     [ "\n  "
@@ -359,10 +359,6 @@ yellow = "\x1b[33m"
 cyan = "\x1b[36m"
 white = "\x1b[37m"
 -----------------------------------------------------------------------------
--- | Convenience for calling 'liftJSM'
-jsm :: JSM a -> Test a
-jsm = liftJSM
------------------------------------------------------------------------------
 -- | Return a random integer between the first two provided [min, max)
 --
 -- The maximum is exclusive and the minimum is inclusive
@@ -372,7 +368,7 @@ choose
   -- ^ min
   -> Int
   -- ^ max
-  -> JSM Int
+  -> IO Int
 choose x y = fromJSValUnchecked =<< do
-  global # ("getRandomNumber" :: MisoString) $ (x,y)
+  global # "getRandomNumber" $ (x,y)
 -----------------------------------------------------------------------------

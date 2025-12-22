@@ -62,6 +62,9 @@ module Miso
   , module Miso.Effect
     -- * Event
     -- | Functions for specifying component lifecycle events and event handlers.
+  , module Miso.DSL
+    -- * DSL
+    -- | A JavaScript DSL for easy FFI interoperability
   , module Miso.Event
     -- * Property
     -- | Construct custom properties on DOM elements.
@@ -93,17 +96,13 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-#ifndef GHCJS_BOTH
 #ifdef WASM
-import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
-#else
 import           Data.FileEmbed (embedStringFile)
-import           Language.Javascript.JSaddle (eval)
-#endif
 #endif
 -----------------------------------------------------------------------------
 import           Miso.Binding
 import           Miso.Diff
+import           Miso.DSL
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
@@ -130,7 +129,7 @@ import           Miso.Util
 -- main :: IO ()
 -- main = run (miso (\\uri -> ..))
 -- @
-miso :: Eq model => (URI -> App model action) -> JSM ()
+miso :: Eq model => (URI -> App model action) -> IO ()
 miso f = withJS $ do
   vcomp <- f <$> getURI
   body <- FFI.getBody
@@ -144,15 +143,15 @@ miso f = withJS $ do
 -- main :: IO ()
 -- main = run (startApp app)
 -- @
-startApp :: Eq model => App model action -> JSM ()
+startApp :: Eq model => App model action -> IO ()
 startApp = startComponent
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
-(🍜) :: Eq model => (URI -> App model action) -> JSM ()
+(🍜) :: Eq model => (URI -> App model action) -> IO ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
-startComponent :: Eq model => Component ROOT model action -> JSM ()
+startComponent :: Eq model => Component ROOT model action -> IO ()
 startComponent vcomp = withJS (initComponent vcomp)
 ----------------------------------------------------------------------------
 -- | Runs a 'miso' application, but with a custom rendering engine.
@@ -173,7 +172,7 @@ renderApp
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
-  -> JSM ()
+  -> IO ()
 renderApp renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
 ----------------------------------------------------------------------------
@@ -181,7 +180,7 @@ renderApp renderer vcomp =
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action
-  -> JSM (ComponentState model action)
+  -> IO (ComponentState model action)
 initComponent vcomp@Component {..} = do
   root <- mountElement (getMountPoint mountPoint)
   initialize rootComponentId Draw isRoot vcomp (pure root)
@@ -194,16 +193,11 @@ isRoot = True
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
--- | Used when compiling with jsaddle to make miso's JavaScript present in
--- the execution context.
-withJS :: JSM a -> JSM ()
+-- | Used to embed JS when compiling with WASM
+withJS :: IO a -> IO ()
 withJS action = void $ do
-#ifndef GHCJS_BOTH
 #ifdef WASM
-  $(JSaddle.Wasm.TH.evalFile MISO_JS_PATH)
-#else
   _ <- eval ($(embedStringFile MISO_JS_PATH) :: MisoString)
-#endif
 #endif
   action
 -----------------------------------------------------------------------------
