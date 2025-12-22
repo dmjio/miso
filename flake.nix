@@ -26,10 +26,6 @@
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Miso uses this for FFI
-    jsaddle.url =
-      "github:ghcjs/jsaddle?rev=0fb7260ad02592546c9f180078d770256fb1f0f6";
-
     # Miso uses this compiling for WebAssembly
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";

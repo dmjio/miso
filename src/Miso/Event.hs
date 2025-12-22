@@ -38,8 +38,8 @@ module Miso.Event
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
 import           Data.Aeson.Types (parseEither)
-import           Language.Javascript.JSaddle
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI

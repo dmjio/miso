@@ -29,11 +29,11 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
 #ifdef SSR
-import Control.Exception (SomeException, catch)
-import System.IO.Unsafe (unsafePerformIO)
+import           Control.Exception (SomeException, catch)
+import           System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
-import           Miso.String hiding (intercalate)
+import           Miso.String hiding (intercalate, elem)
 import qualified Miso.String as MS
 import           Miso.Types
 ----------------------------------------------------------------------------

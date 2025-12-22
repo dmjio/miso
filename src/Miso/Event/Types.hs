@@ -42,7 +42,8 @@ module Miso.Event.Types
 -----------------------------------------------------------------------------
 import           Data.Aeson (FromJSON(..), withText)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (ToJSVal(..), create, setProp)
+-----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.String (MisoString, ms)
 -----------------------------------------------------------------------------
 -- | Type useful for both KeyCode and additional key press information.

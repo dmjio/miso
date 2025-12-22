@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.History
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -22,39 +24,40 @@ module Miso.Subscription.History
   , URI (..)
   ) where
 -----------------------------------------------------------------------------
+import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Language.Javascript.JSaddle
 import           System.IO.Unsafe
 -----------------------------------------------------------------------------
 import           Miso.Concurrent
+import           Miso.DSL
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String
 import           Miso.Router
 import           Miso.Effect (Sub)
 -----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack.
-pushURI :: URI -> JSM ()
+pushURI :: URI -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
   liftIO (notify chan)
 -----------------------------------------------------------------------------
 -- | Replaces current URI on stack.
-replaceURI :: URI -> JSM ()
+replaceURI :: URI -> IO ()
 replaceURI uri = do
   replaceState (prettyURI uri)
   liftIO (notify chan)
 -----------------------------------------------------------------------------
 -- | Navigates backwards.
-back :: JSM ()
+back :: IO ()
 back = void $ getHistory # "back" $ ()
 -----------------------------------------------------------------------------
 -- | Navigates forwards.
-forward :: JSM ()
+forward :: IO ()
 forward = void $ getHistory # "forward" $ ()
 -----------------------------------------------------------------------------
 -- | Jumps to a specific position in history.
-go :: Int -> JSM ()
+go :: Int -> IO ()
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
 chan :: Waiter
@@ -64,10 +67,10 @@ chan = unsafePerformIO waiter
 -- | Subscription for @popstate@ events, from the History API.
 uriSub :: (URI -> action) -> Sub action
 uriSub = \f sink -> do
-  void . FFI.forkJSM . forever $ do
+  void . forkIO . forever $ do
     liftIO (wait chan)
     sink . f =<< getURI
-  void $ FFI.windowAddEventListener (ms "popstate") $ \_ ->
+  void $ FFI.windowAddEventListener "popstate" $ \_ ->
     sink . f =<< getURI
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
@@ -77,7 +80,7 @@ routerSub f = uriSub $ \uri -> f (route uri)
 -----------------------------------------------------------------------------
 -- | Retrieves the current relative URI by inspecting @pathname@, @search@
 -- and @hash@.
-getURI :: JSM URI
+getURI :: IO URI
 getURI = do
   location <- jsg "window" ! "location"
   pathname <- fromJSValUnchecked =<< location ! "pathname"
@@ -91,17 +94,17 @@ getURI = do
         ]
   case parseURI uriText of
     Left err -> do
-      FFI.consoleError (ms "Couldn't parse URI: " <> err)
+      FFI.consoleError ("Couldn't parse URI: " <> err)
       pure emptyURI
     Right uri -> do
       pure uri
 -----------------------------------------------------------------------------
-getHistory :: JSM JSVal
+getHistory :: IO JSVal
 getHistory = jsg "window" ! "history"
 -----------------------------------------------------------------------------
-pushState :: MisoString -> JSM ()
+pushState :: MisoString -> IO ()
 pushState url = void $ getHistory # "pushState" $ (jsNull, jsNull, url)
 -----------------------------------------------------------------------------
-replaceState :: MisoString -> JSM ()
+replaceState :: MisoString -> IO ()
 replaceState url = void $ getHistory # "replaceState" $ (jsNull, jsNull, url)
 -----------------------------------------------------------------------------

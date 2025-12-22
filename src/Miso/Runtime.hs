@@ -77,8 +77,9 @@ module Miso.Runtime
   , rootComponentId
   ) where
 -----------------------------------------------------------------------------
+import           Control.Concurrent
 import           Control.Concurrent.STM
-import           Control.Exception (SomeException)
+import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, forever, (<=<), zipWithM_)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
@@ -91,12 +92,7 @@ import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-#ifndef GHCJS_BOTH
-import           Language.Javascript.JSaddle hiding (Sync, Result, Success)
-#else
-import           Language.Javascript.JSaddle
-#endif
-import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), ThreadId, killThread, threadStatus)
+import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -106,11 +102,12 @@ import           Text.Printf
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator)
+import           Miso.DSL
 import qualified Miso.Diff as Diff
 import qualified Miso.Hydrate as Hydrate
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
-import           Miso.String hiding (reverse, drop)
+import           Miso.String hiding (reverse, drop, elem)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
@@ -126,9 +123,9 @@ initialize
   -> Bool
   -- ^ Is the root node being rendered?
   -> Component parent model action
-  -> JSM DOMRef
+  -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
-  -> JSM (ComponentState model action)
+  -> IO (ComponentState model action)
 initialize componentParentId hydrate isRoot Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
@@ -179,7 +176,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
         pure ref
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
-    threadId <- FFI.forkJSM (sub componentSink)
+    threadId <- forkIO (sub componentSink)
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
@@ -208,13 +205,12 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
             -- dmj: reset the dirty bit
             when (mounted > 1) (writeTChan componentDiffs Null)
             -- dmj: child wake-up call for model synch.
-      syncPoint
       eventLoop
 
   -- mailbox
   componentMailbox <- liftIO newMailbox
   componentMailboxThreadId <- do
-    FFI.forkJSM . forever $ do
+    forkIO . forever $ do
       message <- liftIO (readMail =<< copyMailbox componentMailbox)
       mapM_ componentSink (mailbox message)
 
@@ -254,7 +250,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
     else
       addToDelegatedEvents logLevel events
   forM_ initialAction componentSink
-  _ <- FFI.forkJSM eventLoop
+  _ <- forkIO eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
 synchronizeChildToParent
@@ -263,7 +259,7 @@ synchronizeChildToParent
   -> TVar model
   -> Mailbox
   -> [ Binding parent model ]
-  -> JSM (Maybe ThreadId)
+  -> IO (Maybe ThreadId)
 synchronizeChildToParent _ _ _ [] = pure Nothing
 synchronizeChildToParent parentId componentModel componentDiffs bindings = do
   -- Get parent's componentNotify, subscribe to it, on notification
@@ -275,7 +271,7 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
     Just parentComponentState -> do
       bindProperty parentComponentState
       -- dmj: ^ parent assumes child state on initialization
-      fmap Just $ FFI.forkJSM $ do
+      fmap Just $ forkIO $ do
         forever $ do
           _ <- liftIO (readMail =<< copyMailbox componentDiffs)
           -- dmj: ^ listen on child this time
@@ -288,7 +284,7 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
           atomically $ writeTVar (componentIsDirty parentComponentState) True
           componentNotify parentComponentState
 -----------------------------------------------------------------------------
-addToDelegatedEvents :: LogLevel -> Events -> JSM ()
+addToDelegatedEvents :: LogLevel -> Events -> IO ()
 addToDelegatedEvents logLevel events = do
   root <- (IM.! topLevelComponentId) <$> liftIO (readIORef components)
   delegated <- M.unions . fmap componentEvents . IM.elems <$>
@@ -311,7 +307,7 @@ bindChildToParent
   -- ^ Child new model
   -> Binding parent model
   -- ^ Binding
-  -> JSM Bool
+  -> IO Bool
 bindChildToParent ComponentState {..} childRef = \case
   ChildToParent setParent getChild ->
     childToParent setParent getChild
@@ -336,7 +332,7 @@ synchronizeParentToChild
   -> TVar Bool
   -> [ Binding type_ model ]
   -> IO ()
-  -> JSM (Maybe ThreadId)
+  -> IO (Maybe ThreadId)
 synchronizeParentToChild _ _ _ [] _ = pure Nothing
 synchronizeParentToChild parentId componentModel_ componentIsDirty bindings notify= do
   -- Get parent's componentNotify, subscribe to it, on notification
@@ -348,7 +344,7 @@ synchronizeParentToChild parentId componentModel_ componentIsDirty bindings noti
     Just parentComponentState -> do
       bindProperty parentComponentState
       -- dmj: ^ assume parent state on initialization
-      fmap Just $ FFI.forkJSM $ forever $ do
+      fmap Just $ forkIO $ forever $ do
         Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
         bindProperty parentComponentState
   where
@@ -367,7 +363,7 @@ bindParentToChild
   -- ^ Child new model
   -> Binding props model
   -- ^ binding
-  -> JSM Bool
+  -> IO Bool
 bindParentToChild ComponentState {..} modelRef = \case
   ParentToChild getParent setChild -> do
     parentToChild getParent setChild
@@ -404,7 +400,7 @@ data ComponentState model action
   -- ^ The DOM reference the t'Miso.Types.Component' is mounted on
   , componentVTree :: IORef VTree
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
-  , componentSink :: action -> JSM ()
+  , componentSink :: action -> IO ()
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
   , componentModel :: TVar model
   -- ^ t'Miso.Types.Component' state
@@ -565,7 +561,7 @@ subscribe topicName successful errorful = do
             subscribeToMailbox key mailbox vcompId
   where
     subscribeToMailbox key mailbox vcompId = do
-      threadId <- FFI.forkJSM $ do
+      threadId <- forkIO $ do
         clonedMailbox <- liftIO (copyMailbox mailbox)
         ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
         forever $ do
@@ -619,7 +615,7 @@ unsubscribe topicName = do
   io_ (unsubscribe_ topicName _componentId)
 -----------------------------------------------------------------------------
 -- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
-unsubscribe_ :: Topic message -> ComponentId -> JSM ()
+unsubscribe_ :: Topic message -> ComponentId -> IO ()
 unsubscribe_ topicName vcompId = do
   let key = (vcompId, topicName)
   subscribersMap <- liftIO (readIORef subscribers)
@@ -724,9 +720,9 @@ components :: IORef (IntMap (ComponentState model action))
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
 -- | This function evaluates effects according to 'Synchronicity'.
-evalScheduled :: Synchronicity -> JSM () -> JSM ()
+evalScheduled :: Synchronicity -> IO () -> IO ()
 evalScheduled Sync x = x
-evalScheduled Async x = void (FFI.forkJSM x)
+evalScheduled Async x = void (forkIO x)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
@@ -737,7 +733,7 @@ foldEffects
   -> Sink action
   -> [action]
   -> model
-  -> JSM model
+  -> IO model
 foldEffects _ _ _ _ [] m = pure m
 foldEffects update drainSink info snk (e:es) o =
   case runEffect (update e) info o of
@@ -750,14 +746,14 @@ foldEffects update drainSink info snk (e:es) o =
           else evalScheduled synchronicity action
       foldEffects update drainSink info snk es n
   where
-    exception :: SomeException -> JSM ()
+    exception :: SomeException -> IO ()
     exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
   :: Component parent model action
   -> ComponentState model action
-  -> JSM ()
+  -> IO ()
 drain app@Component{..} cs@ComponentState {..} = do
   actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
   let info = ComponentInfo componentId componentParentId componentDOMRef
@@ -770,16 +766,15 @@ drain app@Component{..} cs@ComponentState {..} = do
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
-unloadScripts :: ComponentState model action -> JSM ()
+unloadScripts :: ComponentState model action -> IO ()
 unloadScripts ComponentState {..} = do
   head_ <- FFI.getHead
   forM_ componentScripts $ \domRef ->
     FFI.removeChild head_ domRef
 -----------------------------------------------------------------------------
 -- | Helper to drop all lifecycle and mounting hooks if defined.
-freeLifecycleHooks :: ComponentState model action -> JSM ()
+freeLifecycleHooks :: ComponentState model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
-#ifndef GHCJS_BOTH
   VTree (Object vcomp) <- liftIO (readIORef componentVTree)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onUnmounted" :: MisoString)
@@ -787,15 +782,12 @@ freeLifecycleHooks ComponentState {..} = do
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
-#else
-  pure ()
-#endif
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
   :: Component parent model action
   -> ComponentState model action
-  -> JSM ()
+  -> IO ()
 unmount app cs@ComponentState {..} = do
   liftIO $ do
     killThread componentMailboxThreadId
@@ -810,7 +802,7 @@ unmount app cs@ComponentState {..} = do
   freeLifecycleHooks cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
 -----------------------------------------------------------------------------
-killSubscribers :: ComponentId -> JSM ()
+killSubscribers :: ComponentId -> IO ()
 killSubscribers componentId =
   mapM_ (flip unsubscribe_ componentId) =<<
     M.keys <$> liftIO (readIORef mailboxes)
@@ -831,7 +823,7 @@ buildVTree
   -> LogLevel
   -> Events
   -> View model action
-  -> JSM VTree
+  -> IO VTree
 buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
@@ -893,7 +885,8 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
           pure kidsViews
             where
               setNextSibling xs =
-                zipWithM_ (<# ("nextSibling" :: MisoString)) xs (drop 1 xs)
+                zipWithM_ (flip setField "nextSibling")
+                  xs (drop 1 xs)
   VText key t -> do
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
@@ -905,7 +898,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
 -- Doesn't handle children
-createNode :: MisoString -> NS -> MisoString -> JSM Object
+createNode :: MisoString -> NS -> MisoString -> IO Object
 createNode typ ns tag = do
   vnode <- create
   cssObj <- create
@@ -931,7 +924,7 @@ setAttrs
   -> Sink action
   -> LogLevel
   -> Events
-  -> JSM ()
+  -> IO ()
 setAttrs vnode@(Object jval) attrs snk logLevel events =
   forM_ attrs $ \case
     Property "key" v -> do
@@ -961,7 +954,7 @@ registerComponent componentState = liftIO
 -- Meant for development purposes
 -- Appends CSS to <head>
 --
-renderStyles :: [CSS] -> JSM [DOMRef]
+renderStyles :: [CSS] -> IO [DOMRef]
 renderStyles styles =
   forM styles $ \case
     Href url -> FFI.addStyleSheet url
@@ -973,7 +966,7 @@ renderStyles styles =
 -- Meant for development purposes
 -- Appends JS to <head>
 --
-renderScripts :: [JS] -> JSM [DOMRef]
+renderScripts :: [JS] -> IO [DOMRef]
 renderScripts scripts =
   forM scripts $ \case
     Src src ->
@@ -990,7 +983,7 @@ renderScripts scripts =
       FFI.set "imports" imports o
       FFI.addScriptImportMap
         =<< fromJSValUnchecked
-        =<< (jsg @MisoString "JSON" # ("stringify" :: MisoString) $ [o])
+        =<< do jsg "JSON" # "stringify" $ [o]
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
@@ -1029,7 +1022,7 @@ startSub subKey sub = do
               _ -> pure ()
   where
     startThread ComponentState {..} = do
-      tid <- FFI.forkJSM (sub componentSink)
+      tid <- forkIO (sub componentSink)
       liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
         (M.insert (ms subKey) tid m, ())
 -----------------------------------------------------------------------------
@@ -1308,7 +1301,7 @@ websocketConnect url onOpen onClosed onMessage onError =
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket>
 websocketCore
-  :: (WebSocket -> Sink action -> JSM Socket)
+  :: (WebSocket -> Sink action -> IO Socket)
   -> Effect parent model action
 websocketCore core = do
   ComponentInfo {..} <- ask
@@ -1317,7 +1310,7 @@ websocketCore core = do
     socket <- core webSocketId sink
     insertWebSocket _componentId webSocketId socket
   where
-    insertWebSocket :: ComponentId -> WebSocket -> Socket -> JSM ()
+    insertWebSocket :: ComponentId -> WebSocket -> Socket -> IO ()
     insertWebSocket componentId (WebSocket socketId) socket =
       liftIO $
         atomicModifyIORef' websocketConnections $ \websockets ->
@@ -1328,7 +1321,7 @@ websocketCore core = do
             $ IM.singleton componentId
             $ IM.singleton socketId socket
 
-    freshWebSocket :: JSM WebSocket
+    freshWebSocket :: IO WebSocket
     freshWebSocket = WebSocket <$>
       liftIO (atomicModifyIORef' websocketConnectionIds $ \x -> (x + 1, x))
 -----------------------------------------------------------------------------
@@ -1336,13 +1329,13 @@ getWebSocket :: ComponentId -> WebSocket -> WebSockets -> Maybe Socket
 getWebSocket vcompId (WebSocket websocketId) =
   IM.lookup websocketId <=< IM.lookup vcompId
 -----------------------------------------------------------------------------
-finalizeWebSockets :: ComponentId -> JSM ()
+finalizeWebSockets :: ComponentId -> IO ()
 finalizeWebSockets vcompId = do
   mapM_ (mapM_ FFI.websocketClose . IM.elems) =<<
     IM.lookup vcompId <$> liftIO (readIORef websocketConnections)
   dropComponentWebSockets
     where
-      dropComponentWebSockets :: JSM ()
+      dropComponentWebSockets :: IO ()
       dropComponentWebSockets = liftIO $
         atomicModifyIORef' websocketConnections $ \websockets ->
           (IM.delete vcompId websockets, ())
@@ -1562,7 +1555,7 @@ eventSourceConnectJSON url onOpen onMessage onError =
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/EventSource>
 eventSourceCore
-  :: (EventSource -> Sink action -> JSM Socket)
+  :: (EventSource -> Sink action -> IO Socket)
   -> Effect parent model action
 eventSourceCore core = do
   ComponentInfo {..} <- ask
@@ -1571,7 +1564,7 @@ eventSourceCore core = do
     socket <- core eventSourceId sink
     insertEventSource _componentId eventSourceId socket
   where
-    insertEventSource :: ComponentId -> EventSource -> Socket -> JSM ()
+    insertEventSource :: ComponentId -> EventSource -> Socket -> IO ()
     insertEventSource componentId (EventSource socketId) socket =
       liftIO $
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
@@ -1582,7 +1575,7 @@ eventSourceCore core = do
             $ IM.singleton componentId
             $ IM.singleton socketId socket
 
-    freshEventSource :: JSM EventSource
+    freshEventSource :: IO EventSource
     freshEventSource = EventSource <$>
       liftIO (atomicModifyIORef' eventSourceConnectionIds $ \x -> (x + 1, x))
 -----------------------------------------------------------------------------
@@ -1613,13 +1606,13 @@ eventSourceClose socketId = do
     getEventSource vcompId (EventSource eventSourceId) =
       IM.lookup eventSourceId <=< IM.lookup vcompId
 -----------------------------------------------------------------------------
-finalizeEventSources :: ComponentId -> JSM ()
+finalizeEventSources :: ComponentId -> IO ()
 finalizeEventSources vcompId = do
   mapM_ (mapM_ FFI.eventSourceClose . IM.elems) =<<
     IM.lookup vcompId <$> liftIO (readIORef eventSourceConnections)
   dropComponentEventSources
     where
-      dropComponentEventSources :: JSM ()
+      dropComponentEventSources :: IO ()
       dropComponentEventSources = liftIO $
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (IM.delete vcompId eventSources, ())
@@ -1646,9 +1639,4 @@ blob = BLOB
 -- | Smart constructor for sending an @ArrayBuffer@ via an t'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
------------------------------------------------------------------------------
-#ifndef GHCJS_BOTH
-instance FromJSVal Function where
-  fromJSVal = pure . Just . Function . Object
-#endif
 -----------------------------------------------------------------------------

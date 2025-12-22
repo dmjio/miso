@@ -34,9 +34,6 @@ in
   miso-tests       = make-src-filter ../tests;
   sample-app       = make-src-filter ../sample-app;
 
-  # flake sources
-  jsaddle = fetchFromFlake (nodes.jsaddle);
-
   # non-flakified sources
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
