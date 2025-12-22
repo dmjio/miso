@@ -43,7 +43,7 @@ import qualified Data.Text.Lazy.Encoding as LT
 import           Miso.DSL.JSString
 ----------------------------------------------------------------------------
 -- | String type swappable based on compiler
-type MisoString = T.Text
+type MisoString = JSString
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 instance ToJSONKey MisoString

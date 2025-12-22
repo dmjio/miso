@@ -908,7 +908,7 @@ websocketConnect
       , textOnly_
       ]
   where
-    withMaybe Nothing = pure jsNull
+    withMaybe Nothing = jsNull
     withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 websocketClose :: JSVal -> IO ()
@@ -936,7 +936,7 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
   jsg "miso" # "eventSourceConnect" $
     (url, onOpen_, onMessageText_, onMessageJSON_, onError_, textOnly_)
     where
-      withMaybe Nothing = pure jsNull
+      withMaybe Nothing = jsNull
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 eventSourceClose :: JSVal -> IO ()

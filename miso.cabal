@@ -119,6 +119,7 @@ library
     Miso.DSL
     Miso.DSL.JSVal
     Miso.DSL.JSString
+    Miso.DSL.FFI
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -164,6 +165,19 @@ library
     Miso.Util.Lexer
     Miso.Util.Parser
     Miso.WebSocket
+
+  -- FFI declarations
+  if arch(javasript) || impl(ghcjs)
+    hs-source-dirs:
+      ffi/js
+  elif arch(wasm32)
+    hs-source-dirs:
+      ffi/wasm
+    build-depends:
+      ghc-experimental
+  else
+    hs-source-dirs:
+      ffi/ghc
 
   if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
