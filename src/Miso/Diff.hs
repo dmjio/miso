@@ -31,10 +31,12 @@ diff current new_ mountEl =
       FFI.diff current' new' mountEl
       FFI.flush
     (Nothing, Just (VTree new')) -> do
-      FFI.diff (Object jsNull) new' mountEl
+      null_ <- jsNull
+      FFI.diff (Object null_) new' mountEl
       FFI.flush
     (Just (VTree current'), Nothing) -> do
-      FFI.diff current' (Object jsNull) mountEl
+      null_ <- jsNull
+      FFI.diff current' (Object null_) mountEl
       FFI.flush
 -----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body

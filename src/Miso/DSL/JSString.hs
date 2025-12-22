@@ -1,8 +1,22 @@
-module Miso.DSL.JSString where
-
-import           Data.Text (Text)
-
+-----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
+-----------------------------------------------------------------------------
+module Miso.DSL.JSString (JSString) where
+-----------------------------------------------------------------------------
+#ifdef VANILLA
+import Data.Text (Text)
 type JSString = Text
-
-textFromJSString :: JSString -> Text
-textFromJSString = undefined
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+import GHC.Wasm.Prim (JSString)
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+import GHC.JS.Prim (JSString)
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+import GHCJS.Prim (JSString)
+#endif
+-----------------------------------------------------------------------------
