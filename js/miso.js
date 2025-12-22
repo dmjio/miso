@@ -252,15 +252,8 @@ function populateDomRef(c, context) {
   }
 }
 function callCreated(parent, n, context) {
-  switch (n.type) {
-    case 0 /* VComp */:
-      mountComponent(parent, 0 /* APPEND */, null, n, context);
-      break;
-    case 1 /* VNode */:
-      if (n.onCreated)
-        n.onCreated(n.domRef);
-      break;
-  }
+  if (n.onCreated)
+    n.onCreated(n.domRef);
 }
 function createElement(parent, op, replacing, n, context) {
   switch (n.type) {
