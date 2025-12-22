@@ -835,12 +835,17 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     vcomp <- create
 
     mountCallback <- do
-      FFI.syncCallback2 $ \parent_ continuation -> do
-        ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
-        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-        FFI.set "parent" vcomp (Object vtree)
-        vcompId_ <- toJSVal componentId
-        void $ call continuation global [vcompId_, vtree]
+      if hydrate == Hydrate
+        then
+          toJSVal jsNull
+        else
+          toJSVal =<< do
+            FFI.syncCallback2 $ \parent_ continuation -> do
+              ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
+              vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+              FFI.set "parent" vcomp (Object vtree)
+              vcompId_ <- toJSVal componentId
+              void $ call continuation global (vcompId_, vtree)
 
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \vcompId_ -> do
@@ -864,7 +869,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         FFI.set "child" jsNull vcomp        
       
     setAttrs vcomp attrs snk (logLevel app) (events app)
-    flip (FFI.set "mount") vcomp =<< toJSVal mountCallback
+    when (hydrate == Draw) (FFI.set "mount" mountCallback vcomp)
     FFI.set "unmount" unmountCallback vcomp
     FFI.set "eventPropagation" (eventPropagation app) vcomp
     flip (FFI.set "type") vcomp =<< toJSVal VCompType
