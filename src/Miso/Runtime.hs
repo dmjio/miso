@@ -168,6 +168,11 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
         when isRoot $ do
           hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
           when (not hydrated) $ do
+            liftIO $ do
+              atomicWriteIORef components IM.empty
+              atomicWriteIORef componentIds topLevelComponentId
+              atomicWriteIORef subscribers mempty
+              atomicWriteIORef mailboxes mempty
             newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
             liftIO (atomicWriteIORef ref newTree)
             Diff.diff Nothing (Just newTree) componentDOMRef
@@ -705,10 +710,7 @@ topLevelComponentId = 1
 --
 componentIds :: IORef Int
 {-# NOINLINE componentIds #-}
-componentIds = unsafePerformIO $ liftIO (newIORef initialComponentId)
-  where
-    initialComponentId :: Int
-    initialComponentId = 1
+componentIds = unsafePerformIO $ liftIO (newIORef topLevelComponentId)
 -----------------------------------------------------------------------------
 freshComponentId :: IO ComponentId
 freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
