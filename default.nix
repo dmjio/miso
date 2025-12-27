@@ -24,7 +24,7 @@ with pkgs.haskell.lib;
   # miso x86
   miso-ghc = legacyPkgs.haskell.packages.ghc865.miso;
   miso-ghc-9122 = pkgs.haskell.packages.ghc9122.miso;
-  miso-tests-ghc = pkgs.haskell.packages.ghc9122.miso;
+  miso-tests-ghc = pkgs.haskell.packages.ghc9122.miso-tests;
 
   # sample app legacy build
   inherit (legacyPkgs.haskell.packages.ghc865)

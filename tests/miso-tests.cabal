@@ -11,8 +11,6 @@ maintainer:         code@dmj.io
 copyright:          dmjio @ 2026
 category:           Web
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
-extra-source-files:
 
 common warnings
   ghc-options: -Wall
@@ -39,8 +37,14 @@ flag jsdom
 executable component-tests
   import:
     options
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: True
+  else
+    buildable: False
+
   main-is:
-    Main.hs
+    main.hs
   build-depends:
     base, miso, miso-tests, containers, mtl, jsaddle, stm
   hs-source-dirs:
@@ -50,11 +54,29 @@ executable component-tests
     js-sources:
       js/jsdom.js
     cpp-options:
-      -DJSDOM
+      -djsdom
   else
     cpp-options:
-      -DGHCJS_BROWSER
+      -dghcjs_browser
 
+  default-language:
+    Haskell2010
+
+executable integration-tests-server
+  import:
+    warnings
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: False
+  else
+    buildable: True
+
+  main-is:
+    IntegrationTests.hs
+  build-depends:
+    base
+  hs-source-dirs:
+    app
   default-language:
     Haskell2010
 
