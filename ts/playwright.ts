@@ -1,12 +1,48 @@
 const http = require('http');
 const url = require('url');
 const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
 
 let browser;
 let server;
 let isShuttingDown = false;
-const TEST_TIMEOUT = 10000;    // 10 seconds for background tests
-const WAIT_TIMEOUT = 15000;    // 15 seconds for synchronous tests
+let isReady = false;
+const TEST_TIMEOUT = 10000;
+const WAIT_TIMEOUT = 15000;
+
+// ======================
+// READINESS MANAGEMENT
+// ======================
+const READY_FILE = process.env.READY_FILE || '/tmp/playwright-server-ready';
+const PORT = parseInt(process.env.PORT || '3000');
+
+function markAsReady() {
+  isReady = true;
+  
+  // Create ready file if requested
+  if (process.argv.includes('--write-ready-file')) {
+    try {
+      fs.writeFileSync(READY_FILE, `${Date.now()}`);
+      console.log(`✅ Ready file created at: ${READY_FILE}`);
+    } catch (e) {
+      console.error('❌ Failed to write ready file:', e.message);
+    }
+  }
+  
+  console.log(`✅ Server is READY and accepting connections on port ${PORT}`);
+}
+
+function cleanupReadyFile() {
+  if (fs.existsSync(READY_FILE)) {
+    try {
+      fs.unlinkSync(READY_FILE);
+      console.log(`🧹 Cleaned up ready file: ${READY_FILE}`);
+    } catch (e) {
+      console.error('❌ Failed to clean up ready file:', e.message);
+    }
+  }
+}
 
 // ======================
 // BROWSER MANAGEMENT
@@ -33,7 +69,6 @@ async function executeTestCore(page, port, timeout) {
   return new Promise(async (resolve) => {
     let testCompleted = false;
     
-    // Console message handler
     const consoleHandler = (msg) => {
       if (testCompleted) return;
       const text = msg.text();
@@ -48,7 +83,6 @@ async function executeTestCore(page, port, timeout) {
 
     page.on('console', consoleHandler);
 
-    // Timeout handler
     const timeoutId = setTimeout(() => {
       if (testCompleted) return;
       testCompleted = true;
@@ -56,7 +90,6 @@ async function executeTestCore(page, port, timeout) {
       resolve({ status: 'TIMEOUT' });
     }, timeout);
 
-    // Navigation
     try {
       await page.goto(`http://127.0.0.1:${port}`, {
         timeout: timeout - 1000,
@@ -128,7 +161,34 @@ async function safePageClose(page, port, reason) {
 // ======================
 // ENDPOINT HANDLERS
 // ======================
+function handleReadinessCheck(req, res) {
+  if (isReady) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      status: 'ready',
+      message: 'Server is fully initialized and ready',
+      port: PORT,
+      timestamp: new Date().toISOString()
+    }));
+  } else {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      status: 'initializing',
+      message: 'Server is still starting up',
+      port: PORT
+    }));
+  }
+}
+
 async function handleTestRequest(req, res, port, waitForResult = false) {
+  if (!isReady) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ 
+      error: 'Service Unavailable',
+      message: 'Server is still initializing'
+    }));
+  }
+
   if (waitForResult) {
     try {
       const result = await runTestAndWait(port);
@@ -186,7 +246,6 @@ async function handleTestRequest(req, res, port, waitForResult = false) {
       }));
     }
   } else {
-    // Background execution
     console.log(`[PORT ${port}] 🚀 Test triggered (background)`);
     setImmediate(() => runTestInBackground(port).catch(e => 
       console.error(`[PORT ${port}] Background test error:`, e.message)
@@ -221,6 +280,7 @@ async function initiateShutdown() {
   isShuttingDown = true;
   
   console.log('⏳ Initiating graceful shutdown...');
+  cleanupReadyFile();
   
   server.close(() => {
     console.log('🔌 HTTP server closed');
@@ -259,6 +319,9 @@ function parseBooleanParam(param) {
 // ======================
 async function startServer() {
   try {
+    // Cleanup any stale ready file from previous runs
+    cleanupReadyFile();
+    
     await initializeBrowser();
     
     server = http.createServer(async (req, res) => {
@@ -274,7 +337,12 @@ async function startServer() {
         }));
       }
 
-      // Route requests
+      // Handle readiness check first
+      if (req.method === 'GET' && pathname === '/ready') {
+        return handleReadinessCheck(req, res);
+      }
+
+      // Route other requests
       if (req.method === 'GET' && pathname === '/test') {
         const portValidation = validatePort(query.port);
         if (!portValidation.valid) {
@@ -295,27 +363,26 @@ async function startServer() {
       res.end(JSON.stringify({
         error: 'Not Found',
         endpoints: {
+          ready: 'GET /ready - Check server readiness',
           test: 'GET /test?port=<PORT_NUMBER>&wait=<true|false>',
           shutdown: 'POST /shutdown'
         }
       }));
     });
 
-    const PORT = 8060;
     server.listen(PORT, () => {
-      console.log(`\n🚀 Server running at http://localhost:${PORT}`);
-      console.log('_AVAILABLE ENDPOINTS_');
-      console.log(`🔹 GET  /test?port=<PORT>&wait=<true|false>`);
-      console.log(`   - wait=true:  Wait for test result (synchronous)`);
-      console.log(`   - wait=false: Start test in background (asynchronous)`);
-      console.log(`🔹 POST /shutdown        - Gracefully shut down server\n`);
+      markAsReady();
     });
 
     // Handle process signals
     process.on('SIGINT', initiateShutdown);
     process.on('SIGTERM', initiateShutdown);
+    
+    // Cleanup on exit
+    process.on('exit', cleanupReadyFile);
   } catch (e) {
     console.error('💥 Fatal startup error:', e.message);
+    cleanupReadyFile();
     process.exit(1);
   }
 }
@@ -323,5 +390,6 @@ async function startServer() {
 // Start everything
 startServer().catch(e => {
   console.error('💥 Server startup failed:', e.message);
+  cleanupReadyFile();
   process.exit(1);
 });

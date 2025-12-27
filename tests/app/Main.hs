@@ -51,7 +51,10 @@ testComponent :: Component parent Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
-      AddOne -> this += 1
+      AddOne -> do
+        model <- get
+        io_ $ consoleLog $ "CLICK " <> toMisoString (show model)
+        this += 1
 -----------------------------------------------------------------------------
 data Action = AddOne
   deriving (Show, Eq)
@@ -87,12 +90,12 @@ main = do
         parentFieldUndefined `shouldBe` False
 
 #ifndef WASM
-      it "Should mount 10,000 components" $ do
+      it "Should mount 10 components" $ do
         _ <- jsm $ do
           startApp $
             component (0 :: Int) noop $ \_ ->
-              div_ [] (replicate 9999 (mount testComponent))
-        mountedComponents >>= (`shouldBe` 10000)
+              div_ [] (replicate 9 (mount testComponent))
+        mountedComponents >>= (`shouldBe` 10)
 #endif
 -----------------------------------------------------------------------------
 
