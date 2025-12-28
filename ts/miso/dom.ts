@@ -1,4 +1,4 @@
-import { Class, DrawingContext, CSS, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType, OP } from './types';
+import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType, OP } from './types';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -348,25 +348,22 @@ function unmountComponent<T>(c: VComp<T>): void {
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>, context: DrawingContext<T>): void {
   if (n.onBeforeMounted) n.onBeforeMounted();
-
   // 'mount()' should be executed synchronously, including its callback function argument.
-  n.mount(parent, (componentId: ComponentId, componentTree: VTree<T>) => {
-    // mount() gives us the VTree from the Haskell side
-    n.componentId = componentId;
-    n.child = componentTree;
-    componentTree.parent = n;
-    if (componentTree.type !== VTreeType.VComp) {
-      // Handle DOM placement for non-VComp child nodes
-      const childDomRef = getDOMRef(componentTree);
-      if (op === OP.REPLACE && replacing) {
-        context.replaceChild(parent, childDomRef, replacing);
-      } else if (op === OP.INSERT_BEFORE) {
-        context.insertBefore(parent, childDomRef, replacing);
-      }
-      // For OP.APPEND, this happens naturally in mount()
+  let mounted: Mount<T> = n.mount(parent); 
+  // mount() gives us the VTree from the Haskell side
+  n.componentId = mounted.componentId;
+  n.child = mounted.componentTree;
+  mounted.componentTree.parent = n;
+  if (mounted.componentTree.type !== VTreeType.VComp) {
+    // Handle DOM placement for non-VComp child nodes
+    const childDomRef = getDOMRef(mounted.componentTree);
+    if (op === OP.REPLACE && replacing) {
+      context.replaceChild(parent, childDomRef, replacing);
+    } else if (op === OP.INSERT_BEFORE) {
+      context.insertBefore(parent, childDomRef, replacing);
     }
-  });
-
+      // For OP.APPEND, this happens naturally in mount()
+  }
   if (n.onMounted) n.onMounted();
 }
 

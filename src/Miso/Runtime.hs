@@ -845,18 +845,19 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         then
           toJSVal jsNull
         else
-          toJSVal =<< do
-            FFI.syncCallback2 $ \parent_ continuation -> do
-              ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
-              vtree <- toJSVal =<< liftIO (readIORef componentVTree)
-              FFI.set "parent" vcomp (Object vtree)
-              vcompId_ <- toJSVal componentId
-              void $ call continuation global (vcompId_, vtree)
+          syncCallback1' $ \parent_ -> do
+            ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
+            vtree <- toJSVal =<< readIORef componentVTree
+            FFI.set "parent" vcomp (Object vtree)
+            obj <- create
+            setProp "componentId" componentId obj
+            setProp "componentTree" vtree obj
+            toJSVal obj
 
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \vcompId_ -> do
         componentId_ <- fromJSValUnchecked vcompId_
-        IM.lookup componentId_ <$> liftIO (readIORef components) >>= \case
+        IM.lookup componentId_ <$> readIORef components >>= \case
           Nothing -> pure ()
           Just componentState ->
             unmount app componentState

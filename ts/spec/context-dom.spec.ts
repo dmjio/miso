@@ -188,10 +188,10 @@ describe('DrawingContext tests', () => {
   });
 
   test('Should get next sibling for VComp by drilling', () => {
-    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
-      cb (0, node1);
+      return { componentId: 0, componentTree: node1 };
     }});
 
     const node1 = vnode<DOMRef>({ tag: 'div' });
@@ -219,10 +219,10 @@ describe('DrawingContext tests', () => {
    });
 
   test('Should return undefined when no next sibling', () => {
-    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
-      cb (0, node1);
+      return { componentId: 0, componentTree: node1 };
     }});
 
     const node1 = vnode<DOMRef>({ tag: 'div' });

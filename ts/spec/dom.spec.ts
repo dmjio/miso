@@ -441,11 +441,11 @@ describe('DOM tests', () => {
       onMounted : () => {
         mounted++;
       },
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       onBeforeUnmounted: () => {
         beforeUnmounted++;
@@ -1063,10 +1063,11 @@ describe('DOM tests', () => {
     let componentMounted2 = false;
     
     const comp1 = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         componentMounted = true;
         const tree = vnode<DOMRef>({});
-        callback(1 as any, tree);
+        diff<DOMRef>(null, tree, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: tree };
       },
       unmount: () => {}
     });
@@ -1076,10 +1077,11 @@ describe('DOM tests', () => {
     expect(componentMounted).toBe(true);
     
     const comp2 = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         componentMounted2 = true;
         const tree = vnode<DOMRef>({});
-        callback(2 as any, tree);
+        diff<DOMRef>(null, tree, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: tree };
       },
       unmount: () => {}
     });
@@ -1095,10 +1097,11 @@ describe('DOM tests', () => {
   test('Should handle recursive drill for nested components', () => {
     let outerComponentMounted = false;
     const outerComp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         outerComponentMounted = true;
         const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1112,10 +1115,11 @@ describe('DOM tests', () => {
     let mountCount = 0;
     
     const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         mountCount++;
         const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1125,10 +1129,11 @@ describe('DOM tests', () => {
     expect(mountCount).toBe(1);
     
     const comp2 = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         mountCount++;
         const vn = vnode<DOMRef>({ tag: 'span' });
-        callback(2 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1229,10 +1234,11 @@ describe('DOM tests', () => {
   test('Should handle VComp creation with OP.APPEND', () => {
     let mountCalled = false;
     const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         mountCalled = true;
         const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1247,10 +1253,11 @@ describe('DOM tests', () => {
     let outerMounted = false;
     
     const outerComp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         outerMounted = true;
         const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1281,9 +1288,10 @@ describe('DOM tests', () => {
     let secondMounted = false;
     
     const first = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         const vn = vnode<DOMRef>({ tag: 'span' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {
         firstUnmounted = true;
@@ -1293,10 +1301,11 @@ describe('DOM tests', () => {
     diff<DOMRef>(null, first, document.body, drawingContext);
     
     const second = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         secondMounted = true;
         const vn = vnode<DOMRef>({ tag: 'div' });
-        callback(2 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1321,10 +1330,11 @@ describe('DOM tests', () => {
   test('Should handle mountComponent callback with non-VComp child', () => {
     let mounted = false;
     const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         mounted = true;
         const vn = vnode<DOMRef>({ tag: 'article' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1336,9 +1346,10 @@ describe('DOM tests', () => {
 
   test('Should get DOM reference from drilled VComp', () => {
     const comp = vcomp<DOMRef>({
-      mount: (parent, callback) => {
+      mount: (parent) => {
         const vn = vnode<DOMRef>({ tag: 'section' });
-        callback(1 as any, vn);
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
