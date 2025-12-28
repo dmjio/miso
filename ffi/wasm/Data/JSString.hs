@@ -87,17 +87,16 @@ module Data.JSString
   , break
   , span
   , group
-  , group'
   , groupBy
   , inits
   , tails
   -- ** Breaking into many substrings
-  , splitOn, splitOn'
+  , splitOn
   , split
-  , chunksOf, chunksOf'
+  , chunksOf
   -- ** Breaking into lines and words
-  , lines, lines'
-  , words, words'
+  , lines
+  , words
   , unlines
   , unwords
   -- * Predicates
@@ -110,7 +109,7 @@ module Data.JSString
   , commonPrefixes
     -- * Searching
   , filter
-  , breakOnAll, breakOnAll'
+  , breakOnAll
   , find
   , partition
     -- * Indexing
@@ -132,6 +131,7 @@ import GHC.Wasm.Prim (JSString(..), fromJSString, toJSString)
 import Data.Aeson
 import Data.String (IsString(..))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Prelude
   hiding ( length, head, tail, filter, zip
          , zipWith, unlines, unwords, null
@@ -143,174 +143,269 @@ import Prelude
          , break, span, lines, words
          )
 -----------------------------------------------------------------------------
-pack :: a
-pack = undefined
-unpack' :: a
-unpack' = undefined
-empty :: a
-empty = undefined
-cons :: a
-cons = undefined
-snoc :: a
-snoc = undefined
-append :: a
-append = undefined
-unsnoc :: a
-unsnoc = undefined
-last :: a
-last = undefined
-init :: a
-init = undefined
-compareLength :: a
-compareLength = undefined
-map :: a
-map = undefined
-intersperse :: a
-intersperse = undefined
-transpose :: a
-transpose = undefined
-reverse :: a
-reverse = undefined
-replace :: a
-replace = undefined
-toCaseFold :: a
-toCaseFold = undefined
-toLower :: a
-toLower = undefined
-toUpper :: a
-toUpper = undefined
-toTitle :: a
-toTitle = undefined
-justifyLeft :: a
-justifyLeft = undefined
-justifyRight :: a
-justifyRight = undefined
-center :: a
-center = undefined
+pack :: String -> JSString
+pack = toJSString
+-----------------------------------------------------------------------------
+unpack' :: JSString -> String
+unpack' = fromJSString
+-----------------------------------------------------------------------------
+empty :: JSString
+empty = mempty
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return String.fromCharCode($1) + $2;
+  """ cons :: Char -> JSString -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1 + String.fromCharCode($2);
+  """ snoc :: JSString -> Char -> JSString
+-----------------------------------------------------------------------------
+append :: JSString -> JSString -> JSString
+append = mappend
+-----------------------------------------------------------------------------
+unsnoc :: JSString -> Maybe (JSString, Char) 
+unsnoc s = do
+  if length s == 0
+    then Nothing
+    else Just (init s, last s)
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) throw new Error ('last: empty string');
+  return $1.slice(-1).charCodeAt();
+  """ last :: JSString -> Char
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) throw new Error ('init: empty string');
+  return $1.slice(0,-1);
+  """ init :: JSString -> JSString
+-----------------------------------------------------------------------------
+compareLength :: JSString -> Int -> Ordering
+compareLength str = compare (length str)
+-----------------------------------------------------------------------------
+map :: (Char -> Char) -> JSString -> JSString
+map f = textToJSString . T.map f . textFromJSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  const sep = String.fromCharCode($1)
+  if ($2.length === 0) return '';
+  else if ($2.length === 1) return $2;
+  else return $2.split('').join(sep);
+  """ intersperse :: Char -> JSString -> JSString
+-----------------------------------------------------------------------------
+transpose :: [JSString] -> [JSString]
+transpose = fmap textToJSString . T.transpose . fmap textFromJSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return [...$1].reverse().join('');
+  """ reverse :: JSString -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $3.replace($1,$2);
+  """ replace :: JSString -> JSString -> JSString -> JSString
+-----------------------------------------------------------------------------
+toCaseFold :: JSString -> JSString
+toCaseFold = textToJSString . T.toCaseFold . textFromJSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1.toLowerCase();
+  """ toLower :: JSString -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1.toUpperCase();
+  """ toUpper :: JSString -> JSString
+-----------------------------------------------------------------------------
+toTitle :: JSString -> JSString
+toTitle = textToJSString . T.toTitle . textFromJSString
+-----------------------------------------------------------------------------
+justifyLeft :: Int -> Char -> JSString -> JSString
+justifyLeft k n = textToJSString . T.justifyLeft k n . textFromJSString
+-----------------------------------------------------------------------------
+justifyRight :: Int -> Char -> JSString -> JSString
+justifyRight k n = textToJSString . T.justifyRight k n . textFromJSString
+-----------------------------------------------------------------------------
+center :: Int -> Char -> JSString -> JSString
+center k n = textToJSString . T.center k n . textFromJSString
+-----------------------------------------------------------------------------
 foldl :: a
 foldl = undefined
+-----------------------------------------------------------------------------
 foldl1 :: a
 foldl1 = undefined
+-----------------------------------------------------------------------------
 foldl1' :: a
 foldl1' = undefined
+-----------------------------------------------------------------------------
 foldr :: a
 foldr = undefined
+-----------------------------------------------------------------------------
 foldr1 :: a
 foldr1 = undefined
+-----------------------------------------------------------------------------
 any :: a
 any = undefined
+-----------------------------------------------------------------------------
 all :: a
 all = undefined
+-----------------------------------------------------------------------------
 maximum :: a
 maximum = undefined
+-----------------------------------------------------------------------------
 minimum :: a
 minimum = undefined
+-----------------------------------------------------------------------------
 scanl :: a
 scanl = undefined
+-----------------------------------------------------------------------------
 scanl1 :: a
 scanl1 = undefined
+-----------------------------------------------------------------------------
 scanr :: a
 scanr = undefined
+-----------------------------------------------------------------------------
 scanr1 :: a
 scanr1 = undefined
+-----------------------------------------------------------------------------
 mapAccumL :: a
 mapAccumL = undefined
+-----------------------------------------------------------------------------
 mapAccumR :: a
 mapAccumR = undefined
+-----------------------------------------------------------------------------
 unfoldr :: a
 unfoldr = undefined
+-----------------------------------------------------------------------------
 unfoldrN :: a
 unfoldrN = undefined
-take :: a
-take = undefined
-takeEnd :: a
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  if ($1 < 1) return "";
+  return $2.slice(0, $1);
+  """ take :: Int -> JSString -> JSString
+-----------------------------------------------------------------------------
+takeEnd :: Int -> JSString -> JSString
 takeEnd = undefined
+-----------------------------------------------------------------------------
 dropEnd :: a
 dropEnd = undefined
+-----------------------------------------------------------------------------
 takeWhile :: a
 takeWhile = undefined
+-----------------------------------------------------------------------------
 takeWhileEnd :: a
 takeWhileEnd = undefined
+-----------------------------------------------------------------------------
 dropWhile :: a
 dropWhile = undefined
+-----------------------------------------------------------------------------
 dropWhileEnd :: a
 dropWhileEnd = undefined
+-----------------------------------------------------------------------------
 dropAround :: a
 dropAround = undefined
+-----------------------------------------------------------------------------
 strip :: a
 strip = undefined
+-----------------------------------------------------------------------------
 stripStart :: a
 stripStart = undefined
+-----------------------------------------------------------------------------
 stripEnd :: a
 stripEnd = undefined
+-----------------------------------------------------------------------------
 splitAt :: a
 splitAt = undefined
+-----------------------------------------------------------------------------
 breakOn :: a
 breakOn = undefined
+-----------------------------------------------------------------------------
 breakOnEnd :: a
 breakOnEnd = undefined
+-----------------------------------------------------------------------------
 break :: a
 break = undefined
+-----------------------------------------------------------------------------
 span :: a
 span = undefined
+-----------------------------------------------------------------------------
 group :: a
 group = undefined
-group' :: a
-group' = undefined
+-----------------------------------------------------------------------------l
 groupBy :: a
 groupBy = undefined
+-----------------------------------------------------------------------------
 inits :: a
 inits = undefined
+-----------------------------------------------------------------------------
 tails :: a
 tails = undefined
+-----------------------------------------------------------------------------
 splitOn :: a
 splitOn = undefined
-splitOn' :: a
-splitOn' = undefined
+-----------------------------------------------------------------------------
 split :: a
 split = undefined
+-----------------------------------------------------------------------------
 chunksOf :: a
 chunksOf = undefined
-chunksOf' :: a
-chunksOf' = undefined
+-----------------------------------------------------------------------------
 lines :: a
 lines = undefined
-lines' :: a
-lines' = undefined
+-----------------------------------------------------------------------------
 words :: a
 words = undefined
-words' :: a
-words' = undefined
+-----------------------------------------------------------------------------
 unwords :: a
 unwords = undefined
+-----------------------------------------------------------------------------
 isSuffixOf :: a
 isSuffixOf = undefined
+-----------------------------------------------------------------------------
 isInfixOf :: a
 isInfixOf = undefined
+-----------------------------------------------------------------------------
 stripPrefix :: a
 stripPrefix = undefined
+-----------------------------------------------------------------------------
 stripSuffix :: a
 stripSuffix = undefined
+-----------------------------------------------------------------------------
 commonPrefixes :: a
 commonPrefixes = undefined
+-----------------------------------------------------------------------------
 filter :: a
 filter = undefined
+-----------------------------------------------------------------------------
 breakOnAll :: a
 breakOnAll = undefined
-breakOnAll' :: a
-breakOnAll' = undefined
+-----------------------------------------------------------------------------
 find :: a
 find = undefined
+-----------------------------------------------------------------------------
 partition :: a
 partition = undefined
+-----------------------------------------------------------------------------
 index :: a
 index = undefined
+-----------------------------------------------------------------------------
 findIndex :: a
 findIndex = undefined
+-----------------------------------------------------------------------------
 count :: a
 count = undefined
+-----------------------------------------------------------------------------
 zip :: a
 zip = undefined
+-----------------------------------------------------------------------------
 zipWith :: a
 zipWith = undefined
 -----------------------------------------------------------------------------
@@ -320,8 +415,10 @@ textFromJSString = undefined
 textToJSString :: Text -> JSString
 textToJSString = undefined
 -----------------------------------------------------------------------------
-null :: JSString -> Bool
-null = undefined
+foreign import javascript unsafe
+  """
+  return $1.length === 0
+  """ null :: JSString -> Bool
 -----------------------------------------------------------------------------
 drop :: Int -> JSString -> JSString
 drop = undefined
@@ -329,20 +426,29 @@ drop = undefined
 foldl' :: (a -> Char -> a) -> a -> JSString -> a
 foldl' = undefined
 -----------------------------------------------------------------------------
-length :: JSString -> Int
-length = undefined
+foreign import javascript unsafe
+  """
+  return $1.length
+  """ length :: JSString -> Int
 -----------------------------------------------------------------------------
 isPrefixOf :: JSString -> JSString -> Bool
 isPrefixOf = undefined
 -----------------------------------------------------------------------------
-singleton :: Char -> JSString
-singleton = undefined
+foreign import javascript unsafe
+  """
+  return String.fromCharCode($1);
+  """ singleton :: Char -> JSString
 -----------------------------------------------------------------------------
-head :: JSString -> Char
-head = undefined
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) throw new Error ('head: empty string');
+  return $1.slice(0).charCodeAt();
+  """ head :: JSString -> Char
 -----------------------------------------------------------------------------
-tail :: JSString -> JSString
-tail = undefined
+foreign import javascript unsafe
+  """
+  return $1.slice(1,$1.length)
+  """ tail :: JSString -> JSString
 -----------------------------------------------------------------------------
 uncons :: JSString -> Maybe (Char, JSString)
 uncons str
@@ -369,7 +475,7 @@ concatMap :: (Char -> JSString) -> JSString -> JSString
 concatMap = undefined
 -----------------------------------------------------------------------------
 unlines :: [JSString] -> JSString
-unlines = undefined
+unlines ks = concat [ snoc k '\n' | k <- ks ]
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
