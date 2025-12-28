@@ -84,6 +84,8 @@ module Miso.Html.Event
   , onEndedWith
   , onError
   , onErrorWith
+  , onLoad
+  , onUnload
   , onLoadedData
   , onLoadedDataWith
   , onLoadedMetadata
@@ -433,6 +435,14 @@ onError action = on "error" emptyDecoder $ \() _ -> action
 -- | https://www.w3schools.com/tags/av_event_error.asp
 onErrorWith :: (Media -> action) -> Attribute action
 onErrorWith action = on "error" emptyDecoder $ \() -> action . Media
+-----------------------------------------------------------------------------
+-- | https://www.w3schools.com/jsref/event_onload.asp
+onLoad :: action -> Attribute action
+onLoad action = on "load" emptyDecoder $ \() _ -> action
+-----------------------------------------------------------------------------
+-- | onUnload event
+onUnload :: action -> Attribute action
+onUnload action = on "unload" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | https://www.w3schools.com/tags/av_event_loadeddata.asp
 onLoadedData :: action -> Attribute action
