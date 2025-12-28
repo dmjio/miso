@@ -225,7 +225,7 @@ instance KnownSymbol hex => IsLabel hex MisoString where
 -----------------------------------------------------------------------------
 -- | 'ToArgs' instance for 'Color'
 instance ToArgs Color where
-  makeArgs color = (:[]) <$> toJSVal color
+  toArgs color = (:[]) <$> toJSVal color
 -----------------------------------------------------------------------------
 -- | 'ToJSVal' instance for 'Color'
 instance ToJSVal Color where

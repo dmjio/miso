@@ -67,10 +67,6 @@ module Miso.FFI.Internal
    , getProperty
    , callFunction
    , castJSVal
-   -- * Conversions
-   , integralToJSString
-   , realFloatToJSString
-   , jsStringToDouble
    -- * Events
    , delegateEvent
    , undelegateEvent
@@ -161,44 +157,6 @@ import           Miso.DSL
 import           Miso.String
 import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
--- | Creates a synchronous callback function (no return value)
-syncCallback :: IO () -> IO Function
-syncCallback a = function (\_ _ _ -> a)
------------------------------------------------------------------------------
--- | Creates an asynchronous callback function
-asyncCallback :: IO () -> IO Function
-asyncCallback a = asyncFunction (\_ _ _ -> a)
------------------------------------------------------------------------------
--- | Creates an asynchronous callback function with a single argument
-asyncCallback1 :: (JSVal -> IO ()) -> IO Function
-asyncCallback1 f = asyncFunction handle
-  where
-    handle _ _ []    = error "asyncCallback1: no args, impossible"
-    handle _ _ (x:_) = f x
------------------------------------------------------------------------------
--- | Creates an asynchronous callback function with two arguments
-asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO Function
-asyncCallback2 f = asyncFunction handle
-  where
-    handle _ _ []    = error "asyncCallback2: no args, impossible"
-    handle _ _ [_]   = error "asyncCallback2: 1 arg, impossible"
-    handle _ _ (x:y:_) = f x y
------------------------------------------------------------------------------
--- | Creates a synchronous callback function with one argument
-syncCallback1 :: (JSVal -> IO ()) -> IO Function
-syncCallback1 f = function handle
-  where
-    handle _ _ []    = error "syncCallback1: no args, impossible"
-    handle _ _ (x:_) = f x
------------------------------------------------------------------------------
--- | Creates a synchronous callback function with two arguments
-syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO Function
-syncCallback2 f = function handle
-  where
-    handle _ _ []    = error "syncCallback2: no args, impossible"
-    handle _ _ [_]   = error "syncCallback2: 1 arg, impossible"
-    handle _ _ (x:y:_) = f x y
------------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> IO ()
 set k v o = do
@@ -237,12 +195,9 @@ addEventListener
   -- the event will be passed to it as a parameter.
   -> IO Function
 addEventListener self name cb = do
-  cb_ <- function handle
+  cb_ <- Function <$> syncCallback1 cb
   void $ self # "addEventListener" $ (name, cb_)
   pure cb_
-    where
-      handle _ _ []    = error "addEventListener: no args, impossible"
-      handle _ _ (x:_) = cb x
 -----------------------------------------------------------------------------
 -- | Removes an event listener from given target.
 removeEventListener
@@ -347,7 +302,7 @@ consoleError v = do
 -- | Console-logging of JSVal
 consoleLog' :: ToArgs a => a -> IO ()
 consoleLog' args' = do
-  args <- makeArgs args'
+  args <- toArgs args'
   _ <- jsg "console" # "log" $ args
   pure ()
 -----------------------------------------------------------------------------
@@ -479,39 +434,19 @@ diff (Object a) (Object b) c = do
   context <- getDrawingContext
   void $ moduleMiso # "diff" $ [a,b,c,context]
 -----------------------------------------------------------------------------
--- | Helper function for converting Integral types to JavaScript strings
-integralToJSString :: Integral a => a -> MisoString
-integralToJSString = pack . show . toInteger
------------------------------------------------------------------------------
--- | Helper function for converting RealFloat types to JavaScript strings
-realFloatToJSString :: RealFloat a => a -> MisoString
-realFloatToJSString x = (pack . show) (realToFrac x :: Double)
------------------------------------------------------------------------------
--- | Helper function for converting RealFloat types to JavaScript strings
-jsStringToDouble :: MisoString -> Double
-jsStringToDouble = read . unpack
------------------------------------------------------------------------------
 -- | Initialize event delegation from a mount point.
 delegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 delegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
-  cb <- function handler
-  delegate mountPoint events debug cb ctx
-    where
-      handler _ _ [] = error "delegate: no args - impossible state"
-      handler _ _ (continuation : _) =
-        void (call continuation global =<< getVTree)
+  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
+  delegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
 -- | Deinitialize event delegation from a mount point.
 undelegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 undelegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
-  cb <- function handler
-  undelegate mountPoint events debug cb ctx
-    where
-      handler _ _ [] = error "undelegate: no args - impossible state"
-      handler _ _ (continuation : _) =
-        void (call continuation global =<< getVTree)
+  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
+  undelegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
 delegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> IO ()
@@ -908,8 +843,8 @@ websocketConnect
       , textOnly_
       ]
   where
-    withMaybe Nothing = jsNull
-    withMaybe (Just f) = toJSVal =<< asyncCallback1 f
+    withMaybe Nothing = pure jsNull
+    withMaybe (Just f) = asyncCallback1 f
 -----------------------------------------------------------------------------
 websocketClose :: JSVal -> IO ()
 websocketClose websocket = void $ do
@@ -936,7 +871,7 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
   jsg "miso" # "eventSourceConnect" $
     (url, onOpen_, onMessageText_, onMessageJSON_, onError_, textOnly_)
     where
-      withMaybe Nothing = jsNull
+      withMaybe Nothing = pure jsNull
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 eventSourceClose :: JSVal -> IO ()

@@ -213,7 +213,7 @@ renderStyleArg = \case
   PatternArg p -> toJSVal p
 -----------------------------------------------------------------------------
 instance ToArgs StyleArg where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal StyleArg where
   toJSVal = renderStyleArg
@@ -234,7 +234,7 @@ data LineCapType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs LineCapType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal LineCapType where
   toJSVal = toJSVal . renderLineCapType
@@ -254,7 +254,7 @@ data LineJoinType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs LineJoinType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal LineJoinType where
   toJSVal = toJSVal . renderLineJoinType
@@ -274,7 +274,7 @@ data DirectionType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs DirectionType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal DirectionType where
   toJSVal = toJSVal . renderDirectionType
@@ -296,7 +296,7 @@ data TextAlignType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs TextAlignType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal TextAlignType where
   toJSVal = toJSVal . renderTextAlignType
@@ -321,7 +321,7 @@ data TextBaselineType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs TextBaselineType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal TextBaselineType where
   toJSVal = toJSVal . renderTextBaselineType
@@ -352,7 +352,7 @@ data CompositeOperation
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToArgs CompositeOperation where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal CompositeOperation where
   toJSVal = toJSVal . renderCompositeOperation
@@ -388,7 +388,7 @@ instance FromJSVal Gradient where
 newtype ImageData = ImageData JSVal deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
 instance ToArgs ImageData where
-  makeArgs args = (:[]) <$> toJSVal args
+  toArgs args = (:[]) <$> toJSVal args
 -----------------------------------------------------------------------------
 instance FromJSVal ImageData where
   fromJSVal = pure . pure . ImageData
@@ -415,7 +415,7 @@ call name arg = do
 set :: ToArgs args => MisoString -> args -> Canvas ()
 set name args = do
   ctx <- ask
-  liftIO $ setField ctx name (makeArgs args)
+  liftIO $ setField ctx name (toArgs args)
 -----------------------------------------------------------------------------
 -- | DSL for expressing operations on 'canvas_'
 type Canvas a = ReaderT CanvasContext2D IO a

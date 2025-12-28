@@ -7,17 +7,54 @@
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 module Miso.DSL
-  ( module Miso.DSL
-  , module Miso.DSL.JSVal
-  , module Miso.DSL.JSString
+  ( -- * Classes
+    ToJSVal (..)
+  , FromJSVal (..)
+  , ToArgs (..)
+  , ToObject (..)
+    -- * Types
+  , JSVal
+  , Object (..)
+  , Function (..)
+    -- * Utils
+  , jsg
+  , global
+  , (#)
+  , setField
+  , (<##)
+  , (!)
+  , listProps
+  , call
+  , jsg1
+  , new
+  , create
+  , setProp
+  , getProp
+  , eval
+  , waitForAnimationFrame
+  , freeFunction
+  , (!!)
+  , isUndefined
+  , isNull
   , jsNull
+  , syncCallback
+  , syncCallback1
+  , syncCallback2
+  , syncCallback3
+  , syncCallback'
+  , syncCallback1'
+  , syncCallback2'
+  , syncCallback3'
+  , asyncCallback
+  , asyncCallback1
+  , asyncCallback2
+  , asyncCallback3
   ) where
 -----------------------------------------------------------------------------
 import Data.Aeson (Value)
 import Control.Monad
+import Prelude hiding ((!!))
 -----------------------------------------------------------------------------
-import Miso.DSL.JSVal
-import Miso.DSL.JSString
 import Miso.DSL.FFI
 import Miso.String
 -----------------------------------------------------------------------------
@@ -26,6 +63,9 @@ class ToJSVal a where
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
+-----------------------------------------------------------------------------
+instance ToJSVal (IO JSVal) where
+  toJSVal action = action
 -----------------------------------------------------------------------------
 instance ToJSVal Double where
   toJSVal = toJSVal_Double
@@ -42,7 +82,7 @@ instance ToJSVal a => ToJSVal (Maybe a) where
     Just x -> toJSVal x
 -----------------------------------------------------------------------------
 instance FromJSVal a => FromJSVal [a] where
-  fromJSVal = fromJSVal
+  fromJSVal = undefined
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal [a] where
   toJSVal = toJSVal_List <=< mapM toJSVal
@@ -68,7 +108,7 @@ instance FromJSVal Double where
   fromJSVal = fromJSVal_Double
 -----------------------------------------------------------------------------
 instance ToObject Object where
-  makeObject = pure
+  toObject = pure
 -----------------------------------------------------------------------------
 instance ToJSVal Value where
   toJSVal = toJSVal_Value
@@ -113,25 +153,25 @@ infixr 2 #
 (#) = undefined
 -----------------------------------------------------------------------------
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
-new = new_ffi
+new constr args = do
+  obj <- toJSVal =<< toObject constr
+  argv <- toJSVal =<< toArgs args
+  new_ffi obj argv  
 -----------------------------------------------------------------------------
 create :: IO Object
-create = create_ffi
+create = Object <$> create_ffi
 -----------------------------------------------------------------------------
-setProp :: MisoString -> JSVal -> Object -> IO ()
-setProp = setProp_ffi
+setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
+setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
 -----------------------------------------------------------------------------
 getProp :: ToObject o => MisoString -> o -> IO JSVal
-getProp = getProp_ffi
+getProp k v = getProp_ffi k =<< toJSVal (toObject v) 
 -----------------------------------------------------------------------------
-function :: (JSVal -> JSVal -> [JSVal] -> IO ()) -> IO Function
-function = function_ffi
+-- function :: (JSVal -> JSVal -> [JSVal] -> IO ()) -> IO Function
+-- function = function_ffi
 -----------------------------------------------------------------------------
-asyncFunction :: (JSVal -> JSVal -> [JSVal] -> IO ()) -> IO Function
-asyncFunction = asyncFunction_ffi
------------------------------------------------------------------------------
-global :: IO JSVal
-global = jsg ("globalThis" :: MisoString)
+-- asyncFunction :: (JSVal -> JSVal -> [JSVal] -> IO ()) -> IO Function
+-- asyncFunction = asyncFunction_ffi
 -----------------------------------------------------------------------------
 eval :: MisoString -> IO JSVal
 eval = eval_ffi
@@ -145,57 +185,51 @@ instance FromJSVal JSVal where
 instance FromJSVal a => FromJSVal (Maybe a) where
   fromJSVal = undefined
 -----------------------------------------------------------------------------
-newtype Object = Object { unObject :: JSVal }
-  deriving ToJSVal
------------------------------------------------------------------------------
 class ToArgs args where
-  makeArgs :: args -> IO [JSVal]
+  toArgs :: args -> IO [JSVal]
 -----------------------------------------------------------------------------
 instance ToArgs Double where
-  makeArgs x = (:[]) <$> toJSVal x
+  toArgs x = (:[]) <$> toJSVal x
 -----------------------------------------------------------------------------
 instance ToArgs JSVal where
-  makeArgs val = pure [val]
+  toArgs val = pure [val]
 -----------------------------------------------------------------------------
 instance ToObject JSVal where
-  makeObject = pure . Object
+  toObject = pure . Object
 -----------------------------------------------------------------------------
 class ToObject a where
-  makeObject :: a -> IO Object
+  toObject :: a -> IO Object
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
-  makeObject action = Object <$> (toJSVal =<< action)
+  toObject action = Object <$> (toJSVal =<< action)
 -----------------------------------------------------------------------------
 instance ToArgs MisoString where
-  makeArgs arg = (:[]) <$> toJSVal arg
+  toArgs arg = (:[]) <$> toJSVal arg
 ----------------------------------------------------------------------------
 instance ToJSVal MisoString where
-  toJSVal _ = pure JSVal
-----------------------------------------------------------------------------
-newtype Function = Function JSVal
-  deriving ToJSVal
+  toJSVal _ = undefined -- pure JSVal
 ----------------------------------------------------------------------------
 instance ToJSVal arg => ToArgs [arg] where
-    makeArgs = mapM toJSVal
+    toArgs = mapM toJSVal
 ----------------------------------------------------------------------------
 instance ToArgs () where
-  makeArgs _ = pure []
+  toArgs _ = pure []
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2) => ToArgs (arg1, arg2) where
-  makeArgs (arg1, arg2) = do
+  toArgs (arg1, arg2) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     return [rarg1, rarg2]
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3) => ToArgs (arg1, arg2, arg3) where
-  makeArgs (arg1, arg2, arg3) = do
+  toArgs (arg1, arg2, arg3) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     rarg3 <- toJSVal arg3
     return [rarg1, rarg2, rarg3]
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4) => ToArgs (arg1, arg2, arg3, arg4) where
-  makeArgs (arg1, arg2, arg3, arg4) = do
+  toArgs (arg1, arg2, arg3, arg4) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     rarg3 <- toJSVal arg3
@@ -203,7 +237,7 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4) => ToArgs (arg
     return [rarg1, rarg2, rarg3, rarg4]
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5) => ToArgs (arg1, arg2, arg3, arg4, arg5) where
-  makeArgs (arg1, arg2, arg3, arg4, arg5) = do
+  toArgs (arg1, arg2, arg3, arg4, arg5) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     rarg3 <- toJSVal arg3
@@ -212,7 +246,7 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5) 
     return [rarg1, rarg2, rarg3, rarg4, rarg5]
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, ToJSVal arg6) => ToArgs (arg1, arg2, arg3, arg4, arg5, arg6) where
-  makeArgs (arg1, arg2, arg3, arg4, arg5, arg6) = do
+  toArgs (arg1, arg2, arg3, arg4, arg5, arg6) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     rarg3 <- toJSVal arg3
@@ -225,7 +259,7 @@ waitForAnimationFrame :: IO ()
 waitForAnimationFrame = undefined
 ----------------------------------------------------------------------------
 freeFunction :: Function -> IO ()
-freeFunction = undefined
+freeFunction (Function x) = freeFunction_ffi x
 -----------------------------------------------------------------------------
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function
@@ -233,10 +267,13 @@ instance FromJSVal Function where
 (!!) :: ToObject object => object -> Int -> IO JSVal
 (!!) = getPropIndex_ffi
 -----------------------------------------------------------------------------
-isUndefined :: JSVal -> IO Bool
-isUndefined = toJSVal_isUndefined
+isUndefined :: ToJSVal val => val -> IO Bool
+isUndefined = isUndefined_ffi <=< toJSVal
 -----------------------------------------------------------------------------
-isNull :: JSVal -> IO Bool
-isNull = toJSVal_isNull
+isNull :: ToJSVal val => val -> IO Bool
+isNull = isNull_ffi <=< toJSVal
 -----------------------------------------------------------------------------
-
+newtype Object = Object { unObject :: JSVal } deriving ToJSVal
+-----------------------------------------------------------------------------
+newtype Function = Function { unFunction :: JSVal } deriving ToJSVal
+-----------------------------------------------------------------------------

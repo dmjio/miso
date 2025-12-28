@@ -52,10 +52,6 @@ common cpp
       -DBENCH
 
 common client
-  if arch(wasm32)
-    build-depends:
-      file-embed < 0.1
-
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(production)
       js-sources:
@@ -108,6 +104,7 @@ library
   other-modules:
     Miso.Delegate
     Miso.Diff
+    Miso.DSL.FFI
     Miso.Hydrate
     Miso.FFI.Internal
     Miso.Runtime
@@ -117,9 +114,6 @@ library
     Miso.Canvas
     Miso.Concurrent
     Miso.DSL
-    Miso.DSL.JSVal
-    Miso.DSL.JSString
-    Miso.DSL.FFI
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -175,6 +169,9 @@ library
       ffi/wasm
     build-depends:
       ghc-experimental
+    other-modules:
+      Miso.DSL.TH
+      Data.JSString
   else
     hs-source-dirs:
       ffi/ghc

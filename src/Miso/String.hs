@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP                  #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
@@ -21,43 +21,31 @@ module Miso.String
   , module Data.Monoid
 #ifdef VANILLA
   , module Data.Text
+#else
+  , module Data.JSString
 #endif
   , ms
   ) where
 ----------------------------------------------------------------------------
-#ifndef VANILLA
-import           Data.Aeson
-#endif
+#ifdef VANILLA
 import           Data.Text hiding (show)
+#endif
 import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as BL
-import           Data.Char
 import           Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 ----------------------------------------------------------------------------
-import           Miso.DSL.JSString
-----------------------------------------------------------------------------
--- | String type swappable based on compiler
+#ifdef VANILLA
+import Data.Text
+type MisoString = Text
+#else
+import Data.JSString
 type MisoString = JSString
-----------------------------------------------------------------------------
-#ifndef VANILLA
-instance ToJSONKey MisoString
-instance FromJSONKey MisoString
-----------------------------------------------------------------------------
--- | `ToJSON` for `MisoString`
-instance ToJSON MisoString where
-  toJSON = String . textFromJSString
-----------------------------------------------------------------------------
--- | `FromJSON` for `MisoString`
-instance FromJSON MisoString where
-  parseJSON =
-    withText "Not a valid string" $ \x ->
-      pure (toMisoString x)
 #endif
 ----------------------------------------------------------------------------
 -- | Convenience class for creating `MisoString` from other string-like types
@@ -84,55 +72,61 @@ ms = toMisoString
 instance ToMisoString a => ToMisoString (Maybe a) where
   toMisoString = \case
     Nothing -> mempty
-    Just x -> toMisoString x
+    Just x -> ms x
 ----------------------------------------------------------------------------
 instance ToMisoString Char where
-  toMisoString = T.singleton
+  toMisoString = singleton
 ----------------------------------------------------------------------------
 instance ToMisoString IOException where
-  toMisoString = undefined
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString MisoString where
   toMisoString = id
 ----------------------------------------------------------------------------
 instance ToMisoString SomeException where
-  toMisoString = toMisoString . show
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString String where
-  toMisoString = T.pack
+  toMisoString = toJSString
 ----------------------------------------------------------------------------
 instance ToMisoString LT.Text where
-  toMisoString = LT.toStrict
+  toMisoString = ms . LT.toStrict
+----------------------------------------------------------------------------
+instance ToMisoString T.Text where
+  toMisoString = textToJSString
 ----------------------------------------------------------------------------
 instance ToMisoString B.ByteString where
-  toMisoString = toMisoString . T.decodeUtf8
+  toMisoString = ms . T.decodeUtf8
 ----------------------------------------------------------------------------
 instance ToMisoString BL.ByteString where
-  toMisoString = toMisoString . LT.decodeUtf8
+  toMisoString = ms . LT.decodeUtf8
 ----------------------------------------------------------------------------
 instance ToMisoString B.Builder where
-  toMisoString = toMisoString . B.toLazyByteString
+  toMisoString = ms . B.toLazyByteString
 ----------------------------------------------------------------------------
 instance ToMisoString Float where
-  toMisoString = T.pack . show
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
-  toMisoString = T.pack . show
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString Int where
-  toMisoString = T.pack . show
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString Word where
-  toMisoString = T.pack . show
+  toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
 ----------------------------------------------------------------------------
+instance FromMisoString T.Text where
+  fromMisoStringEither = Right . textFromJSString
+----------------------------------------------------------------------------
 instance FromMisoString String where
-  fromMisoStringEither = Right . T.unpack
+  fromMisoStringEither = Right . fromJSString
 ----------------------------------------------------------------------------
 instance FromMisoString LT.Text where
-  fromMisoStringEither = Right . LT.fromStrict
+  fromMisoStringEither = Right . LT.fromStrict . textFromJSString
 ----------------------------------------------------------------------------
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
@@ -142,35 +136,4 @@ instance FromMisoString BL.ByteString where
 ----------------------------------------------------------------------------
 instance FromMisoString B.Builder where
   fromMisoStringEither = fmap B.byteString . fromMisoStringEither
-----------------------------------------------------------------------------
-instance FromMisoString Float where
-  fromMisoStringEither = fmap realToFrac . jsStringToDoubleEither
-----------------------------------------------------------------------------
-instance FromMisoString Double where
-  fromMisoStringEither = jsStringToDoubleEither
-----------------------------------------------------------------------------
-instance FromMisoString Int where
-  fromMisoStringEither = parseInt
-----------------------------------------------------------------------------
-instance FromMisoString Word where
-  fromMisoStringEither = parseWord
-----------------------------------------------------------------------------
-jsStringToDoubleEither :: JSString -> Either String Double
-jsStringToDoubleEither s = let d = read $ T.unpack s
-                           in if isNaN d then Left "jsStringToDoubleEither: parse failed"
-                                         else Right d
-----------------------------------------------------------------------------
-parseWord :: MisoString -> Either String Word
-parseWord s = case T.uncons s of
-                Nothing     -> Left "parseWord: parse error"
-                Just (c, s') -> T.foldl' k (pDigit c) s'
-  where
-    pDigit c | isDigit c = Right . fromIntegral . digitToInt $ c
-             | otherwise = Left "parseWord: parse error"
-    k ea c = (\a x -> 10 * a + x) <$> ea <*> pDigit c
-----------------------------------------------------------------------------
-parseInt   :: MisoString -> Either String Int
-parseInt s = case T.uncons s of
-               Just ('-',s') -> ((-1)*) . fromIntegral <$> parseWord s'
-               _             ->           fromIntegral <$> parseWord s
 ----------------------------------------------------------------------------

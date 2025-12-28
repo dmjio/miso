@@ -96,9 +96,6 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-#ifdef WASM
-import           Data.FileEmbed (embedStringFile)
-#endif
 -----------------------------------------------------------------------------
 import           Miso.Binding
 import           Miso.Diff
@@ -193,11 +190,10 @@ isRoot = True
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
--- | Used to embed JS when compiling with WASM
 withJS :: IO a -> IO ()
 withJS action = void $ do
 #ifdef WASM
-  _ <- eval ($(embedStringFile MISO_JS_PATH) :: MisoString)
+  $(evalFile MISO_JS_PATH)
 #endif
   action
 -----------------------------------------------------------------------------

@@ -4,9 +4,11 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE NamedFieldPuns             #-}
+{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ImportQualifiedPost        #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -75,6 +77,9 @@ module Miso.Runtime
   , components
   , componentIds
   , rootComponentId
+#ifdef WASM
+  , evalFile
+#endif
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent
@@ -93,6 +98,9 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
+#ifdef WASM
+import           Language.Haskell.TH qualified as TH
+#endif
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -103,17 +111,21 @@ import           Text.Printf
 import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
 import           Miso.Delegate (delegator)
 import           Miso.DSL
+#ifdef WASM
+import           Miso.DSL.TH
+#endif
 import qualified Miso.Diff as Diff
 import qualified Miso.Hydrate as Hydrate
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
-import           Miso.String hiding (reverse, drop, elem)
+import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
-                             , io_, withSink, Synchronicity(..)
-                             )
+import           Miso.Effect
+  ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+  , io_, withSink, Synchronicity(..)
+  )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -1639,4 +1651,15 @@ blob = BLOB
 -- | Smart constructor for sending an @ArrayBuffer@ via an t'EventSource'
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
+-----------------------------------------------------------------------------
+#ifdef WASM
+-----------------------------------------------------------------------------
+-- | Like 'eval', but read the JS code to evaluate from a file.
+evalFile :: FilePath -> TH.Q TH.Exp
+evalFile path = eval_ =<< TH.runIO (readFile path)
+  where
+    eval_ :: String -> TH.Q TH.Exp
+    eval_ chunk = [| $(Miso.DSL.TH.evalTH chunk []) :: IO () |]
+-----------------------------------------------------------------------------
+#endif
 -----------------------------------------------------------------------------

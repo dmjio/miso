@@ -334,9 +334,9 @@ data NS
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
   toJSVal = \case
-    SVG -> toJSVal ("svg" :: JSString)
-    HTML -> toJSVal ("html" :: JSString)
-    MATHML -> toJSVal ("mathml" :: JSString)
+    SVG -> toJSVal ("svg" :: MisoString)
+    HTML -> toJSVal ("html" :: MisoString)
+    MATHML -> toJSVal ("mathml" :: MisoString)
 -----------------------------------------------------------------------------
 -- | Unique key for a DOM node.
 --
