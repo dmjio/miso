@@ -8,7 +8,7 @@ module Data.JSString
     JSString (..)
     -- * Creation and elimination
   , pack
-  , unpack, unpack'
+  , unpack
   , singleton
   , empty
     -- * Basic interface
@@ -44,7 +44,6 @@ module Data.JSString
   , foldl
   , foldl'
   , foldl1
-  , foldl1'
   , foldr
   , foldr1
     -- ** Special folds
@@ -146,9 +145,6 @@ import Prelude
 pack :: String -> JSString
 pack = toJSString
 -----------------------------------------------------------------------------
-unpack' :: JSString -> String
-unpack' = fromJSString
------------------------------------------------------------------------------
 empty :: JSString
 empty = mempty
 -----------------------------------------------------------------------------
@@ -235,25 +231,22 @@ justifyRight k n = textToJSString . T.justifyRight k n . textFromJSString
 center :: Int -> Char -> JSString -> JSString
 center k n = textToJSString . T.center k n . textFromJSString
 -----------------------------------------------------------------------------
-foldl :: a
+foldl :: (a -> Char -> a) -> a -> JSString -> a
 foldl = undefined
 -----------------------------------------------------------------------------
-foldl1 :: a
+foldl1 :: (Char -> Char -> Char) -> JSString -> Char
 foldl1 = undefined
 -----------------------------------------------------------------------------
-foldl1' :: a
-foldl1' = undefined
------------------------------------------------------------------------------
-foldr :: a
+foldr :: (Char -> a -> a) -> a -> JSString -> a
 foldr = undefined
 -----------------------------------------------------------------------------
-foldr1 :: a
+foldr1 :: (Char -> Char -> Char) -> JSString -> Char
 foldr1 = undefined
 -----------------------------------------------------------------------------
-any :: a
+any :: (Char -> Bool) -> JSString -> Bool
 any = undefined
 -----------------------------------------------------------------------------
-all :: a
+all :: (Char -> Bool) -> JSString -> Bool
 all = undefined
 -----------------------------------------------------------------------------
 maximum :: a
@@ -293,10 +286,10 @@ foreign import javascript unsafe
   """ take :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 takeEnd :: Int -> JSString -> JSString
-takeEnd = undefined
+takeEnd n = reverse . take n . reverse
 -----------------------------------------------------------------------------
-dropEnd :: a
-dropEnd = undefined
+dropEnd :: Int -> JSString -> JSString
+dropEnd n = reverse . drop n . reverse
 -----------------------------------------------------------------------------
 takeWhile :: a
 takeWhile = undefined
