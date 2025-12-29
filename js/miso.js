@@ -307,19 +307,18 @@ function unmountComponent(c) {
 function mountComponent(parent, op, replacing, n, context) {
   if (n.onBeforeMounted)
     n.onBeforeMounted();
-  n.mount(parent, (componentId, componentTree) => {
-    n.componentId = componentId;
-    n.child = componentTree;
-    componentTree.parent = n;
-    if (componentTree.type !== 0 /* VComp */) {
-      const childDomRef = getDOMRef(componentTree);
-      if (op === 1 /* REPLACE */ && replacing) {
-        context.replaceChild(parent, childDomRef, replacing);
-      } else if (op === 2 /* INSERT_BEFORE */) {
-        context.insertBefore(parent, childDomRef, replacing);
-      }
+  let mounted = n.mount(parent);
+  n.componentId = mounted.componentId;
+  n.child = mounted.componentTree;
+  mounted.componentTree.parent = n;
+  if (mounted.componentTree.type !== 0 /* VComp */) {
+    const childDomRef = getDOMRef(mounted.componentTree);
+    if (op === 1 /* REPLACE */ && replacing) {
+      context.replaceChild(parent, childDomRef, replacing);
+    } else if (op === 2 /* INSERT_BEFORE */) {
+      context.insertBefore(parent, childDomRef, replacing);
     }
-  });
+  }
   if (n.onMounted)
     n.onMounted();
 }
