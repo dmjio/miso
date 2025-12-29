@@ -8,7 +8,6 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE ImportQualifiedPost        #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -99,7 +98,7 @@ import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
 #ifdef WASM
-import           Language.Haskell.TH qualified as TH
+import qualified Language.Haskell.TH as TH
 #endif
 import           Prelude hiding (null)
 import           System.IO.Unsafe (unsafePerformIO)
@@ -122,10 +121,9 @@ import           Miso.String hiding (reverse, drop)
 import           Miso.Types
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect
-  ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
-  , io_, withSink, Synchronicity(..)
-  )
+import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+                             , io_, withSink, Synchronicity(..)
+                             )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
