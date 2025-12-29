@@ -1,4 +1,4 @@
-import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType, OP } from './types';
+import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
