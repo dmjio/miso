@@ -1,7 +1,10 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE MultilineStrings #-}
-{-# LANGUAGE BangPatterns     #-}
-{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultilineStrings  #-}
+{-# LANGUAGE UnboxedTuples     #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE MagicHash         #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
@@ -110,7 +113,7 @@ module Data.JSString
   , commonPrefixes
     -- * Searching
   , filter
-  , breakOnAll
+  -- , breakOnAll
   , find
   , partition
     -- * Indexing
@@ -127,13 +130,15 @@ module Data.JSString
   , fromJSString
   ) where
 -----------------------------------------------------------------------------
-import GHC.Wasm.Prim (JSString(..), fromJSString, toJSString)
------------------------------------------------------------------------------
-import Data.Aeson
-import Data.String (IsString(..))
-import Data.Text (Text)
+import           Data.Aeson
+import           Data.Array.Byte (ByteArray(..))
+import           Data.Text.Internal hiding (pack, empty, append)
+import           GHC.Exts
+import           GHC.IO
+import           GHC.Wasm.Prim
+import qualified Data.List as List
 import qualified Data.Text as T
-import Prelude
+import           Prelude
   hiding ( length, head, tail, filter, zip
          , zipWith, unlines, unwords, null
          , map, reverse, foldl', last, init
@@ -195,7 +200,7 @@ foreign import javascript unsafe
   """ intersperse :: Char -> JSString -> JSString
 -----------------------------------------------------------------------------
 transpose :: [JSString] -> [JSString]
-transpose = fmap textToJSString . T.transpose . fmap textFromJSString
+transpose = fmap toJSString . List.transpose . fmap fromJSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -223,21 +228,50 @@ foreign import javascript unsafe
 toTitle :: JSString -> JSString
 toTitle = textToJSString . T.toTitle . textFromJSString
 -----------------------------------------------------------------------------
-justifyLeft :: Int -> Char -> JSString -> JSString
-justifyLeft k n = textToJSString . T.justifyLeft k n . textFromJSString
+foreign import javascript unsafe
+  """
+  if ($1 <= $3.length) return $3;
+  let paddings = $1 - $3.length;
+  while (paddings > 0) {
+    $3 += String.fromCharCode($2);
+    paddings--;
+  }
+  return $3;
+  """ justifyLeft :: Int -> Char -> JSString -> JSString
 -----------------------------------------------------------------------------
-justifyRight :: Int -> Char -> JSString -> JSString
-justifyRight k n = textToJSString . T.justifyRight k n . textFromJSString
+foreign import javascript unsafe
+  """
+  if ($1 <= $3.length) return $3;
+  let paddings = $1 - $3.length;
+  while (paddings > 0) {
+    $3 = String.fromCharCode($2) + $3;
+    paddings--;
+  }
+  return $3;
+  """ justifyRight :: Int -> Char -> JSString -> JSString
 -----------------------------------------------------------------------------
-center :: Int -> Char -> JSString -> JSString
-center k n = textToJSString . T.center k n . textFromJSString
+foreign import javascript unsafe
+  """
+  if ($1 <= $3.length) return $3;
+  let paddings = ($1 - $3.length) / 2;
+  let left = Math.ceil(paddings);
+  let right = Math.floor(paddings);
+  while (left > 0) {
+    $3 = String.fromCharCode($2) + $3;
+    left--;
+  }
+  while (right > 0) {
+    $3 += String.fromCharCode($2);
+    right--;
+  }
+  return $3;
+  """ center :: Int -> Char -> JSString -> JSString
 -----------------------------------------------------------------------------
 foldl :: (a -> Char -> a) -> a -> JSString -> a
 foldl f x ys =
   case uncons ys of
     Nothing -> x
-    Just (c, next) ->
-      foldl f (f x c) next
+    Just (c, next) -> foldl f (f x c) next
 -----------------------------------------------------------------------------
 foldl1 :: (Char -> Char -> Char) -> JSString -> Char
 foldl1 f xs =
@@ -329,17 +363,40 @@ scanr1 f ys =
     Just (c, next) ->
       scanr f c next 
 -----------------------------------------------------------------------------
-mapAccumL :: a
-mapAccumL = undefined
+mapAccumL :: (a -> Char -> (a, Char)) -> a -> JSString -> (a, JSString)
+mapAccumL f x str =
+  case uncons str of
+    Nothing -> (x, str)
+    Just (c, next) -> do
+      let (a, c') = f x c
+      cons c' <$> mapAccumL f a next
 -----------------------------------------------------------------------------
-mapAccumR :: a
-mapAccumR = undefined
+mapAccumR :: (a -> Char -> (a, Char)) -> a -> JSString -> (a, JSString)
+mapAccumR f x str =
+  case uncons str of
+    Nothing -> (x, str)
+    Just (c, next) ->
+      case mapAccumR f x next of
+        (a, qs) ->
+          case f a c of
+            (a', k) -> (a', k `cons` qs)
 -----------------------------------------------------------------------------
-unfoldr :: a
-unfoldr = undefined
+unfoldr :: (a -> Maybe (Char, a)) -> a -> JSString
+unfoldr f x = do
+  case f x of
+    Nothing -> mempty
+    Just (c, y) ->
+      c `cons` unfoldr f y
 -----------------------------------------------------------------------------
-unfoldrN :: a
-unfoldrN = undefined
+unfoldrN :: Int -> (a -> Maybe (Char, a)) -> a -> JSString
+unfoldrN n f seed = go seed mempty
+  where
+    go x acc
+      | length acc == n = acc
+      | otherwise =
+          case f x of
+            Nothing -> mempty
+            Just (c,y) -> go y (c `cons` acc)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -347,17 +404,23 @@ foreign import javascript unsafe
   return $2.slice(0, $1);
   """ take :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
-takeEnd :: Int -> JSString -> JSString
-takeEnd n = reverse . take n . reverse
+foreign import javascript unsafe
+  """
+  if ($1 < 1) return "";
+  return $2.slice(-$1);
+  """ takeEnd :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
-dropEnd :: Int -> JSString -> JSString
-dropEnd n = reverse . drop n . reverse
+foreign import javascript unsafe
+  """
+  if ($1 < 1) return "";
+  return $2.slice(0, -$1);
+  """ dropEnd :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 takeWhile :: (Char -> Bool) -> JSString -> JSString
 takeWhile f xs =
   case uncons xs of
     Nothing -> mempty
-    Just (c,next) ->
+    Just (c, next) ->
       if f c
         then c `cons` takeWhile f next
         else mempty
@@ -395,65 +458,154 @@ foreign import javascript unsafe
   return $1.trimEnd();
   """ stripEnd :: JSString -> JSString
 -----------------------------------------------------------------------------
-splitAt :: a
-splitAt = undefined
+splitAt :: Int -> JSString -> (JSString, JSString)
+splitAt n xs = (take n xs, drop n xs)
 -----------------------------------------------------------------------------
-breakOn :: a
-breakOn = undefined
+breakOn :: JSString -> JSString -> (JSString, JSString)
+breakOn n _ | 0 <- length n = error "breakOn: empty needle"
+breakOn needle haystack = go (mempty, haystack)
+  where
+    go (acc, stack) =
+      if needle `isPrefixOf` stack
+        then (acc, stack)
+        else
+          case uncons stack of
+            Nothing -> (acc, stack)
+            Just (c,next) ->
+              go (acc `snoc` c, next)
 -----------------------------------------------------------------------------
-breakOnEnd :: a
-breakOnEnd = undefined
+breakOnEnd :: JSString -> JSString -> (JSString, JSString)
+breakOnEnd n _ | 0 <- length n = error "breakOnEnd: empty needle"
+breakOnEnd needle haystack = go (mempty, haystack)
+  where
+    go (acc, stack) =
+      if needle `isSuffixOf` stack
+        then (stack, acc)
+        else
+          case unsnoc stack of
+            Nothing -> (stack, acc)
+            Just (next, c) ->
+              go (c `cons` acc, next)
 -----------------------------------------------------------------------------
-break :: a
-break = undefined
+break :: (Char -> Bool) -> JSString -> (JSString, JSString)
+break f s = go (mempty, s)
+  where
+    go (failed, rest) =
+      case uncons rest of
+        Nothing -> (failed, rest)
+        Just (c,next) ->
+          if f c
+            then (failed, c `cons` next)
+            else go (failed `snoc` c, next)
 -----------------------------------------------------------------------------
-span :: a
-span = undefined
+span :: (Char -> Bool) -> JSString -> (JSString, JSString)
+span f s = (takeWhile f s, dropWhile f s)
 -----------------------------------------------------------------------------
-group :: a
-group = undefined
------------------------------------------------------------------------------l
-groupBy :: a
-groupBy = undefined
+group :: JSString -> [JSString]
+group = groupBy (==)
 -----------------------------------------------------------------------------
-inits :: a
-inits = undefined
+groupBy :: (Char -> Char -> Bool) -> JSString -> [JSString]
+groupBy eq s' =
+  case uncons s' of
+    Nothing -> []
+    Just (c, next) -> do
+      let (ys, zs) = span (eq c) next
+      (c `cons` ys) : groupBy eq zs
 -----------------------------------------------------------------------------
-tails :: a
-tails = undefined
+inits :: JSString -> [JSString]
+inits s = 
+  case unsnoc s of
+    Nothing -> [""]
+    Just (next, _) -> inits next <> [s]
 -----------------------------------------------------------------------------
-splitOn :: a
-splitOn = undefined
+tails :: JSString -> [JSString]
+tails s =
+  case uncons s of
+    Nothing -> [""]
+    Just (_, next) -> s : tails next
 -----------------------------------------------------------------------------
-split :: a
-split = undefined
+splitOn :: JSString -> JSString -> [JSString]
+splitOn prefix _ | 0 <- length prefix = error "splitOn: empty prefix"
+splitOn prefix str = go str mempty
+  where
+    go s acc | 0 <- length s = [acc]
+    go s acc = do
+      if prefix `isPrefixOf` s
+        then acc : go (drop (length prefix) s) mempty
+        else
+          case uncons s of
+            Nothing -> [acc]
+            Just (c,next) ->
+              go next (acc `snoc` c)
 -----------------------------------------------------------------------------
-chunksOf :: a
-chunksOf = undefined
+split :: (Char -> Bool) -> JSString -> [JSString]
+split f = go
+  where
+    go str | 0 <- length str = []
+    go str = do
+      let
+        found = takeWhile (not . f) str
+        next = drop 1 $ dropWhile (not . f) str
+      found : go next
 -----------------------------------------------------------------------------
-lines :: a
-lines = undefined
+chunksOf :: Int -> JSString -> [JSString]
+chunksOf 0 _ = []
+chunksOf n s =
+  case (take n s, drop n s) of
+    (hd, tl) ->
+      if length tl == 0
+        then [hd]
+        else hd : chunksOf n tl
 -----------------------------------------------------------------------------
-words :: a
-words = undefined
+lines :: JSString -> [JSString]
+lines = splitOn "\n"
 -----------------------------------------------------------------------------
-unwords :: a
-unwords = undefined
+words :: JSString -> [JSString]
+words s = go (strip s)
+  where
+    go xs | length xs == 0 = []
+    go xs = do
+      let next = dropWhile (==' ') xs
+      let payload = takeWhile (/=' ') next
+      payload : go (drop (length payload) next)
 -----------------------------------------------------------------------------
-isSuffixOf :: a
-isSuffixOf = undefined
+unwords :: [JSString] -> JSString
+unwords = intercalate " "
 -----------------------------------------------------------------------------
-isInfixOf :: a
-isInfixOf = undefined
+foreign import javascript unsafe
+  """
+  return $2.endsWith($1);
+  """ isSuffixOf :: JSString -> JSString -> Bool
 -----------------------------------------------------------------------------
-stripPrefix :: a
-stripPrefix = undefined
+foreign import javascript unsafe
+  """
+  return $2.includes($1);
+  """ isInfixOf :: JSString -> JSString -> Bool
 -----------------------------------------------------------------------------
-stripSuffix :: a
-stripSuffix = undefined
+stripPrefix :: JSString -> JSString -> Maybe JSString
+stripPrefix prefix string
+  | not (prefix `isPrefixOf` string) = Nothing
+  | otherwise = Just (drop (length prefix) string)
 -----------------------------------------------------------------------------
-commonPrefixes :: a
-commonPrefixes = undefined
+stripSuffix :: JSString -> JSString -> Maybe JSString
+stripSuffix suffix string
+  | not (suffix `isSuffixOf` string) = Nothing
+  | otherwise = Just (dropEnd (length suffix) string)
+-----------------------------------------------------------------------------
+commonPrefixes :: JSString -> JSString -> Maybe (JSString, JSString, JSString)
+commonPrefixes ls rs | length ls == 0 || length rs == 0 = Nothing
+commonPrefixes ls' rs' = go mempty ls' rs'
+  where
+    go acc ls rs =
+      case (uncons ls, uncons rs) of
+        (Just (l,lss), Just (r,rss)) ->
+          if l == r
+            then go (acc `snoc` l) lss rss
+            else
+              if null acc
+                then Nothing
+                else Just (acc, l `cons` lss, r `cons` rss)
+        _ -> Nothing
 -----------------------------------------------------------------------------
 filter :: (Char -> Bool) -> JSString -> JSString
 filter f xs =
@@ -464,8 +616,8 @@ filter f xs =
         then c `cons` filter f next
         else filter f next
 -----------------------------------------------------------------------------
-breakOnAll :: a
-breakOnAll = undefined
+-- breakOnAll :: JSString -> JSString -> [(JSString, JSString)]
+-- breakOnAll = error "TODO: implement breakOnAll"
 -----------------------------------------------------------------------------
 find :: (Char -> Bool) -> JSString -> Maybe Char
 find f xs = do
@@ -513,11 +665,35 @@ zipWith f l r =
       f l' r' `cons` zipWith f ls rs
     _ -> mempty
 -----------------------------------------------------------------------------
+newtype JSUint8Array = JSUint8Array JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(new TextEncoder()).encode($1)"
+  js_str_encode :: JSString -> IO JSUint8Array
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "$1.byteLength"
+  js_buf_len :: JSUint8Array -> IO Int
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(new Uint8Array(__exports.memory.buffer, $2, $1.byteLength)).set($1)"
+  js_from_buf :: JSUint8Array -> Ptr a -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "(new TextDecoder('utf-8', {fatal: true})).decode(new Uint8Array(__exports.memory.buffer, $1, $2))"
+  js_to_str :: Ptr a -> Int -> IO JSString
+-----------------------------------------------------------------------------
 textFromJSString :: JSString -> Text
-textFromJSString = undefined
+textFromJSString str = unsafeDupablePerformIO $ do
+  buf <- js_str_encode str
+  I# len# <- js_buf_len buf
+  IO $ \s0 -> case newByteArray# len# s0 of
+    (# s1, mba# #) -> case unIO (js_from_buf buf (Ptr (mutableByteArrayContents# mba#))) s1 of
+      (# s2, _ #) -> case unIO (freeJSVal (coerce buf)) s2 of
+        (# s3, _ #) -> case unsafeFreezeByteArray# mba# s3 of
+          (# s4, ba# #) -> (# s4, Text (ByteArray ba#) 0 (I# len#) #)
 -----------------------------------------------------------------------------
 textToJSString :: Text -> JSString
-textToJSString = undefined
+textToJSString (Text (ByteArray ba#) (I# off#) (I# len#)) = unsafeDupablePerformIO $
+  IO $ \s0 -> case newPinnedByteArray# len# s0 of
+    (# s1, mba# #) -> case copyByteArray# ba# off# mba# 0# len# s1 of
+      s2 -> keepAlive# mba# s2 $ unIO $ js_to_str (Ptr (mutableByteArrayContents# mba#)) $ I# len#
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
