@@ -1,7 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE MultilineStrings  #-}
+{-# LANGUAGE MultilineStrings #-}
+{-# LANGUAGE BangPatterns     #-}
+{-# LANGUAGE LambdaCase       #-}
 -----------------------------------------------------------------------------
-{-# OPTIONS_GHC -fno-warn-orphans  #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -----------------------------------------------------------------------------
 module Data.JSString
   ( -- * Types
@@ -162,10 +164,9 @@ append :: JSString -> JSString -> JSString
 append = mappend
 -----------------------------------------------------------------------------
 unsnoc :: JSString -> Maybe (JSString, Char) 
-unsnoc s = do
-  if length s == 0
-    then Nothing
-    else Just (init s, last s)
+unsnoc s
+  | 0 <- length s = Nothing
+  | otherwise = Just (init s, last s)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -232,40 +233,101 @@ center :: Int -> Char -> JSString -> JSString
 center k n = textToJSString . T.center k n . textFromJSString
 -----------------------------------------------------------------------------
 foldl :: (a -> Char -> a) -> a -> JSString -> a
-foldl = undefined
+foldl f x ys =
+  case uncons ys of
+    Nothing -> x
+    Just (c, next) ->
+      foldl f (f x c) next
 -----------------------------------------------------------------------------
 foldl1 :: (Char -> Char -> Char) -> JSString -> Char
-foldl1 = undefined
+foldl1 f xs =
+  case uncons xs of
+    Nothing -> error "foldl1: empty string"
+    Just (c,next) ->
+      foldl f c next
 -----------------------------------------------------------------------------
 foldr :: (Char -> a -> a) -> a -> JSString -> a
-foldr = undefined
+foldr f x ys =
+  case uncons ys of
+    Nothing -> x
+    Just (c, next) ->
+      f c (foldr f x next)
 -----------------------------------------------------------------------------
 foldr1 :: (Char -> Char -> Char) -> JSString -> Char
-foldr1 = undefined
+foldr1 f xs =
+  case uncons xs of
+    Nothing -> error "foldr1: empty strring"
+    Just (c,next) -> foldr f c next
 -----------------------------------------------------------------------------
 any :: (Char -> Bool) -> JSString -> Bool
-any = undefined
+any f str =
+  case uncons str of
+    Nothing -> False
+    Just (c, next) ->
+      f c || any f next
 -----------------------------------------------------------------------------
 all :: (Char -> Bool) -> JSString -> Bool
-all = undefined
+all f str =
+  case uncons str of
+    Nothing -> True
+    Just (c, next) ->
+      f c && all f next
 -----------------------------------------------------------------------------
-maximum :: a
-maximum = undefined
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) return $1;
+
+  let max = $1[0].charCodeAt();
+  for (let i = 0; i < $1.length; i++) {
+    if (max < $1[i].charCodeAt()) {
+      max = $1[i].charCodeAt();
+    }
+  }
+  return String.fromCharCode(max);
+  """ maximum :: JSString -> JSString
 -----------------------------------------------------------------------------
-minimum :: a
-minimum = undefined
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) return $1;
+
+  let min = $1[0].charCodeAt();
+  for (let i = 0; i < $1.length; i++) {
+    if ($1[i].charCodeAt() < min) {
+      min = $1[i].charCodeAt();
+    }
+  }
+  return String.fromCharCode(min);
+  """ minimum :: JSString -> JSString
 -----------------------------------------------------------------------------
-scanl :: a
-scanl = undefined
+scanl :: (Char -> Char -> Char) -> Char -> JSString -> JSString
+scanl f x ys =
+  case uncons ys of
+    Nothing -> singleton x
+    Just (c, next) ->
+      x `cons` scanl f (f x c) next
 -----------------------------------------------------------------------------
-scanl1 :: a
-scanl1 = undefined
+scanl1 :: (Char -> Char -> Char) -> JSString -> JSString
+scanl1 f ys =
+  case uncons ys of
+    Nothing -> mempty
+    Just (c, next) ->
+      scanl f c next 
 -----------------------------------------------------------------------------
-scanr :: a
-scanr = undefined
+scanr :: (Char -> Char -> Char) -> Char -> JSString -> JSString
+scanr f x ys = 
+  case uncons ys of
+    Nothing -> singleton x
+    Just (c, next) ->
+      case uncons (scanr f x next) of
+        Just (q, qs) -> f c q `cons` (q `cons` qs)
+        Nothing -> error "scanr: impossible" 
 -----------------------------------------------------------------------------
-scanr1 :: a
-scanr1 = undefined
+scanr1 :: (Char -> Char -> Char) -> JSString -> JSString
+scanr1 f ys = 
+  case uncons ys of
+    Nothing -> mempty
+    Just (c, next) ->
+      scanr f c next 
 -----------------------------------------------------------------------------
 mapAccumL :: a
 mapAccumL = undefined
@@ -291,29 +353,47 @@ takeEnd n = reverse . take n . reverse
 dropEnd :: Int -> JSString -> JSString
 dropEnd n = reverse . drop n . reverse
 -----------------------------------------------------------------------------
-takeWhile :: a
-takeWhile = undefined
+takeWhile :: (Char -> Bool) -> JSString -> JSString
+takeWhile f xs =
+  case uncons xs of
+    Nothing -> mempty
+    Just (c,next) ->
+      if f c
+        then c `cons` takeWhile f next
+        else mempty
 -----------------------------------------------------------------------------
-takeWhileEnd :: a
-takeWhileEnd = undefined
+takeWhileEnd :: (Char -> Bool) -> JSString -> JSString
+takeWhileEnd f = reverse . takeWhile f . reverse
 -----------------------------------------------------------------------------
-dropWhile :: a
-dropWhile = undefined
+dropWhile :: (Char -> Bool) -> JSString -> JSString
+dropWhile f xs =
+  case uncons xs of
+    Nothing -> xs
+    Just (c, next) ->
+      if f c
+        then dropWhile f next
+        else xs
 -----------------------------------------------------------------------------
-dropWhileEnd :: a
-dropWhileEnd = undefined
+dropWhileEnd :: (Char -> Bool) -> JSString -> JSString
+dropWhileEnd f = reverse . dropWhile f . reverse
 -----------------------------------------------------------------------------
-dropAround :: a
-dropAround = undefined
+dropAround :: (Char -> Bool) -> JSString -> JSString
+dropAround f = dropWhile f . dropWhileEnd f
 -----------------------------------------------------------------------------
-strip :: a
-strip = undefined
+foreign import javascript unsafe
+  """
+  return $1.trim();
+  """ strip :: JSString -> JSString
 -----------------------------------------------------------------------------
-stripStart :: a
-stripStart = undefined
+foreign import javascript unsafe
+  """
+  return $1.trimStart();
+  """ stripStart :: JSString -> JSString
 -----------------------------------------------------------------------------
-stripEnd :: a
-stripEnd = undefined
+foreign import javascript unsafe
+  """
+  return $1.trimEnd();
+  """ stripEnd :: JSString -> JSString
 -----------------------------------------------------------------------------
 splitAt :: a
 splitAt = undefined
@@ -375,32 +455,63 @@ stripSuffix = undefined
 commonPrefixes :: a
 commonPrefixes = undefined
 -----------------------------------------------------------------------------
-filter :: a
-filter = undefined
+filter :: (Char -> Bool) -> JSString -> JSString
+filter f xs =
+  case uncons xs of
+    Nothing -> mempty
+    Just (c,next) ->
+      if f c
+        then c `cons` filter f next
+        else filter f next
 -----------------------------------------------------------------------------
 breakOnAll :: a
 breakOnAll = undefined
 -----------------------------------------------------------------------------
-find :: a
-find = undefined
+find :: (Char -> Bool) -> JSString -> Maybe Char
+find f xs = do
+  (c,next) <- uncons xs
+  if f c
+    then pure c
+    else find f next
 -----------------------------------------------------------------------------
-partition :: a
-partition = undefined
+partition :: (Char -> Bool) -> JSString -> (JSString, JSString)
+partition f xs = (filter f xs, filter (not . f) xs)
 -----------------------------------------------------------------------------
-index :: a
-index = undefined
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) throw new Error ('count: empty string')
+  return $2.split($1).length - 1;
+  """ index :: JSString -> Int -> Char
 -----------------------------------------------------------------------------
-findIndex :: a
-findIndex = undefined
+findIndex :: (Char -> Bool) -> JSString -> Maybe Int
+findIndex f xs = go xs
+  where
+    len = length xs - 1
+    go zs = do
+      (next, ys) <- uncons zs
+      if f next
+        then pure (len - length ys)
+        else go ys
 -----------------------------------------------------------------------------
-count :: a
-count = undefined
+foreign import javascript unsafe
+  """
+  if ($1.length === 0) throw new Error ('count: empty string')
+  return $2.split($1).length - 1;
+  """ count :: JSString -> JSString -> Int
 -----------------------------------------------------------------------------
-zip :: a
-zip = undefined
+zip :: JSString -> JSString -> [(Char,Char)]
+zip l r =
+  case (uncons l, uncons r) of
+    (Just (l',ls), Just (r',rs)) ->
+      (l',r') : zip ls rs
+    _ -> []
 -----------------------------------------------------------------------------
-zipWith :: a
-zipWith = undefined
+zipWith :: (Char -> Char -> Char) -> JSString -> JSString -> JSString
+zipWith f l r =
+  case (uncons l, uncons r) of
+    (Just (l', ls), Just (r', rs)) ->
+      f l' r' `cons` zipWith f ls rs
+    _ -> mempty
 -----------------------------------------------------------------------------
 textFromJSString :: JSString -> Text
 textFromJSString = undefined
@@ -413,19 +524,29 @@ foreign import javascript unsafe
   return $1.length === 0
   """ null :: JSString -> Bool
 -----------------------------------------------------------------------------
-drop :: Int -> JSString -> JSString
-drop = undefined
+foreign import javascript unsafe
+  """
+  if ($1 < 1 || $2.length === 0) return $2;
+  return $2.slice($1, $2.length);
+  """ drop :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 foldl' :: (a -> Char -> a) -> a -> JSString -> a
-foldl' = undefined
+foldl' f x ys =
+  case uncons ys of
+    Nothing -> x
+    Just (c, next) -> do
+      let !z = f x c
+      foldl' f z next
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
   return $1.length
   """ length :: JSString -> Int
 -----------------------------------------------------------------------------
-isPrefixOf :: JSString -> JSString -> Bool
-isPrefixOf = undefined
+foreign import javascript unsafe
+  """
+  return $2.startsWith($1)
+  """ isPrefixOf :: JSString -> JSString -> Bool
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -452,7 +573,10 @@ unpack :: JSString -> String
 unpack = fromJSString
 -----------------------------------------------------------------------------
 intercalate :: JSString -> [JSString] -> JSString
-intercalate = undefined
+intercalate sep = \case
+  [] -> mempty
+  [x] -> x
+  (x:xs) -> x <> sep <> intercalate sep xs
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -462,10 +586,13 @@ foreign import javascript unsafe
   """ jsstringOrd :: JSString -> JSString -> Int
 -----------------------------------------------------------------------------
 concat :: [JSString] -> JSString
-concat = undefined
+concat = mconcat
 -----------------------------------------------------------------------------
 concatMap :: (Char -> JSString) -> JSString -> JSString
-concatMap = undefined
+concatMap f str =
+  case uncons str of
+    Nothing -> mempty
+    Just (c, next) -> f c <> concatMap f next
 -----------------------------------------------------------------------------
 unlines :: [JSString] -> JSString
 unlines ks = concat [ snoc k '\n' | k <- ks ]
