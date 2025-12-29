@@ -189,7 +189,11 @@ compareLength :: JSString -> Int -> Ordering
 compareLength str = compare (length str)
 -----------------------------------------------------------------------------
 map :: (Char -> Char) -> JSString -> JSString
-map f = textToJSString . T.map f . textFromJSString
+map f s =
+  case uncons s of
+    Nothing -> mempty
+    Just (c, next) ->
+      f c `cons` map f next
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
