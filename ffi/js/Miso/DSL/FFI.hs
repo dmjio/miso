@@ -2,7 +2,6 @@
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
 import Data.Aeson
-import Miso.DSL.JSVal
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
 toJSVal_Bool = undefined
@@ -12,9 +11,6 @@ toJSVal_Double = undefined
 -----------------------------------------------------------------------------
 toJSVal_Int :: Int -> IO JSVal
 toJSVal_Int = undefined
------------------------------------------------------------------------------
-toJSVal_null :: IO JSVal
-toJSVal_null = undefined
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = undefined

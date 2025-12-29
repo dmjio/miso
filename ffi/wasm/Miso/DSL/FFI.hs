@@ -17,12 +17,13 @@ module Miso.DSL.FFI
   , toJSVal_Bool
   , toJSVal_Double
   , toJSVal_Int
-  , toJSVal_null
   , toJSVal_List
   , toJSVal_Value
+  , toJSVal_JSString
     -- *** FromJSVal
   , fromJSVal_Bool
-  , fromJSVal_Value
+  , fromJSVal_List
+  , fromJSVal_JSString
   -- * Callback FFI
   , asyncCallback
   , asyncCallback1
@@ -54,52 +55,103 @@ module Miso.DSL.FFI
   , isNull_ffi
   , jsNull
   , freeFunction_ffi
+  , waitForAnimationFrame_ffi
+  , listProps_ffi
   ) where
 -----------------------------------------------------------------------------
+import Control.Exception
+import Control.Monad
 import Data.Aeson
-import System.IO.Unsafe
 import Prelude
   hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import GHC.Wasm.Prim
 -----------------------------------------------------------------------------
-toJSVal_Bool :: Bool -> IO JSVal
-toJSVal_Bool = undefined
+foreign import javascript unsafe
+  """
+  return $1
+  """ toJSVal_Bool :: Bool -> IO JSVal
 -----------------------------------------------------------------------------
-toJSVal_Double :: Double -> IO JSVal
-toJSVal_Double = undefined
+foreign import javascript unsafe
+  """
+  return $1
+  """ toJSVal_Double :: Double -> IO JSVal
 -----------------------------------------------------------------------------
-toJSVal_Int :: Int -> IO JSVal
-toJSVal_Int = undefined
------------------------------------------------------------------------------
-toJSVal_null :: IO JSVal
-toJSVal_null = undefined
+foreign import javascript unsafe
+  """
+  return $1
+  """ toJSVal_Int :: Int -> IO JSVal
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
-toJSVal_List = undefined
+toJSVal_List js = do
+  arr <- newArray
+  forM_ js (pushArray arr)
+  pure arr
 -----------------------------------------------------------------------------
-isUndefined_ffi :: JSVal -> IO Bool
-isUndefined_ffi = undefined
+foreign import javascript unsafe
+  """
+  return [];
+  """ newArray :: IO JSVal
 -----------------------------------------------------------------------------
-isNull_ffi :: JSVal -> IO Bool
-isNull_ffi = undefined
+foreign import javascript unsafe
+  """
+  $1.push($2)
+  """ pushArray :: JSVal -> JSVal -> IO ()
 -----------------------------------------------------------------------------
-jsNull :: JSVal
-jsNull = undefined
+toJSVal_JSString :: JSString -> IO JSVal
+toJSVal_JSString (JSString jsval) = pure jsval
 -----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = undefined
+toJSVal_Value = error "tojsval value"
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
-fromJSVal_Bool = undefined
+fromJSVal_Bool x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> boolFromJSVal x
 -----------------------------------------------------------------------------
-fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = undefined
+foreign import javascript unsafe "return $1" boolFromJSVal :: JSVal -> IO Bool
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return globalThis" globalThis :: IO JSVal 
+fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
+fromJSVal_List arr = do
+  arrayLike <- isArray arr
+  if arrayLike
+    then pure Nothing
+    else do
+      len <- length arr
+      if len == 0
+        then pure (Just [])
+        else Just <$> do
+          forM [ 0 .. len - 1 ] $ \idx ->
+            getPropIndex_ffi idx arr
 -----------------------------------------------------------------------------
-global :: JSVal
-global = unsafePerformIO globalThis
+fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
+fromJSVal_JSString x = do
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> jsstringFromJSVal x
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return $1" jsstringFromJSVal :: JSVal -> IO JSString
+-----------------------------------------------------------------------------
+isNullOrUndefined :: JSVal -> Bool
+isNullOrUndefined x = isNull_ffi x || isUndefined_ffi x
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1 === undefined;
+  """ isUndefined_ffi :: JSVal -> Bool
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1 === null;
+  """ isNull_ffi :: JSVal -> Bool
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return null;
+  """ jsNull :: JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return globalThis" global :: JSVal 
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper"
   asyncCallback
@@ -161,12 +213,21 @@ foreign import javascript "wrapper sync"
     :: (JSVal -> JSVal -> JSVal -> IO JSVal)
     -> IO JSVal
 -----------------------------------------------------------------------------
-foreign import javascript "return $1.apply($2, $3);"
+foreign import javascript
+  """
+  return Object.keys($1);
+  """
+  listProps_ffi :: JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript
+  """
+  return $1.apply($2, $3);
+  """
   invokeFunction
     :: JSVal
-    -- ^ Object
-    -> JSString
-    -- ^ Field name
+    -- ^ Func
+    -> JSVal
+    -- ^ Obj
     -> JSVal
     -- ^ Args
     -> IO JSVal
@@ -182,7 +243,7 @@ foreign import javascript "$2[$1]=$3"
     -- ^ Value
     -> IO ()
 -----------------------------------------------------------------------------
-foreign import javascript "$2[$1]=$3"
+foreign import javascript "$3[$1]=$2"
   setProp_ffi
     :: JSString
     -- ^ Field
@@ -214,20 +275,40 @@ foreign import javascript unsafe "return $2[$1]"
     -> IO JSVal
     -- ^ Return
 -----------------------------------------------------------------------------
-eval_ffi :: a
-eval_ffi = undefined
+-- | Unsafe JS eval, use at your own risk! You have been warned
+foreign import javascript unsafe
+  """
+  return eval($1);
+  """ eval_ffi :: JSString -> IO JSVal
 -----------------------------------------------------------------------------
-setField_ffi :: a
-setField_ffi = undefined
+foreign import javascript unsafe
+  """
+  $1[$2] = $3;
+  """ setField_ffi
+      :: JSVal
+      -- ^ Object to set
+      -> JSString
+      -- ^ Field name
+      -> JSVal
+      -- ^ Value to set
+      -> IO ()
 -----------------------------------------------------------------------------
-fromJSVal_Int :: a
-fromJSVal_Int = undefined
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSVal_Int :: JSVal -> IO Int
 -----------------------------------------------------------------------------
-fromJSVal_Double :: a
-fromJSVal_Double = undefined
+fromJSVal_Double :: JSVal -> IO (Maybe Double)
+fromJSVal_Double = error "fromjsval double"
 -----------------------------------------------------------------------------
-getPropIndex_ffi :: a
-getPropIndex_ffi = undefined
+foreign import javascript unsafe "return $2[$1]"
+  getPropIndex_ffi
+    :: Int
+    -- ^ Key
+    -> JSVal
+    -- ^ Value
+    -> IO JSVal
+    -- ^ Return
 -----------------------------------------------------------------------------
 -- | String FFIs
 -----------------------------------------------------------------------------
@@ -239,4 +320,41 @@ getPropIndex_ffi = undefined
 -----------------------------------------------------------------------------
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = freeJSVal
+-----------------------------------------------------------------------------
+waitForAnimationFrame_ffi :: IO Double
+waitForAnimationFrame_ffi = do
+  h <- makeHandle
+  waitForFrame h `onException` cancelFrame h
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  console.log('making animation frame handle');
+  return { handle: null, callback: null };
+  """ makeHandle :: IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  "(($1,$2) => { return $1.handle = requestAnimationFrame($2); })"
+  """ waitForFrame :: JSVal -> IO Double
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+   if ($1.handle) cancelAnimationFrame($1.handle);
+   if ($1.callback) { $1.callback = null; }
+  """ cancelFrame :: JSVal -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return Array.isArray($1);
+  """ isArray :: JSVal -> IO Bool
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1.length
+  """ length :: JSVal -> IO Int
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return typeof($1);
+  """ typeof :: JSVal -> IO JSString
 -----------------------------------------------------------------------------

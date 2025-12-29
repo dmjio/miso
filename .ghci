@@ -1,3 +1,4 @@
 :set -XOverloadedStrings
 :set -isrc
 :set -Wall
+:set -finteractive
