@@ -827,12 +827,12 @@ instance Show JSString where
 instance IsString JSString where
   fromString = toJSString
 -----------------------------------------------------------------------------
-foreign import javascript "return $1 === $2"
+foreign import javascript unsafe "return $1 === $2"
   jsstringEq :: JSString -> JSString -> Bool
 -----------------------------------------------------------------------------
-foreign import javascript "return $1 + $2"
+foreign import javascript unsafe "return $1 + $2"
   jsstringMappend :: JSString -> JSString -> JSString
 -----------------------------------------------------------------------------
-foreign import javascript "return ''"
+foreign import javascript unsafe "return ''"
   jsstringMempty :: JSString
 -----------------------------------------------------------------------------
