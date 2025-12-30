@@ -7,7 +7,7 @@ import           Data.Aeson
 data JSVal = JSVal
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
-toJSVal_Bool = error "tojsval bool"
+toJSVal_Bool = undefined
 -----------------------------------------------------------------------------
 toJSVal_Double :: Double -> IO JSVal
 toJSVal_Double = undefined
