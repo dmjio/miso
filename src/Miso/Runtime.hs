@@ -150,28 +150,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
-  componentVTree <- do
-#ifdef BENCH
-    start <- if isRoot then FFI.now else pure 0
-#endif
-    vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
-#ifdef BENCH
-    end <- if isRoot then FFI.now else pure 0
-    when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
-#endif
-    ref <- liftIO (newIORef vtree)
-    case hydrate of
-      Draw -> do
-        Diff.diff Nothing (Just vtree) componentDOMRef
-        pure ref
-      Hydrate -> do
-        when isRoot $ do
-          hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
-          when (not hydrated) $ do
-            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
-            liftIO (atomicWriteIORef ref newTree)
-            Diff.diff Nothing (Just newTree) componentDOMRef
-        pure ref
+  componentVTree <- liftIO (newIORef (VTree (Object jsNull)))
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- FFI.forkJSM (sub componentSink)
@@ -248,6 +227,35 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
       delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     else
       addToDelegatedEvents logLevel events
+
+#ifdef BENCH
+  start <- if isRoot then FFI.now else pure 0
+#endif
+  vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
+#ifdef BENCH
+  end <- if isRoot then FFI.now else pure 0
+  when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
+#endif
+  case hydrate of
+    Draw -> do
+      Diff.diff Nothing (Just vtree) componentDOMRef
+      atomicWriteIORef componentVTree vtree
+    Hydrate -> do
+      when isRoot $ do
+        hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
+        if not hydrated
+          then do
+            liftIO $ do
+              atomicWriteIORef components IM.empty
+              atomicWriteIORef componentIds topLevelComponentId
+              atomicWriteIORef subscribers mempty
+              atomicWriteIORef mailboxes mempty
+            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
+            Diff.diff Nothing (Just newTree) componentDOMRef
+            atomicWriteIORef componentVTree newTree
+          else
+            atomicWriteIORef componentVTree vtree
+
   forM_ initialAction componentSink
   _ <- FFI.forkJSM eventLoop
   pure vcomp
