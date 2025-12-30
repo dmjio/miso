@@ -161,9 +161,16 @@ library
     Miso.WebSocket
 
   -- FFI declarations
-  if arch(javasript) || impl(ghcjs)
+  if arch(javascript) || impl(ghcjs)
     hs-source-dirs:
       ffi/js
+    build-depends:
+      ghcjs-base -any
+
+    if impl(ghcjs)
+      build-depends:
+        ghcjs-prim
+
   elif arch(wasm32)
     hs-source-dirs:
       ffi/wasm

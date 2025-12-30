@@ -144,14 +144,14 @@ setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
 setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
-  setField_ffi o' k v'
+  setProp_ffi k v' o'
 -----------------------------------------------------------------------------
 infixr 1 <##
 (<##) :: (ToObject o, ToJSVal v) => o -> Int -> v -> IO ()
 (<##) o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
-  setPropIndex_ffi k o' v'
+  setPropIndex_ffi k v' o'
 -----------------------------------------------------------------------------
 (!) :: ToObject o => o -> MisoString -> IO JSVal
 (!) = flip getProp

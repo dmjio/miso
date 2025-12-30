@@ -34,6 +34,9 @@ import qualified Data.ByteString.Lazy as BL
 import           Data.Text hiding (show, elem)
 #else
 import           Data.JSString
+#ifdef GHCJS_BOTH
+import           Data.JSString.Text
+#endif
 #endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T

@@ -49,7 +49,6 @@ module Miso.DSL.FFI
   , new_ffi
   , getProp_ffi
   , eval_ffi
-  , setField_ffi
   , setPropIndex_ffi
   , getPropIndex_ffi
   , create_ffi
@@ -58,7 +57,6 @@ module Miso.DSL.FFI
   , isUndefined_ffi
   , isNull_ffi
   , jsNull
-  , jsUndefined
   , freeFunction_ffi
   , waitForAnimationFrame_ffi
   , listProps_ffi
@@ -131,7 +129,7 @@ toJSVal_Value = \case
     forM_ (KM.toList hms) $ \(k,v) -> do
       v' <- toJSVal_Value v
       let key = textToJSString (K.toText k)
-      setField_ffi o key v'
+      setProp_ffi key v' o
     pure o
 -----------------------------------------------------------------------------
 toJSVal_Text :: Text -> IO JSVal
@@ -197,11 +195,6 @@ foreign import javascript unsafe
   """
   return null;
   """ jsNull :: JSVal
------------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  return undefined;
-  """ jsUndefined :: JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return globalThis" global :: JSVal
 -----------------------------------------------------------------------------
@@ -285,14 +278,14 @@ foreign import javascript
     -> IO JSVal
     -- ^ Return value
 -----------------------------------------------------------------------------
-foreign import javascript "$2[$1]=$3"
+foreign import javascript "$3[$1]=$2"
   setPropIndex_ffi
     :: Int
     -- ^ Index
     -> JSVal
-    -- ^ Object
-    -> JSVal
     -- ^ Value
+    -> JSVal
+    -- ^ Object
     -> IO ()
 -----------------------------------------------------------------------------
 foreign import javascript "$3[$1]=$2"
@@ -300,9 +293,9 @@ foreign import javascript "$3[$1]=$2"
     :: JSString
     -- ^ Field
     -> JSVal
-    -- ^ Object
-    -> JSVal
     -- ^ Value
+    -> JSVal
+    -- ^ Object
     -> IO ()
 -----------------------------------------------------------------------------
 -- | Regular FFIs
@@ -332,18 +325,6 @@ foreign import javascript unsafe
   """
   return eval($1);
   """ eval_ffi :: JSString -> IO JSVal
------------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  $1[$2] = $3;
-  """ setField_ffi
-      :: JSVal
-      -- ^ Object to set
-      -> JSString
-      -- ^ Field name
-      -> JSVal
-      -- ^ Value to set
-      -> IO ()
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

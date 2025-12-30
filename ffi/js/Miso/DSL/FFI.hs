@@ -1,47 +1,290 @@
 -----------------------------------------------------------------------------
-module Miso.DSL.FFI where
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP               #-}
 -----------------------------------------------------------------------------
-import Data.Aeson
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
+-----------------------------------------------------------------------------
+module Miso.DSL.FFI
+  ( -- ** Types
+    JSVal
+  , JSString
+    -- ** Serialization FFI
+    -- *** ToJSVal
+  , toJSVal_Bool
+  , toJSVal_Double
+  , toJSVal_Int
+  , toJSVal_List
+  , toJSVal_Value
+  , toJSVal_JSString
+    -- *** FromJSVal
+  , fromJSVal_Bool
+  , fromJSValUnchecked_Bool
+  , fromJSVal_Double
+  , fromJSValUnchecked_Double
+  , fromJSVal_Int
+  , fromJSValUnchecked_Int
+  , fromJSVal_List
+  , fromJSVal_Value
+  , fromJSVal_JSString
+  , fromJSVal_Maybe
+  , fromJSValUnchecked_Maybe
+  -- * Callback FFI
+  , asyncCallback
+  , asyncCallback1
+  , asyncCallback2
+  , asyncCallback3
+  , syncCallback
+  , syncCallback1
+  , syncCallback2
+  , syncCallback3
+  , syncCallback'
+  , syncCallback1'
+  , syncCallback2'
+  , syncCallback3'
+  -- * DSL FFI
+  , invokeFunction
+  , setProp_ffi
+  , new_ffi
+  , getProp_ffi
+  , eval_ffi
+  , setPropIndex_ffi
+  , getPropIndex_ffi
+  , create_ffi
+    -- *** Misc. FFI
+  , global
+  , isUndefined_ffi
+  , isNull_ffi
+  , jsNull
+  , freeFunction_ffi
+  , waitForAnimationFrame_ffi
+  , listProps_ffi
+  ) where
+-----------------------------------------------------------------------------
+import           Data.Aeson
+import           Data.JSString
+import           Data.JSString.Text
+import qualified GHCJS.Marshal as Marshal
+import           JavaScript.Web.AnimationFrame (waitForAnimationFrame)
+-----------------------------------------------------------------------------
+import           GHCJS.Types
+-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+import           GHC.JS.Prim
+import qualified GHC.JS.Foreign.Callback as Callback
+#elif GHCJS_OLD
+import           GHCJS.Prim
+import qualified GHCJS.Foreign.Callback as Callback
+#endif
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
-toJSVal_Bool = undefined
+toJSVal_Bool = Marshal.toJSVal
 -----------------------------------------------------------------------------
 toJSVal_Double :: Double -> IO JSVal
-toJSVal_Double = undefined
+toJSVal_Double = Marshal.toJSVal
 -----------------------------------------------------------------------------
 toJSVal_Int :: Int -> IO JSVal
-toJSVal_Int = undefined
+toJSVal_Int = Marshal.toJSVal
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
-toJSVal_List = undefined
------------------------------------------------------------------------------
-toJSVal_isUndefined :: JSVal -> IO Bool
-toJSVal_isUndefined = undefined
------------------------------------------------------------------------------
-toJSVal_isNull :: JSVal -> IO Bool
-toJSVal_isNull = undefined
------------------------------------------------------------------------------
-jsNull :: IO JSVal
-jsNull = undefined
+toJSVal_List = Marshal.toJSVal
 -----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = undefined
+toJSVal_Value = Marshal.toJSVal
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
-fromJSVal_Bool = undefined
+fromJSVal_Bool = Marshal.fromJSVal
 -----------------------------------------------------------------------------
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = undefined
+fromJSVal_Value = Marshal.fromJSVal
 -----------------------------------------------------------------------------
-new_ffi           = undefined
-eval_ffi          = undefined
-create_ffi        = undefined
-getProp_ffi       = undefined
-setProp_ffi       = undefined
-setField_ffi      = undefined
-function_ffi      = undefined
-fromJSVal_Int     = undefined
-fromJSVal_Double  = undefined
-getPropIndex_ffi  = undefined
-asyncFunction_ffi = undefined
+foreign import javascript safe
+#ifdef GHCJS_NEW
+  "(($1,$2) => { return new $1(...$2) })"
+#else
+  "switch($2.length) {\
+       case 0 : $r = new $1(); break;\
+       case 1 : $r = new $1($2[0]); break;\
+       case 2 : $r = new $1($2[0],$2[1]); break;\
+       case 3 : $r = new $1($2[0],$2[1],$2[2]); break;\
+       case 4 : $r = new $1($2[0],$2[1],$2[2],$2[3]); break;\
+       case 5 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4]); break;\
+       case 6 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4],$2[5]); break;\
+       case 7 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4],$2[5],$2[6]); break;\
+       default:\
+           var temp = function() {\
+               ret = $1.apply(this, $2);\
+           };\
+           temp.prototype = $1.prototype;\
+           var i = new temp();\
+           if(ret instanceof Object) {\
+               $r = ret;\
+           } else {\
+               i.constructor = $1;\
+               $r = i;\
+           }\
+   }"
+#endif
+  new_ffi :: JSVal -> JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return eval($1); })"
+#else
+  "$r = eval($1);"
+#endif
+  eval_ffi :: JSString -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(() => { return {}; })"
+#else
+  "$r = {};"
+#endif
+  create_ffi :: IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1,$2) => { return $2[$1]; })"
+#else
+  "$r=$2[$1]"
+#endif
+  getProp_ffi :: JSString -> JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1,$2,$3) => { return $3[$1]=$2; })"
+#else
+  "$3[$1]=$2"
+#endif
+  setProp_ffi
+    :: JSString
+    -- ^ Key
+    -> JSVal
+    -- ^ Value
+    -> JSVal
+    -- ^ Object
+    -> IO ()
+-----------------------------------------------------------------------------
+fromJSVal_Int :: JSVal -> IO (Maybe Int)
+fromJSVal_Int = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSVal_Double :: JSVal -> IO (Maybe Double)
+fromJSVal_Double  = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1,$2) => { return $2[$1]; })"
+#else
+  "$r=$2[$1]"
+#endif
+  getPropIndex_ffi :: Int -> JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+isNull_ffi :: JSVal -> Bool
+isNull_ffi = isNull
+-----------------------------------------------------------------------------
+isUndefined_ffi :: JSVal -> Bool
+isUndefined_ffi = isUndefined
+-----------------------------------------------------------------------------
+freeFunction_ffi :: JSVal -> IO ()
+freeFunction_ffi _ = pure ()
+-----------------------------------------------------------------------------
+waitForAnimationFrame_ffi :: IO Double
+waitForAnimationFrame_ffi = waitForAnimationFrame
+-----------------------------------------------------------------------------
+toJSVal_JSString :: JSString -> IO JSVal
+toJSVal_JSString = Marshal.toJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Maybe :: JSVal -> IO (Maybe JSVal)
+fromJSValUnchecked_Maybe = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSVal_Maybe :: JSVal -> IO (Maybe (Maybe JSVal))
+fromJSVal_Maybe = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Bool :: JSVal -> IO Bool
+fromJSValUnchecked_Bool = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1,$2,$3) => { return $1.apply($2, $3); })"
+#else
+  "$r = $1.apply($2, $3);"
+#endif
+  invokeFunction :: JSVal -> JSVal -> JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return Object.keys($1); })"
+#else
+  "$r = Object.keys($1);"
+#endif
+  listProps_ffi :: JSVal -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1,$2,$3) => { return $3[$1]=$2; })"
+#else
+  "$3[$1]=$2"
+#endif
+  setPropIndex_ffi
+    :: Int
+    -- ^ Key
+    -> JSVal
+    -- ^ Value
+    -> JSVal
+    -- ^ Object
+    -> IO ()
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(() => { return globalThis; })"
+#else
+  "$r = globalThis"
+#endif
+  global :: JSVal
+-----------------------------------------------------------------------------
+fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
+fromJSVal_List = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Int :: JSVal -> IO Int
+fromJSValUnchecked_Int = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Double :: JSVal -> IO Double
+fromJSValUnchecked_Double = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
+fromJSVal_JSString = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+asyncCallback :: IO () -> IO JSVal
+asyncCallback x = jsval <$> Callback.asyncCallback x
+asyncCallback1 :: (JSVal -> IO ()) -> IO JSVal
+asyncCallback1 x = jsval <$> Callback.asyncCallback1 x
+asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
+asyncCallback2 x = jsval <$> Callback.asyncCallback2 x
+asyncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
+asyncCallback3 x = jsval <$> Callback.asyncCallback3 x
+-----------------------------------------------------------------------------
+syncCallback :: IO () -> IO JSVal
+syncCallback x = jsval <$> Callback.syncCallback Callback.ThrowWouldBlock x
+syncCallback1 :: (JSVal -> IO ()) -> IO JSVal
+syncCallback1 x = jsval <$> Callback.syncCallback1 Callback.ThrowWouldBlock x
+syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
+syncCallback2 x = jsval <$> Callback.syncCallback2 Callback.ThrowWouldBlock x
+syncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
+syncCallback3 x = jsval <$> Callback.syncCallback3 Callback.ThrowWouldBlock x
+-----------------------------------------------------------------------------
+syncCallback' :: IO JSVal -> IO JSVal
+syncCallback' x = jsval <$> Callback.syncCallback' x
+syncCallback1' :: (JSVal -> IO JSVal) -> IO JSVal
+syncCallback1' x = jsval <$> Callback.syncCallback1' x
+syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
+syncCallback2' x = jsval <$> Callback.syncCallback2' x
+syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
+syncCallback3' x = jsval <$> Callback.syncCallback3' x
+-----------------------------------------------------------------------------
+instance FromJSON JSString where
+  parseJSON = withText "jsstring" $ \s ->
+    pure (textToJSString s)
+-----------------------------------------------------------------------------
+instance ToJSON JSString where
+  toJSON = String . textFromJSString
 -----------------------------------------------------------------------------

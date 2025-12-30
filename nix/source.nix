@@ -41,4 +41,11 @@ in
     rev = "8c7635889ca0a5aaac36a8b21db7f5e5ec0ae4c9";
     sha256 = "0s6kzqxbshsnqbqfj7rblqkrr5mzkjxknb6k8m8z4h10mcv1zh7j";
   };
+
+  ghcjs-base = fetchFromGitHub {
+    owner = "ghcjs";
+    repo = "ghcjs-base";
+    rev = "b7ae2cafb082ff247d29ab50d651f4e955ada47a";
+    sha256 = "0az7xdvd5irsf4x18dgz8aqymrk01bxzmjwhwrmbqmi8kdp1dfb4";
+  };
 }

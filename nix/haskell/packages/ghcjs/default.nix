@@ -10,6 +10,8 @@ self: super:
   miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell" {};
   miso-tests = self.callCabal2nix "miso-tests" source.miso-tests {};
 
+  ghcjs-base = self.callCabal2nix "ghcjs-base" source.ghcjs-base {};
+
   /* examples */
   sample-app-js = self.callCabal2nix "app" source.sample-app {};
 
