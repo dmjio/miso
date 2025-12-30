@@ -18,6 +18,8 @@ module Miso.DSL
   , Function (..)
     -- * Utils
   , jsg
+  , jsg1
+  , jsgf
   , global
   , (#)
   , setField
@@ -25,7 +27,6 @@ module Miso.DSL
   , (!)
   , listProps
   , call
-  , jsg1
   , new
   , create
   , setProp
@@ -131,6 +132,12 @@ instance FromJSVal MisoString where
 jsg :: MisoString -> IO JSVal
 jsg key = global ! key
 -----------------------------------------------------------------------------
+jsgf :: ToArgs args => MisoString -> args -> IO JSVal
+jsgf name = global # name 
+-----------------------------------------------------------------------------
+jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
+jsg1 name arg = jsgf name [arg]
+-----------------------------------------------------------------------------
 setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
 setField o k v = do
   o' <- toJSVal =<< toObject o
@@ -155,9 +162,6 @@ call o this args = do
   this' <- toJSVal =<< toObject this
   args' <- toJSVal =<< toArgs args
   invokeFunction o' this' args'
------------------------------------------------------------------------------
-jsg1 :: ToJSVal a => MisoString -> a -> IO JSVal
-jsg1 = error "jsg1"
 -----------------------------------------------------------------------------
 infixr 2 #
 (#) :: (ToObject object, ToArgs args) => object -> MisoString -> args -> IO JSVal
