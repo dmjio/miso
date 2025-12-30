@@ -760,8 +760,8 @@ intercalate sep = \case
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  if ($1.length === $2.length) return 0;
-  else if ($1.length > $2.length) return 1;
+  if ($1 === $2) return 0;
+  else if ($1 > $2) return 1;
   else return -1;
   """ jsstringOrd :: JSString -> JSString -> Int
 -----------------------------------------------------------------------------
