@@ -64,6 +64,7 @@ module Miso.DSL.FFI
   , listProps_ffi
   ) where
 -----------------------------------------------------------------------------
+import           Data.Text    (Text)
 import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import           Data.Scientific
@@ -71,7 +72,7 @@ import           Control.Monad.Trans.Maybe
 import           Control.Exception
 import           Control.Monad
 import           Data.Aeson
-import           Data.JSString (textFromJSString)
+import           Data.JSString (textFromJSString, textToJSString)
 import           Prelude
   hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 import qualified Data.Vector as V
@@ -113,7 +114,30 @@ toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString (JSString jsval) = pure jsval
 -----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = error "tojsval value"
+toJSVal_Value = \case
+  Null ->
+    pure jsNull
+  Bool bool_ ->
+    toJSVal_Bool bool_
+  String txt ->
+    toJSVal_Text txt
+  Number sci ->
+    toJSVal_Double (realToFrac sci)
+  Array vect ->
+    toJSVal_List =<<
+      forM (V.toList vect) toJSVal_Value
+  Object hms -> do
+    o <- create_ffi
+    forM_ (KM.toList hms) $ \(k,v) -> do
+      v' <- toJSVal_Value v
+      let key = textToJSString (K.toText k)
+      setField_ffi o key v'
+    pure o
+-----------------------------------------------------------------------------
+toJSVal_Text :: Text -> IO JSVal
+toJSVal_Text t =
+  case textToJSString t of
+    JSString jsval -> pure jsval
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool x =
