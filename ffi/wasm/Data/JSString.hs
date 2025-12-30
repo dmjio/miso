@@ -313,7 +313,7 @@ all f str =
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  if ($1.length === 0) return $1;
+  if ($1.length === 0) throw new Error ('maximum: empty string');
 
   let max = $1[0].charCodeAt();
   for (let i = 0; i < $1.length; i++) {
@@ -326,7 +326,7 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  if ($1.length === 0) return $1;
+  if ($1.length === 0) throw new Error ('minimum: empty string');
 
   let min = $1[0].charCodeAt();
   for (let i = 0; i < $1.length; i++) {
