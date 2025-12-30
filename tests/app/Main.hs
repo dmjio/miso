@@ -87,10 +87,10 @@ main = do
         parentFieldUndefined <- liftIO (isUndefined childParentField)
         parentFieldUndefined `shouldBe` False
 
-      it "Should mount 10 components" $ do
+      it "Should mount 10000 components" $ do
         liftIO $ startApp $
           component (0 :: Int) noop $ \_ ->
-            div_ [] (replicate 9 (mount testComponent))
-        mountedComponents >>= (`shouldBe` 10)
+            div_ [] (replicate 9999 (mount testComponent))
+        mountedComponents >>= (`shouldBe` 10000)
 -----------------------------------------------------------------------------
 

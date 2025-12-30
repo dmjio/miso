@@ -8,11 +8,11 @@ index-state: 2025-06-27T20:43:14Z
 allow-newer:
   all:base
 
-with-hc-pkg:
-  wasm32-wasi-ghc-pkg
+-- with-hc-pkg:
+--   wasm32-wasi-ghc-pkg
 
-with-compiler:
-  wasm32-wasi-ghc
+-- with-compiler:
+--   wasm32-wasi-ghc
 
 if arch(wasm32)
   -- Required for TemplateHaskell. When using wasm32-wasi-cabal from
