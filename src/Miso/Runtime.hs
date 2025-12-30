@@ -902,7 +902,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
     forM_ key $ \k -> FFI.set "key" (ms k) vtree
-    FFI.set "ns" ("text" :: JSString) vtree
+    FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
 -----------------------------------------------------------------------------

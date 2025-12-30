@@ -18,7 +18,6 @@ module Miso.String
   , FromMisoString (..)
   , fromMisoString
   , MisoString
-  , module Data.Monoid
 #ifdef VANILLA
   , module Data.Text
 #else
@@ -27,24 +26,23 @@ module Miso.String
   , ms
   ) where
 ----------------------------------------------------------------------------
-#ifdef VANILLA
-import           Data.Text hiding (show)
-#endif
 import           Control.Exception
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as BL
-import           Data.Monoid
+#ifdef VANILLA
+import           Data.Text hiding (show, elem)
+#else
+import           Data.JSString
+#endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 ----------------------------------------------------------------------------
 #ifdef VANILLA
-import Data.Text
 type MisoString = Text
 #else
-import Data.JSString
 type MisoString = JSString
 #endif
 ----------------------------------------------------------------------------
@@ -80,20 +78,26 @@ instance ToMisoString Char where
 instance ToMisoString IOException where
   toMisoString = ms . show
 ----------------------------------------------------------------------------
+#ifndef VANILLA
 instance ToMisoString MisoString where
   toMisoString = id
+#endif
 ----------------------------------------------------------------------------
 instance ToMisoString SomeException where
   toMisoString = ms . show
 ----------------------------------------------------------------------------
 instance ToMisoString String where
-  toMisoString = toJSString
+  toMisoString = pack
 ----------------------------------------------------------------------------
 instance ToMisoString LT.Text where
   toMisoString = ms . LT.toStrict
 ----------------------------------------------------------------------------
 instance ToMisoString T.Text where
+#ifdef VANILLA
+  toMisoString = id
+#else
   toMisoString = textToJSString
+#endif
 ----------------------------------------------------------------------------
 instance ToMisoString B.ByteString where
   toMisoString = ms . T.decodeUtf8
@@ -116,17 +120,27 @@ instance ToMisoString Int where
 instance ToMisoString Word where
   toMisoString = ms . show
 ----------------------------------------------------------------------------
+#ifndef VANILLA
 instance FromMisoString MisoString where
   fromMisoStringEither = Right
+#endif
 ----------------------------------------------------------------------------
 instance FromMisoString T.Text where
+#ifdef VANILLA
+  fromMisoStringEither = Right
+#else
   fromMisoStringEither = Right . textFromJSString
+#endif
 ----------------------------------------------------------------------------
 instance FromMisoString String where
-  fromMisoStringEither = Right . fromJSString
+  fromMisoStringEither = Right . unpack
 ----------------------------------------------------------------------------
 instance FromMisoString LT.Text where
+#ifdef VANILLA
+  fromMisoStringEither = Right . LT.fromStrict
+#else
   fromMisoStringEither = Right . LT.fromStrict . textFromJSString
+#endif
 ----------------------------------------------------------------------------
 instance FromMisoString B.ByteString where
   fromMisoStringEither = fmap T.encodeUtf8 . fromMisoStringEither
