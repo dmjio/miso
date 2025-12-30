@@ -101,28 +101,7 @@ foreign import javascript safe
 #ifdef GHCJS_NEW
   "(($1,$2) => { return new $1(...$2) })"
 #else
-  "switch($2.length) {\
-       case 0 : $r = new $1(); break;\
-       case 1 : $r = new $1($2[0]); break;\
-       case 2 : $r = new $1($2[0],$2[1]); break;\
-       case 3 : $r = new $1($2[0],$2[1],$2[2]); break;\
-       case 4 : $r = new $1($2[0],$2[1],$2[2],$2[3]); break;\
-       case 5 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4]); break;\
-       case 6 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4],$2[5]); break;\
-       case 7 : $r = new $1($2[0],$2[1],$2[2],$2[3],$2[4],$2[5],$2[6]); break;\
-       default:\
-           var temp = function() {\
-               ret = $1.apply(this, $2);\
-           };\
-           temp.prototype = $1.prototype;\
-           var i = new temp();\
-           if(ret instanceof Object) {\
-               $r = ret;\
-           } else {\
-               i.constructor = $1;\
-               $r = i;\
-           }\
-   }"
+  "$r = Reflect.construct($1, $2);"
 #endif
   new_ffi :: JSVal -> JSVal -> IO JSVal
 -----------------------------------------------------------------------------
