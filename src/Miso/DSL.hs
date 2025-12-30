@@ -95,21 +95,23 @@ instance ToJSVal JSVal where
   toJSVal = pure
 -----------------------------------------------------------------------------
 instance FromJSVal Value where
-  fromJSVal = error "fromjsval value"
+  fromJSVal = fromJSVal_Value
 -----------------------------------------------------------------------------
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
   fromJSValUnchecked :: JSVal -> IO a
   fromJSValUnchecked x = do
     fromJSVal x >>= \case
-      Nothing -> error "fromJSVal failure"
+      Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
-  fromJSVal = fmap Just <$> fromJSVal_Int
+  fromJSVal = fromJSVal_Int
+  fromJSValUnchecked = fromJSValUnchecked_Int
 -----------------------------------------------------------------------------
 instance FromJSVal Double where
   fromJSVal = fromJSVal_Double
+  fromJSValUnchecked = fromJSValUnchecked_Double
 -----------------------------------------------------------------------------
 instance ToObject Object where
   toObject = pure
@@ -118,7 +120,7 @@ instance ToJSVal Value where
   toJSVal = toJSVal_Value
 -----------------------------------------------------------------------------
 instance FromJSVal () where
-  fromJSVal _ = pure Nothing
+  fromJSVal _ = pure (Just ())
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
   toJSVal (x,y) = do
@@ -133,7 +135,7 @@ jsg :: MisoString -> IO JSVal
 jsg key = global ! key
 -----------------------------------------------------------------------------
 jsgf :: ToArgs args => MisoString -> args -> IO JSVal
-jsgf name = global # name 
+jsgf name = global # name
 -----------------------------------------------------------------------------
 jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
 jsg1 name arg = jsgf name [arg]
@@ -146,7 +148,10 @@ setField o k v = do
 -----------------------------------------------------------------------------
 infixr 1 <##
 (<##) :: (ToObject o, ToJSVal v) => o -> Int -> v -> IO ()
-(<##) = error "<##"
+(<##) o k v = do
+  o' <- toJSVal =<< toObject o
+  v' <- toJSVal v
+  setPropIndex_ffi k o' v'
 -----------------------------------------------------------------------------
 (!) :: ToObject o => o -> MisoString -> IO JSVal
 (!) = flip getProp
@@ -191,12 +196,19 @@ eval = eval_ffi
 -----------------------------------------------------------------------------
 instance FromJSVal Bool where
   fromJSVal = fromJSVal_Bool
+  fromJSValUnchecked = fromJSValUnchecked_Bool
 -----------------------------------------------------------------------------
 instance FromJSVal JSVal where
   fromJSVal = pure . Just
 -----------------------------------------------------------------------------
 instance FromJSVal a => FromJSVal (Maybe a) where
-  fromJSVal = undefined -- fromJSVal_Maybe
+  fromJSVal x = fromJSVal_Maybe x >>= \case
+    Nothing -> pure Nothing
+    Just Nothing -> pure (Just Nothing)
+    Just (Just y) -> fmap Just <$> fromJSVal y
+  fromJSValUnchecked x = fromJSValUnchecked_Maybe x >>= \case
+    Nothing -> pure Nothing
+    Just y -> Just <$> fromJSValUnchecked y
 -----------------------------------------------------------------------------
 class ToArgs args where
   toArgs :: args -> IO [JSVal]

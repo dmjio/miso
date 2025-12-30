@@ -47,7 +47,7 @@ executable component-tests
 
 library
   import:
-    warnings, options
+    warnings
   hs-source-dirs:
     src
   default-language:

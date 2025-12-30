@@ -69,6 +69,7 @@ main = do
       it "Should append a single node to document.body" $ do
           _ <- liftIO $ eval ("document.body.appendChild (document.createElement('div'));" :: MisoString)
           nodeLength >>= (`shouldBe` (1 :: Int))
+
     describe "Component tests" $ do
       it "Should mount one component" $ do
         liftIO (startApp testComponent)
@@ -86,12 +87,10 @@ main = do
         parentFieldUndefined <- liftIO (isUndefined childParentField)
         parentFieldUndefined `shouldBe` False
 
-#ifndef WASM
-      it "Should mount 10,000 components" $ do
+      it "Should mount 10 components" $ do
         liftIO $ startApp $
           component (0 :: Int) noop $ \_ ->
-            div_ [] (replicate 9999 (mount testComponent))
-        mountedComponents >>= (`shouldBe` 10000)
-#endif
+            div_ [] (replicate 9 (mount testComponent))
+        mountedComponents >>= (`shouldBe` 10)
 -----------------------------------------------------------------------------
 

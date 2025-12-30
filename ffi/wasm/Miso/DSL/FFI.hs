@@ -1,9 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE PolyKinds                #-}
 {-# LANGUAGE LambdaCase               #-}
 {-# LANGUAGE TemplateHaskell          #-}
 {-# LANGUAGE MultilineStrings         #-}
-{-# LANGUAGE ImportQualifiedPost      #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
@@ -22,8 +20,16 @@ module Miso.DSL.FFI
   , toJSVal_JSString
     -- *** FromJSVal
   , fromJSVal_Bool
+  , fromJSValUnchecked_Bool
+  , fromJSVal_Double
+  , fromJSValUnchecked_Double
+  , fromJSVal_Int
+  , fromJSValUnchecked_Int
   , fromJSVal_List
+  , fromJSVal_Value
   , fromJSVal_JSString
+  , fromJSVal_Maybe
+  , fromJSValUnchecked_Maybe
   -- * Callback FFI
   , asyncCallback
   , asyncCallback1
@@ -39,14 +45,12 @@ module Miso.DSL.FFI
   , syncCallback3'
   -- * DSL FFI
   , invokeFunction
-  , setPropIndex_ffi
   , setProp_ffi
   , new_ffi
   , getProp_ffi
   , eval_ffi
   , setField_ffi
-  , fromJSVal_Int
-  , fromJSVal_Double
+  , setPropIndex_ffi
   , getPropIndex_ffi
   , create_ffi
     -- *** Misc. FFI
@@ -54,18 +58,25 @@ module Miso.DSL.FFI
   , isUndefined_ffi
   , isNull_ffi
   , jsNull
+  , jsUndefined
   , freeFunction_ffi
   , waitForAnimationFrame_ffi
   , listProps_ffi
   ) where
 -----------------------------------------------------------------------------
-import Control.Exception
-import Control.Monad
-import Data.Aeson
-import Prelude
+import qualified Data.Aeson.Key as K
+import qualified Data.Aeson.KeyMap as KM
+import           Data.Scientific
+import           Control.Monad.Trans.Maybe
+import           Control.Exception
+import           Control.Monad
+import           Data.Aeson
+import           Data.JSString (textFromJSString)
+import           Prelude
   hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
+import qualified Data.Vector as V
 -----------------------------------------------------------------------------
-import GHC.Wasm.Prim
+import           GHC.Wasm.Prim
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -108,22 +119,34 @@ fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool x =
   if isNullOrUndefined x
     then pure Nothing
-    else Just <$> boolFromJSVal x
+    else Just <$> fromJSValUnchecked_Bool x
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return $1" boolFromJSVal :: JSVal -> IO Bool
+fromJSVal_Int :: JSVal -> IO (Maybe Int)
+fromJSVal_Int x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Int x
+-----------------------------------------------------------------------------
+fromJSVal_Double :: JSVal -> IO (Maybe Double)
+fromJSVal_Double x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Double x
 -----------------------------------------------------------------------------
 fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
-fromJSVal_List arr = do
-  arrayLike <- isArray arr
-  if arrayLike
+fromJSVal_List x = do
+  if isNullOrUndefined x
     then pure Nothing
     else do
-      len <- length arr
-      if len == 0
-        then pure (Just [])
-        else Just <$> do
-          forM [ 0 .. len - 1 ] $ \idx ->
-            getPropIndex_ffi idx arr
+      arrayLike <- isArray x
+      if not arrayLike
+        then pure Nothing
+        else Just <$> fromJSValUnchecked_List x
+-----------------------------------------------------------------------------
+fromJSValUnchecked_List :: JSVal -> IO [JSVal]
+fromJSValUnchecked_List x = do
+   len <- length x
+   forM [ 0 .. len - 1 ] (flip getPropIndex_ffi x)
 -----------------------------------------------------------------------------
 fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
 fromJSVal_JSString x = do
@@ -151,7 +174,12 @@ foreign import javascript unsafe
   return null;
   """ jsNull :: JSVal
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return globalThis" global :: JSVal 
+foreign import javascript unsafe
+  """
+  return undefined;
+  """ jsUndefined :: JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return globalThis" global :: JSVal
 -----------------------------------------------------------------------------
 foreign import javascript "wrapper"
   asyncCallback
@@ -296,10 +324,58 @@ foreign import javascript unsafe
 foreign import javascript unsafe
   """
   return $1
-  """ fromJSVal_Int :: JSVal -> IO Int
+  """ fromJSValUnchecked_Int :: JSVal -> IO Int
 -----------------------------------------------------------------------------
-fromJSVal_Double :: JSVal -> IO (Maybe Double)
-fromJSVal_Double = error "fromjsval double"
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSValUnchecked_Double :: JSVal -> IO Double
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSValUnchecked_Bool :: JSVal -> IO Bool
+-----------------------------------------------------------------------------
+fromJSVal_Value :: JSVal -> IO (Maybe Value)
+fromJSVal_Value jsval = do
+  typeof jsval >>= \case
+    0 -> return (Just Null)
+    1 -> Just . Number . fromFloatDigits <$> fromJSValUnchecked_Double jsval
+    2 -> pure $ Just $ String $ textFromJSString (JSString jsval)
+    3 -> Just . Bool <$> fromJSValUnchecked_Bool jsval
+    4 -> do xs <- fromJSValUnchecked_List jsval
+            values <- forM xs fromJSVal_Value
+            pure (Array . V.fromList <$> sequence values)
+    5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
+            result <-
+              runMaybeT $ forM keys $ \key -> do
+                raw <- MaybeT $ Just <$> getProp_ffi (JSString key) jsval
+                value <- MaybeT (fromJSVal_Value raw)
+                let txt = textFromJSString (JSString key)
+                pure (K.fromText txt, value)
+            pure (toObject <$> result)
+    _ -> error "fromJSVal_Value: Unknown JSON type"
+  where
+    toObject = Object . KM.fromList
+-----------------------------------------------------------------------------
+-- | Determine type for FromJSVal Value instance
+--
+-- 0. null
+-- 1. number
+-- 2. string
+-- 3. bool
+-- 4. array
+-- 5. object
+--
+foreign import javascript unsafe
+  """
+  if ($1 === null || $1 === undefined) return 0;
+  if (typeof($1) === 'number') return 1;
+  if (typeof($1) === 'string') return 2;
+  if (typeof($1) === 'boolean') return 3;
+  if (Array.isArray($1)) return 4;
+  return 5;
+  """ typeof :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return $2[$1]"
   getPropIndex_ffi
@@ -328,7 +404,6 @@ waitForAnimationFrame_ffi = do
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  console.log('making animation frame handle');
   return { handle: null, callback: null };
   """ makeHandle :: IO JSVal
 -----------------------------------------------------------------------------
@@ -353,8 +428,15 @@ foreign import javascript unsafe
   return $1.length
   """ length :: JSVal -> IO Int
 -----------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  return typeof($1);
-  """ typeof :: JSVal -> IO JSString
+fromJSVal_Maybe :: JSVal -> IO (Maybe (Maybe JSVal))
+fromJSVal_Maybe jsval = do
+  if isNullOrUndefined jsval
+    then pure (Just Nothing)
+    else pure $ Just (Just jsval)
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Maybe :: JSVal -> IO (Maybe JSVal)
+fromJSValUnchecked_Maybe jsval = do
+  if isNullOrUndefined jsval
+    then pure Nothing
+    else pure (Just jsval)
 -----------------------------------------------------------------------------

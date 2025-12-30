@@ -37,7 +37,7 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
-import           Data.Aeson.Types (parseEither, Value,object)
+import           Data.Aeson.Types (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event.Decoder
@@ -114,8 +114,8 @@ onWithOptions phase options eventName Decoder{..} toAction =
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
     cb <- FFI.asyncCallback2 $ \e domRef -> do
-        -- Just _ <- fromJSVal =<< FFI.eventJSON decodeAtVal e
-        case parseEither decoder (object []) of
+        Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
+        case parseEither decoder v of
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
           Right event -> sink (toAction event domRef)
     FFI.set "runEvent" cb eventHandlerObject
