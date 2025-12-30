@@ -120,7 +120,7 @@ toJSVal_Value = \case
   String txt ->
     toJSVal_Text txt
   Number sci ->
-    toJSVal_Double (realToFrac sci)
+    toJSVal_Double (toRealFloat sci)
   Array vect ->
     toJSVal_List =<<
       forM (V.toList vect) toJSVal_Value
