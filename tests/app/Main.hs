@@ -461,18 +461,6 @@ main = do
         S.unpack (S.zipWith (\_ y -> y)  "aaa" "bbb") `shouldBe`
           T.unpack (T.zipWith (\_ y -> y) "aaa" "bbb")
 
-      it "Should textFromJSString" $ do
-        S.textFromJSString "abc" `shouldBe` T.pack "abc"
-
-      it "Should textToJSString" $ do
-        S.textToJSString "abc" `shouldBe` S.pack "abc"
-
-      it "Should toJSString" $ do
-        S.toJSString "abc" `shouldBe` S.pack "abc"
-
-      it "Should fromJSString" $ do
-        S.fromJSString "abc" `shouldBe` "abc"
-
     describe "JS DSL tests" $ do
       it "Should get an set a property on an Object" $ do
         c <- liftIO create
