@@ -171,7 +171,7 @@ toJSVal_Value = \case
     pure o
 -----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
-fromJSVal_Text x = 
+fromJSVal_Text x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Text x
@@ -312,13 +312,13 @@ foreign import javascript "wrapper sync"
     :: (JSVal -> JSVal -> JSVal -> IO JSVal)
     -> IO JSVal
 -----------------------------------------------------------------------------
-foreign import javascript
+foreign import javascript unsafe
   """
   return Object.keys($1);
   """
   listProps_ffi :: JSVal -> IO JSVal
 -----------------------------------------------------------------------------
-foreign import javascript
+foreign import javascript unsafe
   """
   return $1.apply($2, $3);
   """
@@ -332,7 +332,8 @@ foreign import javascript
     -> IO JSVal
     -- ^ Return value
 -----------------------------------------------------------------------------
-foreign import javascript "$3[$1]=$2"
+foreign import javascript unsafe
+  "$3[$1]=$2"
   setPropIndex_ffi
     :: Int
     -- ^ Index
@@ -342,7 +343,8 @@ foreign import javascript "$3[$1]=$2"
     -- ^ Object
     -> IO ()
 -----------------------------------------------------------------------------
-foreign import javascript "$3[$1]=$2"
+foreign import javascript unsafe
+  "$3[$1]=$2"
   setProp_ffi
     :: JSString
     -- ^ Field
@@ -354,7 +356,8 @@ foreign import javascript "$3[$1]=$2"
 -----------------------------------------------------------------------------
 -- | Regular FFIs
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return new $1(...$2)"
+foreign import javascript unsafe
+  "return new $1(...$2)"
   new_ffi
     :: JSVal
     -- ^ Constructor

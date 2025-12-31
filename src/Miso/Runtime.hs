@@ -136,7 +136,7 @@ initialize
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState model action)
-initialize componentParentId hydrate isRoot Component {..} getComponentMountPoint = do
+initialize componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -157,33 +157,7 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
   componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   componentDOMRef <- getComponentMountPoint
   componentIsDirty <- liftIO (newTVarIO False)
-  componentVTree <- do
-#ifdef BENCH
-    start <- if isRoot then FFI.now else pure 0
-#endif
-    vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
-#ifdef BENCH
-    end <- if isRoot then FFI.now else pure 0
-    when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
-#endif
-    ref <- liftIO (newIORef vtree)
-    case hydrate of
-      Draw -> do
-        Diff.diff Nothing (Just vtree) componentDOMRef
-        pure ref
-      Hydrate -> do
-        when isRoot $ do
-          hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
-          when (not hydrated) $ do
-            liftIO $ do
-              atomicWriteIORef components IM.empty
-              atomicWriteIORef componentIds topLevelComponentId
-              atomicWriteIORef subscribers mempty
-              atomicWriteIORef mailboxes mempty
-            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
-            liftIO (atomicWriteIORef ref newTree)
-            Diff.diff Nothing (Just newTree) componentDOMRef
-        pure ref
+  componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
   componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
     threadId <- forkIO (sub componentSink)
@@ -259,9 +233,39 @@ initialize componentParentId hydrate isRoot Component {..} getComponentMountPoin
       delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     else
       addToDelegatedEvents logLevel events
+  initialDraw initializedModel hydrate isRoot comp vcomp
   forM_ initialAction componentSink
   _ <- forkIO eventLoop
   pure vcomp
+-----------------------------------------------------------------------------
+initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState m a -> IO ()
+initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} = do
+#ifdef BENCH
+  start <- FFI.now
+#endif
+  vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
+#ifdef BENCH
+  end <- FFI.now
+  when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
+#endif
+  case hydrate of
+    Draw -> do
+      Diff.diff Nothing (Just vtree) componentDOMRef
+      atomicWriteIORef componentVTree vtree
+    Hydrate -> do
+      when isRoot $ do
+        hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
+        if hydrated
+          then atomicWriteIORef componentVTree vtree
+          else do
+            liftIO $ do -- dmj: reset state
+              atomicWriteIORef components IM.empty
+              atomicWriteIORef componentIds topLevelComponentId
+              atomicWriteIORef subscribers mempty
+              atomicWriteIORef mailboxes mempty
+            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
+            Diff.diff Nothing (Just newTree) componentDOMRef
+            liftIO (atomicWriteIORef componentVTree newTree)
 -----------------------------------------------------------------------------
 synchronizeChildToParent
   :: Eq parent
