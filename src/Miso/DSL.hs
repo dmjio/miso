@@ -53,7 +53,9 @@ module Miso.DSL
   ) where
 -----------------------------------------------------------------------------
 import Data.Aeson (Value)
+#ifndef VANILLA
 import Data.Text (Text)
+#endif
 import Control.Monad
 import Control.Monad.Trans.Maybe
 import Prelude hiding ((!!))
@@ -160,9 +162,6 @@ instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
     y_ <- toJSVal y
     toJSVal_List [ x_, y_ ]
 -----------------------------------------------------------------------------
-instance FromJSVal MisoString where
-  fromJSVal = fromJSVal_JSString
------------------------------------------------------------------------------
 jsg :: MisoString -> IO JSVal
 jsg key = global ! key
 -----------------------------------------------------------------------------
@@ -229,7 +228,7 @@ eval = eval_ffi
 instance FromJSVal Bool where
   fromJSVal = fromJSVal_Bool
   fromJSValUnchecked = fromJSValUnchecked_Bool
---------------------------------------------d---------------------------------
+-----------------------------------------------------------------------------
 instance FromJSVal JSVal where
   fromJSVal = pure . Just
 -----------------------------------------------------------------------------
@@ -263,8 +262,15 @@ instance ToJSVal a => ToObject (IO a) where
 instance ToArgs MisoString where
   toArgs arg = (:[]) <$> toJSVal arg
 ----------------------------------------------------------------------------
+#ifndef VANILLA
+----------------------------------------------------------------------------
 instance ToJSVal MisoString where
   toJSVal = toJSVal_JSString
+-----------------------------------------------------------------------------
+instance FromJSVal MisoString where
+  fromJSVal = fromJSVal_JSString
+----------------------------------------------------------------------------
+#endif
 ----------------------------------------------------------------------------
 instance ToJSVal arg => ToArgs [arg] where
     toArgs = mapM toJSVal

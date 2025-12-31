@@ -18,17 +18,41 @@ toJSVal_Int = undefined
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = undefined
 -----------------------------------------------------------------------------
-toJSVal_isUndefined :: JSVal -> IO Bool
-toJSVal_isUndefined = undefined
------------------------------------------------------------------------------
-toJSVal_isNull :: JSVal -> IO Bool
-toJSVal_isNull = undefined
------------------------------------------------------------------------------
 jsNull :: JSVal
 jsNull = JSVal
 -----------------------------------------------------------------------------
+toJSVal_JSVal :: JSVal -> IO JSVal
+toJSVal_JSVal = undefined
+-----------------------------------------------------------------------------
+toJSVal_Char :: Char -> IO JSVal
+toJSVal_Char = undefined
+-----------------------------------------------------------------------------
+toJSVal_Float :: Float -> IO JSVal
+toJSVal_Float = undefined
+-----------------------------------------------------------------------------
+toJSVal_Text :: Text -> IO JSVal
+toJSVal_Text = undefined
+-----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
 toJSVal_Value = undefined
+-----------------------------------------------------------------------------
+fromJSVal_Text :: JSVal -> IO (Maybe Text)
+fromJSVal_Text = undefined
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Text :: JSVal -> IO Text
+fromJSValUnchecked_Text = undefined
+-----------------------------------------------------------------------------
+fromJSVal_Char :: JSVal -> IO (Maybe Char)
+fromJSVal_Char = undefined
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Char :: JSVal -> IO Char
+fromJSValUnchecked_Char = undefined
+-----------------------------------------------------------------------------
+fromJSVal_Float :: JSVal -> IO (Maybe Float)
+fromJSVal_Float = undefined
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Float :: JSVal -> IO Float
+fromJSValUnchecked_Float = undefined
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool = undefined

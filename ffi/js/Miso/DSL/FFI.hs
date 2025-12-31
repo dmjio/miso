@@ -10,17 +10,26 @@ module Miso.DSL.FFI
   , JSString
     -- ** Serialization FFI
     -- *** ToJSVal
+  , toJSVal_Char
   , toJSVal_Bool
   , toJSVal_Double
+  , toJSVal_Float
   , toJSVal_Int
   , toJSVal_List
   , toJSVal_Value
   , toJSVal_JSString
+  , toJSVal_Text
     -- *** FromJSVal
+  , fromJSVal_Text
+  , fromJSValUnchecked_Text
+  , fromJSVal_Char
+  , fromJSValUnchecked_Char
   , fromJSVal_Bool
   , fromJSValUnchecked_Bool
   , fromJSVal_Double
   , fromJSValUnchecked_Double
+  , fromJSVal_Float
+  , fromJSValUnchecked_Float
   , fromJSVal_Int
   , fromJSValUnchecked_Int
   , fromJSVal_List
@@ -63,6 +72,7 @@ module Miso.DSL.FFI
 import           Data.Aeson
 import           Data.JSString
 import           Data.JSString.Text
+import           Data.Text
 import qualified GHCJS.Marshal as Marshal
 import           JavaScript.Web.AnimationFrame (waitForAnimationFrame)
 -----------------------------------------------------------------------------
@@ -232,6 +242,33 @@ fromJSValUnchecked_Double = Marshal.fromJSValUnchecked
 -----------------------------------------------------------------------------
 fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
 fromJSVal_JSString = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+toJSVal_Char :: Char -> IO JSVal
+toJSVal_Char = Marshal.toJSVal
+-----------------------------------------------------------------------------
+toJSVal_Float :: Float -> IO JSVal
+toJSVal_Float = Marshal.toJSVal
+-----------------------------------------------------------------------------
+toJSVal_Text :: Text -> IO JSVal
+toJSVal_Text = Marshal.toJSVal
+-----------------------------------------------------------------------------
+fromJSVal_Text :: JSVal -> IO (Maybe Text)
+fromJSVal_Text = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Text :: JSVal -> IO Text
+fromJSValUnchecked_Text = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSVal_Char :: JSVal -> IO (Maybe Char)
+fromJSVal_Char = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Char :: JSVal -> IO Char
+fromJSValUnchecked_Char = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSVal_Float :: JSVal -> IO (Maybe Float)
+fromJSVal_Float = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Float :: JSVal -> IO Float
+fromJSValUnchecked_Float = Marshal.fromJSValUnchecked
 -----------------------------------------------------------------------------
 asyncCallback :: IO () -> IO JSVal
 asyncCallback x = jsval <$> Callback.asyncCallback x
