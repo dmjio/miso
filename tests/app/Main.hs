@@ -67,6 +67,13 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "JS DSL tests" $ do
+      it "Should get an set a property on an Object" $ do
+        c <- liftIO create
+        liftIO $ flip (setProp "foo") c =<< toJSVal True
+        (`shouldBe` True) =<< liftIO (fromJSValUnchecked =<< getProp "foo" c)
+      it "Should call eval" $ do
+        (`shouldBe` 4) =<< liftIO (fromJSValUnchecked =<< eval "2+2")
     describe "Marshal tests" $ do
       it "Should marshal a Value(Object)" $ do
         (`shouldBe` Just (JSON.object [ "foo" JSON..= True ])) =<< liftIO (fromJSVal =<< toJSVal (JSON.object [ "foo" JSON..= True ]))

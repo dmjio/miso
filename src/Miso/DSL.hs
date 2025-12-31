@@ -18,7 +18,12 @@ module Miso.DSL
   , Function (..)
     -- * Utils
   , jsg
+  , jsg0
   , jsg1
+  , jsg2
+  , jsg3
+  , jsg4
+  , jsg5
   , jsgf
   , global
   , (#)
@@ -168,8 +173,59 @@ jsg key = global ! key
 jsgf :: ToArgs args => MisoString -> args -> IO JSVal
 jsgf name = global # name
 -----------------------------------------------------------------------------
+jsg0 :: MisoString -> IO JSVal
+jsg0 name = jsgf name ([] :: [JSVal])
+-----------------------------------------------------------------------------
 jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
 jsg1 name arg = jsgf name [arg]
+-----------------------------------------------------------------------------
+jsg2 :: (ToJSVal arg1, ToJSVal arg2)  => MisoString -> arg1 -> arg2 -> IO JSVal
+jsg2 name arg1 arg2 = do
+  arg1_ <- toJSVal arg1
+  arg2_ <- toJSVal arg2
+  jsgf name [arg1_, arg2_]
+-----------------------------------------------------------------------------
+jsg3 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
+     => MisoString
+     -> arg1
+     -> arg2
+     -> arg3
+     -> IO JSVal
+jsg3 name arg1 arg2 arg3 = do
+  arg1_ <- toJSVal arg1
+  arg2_ <- toJSVal arg2
+  arg3_ <- toJSVal arg3
+  jsgf name [arg1_, arg2_, arg3_]
+-----------------------------------------------------------------------------
+jsg4 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4)
+     => MisoString
+     -> arg1
+     -> arg2
+     -> arg3
+     -> arg4
+     -> IO JSVal
+jsg4 name arg1 arg2 arg3 arg4 = do
+  arg1_ <- toJSVal arg1
+  arg2_ <- toJSVal arg2
+  arg3_ <- toJSVal arg3
+  arg4_ <- toJSVal arg4
+  jsgf name [arg1_, arg2_, arg3_, arg4_]
+-----------------------------------------------------------------------------
+jsg5 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5)
+     => MisoString
+     -> arg1
+     -> arg2
+     -> arg3
+     -> arg4
+     -> arg5
+     -> IO JSVal
+jsg5 name arg1 arg2 arg3 arg4 arg5 = do
+  arg1_ <- toJSVal arg1
+  arg2_ <- toJSVal arg2
+  arg3_ <- toJSVal arg3
+  arg4_ <- toJSVal arg4
+  arg5_ <- toJSVal arg5
+  jsgf name [arg1_, arg2_, arg3_, arg4_, arg5_]
 -----------------------------------------------------------------------------
 setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
 setField o k v = do
@@ -327,10 +383,9 @@ freeFunction (Function x) = freeFunction_ffi x
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function
 -----------------------------------------------------------------------------
+-- | Lookup a property based on its index
 (!!) :: ToObject object => object -> Int -> IO JSVal
-(!!) o k = do
-  o' <- toJSVal =<< toObject o
-  getPropIndex_ffi k o'
+(!!) o k = getPropIndex_ffi k =<< toJSVal =<< toObject o
 -----------------------------------------------------------------------------
 isUndefined :: ToJSVal val => val -> IO Bool
 isUndefined val = isUndefined_ffi <$> toJSVal val
