@@ -15,11 +15,13 @@ import qualified Data.Aeson as JSON
 import qualified Data.Vector as V
 import           Data.IORef
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Scientific (Scientific, fromFloatDigits)
 import           Control.Monad.State
 import qualified Data.IntMap.Strict as IM
 -----------------------------------------------------------------------------
 import           Miso
+import qualified Miso.String as S
 import           Miso.DSL
 import           Miso.Lens
 import           Miso.Test
@@ -67,6 +69,410 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "MisoString tests" $ do
+      it "Should pack" $ do
+        S.unpack (S.pack "foo") `shouldBe`
+          T.unpack (T.pack "foo")
+      it "Should unpack" $ do
+        S.unpack "foo" `shouldBe` T.unpack "foo"
+      it "Should make singleton" $ do
+        S.unpack (S.singleton 'c') `shouldBe`
+          T.unpack (T.singleton 'c')
+      it "Should be empty" $ do
+        S.unpack S.empty `shouldBe`
+          T.unpack T.empty
+      it "Should cons" $ do
+        S.unpack (S.cons 'c' "foo") `shouldBe`
+          T.unpack (T.cons 'c' "foo")
+      it "Should snoc" $ do
+        S.unpack (S.snoc "foo" 'l') `shouldBe`
+          T.unpack (T.snoc "foo" 'l')
+      it "Should append" $ do
+        S.unpack (S.append "foo" "l") `shouldBe`
+          T.unpack (T.append "foo" "l")
+      it "Should uncons" $ do
+        S.uncons "foo" `shouldBe`
+          Just ('f', "oo")
+        S.uncons "" `shouldBe`
+          Nothing
+      it "Should unsnoc" $ do
+        S.unsnoc "foo" `shouldBe`
+          Just ("fo", 'o')
+        S.unsnoc "" `shouldBe`
+          Nothing
+      it "Should head" $ do
+        S.head "foo" `shouldBe`
+          'f'
+      it "Should last" $ do
+        S.last "foo" `shouldBe`
+          'o'
+      it "Should tail" $ do
+        S.tail "foo" `shouldBe`
+          "oo"
+      it "Should init" $ do
+        S.init "foo" `shouldBe`
+          "fo"
+      it "Should null" $ do
+        S.null "" `shouldBe`
+          True
+        S.null "foo" `shouldBe`
+          False
+      it "Should length" $ do
+        S.length "" `shouldBe` 0
+        S.length "foo" `shouldBe` 3
+
+      it "Should compareLength" $ do
+        S.compareLength "" (-1) `shouldBe`
+          T.compareLength "" (-1)
+        S.compareLength "foo" 0 `shouldBe`
+          T.compareLength "foo" 0 
+        S.compareLength "foo" 2 `shouldBe`
+          T.compareLength "foo" 2 
+        S.compareLength "foo" 4 `shouldBe`
+          T.compareLength "foo" 4
+
+      it "Should map" $ do
+        S.unpack (S.map succ "") `shouldBe`
+          T.unpack (T.map succ "")
+        S.unpack (S.map succ "aslkjdf9823@#SDF@#") `shouldBe`
+          T.unpack (T.map succ "aslkjdf9823@#SDF@#")
+
+      it "Should intercalate" $ do
+        S.unpack (S.intercalate "," []) `shouldBe`
+          T.unpack (T.intercalate "," [])
+        S.unpack (S.intercalate "," ["aslkjdf9823@#SDF@#", "foo"]) `shouldBe`
+          T.unpack (T.intercalate "," ["aslkjdf9823@#SDF@#","foo"])
+
+      it "Should intersperse" $ do
+        S.unpack (S.intersperse ',' "") `shouldBe`
+          T.unpack (T.intersperse ',' "")
+        S.unpack (S.intersperse ',' "aslkjdf9823@#SDF@#") `shouldBe`
+          T.unpack (T.intersperse ',' "aslkjdf9823@#SDF@#")
+
+      it "Should transpose" $ do
+        (S.unpack <$> S.transpose ["a","b","c","d","e","fghi","klmn"])
+          `shouldBe`
+            (T.unpack <$> T.transpose ["a","b","c","d","e","fghi","klmn"])
+
+      it "Should reverse" $ do
+        S.unpack (S.reverse "") `shouldBe`
+          T.unpack (T.reverse "")
+        S.unpack (S.reverse "reverse") `shouldBe`
+          T.unpack (T.reverse "reverse")
+
+      it "Should replace" $ do
+        S.unpack (S.replace "s" "k" "str") `shouldBe`
+          T.unpack (T.replace "s" "k" "str")
+
+      it "Should case fold" $ do
+        S.unpack (S.toCaseFold "foobar") `shouldBe`
+          T.unpack (T.toCaseFold "foobar")
+
+      it "Should toLower" $ do
+        S.unpack (S.toLower "LOL") `shouldBe`
+          T.unpack (T.toLower "LOL")
+
+      it "Should toUpper" $ do
+        S.unpack (S.toUpper "lol") `shouldBe`
+          T.unpack (T.toUpper "lol")
+
+      it "Should toTitle" $ do
+        S.unpack (S.toUpper "lol") `shouldBe`
+          T.unpack (T.toUpper "lol")
+
+      it "Should justifyLeft" $ do
+        S.unpack (S.justifyLeft 2 'a' "bbb") `shouldBe`
+          T.unpack (T.justifyLeft 2 'a' "bbb")
+
+      it "Should justifyRight" $ do
+        S.unpack (S.justifyRight 2 'a' "bbb") `shouldBe`
+          T.unpack (T.justifyRight 2 'a' "bbb")
+
+      it "Should center" $ do
+        S.unpack (S.center 2 'a' "bbb") `shouldBe`
+          T.unpack (T.center 2 'a' "bbb")
+
+      it "Should foldl" $ do
+        S.unpack (S.foldl S.snoc "x" "abc") `shouldBe`
+          T.unpack (T.foldl T.snoc "x" "abc")
+
+      it "Should foldl'" $ do
+        S.unpack (S.foldl' S.snoc "x" "abc") `shouldBe`
+          T.unpack (T.foldl' T.snoc "x" "abc")
+
+      it "Should foldl1" $ do
+        S.foldl1 const "abc" `shouldBe`
+          T.foldl1 const "abc"
+
+        S.foldl1 (\_ y -> y) "abc" `shouldBe`
+          T.foldl1 (\_ y -> y) "abc"
+
+      it "Should foldr" $ do
+        S.unpack (S.foldr S.cons "x" "abc") `shouldBe`
+          T.unpack (T.foldr T.cons "x" "abc")
+
+      it "Should foldr1" $ do
+        S.foldr1 const "abc" `shouldBe`
+          T.foldr1 const "abc"
+
+        S.foldr1 (\_ y -> y) "abc" `shouldBe`
+          T.foldr1 (\_ y -> y) "abc"
+
+      it "Should concat" $ do
+        S.unpack (S.concat ["foo","bar"])
+          `shouldBe`
+             T.unpack (T.concat ["foo","bar"])
+
+      it "Should concatMap" $ do
+        S.unpack (S.concatMap S.singleton "okedoke")
+         `shouldBe`
+            T.unpack (T.concatMap T.singleton "okedoke")
+
+      it "Should all" $ do
+        S.all (=='a') "aaa" `shouldBe` True
+        T.all (=='a') "aaa" `shouldBe` True
+
+      it "Should any" $ do
+        S.any (=='a') "aaa" `shouldBe` T.any (=='a') "aaa"
+
+      it "Should maximum" $ do
+        S.maximum "abc" `shouldBe` 'c'
+        T.maximum "abc" `shouldBe` 'c'
+
+      it "Should minimum" $ do
+        S.minimum "abc" `shouldBe` 'a'
+        T.minimum "abc" `shouldBe` 'a'
+
+      it "Should scanl" $ do
+        S.unpack (S.scanl const 'a' "foo") `shouldBe`
+          T.unpack (T.scanl const 'a' "foo")
+
+      it "Should scanl1" $ do
+        S.unpack (S.scanl1 const "foo") `shouldBe`
+          T.unpack (T.scanl1 const "foo")
+
+      it "Should scanr" $ do
+        S.unpack (S.scanr const 'a' "foo") `shouldBe`
+          T.unpack (T.scanr const 'a' "foo")
+
+      it "Should scanr1" $ do
+        S.unpack (S.scanr1 const "foo") `shouldBe`
+          T.unpack (T.scanr1 const "foo")
+
+      it "Should mapAccumL" $ do
+        (S.unpack <$> (S.mapAccumL (,) 'a' "foo")) `shouldBe`
+          (T.unpack <$> (T.mapAccumL (,) 'a' "foo"))
+
+      it "Should mapAccumR" $ do
+        (S.unpack <$> (S.mapAccumR (,) 'a' "foo")) `shouldBe`
+          (T.unpack <$> (T.mapAccumR (,) 'a' "foo"))
+
+        (S.unpack <$> (S.mapAccumR (,) 'a' "")) `shouldBe`
+          (T.unpack <$> (T.mapAccumR (,) 'a' ""))
+
+      it "Should replicate" $ do
+        S.unpack (S.replicate 10 "a") `shouldBe`
+          T.unpack (T.replicate 10 "a")
+
+      it "Should unfoldr" $ do
+        S.unpack (S.unfoldr (\x -> if x < 10 then Just ('a', x+1) else Nothing) 0) `shouldBe`
+          T.unpack (T.unfoldr (\x -> if x < 10 then Just ('a', x+1) else Nothing) 0)
+
+      it "Should unfoldrN" $ do
+        S.unpack (S.unfoldrN 5 (\x -> if x < 10 then Just ('a', x+1) else Nothing) 0)
+          `shouldBe` T.unpack (T.unfoldrN 5 (\x -> if x < 10 then Just ('a', x+1) else Nothing) 0)
+
+      it "Should take" $ do
+        S.unpack (S.take 1 "foo") `shouldBe`
+          T.unpack (T.take 1 "foo")
+
+      it "Should takeEnd" $ do
+        S.unpack (S.takeEnd 1 "foo") `shouldBe`
+          T.unpack (T.takeEnd 1 "foo")
+
+      it "Should drop" $ do
+        S.unpack (S.drop 1 "foo") `shouldBe`
+          T.unpack (T.drop 1 "foo")
+
+      it "Should dropEnd" $ do
+        S.unpack (S.dropEnd 1 "foo") `shouldBe`
+          T.unpack (T.dropEnd 1 "foo")
+
+      it "Should takeWhile" $ do
+        S.unpack (S.takeWhile (=='f') "foo") `shouldBe`
+          T.unpack (T.takeWhile (=='f') "foo")
+
+      it "Should takeWhileEnd" $ do
+        S.unpack (S.takeWhileEnd (=='o') "foo") `shouldBe`
+          T.unpack (T.takeWhileEnd (=='o') "foo")
+
+      it "Should dropWhile" $ do
+        S.unpack (S.dropWhile (=='f') "foo") `shouldBe`
+          T.unpack (T.dropWhile (=='f') "foo")
+
+      it "Should dropWhileEnd" $ do
+        S.unpack (S.dropWhileEnd (=='o') "foo") `shouldBe`
+          T.unpack (T.dropWhileEnd (=='o') "foo")
+
+      it "Should dropAround" $ do
+        S.unpack (S.dropAround (=='o') "foo") `shouldBe`
+          T.unpack (T.dropAround (=='o') "foo")
+
+      it "Should strip" $ do
+        S.unpack (S.strip "  foo  ") `shouldBe`
+          T.unpack (T.strip "  foo ")
+
+      it "Should stripStart" $ do
+        S.unpack (S.strip "  foo") `shouldBe`
+          T.unpack (T.strip "foo")
+
+      it "Should stripEnd" $ do
+        S.unpack (S.strip "foo") `shouldBe`
+          T.unpack (T.strip "foo  ")
+
+      it "Should splitAt" $ do
+        let (x,y) = S.splitAt 3 "foobar"
+        let (x',y') = T.splitAt 3 "foobar"
+        S.unpack x `shouldBe` T.unpack x'
+        S.unpack y `shouldBe` T.unpack y'
+
+      it "Should breakOn" $ do
+        let (x,y) = S.breakOn "b" "ababa"
+        let (x',y') = T.breakOn "b" "ababa"
+        S.unpack x `shouldBe` T.unpack x'
+        S.unpack y `shouldBe` T.unpack y'
+
+      it "Should breakOnEnd" $ do
+        let (x,y) = S.breakOnEnd "b" "ababa"
+        let (x',y') = T.breakOnEnd "b" "ababa"
+        S.unpack x `shouldBe` T.unpack x'
+        S.unpack y `shouldBe` T.unpack y'
+
+      it "Should break" $ do
+        let (x,y) = S.break (=='b') "ababa"
+        let (x',y') = T.break (=='b') "ababa"
+        S.unpack x `shouldBe` T.unpack x'
+        S.unpack y `shouldBe` T.unpack y'
+
+      it "Should span" $ do
+        let (x,y) = S.break (=='b') "ababa"
+        let (x',y') = T.break (=='b') "ababa"
+        S.unpack x `shouldBe` T.unpack x'
+        S.unpack y `shouldBe` T.unpack y'
+
+      it "Should group" $ do
+        fmap S.unpack (S.group "aabbcc") `shouldBe`
+          fmap T.unpack (T.group "aabbcc")
+
+      it "Should groupBy" $ do
+        fmap S.unpack (S.groupBy (==) "aabbcc") `shouldBe`
+          fmap T.unpack (T.groupBy (==) "aabbcc")
+
+      it "Should inits" $ do
+        fmap S.unpack (S.inits "foo bar") `shouldBe`
+          fmap T.unpack (T.inits "foo bar")
+
+      it "Should tails" $ do
+        fmap S.unpack (S.tails "foo bar") `shouldBe`
+          fmap T.unpack (T.tails "foo bar")
+
+      it "Should splitOn" $ do
+        fmap S.unpack (S.splitOn "a" "ababa") `shouldBe`
+          fmap T.unpack (T.splitOn "a" "ababa")
+
+      it "Should split" $ do
+        fmap S.unpack (S.split (=='a') "ababa") `shouldBe`
+          fmap T.unpack (T.split (=='a') "ababa")
+
+      it "Should chunksOf" $ do
+        fmap S.unpack (S.chunksOf 3 "foofoo") `shouldBe`
+          fmap T.unpack (T.chunksOf 3 "foofoo")
+
+      it "Should lines" $ do
+        fmap S.unpack (S.lines "foo\nbar") `shouldBe`
+          fmap T.unpack (T.lines "foo\nbar")
+
+      it "Should unlines" $ do
+        S.unpack (S.unlines ["foo", "bar"]) `shouldBe`
+          T.unpack (T.unlines ["foo", "bar"])
+
+      it "Should words" $ do
+        fmap S.unpack (S.words "foo bar") `shouldBe`
+          fmap T.unpack (T.words "foo bar")
+
+      it "Should unwords" $ do
+        S.unpack (S.unwords ["foo", "bar"]) `shouldBe`
+          T.unpack (T.unwords ["foo", "bar"])
+
+      it "Should isPrefixOf" $ do
+        S.isPrefixOf "f" "foo" `shouldBe`
+          T.isPrefixOf "f" "foo"
+
+      it "Should isSuffixOf" $ do
+        S.isSuffixOf "o" "foo" `shouldBe`
+          T.isSuffixOf "o" "foo"
+
+      it "Should isInfixOf" $ do
+        S.isInfixOf "o" "foo" `shouldBe`
+          T.isInfixOf "o" "foo"
+
+      it "Should stripPrefix" $ do
+        fmap S.unpack (S.stripPrefix "f" "foo") `shouldBe`
+          fmap T.unpack (T.stripPrefix "f" "foo")
+
+      it "Should stripSuffix" $ do
+        fmap S.unpack (S.stripSuffix "o" "foo") `shouldBe`
+          fmap T.unpack (T.stripSuffix "o" "foo")
+
+      it "Should filter" $ do
+        S.unpack (S.filter (=='a') "aba") `shouldBe`
+          T.unpack (T.filter (=='a') "aba")
+
+      it "Should find" $ do
+        S.find (=='a') "aba" `shouldBe`
+          T.find (=='a') "aba"
+
+      it "Should index" $ do
+        S.index "aba" 0 `shouldBe`
+          T.index "aba" 0
+
+      it "Should findIndex" $ do
+        S.findIndex (=='a') "aba" `shouldBe`
+          T.findIndex (=='a') "aba"
+
+      it "Should count" $ do
+        S.count "a" "aba" `shouldBe`
+          T.count "a" "aba"
+
+      it "Should partition" $ do
+        let (l,r) = S.partition (=='o') "foobar"
+        let (l',r') = T.partition (=='o') "foobar"
+        S.unpack l `shouldBe` T.unpack l'
+        S.unpack r `shouldBe` T.unpack r'
+
+      it "Should zip" $ do
+        S.zip "aaa" "bbb" `shouldBe`
+          T.zip "aaa" "bbb"
+
+      it "Should zipWith" $ do
+        S.unpack (S.zipWith const "aaa" "bbb") `shouldBe`
+          T.unpack (T.zipWith const "aaa" "bbb")
+
+        S.unpack (S.zipWith (\_ y -> y)  "aaa" "bbb") `shouldBe`
+          T.unpack (T.zipWith (\_ y -> y) "aaa" "bbb")
+
+      it "Should textFromJSString" $ do
+        S.textFromJSString "abc" `shouldBe` T.pack "abc"
+
+      it "Should textToJSString" $ do
+        S.textToJSString "abc" `shouldBe` S.pack "abc"
+
+      it "Should toJSString" $ do
+        S.toJSString "abc" `shouldBe` S.pack "abc"
+
+      it "Should fromJSString" $ do
+        S.fromJSString "abc" `shouldBe` "abc"
+
     describe "JS DSL tests" $ do
       it "Should get an set a property on an Object" $ do
         c <- liftIO create

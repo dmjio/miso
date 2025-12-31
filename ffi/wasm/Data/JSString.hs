@@ -292,10 +292,12 @@ foldr f x ys =
       f c (foldr f x next)
 -----------------------------------------------------------------------------
 foldr1 :: (Char -> Char -> Char) -> JSString -> Char
-foldr1 f xs =
-  case uncons xs of
-    Nothing -> error "foldr1: empty strring"
-    Just (c,next) -> foldr f c next
+foldr1 f ys =
+  case uncons ys of
+    Nothing -> error "foldr1: empty string"
+    Just (c, next)
+      | length next == 0 -> c
+      | otherwise -> f c (foldr1 f next)
 -----------------------------------------------------------------------------
 any :: (Char -> Bool) -> JSString -> Bool
 any f str =
@@ -321,8 +323,8 @@ foreign import javascript unsafe
       max = $1[i].charCodeAt();
     }
   }
-  return String.fromCharCode(max);
-  """ maximum :: JSString -> JSString
+  return max;
+  """ maximum :: JSString -> Char
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -334,8 +336,8 @@ foreign import javascript unsafe
       min = $1[i].charCodeAt();
     }
   }
-  return String.fromCharCode(min);
-  """ minimum :: JSString -> JSString
+  return min;
+  """ minimum :: JSString -> Char
 -----------------------------------------------------------------------------
 scanl :: (Char -> Char -> Char) -> Char -> JSString -> JSString
 scanl f x ys =
@@ -352,20 +354,26 @@ scanl1 f ys =
       scanl f c next 
 -----------------------------------------------------------------------------
 scanr :: (Char -> Char -> Char) -> Char -> JSString -> JSString
-scanr f x ys = 
+scanr f q0 ys = 
   case uncons ys of
-    Nothing -> singleton x
-    Just (c, next) ->
-      case uncons (scanr f x next) of
-        Just (q, qs) -> f c q `cons` (q `cons` qs)
+    Nothing -> singleton q0
+    Just (x, xs) ->
+      case uncons (scanr f q0 xs) of
+        Just (q, qss) -> do
+          let qs = q `cons` qss
+          f x q `cons` qs
         Nothing -> error "scanr: impossible" 
 -----------------------------------------------------------------------------
 scanr1 :: (Char -> Char -> Char) -> JSString -> JSString
 scanr1 f ys = 
   case uncons ys of
     Nothing -> mempty
-    Just (c, next) ->
-      scanr f c next 
+    Just (x, xs)
+      | length xs == 0 -> singleton x
+      | otherwise -> do
+          case uncons (scanr1 f xs) of
+            Just (q, qss) -> f x q `cons` (q `cons` qss)
+            Nothing -> error "scanr: impossible" 
 -----------------------------------------------------------------------------
 mapAccumL :: (a -> Char -> (a, Char)) -> a -> JSString -> (a, JSString)
 mapAccumL f x str =
@@ -549,7 +557,7 @@ split f = go
     go str = do
       let
         found = takeWhile (not . f) str
-        next = drop 1 $ dropWhile (not . f) str
+        next = drop 1 (dropWhile (not . f) str)
       found : go next
 -----------------------------------------------------------------------------
 chunksOf :: Int -> JSString -> [JSString]
@@ -635,8 +643,8 @@ partition f xs = (filter f xs, filter (not . f) xs)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  if ($1.length === 0) throw new Error ('count: empty string')
-  return $2.split($1).length - 1;
+  if ($1.length === 0) throw new Error ('index: empty string')
+  return $1[$2].charCodeAt();
   """ index :: JSString -> Int -> Char
 -----------------------------------------------------------------------------
 findIndex :: (Char -> Bool) -> JSString -> Maybe Int
