@@ -381,8 +381,8 @@ main = do
           fmap T.unpack (T.splitOn "a" "ababa")
 
       it "Should split" $ do
-        fmap S.unpack (S.split (=='a') "ababa") `shouldBe`
-          fmap T.unpack (T.split (=='a') "ababa")
+        fmap S.unpack (S.split (=='a') "aabbaca") `shouldBe`
+          fmap T.unpack (T.split (=='a') "aabbaca")
 
       it "Should chunksOf" $ do
         fmap S.unpack (S.chunksOf 3 "foofoo") `shouldBe`

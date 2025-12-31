@@ -553,7 +553,7 @@ splitOn prefix str = go str mempty
 split :: (Char -> Bool) -> JSString -> [JSString]
 split f = go
   where
-    go str | 0 <- length str = []
+    go str | 0 <- length str = [empty]
     go str = do
       let
         found = takeWhile (not . f) str
