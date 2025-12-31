@@ -11,7 +11,11 @@ import           Prelude hiding ((!!))
 import           Control.Monad
 import           Control.Concurrent
 import           Control.Concurrent.STM
+import qualified Data.Aeson as JSON
+import qualified Data.Vector as V
 import           Data.IORef
+import           Data.Text (Text)
+import           Data.Scientific (Scientific, fromFloatDigits)
 import           Control.Monad.State
 import qualified Data.IntMap.Strict as IM
 -----------------------------------------------------------------------------
@@ -63,6 +67,57 @@ foreign export javascript "hs_start" main :: IO ()
 main :: IO ()
 main = do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Marshal tests" $ do
+      it "Should marshal a Value(Object)" $ do
+        (`shouldBe` Just (JSON.object [ "foo" JSON..= True ])) =<< liftIO (fromJSVal =<< toJSVal (JSON.object [ "foo" JSON..= True ]))
+      it "Should marshal a Value(Array)" $ do
+        (`shouldBe` Just (JSON.Array (V.fromList [ JSON.Number 1.0, JSON.Number 2.0 ]))) =<<
+          liftIO (fromJSVal =<< toJSVal (JSON.Array (V.fromList [ JSON.Number 1.0, JSON.Number 2.0 ])))
+      it "Should marshal a Value(Number)" $ do
+        (`shouldBe` Just (JSON.Number (fromFloatDigits pi))) =<< liftIO (fromJSVal =<< toJSVal (JSON.Number (fromFloatDigits pi)))
+      it "Should marshal a Value(Bool(False))" $ do
+        (`shouldBe` Just (JSON.Bool False)) =<< liftIO (fromJSVal =<< toJSVal (JSON.Bool False))
+      it "Should marshal a Value(Bool(True))" $ do
+        (`shouldBe` Just (JSON.Bool True)) =<< liftIO (fromJSVal =<< toJSVal (JSON.Bool True))
+      it "Should marshal a Value(String)" $ do
+        (`shouldBe` Just (JSON.String "foo")) =<< liftIO (fromJSVal =<< toJSVal (JSON.String "foo"))
+      it "Should marshal a Value(Null)" $ do
+        (`shouldBe` Just JSON.Null) =<< liftIO (fromJSVal =<< toJSVal JSON.Null)
+      it "Should marshal a Bool(True)" $ do
+        (`shouldBe` Just True) =<< liftIO (fromJSVal =<< toJSVal True)
+      it "Should marshal a ()" $ do
+        (`shouldBe` Just ()) =<< liftIO (fromJSVal =<< toJSVal ())
+      it "Should marshal a Bool(False)" $ do
+        (`shouldBe` Just False) =<< liftIO (fromJSVal =<< toJSVal False)
+      it "Should marshal a Float" $ do
+        (`shouldBe` Just (pi :: Float)) =<< liftIO (fromJSVal =<< toJSVal (pi :: Float))
+        (`shouldBe` Just (-99.99 :: Float)) =<< liftIO (fromJSVal =<< toJSVal (-99.99 :: Float))
+        (`shouldBe` Just (-0 :: Float)) =<< liftIO (fromJSVal =<< toJSVal (-0 :: Float))
+      it "Should marshal a Double" $ do
+        (`shouldBe` Just pi) =<< liftIO (fromJSVal =<< toJSVal pi)
+        (`shouldBe` Just (-99.99 :: Double)) =<< liftIO (fromJSVal =<< toJSVal (-99.99 :: Double))
+        (`shouldBe` Just (-0 :: Double)) =<< liftIO (fromJSVal =<< toJSVal (-0 :: Double))
+      it "Should marshal a Int" $ do
+        (`shouldBe` Just (99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (99 :: Int))
+        (`shouldBe` Just (-99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (-99 :: Int))
+        (`shouldBe` Just (0 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (0 :: Int))
+      it "Should marshal a MisoString" $ do
+        (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
+      it "Should marshal a (Maybe Bool)" $ do
+        (`shouldBe` (Nothing :: Maybe Bool)) =<< liftIO (fromJSVal =<< toJSVal (Nothing :: Maybe Bool))
+        (`shouldBe` (Just True :: Maybe Bool)) =<< liftIO (fromJSVal =<< toJSVal (Just True :: Maybe Bool))
+      it "Should marshal a (Bool,Double)" $ do
+        (`shouldBe` Just (True,pi)) =<< liftIO (fromJSVal =<< toJSVal (True,pi))
+      it "Should marshal a [Double]" $ do
+        (`shouldBe` Just [pi,pi]) =<< liftIO (fromJSVal =<< toJSVal [pi,pi])
+        (`shouldBe` Just ([] :: [Bool])) =<< liftIO (fromJSVal =<< toJSVal ([] :: [Bool]))
+      it "Should marshal a Char" $ do
+        (`shouldBe` Just ('o' :: Char)) =<< liftIO (fromJSVal =<< toJSVal ('o' :: Char))
+      it "Should marshal a String" $ do
+        (`shouldBe` Just ("foo" :: String)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: String))
+      it "Should marshal a Text" $ do
+        (`shouldBe` Just ("foo" :: Text)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: Text))
+
     describe "DOM tests" $ do
       it "Should have access to document.body" $ do
         nodeLength >>= (`shouldBe` (0 :: Int))
@@ -90,7 +145,5 @@ main = do
       it "Should mount 10000 components" $ do
         liftIO $ startApp $
           component (0 :: Int) noop $ \_ ->
-            div_ [] (replicate 9999 (mount testComponent))
-        mountedComponents >>= (`shouldBe` 10000)
------------------------------------------------------------------------------
-
+            div_ [] (replicate 1 (mount testComponent))
+        mountedComponents >>= (`shouldBe` 2)

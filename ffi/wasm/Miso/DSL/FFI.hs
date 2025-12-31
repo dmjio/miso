@@ -12,17 +12,26 @@ module Miso.DSL.FFI
   , JSString (..)
     -- ** Serialization FFI
     -- *** ToJSVal
+  , toJSVal_Char
   , toJSVal_Bool
   , toJSVal_Double
+  , toJSVal_Float
   , toJSVal_Int
   , toJSVal_List
   , toJSVal_Value
   , toJSVal_JSString
+  , toJSVal_Text
     -- *** FromJSVal
+  , fromJSVal_Text
+  , fromJSValUnchecked_Text
+  , fromJSVal_Char
+  , fromJSValUnchecked_Char
   , fromJSVal_Bool
   , fromJSValUnchecked_Bool
   , fromJSVal_Double
   , fromJSValUnchecked_Double
+  , fromJSVal_Float
+  , fromJSValUnchecked_Float
   , fromJSVal_Int
   , fromJSValUnchecked_Int
   , fromJSVal_List
@@ -79,7 +88,8 @@ import           GHC.Wasm.Prim
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  return $1
+  if ($1 === 0.0) return false;
+  return true;
   """ toJSVal_Bool :: Bool -> IO JSVal
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
@@ -108,6 +118,34 @@ foreign import javascript unsafe
   $1.push($2)
   """ pushArray :: JSVal -> JSVal -> IO ()
 -----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """
+  toJSVal_Char :: Char -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """
+  toJSVal_Float :: Float -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSValUnchecked_Float :: JSVal -> IO Float
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSValUnchecked_Char :: JSVal -> IO Char
+-----------------------------------------------------------------------------
+fromJSVal_Char :: JSVal -> IO (Maybe Char)
+fromJSVal_Char x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Char x
+-----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString (JSString jsval) = pure jsval
 -----------------------------------------------------------------------------
@@ -132,10 +170,26 @@ toJSVal_Value = \case
       setProp_ffi key v' o
     pure o
 -----------------------------------------------------------------------------
+fromJSVal_Text :: JSVal -> IO (Maybe Text)
+fromJSVal_Text x = 
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Text x
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Text :: JSVal -> IO Text
+fromJSValUnchecked_Text t =
+  pure $ textFromJSString (JSString t)
+-----------------------------------------------------------------------------
 toJSVal_Text :: Text -> IO JSVal
 toJSVal_Text t =
   case textToJSString t of
     JSString jsval -> pure jsval
+-----------------------------------------------------------------------------
+fromJSVal_Float :: JSVal -> IO (Maybe Float)
+fromJSVal_Float x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Float x
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool x =
@@ -347,7 +401,10 @@ fromJSVal_Value jsval = do
     0 -> return (Just Null)
     1 -> Just . Number . fromFloatDigits <$> fromJSValUnchecked_Double jsval
     2 -> pure $ Just $ String $ textFromJSString (JSString jsval)
-    3 -> Just . Bool <$> fromJSValUnchecked_Bool jsval
+    3 -> fromJSValUnchecked_Int jsval >>= \case
+      0 -> pure $ Just (Bool False)
+      1 -> pure $ Just (Bool True)
+      _ -> pure Nothing
     4 -> do xs <- fromJSValUnchecked_List jsval
             values <- forM xs fromJSVal_Value
             pure (Array . V.fromList <$> sequence values)
@@ -444,4 +501,3 @@ fromJSValUnchecked_Maybe jsval = do
   if isNullOrUndefined jsval
     then pure Nothing
     else pure (Just jsval)
------------------------------------------------------------------------------

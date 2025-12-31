@@ -53,7 +53,9 @@ module Miso.DSL
   ) where
 -----------------------------------------------------------------------------
 import Data.Aeson (Value)
+import Data.Text (Text)
 import Control.Monad
+import Control.Monad.Trans.Maybe
 import Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import Miso.DSL.FFI
@@ -71,8 +73,17 @@ instance ToJSVal (IO JSVal) where
 instance ToJSVal Double where
   toJSVal = toJSVal_Double
 -----------------------------------------------------------------------------
+instance ToJSVal Float where
+  toJSVal = toJSVal_Float
+-----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal (IO a) where
   toJSVal action = toJSVal =<< action
+-----------------------------------------------------------------------------
+instance ToJSVal () where
+  toJSVal () = pure jsNull
+-----------------------------------------------------------------------------
+instance ToJSVal Char where
+  toJSVal = toJSVal_Char
 -----------------------------------------------------------------------------
 instance ToJSVal Int where
   toJSVal = toJSVal_Int
@@ -109,9 +120,21 @@ instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
   fromJSValUnchecked = fromJSValUnchecked_Int
 -----------------------------------------------------------------------------
+instance FromJSVal Char where
+  fromJSVal = fromJSVal_Char
+  fromJSValUnchecked = fromJSValUnchecked_Char
+-----------------------------------------------------------------------------
+instance FromJSVal Float where
+  fromJSVal = fromJSVal_Float
+  fromJSValUnchecked = fromJSValUnchecked_Float
+-----------------------------------------------------------------------------
 instance FromJSVal Double where
   fromJSVal = fromJSVal_Double
   fromJSValUnchecked = fromJSValUnchecked_Double
+-----------------------------------------------------------------------------
+instance FromJSVal Text where
+  fromJSVal = fromJSVal_Text
+  fromJSValUnchecked = fromJSValUnchecked_Text
 -----------------------------------------------------------------------------
 instance ToObject Object where
   toObject = pure
@@ -119,8 +142,17 @@ instance ToObject Object where
 instance ToJSVal Value where
   toJSVal = toJSVal_Value
 -----------------------------------------------------------------------------
+instance ToJSVal Text where
+  toJSVal = toJSVal_Text
+-----------------------------------------------------------------------------
 instance FromJSVal () where
-  fromJSVal _ = pure (Just ())
+  fromJSVal x =
+    if isUndefined_ffi x
+      then pure Nothing
+      else
+      if isNull_ffi x
+        then pure (Just ())
+        else pure Nothing
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
   toJSVal (x,y) = do
@@ -197,7 +229,7 @@ eval = eval_ffi
 instance FromJSVal Bool where
   fromJSVal = fromJSVal_Bool
   fromJSValUnchecked = fromJSValUnchecked_Bool
------------------------------------------------------------------------------
+--------------------------------------------d---------------------------------
 instance FromJSVal JSVal where
   fromJSVal = pure . Just
 -----------------------------------------------------------------------------
@@ -303,4 +335,33 @@ isNull val = isNull_ffi <$> toJSVal val
 newtype Object = Object { unObject :: JSVal } deriving ToJSVal
 -----------------------------------------------------------------------------
 newtype Function = Function { unFunction :: JSVal } deriving ToJSVal
+-----------------------------------------------------------------------------
+instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
+    fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c) => FromJSVal (a,b,c) where
+    fromJSVal r = runMaybeT $ (,,) <$> jf r 0 <*> jf r 1 <*> jf r 2
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d) => FromJSVal (a,b,c,d) where
+    fromJSVal r = runMaybeT $ (,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e) => FromJSVal (a,b,c,d,e) where
+    fromJSVal r = runMaybeT $ (,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f) => FromJSVal (a,b,c,d,e,f) where
+    fromJSVal r = runMaybeT $ (,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g) => FromJSVal (a,b,c,d,e,f,g) where
+    fromJSVal r = runMaybeT $ (,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6
+    {-# INLINE fromJSVal #-}
+instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g, FromJSVal h) => FromJSVal (a,b,c,d,e,f,g,h) where
+    fromJSVal r = runMaybeT $ (,,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6 <*> jf r 7
+    {-# INLINE fromJSVal #-}
+-----------------------------------------------------------------------------
+jf :: FromJSVal a => JSVal -> Int -> MaybeT IO a
+jf r n = MaybeT $ do
+  x <- getPropIndex_ffi n r
+  if isUndefined_ffi r
+    then return Nothing
+    else fromJSVal x
 -----------------------------------------------------------------------------
