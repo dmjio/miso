@@ -69,11 +69,14 @@ with pkgs.haskell.lib;
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
-    http-server ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
-    cd tests
-    bun run ../ts/playwright.ts
+    http-server -p 8061 ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
+    HTTP_SERVER_PID=$!
+    bun run ./ts/playwright.ts &
+    PLAYWRIGHT_SERVER_PID=$!
+    curl -v --fail 'http://localhost:8060/test?port=8061&wait=true'
     exit_code=$?
-    pkill http-server
+    kill $HTTP_SERVER_PID
+    kill $PLAYWRIGHT_SERVER_PID
     exit "$exit_code"
   '';
 
