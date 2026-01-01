@@ -117,7 +117,7 @@ componentId = lens _componentId $ \r x -> r { _componentId = x }
 componentParentId :: Lens (ComponentInfo parent) ComponentId
 componentParentId = lens _componentParentId $ \r x -> r { _componentParentId = x }
 -----------------------------------------------------------------------------
--- | Lens for accessing the underlying 'Component' t'DOMRef'.
+-- | Lens for accessing the underlying t'Miso.Types.Component' t'DOMRef'.
 --
 -- @
 --   update = \case

@@ -6,6 +6,14 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
+-- |
+-- Module      :  Miso.DSL
+-- Copyright   :  (C) 2016-2025 David M. Johnson (@dmjio)
+-- License     :  BSD3-style (see the file LICENSE)
+-- Maintainer  :  David M. Johnson <code@dmj.io>
+-- Stability   :  experimental
+-- Portability :  non-portable
+-----------------------------------------------------------------------------
 module Miso.DSL
   ( -- * Classes
     ToJSVal (..)
@@ -68,6 +76,7 @@ import Prelude hiding ((!!))
 import Miso.DSL.FFI
 import Miso.String
 -----------------------------------------------------------------------------
+-- | A class for marhsaling Haskell values into JS
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
 -----------------------------------------------------------------------------
@@ -115,6 +124,7 @@ instance ToJSVal JSVal where
 instance FromJSVal Value where
   fromJSVal = fromJSVal_Value
 -----------------------------------------------------------------------------
+-- | A class for marhsaling JS values into Haskell
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
   fromJSValUnchecked :: JSVal -> IO a
@@ -167,24 +177,30 @@ instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
     y_ <- toJSVal y
     toJSVal_List [ x_, y_ ]
 -----------------------------------------------------------------------------
+-- | Retrieves a field from globalThis
 jsg :: MisoString -> IO JSVal
 jsg key = global ! key
 -----------------------------------------------------------------------------
+-- | Invokes a function with a specified argument list
 jsgf :: ToArgs args => MisoString -> args -> IO JSVal
 jsgf name = global # name
 -----------------------------------------------------------------------------
+-- | Invokes a function with no argument
 jsg0 :: MisoString -> IO JSVal
 jsg0 name = jsgf name ([] :: [JSVal])
 -----------------------------------------------------------------------------
+-- | Invokes a function with 1 argument
 jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
 jsg1 name arg = jsgf name [arg]
 -----------------------------------------------------------------------------
-jsg2 :: (ToJSVal arg1, ToJSVal arg2)  => MisoString -> arg1 -> arg2 -> IO JSVal
+-- | Invokes a function with 2 arguments
+jsg2 :: (ToJSVal arg1, ToJSVal arg2) => MisoString -> arg1 -> arg2 -> IO JSVal
 jsg2 name arg1 arg2 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
   jsgf name [arg1_, arg2_]
 -----------------------------------------------------------------------------
+-- | Invokes a function with 3 arguments
 jsg3 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
      => MisoString
      -> arg1
@@ -197,6 +213,7 @@ jsg3 name arg1 arg2 arg3 = do
   arg3_ <- toJSVal arg3
   jsgf name [arg1_, arg2_, arg3_]
 -----------------------------------------------------------------------------
+-- | Invokes a function with 4 arguments
 jsg4 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4)
      => MisoString
      -> arg1
@@ -211,6 +228,7 @@ jsg4 name arg1 arg2 arg3 arg4 = do
   arg4_ <- toJSVal arg4
   jsgf name [arg1_, arg2_, arg3_, arg4_]
 -----------------------------------------------------------------------------
+-- | Invokes a function with 5 arguments
 jsg5 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5)
      => MisoString
      -> arg1
@@ -227,12 +245,14 @@ jsg5 name arg1 arg2 arg3 arg4 arg5 = do
   arg5_ <- toJSVal arg5
   jsgf name [arg1_, arg2_, arg3_, arg4_, arg5_]
 -----------------------------------------------------------------------------
+-- | Sets a field on an Object at a specified field
 setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
 setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
   setProp_ffi k v' o'
 -----------------------------------------------------------------------------
+-- | Sets a field on an Object at a specified index
 infixr 1 <##
 (<##) :: (ToObject o, ToJSVal v) => o -> Int -> v -> IO ()
 (<##) o k v = do
@@ -240,14 +260,17 @@ infixr 1 <##
   v' <- toJSVal v
   setPropIndex_ffi k v' o'
 -----------------------------------------------------------------------------
+-- | Retrieves a property from an Object
 (!) :: ToObject o => o -> MisoString -> IO JSVal
 (!) = flip getProp
 -----------------------------------------------------------------------------
+-- | Lists the properties on a JS Object.
 listProps :: Object -> IO [MisoString]
 listProps (Object jsval) = do
   keys <- fromJSValUnchecked =<< listProps_ffi jsval
   forM keys fromJSValUnchecked
 -----------------------------------------------------------------------------
+-- | Calls a JS function on an t'Object' at a field with specified arguments.
 call :: (ToObject obj, ToObject this, ToArgs args) => obj -> this -> args -> IO JSVal
 call o this args = do
   o' <- toJSVal =<< toObject o
@@ -255,6 +278,7 @@ call o this args = do
   args' <- toJSVal =<< toArgs args
   invokeFunction o' this' args'
 -----------------------------------------------------------------------------
+-- | Calls a JS function on an t'Object' at a field with specified arguments.
 infixr 2 #
 (#) :: (ToObject object, ToArgs args) => object -> MisoString -> args -> IO JSVal
 (#) o k args = do
@@ -263,21 +287,27 @@ infixr 2 #
   args' <- toJSVal =<< toArgs args
   invokeFunction func o' args'
 -----------------------------------------------------------------------------
+-- | Instantiates a new JS t'Object'.
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
 new constr args = do
   obj <- toJSVal =<< toObject constr
   argv <- toJSVal =<< toArgs args
   new_ffi obj argv
 -----------------------------------------------------------------------------
+-- | Creates a new JS t'Object'
 create :: IO Object
 create = Object <$> create_ffi
 -----------------------------------------------------------------------------
+-- | Sets a property on a JS t'Object'
 setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
 setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
 -----------------------------------------------------------------------------
+-- | Retrieves a property from a JS t'Object'
 getProp :: ToObject o => MisoString -> o -> IO JSVal
 getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 -----------------------------------------------------------------------------
+-- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
+--
 eval :: MisoString -> IO JSVal
 eval = eval_ffi
 -----------------------------------------------------------------------------
@@ -297,6 +327,7 @@ instance FromJSVal a => FromJSVal (Maybe a) where
     Nothing -> pure Nothing
     Just y -> Just <$> fromJSValUnchecked y
 -----------------------------------------------------------------------------
+-- | A class for creating arguments to a JS function
 class ToArgs args where
   toArgs :: args -> IO [JSVal]
 -----------------------------------------------------------------------------
@@ -309,6 +340,7 @@ instance ToArgs JSVal where
 instance ToObject JSVal where
   toObject = pure . Object
 -----------------------------------------------------------------------------
+-- | A class for creating JS objects.
 class ToObject a where
   toObject :: a -> IO Object
 -----------------------------------------------------------------------------
@@ -374,9 +406,11 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
     rarg6 <- toJSVal arg6
     return [rarg1, rarg2, rarg3, rarg4, rarg5, rarg6]
 ----------------------------------------------------------------------------
+-- | Retrieves the next animation frame
 waitForAnimationFrame :: IO Double
 waitForAnimationFrame = waitForAnimationFrame_ffi
 ----------------------------------------------------------------------------
+-- | Frees references to a callback
 freeFunction :: Function -> IO ()
 freeFunction (Function x) = freeFunction_ffi x
 -----------------------------------------------------------------------------
@@ -387,14 +421,18 @@ instance FromJSVal Function where
 (!!) :: ToObject object => object -> Int -> IO JSVal
 (!!) o k = getPropIndex_ffi k =<< toJSVal =<< toObject o
 -----------------------------------------------------------------------------
+-- | Checks if a t'JSVal' is undefined
 isUndefined :: ToJSVal val => val -> IO Bool
 isUndefined val = isUndefined_ffi <$> toJSVal val
 -----------------------------------------------------------------------------
+-- | Checks if a t'JSVal' is null
 isNull :: ToJSVal val => val -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
 -----------------------------------------------------------------------------
+-- | A JS Object
 newtype Object = Object { unObject :: JSVal } deriving ToJSVal
 -----------------------------------------------------------------------------
+-- | A JS Function
 newtype Function = Function { unFunction :: JSVal } deriving ToJSVal
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where

@@ -206,6 +206,12 @@ foreign import javascript unsafe
 transpose :: [JSString] -> [JSString]
 transpose = fmap toJSString . List.transpose . fmap fromJSString
 -----------------------------------------------------------------------------
+-- | Reverses a t'Miso.String.MisoString'
+--
+-- @
+-- reverse "abc"
+-- "cba"
+-- @
 foreign import javascript unsafe
   """
   return [...$1].reverse().join('');

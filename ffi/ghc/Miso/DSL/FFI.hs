@@ -4,6 +4,7 @@ module Miso.DSL.FFI where
 import           Data.Text (Text)
 import           Data.Aeson
 -----------------------------------------------------------------------------
+-- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
@@ -18,6 +19,7 @@ toJSVal_Int = undefined
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = undefined
 -----------------------------------------------------------------------------
+-- | The 'null' value in JS.
 jsNull :: JSVal
 jsNull = JSVal
 -----------------------------------------------------------------------------
@@ -120,6 +122,7 @@ listProps_ffi = undefined
 setPropIndex_ffi :: Int -> JSVal -> JSVal -> IO ()
 setPropIndex_ffi = undefined
 -----------------------------------------------------------------------------
+-- | The @globalThis@ object in JS.
 global :: JSVal
 global = undefined
 -----------------------------------------------------------------------------
@@ -135,30 +138,42 @@ fromJSValUnchecked_Double = undefined
 fromJSVal_JSString :: JSVal -> IO (Maybe Text)
 fromJSVal_JSString = undefined
 -----------------------------------------------------------------------------
+-- | A asynchronous callback
 asyncCallback :: IO () -> IO JSVal
 asyncCallback = undefined
+-- | A asynchronous callback with one argument
 asyncCallback1 :: (JSVal -> IO ()) -> IO JSVal
 asyncCallback1 = undefined
+-- | A asynchronous callback with two arguments
 asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
 asyncCallback2 = undefined
+-- | A asynchronous callback with three arguments
 asyncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
 asyncCallback3 = undefined
 -----------------------------------------------------------------------------
+-- | A synchronous callback
 syncCallback :: IO () -> IO JSVal
 syncCallback = undefined
+-- | A synchronous callback with a single argument
 syncCallback1 :: (JSVal -> IO ()) -> IO JSVal
 syncCallback1 = undefined
+-- | A synchronous callback with two arguments
 syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
 syncCallback2 = undefined
+-- | A synchronous callback with three arguments
 syncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
 syncCallback3 = undefined
 -----------------------------------------------------------------------------
+-- | A synchronous callback that returns a value
 syncCallback' :: IO JSVal -> IO JSVal
 syncCallback' = undefined
+-- | A synchronous callback that takes a single argument and returns a value
 syncCallback1' :: (JSVal -> IO JSVal) -> IO JSVal
 syncCallback1' = undefined
+-- | A synchronous callback that takes two arguments and returns a value
 syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback2' = undefined
+-- | A synchronous callback that takes three arguments and returns a value
 syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' = undefined
 -----------------------------------------------------------------------------

@@ -43,6 +43,11 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 ----------------------------------------------------------------------------
+-- | An efficient string type when building miso applications
+--
+-- t'MisoString' is t'Text' when prerendering
+-- t'MisoString' is a JavaScript string when using the JS/WASM backends
+--
 #ifdef VANILLA
 type MisoString = Text
 #else
