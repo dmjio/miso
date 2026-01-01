@@ -244,18 +244,30 @@ main = do
         T.minimum "abc" `shouldBe` 'a'
 
       it "Should scanl" $ do
+        S.unpack (S.scanl (flip const) 'a' "foo") `shouldBe`
+          T.unpack (T.scanl (flip const) 'a' "foo")
+
         S.unpack (S.scanl const 'a' "foo") `shouldBe`
           T.unpack (T.scanl const 'a' "foo")
 
       it "Should scanl1" $ do
+        S.unpack (S.scanl1 (flip const) "foo") `shouldBe`
+          T.unpack (T.scanl1 (flip const) "foo")
+
         S.unpack (S.scanl1 const "foo") `shouldBe`
           T.unpack (T.scanl1 const "foo")
 
       it "Should scanr" $ do
+        S.unpack (S.scanr (flip const) 'a' "foo") `shouldBe`
+          T.unpack (T.scanr (flip const) 'a' "foo")
+
         S.unpack (S.scanr const 'a' "foo") `shouldBe`
           T.unpack (T.scanr const 'a' "foo")
 
       it "Should scanr1" $ do
+        S.unpack (S.scanr1 (flip const) "foo") `shouldBe`
+          T.unpack (T.scanr1 (flip const) "foo")
+
         S.unpack (S.scanr1 const "foo") `shouldBe`
           T.unpack (T.scanr1 const "foo")
 
