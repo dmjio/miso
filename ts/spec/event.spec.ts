@@ -146,10 +146,10 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: true,
-      mount : function (p, f) {
+      mount: (p) => {
         diff(null, child, p, drawingContext);
-        return f(0, child);
-      }
+        return { componentId: 0, componentTree: child };
+      },
     });
 
     var parent = vnode({
@@ -158,10 +158,10 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      mount : function (p, f) {
+      mount: (p) => {
         diff(null, parent, p, drawingContext);
-        return f(1, parent);
-      }
+        return { componentId: 1, componentTree: parent };
+      },
     });
 
     /* create hierarchy */
@@ -213,10 +213,10 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: false,
-      mount : function (p, f) {
+      mount: (p) => {
         diff(null, child, p, drawingContext);
-        return f(0, child);
-      }
+        return { componentId: 0, componentTree: child };
+      },
     });
 
     var parent = vnode({
@@ -225,10 +225,10 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      mount : function (p, f) {
+      mount: (p) => {
         diff(null, parent, p, drawingContext);
-        return f(1, parent);
-      }
+        return { componentId: 1, componentTree: parent };
+      },
     });
 
     /* create hierarchy */
@@ -280,10 +280,10 @@ describe ('Event tests', () => {
 
     var childVComp = vcomp({
       eventPropagation: true,
-      mount : function (p: DOMRef, f) {
+      mount: (p: DOMRef) => {
         diff(null, child, p, drawingContext);
-        return f(0, child as VNode<DOMRef>);
-      }
+        return { componentId: 0, componentTree: child as VNode<DOMRef> };
+      },
     });
 
     var parent = vnode({
@@ -292,10 +292,10 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      mount : function (p: DOMRef, f) {
+      mount: (p: DOMRef) => {
         diff(null, parent, p, drawingContext);
-        return f(1, parent as VNode<DOMRef>);
-      }
+        return { componentId: 1, componentTree: parent as VNode<DOMRef> };
+      },
     });
 
     /* create hierarchy */
@@ -532,19 +532,19 @@ describe ('Event tests', () => {
     // Middle vcomp wrapping the vnode
     var middleVComp = vcomp({
       eventPropagation: true,
-      mount: function (p, f) {
+      mount: (p) => {
         diff(null, innerNode, p, drawingContext);
-        return f(1, innerNode);
-      }
+        return { componentId: 1, componentTree: innerNode };
+      },
     });
 
     // Outer vcomp wrapping the middle vcomp
     var outerVComp = vcomp({
       eventPropagation: true,
-      mount: function (p, f) {
+      mount: (p) => {
         diff(null, middleVComp, p, drawingContext);
-        return f(0, middleVComp);
-      }
+        return { componentId: 0, componentTree: middleVComp };
+      },
     });
 
     // Set up parent hierarchy

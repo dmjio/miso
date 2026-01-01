@@ -394,7 +394,7 @@ instance GRouter next => GRouter (D1 m next) where
   gFromRoute (M1 x) = gFromRoute x
   gRouteParser = M1 <$> gRouteParser
 -----------------------------------------------------------------------------
-instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) next) where
+instance (KnownSymbol name, GRouter next) => GRouter (C1 ('MetaCons name x y) next) where
   gFromRoute (M1 x) =
     case name of
       "index" -> [IndexToken]

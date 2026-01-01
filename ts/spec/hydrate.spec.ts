@@ -318,9 +318,9 @@ describe ("Hydration tests", () => {
       key: 'test-comp',
       componentId : 1,
       child: vnode({ children: [vtext<DOMRef>('component content')] }),
-      mount: (parent: any, callback: any) => {
+      mount: (_parent: any) => {
         mountCalled = true;
-        callback(componentId, componentTree);
+        return { componentId, componentTree } as any;
       },
       unmount: () => {},
     }) as VComp<DOMRef>;
@@ -348,8 +348,7 @@ describe ("Hydration tests", () => {
       onMounted: () => {
         onMountedCalled = true;
       },
-      mount: (parent: any, callback: any) => {
-      },
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
       child : vnode<DOMRef> ({}),
       unmount: () => {},
     }) as VComp<DOMRef>;
@@ -371,9 +370,7 @@ describe ("Hydration tests", () => {
         tag: 'span',
         children: [vtext<DOMRef>('nested child')],
       }),
-      mount: (parent: any, callback: any) => {
-
-      },
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
       unmount: () => {},
     }) as VComp<DOMRef>;
 
@@ -457,8 +454,7 @@ describe ("Hydration tests", () => {
       key: 'walk-comp',
       componentId: 6,
       child: vnode<DOMRef>({ tag: 'span' }),
-      mount: (parent: any, callback: any) => {
-      },
+      mount: (_parent: any) => ({ componentId: 6, componentTree: vnode<DOMRef>({ tag: 'span' }) } as any),
       unmount: () => {},
     }) as VComp<DOMRef>;
 

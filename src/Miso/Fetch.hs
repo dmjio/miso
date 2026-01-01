@@ -64,8 +64,8 @@ module Miso.Fetch
 ----------------------------------------------------------------------------
 import           Data.Aeson
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
 ----------------------------------------------------------------------------
+import           Miso.DSL (toJSVal, FromJSVal(..), JSVal)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink)
 import           Miso.String (MisoString, ms)

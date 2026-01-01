@@ -45,8 +45,6 @@ module Miso.Types
   , Events
   , Phase         (..)
   , URI           (..)
-  -- ** Re-exports
-  , JSM
   -- ** Classes
   , ToKey         (..)
   -- ** Data Bindings
@@ -86,12 +84,11 @@ module Miso.Types
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson (Value, ToJSON(..))
-import           Data.JSString (JSString)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Language.Javascript.JSaddle (ToJSVal(toJSVal), Object(..), JSM, MakeObject)
+import           Miso.DSL
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
@@ -110,7 +107,7 @@ data Component parent model action
 #ifdef SSR
   , hydrateModel :: Maybe (IO model)
 #else
-  , hydrateModel :: Maybe (JSM model)
+  , hydrateModel :: Maybe (IO model)
 #endif
   -- ^ Action to load component state, such as reading data from page.
   --   The resulting model is only used during initial hydration, not on remounts.
@@ -337,9 +334,9 @@ data NS
 -----------------------------------------------------------------------------
 instance ToJSVal NS where
   toJSVal = \case
-    SVG -> toJSVal ("svg" :: JSString)
-    HTML -> toJSVal ("html" :: JSString)
-    MATHML -> toJSVal ("mathml" :: JSString)
+    SVG -> toJSVal ("svg" :: MisoString)
+    HTML -> toJSVal ("html" :: MisoString)
+    MATHML -> toJSVal ("mathml" :: MisoString)
 -----------------------------------------------------------------------------
 -- | Unique key for a DOM node.
 --
@@ -367,7 +364,7 @@ class ToKey key where
 instance ToKey Key where toKey = id
 -----------------------------------------------------------------------------
 -- | Convert 'MisoString' to t'Key'
-instance ToKey JSString where toKey = Key . toMisoString
+-- instance ToKey JSString where toKey = Key . toMisoString
 -----------------------------------------------------------------------------
 -- | Convert 'T.Text' to t'Key'
 instance ToKey T.Text where toKey = Key . toMisoString
@@ -392,7 +389,7 @@ instance ToKey Word where toKey = Key . toMisoString
 data Attribute action
   = Property MisoString Value
   | ClassList [MisoString]
-  | On (Sink action -> VTree -> LogLevel -> Events -> JSM ())
+  | On (Sink action -> VTree -> LogLevel -> Events -> IO ())
   -- ^ The @Sink@ callback can be used to dispatch actions which are fed back to
   -- the @update@ function. This is especially useful for event handlers
   -- like the @onclick@ attribute. The second argument represents the
@@ -408,10 +405,7 @@ instance IsString (View model action) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see t'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
-  deriving (MakeObject)
------------------------------------------------------------------------------
-instance ToJSVal VTree where
-  toJSVal (VTree (Object vtree)) = pure vtree
+  deriving (ToObject, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
@@ -444,9 +438,8 @@ textRaw = VText Nothing
 -- |
 -- HTML-encodes text.
 --
--- N.B. This only works when not using @jsaddle@, useful for escaping HTML
--- when delivering on the server. Naive usage of 'text' will ensure this
--- as well.
+-- Useful for escaping HTML when delivering on the server. Naive usage
+-- of 'text' will ensure this as well.
 --
 -- >>> Data.Text.IO.putStrLn $ text "<a href=\"\">"
 -- &lt;a href=&quot;&quot;&gt;
