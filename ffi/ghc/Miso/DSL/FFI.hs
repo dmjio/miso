@@ -98,8 +98,11 @@ isUndefined_ffi = undefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = undefined
 -----------------------------------------------------------------------------
-waitForAnimationFrame_ffi :: IO Double
-waitForAnimationFrame_ffi = undefined
+requestAnimationFrame :: JSVal -> IO Int
+requestAnimationFrame = undefined
+-----------------------------------------------------------------------------
+cancelAnimationFrame :: Int -> IO ()
+cancelAnimationFrame = undefined
 -----------------------------------------------------------------------------
 toJSVal_JSString :: Text -> IO JSVal
 toJSVal_JSString = undefined

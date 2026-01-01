@@ -67,7 +67,8 @@ module Miso.DSL.FFI
   , isNull_ffi
   , jsNull
   , freeFunction_ffi
-  , waitForAnimationFrame_ffi
+  , requestAnimationFrame
+  , cancelAnimationFrame
   , listProps_ffi
   ) where
 -----------------------------------------------------------------------------
@@ -76,7 +77,6 @@ import qualified Data.Aeson.Key as K
 import qualified Data.Aeson.KeyMap as KM
 import           Data.Scientific
 import           Control.Monad.Trans.Maybe
-import           Control.Exception
 import           Control.Monad
 import           Data.Aeson
 import           Data.JSString (textFromJSString, textToJSString)
@@ -462,26 +462,15 @@ foreign import javascript unsafe "return $2[$1]"
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = freeJSVal
 -----------------------------------------------------------------------------
-waitForAnimationFrame_ffi :: IO Double
-waitForAnimationFrame_ffi = do
-  h <- makeHandle
-  waitForFrame h `onException` cancelFrame h
+foreign import javascript unsafe
+  """
+  return requestAnimationFrame($1);
+  """ requestAnimationFrame :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
-  return { handle: null, callback: null };
-  """ makeHandle :: IO JSVal
------------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-  "(($1,$2) => { return $1.handle = requestAnimationFrame($2); })"
-  """ waitForFrame :: JSVal -> IO Double
------------------------------------------------------------------------------
-foreign import javascript unsafe
-  """
-   if ($1.handle) cancelAnimationFrame($1.handle);
-   if ($1.callback) { $1.callback = null; }
-  """ cancelFrame :: JSVal -> IO ()
+  return cancelAnimationFrame($1);
+  """ cancelAnimationFrame :: Int -> IO ()
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

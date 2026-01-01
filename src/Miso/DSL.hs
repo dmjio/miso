@@ -45,7 +45,8 @@ module Miso.DSL
   , setProp
   , getProp
   , eval
-  , waitForAnimationFrame
+  , requestAnimationFrame
+  , cancelAnimationFrame
   , freeFunction
   , (!!)
   , isUndefined
@@ -405,10 +406,6 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
     rarg5 <- toJSVal arg5
     rarg6 <- toJSVal arg6
     return [rarg1, rarg2, rarg3, rarg4, rarg5, rarg6]
-----------------------------------------------------------------------------
--- | Retrieves the next animation frame
-waitForAnimationFrame :: IO Double
-waitForAnimationFrame = waitForAnimationFrame_ffi
 ----------------------------------------------------------------------------
 -- | Frees references to a callback
 freeFunction :: Function -> IO ()

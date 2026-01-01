@@ -65,8 +65,9 @@ module Miso.DSL.FFI
   , isNull_ffi
   , jsNull
   , freeFunction_ffi
-  , waitForAnimationFrame_ffi
   , listProps_ffi
+  , requestAnimationFrame
+  , cancelAnimationFrame
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
@@ -74,7 +75,6 @@ import           Data.JSString
 import           Data.JSString.Text
 import           Data.Text
 import qualified GHCJS.Marshal as Marshal
-import           JavaScript.Web.AnimationFrame (waitForAnimationFrame)
 -----------------------------------------------------------------------------
 import           GHCJS.Types
 -----------------------------------------------------------------------------
@@ -177,8 +177,21 @@ isUndefined_ffi = isUndefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi _ = pure ()
 -----------------------------------------------------------------------------
-waitForAnimationFrame_ffi :: IO Double
-waitForAnimationFrame_ffi = waitForAnimationFrame
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return requestAnimationFrame($1); })"
+#else
+  "$r = requestAnimationFrame($1);"
+#endif
+  requestAnimationFrame :: JSVal -> IO Int
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return cancelAnimationFrame($1); })"
+#else
+  "cancelAnimationFrame($1);"
+#endif
+  cancelAnimationFrame :: Int -> IO ()
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString = Marshal.toJSVal
