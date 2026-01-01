@@ -177,15 +177,17 @@ library
     build-depends:
       ghc-experimental,
       scientific,
+      template-haskell >= 2.21 && < 2.24,
       vector
-    other-modules:
+    exposed-modules:
       Miso.DSL.TH
+    other-modules:
       Data.JSString
   else
     hs-source-dirs:
       ffi/ghc
 
-  if flag (template-haskell) && !impl(ghcjs)
+  if flag (template-haskell) && arch(javascript)
     exposed-modules:
       Miso.Lens.TH
       Miso.String.QQ
