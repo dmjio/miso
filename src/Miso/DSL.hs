@@ -173,10 +173,44 @@ instance FromJSVal () where
         else pure Nothing
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
-  toJSVal (x,y) = do
+  toJSVal (y,z) = do
+    y_ <- toJSVal y
+    z_ <- toJSVal z
+    toJSVal_List [ y_, z_ ]
+-----------------------------------------------------------------------------
+instance (ToJSVal a, ToJSVal b, ToJSVal c) => ToJSVal (a,b,c) where
+  toJSVal (x,y,z) = do
     x_ <- toJSVal x
     y_ <- toJSVal y
-    toJSVal_List [ x_, y_ ]
+    z_ <- toJSVal z
+    toJSVal_List [ x_, y_, z_ ]
+-----------------------------------------------------------------------------
+instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d) => ToJSVal (a,b,c,d) where
+  toJSVal (w,x,y,z) = do
+    w_ <- toJSVal w
+    x_ <- toJSVal x
+    y_ <- toJSVal y
+    z_ <- toJSVal z
+    toJSVal_List [ w_, x_, y_, z_ ]
+-----------------------------------------------------------------------------
+instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e) => ToJSVal (a,b,c,d,e) where
+  toJSVal (v,w,x,y,z) = do
+    v_ <- toJSVal v
+    w_ <- toJSVal w
+    x_ <- toJSVal x
+    y_ <- toJSVal y
+    z_ <- toJSVal z
+    toJSVal_List [ v_, w_, x_, y_, z_ ]
+-----------------------------------------------------------------------------
+instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e, ToJSVal f) => ToJSVal (a,b,c,d,e,f) where
+  toJSVal (u,v,w,x,y,z) = do
+    u_ <- toJSVal u
+    v_ <- toJSVal v
+    w_ <- toJSVal w
+    x_ <- toJSVal x
+    y_ <- toJSVal y
+    z_ <- toJSVal z
+    toJSVal_List [ u_, v_, w_, x_, y_, z_ ]
 -----------------------------------------------------------------------------
 -- | Retrieves a field from globalThis
 jsg :: MisoString -> IO JSVal
