@@ -44,4 +44,18 @@ in
     rev = "8c7635889ca0a5aaac36a8b21db7f5e5ec0ae4c9";
     sha256 = "0s6kzqxbshsnqbqfj7rblqkrr5mzkjxknb6k8m8z4h10mcv1zh7j";
   };
+
+  servant-miso-html = fetchFromGitHub {
+    owner = "haskell-miso";
+    repo = "servant-miso-html";
+    rev = "00781d1920795b67e0476b67ed6840c388f29810";
+    sha256 = "sha256-dYPlwSbQ+QXvMeS5tonBVnT9zQGADtohmD/ZAiY/cXA=";
+  };
+
+  servant-miso-router = fetchFromGitHub {
+    owner = "haskell-miso";
+    repo = "servant-miso-router";
+    rev = "0c828e0ba30ee7a446ce8999288b32b7f6425dd1";
+    sha256 = "sha256-2Vkheb2iNDFWNAToO+r8rMY3OAA6LlUtgxiCWRm0wAY=";
+  };
 }

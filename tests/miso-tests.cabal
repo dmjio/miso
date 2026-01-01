@@ -72,9 +72,24 @@ executable integration-tests-server
     buildable: True
 
   main-is:
-    IntegrationTests.hs
+    TestServer.hs
+
+  other-modules:    
+    TestApp
+
   build-depends:
-    base
+    base,
+    text,
+    aeson,
+    miso,
+    warp,
+    wai-extra,
+    wai,
+    servant,
+    servant-server,
+    servant-miso-router,
+    servant-miso-html,
+    directory,
   hs-source-dirs:
     app
   default-language:
