@@ -195,7 +195,7 @@ addEventListener
   -- the event will be passed to it as a parameter.
   -> IO Function
 addEventListener self name cb = do
-  cb_ <- Function <$> syncCallback1 cb
+  cb_ <- Function <$> asyncCallback1 cb
   void $ self # "addEventListener" $ (name, cb_)
   pure cb_
 -----------------------------------------------------------------------------
