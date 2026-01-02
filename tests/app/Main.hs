@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -----------------------------------------------------------------------------
@@ -12,6 +13,7 @@ import           Control.Monad
 import           Control.Concurrent
 import           Control.Concurrent.STM
 import qualified Data.Aeson as JSON
+import           Data.Either
 import qualified Data.Vector as V
 import           Data.IORef
 import           Data.Text (Text)
@@ -63,7 +65,9 @@ data Action = AddOne
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 #ifdef WASM
+#ifndef INTERACTIVE
 foreign export javascript "hs_start" main :: IO ()
+#endif
 #endif
 -----------------------------------------------------------------------------
 main :: IO ()
@@ -472,6 +476,16 @@ main = do
 
         S.unpack (S.zipWith (\_ y -> y)  "aaa" "bbb") `shouldBe`
           T.unpack (T.zipWith (\_ y -> y) "aaa" "bbb")
+
+      it "Should perform Real / Integral conversions on MisoString" $ do
+        S.fromMisoStringEither "3.14" `shouldBe` Right (3.14 :: Double)
+        S.fromMisoStringEither @Double "foo" `shouldSatisfy` isLeft
+        S.fromMisoStringEither "3.14" `shouldBe` Right (3.14 :: Float)
+        S.fromMisoStringEither @Float "foo" `shouldSatisfy` isLeft
+        S.fromMisoStringEither "3" `shouldBe` Right (3 :: Int)
+        S.fromMisoStringEither @Int "foo" `shouldSatisfy` isLeft
+        S.fromMisoStringEither "3" `shouldBe` Right (3 :: Word)
+        S.fromMisoStringEither @Word "foo" `shouldSatisfy` isLeft
 
     describe "JS DSL tests" $ do
       it "Should get an set a property on an Object" $ do

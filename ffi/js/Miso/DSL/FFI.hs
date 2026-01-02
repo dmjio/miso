@@ -68,6 +68,11 @@ module Miso.DSL.FFI
   , listProps_ffi
   , requestAnimationFrame
   , cancelAnimationFrame
+  -- *** String FFI
+  , parseInt
+  , parseDouble
+  , parseWord
+  , parseFloat
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
@@ -316,4 +321,38 @@ instance FromJSON JSString where
 -----------------------------------------------------------------------------
 instance ToJSON JSString where
   toJSON = String . textFromJSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return parseInt($1); })"
+#else
+  "$r = parseInt($1)"
+#endif
+  parseInt_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseWord :: JSString -> Maybe Word
+parseWord string = fromIntegral <$> parseInt string
+-----------------------------------------------------------------------------
+parseInt :: JSString -> Maybe Int
+parseInt string =
+  case parseInt_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just (round double)
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return parseFloat($1); })"
+#else
+  "$r = parseFloat($1)"
+#endif
+  parseDouble_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseDouble :: JSString -> Maybe Double
+parseDouble string =
+  case parseDouble_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just double
+-----------------------------------------------------------------------------
+parseFloat :: JSString -> Maybe Float
+parseFloat string = realToFrac <$> parseDouble string
 -----------------------------------------------------------------------------

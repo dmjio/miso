@@ -70,6 +70,11 @@ module Miso.DSL.FFI
   , requestAnimationFrame
   , cancelAnimationFrame
   , listProps_ffi
+  -- *** String FFI
+  , parseInt
+  , parseDouble
+  , parseWord
+  , parseFloat
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text    (Text)
@@ -493,3 +498,34 @@ fromJSValUnchecked_Maybe jsval = do
   if isNullOrUndefined jsval
     then pure Nothing
     else pure (Just jsval)
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return parseInt($1);
+  """
+  parseInt_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseWord :: JSString -> Maybe Word
+parseWord string = fromIntegral <$> parseInt string
+-----------------------------------------------------------------------------
+parseInt :: JSString -> Maybe Int
+parseInt string = do
+  case parseInt_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just (round double)
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return parseFloat($1);
+  """
+  parseDouble_Unchecked :: JSString -> Double
+-----------------------------------------------------------------------------
+parseDouble :: JSString -> Maybe Double
+parseDouble string = do
+  case parseDouble_Unchecked string of
+    double | isNaN double -> Nothing
+           | otherwise -> Just double
+-----------------------------------------------------------------------------
+parseFloat :: JSString -> Maybe Float
+parseFloat string = realToFrac <$> parseDouble string
+-----------------------------------------------------------------------------

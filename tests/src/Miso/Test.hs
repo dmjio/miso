@@ -35,6 +35,7 @@ module Miso.Test
   , beforeEach
   , afterEach
   , shouldBe
+  , shouldSatisfy
   , shouldNotBe
   , runTests
   -- * Utils
@@ -194,6 +195,38 @@ expect f x y = do
           [ "Expecting: "
           , yellow
           , ms (show y)
+          , "\n"
+          , reset
+          , "      "
+          , cyan <> "↳ " <> reset <> "Received:  "
+          , red
+          , ms (show x)
+          , " \n"
+          , reset
+          ]
+-----------------------------------------------------------------------------
+-- | Primitive for performing expectations in an 'it' block.
+shouldSatisfy
+  :: (Eq a, Show a)
+  => a
+  -> (a -> Bool)
+  -> Test ()
+shouldSatisfy x f = do
+  let succeeded = f x
+  name <- use currentTestName
+  start <- use currentTestTime
+  groupName <- use currentTestGroup
+  expects += 1
+  currentTestResult %= (&& succeeded)
+  when (not succeeded) $ liftIO $ do
+    stop <- now
+    prettyTest (CurrentTest groupName name succeeded expectationMessage (stop - start))
+      where
+        expectationMessage = mconcat
+          [ "Expecting: "
+          , yellow
+          , ms (show x)
+          , " to satisfy predicate"
           , "\n"
           , reset
           , "      "
