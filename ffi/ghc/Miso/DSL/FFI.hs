@@ -180,3 +180,15 @@ syncCallback2' = undefined
 syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' = undefined
 -----------------------------------------------------------------------------
+parseInt :: Text -> Maybe Int
+parseInt = undefined
+-----------------------------------------------------------------------------
+parseDouble :: Text -> Maybe Double
+parseDouble = undefined
+-----------------------------------------------------------------------------
+parseWord :: Text -> Maybe Word
+parseWord = undefined
+-----------------------------------------------------------------------------
+parseFloat :: Text -> Maybe Float
+parseFloat = undefined
+-----------------------------------------------------------------------------

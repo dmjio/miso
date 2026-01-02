@@ -43,6 +43,8 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 ----------------------------------------------------------------------------
+import           Miso.DSL.FFI
+----------------------------------------------------------------------------
 -- | An efficient string type when building miso applications
 --
 -- t'MisoString' is t'Text' when prerendering
@@ -68,7 +70,7 @@ class FromMisoString t where
 fromMisoString :: FromMisoString a => MisoString -> a
 fromMisoString s =
   case fromMisoStringEither s of
-    Left err -> error err
+    Left error_ -> error ("fromMisoString: " <> error_)
     Right x  -> x
 ----------------------------------------------------------------------------
 -- | Convenience function, shorthand for `toMisoString`
@@ -158,4 +160,28 @@ instance FromMisoString BL.ByteString where
 ----------------------------------------------------------------------------
 instance FromMisoString B.Builder where
   fromMisoStringEither = fmap B.byteString . fromMisoStringEither
+----------------------------------------------------------------------------
+instance FromMisoString Word where
+  fromMisoStringEither string =
+    case parseWord string of
+      Nothing -> Left ("fromMisoString Word: could not parse " <> unpack string)
+      Just x -> Right x
+----------------------------------------------------------------------------
+instance FromMisoString Double where
+  fromMisoStringEither string =
+    case parseDouble string of
+      Nothing -> Left ("fromMisoString Double: could not parse " <> unpack string)
+      Just x -> Right x
+----------------------------------------------------------------------------
+instance FromMisoString Int where
+  fromMisoStringEither string =
+    case parseInt string of
+      Nothing -> Left ("fromMisoString Int: could not parse " <> unpack string)
+      Just x -> Right x
+----------------------------------------------------------------------------
+instance FromMisoString Float where
+  fromMisoStringEither string =
+    case parseFloat string of
+      Nothing -> Left ("fromMisoString Float: could not parse " <> unpack string)
+      Just x -> Right x
 ----------------------------------------------------------------------------

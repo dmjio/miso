@@ -14,6 +14,10 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 extra-source-files:
 
+flag interactive
+  default: False
+  manual: True
+
 common warnings
   ghc-options: -Wall
 
@@ -23,6 +27,10 @@ common options
       -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
     cpp-options:
       -DWASM
+
+  if flag (interactive)
+    cpp-options:
+      -DINTERACTIVE
 
   if arch(javascript)
      ld-options:
