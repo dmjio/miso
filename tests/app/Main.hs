@@ -530,6 +530,8 @@ main = do
         (`shouldBe` Just (0 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (0 :: Int))
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
+      it "Should marshal ()" $ do
+        (`shouldBe` Just ()) =<< liftIO (fromJSVal =<< toJSVal ())
       it "Should marshal a (Maybe Bool)" $ do
         -- dmj: js backend bug
         -- (`shouldBe` (Nothing :: Maybe Bool)) =<< liftIO (fromJSVal =<< toJSVal (Nothing :: Maybe Bool))
