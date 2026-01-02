@@ -28,7 +28,7 @@
 
     # Miso uses this compiling for WebAssembly
     ghc-wasm-meta.url =
-      "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
+      "github:haskell-wasm/ghc-wasm-meta";
 
     # dmj: (leave commented for now, we might cache our own copy of ghc-wasm if we need to)
     #
