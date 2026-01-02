@@ -187,7 +187,7 @@ library
     hs-source-dirs:
       ffi/ghc
 
-  if flag (template-haskell) && arch(javascript)
+  if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
       Miso.String.QQ
