@@ -165,12 +165,9 @@ instance ToJSVal Text where
 -----------------------------------------------------------------------------
 instance FromJSVal () where
   fromJSVal x =
-    if isUndefined_ffi x
-      then pure Nothing
-      else
-      if isNull_ffi x
-        then pure (Just ())
-        else pure Nothing
+    if isUndefined_ffi x || isNull_ffi x
+      then pure (Just ())
+      else pure Nothing
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
   toJSVal (y,z) = do
