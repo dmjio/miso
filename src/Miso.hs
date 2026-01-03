@@ -55,24 +55,24 @@ module Miso
   -- ** JS file embedding
   , evalFile
 #endif
-    -- * Reactivity
+    -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
-    -- * Types
-    -- | Core types for Miso applications.
-  , module Miso.Types
+    -- * DSL
+    -- | A JavaScript DSL for easy FFI interoperability
+  , module Miso.DSL
     -- * Effect
     -- | 'Effect', 'Sub', and 'Sink' types for defining update functions and subscriptions.
   , module Miso.Effect
     -- * Event
     -- | Functions for specifying component lifecycle events and event handlers.
-  , module Miso.DSL
-    -- * DSL
-    -- | A JavaScript DSL for easy FFI interoperability
   , module Miso.Event
     -- * Property
     -- | Construct custom properties on DOM elements.
   , module Miso.Property
+    -- * Fetch
+    -- | Interface to the Fetch API for making HTTP requests.
+  , module Miso.Fetch
     -- * PubSub
     -- | Publish / Subscribe primitives for communication between components.
   , module Miso.PubSub
@@ -85,9 +85,9 @@ module Miso
     -- * Storage
     -- | Web Storage API (Local and Session storage) interface.
   , module Miso.Storage
-    -- * Fetch
-    -- | Interface to the Fetch API for making HTTP requests.
-  , module Miso.Fetch
+    -- * Types
+    -- | Core types for Miso applications.
+  , module Miso.Types
     -- * Util
     -- | Utility functions for views, parsing, and general purpose combinators.
   , module Miso.Util
