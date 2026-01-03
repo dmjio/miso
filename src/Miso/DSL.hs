@@ -1,6 +1,8 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE DeriveAnyClass       #-}
@@ -113,13 +115,16 @@ instance (GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
     R1 x -> gToJSVal x
 -----------------------------------------------------------------------------
 instance (ToJSVal a, Selector s) => GToJSVal (S1 s (K1 i a)) where
-  gToJSVal m@(M1 (K1 x)) o = do
+  gToJSVal (M1 (K1 x)) o =
     setField o fieldName =<< toJSVal x
       where
-        fieldName = ms (selName m)
+        fieldName = ms $ selName (undefined :: S1 s (K1 i a) ())
 -----------------------------------------------------------------------------
 instance GToJSVal U1 where
   gToJSVal U1 _ = pure ()
+-----------------------------------------------------------------------------
+instance GToJSVal V1 where
+  gToJSVal _ _ = pure ()
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
@@ -184,6 +189,9 @@ instance GFromJSVal a => GFromJSVal (C1 i a) where
 -----------------------------------------------------------------------------
 instance GFromJSVal U1 where
   gFromJSVal _ = pure (Just U1)
+-----------------------------------------------------------------------------
+instance GFromJSVal V1 where
+  gFromJSVal _ = pure Nothing
 -----------------------------------------------------------------------------
 instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
   gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
@@ -543,10 +551,10 @@ isNull :: ToJSVal val => val -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
 -----------------------------------------------------------------------------
 -- | A JS Object
-newtype Object = Object { unObject :: JSVal } deriving (ToJSVal, Generic)
+newtype Object = Object { unObject :: JSVal } deriving newtype (ToJSVal)
 -----------------------------------------------------------------------------
--- | A JS Function
-newtype Function = Function { unFunction :: JSVal } deriving (ToJSVal, Generic)
+-- | A JS Functionn
+newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal)
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
     fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
