@@ -363,8 +363,12 @@ class ToKey key where
 -- | Identity instance
 instance ToKey Key where toKey = id
 -----------------------------------------------------------------------------
+#ifndef VANILLA
+-----------------------------------------------------------------------------
 -- | Convert 'MisoString' to t'Key'
--- instance ToKey JSString where toKey = Key . toMisoString
+instance ToKey MisoString where toKey = Key . toMisoString
+-----------------------------------------------------------------------------
+#endif
 -----------------------------------------------------------------------------
 -- | Convert 'T.Text' to t'Key'
 instance ToKey T.Text where toKey = Key . toMisoString
