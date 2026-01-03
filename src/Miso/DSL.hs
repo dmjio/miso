@@ -395,6 +395,22 @@ instance ToJSVal arg => ToArgs [arg] where
 instance ToArgs () where
   toArgs _ = pure []
 ----------------------------------------------------------------------------
+instance ToArgs Int where
+  toArgs k = (:[]) <$> toJSVal k
+-----------------------------------------------------------------------------
+instance ToArgs Function where
+  toArgs k = (:[]) <$> toJSVal k
+-----------------------------------------------------------------------------
+instance ToArgs Bool where
+  toArgs k = (:[]) <$> toJSVal k
+-----------------------------------------------------------------------------
+instance ToArgs Object where
+  toArgs k = (:[]) <$> toJSVal k
+-----------------------------------------------------------------------------
+instance ToArgs args => ToArgs (Maybe args) where
+  toArgs (Just args) = toArgs args
+  toArgs Nothing     = pure []
+----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2) => ToArgs (arg1, arg2) where
   toArgs (arg1, arg2) = do
     rarg1 <- toJSVal arg1
@@ -441,6 +457,9 @@ freeFunction (Function x) = freeFunction_ffi x
 -----------------------------------------------------------------------------
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function
+-----------------------------------------------------------------------------
+instance FromJSVal Object where
+  fromJSVal = pure . Just . Object
 -----------------------------------------------------------------------------
 -- | Lookup a property based on its index
 (!!) :: ToObject object => object -> Int -> IO JSVal
