@@ -84,9 +84,6 @@ class ToJSVal a where
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
 -----------------------------------------------------------------------------
-instance ToJSVal (IO JSVal) where
-  toJSVal action = action
------------------------------------------------------------------------------
 instance ToJSVal Double where
   toJSVal = toJSVal_Double
 -----------------------------------------------------------------------------
