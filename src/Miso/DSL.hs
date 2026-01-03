@@ -182,6 +182,9 @@ instance GFromJSVal a => GFromJSVal (D1 i a) where
 instance GFromJSVal a => GFromJSVal (C1 i a) where
   gFromJSVal o = fmap M1 <$> gFromJSVal o
 -----------------------------------------------------------------------------
+instance GFromJSVal U1 where
+  gFromJSVal _ = pure (Just U1)
+-----------------------------------------------------------------------------
 instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
   gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
 -----------------------------------------------------------------------------
