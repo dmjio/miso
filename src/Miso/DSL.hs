@@ -1,10 +1,16 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE DerivingStrategies   #-}
+{-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE LambdaCase                 #-}
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE DeriveAnyClass       #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE CPP                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.DSL
@@ -13,6 +19,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- A JavaScript DSL for interacting with the browser or JS runtime environments.
 -----------------------------------------------------------------------------
 module Miso.DSL
   ( -- * Classes
@@ -66,12 +74,15 @@ module Miso.DSL
   , asyncCallback3
   ) where
 -----------------------------------------------------------------------------
+import Control.Applicative
 import Data.Aeson (Value)
 #ifndef VANILLA
 import Data.Text (Text)
 #endif
 import Control.Monad
 import Control.Monad.Trans.Maybe
+import GHC.Generics
+import Data.Kind
 import Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import Miso.DSL.FFI
@@ -80,6 +91,40 @@ import Miso.String
 -- | A class for marhsaling Haskell values into JS
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
+  default toJSVal :: (Generic a, GToJSVal (Rep a)) => a -> IO JSVal
+  toJSVal x = do
+    o <- create
+    gToJSVal (from x) o
+    toJSVal o
+-----------------------------------------------------------------------------
+class GToJSVal (f :: Type -> Type) where
+  gToJSVal :: f a -> Object -> IO ()
+-----------------------------------------------------------------------------
+instance GToJSVal a => GToJSVal (D1 i a) where
+  gToJSVal (M1 x) = gToJSVal x
+-----------------------------------------------------------------------------
+instance GToJSVal a => GToJSVal (C1 i a) where
+  gToJSVal (M1 x) = gToJSVal x
+-----------------------------------------------------------------------------
+instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
+  gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
+-----------------------------------------------------------------------------
+instance (GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
+  gToJSVal = \case
+    L1 x -> gToJSVal x
+    R1 x -> gToJSVal x
+-----------------------------------------------------------------------------
+instance (ToJSVal a, Selector s) => GToJSVal (S1 s (K1 i a)) where
+  gToJSVal (M1 (K1 x)) o =
+    setField o fieldName =<< toJSVal x
+      where
+        fieldName = ms $ selName (undefined :: S1 s (K1 i a) ())
+-----------------------------------------------------------------------------
+instance GToJSVal U1 where
+  gToJSVal U1 _ = pure ()
+-----------------------------------------------------------------------------
+instance GToJSVal V1 where
+  gToJSVal _ _ = pure ()
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
@@ -125,11 +170,43 @@ instance FromJSVal Value where
 -- | A class for marhsaling JS values into Haskell
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
+  default fromJSVal :: (Generic a, GFromJSVal (Rep a)) => JSVal -> IO (Maybe a)
+  fromJSVal x = fmap to <$> gFromJSVal (Object x)
   fromJSValUnchecked :: JSVal -> IO a
   fromJSValUnchecked x = do
     fromJSVal x >>= \case
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
+-----------------------------------------------------------------------------
+class GFromJSVal (f :: Type -> Type) where
+  gFromJSVal :: Object -> IO (Maybe (f a))
+-----------------------------------------------------------------------------
+instance GFromJSVal a => GFromJSVal (D1 i a) where
+  gFromJSVal o = fmap M1 <$> gFromJSVal o
+-----------------------------------------------------------------------------
+instance GFromJSVal a => GFromJSVal (C1 i a) where
+  gFromJSVal o = fmap M1 <$> gFromJSVal o
+-----------------------------------------------------------------------------
+instance GFromJSVal U1 where
+  gFromJSVal _ = pure (Just U1)
+-----------------------------------------------------------------------------
+instance GFromJSVal V1 where
+  gFromJSVal _ = pure Nothing
+-----------------------------------------------------------------------------
+instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
+  gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
+-----------------------------------------------------------------------------
+instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
+  gFromJSVal o = do
+    x <- fmap L1 <$> gFromJSVal o
+    case x of
+      Nothing -> fmap R1 <$> gFromJSVal o
+      Just y -> pure (Just y)
+-----------------------------------------------------------------------------
+instance (FromJSVal a, Selector s) => GFromJSVal (S1 s (K1 i a)) where
+  gFromJSVal o = fmap (M1 . K1) <$> do fromJSVal =<< getProp (ms name) o
+    where
+      name = selName (undefined :: S1 s (K1 i a) ())
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
@@ -474,10 +551,10 @@ isNull :: ToJSVal val => val -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
 -----------------------------------------------------------------------------
 -- | A JS Object
-newtype Object = Object { unObject :: JSVal } deriving ToJSVal
+newtype Object = Object { unObject :: JSVal } deriving newtype (ToJSVal)
 -----------------------------------------------------------------------------
--- | A JS Function
-newtype Function = Function { unFunction :: JSVal } deriving ToJSVal
+-- | A JS Functionn
+newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal)
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
     fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
