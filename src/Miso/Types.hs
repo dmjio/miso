@@ -83,7 +83,7 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON(..))
+import           Data.Aeson (Value, ToJSON(..), encode)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
@@ -398,6 +398,26 @@ data Attribute action
   -- vnode the attribute is attached to.
   | Styles (M.Map MisoString MisoString)
   deriving Functor
+-----------------------------------------------------------------------------
+instance Eq (Attribute action) where
+  Property k1 v1 == Property k2 v2 = k1 == k2 && v1 == v2
+  ClassList x == ClassList y = x == y
+  Styles x == Styles y = x == y
+  _ == _ = False
+-----------------------------------------------------------------------------
+instance Show (Attribute action) where
+  show = \case
+    Property key value ->
+      MS.unpack key <> "=" <> MS.unpack (ms (encode value))
+    ClassList classes ->
+      MS.unpack (MS.intercalate " " classes)
+    On _ ->
+      "<event-handler>"
+    Styles styles ->
+      MS.unpack $ MS.concat
+        [ k <> "=" <> v <> ";"
+        | (k, v) <- M.toList styles
+        ]
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
 instance IsString (View model action) where

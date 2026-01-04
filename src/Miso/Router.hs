@@ -144,6 +144,9 @@ module Miso.Router
   , queryParam
   , capture
   , path
+    -- ** Lexing
+  , lexTokens
+  , tokensToURI
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -552,7 +555,7 @@ query = foldr (<|>) empty
   ]
 -----------------------------------------------------------------------------
 subDelims :: Lexer MisoString
-subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$&'()*+,;=" :: String)
+subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$&'()*+,;" :: String)
 -----------------------------------------------------------------------------
 unreserved :: Lexer MisoString
 unreserved = ms <$> do
