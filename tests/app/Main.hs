@@ -85,9 +85,18 @@ data Route
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
 -----------------------------------------------------------------------------
+data Person = Person { name :: MisoString, age :: Int }
+  deriving stock Generic
+  deriving anyclass (ToJSVal, ToObject)
+----------------------------------------------------------------------------
+getAge :: Person -> IO Int
+getAge = inline "return age;"
+----------------------------------------------------------------------------
 main :: IO ()
 main = do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Inline JS tests" $ do
+     (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
     describe "Router tests" $ do
       it "should call fromRoute on Index" $ do
         fromRoute Index `shouldBe` [ IndexToken ]
