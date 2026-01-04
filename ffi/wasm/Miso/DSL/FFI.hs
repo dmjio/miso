@@ -94,7 +94,7 @@ import           GHC.Wasm.Prim
 foreign import javascript unsafe
   """
   return $1 === $2;
-  """ eq :: JSVal -> JSVal -> IO Bool
+  """ eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
 instance Eq JSVal where (==) = eq
 -----------------------------------------------------------------------------
