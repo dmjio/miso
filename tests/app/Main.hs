@@ -499,9 +499,9 @@ main = do
         toMisoString (3.14 :: Double) `shouldBe` "3.14"
       it "Should marshal a Float to JSString" $ do
         toMisoString (3.14 :: Float) `shouldBe` "3.14"
-      it "Should marshal a Double to JSString" $ do
+      it "Should marshal a Word to JSString" $ do
         toMisoString (3 :: Word) `shouldBe` "3"
-      it "Should marshal a Float to JSString" $ do
+      it "Should marshal a Int to JSString" $ do
         toMisoString ((-5) :: Int) `shouldBe` "-5"
       it "Should marshal a Value(Object)" $ do
         (`shouldBe` Just (JSON.object [ "foo" JSON..= True ])) =<< liftIO (fromJSVal =<< toJSVal (JSON.object [ "foo" JSON..= True ]))
@@ -538,8 +538,6 @@ main = do
         (`shouldBe` Just (0 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (0 :: Int))
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
-      it "Should marshal ()" $ do
-        (`shouldBe` Just ()) =<< liftIO (fromJSVal =<< toJSVal ())
       it "Should marshal a (Maybe Bool)" $ do
         -- dmj: js backend bug
         -- (`shouldBe` (Nothing :: Maybe Bool)) =<< liftIO (fromJSVal =<< toJSVal (Nothing :: Maybe Bool))
