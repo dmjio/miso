@@ -88,7 +88,7 @@ import Prelude hiding ((!!))
 import Miso.DSL.FFI
 import Miso.String
 -----------------------------------------------------------------------------
--- | A class for marhsaling Haskell values into JS
+-- | A class for marshaling Haskell values into JS
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
   default toJSVal :: (Generic a, GToJSVal (Rep a)) => a -> IO JSVal
@@ -167,7 +167,7 @@ instance ToJSVal JSVal where
 instance FromJSVal Value where
   fromJSVal = fromJSVal_Value
 -----------------------------------------------------------------------------
--- | A class for marhsaling JS values into Haskell
+-- | A class for marshaling JS values into Haskell
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
   default fromJSVal :: (Generic a, GFromJSVal (Rep a)) => JSVal -> IO (Maybe a)
