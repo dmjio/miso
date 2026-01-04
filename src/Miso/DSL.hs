@@ -414,6 +414,11 @@ getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 -----------------------------------------------------------------------------
 -- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
 --
+-- `eval()` is slower (not subject to JS engine optimizations) and also
+-- has security vulnerabilities (can alter other local variables).
+--
+-- Consider using the more performant and secure (isolated) `inline` function.
+--
 eval :: MisoString -> IO JSVal
 eval = eval_ffi
 -----------------------------------------------------------------------------

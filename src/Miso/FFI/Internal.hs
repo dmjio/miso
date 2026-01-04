@@ -346,6 +346,8 @@ updateRef jsval1 jsval2 = do
 -----------------------------------------------------------------------------
 -- | Convenience function to write inline javascript.
 --
+-- Prefer this function over the use of `eval`.
+--
 -- This function takes as arguments a JavaScript object and makes the
 -- keys available in the function body.
 --
