@@ -105,6 +105,7 @@
                  http-server
                  cabal-install
                  tailwindcss_4
+                 ghciwatch
                ];
               shellHook = ''
                 function build () {
@@ -119,6 +120,9 @@
                 function repl () {
                    wasm32-wasi-cabal repl $1 -finteractive \
                      --repl-options='-fghci-browser -fghci-browser-port=8080'
+                }
+                function repl-watch () {
+                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci-browser -fghci-browser-port=8080"'
                 }
               '';
             };
