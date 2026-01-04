@@ -7,6 +7,9 @@ import           Data.Aeson
 -- | A type that represents any JS value
 data JSVal = JSVal
 -----------------------------------------------------------------------------
+instance Eq JSVal where
+  JSVal == JSVal = True
+-----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
 toJSVal_Bool = undefined
 -----------------------------------------------------------------------------
