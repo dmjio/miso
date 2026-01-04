@@ -93,6 +93,13 @@ import           GHC.Wasm.Prim
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
+  return $1 === $2
+  """ eq :: JSVal -> JSVal -> IO Bool
+-----------------------------------------------------------------------------
+instance Eq JSVal where (==) = eq
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
   if ($1 === 0.0) return false;
   return true;
   """ toJSVal_Bool :: Bool -> IO JSVal
