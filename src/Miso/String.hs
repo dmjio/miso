@@ -119,16 +119,16 @@ instance ToMisoString B.Builder where
   toMisoString = ms . B.toLazyByteString
 ----------------------------------------------------------------------------
 instance ToMisoString Float where
-  toMisoString = ms . show
+  toMisoString = toString_Float
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
-  toMisoString = ms . show
+  toMisoString = toString_Double
 ----------------------------------------------------------------------------
 instance ToMisoString Int where
-  toMisoString = ms . show
+  toMisoString = toString_Int
 ----------------------------------------------------------------------------
 instance ToMisoString Word where
-  toMisoString = ms . show
+  toMisoString = toString_Word
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 instance FromMisoString MisoString where

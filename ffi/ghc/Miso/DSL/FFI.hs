@@ -192,3 +192,15 @@ parseWord = undefined
 parseFloat :: Text -> Maybe Float
 parseFloat = undefined
 -----------------------------------------------------------------------------
+toString_Int :: Int -> JSString
+toString_Int = undefined
+-----------------------------------------------------------------------------
+toString_Word :: Word -> JSString
+toString_Word = undefined
+-----------------------------------------------------------------------------
+toString_Float :: Float -> JSString
+toString_Float = undefined
+-----------------------------------------------------------------------------
+toString_Double :: Double -> JSString
+toString_Double = undefined
+-----------------------------------------------------------------------------
