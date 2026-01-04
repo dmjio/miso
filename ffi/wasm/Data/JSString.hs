@@ -128,6 +128,10 @@ module Data.JSString
   , textToJSString
   , toJSString
   , fromJSString
+  , toString_Double
+  , toString_Float
+  , toString_Word
+  , toString_Int
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
@@ -849,4 +853,16 @@ foreign import javascript unsafe "return $1 + $2"
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return ''"
   jsstringMempty :: JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return ($1).toString()"
+  toString_Int :: Int -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return ($1).toString()"
+  toString_Double :: Double -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return ($1).toString()"
+  toString_Float :: Float -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe "return ($1).toString()"
+  toString_Word :: Word -> JSString
 -----------------------------------------------------------------------------

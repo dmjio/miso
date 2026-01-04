@@ -119,16 +119,17 @@ instance ToMisoString B.Builder where
   toMisoString = ms . B.toLazyByteString
 ----------------------------------------------------------------------------
 instance ToMisoString Float where
-  toMisoString = ms . show
+  -- dmj: issue where Float shows additional digits (affects both JS & WASM)
+  toMisoString = toString_Double . realToFrac
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
-  toMisoString = ms . show
+  toMisoString = toString_Double
 ----------------------------------------------------------------------------
 instance ToMisoString Int where
-  toMisoString = ms . show
+  toMisoString = toString_Int
 ----------------------------------------------------------------------------
 instance ToMisoString Word where
-  toMisoString = ms . show
+  toMisoString = toString_Word
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 instance FromMisoString MisoString where

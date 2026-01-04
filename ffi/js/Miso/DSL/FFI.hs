@@ -73,6 +73,10 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+  , toString_Double
+  , toString_Float
+  , toString_Word
+  , toString_Int
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
@@ -355,4 +359,36 @@ parseDouble string =
 -----------------------------------------------------------------------------
 parseFloat :: JSString -> Maybe Float
 parseFloat string = realToFrac <$> parseDouble string
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return ($1).toString(); })"
+#else
+  "$r = ($1).toString();"
+#endif
+  toString_Int :: Int -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return ($1).toString(); })"
+#else
+  "$r = ($1).toString();"
+#endif
+  toString_Double :: Double -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return ($1).toString(); })"
+#else
+  "$r = ($1).toString();"
+#endif
+  toString_Float :: Float -> JSString
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+#if GHCJS_NEW
+  "(($1) => { return ($1).toString(); })"
+#else
+  "$r = ($1).toString();"
+#endif
+  toString_Word :: Word -> JSString
 -----------------------------------------------------------------------------
