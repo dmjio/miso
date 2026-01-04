@@ -495,6 +495,14 @@ main = do
       it "Should call eval" $ do
         (`shouldBe` 4) =<< liftIO (fromJSValUnchecked =<< eval "2+2")
     describe "Marshal tests" $ do
+      it "Should marshal a Double to JSString" $ do
+        toMisoString (3.14 :: Double) `shouldBe` "3.14"
+      it "Should marshal a Float to JSString" $ do
+        toMisoString (3.14 :: Float) `shouldBe` "3.14"
+      it "Should marshal a Double to JSString" $ do
+        toMisoString (3 :: Word) `shouldBe` "3"
+      it "Should marshal a Float to JSString" $ do
+        toMisoString ((-5) :: Int) `shouldBe` "-5"
       it "Should marshal a Value(Object)" $ do
         (`shouldBe` Just (JSON.object [ "foo" JSON..= True ])) =<< liftIO (fromJSVal =<< toJSVal (JSON.object [ "foo" JSON..= True ]))
       it "Should marshal a Value(Array)" $ do

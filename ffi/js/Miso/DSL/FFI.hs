@@ -73,6 +73,10 @@ module Miso.DSL.FFI
   , parseDouble
   , parseWord
   , parseFloat
+  , toString_Double
+  , toString_Float
+  , toString_Word
+  , toString_Int
   ) where
 -----------------------------------------------------------------------------
 import           Data.Aeson
