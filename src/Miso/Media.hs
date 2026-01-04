@@ -64,7 +64,7 @@ import           Miso.String
 -- media <- t'Media' \<$\> 'Miso.FFI.getElementById' "myVideo"
 -- @
 newtype Media = Media JSVal
-  deriving (ToJSVal)
+  deriving (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 -- | Possible values of [networkState](https://www.w3schools.com/tags/av_prop_networkstate.asp) property.
 data NetworkState
