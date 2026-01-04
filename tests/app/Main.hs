@@ -81,7 +81,7 @@ foreign export javascript "hs_start" main :: IO ()
 data Route
   = Index
   | Home
-  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int)
+  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int) (QueryParam "lol" Int)
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
 -----------------------------------------------------------------------------
@@ -94,23 +94,24 @@ main = do
       it "should call fromRoute on Home" $ do
         fromRoute Home `shouldBe` [ CaptureOrPathToken "home" ]
       it "should call fromRoute on Widget" $ do
-        fromRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
-         `shouldBe`  [ CaptureOrPathToken "widget"
+        fromRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+          `shouldBe` [ CaptureOrPathToken "widget"
                      , CaptureOrPathToken "10"
                      , CaptureOrPathToken "foo"
                      , CaptureOrPathToken "other"
-                     , QueryParamToken "bar" "12"
+                     , QueryParamToken "bar" (Just "12")
+                     , QueryParamToken "lol" (Just "11")
                      ]
       it "should call toURI on Index" $ do
         toURI Index `shouldBe` URI "" "" mempty
       it "should call toURI on Home" $ do
         toURI Home `shouldBe` URI "home" "" mempty
       it "should call toURI on Widget" $ do
-        toURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
+        toURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
           `shouldBe`
              URI { uriPath = "widget/10/foo/other"
                  , uriFragment = ""
-                 , uriQueryString = M.fromList [("bar", Just "12")]
+                 , uriQueryString = M.fromList [("bar", Just "12"), ("lol", Just "11")]
                  }
       it "should call fromMisoString on Int" $ do
         S.fromMisoStringEither "10" `shouldBe` Right (10 :: Int)
@@ -119,36 +120,36 @@ main = do
       it "should call href on Home" $ do
         Miso.Router.href_ Home `shouldBe` Property "href" "/home"
       it "should call href on Widget" $ do
-        Miso.Router.href_ (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
-          `shouldBe` Property "href" "/widget/10/foo/other?bar=12"
+        Miso.Router.href_ (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+          `shouldBe` Property "href" "/widget/10/foo/other?bar=12&lol=11"
       it "should call prettyRoute on Index" $ do
         prettyRoute Index `shouldBe` "/"
       it "should call prettyRoute on Home" $ do
         prettyRoute Home `shouldBe` "/home"
       it "should call prettyRoute on Widget" $ do
-        prettyRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
-          `shouldBe` "/widget/10/foo/other?bar=12"
+        prettyRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+          `shouldBe` "/widget/10/foo/other?bar=12&lol=11"
       it "should call dumpURI on Index" $ do
         dumpURI Index `shouldBe` "URI {uriPath = , uriFragment = , uriQueryString = fromList []}"
       it "should call dumpURI on Home" $ do
         dumpURI Home `shouldBe` "URI {uriPath = home, uriFragment = , uriQueryString = fromList []}"
       it "should call dumpURI on Widget" $ do
-        dumpURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
-          `shouldBe` "URI {uriPath = widget/10/foo/other, uriFragment = , uriQueryString = fromList [(bar,Just 12)]}"
+        dumpURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
+          `shouldBe` "URI {uriPath = widget/10/foo/other, uriFragment = , uriQueryString = fromList [(bar,Just 12),(lol,Just 11)]}"
       it "should call toRoute Index" $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do
         toRoute "/home" `shouldBe` Right Home
       it "should call toRoute Widget" $ do
-        toRoute "/widget/10/foo/other?bar=12"
+        toRoute "/widget/10/foo/other?bar=12&lol=11"
           `shouldBe`
-            Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)))
+            Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
 
       it "should lexTokens" $ do
         lexTokens "/foo?bar=12" `shouldBe`
-          Right [CaptureOrPathToken "foo", QueryParamToken "bar" "12"]
+          Right [CaptureOrPathToken "foo", QueryParamToken "bar" (Just "12")]
         lexTokens "/foo?bar" `shouldBe`
-          Right [CaptureOrPathToken "foo", QueryFlagToken "bar"]
+          Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing]
 
     describe "MisoString tests" $ do
       it "Should pack" $ do
