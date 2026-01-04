@@ -130,12 +130,12 @@ main = do
         prettyRoute (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
           `shouldBe` "/widget/10/foo/other?bar=12&lol=11"
       it "should call dumpURI on Index" $ do
-        dumpURI Index `shouldBe` "URI {uriPath = , uriFragment = , uriQueryString = fromList []}"
+        dumpURI Index `shouldBe` "URI {uriPath = \"\", uriFragment = \"\", uriQueryString = fromList []}"
       it "should call dumpURI on Home" $ do
-        dumpURI Home `shouldBe` "URI {uriPath = home, uriFragment = , uriQueryString = fromList []}"
+        dumpURI Home `shouldBe` "URI {uriPath = \"home\", uriFragment = \"\", uriQueryString = fromList []}"
       it "should call dumpURI on Widget" $ do
         dumpURI (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
-          `shouldBe` "URI {uriPath = widget/10/foo/other, uriFragment = , uriQueryString = fromList [(bar,Just 12),(lol,Just 11)]}"
+          `shouldBe` "URI {uriPath = \"widget/10/foo/other\", uriFragment = \"\", uriQueryString = fromList [(\"bar\",Just \"12\"),(\"lol\",Just \"11\")]}"
       it "should call toRoute Index" $ do
         toRoute "/" `shouldBe` Right Index
       it "should call toRoute Home" $ do

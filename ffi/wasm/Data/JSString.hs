@@ -836,7 +836,7 @@ instance Monoid JSString where
   mempty = jsstringMempty
 ----------------------------------------------------------------------------
 instance Show JSString where
-  show = fromJSString
+  show = show . fromJSString
 ----------------------------------------------------------------------------
 instance IsString JSString where
   fromString = toJSString
