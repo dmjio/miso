@@ -449,6 +449,11 @@ instance ToObject JSVal where
 -- | A class for creating JS objects.
 class ToObject a where
   toObject :: a -> IO Object
+  default toObject :: (Generic a, GToJSVal (Rep a)) => a -> IO Object
+  toObject x = do
+    o <- create
+    gToJSVal (from x) o
+    pure o
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)

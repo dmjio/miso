@@ -933,6 +933,12 @@ function updateRef(current, latest) {
   latest.parent = current.parent;
   current.parent.child = latest;
 }
+function inline(code, context = {}) {
+  const keys = Object.keys(context);
+  const values = Object.values(context);
+  const func = new Function(...keys, code);
+  return func(...values);
+}
 
 // ts/miso/context/dom.ts
 var eventContext = {
@@ -1113,6 +1119,7 @@ globalThis["miso"] = {
   websocketSend,
   undelegate,
   updateRef,
+  inline,
   populateClass,
   integrityCheck,
   setDrawingContext: function(name) {
