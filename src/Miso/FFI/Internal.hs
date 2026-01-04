@@ -736,7 +736,7 @@ setDrawingContext rendererName =
 -----------------------------------------------------------------------------
 -- | The [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) type
 newtype Date = Date JSVal
-  deriving (ToJSVal, ToObject)
+  deriving (ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 -- | Smart constructor for a t'Date'
 newDate :: IO Date
@@ -922,14 +922,14 @@ isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 -- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype Blob = Blob JSVal
-  deriving ToJSVal
+  deriving (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal Blob where
   fromJSVal = pure . pure . Blob
 -----------------------------------------------------------------------------
 -- | [FormData](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 newtype FormData = FormData JSVal
-  deriving ToJSVal
+  deriving (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal FormData where
   fromJSVal = pure . pure . FormData
@@ -939,7 +939,7 @@ instance FromJSVal ArrayBuffer where
 -----------------------------------------------------------------------------
 -- | [ArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/API/ArrayBuffer)
 newtype ArrayBuffer = ArrayBuffer JSVal
-  deriving ToJSVal
+  deriving (Eq, ToJSVal)
 -----------------------------------------------------------------------------
 geolocation :: (JSVal -> IO ()) -> (JSVal -> IO ()) -> IO ()
 geolocation successful errorful = do
@@ -950,7 +950,7 @@ geolocation successful errorful = do
 -----------------------------------------------------------------------------
 -- | [File](https://developer.mozilla.org/en-US/docs/Web/API/File)
 newtype File = File JSVal
-  deriving (ToJSVal, ToObject)
+  deriving (ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal File where
   fromJSVal = pure . pure . File
@@ -964,14 +964,14 @@ instance FromJSVal Uint8Array where
 -----------------------------------------------------------------------------
 -- | [FileReader](https://developer.mozilla.org/en-US/docs/Web/API/FileReader)
 newtype FileReader = FileReader JSVal
-  deriving (ToJSVal, ToObject)
+  deriving (ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal FileReader where
   fromJSVal = pure . pure . FileReader
 -----------------------------------------------------------------------------
 -- | [URLSearchParams](https://developer.mozilla.org/en-US/docs/Web/API/URLSearchParams)
 newtype URLSearchParams = URLSearchParams JSVal
-  deriving (ToJSVal, ToObject)
+  deriving (ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal URLSearchParams where
   fromJSVal = pure . pure . URLSearchParams
@@ -1015,7 +1015,7 @@ instance FromJSVal (Map MisoString MisoString) where
 -----------------------------------------------------------------------------
 -- | [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
 newtype Event = Event JSVal
-  deriving (ToJSVal)
+  deriving (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 instance FromJSVal Event where
   fromJSVal = pure . Just . Event
