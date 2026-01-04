@@ -5,7 +5,9 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE MultilineStrings    #-}
 {-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -85,9 +87,34 @@ data Route
   deriving stock (Generic, Show, Eq)
   deriving anyclass Router
 -----------------------------------------------------------------------------
+data Person = Person { name :: MisoString, age :: Int }
+  deriving stock Generic
+  deriving anyclass (ToJSVal, ToObject)
+----------------------------------------------------------------------------
+getAge :: Person -> IO Int
+getAge = inline
+  """
+  return age;
+  """
+----------------------------------------------------------------------------
+#ifdef PRODUCTION
+#define MISO_JS_PATH "../js/miso.prod.js"
+#else
+#define MISO_JS_PATH "../js/miso.js"
+#endif
+withJS :: IO a -> IO ()
+withJS action = void $ do
+#ifdef WASM
+  $(evalFile MISO_JS_PATH)
+#endif
+  action
+-----------------------------------------------------------------------------
 main :: IO ()
-main = do
+main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Inline JS tests" $ do
+     it "Should use inline js" $ do
+       (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
     describe "Router tests" $ do
       it "should call fromRoute on Index" $ do
         fromRoute Index `shouldBe` [ IndexToken ]

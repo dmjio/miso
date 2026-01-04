@@ -96,6 +96,8 @@ module Miso.FFI
   , Event (..)
   , eventPreventDefault
   , eventStopPropagation
+    -- ** Inline JS
+  , inline
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

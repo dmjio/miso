@@ -414,6 +414,11 @@ getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 -----------------------------------------------------------------------------
 -- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
 --
+-- `eval()` is slower (not subject to JS engine optimizations) and also
+-- has security vulnerabilities (can alter other local variables).
+--
+-- Consider using the more performant and secure (isolated) `inline` function.
+--
 eval :: MisoString -> IO JSVal
 eval = eval_ffi
 -----------------------------------------------------------------------------
@@ -449,6 +454,11 @@ instance ToObject JSVal where
 -- | A class for creating JS objects.
 class ToObject a where
   toObject :: a -> IO Object
+  default toObject :: (Generic a, GToJSVal (Rep a)) => a -> IO Object
+  toObject x = do
+    o <- create
+    gToJSVal (from x) o
+    pure o
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)

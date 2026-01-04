@@ -229,3 +229,10 @@ export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
   // invariant, parent is always VComp<T>, safe cast
   (current.parent as VComp<T>).child = latest;
 }
+
+export function inline(code, context = {}) {
+  const keys = Object.keys(context);
+  const values = Object.values(context);
+  const func = new Function(...keys, code);
+  return func(...values);
+}

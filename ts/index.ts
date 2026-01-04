@@ -18,6 +18,7 @@ import {
   websocketSend,
   populateClass,
   updateRef,
+  inline,
 } from './miso';
 
 import {
@@ -50,6 +51,7 @@ globalThis['miso'] = {
     websocketSend,
     undelegate,
     updateRef,
+    inline,
     populateClass,
     integrityCheck,
     setDrawingContext : function (name) {

@@ -143,6 +143,8 @@ module Miso.FFI.Internal
    -- * Class
    , populateClass
    , updateRef
+   -- * Inline JS
+   , inline
    ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -341,6 +343,39 @@ updateRef
 updateRef jsval1 jsval2 = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "updateRef" $ (jsval1, jsval2)
+-----------------------------------------------------------------------------
+-- | Convenience function to write inline javascript.
+--
+-- Prefer this function over the use of `eval`.
+--
+-- This function takes as arguments a JavaScript object and makes the
+-- keys available in the function body.
+--
+-- @
+--
+--  data Person = Person { name :: MisoString, age :: Int }
+--    deriving stock (Generic)
+--    deriving anyclass (ToJSVal, ToObject)
+--
+-- logNameGetAge :: Person -> IO Int
+-- logNameGetAge = inline
+--   """
+--   console.log('name', name);
+--   return age;
+--   """
+--
+-- @
+--
+inline
+    :: (FromJSVal return, ToObject object)
+    => MisoString
+    -> object
+    -> IO return
+inline code o = do
+  moduleMiso <- jsg "miso"
+  Object obj <- toObject o
+  fromJSValUnchecked =<< do
+    moduleMiso # "inline" $ (code, obj)
 -----------------------------------------------------------------------------
 -- | Populate the 'Miso.Html.Property.classList' Set on the virtual DOM.
 populateClass

@@ -16,6 +16,7 @@ import {
    eventSourceClose,
    populateClass,
    updateRef,
+   inline,
 } from './miso/util';
 
 import {
@@ -60,6 +61,7 @@ export {
   patch,
   populateClass,
   updateRef,
+  inline,
 
   /* Types */
   VTree,
