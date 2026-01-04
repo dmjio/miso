@@ -561,10 +561,10 @@ isNull :: ToJSVal val => val -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
 -----------------------------------------------------------------------------
 -- | A JS Object
-newtype Object = Object { unObject :: JSVal } deriving newtype (ToJSVal)
+newtype Object = Object { unObject :: JSVal } deriving newtype (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 -- | A JS Functionn
-newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal)
+newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal, Eq)
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
     fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
