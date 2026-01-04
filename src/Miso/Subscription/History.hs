@@ -35,6 +35,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.String
 import           Miso.Router
 import           Miso.Effect (Sub)
+import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
 -- | Pushes a new URI onto the History stack.
 pushURI :: URI -> IO ()
@@ -66,12 +67,18 @@ chan = unsafePerformIO waiter
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API.
 uriSub :: (URI -> action) -> Sub action
-uriSub = \f sink -> do
-  void . forkIO . forever $ do
-    liftIO (wait chan)
-    sink . f =<< getURI
-  void $ FFI.windowAddEventListener "popstate" $ \_ ->
-    sink . f =<< getURI
+uriSub f sink = createSub acquire release sink
+  where
+    release (tid, cb) = do
+      FFI.windowRemoveEventListener "popstate" cb
+      killThread tid
+    acquire = do
+      tid <- forkIO . forever $ do
+        liftIO (wait chan)
+        sink . f =<< getURI
+      cb <- FFI.windowAddEventListener "popstate" $ \_ ->
+        sink . f =<< getURI
+      pure (tid, cb)
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
 -- to a user-defined 'Router'.
