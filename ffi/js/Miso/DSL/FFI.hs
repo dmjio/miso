@@ -95,6 +95,16 @@ import           GHCJS.Prim
 import qualified GHCJS.Foreign.Callback as Callback
 #endif
 -----------------------------------------------------------------------------
+foreign import javascript safe
+#ifdef GHCJS_NEW
+  "(($1,$2) => { return $1 === $2; })"
+#else
+  "$r = $1 === $2;"
+#endif
+  eq :: JSVal -> JSVal -> IO Bool
+-----------------------------------------------------------------------------
+instance Eq JSVal where (==) = eq
+-----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
 toJSVal_Bool = Marshal.toJSVal
 -----------------------------------------------------------------------------
