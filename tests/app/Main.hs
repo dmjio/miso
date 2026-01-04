@@ -145,11 +145,15 @@ main = do
           `shouldBe`
             Right (Widget (Capture 10) (Path "foo") (Capture "other") (QueryParam (Just 12)) (QueryParam (Just 11)))
 
-      it "should lexTokens" $ do
+      it "should lexTokens on query params/flags" $ do
         lexTokens "/foo?bar=12" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" (Just "12")]
         lexTokens "/foo?bar" `shouldBe`
           Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing]
+
+      it "should lexTokens on fragments" $ do
+        lexTokens "/foo?bar#cool" `shouldBe`
+          Right [CaptureOrPathToken "foo", QueryParamToken "bar" Nothing, FragmentToken "cool"]
 
     describe "MisoString tests" $ do
       it "Should pack" $ do
