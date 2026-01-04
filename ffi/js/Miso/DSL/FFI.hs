@@ -101,7 +101,7 @@ foreign import javascript safe
 #else
   "$r = $1 === $2;"
 #endif
-  eq :: JSVal -> JSVal -> IO Bool
+  eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
 instance Eq JSVal where (==) = eq
 -----------------------------------------------------------------------------
