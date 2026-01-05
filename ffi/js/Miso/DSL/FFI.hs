@@ -146,8 +146,8 @@ fromJSVal_Value :: JSVal -> IO (Maybe Value)
 fromJSVal_Value jsval_ = do
   typeof jsval_ >>= \case
     0 -> return (Just Null)
-    1 -> Just . Number <$> fromJSValUnchecked_Double jsval_
-    2 -> fmap String <$> Marshal.fromJSVal jsval_
+    1 -> Just . Number <$> Marshal.fromJSValUnchecked jsval_
+    2 -> Just . String <$> Marshal.fromJSValUnchecked jsval_
     3 -> fromJSValUnchecked_Int jsval_ >>= \case
       0 -> pure $ Just (Bool False)
       1 -> pure $ Just (Bool True)
