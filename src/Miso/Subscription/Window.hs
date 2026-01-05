@@ -26,7 +26,7 @@ import           Miso.DSL
 import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
-import           Miso.JSON
+import           Miso.JSON hiding (Options)
 import           Miso.String
 import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
