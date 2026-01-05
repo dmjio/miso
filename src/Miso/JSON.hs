@@ -194,7 +194,7 @@ instance ToJSON Value where
   toJSON = id
 ----------------------------------------------------------------------------
 instance ToJSON Char where
-  toJSON _ = undefined
+  toJSON c = String (singleton c)
 ----------------------------------------------------------------------------
 instance ToJSON Bool where
   toJSON = Bool
