@@ -64,7 +64,6 @@ import qualified GHCJS.Marshal as Marshal
 ----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad
-import           Data.Either
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
@@ -314,32 +313,65 @@ encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 ----------------------------------------------------------------------------
 decode :: FromJSON a => MisoString -> Maybe a
-decode = eitherToMaybe . eitherDecode
+decode s
+  | Right x <- eitherDecode s = Just x
+  | otherwise = Nothing
 -----------------------------------------------------------------------------
--- | Encodes a Haskell object as a JSON string by way of a JavaScript object
-jsonStringify :: ToJSON json => json -> IO JSVal
-{-# INLINE jsonStringify #-}
-jsonStringify j = do
-  v <- toJSVal (toJSON j)
-  jsg "JSON" # "stringify" $ [v]
+#ifdef GHCJS_OLD
+foreign import javascript unsafe
+  "$r = JSON.stringify($1)"
+  jsonStringify :: JSVal -> IO MisoString
+#endif
 -----------------------------------------------------------------------------
--- | Parses a JavaScript value into a Haskell type using JSON conversion
-jsonParse :: FromJSON json => JSVal -> IO json
-{-# INLINE jsonParse #-}
-jsonParse jval = do
-  v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
-  case fromJSON v of
-    Success x -> pure x
-    Error y -> error (unpack y)
-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+foreign import javascript unsafe
+  "(($1) => { return JSON.stringify($1); })"
+  jsonStringify :: JSVal -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign import javascript unsafe
+  "return JSON.stringify($1);"
+  jsonStringify :: JSVal -> MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef VANILLA
+jsonStringify :: JSVal -> IO MisoString
+jsonStringify _ = undefined
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+foreign import javascript unsafe
+  "$r = JSON.parse($1)"
+  jsonParse :: MisoString -> IO JSVal
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+foreign import javascript unsafe
+  "(($1) => { return JSON.parse($1); })"
+  jsonParse :: MisoString -> IO JSVal
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign import javascript unsafe
+  "return JSON.parse($1);"
+  jsonParse :: MisoString -> IO JSVal
+#endif
+-----------------------------------------------------------------------------
+#ifdef VANILLA
+jsonParse :: MisoString -> IO JSVal
+jsonParse _ = undefined
+#endif
+-----------------------------------------------------------------------------
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
-eitherDecode = unsafePerformIO $ do
-    (jsonParse string >>= fromJSVal_Value) >>= \case
-      Nothing -> pure Nothing
-      Just result ->
-        case fromJSON result of
-          Success x -> pure (Right x)
-          Error err -> pure (Left err)
+eitherDecode string = unsafePerformIO $ do
+  (jsonParse string >>= fromJSVal_Value) >>= \case
+    Nothing ->
+      pure $ Left ("eitherDecode: " <> string)
+    Just result ->
+      case fromJSON result of
+        Success x -> pure (Right x)
+        Error err -> pure (Left err)
 ----------------------------------------------------------------------------
 data Value
   = Number Double

@@ -46,8 +46,6 @@ module Miso.FFI.Internal
    , consoleError
    , consoleLog'
    -- * JSON
-   , jsonStringify
-   , jsonParse
    , eventJSON
    -- * Object
    , set
@@ -59,8 +57,8 @@ module Miso.FFI.Internal
    , getHydrationContext
    , getEventContext
    , getElementById
-  , removeChild
-  , getHead
+   , removeChild
+   , getHead
    , diff
    , nextSibling
    , previousSibling
