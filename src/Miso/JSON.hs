@@ -513,9 +513,9 @@ data Result a
 ----------------------------------------------------------------------------
 fromJSON :: FromJSON a => Value -> Result a
 fromJSON value =
-  case parseMaybe parseJSON value of
-    Nothing -> Error ("No parse for: " <> encode value)
-    Just x -> Success x
+  case parseEither parseJSON value of
+    Left s -> Error s
+    Right x -> Success x
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
 toJSVal_Value :: Value -> IO JSVal
