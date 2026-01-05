@@ -68,6 +68,8 @@ module Miso.JSON
   , genericToJSON
   , GFromJSON (..)
   , genericParseJSON
+  -- * Modifiers
+  , camelTo2
   ) where
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
@@ -76,6 +78,7 @@ import qualified GHCJS.Marshal as Marshal
 ----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad
+import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
@@ -88,13 +91,13 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
 #ifdef VANILLA
-import Data.Text
+import           Data.Text hiding (toLower)
 type MisoString = Text
 ms :: String -> MisoString
 ms = pack
 #else
 import Control.Monad.Trans.Maybe
-import Data.JSString
+import Data.JSString hiding (toLower)
 type MisoString = JSString
 ms :: String -> MisoString
 ms = pack
@@ -142,6 +145,15 @@ data Options
 ----------------------------------------------------------------------------
 defaultOptions :: Options
 defaultOptions = Options { fieldLabelModifier = \x -> x }
+----------------------------------------------------------------------------
+camelTo2 :: Char -> String -> String
+camelTo2 c = Prelude.map toLower . go2 . go1
+    where go1 "" = ""
+          go1 (x:u:l:xs) | isUpper u && isLower l = x : c : u : l : go1 xs
+          go1 (x:xs) = x : go1 xs
+          go2 "" = ""
+          go2 (l:u:xs) | isLower l && isUpper u = l : c : u : go2 xs
+          go2 (x:xs) = x : go2 xs
 ----------------------------------------------------------------------------
 class GToJSON (f :: Type -> Type) where
   gToJSON :: Options -> [Pair] -> f a -> [Pair]
