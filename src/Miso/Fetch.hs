@@ -144,7 +144,7 @@ postJSON
   -> Effect parent model action
 postJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
@@ -168,7 +168,7 @@ postJSON'
   -> Effect parent model action
 postJSON' url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
       (handleJSON sink)
       (sink . errorful)
@@ -210,7 +210,7 @@ putJSON
   -> Effect parent model action
 putJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "PUT" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
@@ -255,7 +255,7 @@ postText
   -> Effect parent model action
 postText url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) textHeaders_
       (sink . successful)
       (sink . errorful)

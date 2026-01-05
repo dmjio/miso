@@ -43,9 +43,6 @@ module Miso.FFI
     -- ** Drawing
   , flush
   , setDrawingContext
-    -- ** JSON
-  , jsonStringify
-  , jsonParse
     -- ** Window
   , windowInnerWidth
   , windowInnerHeight
