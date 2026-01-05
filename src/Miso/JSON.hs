@@ -53,21 +53,32 @@ module Miso.JSON
   , fromJSON
   , parseEither
   , eitherDecode
+  -- * FFI
+  , fromJSVal_Value
+  , toJSVal_Value
   ) where
+----------------------------------------------------------------------------
+#ifdef GHCJS_BOTH
+import qualified GHCJS.Marshal as Marshal
+#endif
 ----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad
+import           Data.Either
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
 import           Data.Word
 import           Data.String
+import           System.IO.Unsafe (unsafePerformIO)
+----------------------------------------------------------------------------
+import           Miso.DSL.FFI
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 import Data.Text
 type MisoString = Text
 #else
-import Data.JSString
+import Control.Monad.Trans.Maybe
 type MisoString = JSString
 #endif
 ----------------------------------------------------------------------------
@@ -300,13 +311,35 @@ typeMismatch :: MisoString -> Value -> Parser a
 typeMismatch expected _ = pfail ("expected " <> expected)
 ----------------------------------------------------------------------------
 encode :: ToJSON a => a -> MisoString
-encode = undefined
+encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 ----------------------------------------------------------------------------
 decode :: FromJSON a => MisoString -> Maybe a
-decode = undefined
+decode = eitherToMaybe . eitherDecode
+-----------------------------------------------------------------------------
+-- | Encodes a Haskell object as a JSON string by way of a JavaScript object
+jsonStringify :: ToJSON json => json -> IO JSVal
+{-# INLINE jsonStringify #-}
+jsonStringify j = do
+  v <- toJSVal (toJSON j)
+  jsg "JSON" # "stringify" $ [v]
+-----------------------------------------------------------------------------
+-- | Parses a JavaScript value into a Haskell type using JSON conversion
+jsonParse :: FromJSON json => JSVal -> IO json
+{-# INLINE jsonParse #-}
+jsonParse jval = do
+  v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
+  case fromJSON v of
+    Success x -> pure x
+    Error y -> error (unpack y)
 ----------------------------------------------------------------------------
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
-eitherDecode = undefined
+eitherDecode = unsafePerformIO $ do
+    (jsonParse string >>= fromJSVal_Value) >>= \case
+      Nothing -> pure Nothing
+      Just result ->
+        case fromJSON result of
+          Success x -> pure (Right x)
+          Error err -> pure (Left err)
 ----------------------------------------------------------------------------
 data Value
   = Number Double
@@ -335,3 +368,126 @@ fromJSON value =
     Nothing -> Error ("No parse for: " <> encode value)
     Just x -> Success x
 ----------------------------------------------------------------------------
+#ifdef GHCJS_BOTH
+toJSVal_Value :: Value -> IO JSVal
+toJSVal_Value = \case
+  Null ->
+    pure jsNull
+  Bool bool_ ->
+    Marshal.toJSVal bool_
+  String string ->
+    Marshal.toJSVal string
+  Number double ->
+    Marshal.toJSVal double
+  Array arr ->
+    toJSVal_List =<< mapM toJSVal_Value arr
+  Object hms -> do
+    o <- create_ffi
+    forM_ (M.toList hms) $ \(k,v) -> do
+      v' <- toJSVal_Value v
+      setProp_ffi k v' o
+    pure o
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_BOTH
+fromJSVal_Value :: JSVal -> IO (Maybe Value)
+fromJSVal_Value jsval_ = do
+  typeof jsval_ >>= \case
+    0 -> return (Just Null)
+    1 -> Just . Number <$> Marshal.fromJSValUnchecked jsval_
+    2 -> Just . String <$> Marshal.fromJSValUnchecked jsval_
+    3 -> fromJSValUnchecked_Int jsval_ >>= \case
+      0 -> pure $ Just (Bool False)
+      1 -> pure $ Just (Bool True)
+      _ -> pure Nothing
+    4 -> do xs <- Marshal.fromJSValUnchecked jsval_
+            values <- forM xs fromJSVal_Value
+            pure (Array <$> sequence values)
+    5 -> do keys <- Marshal.fromJSValUnchecked =<< listProps_ffi jsval_
+            result <-
+              runMaybeT $ forM keys $ \k -> do
+                key <- MaybeT (Marshal.fromJSVal k)
+                raw <- MaybeT $ Just <$> getProp_ffi key jsval_
+                value <- MaybeT (fromJSVal_Value raw)
+                pure (key, value)
+            pure (toObject <$> result)
+    _ -> error "fromJSVal_Value: Unknown JSON type"
+  where
+    toObject = Object . M.fromList
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+fromJSVal_Value :: JSVal -> IO (Maybe Value)
+fromJSVal_Value jsval = do
+  typeof jsval >>= \case
+    0 -> return (Just Null)
+    1 -> Just . Number <$> fromJSValUnchecked_Double jsval
+    2 -> pure $ Just $ String $ (JSString jsval)
+    3 -> fromJSValUnchecked_Int jsval >>= \case
+      0 -> pure $ Just (Bool False)
+      1 -> pure $ Just (Bool True)
+      _ -> pure Nothing
+    4 -> do xs <- fromJSValUnchecked_List jsval
+            values <- forM xs fromJSVal_Value
+            pure (Array <$> sequence values)
+    5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
+            result <-
+              runMaybeT $ forM keys $ \k -> do
+                let key = JSString k
+                raw <- MaybeT $ Just <$> getProp_ffi key jsval
+                value <- MaybeT (fromJSVal_Value raw)
+                pure (key, value)
+            pure (toObject <$> result)
+    _ -> error "fromJSVal_Value: Unknown JSON type"
+  where
+    toObject = Object . M.fromList
+#endif
+-----------------------------------------------------------------------------
+-- | Determine type for FromJSVal Value instance
+--
+-- 0. null
+-- 1. number
+-- 2. string
+-- 3. bool
+-- 4. array
+-- 5. object
+--
+#ifdef GHCJS_NEW
+foreign import javascript unsafe
+  "(($1) => { return globalThis.miso.typeOf($1); })"
+  typeof :: JSVal -> IO Int
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign import javascript unsafe
+ "return globalThis.miso.typeOf($1);"
+  typeof :: JSVal -> IO Int
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+foreign import javascript unsafe
+  "$r = globalThis.miso.typeOf($1);"
+  typeof :: JSVal -> IO Int
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+toJSVal_Value :: Value -> IO JSVal
+toJSVal_Value = \case
+  Null ->
+    pure jsNull
+  Bool bool_ ->
+    toJSVal_Bool bool_
+  String string ->
+    toJSVal_JSString string
+  Number double ->
+    toJSVal_Double double
+  Array arr ->
+    toJSVal_List =<< mapM toJSVal_Value arr
+  Object hms -> do
+    o <- create_ffi
+    forM_ (M.toList hms) $ \(k,v) -> do
+      v' <- toJSVal_Value v
+      setProp_ffi k v' o
+    pure o
+#endif
+-----------------------------------------------------------------------------

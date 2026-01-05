@@ -18,7 +18,6 @@ module Miso.DSL.FFI
   , toJSVal_Float
   , toJSVal_Int
   , toJSVal_List
-  , toJSVal_Value
   , toJSVal_JSString
   , toJSVal_Text
     -- *** FromJSVal
@@ -35,7 +34,7 @@ module Miso.DSL.FFI
   , fromJSVal_Int
   , fromJSValUnchecked_Int
   , fromJSVal_List
-  , fromJSVal_Value
+  , fromJSValUnchecked_List
   , fromJSVal_JSString
   , fromJSVal_Maybe
   , fromJSValUnchecked_Maybe
@@ -85,8 +84,6 @@ import           Data.JSString (textFromJSString, textToJSString)
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
------------------------------------------------------------------------------
-import           Miso.JSON
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -157,25 +154,6 @@ fromJSVal_Char x =
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString (JSString jsval) = pure jsval
------------------------------------------------------------------------------
-toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = \case
-  Null ->
-    pure jsNull
-  Bool bool_ ->
-    toJSVal_Bool bool_
-  String string ->
-    toJSVal_JSString string
-  Number double ->
-    toJSVal_Double double
-  Array arr ->
-    toJSVal_List =<< mapM toJSVal_Value arr
-  Object hms -> do
-    o <- create_ffi
-    forM_ (M.toList hms) $ \(k,v) -> do
-      v' <- toJSVal_Value v
-      setProp_ffi k v' o
-    pure o
 -----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text x =
@@ -404,46 +382,6 @@ foreign import javascript unsafe
   """
   return $1
   """ fromJSValUnchecked_Bool :: JSVal -> IO Bool
------------------------------------------------------------------------------
-fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value jsval = do
-  typeof jsval >>= \case
-    0 -> return (Just Null)
-    1 -> Just . Number <$> fromJSValUnchecked_Double jsval
-    2 -> pure $ Just $ String $ (JSString jsval)
-    3 -> fromJSValUnchecked_Int jsval >>= \case
-      0 -> pure $ Just (Bool False)
-      1 -> pure $ Just (Bool True)
-      _ -> pure Nothing
-    4 -> do xs <- fromJSValUnchecked_List jsval
-            values <- forM xs fromJSVal_Value
-            pure (Array <$> sequence values)
-    5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
-            result <-
-              runMaybeT $ forM keys $ \k -> do
-                let key = JSString k
-                raw <- MaybeT $ Just <$> getProp_ffi key jsval
-                value <- MaybeT (fromJSVal_Value raw)
-                pure (key, value)
-            pure (toObject <$> result)
-    _ -> error "fromJSVal_Value: Unknown JSON type"
-  where
-    toObject = Object . M.fromList
------------------------------------------------------------------------------
--- | Determine type for FromJSVal Value instance
---
--- 0. null
--- 1. number
--- 2. string
--- 3. bool
--- 4. array
--- 5. object
---
-foreign import javascript unsafe
-  """
-  return globalThis.miso.typeOf($1);
-  """
-  typeof :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return $2[$1]"
   getPropIndex_ffi

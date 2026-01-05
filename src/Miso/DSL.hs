@@ -85,7 +85,7 @@ import Data.Kind
 import Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import Miso.DSL.FFI
-import Miso.JSON (Value)
+import Miso.JSON (Value, fromJSVal_Value, toJSVal_Value)
 import Miso.String
 -----------------------------------------------------------------------------
 -- | A class for marshaling Haskell values into JS

@@ -155,7 +155,6 @@ import qualified Miso.JSON as JSON
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
-import           Miso.JSON hiding (Object)
 import           Miso.String
 import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
@@ -307,22 +306,6 @@ consoleLog' args' = do
   args <- toArgs args'
   _ <- jsg "console" # "log" $ args
   pure ()
------------------------------------------------------------------------------
--- | Encodes a Haskell object as a JSON string by way of a JavaScript object
-jsonStringify :: ToJSON json => json -> IO JSVal
-{-# INLINE jsonStringify #-}
-jsonStringify j = do
-  v <- toJSVal (toJSON j)
-  jsg "JSON" # "stringify" $ [v]
------------------------------------------------------------------------------
--- | Parses a JavaScript value into a Haskell type using JSON conversion
-jsonParse :: FromJSON json => JSVal -> IO json
-{-# INLINE jsonParse #-}
-jsonParse jval = do
-  v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
-  case fromJSON v of
-    JSON.Success x -> pure x
-    JSON.Error y -> error (unpack y)
 -----------------------------------------------------------------------------
 -- | Convert a JavaScript object to JSON
 -- JSONified representation of events
