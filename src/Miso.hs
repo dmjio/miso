@@ -67,15 +67,15 @@ module Miso
     -- * Event
     -- | Functions for specifying component lifecycle events and event handlers.
   , module Miso.Event
-    -- * Property
-    -- | Construct custom properties on DOM elements.
-  , module Miso.Property
     -- * Fetch
     -- | Interface to the Fetch API for making HTTP requests.
   , module Miso.Fetch
     -- * PubSub
     -- | Publish / Subscribe primitives for communication between components.
   , module Miso.PubSub
+    -- * Property
+    -- | Construct custom properties on DOM elements.
+  , module Miso.Property
     -- * Run
     -- | Support for running and live-reloading of miso applications.
   , module Miso.Run
@@ -109,11 +109,11 @@ import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Runtime
 import           Miso.Property
 import           Miso.PubSub
 import           Miso.Router
 import           Miso.Run
+import           Miso.Runtime
 import           Miso.State
 import           Miso.Storage
 import           Miso.Subscription
