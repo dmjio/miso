@@ -177,9 +177,7 @@ library
       ffi/wasm
     build-depends:
       ghc-experimental,
-      scientific,
-      template-haskell >= 2.21 && < 2.24,
-      vector
+      template-haskell >= 2.21 && < 2.24
     exposed-modules:
       Miso.DSL.TH
     other-modules:
