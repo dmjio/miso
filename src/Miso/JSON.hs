@@ -1,7 +1,7 @@
-{-# LANGUAGE TypeOperators #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE DefaultSignatures          #-}
