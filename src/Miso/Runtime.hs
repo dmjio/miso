@@ -87,7 +87,7 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, forever, (<=<), zipWithM_)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.IO.Class
-import           Data.Aeson (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
+import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
 import           Data.Foldable (toList)
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import           Data.Map.Strict (Map)
@@ -119,6 +119,7 @@ import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import           Miso.String hiding (reverse, drop)
 import           Miso.Types
+import           Miso.JSON (encode)
 import           Miso.Util
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
@@ -1397,7 +1398,7 @@ websocketSend socketId msg = do
       Just socket ->
         case msg of
           JSON json_ ->
-            FFI.websocketSend socket =<< FFI.jsonStringify json_
+            FFI.websocketSend socket =<< toJSVal (encode json_)
           BUFFER arrayBuffer_ -> do
             FFI.websocketSend socket =<< toJSVal arrayBuffer_
           TEXT txt ->

@@ -17,6 +17,7 @@ import {
    populateClass,
    updateRef,
    inline,
+   typeOf,
 } from './miso/util';
 
 import {
@@ -62,6 +63,7 @@ export {
   populateClass,
   updateRef,
   inline,
+  typeOf,
 
   /* Types */
   VTree,

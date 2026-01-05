@@ -42,7 +42,7 @@ executable component-tests
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, stm, text, aeson, scientific, vector
+    base, miso, miso-tests, containers, mtl, stm, text
   hs-source-dirs:
     app
 

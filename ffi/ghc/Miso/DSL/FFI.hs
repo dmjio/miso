@@ -2,7 +2,6 @@
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
-import           Data.Aeson
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
 data JSVal = JSVal
@@ -38,9 +37,6 @@ toJSVal_Float = undefined
 toJSVal_Text :: Text -> IO JSVal
 toJSVal_Text = undefined
 -----------------------------------------------------------------------------
-toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = undefined
------------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text = undefined
 -----------------------------------------------------------------------------
@@ -61,9 +57,6 @@ fromJSValUnchecked_Float = undefined
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool = undefined
------------------------------------------------------------------------------
-fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = undefined
 -----------------------------------------------------------------------------
 new_ffi :: JSVal -> JSVal -> IO JSVal
 new_ffi = undefined

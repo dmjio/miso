@@ -29,11 +29,9 @@ module Miso.Storage
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
-import qualified Data.Aeson as A
 -----------------------------------------------------------------------------
 import           Miso.DSL
-import           Miso.FFI.Internal (jsonParse, jsonStringify)
+import           Miso.JSON
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage.
@@ -41,23 +39,21 @@ getStorageCommon
   :: FromJSON b
   => (t -> IO (Maybe JSVal))
   -> t
-  -> IO (Either String b)
+  -> IO (Either MisoString b)
 getStorageCommon f key = do
   result <- f key
   case result of
     Nothing ->
       pure (Left "Not Found")
     Just v -> do
-      r <- jsonParse v
-      pure $ case fromJSON r of
-        A.Success x -> Right x
-        A.Error y -> Left y
+      s <- fromJSValUnchecked v
+      pure (eitherDecode s)
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
   :: FromJSON model
   => MisoString
-  -> IO (Either String model)
+  -> IO (Either MisoString model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- sessionStorage
@@ -68,7 +64,7 @@ getSessionStorage =
 getLocalStorage
   :: FromJSON model
   => MisoString
-  -> IO (Either String model)
+  -> IO (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- localStorage
     r <- getItem s t
@@ -84,7 +80,7 @@ setLocalStorage
   -> IO ()
 setLocalStorage key model = do
   s <- localStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in session storage.
 --
@@ -96,7 +92,7 @@ setSessionStorage
   -> IO ()
 setSessionStorage key model = do
   s <- sessionStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage.
 --

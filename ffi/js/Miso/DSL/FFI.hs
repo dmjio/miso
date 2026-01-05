@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase        #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
@@ -16,7 +17,6 @@ module Miso.DSL.FFI
   , toJSVal_Float
   , toJSVal_Int
   , toJSVal_List
-  , toJSVal_Value
   , toJSVal_JSString
   , toJSVal_Text
     -- *** FromJSVal
@@ -33,7 +33,6 @@ module Miso.DSL.FFI
   , fromJSVal_Int
   , fromJSValUnchecked_Int
   , fromJSVal_List
-  , fromJSVal_Value
   , fromJSVal_JSString
   , fromJSVal_Maybe
   , fromJSValUnchecked_Maybe
@@ -79,14 +78,11 @@ module Miso.DSL.FFI
   , toString_Int
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
 import           Data.JSString
-import           Data.JSString.Text
 import           Data.Text
+-----------------------------------------------------------------------------
 import qualified GHCJS.Marshal as Marshal
------------------------------------------------------------------------------
 import           GHCJS.Types
------------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 import           GHC.JS.Prim
 import qualified GHC.JS.Foreign.Callback as Callback
@@ -117,14 +113,8 @@ toJSVal_Int = Marshal.toJSVal
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = Marshal.toJSVal
 -----------------------------------------------------------------------------
-toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = Marshal.toJSVal
------------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool = Marshal.fromJSVal
------------------------------------------------------------------------------
-fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = Marshal.fromJSVal
 -----------------------------------------------------------------------------
 foreign import javascript safe
 #ifdef GHCJS_NEW
@@ -328,13 +318,6 @@ syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback2' x = jsval <$> Callback.syncCallback2' x
 syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' x = jsval <$> Callback.syncCallback3' x
------------------------------------------------------------------------------
-instance FromJSON JSString where
-  parseJSON = withText "jsstring" $ \s ->
-    pure (textToJSString s)
------------------------------------------------------------------------------
-instance ToJSON JSString where
-  toJSON = String . textFromJSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW

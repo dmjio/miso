@@ -28,10 +28,10 @@ module Miso.Event.Decoder
   ) where
 -----------------------------------------------------------------------------
 import Control.Applicative
-import Data.Aeson.Types
-import Miso.DSL (ToJSVal(toJSVal))
 -----------------------------------------------------------------------------
+import Miso.DSL (ToJSVal(toJSVal))
 import Miso.Event.Types
+import Miso.JSON
 import Miso.String
 -----------------------------------------------------------------------------
 -- | Data type representing path (consisting of field names) within event object

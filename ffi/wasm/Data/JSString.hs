@@ -134,7 +134,6 @@ module Data.JSString
   , toString_Int
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
 import           Data.Array.Byte (ByteArray(..))
 import           Data.Text.Internal hiding (pack, empty, append)
 import           GHC.Exts
@@ -807,20 +806,6 @@ foreign import javascript unsafe
     return $2;
   }
   """ replicate :: Int -> JSString -> JSString
------------------------------------------------------------------------------
--- | `ToJSON` for `JSString`
-instance ToJSON JSString where
-  toJSON = String . textFromJSString
-----------------------------------------------------------------------------
--- | `FromJSON` for `JSString`
-instance FromJSON JSString where
-  parseJSON =
-    withText "Not a valid string" $ \x ->
-      pure (textToJSString x)
-----------------------------------------------------------------------------
-instance ToJSONKey JSString
-----------------------------------------------------------------------------
-instance FromJSONKey JSString
 ----------------------------------------------------------------------------
 instance Ord JSString where
   compare s1 s2 =

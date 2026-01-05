@@ -126,7 +126,7 @@ library
     Miso.Html.Event
     Miso.Html.Property
     Miso.Html.Render
-    Miso.Runtime.Internal
+    Miso.JSON
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
@@ -137,6 +137,7 @@ library
     Miso.PubSub
     Miso.Router
     Miso.Run
+    Miso.Runtime.Internal
     Miso.State
     Miso.Subscription
     Miso.Subscription.History
@@ -176,9 +177,7 @@ library
       ffi/wasm
     build-depends:
       ghc-experimental,
-      scientific,
-      template-haskell >= 2.21 && < 2.24,
-      vector
+      template-haskell >= 2.21 && < 2.24
     exposed-modules:
       Miso.DSL.TH
     other-modules:
@@ -199,7 +198,6 @@ library
   hs-source-dirs:
     src
   build-depends:
-    aeson         < 2.3,
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,

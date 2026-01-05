@@ -46,8 +46,6 @@ module Miso.FFI.Internal
    , consoleError
    , consoleLog'
    -- * JSON
-   , jsonStringify
-   , jsonParse
    , eventJSON
    -- * Object
    , set
@@ -59,8 +57,8 @@ module Miso.FFI.Internal
    , getHydrationContext
    , getEventContext
    , getElementById
-  , removeChild
-  , getHead
+   , removeChild
+   , getHead
    , diff
    , nextSibling
    , previousSibling
@@ -151,8 +149,6 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Control.Monad (void, foldM, forM_, (<=<), when)
-import           Data.Aeson hiding (Object, ToArgs)
-import qualified Data.Aeson as A
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -307,22 +303,6 @@ consoleLog' args' = do
   args <- toArgs args'
   _ <- jsg "console" # "log" $ args
   pure ()
------------------------------------------------------------------------------
--- | Encodes a Haskell object as a JSON string by way of a JavaScript object
-jsonStringify :: ToJSON json => json -> IO JSVal
-{-# INLINE jsonStringify #-}
-jsonStringify j = do
-  v <- toJSVal (toJSON j)
-  jsg "JSON" # "stringify" $ [v]
------------------------------------------------------------------------------
--- | Parses a JavaScript value into a Haskell type using JSON conversion
-jsonParse :: FromJSON json => JSVal -> IO json
-{-# INLINE jsonParse #-}
-jsonParse jval = do
-  v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
-  case fromJSON v of
-    A.Success x -> pure x
-    A.Error y -> error y
 -----------------------------------------------------------------------------
 -- | Convert a JavaScript object to JSON
 -- JSONified representation of events

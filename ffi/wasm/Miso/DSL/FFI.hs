@@ -18,7 +18,6 @@ module Miso.DSL.FFI
   , toJSVal_Float
   , toJSVal_Int
   , toJSVal_List
-  , toJSVal_Value
   , toJSVal_JSString
   , toJSVal_Text
     -- *** FromJSVal
@@ -35,7 +34,7 @@ module Miso.DSL.FFI
   , fromJSVal_Int
   , fromJSValUnchecked_Int
   , fromJSVal_List
-  , fromJSVal_Value
+  , fromJSValUnchecked_List
   , fromJSVal_JSString
   , fromJSVal_Maybe
   , fromJSValUnchecked_Maybe
@@ -77,17 +76,10 @@ module Miso.DSL.FFI
   , parseFloat
   ) where
 -----------------------------------------------------------------------------
-import           Data.Text    (Text)
-import qualified Data.Aeson.Key as K
-import qualified Data.Aeson.KeyMap as KM
-import           Data.Scientific
-import           Control.Monad.Trans.Maybe
+import           Data.Text (Text)
 import           Control.Monad
-import           Data.Aeson
 import           Data.JSString (textFromJSString, textToJSString)
-import           Prelude
-  hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
-import qualified Data.Vector as V
+import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------
 import           GHC.Wasm.Prim
 -----------------------------------------------------------------------------
@@ -160,27 +152,6 @@ fromJSVal_Char x =
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString (JSString jsval) = pure jsval
------------------------------------------------------------------------------
-toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = \case
-  Null ->
-    pure jsNull
-  Bool bool_ ->
-    toJSVal_Bool bool_
-  String txt ->
-    toJSVal_Text txt
-  Number sci ->
-    toJSVal_Double (toRealFloat sci)
-  Array vect ->
-    toJSVal_List =<<
-      forM (V.toList vect) toJSVal_Value
-  Object hms -> do
-    o <- create_ffi
-    forM_ (KM.toList hms) $ \(k,v) -> do
-      v' <- toJSVal_Value v
-      let key = textToJSString (K.toText k)
-      setProp_ffi key v' o
-    pure o
 -----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text x =
@@ -410,50 +381,6 @@ foreign import javascript unsafe
   return $1
   """ fromJSValUnchecked_Bool :: JSVal -> IO Bool
 -----------------------------------------------------------------------------
-fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value jsval = do
-  typeof jsval >>= \case
-    0 -> return (Just Null)
-    1 -> Just . Number . fromFloatDigits <$> fromJSValUnchecked_Double jsval
-    2 -> pure $ Just $ String $ textFromJSString (JSString jsval)
-    3 -> fromJSValUnchecked_Int jsval >>= \case
-      0 -> pure $ Just (Bool False)
-      1 -> pure $ Just (Bool True)
-      _ -> pure Nothing
-    4 -> do xs <- fromJSValUnchecked_List jsval
-            values <- forM xs fromJSVal_Value
-            pure (Array . V.fromList <$> sequence values)
-    5 -> do keys <- fromJSValUnchecked_List =<< listProps_ffi jsval
-            result <-
-              runMaybeT $ forM keys $ \key -> do
-                raw <- MaybeT $ Just <$> getProp_ffi (JSString key) jsval
-                value <- MaybeT (fromJSVal_Value raw)
-                let txt = textFromJSString (JSString key)
-                pure (K.fromText txt, value)
-            pure (toObject <$> result)
-    _ -> error "fromJSVal_Value: Unknown JSON type"
-  where
-    toObject = Object . KM.fromList
------------------------------------------------------------------------------
--- | Determine type for FromJSVal Value instance
---
--- 0. null
--- 1. number
--- 2. string
--- 3. bool
--- 4. array
--- 5. object
---
-foreign import javascript unsafe
-  """
-  if ($1 === null || $1 === undefined) return 0;
-  if (typeof($1) === 'number') return 1;
-  if (typeof($1) === 'string') return 2;
-  if (typeof($1) === 'boolean') return 3;
-  if (Array.isArray($1)) return 4;
-  return 5;
-  """ typeof :: JSVal -> IO Int
------------------------------------------------------------------------------
 foreign import javascript unsafe "return $2[$1]"
   getPropIndex_ffi
     :: Int
@@ -462,14 +389,6 @@ foreign import javascript unsafe "return $2[$1]"
     -- ^ Value
     -> IO JSVal
     -- ^ Return
------------------------------------------------------------------------------
--- | String FFIs
------------------------------------------------------------------------------
--- instance IsString JSString where
---   fromString = toJSString
--- -----------------------------------------------------------------------------
--- instance Show JSString where
---   show = fromJSString
 -----------------------------------------------------------------------------
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = freeJSVal
