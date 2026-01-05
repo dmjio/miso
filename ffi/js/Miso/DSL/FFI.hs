@@ -79,6 +79,7 @@ module Miso.DSL.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Data.JSString
+import           Data.Text
 -----------------------------------------------------------------------------
 import qualified GHCJS.Marshal as Marshal
 import           GHCJS.Types

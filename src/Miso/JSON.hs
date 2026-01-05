@@ -279,7 +279,13 @@ instance GFromJSON U1 where
   gParseJSON _ _ = pure U1
 ----------------------------------------------------------------------------
 instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
-  gParseJSON _ v = M1 . K1 <$> parseJSON v
+  gParseJSON opts = \case
+    Object o ->
+      M1 . K1 <$> o .: ms field
+    v ->
+      M1 . K1 <$> parseJSON v
+    where
+      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
