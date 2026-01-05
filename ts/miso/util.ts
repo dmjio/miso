@@ -236,3 +236,12 @@ export function inline(code, context = {}) {
   const func = new Function(...keys, code);
   return func(...values);
 }
+
+export function typeOf (x) : number {
+  if (x === null || x === undefined) return 0;
+  if (typeof(x) === 'number') return 1;
+  if (typeof(x) === 'string') return 2;
+  if (typeof(x) === 'boolean') return 3;
+  if (Array.isArray(x)) return 4;
+  return 5;
+}

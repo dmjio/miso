@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase        #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 -----------------------------------------------------------------------------
@@ -79,14 +80,14 @@ module Miso.DSL.FFI
   , toString_Int
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
+import           Control.Monad
+import           Control.Monad.Trans.Maybe
+import qualified Data.Map.Strict as M
 import           Data.JSString
-import           Data.JSString.Text
 import           Data.Text
+-----------------------------------------------------------------------------
 import qualified GHCJS.Marshal as Marshal
------------------------------------------------------------------------------
 import           GHCJS.Types
------------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 import           GHC.JS.Prim
 import qualified GHC.JS.Foreign.Callback as Callback
@@ -94,6 +95,8 @@ import qualified GHC.JS.Foreign.Callback as Callback
 import           GHCJS.Prim
 import qualified GHCJS.Foreign.Callback as Callback
 #endif
+-----------------------------------------------------------------------------
+import           Miso.JSON (Value(..))
 -----------------------------------------------------------------------------
 foreign import javascript safe
 #ifdef GHCJS_NEW
@@ -118,13 +121,68 @@ toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = Marshal.toJSVal
 -----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = Marshal.toJSVal
+toJSVal_Value = \case
+  Null ->
+    pure jsNull
+  Bool bool_ ->
+    Marshal.toJSVal bool_
+  String string ->
+    Marshal.toJSVal string
+  Number double ->
+    Marshal.toJSVal double
+  Array arr ->
+    toJSVal_List =<< mapM toJSVal_Value arr
+  Object hms -> do
+    o <- create_ffi
+    forM_ (M.toList hms) $ \(k,v) -> do
+      v' <- toJSVal_Value v
+      setProp_ffi k v' o
+    pure o
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool = Marshal.fromJSVal
 -----------------------------------------------------------------------------
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = Marshal.fromJSVal
+fromJSVal_Value jsval_ = do
+  typeof jsval_ >>= \case
+    0 -> return (Just Null)
+    1 -> Just . Number <$> fromJSValUnchecked_Double jsval_
+    2 -> fmap String <$> Marshal.fromJSVal jsval_
+    3 -> fromJSValUnchecked_Int jsval_ >>= \case
+      0 -> pure $ Just (Bool False)
+      1 -> pure $ Just (Bool True)
+      _ -> pure Nothing
+    4 -> do xs <- Marshal.fromJSValUnchecked jsval_
+            values <- forM xs fromJSVal_Value
+            pure (Array <$> sequence values)
+    5 -> do keys <- Marshal.fromJSValUnchecked =<< listProps_ffi jsval_
+            result <-
+              runMaybeT $ forM keys $ \k -> do
+                key <- MaybeT (Marshal.fromJSVal k)
+                raw <- MaybeT $ Just <$> getProp_ffi key jsval_
+                value <- MaybeT (fromJSVal_Value raw)
+                pure (key, value)
+            pure (toObject <$> result)
+    _ -> error "fromJSVal_Value: Unknown JSON type"
+  where
+    toObject = Object . M.fromList
+-----------------------------------------------------------------------------
+-- | Determine type for FromJSVal Value instance
+--
+-- 0. null
+-- 1. number
+-- 2. string
+-- 3. bool
+-- 4. array
+-- 5. object
+--
+foreign import javascript unsafe
+#ifdef GHCJS_NEW
+  "(($1) => { return globalThis.miso.typeOf($1); })"
+#else
+  "$r = globalThis.miso.typeOf($1);"
+#endif
+  typeof :: JSVal -> IO Int
 -----------------------------------------------------------------------------
 foreign import javascript safe
 #ifdef GHCJS_NEW
@@ -328,13 +386,6 @@ syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback2' x = jsval <$> Callback.syncCallback2' x
 syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' x = jsval <$> Callback.syncCallback3' x
------------------------------------------------------------------------------
-instance FromJSON JSString where
-  parseJSON = withText "jsstring" $ \s ->
-    pure (textToJSString s)
------------------------------------------------------------------------------
-instance ToJSON JSString where
-  toJSON = String . textFromJSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW

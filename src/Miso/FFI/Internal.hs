@@ -151,11 +151,11 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Control.Monad (void, foldM, forM_, (<=<), when)
-import           Data.Aeson hiding (Object, ToArgs)
-import qualified Data.Aeson as A
+import qualified Miso.JSON as JSON
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
+import           Miso.JSON hiding (Object)
 import           Miso.String
 import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
@@ -321,8 +321,8 @@ jsonParse :: FromJSON json => JSVal -> IO json
 jsonParse jval = do
   v <- fromJSValUnchecked =<< (jsg "JSON" # "parse" $ [jval])
   case fromJSON v of
-    A.Success x -> pure x
-    A.Error y -> error y
+    JSON.Success x -> pure x
+    JSON.Error y -> error (unpack y)
 -----------------------------------------------------------------------------
 -- | Convert a JavaScript object to JSON
 -- JSONified representation of events

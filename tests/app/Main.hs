@@ -21,17 +21,15 @@ import           GHC.Generics
 import           Control.Monad
 import           Control.Concurrent
 import           Control.Concurrent.STM
-import qualified Data.Aeson as JSON
 import           Data.Either
-import qualified Data.Vector as V
 import           Data.IORef
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Data.Scientific (Scientific, fromFloatDigits)
 import           Control.Monad.State
 import qualified Data.IntMap.Strict as IM
 -----------------------------------------------------------------------------
 import           Miso
+import qualified Miso.JSON as JSON
 import           Miso.Router
 import qualified Miso.String as S
 import           Miso.DSL
@@ -615,10 +613,10 @@ main = withJS $ do
       it "Should marshal a Value(Object)" $ do
         (`shouldBe` Just (JSON.object [ "foo" JSON..= True ])) =<< liftIO (fromJSVal =<< toJSVal (JSON.object [ "foo" JSON..= True ]))
       it "Should marshal a Value(Array)" $ do
-        (`shouldBe` Just (JSON.Array (V.fromList [ JSON.Number 1.0, JSON.Number 2.0 ]))) =<<
-          liftIO (fromJSVal =<< toJSVal (JSON.Array (V.fromList [ JSON.Number 1.0, JSON.Number 2.0 ])))
+        (`shouldBe` Just (JSON.Array [ JSON.Number 1.0, JSON.Number 2.0 ])) =<<
+          liftIO (fromJSVal =<< toJSVal (JSON.Array [ JSON.Number 1.0, JSON.Number 2.0 ]))
       it "Should marshal a Value(Number)" $ do
-        (`shouldBe` Just (JSON.Number (fromFloatDigits pi))) =<< liftIO (fromJSVal =<< toJSVal (JSON.Number (fromFloatDigits pi)))
+        (`shouldBe` Just (JSON.Number pi)) =<< liftIO (fromJSVal =<< toJSVal (JSON.Number pi))
       it "Should marshal a Value(Bool(False))" $ do
         (`shouldBe` Just (JSON.Bool False)) =<< liftIO (fromJSVal =<< toJSVal (JSON.Bool False))
       it "Should marshal a Value(Bool(True))" $ do

@@ -29,10 +29,9 @@ module Miso.Storage
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
-import qualified Data.Aeson as A
 -----------------------------------------------------------------------------
 import           Miso.DSL
+import           Miso.JSON
 import           Miso.FFI.Internal (jsonParse, jsonStringify)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
@@ -41,7 +40,7 @@ getStorageCommon
   :: FromJSON b
   => (t -> IO (Maybe JSVal))
   -> t
-  -> IO (Either String b)
+  -> IO (Either MisoString b)
 getStorageCommon f key = do
   result <- f key
   case result of
@@ -50,14 +49,14 @@ getStorageCommon f key = do
     Just v -> do
       r <- jsonParse v
       pure $ case fromJSON r of
-        A.Success x -> Right x
-        A.Error y -> Left y
+        Success x -> Right x
+        Error y -> Left y
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
   :: FromJSON model
   => MisoString
-  -> IO (Either String model)
+  -> IO (Either MisoString model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- sessionStorage
@@ -68,7 +67,7 @@ getSessionStorage =
 getLocalStorage
   :: FromJSON model
   => MisoString
-  -> IO (Either String model)
+  -> IO (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- localStorage
     r <- getItem s t

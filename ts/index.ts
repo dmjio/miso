@@ -19,6 +19,7 @@ import {
   populateClass,
   updateRef,
   inline,
+  typeOf,
 } from './miso';
 
 import {
@@ -52,6 +53,7 @@ globalThis['miso'] = {
     undelegate,
     updateRef,
     inline,
+    typeOf,
     populateClass,
     integrityCheck,
     setDrawingContext : function (name) {

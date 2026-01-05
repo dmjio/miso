@@ -83,7 +83,6 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson (Value, ToJSON(..), encode)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
@@ -95,6 +94,7 @@ import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Bi
 import           Miso.Concurrent (Mail)
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
+import           Miso.JSON (Value, ToJSON(..), encode)
 import qualified Miso.String as MS
 import           Miso.String (ToMisoString, MisoString, toMisoString, ms, fromMisoString)
 import           Miso.CSS.Types (StyleSheet)

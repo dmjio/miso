@@ -37,7 +37,7 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
-import           Data.Aeson.Types (parseEither)
+import           Miso.JSON (parseEither)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.Event.Decoder

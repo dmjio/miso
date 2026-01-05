@@ -2,7 +2,8 @@
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
-import           Data.Aeson
+-----------------------------------------------------------------------------
+import           Miso.JSON (Value)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
 data JSVal = JSVal

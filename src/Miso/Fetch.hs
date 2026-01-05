@@ -62,7 +62,7 @@ module Miso.Fetch
   , fetch
   ) where
 ----------------------------------------------------------------------------
-import           Data.Aeson
+import           Miso.JSON
 import qualified Data.Map.Strict as M
 ----------------------------------------------------------------------------
 import           Miso.DSL (toJSVal, FromJSVal(..), JSVal)

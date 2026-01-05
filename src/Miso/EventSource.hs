@@ -27,7 +27,7 @@ module Miso.EventSource
   , Payload (..)
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
+import           Miso.JSON
 -----------------------------------------------------------------------------
 import           Miso.Effect
 import           Miso.Runtime
