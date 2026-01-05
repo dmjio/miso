@@ -473,14 +473,14 @@ diff (Object a) (Object b) c = do
 delegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 delegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
-  cb <- asyncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
+  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
   delegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
 -- | Deinitialize event delegation from a mount point.
 undelegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 undelegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
-  cb <- asyncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
+  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
   undelegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
