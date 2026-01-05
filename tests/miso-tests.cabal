@@ -76,6 +76,7 @@ executable integration-tests-server
 
   other-modules:    
     TestApp
+    HtmlGen
 
   build-depends:
     base,
@@ -90,6 +91,8 @@ executable integration-tests-server
     servant-miso-router,
     servant-miso-html,
     directory,
+    QuickCheck,
+    hashable
   hs-source-dirs:
     app
   default-language:

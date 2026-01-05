@@ -8,6 +8,7 @@ import Miso
     ( App
     , component
     , text
+    , View
     )
 import Miso.Html
     ( div_
@@ -16,6 +17,8 @@ import GHC.Generics
 import Data.Aeson (ToJSON)
 
 type MainComponent = App () ()
+
+type MainView = View () ()
 
 data TestData = TestData
     { randomSeed :: Int
@@ -26,4 +29,6 @@ app = component initialModel update view
     where
         initialModel = ()
         update = const $ return ()
+
+        view :: a -> MainView
         view = const $ div_ [] [ text "Hello World" ]

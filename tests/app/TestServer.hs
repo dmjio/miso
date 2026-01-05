@@ -50,6 +50,14 @@ import qualified Network.Wai.Middleware.RequestLogger as Wai
 import Data.Text.Lazy (toStrict)
 import Data.Aeson.Text (encodeToLazyText)
 import System.Environment (lookupEnv)
+import Test.QuickCheck
+    ( forAll
+    , quickCheck
+    , chooseAny
+    , ioProperty
+    , Gen
+    , Property
+    )
 
 import qualified TestApp as App
 
@@ -131,8 +139,18 @@ server serve_static_dir_path initial_data =
 
 
 mainView :: App.TestData -> Handler IndexPageData
-mainView initial_data = pure $
-    IndexPageData (initial_data, App.app)
+mainView initial_data = pure $ IndexPageData (initial_data, App.app)
+
+prop_testIO :: Property
+prop_testIO = forAll (chooseAny :: Gen Int) $
+    \i -> ioProperty $ do
+        print i
+        return $ i == i
+
+testMain :: IO ()
+testMain = do
+    putStrLn "Begin Quickchecks"
+    quickCheck prop_testIO
 
 
 main :: IO ()
@@ -148,4 +166,6 @@ main = do
 
     putStrLn $ "Beginning to listen on " <> show port
 
-    Wai.run port $ Wai.logStdout (server serve_static_dir_path initialData)
+    testMain
+
+    -- Wai.run port $ Wai.logStdout (server serve_static_dir_path initialData)
