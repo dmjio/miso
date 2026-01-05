@@ -77,6 +77,7 @@ executable integration-tests-server
   other-modules:    
     TestApp
     HtmlGen
+    HtmlGen2
 
   build-depends:
     base,
