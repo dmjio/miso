@@ -371,9 +371,9 @@ eitherDecode string = unsafePerformIO $ do
     Nothing ->
       pure $ Left ("eitherDecode: " <> string)
     Just result ->
-      case fromJSON result of
-        Success x -> pure (Right x)
-        Error err -> pure (Left err)
+      pure (case fromJSON result of
+        Success x -> Right x
+        Error err -> Left err)
 ----------------------------------------------------------------------------
 data Value
   = Number Double
