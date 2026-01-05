@@ -237,6 +237,15 @@ export function inline(code, context = {}) {
   return func(...values);
 }
 
+/*
+--- Determine typeOf for FromJSVal Value instance
+--- 0. null
+--- 1. number
+--- 2. string
+--- 3. bool
+--- 4. array
+--- 5. object
+*/
 export function typeOf (x) : number {
   if (x === null || x === undefined) return 0;
   if (typeof(x) === 'number') return 1;

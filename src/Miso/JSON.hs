@@ -56,6 +56,8 @@ module Miso.JSON
   -- * FFI
   , fromJSVal_Value
   , toJSVal_Value
+  , jsonStringify
+  , jsonParse
   ) where
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
@@ -475,15 +477,16 @@ fromJSVal_Value jsval = do
     toObject = Object . M.fromList
 #endif
 -----------------------------------------------------------------------------
--- | Determine type for FromJSVal Value instance
---
--- 0. null
--- 1. number
--- 2. string
--- 3. bool
--- 4. array
--- 5. object
---
+#ifdef VANILLA
+-----------------------------------------------------------------------------
+fromJSVal_Value :: JSVal -> IO (Maybe Value)
+fromJSVal_Value = undefined
+-----------------------------------------------------------------------------
+toJSVal_Value :: Value -> IO JSVal
+toJSVal_Value = undefined
+-----------------------------------------------------------------------------
+#endif
+-----------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe
   "(($1) => { return globalThis.miso.typeOf($1); })"

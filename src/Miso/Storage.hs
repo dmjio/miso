@@ -32,7 +32,6 @@ import           Control.Monad (void)
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.JSON
-import           Miso.FFI.Internal (jsonParse, jsonStringify)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage.
@@ -47,10 +46,8 @@ getStorageCommon f key = do
     Nothing ->
       pure (Left "Not Found")
     Just v -> do
-      r <- jsonParse v
-      pure $ case fromJSON r of
-        Success x -> Right x
-        Error y -> Left y
+      s <- fromJSValUnchecked v
+      pure (eitherDecode s)
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
@@ -83,7 +80,7 @@ setLocalStorage
   -> IO ()
 setLocalStorage key model = do
   s <- localStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in session storage.
 --
@@ -95,7 +92,7 @@ setSessionStorage
   -> IO ()
 setSessionStorage key model = do
   s <- sessionStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage.
 --

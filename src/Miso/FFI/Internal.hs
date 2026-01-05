@@ -149,7 +149,6 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
 import           Control.Monad (void, foldM, forM_, (<=<), when)
-import qualified Miso.JSON as JSON
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
