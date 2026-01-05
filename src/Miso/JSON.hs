@@ -63,6 +63,8 @@ module Miso.JSON
   , toJSVal_Value
   , jsonStringify
   , jsonParse
+  -- * Options
+  , Options (..)
   -- * Generics
   , GToJSON (..)
   , genericToJSON
