@@ -92,18 +92,10 @@ import           GHC.Generics
 import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
+import           Miso.String (MisoString, ms, singleton)
 ----------------------------------------------------------------------------
-#ifdef VANILLA
-import           Data.Text hiding (toLower)
-type MisoString = Text
-ms :: String -> MisoString
-ms = pack
-#else
+#ifndef VANILLA
 import Control.Monad.Trans.Maybe
-import Data.JSString hiding (toLower)
-type MisoString = JSString
-ms :: String -> MisoString
-ms = pack
 #endif
 ----------------------------------------------------------------------------
 (.=) :: ToJSON v => MisoString -> v -> Pair
