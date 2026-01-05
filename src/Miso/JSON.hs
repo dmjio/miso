@@ -65,6 +65,7 @@ module Miso.JSON
   , jsonParse
   -- * Options
   , Options (..)
+  , defaultOptions
   -- * Generics
   , GToJSON (..)
   , genericToJSON
