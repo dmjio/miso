@@ -334,7 +334,7 @@ foreign import javascript unsafe
 #ifdef WASM
 foreign import javascript unsafe
   "return JSON.stringify($1);"
-  jsonStringify :: JSVal -> MisoString
+  jsonStringify :: JSVal -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
