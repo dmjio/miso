@@ -1,8 +1,13 @@
+{-# LANGUAGE TypeOperators #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
@@ -58,6 +63,11 @@ module Miso.JSON
   , toJSVal_Value
   , jsonStringify
   , jsonParse
+  -- * Generics
+  , GToJSON (..)
+  , genericToJSON
+  , GFromJSON (..)
+  , genericParseJSON
   ) where
 ----------------------------------------------------------------------------
 #ifdef GHCJS_BOTH
@@ -69,8 +79,10 @@ import           Control.Monad
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
+import           Data.Kind
 import           Data.Word
 import           Data.String
+import           GHC.Generics
 import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
@@ -78,9 +90,14 @@ import           Miso.DSL.FFI
 #ifdef VANILLA
 import Data.Text
 type MisoString = Text
+ms :: String -> MisoString
+ms = pack
 #else
 import Control.Monad.Trans.Maybe
+import Data.JSString
 type MisoString = JSString
+ms :: String -> MisoString
+ms = pack
 #endif
 ----------------------------------------------------------------------------
 (.=) :: ToJSON v => MisoString -> v -> Pair
@@ -112,6 +129,48 @@ mv .!= def = fmap (maybe def id) mv
 ----------------------------------------------------------------------------
 class ToJSON a where
   toJSON :: a -> Value
+  default toJSON :: (Generic a, GToJSON (Rep a)) => a -> Value
+  toJSON = genericToJSON defaultOptions
+----------------------------------------------------------------------------
+genericToJSON :: (Generic a, GToJSON (Rep a)) => Options -> a -> Value
+genericToJSON opts = object . gToJSON opts [] . from
+----------------------------------------------------------------------------
+data Options
+  = Options
+  { fieldLabelModifier :: String -> String
+  }
+----------------------------------------------------------------------------
+defaultOptions :: Options
+defaultOptions = Options { fieldLabelModifier = \x -> x }
+----------------------------------------------------------------------------
+class GToJSON (f :: Type -> Type) where
+  gToJSON :: Options -> [Pair] -> f a -> [Pair]
+----------------------------------------------------------------------------
+instance GToJSON a => GToJSON (D1 i a) where
+  gToJSON opts acc (M1 x) = gToJSON opts acc x
+----------------------------------------------------------------------------
+instance GToJSON a => GToJSON (C1 i a) where
+  gToJSON opts acc (M1 x) = gToJSON opts acc x
+----------------------------------------------------------------------------
+instance (GToJSON a, GToJSON b) => GToJSON (a :*: b) where
+  gToJSON opts acc (x :*: y) = gToJSON opts acc x <> gToJSON opts acc y
+----------------------------------------------------------------------------
+instance (GToJSON a, GToJSON b) => GToJSON (a :+: b) where
+  gToJSON opts acc = \case
+    L1 x -> gToJSON opts acc x
+    R1 x -> gToJSON opts acc x
+----------------------------------------------------------------------------
+instance GToJSON U1 where
+  gToJSON _ acc U1 = acc
+----------------------------------------------------------------------------
+instance GToJSON V1 where
+  gToJSON _ acc _ = acc
+----------------------------------------------------------------------------
+instance (Selector s, ToJSON a) => GToJSON (S1 s (K1 i a)) where
+  gToJSON opts acc (M1 (K1 x)) = ms field .= toJSON x : acc
+    where
+      field :: String
+      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
 ----------------------------------------------------------------------------
 instance ToJSON () where
   toJSON () = Array []
@@ -195,6 +254,32 @@ pfail message = P (Left message)
 ----------------------------------------------------------------------------
 class FromJSON a where
   parseJSON :: Value -> Parser a
+  default parseJSON :: (Generic a, GFromJSON (Rep a)) => Value -> Parser a
+  parseJSON = genericParseJSON defaultOptions
+----------------------------------------------------------------------------
+class GFromJSON (f :: Type -> Type) where
+  gParseJSON :: Options -> Value -> Parser (f a)
+----------------------------------------------------------------------------
+genericParseJSON :: (Generic a, GFromJSON (Rep a)) => Options -> Value -> Parser a
+genericParseJSON opts value = to <$> gParseJSON opts value
+----------------------------------------------------------------------------
+instance GFromJSON a => GFromJSON (D1 i a) where
+  gParseJSON opts x = M1 <$> gParseJSON opts x
+----------------------------------------------------------------------------
+instance GFromJSON a => GFromJSON (C1 i a) where
+  gParseJSON opts x = M1 <$> gParseJSON opts x
+----------------------------------------------------------------------------
+instance (GFromJSON a, GFromJSON b) => GFromJSON (a :*: b) where
+  gParseJSON opts x = (:*:) <$> gParseJSON opts x <*> gParseJSON opts x
+----------------------------------------------------------------------------
+instance (GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
+  gParseJSON opts x = (L1 <$> gParseJSON opts x) <|> (R1 <$> gParseJSON opts x)
+----------------------------------------------------------------------------
+instance GFromJSON U1 where
+  gParseJSON _ _ = pure U1
+----------------------------------------------------------------------------
+instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
+  gParseJSON _ v = M1 . K1 <$> parseJSON v
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
