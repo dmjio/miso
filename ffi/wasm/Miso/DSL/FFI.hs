@@ -77,9 +77,7 @@ module Miso.DSL.FFI
   ) where
 -----------------------------------------------------------------------------
 import           Data.Text (Text)
-import           Control.Monad.Trans.Maybe
 import           Control.Monad
-import qualified Data.Map.Strict as M
 import           Data.JSString (textFromJSString, textToJSString)
 import           Prelude hiding (length, head, tail, unlines, concat, null, drop, replicate, concatMap)
 -----------------------------------------------------------------------------

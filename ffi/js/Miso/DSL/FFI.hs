@@ -78,9 +78,6 @@ module Miso.DSL.FFI
   , toString_Int
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad
-import           Control.Monad.Trans.Maybe
-import qualified Data.Map.Strict as M
 import           Data.JSString
 import           Data.Text
 -----------------------------------------------------------------------------
