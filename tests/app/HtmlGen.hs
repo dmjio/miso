@@ -3,7 +3,6 @@
 module HtmlGen where
 
 import Test.QuickCheck
-import qualified Data.Text as T
 import Control.Monad (replicateM)
 import Miso
 import Miso.Html.Element hiding (title_)
@@ -51,15 +50,16 @@ genHeaderContent size = do
                 alt_ "Logo"])
     ]
 
--- Generate a section element
+-- Generate a section element (rewritten for consistency)
 genSection :: Gen (View model action)
 genSection = sized $ \size -> do
   attrs <- genCommonAttributes "section"
-  children <- resize (size - 1) genSectionContent
+  let contentSize = max 0 (size - 1)
+  children <- genSectionContent contentSize
   return (section_ attrs children)
 
-genSectionContent :: Gen [View model action]
-genSectionContent = sized $ \size -> do
+genSectionContent :: Int -> Gen [View model action]
+genSectionContent size = do
   n <- choose (0, min 4 size)
   replicateM n $ oneof [
     genHeading,
@@ -138,7 +138,7 @@ genTableFoot size = do
 -- Generate heading elements (h1-h6)
 genHeading :: Gen (View model action)
 genHeading = do
-  level <- choose (1, 6)
+  level <- choose (1 :: Int, 6)
   textContent <- elements ["Introduction", "Main Content", "Section Title", "Important Note", "Summary"]
   let attrs = [class_ ("heading heading-" <> toMisoString (show level))]
   case level of
@@ -225,8 +225,8 @@ genListItemContent = do
       (:[]) <$> genParagraph
       ]
     else do
-        elem <- elements ["List item", "Bullet point", "Menu option"]
-        return [text elem]
+        elem_ <- elements ["List item", "Bullet point", "Menu option"]
+        return [text elem_]
 
 -- Generate a simple div with content
 genDiv :: Gen (View model action)
@@ -282,3 +282,116 @@ genCommonAttributes elemType = do
     ]
   
   return (baseAttrs <> extraAttrs <> extra)
+
+
+-- Generate a nav element
+genNav :: Gen (View model action)
+genNav = sized $ \size -> do
+  attrs <- genCommonAttributes "nav"
+  let contentSize = max 0 (size - 1)
+  children <- genNavContent contentSize
+  return (nav_ attrs children)
+
+genNavContent :: Int -> Gen [View model action]
+genNavContent size = do
+  n <- choose (0, min 3 size)
+  replicateM n $ oneof [
+    genList,
+    genA,
+    genDiv
+    ]
+
+
+-- Generate a main element
+genMain :: Gen (View model action)
+genMain = sized $ \size -> do
+  attrs <- genCommonAttributes "main"
+  let contentSize = max 0 (size - 1)
+  children <- genMainContent contentSize
+  return (main_ attrs children)
+
+genMainContent :: Int -> Gen [View model action]
+genMainContent size = do
+  n <- choose (0, min 4 size)
+  replicateM n $ oneof [
+    genHeading,
+    genParagraph,
+    genArticle,
+    genSection,
+    genAside,
+    genDiv
+    ]
+
+
+-- Generate an article element
+genArticle :: Gen (View model action)
+genArticle = sized $ \size -> do
+  attrs <- genCommonAttributes "article"
+  let contentSize = max 0 (size - 1)
+  children <- genArticleContent contentSize
+  return (article_ attrs children)
+
+genArticleContent :: Int -> Gen [View model action]
+genArticleContent size = do
+  n <- choose (0, min 4 size)
+  replicateM n $ oneof [
+    genHeading,
+    genParagraph,
+    genSection,
+    genAside,
+    genDiv,
+    genList
+    ]
+
+
+-- Generate an aside element
+genAside :: Gen (View model action)
+genAside = sized $ \size -> do
+  attrs <- genCommonAttributes "aside"
+  let contentSize = max 0 (size - 1)
+  children <- genAsideContent contentSize
+  return (aside_ attrs children)
+
+genAsideContent :: Int -> Gen [View model action]
+genAsideContent size = do
+  n <- choose (0, min 3 size)
+  replicateM n $ oneof [
+    genHeading,
+    genParagraph,
+    genList,
+    genDiv
+    ]
+
+
+-- Generate a footer element
+genFooter :: Gen (View model action)
+genFooter = sized $ \size -> do
+  attrs <- genCommonAttributes "footer"
+  let contentSize = max 0 (size - 1)
+  children <- genFooterContent contentSize
+  return (footer_ attrs children)
+
+genFooterContent :: Int -> Gen [View model action]
+genFooterContent size = do
+  n <- choose (0, min 3 size)
+  replicateM n $ oneof [
+    genParagraph,
+    genAddress,
+    genDiv,
+    pure (text "© 2026 Example Corp")
+    ]
+
+-- Helper for address content (used in footer)
+genAddress :: Gen (View model action)
+genAddress = do
+  attrs <- genCommonAttributes "address"
+  content <- genAddressContent
+  return (address_ attrs content)
+
+genAddressContent :: Gen [View model action]
+genAddressContent = do
+  n <- choose (1, 3)
+  replicateM n $ oneof [
+    elements ["Example Corp", "123 Main St", "contact@example.com"],
+    pure $ br_ []
+    ]
