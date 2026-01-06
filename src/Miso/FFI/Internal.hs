@@ -145,10 +145,9 @@ module Miso.FFI.Internal
    , inline
    ) where
 -----------------------------------------------------------------------------
-import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Maybe
-import           Control.Monad (void, foldM, forM_, (<=<), when)
+import           Control.Monad (void, forM_, (<=<), when)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -985,13 +984,6 @@ instance FromJSVal body => FromJSVal (Response body) where
     errorMessage_ <- fromJSVal =<< getProp "error" (Object o)
     body_ <- fromJSVal =<< getProp "body" (Object o)
     pure (Response <$> status_ <*> headers_ <*> errorMessage_ <*> body_)
------------------------------------------------------------------------------
-instance FromJSVal (Map MisoString MisoString) where
-  fromJSVal o = pure <$> do foldM populate M.empty =<< listProps (Object o)
-    where
-      populate m k = do
-        v <- fromJSValUnchecked =<< getProp k (Object o)
-        pure (M.insert k v m)
 -----------------------------------------------------------------------------
 -- | [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/Event)
 newtype Event = Event JSVal

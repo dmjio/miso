@@ -95,6 +95,8 @@ module Miso.FFI
   , eventStopPropagation
     -- ** Inline JS
   , inline
+    -- ** Scroll
+  , scrollIntoView
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

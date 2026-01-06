@@ -67,7 +67,7 @@ import           Data.Foldable (for_)
 import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
 -----------------------------------------------------------------------------
 import           Miso.Lens
-import           Miso.DSL
+import           Miso.DSL.FFI
 -----------------------------------------------------------------------------
 -- | Smart constructor for t'ComponentInfo'
 mkComponentInfo

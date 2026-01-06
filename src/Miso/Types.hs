@@ -3,9 +3,12 @@
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE DeriveAnyClass             #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE RankNTypes                 #-}
@@ -87,11 +90,12 @@ import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
-import           Miso.DSL
+import           GHC.Generics
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
 import           Miso.Concurrent (Mail)
+import           Miso.DSL
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
 import           Miso.JSON (Value, ToJSON(..), encode)
@@ -345,7 +349,7 @@ instance ToJSVal NS where
 -- of a given DOM node must be unique. Failure to satisfy this
 -- invariant gives undefined behavior at runtime.
 newtype Key = Key MisoString
-  deriving (Show, Eq, IsString, ToJSON, ToMisoString)
+  deriving newtype (Show, Eq, IsString, ToJSON, ToMisoString)
 -----------------------------------------------------------------------------
 -- | ToJSVal instance for t'Key'
 instance ToJSVal Key where
@@ -427,7 +431,7 @@ instance IsString (View model action) where
 --   Used for diffing, patching and event delegation.
 --   Not meant to be constructed directly, see t'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
-  deriving (ToObject, ToJSVal)
+  deriving newtype (ToObject, ToJSVal)
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
@@ -566,7 +570,8 @@ data URI
   = URI
   { uriPath, uriFragment :: MisoString
   , uriQueryString :: M.Map MisoString (Maybe MisoString)
-  } deriving (Show, Eq)
+  } deriving stock (Show, Eq, Generic)
+    deriving anyclass (ToJSVal, ToObject)
 ----------------------------------------------------------------------------
 -- | Empty t'URI'.
 emptyURI :: URI

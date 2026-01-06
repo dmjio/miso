@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DefaultSignatures    #-}
@@ -74,19 +75,21 @@ module Miso.DSL
   , asyncCallback3
   ) where
 -----------------------------------------------------------------------------
-import Control.Applicative
+import           Control.Applicative
 #ifndef VANILLA
-import Data.Text (Text)
+import           Data.Text (Text)
 #endif
-import Control.Monad
-import Control.Monad.Trans.Maybe
-import GHC.Generics
-import Data.Kind
-import Prelude hiding ((!!))
+import           Control.Monad
+import           Control.Monad.Trans.Maybe
+import qualified Data.Map.Strict as M
+import           Data.Map.Strict (Map)
+import           GHC.Generics
+import           Data.Kind
+import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
-import Miso.DSL.FFI
-import Miso.JSON (Value, fromJSVal_Value, toJSVal_Value)
-import Miso.String
+import           Miso.DSL.FFI
+import           Miso.JSON (Value, fromJSVal_Value, toJSVal_Value)
+import           Miso.String
 -----------------------------------------------------------------------------
 -- | A class for marshaling Haskell values into JS
 class ToJSVal a where
@@ -146,6 +149,23 @@ instance ToJSVal Char where
 -----------------------------------------------------------------------------
 instance ToJSVal Int where
   toJSVal = toJSVal_Int
+-----------------------------------------------------------------------------
+instance ToJSVal a => ToJSVal (Map MisoString a) where
+  toJSVal map_ = do
+    o <- create
+    forM_ (M.toList map_) $ \(k,v) ->
+      setField o k =<< toJSVal v
+    toJSVal o
+-----------------------------------------------------------------------------
+instance FromJSVal a => FromJSVal (Map MisoString a) where
+  fromJSVal o = pure <$> do foldM populate M.empty =<< listProps (Object o)
+    where
+      populate m k = do
+        v <- fromJSValUnchecked =<< getProp k (Object o)
+        pure (M.insert k v m)
+-----------------------------------------------------------------------------
+instance ToJSVal a => ToObject (Map MisoString a) where
+  toObject x = Object <$> toJSVal x
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal (Maybe a) where
   toJSVal = \case
