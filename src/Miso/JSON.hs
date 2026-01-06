@@ -58,6 +58,7 @@ module Miso.JSON
   , fromJSON
   , parseEither
   , eitherDecode
+  , typeMismatch
   -- * FFI
   , fromJSVal_Value
   , toJSVal_Value
