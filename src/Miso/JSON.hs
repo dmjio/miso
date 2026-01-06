@@ -61,6 +61,8 @@ module Miso.JSON
   , typeMismatch
   -- * Pretty
   , encodePretty
+  , encodePretty'
+  , defConfig
   , Config (..)
   -- * FFI
   , fromJSVal_Value
