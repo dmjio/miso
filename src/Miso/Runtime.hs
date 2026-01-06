@@ -76,24 +76,29 @@ module Miso.Runtime
   , components
   , componentIds
   , rootComponentId
+  , componentId
+  , modifyComponent
+  , Event (..)
+  -- ** Scheduler
+  , scheduler
 #ifdef WASM
   , evalFile
 #endif
   ) where
 -----------------------------------------------------------------------------
 import           Control.Concurrent
-import           Control.Concurrent.STM
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, forM_, when, void, forever, (<=<), zipWithM_)
+import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_)
 import           Control.Monad.Reader (ask, asks)
-import           Control.Monad.IO.Class
-import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
+import           Control.Monad.State
 import           Data.Foldable (toList)
-import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
+import qualified Data.List as List
+import           Data.Maybe
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
+import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
@@ -107,24 +112,26 @@ import           System.Mem.StableName (makeStableName)
 import           Text.Printf
 #endif
 -----------------------------------------------------------------------------
-import           Miso.Concurrent (Waiter(..), waiter, Mailbox, copyMailbox, readMail, sendMail, newMailbox)
+import           Miso.Concurrent (Waiter(..), waiter)
+import           Miso.CSS (renderStyleSheet)
 import           Miso.Delegate (delegator)
+import qualified Miso.Diff as Diff
 import           Miso.DSL
 #ifdef WASM
 import           Miso.DSL.TH
 #endif
-import qualified Miso.Diff as Diff
-import qualified Miso.Hydrate as Hydrate
+import           Miso.Effect
+  ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
+  , io_, withSink, Synchronicity(..)
+  )
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
+import qualified Miso.Hydrate as Hydrate
+import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, Value) -- toJSON
+import           Miso.Lens hiding (view)
 import           Miso.String hiding (reverse, drop)
 import           Miso.Types
-import           Miso.JSON (encode)
 import           Miso.Util
-import           Miso.CSS (renderStyleSheet)
-import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
-                             , io_, withSink, Synchronicity(..)
-                             )
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -136,16 +143,14 @@ initialize
   -> Component parent model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
-  -> IO (ComponentState model action)
-initialize componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
-  Waiter {..} <- liftIO waiter
-  componentActions <- liftIO (newIORef S.empty)
+  -> IO (ComponentState parent model action)
+initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
+  _componentId <- liftIO freshComponentId
   let
-    componentSink = \action -> liftIO $ do
-      atomicModifyIORef' componentActions $ \actions -> (actions S.|> action, ())
-      notify
-  componentId <- liftIO freshComponentId
-  componentDiffs <- liftIO newMailbox
+    _componentSink = \action -> liftIO $ do
+      atomicModifyIORef' globalEvents $ \actions ->
+        (actions S.|> Event _componentId action, ())
+      notify globalWaiter
   initializedModel <-
     case (hydrate, hydrateModel) of
       (Hydrate, Just action) ->
@@ -155,250 +160,229 @@ initialize componentParentId hydrate isRoot comp@Component {..} getComponentMoun
          action
 #endif
       _ -> pure model
-  componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
-  componentDOMRef <- getComponentMountPoint
-  componentIsDirty <- liftIO (newTVarIO False)
-  componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
-  componentSubThreads <- liftIO (newIORef M.empty)
+  _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
+  _componentDOMRef <- getComponentMountPoint
+  _componentIsDirty <- pure False
+  _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
+  _componentSubThreads <- liftIO (newIORef M.empty)
   forM_ subs $ \sub -> do
-    threadId <- forkIO (sub componentSink)
+    threadId <- forkIO (sub _componentSink)
     subKey <- liftIO freshSubId
-    liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
+    liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
   frame <- newEmptyMVar :: IO (MVar Double)
+  _componentModel <- liftIO (pure initializedModel)
+  -- mailbox
+  _componentMailbox <- pure S.empty
+
   rAFCallback <-
     asyncCallback1 $ \jsval -> do
       putMVar frame =<< fromJSValUnchecked jsval
-  componentModel <- liftIO (newTVarIO initializedModel)
-  let
-    eventLoop = liftIO wait >> do
-      currentModel <- liftIO (readTVarIO componentModel)
-      let info = ComponentInfo componentId componentParentId componentDOMRef
-      as <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-      updatedModel <- foldEffects update False info componentSink (toList as) currentModel
-      currentName <- liftIO $ currentModel `seq` makeStableName currentModel
-      updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
-      isDirty <- liftIO (readTVarIO componentIsDirty)
-      when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view updatedModel)
-        oldVTree <- liftIO (readIORef componentVTree)
+
+  let _componentDraw = \newModel -> do
+        newVTree <- buildVTree _componentParentId _componentId Draw _componentSink logLevel events (view newModel)
+        oldVTree <- liftIO (readIORef _componentVTree)
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
-        Diff.diff (Just oldVTree) (Just newVTree) componentDOMRef
-        FFI.updateRef oldVTree newVTree
-        liftIO $ do
-          atomicWriteIORef componentVTree newVTree
-          mounted <- IM.size <$> readIORef components
-          atomically $ do
-            writeTVar componentModel updatedModel
-            writeTVar componentIsDirty False
-            -- dmj: reset the dirty bit
-            when (mounted > 1) (writeTChan componentDiffs Null)
-            -- dmj: child wake-up call for model synch.
-      eventLoop
+        Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
+        liftIO (atomicWriteIORef _componentVTree newVTree)
 
-  -- mailbox
-  componentMailbox <- liftIO newMailbox
-  componentMailboxThreadId <- do
-    forkIO . forever $ do
-      message <- liftIO (readMail =<< copyMailbox componentMailbox)
-      mapM_ componentSink (mailbox message)
+  let _componentModelDirty :: Eq model => model -> model -> IO Bool
+      _componentModelDirty = \currentModel updatedModel -> do
+        currentName <- currentModel `seq` makeStableName currentModel
+        updatedName <- updatedModel `seq` makeStableName updatedModel
+        pure (currentName /= updatedName && currentModel /= updatedModel)
 
-  -- Bindings (aka. "reactive" mutable variable synchronization)
-  -- Between immediate ancestor / descendant (and sibling if bidi via parent)
-  let
-    bidirectional = [ b | b@Bidirectional {} <- bindings ]
-    parentToChild = [ b | b@ParentToChild {} <- bindings ] ++ bidirectional
-    childToParent = [ b | b@ChildToParent {} <- bindings ] ++ bidirectional
 
-  componentParentToChildThreadId <-
-    synchronizeParentToChild
-      componentParentId
-      componentModel
-      componentIsDirty
-      parentToChild
-      notify
+  let _componentApplyActions = \actions model_ -> do
+        let info = ComponentInfo _componentId _componentParentId _componentDOMRef
+        List.foldl' (\(m, ss) a ->
+          case runEffect (update a) info m of
+            (n, sss) -> (n, ss <> sss)) (model_, []) actions
 
-  componentChildToParentThreadId <-
-    synchronizeChildToParent
-      componentParentId
-      componentModel
-      componentDiffs
-      childToParent
+  let _componentModelDirty = \currentModel updatedModel -> do
+       currentName <- liftIO (currentModel `seq` makeStableName currentModel)
+       updatedName <- liftIO (updatedModel `seq` makeStableName updatedModel)
+       pure (currentName /= updatedName && currentModel /= updatedModel)
 
   let vcomp = ComponentState
-        { componentNotify = notify
-        , componentEvents = events
-        , componentParentId = componentParentId
+        { _componentEvents = events
+        , _componentMailbox = mailbox
+        , _componentBindings = bindings
         , ..
         }
 
   registerComponent vcomp
   if isRoot
     then
-      delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+      delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
     else
       addToDelegatedEvents logLevel events
+
   initialDraw initializedModel hydrate isRoot comp vcomp
-  forM_ initialAction componentSink
-  _ <- forkIO eventLoop
+
+  forM_ initialAction _componentSink
+  when isRoot $ void (forkIO scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
-initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState m a -> IO ()
+scheduler :: IO ()
+scheduler = liftIO (wait globalWaiter) >> do
+  getBatch >>= \case
+    Nothing ->
+      scheduler
+    Just (vcompId, actions) -> do
+      commit vcompId actions
+      renderComponents
+      scheduler
+-----------------------------------------------------------------------------
+-- | Perform a top-down rendering of the Component tree.
+--
+-- We re-read the components each time to account for unmounting
+--
+renderComponents :: IO ()
+renderComponents = do
+  componentIds_ <- IM.keys <$> liftIO (readIORef components)
+  forM_ componentIds_ $ \vcompId ->
+    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+      Nothing -> pure () -- component unmounted
+      Just ComponentState {..} -> do
+        when _componentIsDirty (_componentDraw _componentModel)
+        modifyComponent _componentId (isDirty .= False)
+-----------------------------------------------------------------------------
+-- | Modify a single t'Component p m a' at a t'ComponentId'
+modifyComponent
+  :: MonadIO m
+  => ComponentId
+  -> State (ComponentState parent model action) a
+  -> m ()
+modifyComponent vcompId go = liftIO $ do
+  atomicModifyIORef' components $ \vcomps ->
+    case IM.lookup vcompId vcomps of
+      Nothing -> (vcomps, ())
+      Just vcomp -> (IM.insert vcompId (execState go vcomp) vcomps, ())
+-----------------------------------------------------------------------------
+-- | Runs a t'State' monad action across all t'ComponentState'.
+modifyComponents
+  :: MonadIO m
+  => State (ComponentState parent model action) a
+  -> m ()
+modifyComponents go = liftIO $ do
+  atomicModifyIORef' components $ \vcomps ->
+    (IM.map (execState go) vcomps, ())
+-----------------------------------------------------------------------------
+commit :: ComponentId -> [Event action] -> IO ()
+commit vcompId _ = do
+  -- todo: handle topics, bindings
+  ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
+  let actions = mempty -- mapMaybe _componentMailbox (toList _componentInbox) <> (event <$> events)
+  case _componentApplyActions actions _componentModel of
+    (updated, schedules) -> do
+      forM_ schedules $ \case
+        Schedule Async action ->
+          evalScheduled Async (action _componentSink)
+        Schedule Sync  action ->
+          evalScheduled Sync (action _componentSink)
+      dirty <- _componentModelDirty _componentModel updated
+      modifyComponent _componentId $ do
+        isDirty .= dirty
+        componentModel .= updated
+-----------------------------------------------------------------------------
+-- | Propagate bindings out to all the other Component.
+_crawl :: ComponentId -> IO ()
+_crawl compId = evalStateT go [compId]
+  where
+    go :: StateT [ComponentId] IO ()
+    go = get >>= \case
+      [] -> pure ()
+      nextId : _ -> do
+        ComponentState {} <- (IM.! nextId) <$> liftIO (readIORef components)
+        pure ()
+-----------------------------------------------------------------------------
+_pop :: StateT [s] IO (Maybe s)
+_pop = get >>= \case
+  [] -> pure Nothing
+  (x:xs) -> do
+    put xs
+    pure (Just x)
+-----------------------------------------------------------------------------
+_push :: s -> StateT [s] IO ()
+_push s = modify (s:)
+-----------------------------------------------------------------------------
+initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState p m a -> IO ()
 initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} = do
 #ifdef BENCH
   start <- FFI.now
 #endif
-  vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
+  vtree <- buildVTree _componentParentId _componentId hydrate _componentSink logLevel events (view initializedModel)
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
 #endif
   case hydrate of
     Draw -> do
-      Diff.diff Nothing (Just vtree) componentDOMRef
-      atomicWriteIORef componentVTree vtree
+      Diff.diff Nothing (Just vtree) _componentDOMRef
+      atomicWriteIORef _componentVTree vtree
     Hydrate -> do
       when isRoot $ do
-        hydrated <- Hydrate.hydrate logLevel componentDOMRef vtree
+        hydrated <- Hydrate.hydrate logLevel _componentDOMRef vtree
         if hydrated
-          then atomicWriteIORef componentVTree vtree
+          then atomicWriteIORef _componentVTree vtree
           else do
             liftIO $ do -- dmj: reset state
               atomicWriteIORef components IM.empty
               atomicWriteIORef componentIds topLevelComponentId
               atomicWriteIORef subscribers mempty
-              atomicWriteIORef mailboxes mempty
-            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
-            Diff.diff Nothing (Just newTree) componentDOMRef
-            liftIO (atomicWriteIORef componentVTree newTree)
------------------------------------------------------------------------------
-synchronizeChildToParent
-  :: Eq parent
-  => ComponentId
-  -> TVar model
-  -> Mailbox
-  -> [ Binding parent model ]
-  -> IO (Maybe ThreadId)
-synchronizeChildToParent _ _ _ [] = pure Nothing
-synchronizeChildToParent parentId componentModel componentDiffs bindings = do
-  -- Get parent's componentNotify, subscribe to it, on notification
-  -- update the current Component model using the user-specified lenses
-  IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-    Nothing -> do
-      -- dmj: another impossible case, parent always mounted in children
-      pure Nothing
-    Just parentComponentState -> do
-      bindProperty parentComponentState
-      -- dmj: ^ parent assumes child state on initialization
-      fmap Just $ forkIO $ do
-        forever $ do
-          _ <- liftIO (readMail =<< copyMailbox componentDiffs)
-          -- dmj: ^ listen on child this time
-          bindProperty parentComponentState
-  where
-    bindProperty parentComponentState = do
-      isDirty <- or <$> forM bindings (bindChildToParent parentComponentState componentModel)
-      when isDirty $ do
-        liftIO $ do
-          atomically $ writeTVar (componentIsDirty parentComponentState) True
-          componentNotify parentComponentState
+              -- atomicWriteIORef mailboxes mempty
+            newTree <- buildVTree _componentParentId _componentId Draw _componentSink logLevel events (view initializedModel)
+            Diff.diff Nothing (Just newTree) _componentDOMRef
+            liftIO (atomicWriteIORef _componentVTree newTree)
 -----------------------------------------------------------------------------
 addToDelegatedEvents :: LogLevel -> Events -> IO ()
 addToDelegatedEvents logLevel events = do
   root <- (IM.! topLevelComponentId) <$> liftIO (readIORef components)
-  delegated <- M.unions . fmap componentEvents . IM.elems <$>
+  delegated <- M.unions . fmap _componentEvents . IM.elems <$>
     liftIO (readIORef components)
   forM_ (M.assocs events) $ \(eventName, capture) ->
     case M.lookup eventName delegated of
       Just delegatedCapture
         | delegatedCapture == capture -> pure ()
       _ ->
-        delegator (componentDOMRef root) (componentVTree root)
+        delegator (_componentDOMRef root) (_componentVTree root)
           (M.singleton eventName capture)
           (logLevel `elem` [DebugEvents, DebugAll])
 -----------------------------------------------------------------------------
-bindChildToParent
-  :: forall parent model action
-   . Eq parent
-  => ComponentState parent action
-  -- ^ Parent model
-  -> TVar model
-  -- ^ Child new model
-  -> Binding parent model
-  -- ^ Binding
-  -> IO Bool
-bindChildToParent ComponentState {..} childRef = \case
-  ChildToParent setParent getChild ->
-    childToParent setParent getChild
-  Bidirectional _ setParent getChild _ ->
-    childToParent setParent getChild
-  _ ->
-    pure False
-  where
-    childToParent setParent getChild = do
-       liftIO $ atomically $ do
-         childModel <- readTVar childRef
-         let f = setParent (getChild childModel)
-         currentParent <- readTVar componentModel
-         modifyTVar' componentModel f
-         newParent <- readTVar componentModel
-         pure (currentParent /= newParent)
+data Event action
+  = Event
+  { eventComponentId :: {-# UNPACK #-} !ComponentId
+  , event :: action
+  }
 -----------------------------------------------------------------------------
-synchronizeParentToChild
-  :: Eq model
-  => ComponentId
-  -> TVar model
-  -> TVar Bool
-  -> [ Binding type_ model ]
-  -> IO ()
-  -> IO (Maybe ThreadId)
-synchronizeParentToChild _ _ _ [] _ = pure Nothing
-synchronizeParentToChild parentId componentModel_ componentIsDirty bindings notify= do
-  -- Get parent's componentNotify, subscribe to it, on notification
-  -- update the current Component model using the user-specified lenses
-  IM.lookup parentId <$> liftIO (readIORef components) >>= \case
-    Nothing -> do
-      -- dmj: another impossible case, parent always mounted
-      pure Nothing
-    Just parentComponentState -> do
-      bindProperty parentComponentState
-      -- dmj: ^ assume parent state on initialization
-      fmap Just $ forkIO $ forever $ do
-        Null <- liftIO $ readMail =<< copyMailbox (componentDiffs parentComponentState)
-        bindProperty parentComponentState
-  where
-    bindProperty parentComponentState = do
-      isDirty <- or <$> forM bindings (bindParentToChild parentComponentState componentModel_)
-      when isDirty . liftIO $ do
-        atomically (writeTVar componentIsDirty True)
-        notify
+getBatch
+  :: IO (Maybe (ComponentId, [Event action]))
+getBatch = do
+  liftIO $ atomicModifyIORef' globalEvents $ \case
+    S.Empty -> (mempty, Nothing)
+    event@(Event vcompId _) S.:<| rest ->
+      case S.spanl ((== vcompId) . eventComponentId) rest of
+        (componentActions, xs) ->
+          (xs, pure (vcompId, event : toList componentActions))
 -----------------------------------------------------------------------------
-bindParentToChild
-  :: forall props model action
-   . Eq model
-  => ComponentState props action
-  -- ^ Parent model
-  -> TVar model
-  -- ^ Child new model
-  -> Binding props model
-  -- ^ binding
-  -> IO Bool
-bindParentToChild ComponentState {..} modelRef = \case
-  ParentToChild getParent setChild -> do
-    parentToChild getParent setChild
-  Bidirectional getParent _ _ setChild ->
-    parentToChild getParent setChild
-  _ ->
-    pure False
-  where
-    parentToChild getParent setChild = liftIO $ atomically $ do
-      parentModel <- readTVar componentModel
-      let f = setChild (getParent parentModel)
-      currentChild <- readTVar modelRef
-      modifyTVar' modelRef f
-      newChild <- readTVar modelRef
-      pure (currentChild /= newChild)
+globalEvents :: IORef (Seq (Event action))
+{-# NOINLINE globalEvents #-}
+globalEvents = unsafePerformIO (newIORef mempty)
+-----------------------------------------------------------------------------
+globalWaiter :: Waiter
+{-# NOINLINE globalWaiter #-}
+globalWaiter = unsafePerformIO waiter
+-----------------------------------------------------------------------------
+componentId :: Lens (ComponentState parent model action) ComponentId
+componentId = lens _componentId $ \record field -> record { _componentId = field }
+-----------------------------------------------------------------------------
+isDirty :: Lens (ComponentState parent model action) Bool
+isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty = field }
+-----------------------------------------------------------------------------
+componentModel :: Lens (ComponentState parent model action) model
+componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
@@ -408,44 +392,33 @@ data Hydrate
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' state, data associated with the lifetime of a t'Miso.Types.Component'
-data ComponentState model action
+data ComponentState parent model action
   = ComponentState
-  { componentId :: ComponentId
+  { _componentId :: ComponentId
   -- ^ The ID of the current t'Miso.Types.Component'
-  , componentParentId :: ComponentId
+  , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
-  , componentSubThreads :: IORef (Map MisoString ThreadId)
+  , _componentSubThreads :: IORef (Map MisoString ThreadId)
   -- ^ Mapping of all 'Sub' in use by Component
-  , componentDOMRef :: DOMRef
+  , _componentDOMRef :: DOMRef
   -- ^ The DOM reference the t'Miso.Types.Component' is mounted on
-  , componentVTree :: IORef VTree
+  , _componentVTree :: IORef VTree
   -- ^ A reference to the current virtual DOM (i.e. t'VTree')
-  , componentSink :: action -> IO ()
+  , _componentSink :: action -> IO ()
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
-  , componentModel :: TVar model
+  , _componentModel :: model
   -- ^ t'Miso.Types.Component' state
-  , componentIsDirty :: TVar Bool
+  , _componentIsDirty :: Bool
   -- ^ Indicator if t'Miso.Types.Component' needs to be drawn
-  , componentActions :: IORef (Seq action)
-  -- ^ Set of actions raised by the system
-  , componentMailbox :: Mailbox
-  -- ^ t'Mailbox' for receiving messages from other t'Miso.Types.Component'
-  , componentScripts :: [DOMRef]
+  , _componentScripts :: [DOMRef]
   -- ^ DOM references for \<script\> and \<style\> appended to \<head\>
-  , componentMailboxThreadId :: ThreadId
-  -- ^ Thread responsible for taking actions from t'Mailbox' and
-  -- putting them into 'componentActions'
-  , componentDiffs :: Mailbox
-  -- ^ Used with t'Binding' to synchronize other t'Miso.Types.Component' state
-  -- at the granularity of a t'Miso.Lens.Lens'
-  , componentNotify :: IO ()
-  -- ^ t'IO' action to unblock event loop thread
-  , componentParentToChildThreadId :: Maybe ThreadId
-  -- ^ Thread responsible for parent t'Binding' synchronization
-  , componentChildToParentThreadId :: Maybe ThreadId
-  -- ^ Thread responsible for child t'Binding' synchronization
-  , componentEvents :: Events
+  , _componentEvents :: Events
   -- ^ List of events a Component listens on
+  , _componentBindings :: [Binding parent model]
+  , _componentMailbox :: Value -> Maybe action
+  , _componentDraw :: model -> IO ()
+  , _componentModelDirty :: model -> model -> IO Bool
+  , _componentApplyActions :: [action] -> model -> (model, [Schedule action])
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -502,9 +475,9 @@ newtype Topic a = Topic MisoString
 topic :: MisoString -> Topic a
 topic = Topic
 -----------------------------------------------------------------------------
-mailboxes :: IORef (Map (Topic a) Mailbox)
-{-# NOINLINE mailboxes #-}
-mailboxes = unsafePerformIO $ liftIO (newIORef mempty)
+-- mailboxes :: IORef (Map (Topic a) Mailbox)
+-- {-# NOINLINE mailboxes #-}
+-- mailboxes = unsafePerformIO $ liftIO (newIORef mempty)
 -----------------------------------------------------------------------------
 subscribers :: IORef (Map (ComponentId, Topic a) ThreadId)
 {-# NOINLINE subscribers #-}
@@ -559,39 +532,8 @@ subscribe
   -> (message -> action)
   -> (MisoString -> action)
   -> Effect parent model action
-subscribe topicName successful errorful = do
-  ComponentInfo {..} <- ask
-  io_ $ do
-    let vcompId = _componentId
-    subscribersMap <- liftIO (readIORef subscribers)
-    let key = (vcompId, topicName)
-    case M.lookup key subscribersMap of
-      Just _ ->
-        FFI.consoleWarn ("Already subscribed to: " <> ms topicName)
-      Nothing -> do
-        M.lookup topicName <$> liftIO (readIORef mailboxes) >>= \case
-          Nothing -> do
-            -- no mailbox exists, create a new one, register it and subscribe
-            mailbox <- liftIO $ do
-              mailbox <- newMailbox
-              atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
-              pure mailbox
-            subscribeToMailbox key mailbox vcompId
-          Just mailbox -> do
-            subscribeToMailbox key mailbox vcompId
-  where
-    subscribeToMailbox key mailbox vcompId = do
-      threadId <- forkIO $ do
-        clonedMailbox <- liftIO (copyMailbox mailbox)
-        ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
-        forever $ do
-          fromJSON <$> liftIO (readMail clonedMailbox) >>= \case
-            Success msg ->
-              componentSink (successful msg)
-            Error msg ->
-              componentSink (errorful (ms msg))
-      liftIO $ atomicModifyIORef' subscribers $ \m ->
-        (M.insert key threadId m, ())
+subscribe _ _ _ = undefined
+-- subscribe topicName successful errorful = undefined
 -----------------------------------------------------------------------------
 -- Pub / Sub implementation
 --
@@ -629,24 +571,24 @@ subscribe topicName successful errorful = do
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
-unsubscribe :: Topic message -> Effect parent model action
-unsubscribe topicName = do
-  ComponentInfo {..} <- ask
-  io_ (unsubscribe_ topicName _componentId)
+-- unsubscribe :: Topic message -> Effect parent model action
+-- unsubscribe _ = undefined
+  -- ComponentInfo {..} <- ask
+  -- io_ (unsubscribe_ topicName _componentId)
 -----------------------------------------------------------------------------
 -- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
-unsubscribe_ :: Topic message -> ComponentId -> IO ()
-unsubscribe_ topicName vcompId = do
-  let key = (vcompId, topicName)
-  subscribersMap <- liftIO (readIORef subscribers)
-  case M.lookup key subscribersMap of
-    Just threadId -> do
-      liftIO $ do
-        killThread threadId
-        atomicModifyIORef' subscribers $ \m ->
-          (M.delete key m, ())
-    Nothing ->
-      pure ()
+unsubscribe :: Topic message -> ComponentId -> IO ()
+unsubscribe _ _ = undefined
+  -- let key = (vcompId, topicName)
+  -- subscribersMap <- liftIO (readIORef subscribers)
+  -- case M.lookup key subscribersMap of
+  --   Just threadId -> do
+  --     liftIO $ do
+  --       killThread threadId
+  --       atomicModifyIORef' subscribers $ \m ->
+  --         (M.delete key m, ())
+  --   Nothing ->
+  --     pure ()
 -----------------------------------------------------------------------------
 -- | Publish to a t'Topic message'
 --
@@ -692,14 +634,14 @@ publish
   => Topic message
   -> message
   -> Effect parent model action
-publish topicName value = io_ $ do
-  result <- M.lookup topicName <$> liftIO (readIORef mailboxes)
-  case result of
-    Just mailbox ->
-      liftIO $ sendMail mailbox (toJSON value)
-    Nothing -> liftIO $ do
-      mailbox <- newMailbox
-      void $ atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
+publish _ _ = undefined
+  -- result <- M.lookup topicName <$> liftIO (readIORef _mailboxes)
+  -- case result of
+  --   Just mailbox ->
+  --     liftIO $ sendMail mailbox (toJSON value)
+  --   Nothing -> liftIO $ do
+  --     mailbox <- newMailbox
+  --     void $ atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}
@@ -735,14 +677,17 @@ freshComponentId = atomicModifyIORef' componentIds $ \y -> (y + 1, y)
 --
 -- This is a global t'Miso.Types.Component' @Map@ that holds the state of all currently
 -- mounted t'Miso.Types.Component's
-components :: IORef (IntMap (ComponentState model action))
+components :: IORef (IntMap (ComponentState parent model action))
 {-# NOINLINE components #-}
 components = unsafePerformIO (newIORef mempty)
 -----------------------------------------------------------------------------
 -- | This function evaluates effects according to 'Synchronicity'.
 evalScheduled :: Synchronicity -> IO () -> IO ()
-evalScheduled Sync x = x
-evalScheduled Async x = void (forkIO x)
+evalScheduled Sync x = x `catch` (void . exception)
+evalScheduled Async x = void (forkIO (x `catch` (void . exception)))
+-----------------------------------------------------------------------------
+exception :: SomeException -> IO ()
+exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | Helper for processing effects in the event loop.
 foldEffects
@@ -765,37 +710,35 @@ foldEffects update drainSink info snk (e:es) o =
           then evalScheduled Sync action
           else evalScheduled synchronicity action
       foldEffects update drainSink info snk es n
-  where
-    exception :: SomeException -> IO ()
-    exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 -----------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
   :: Component parent model action
-  -> ComponentState model action
+  -> ComponentState parent model action
   -> IO ()
 drain app@Component{..} cs@ComponentState {..} = do
-  actions <- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-  let info = ComponentInfo componentId componentParentId componentDOMRef
+  actions <- undefined
+  -- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
+  let info = ComponentInfo _componentId _componentParentId _componentDOMRef
   if S.null actions then pure () else go info actions
       where
         go info actions = do
-          x <- liftIO (readTVarIO componentModel)
-          y <- foldEffects update True info componentSink (toList actions) x
-          liftIO $ atomically (writeTVar componentModel y)
+          x <- pure _componentModel
+          _ <- foldEffects update True info _componentSink (toList actions) x
+          -- liftIO $ atomically (writeTVar componentModel y)
           drain app cs
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
-unloadScripts :: ComponentState model action -> IO ()
+unloadScripts :: ComponentState parent model action -> IO ()
 unloadScripts ComponentState {..} = do
   head_ <- FFI.getHead
-  forM_ componentScripts $ \domRef ->
+  forM_ _componentScripts $ \domRef ->
     FFI.removeChild head_ domRef
 -----------------------------------------------------------------------------
 -- | Helper to drop all lifecycle and mounting hooks if defined.
-freeLifecycleHooks :: ComponentState model action -> IO ()
+freeLifecycleHooks :: ComponentState parent model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
-  VTree (Object vcomp) <- liftIO (readIORef componentVTree)
+  VTree (Object vcomp) <- liftIO (readIORef _componentVTree)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onUnmounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
@@ -806,26 +749,23 @@ freeLifecycleHooks ComponentState {..} = do
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
   :: Component parent model action
-  -> ComponentState model action
+  -> ComponentState parent model action
   -> IO ()
 unmount app cs@ComponentState {..} = do
   liftIO $ do
-    killThread componentMailboxThreadId
-    mapM_ killThread =<< readIORef componentSubThreads
-    mapM_ killThread componentParentToChildThreadId
-    mapM_ killThread componentChildToParentThreadId
-  killSubscribers componentId
+    mapM_ killThread =<< readIORef _componentSubThreads
+  killSubscribers _componentId
   drain app cs
-  finalizeWebSockets componentId
-  finalizeEventSources componentId
+  finalizeWebSockets _componentId
+  finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
-  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete componentId m, ())
+  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 -----------------------------------------------------------------------------
 killSubscribers :: ComponentId -> IO ()
-killSubscribers componentId =
-  mapM_ (flip unsubscribe_ componentId) =<<
-    M.keys <$> liftIO (readIORef mailboxes)
+killSubscribers _ = pure ()
+  -- mapM_ (flip unsubscribe_ componentId) =<<
+  --   M.keys <$> liftIO (readIORef _mailboxes)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -855,10 +795,10 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         else
           syncCallback1' $ \parent_ -> do
             ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
-            vtree <- toJSVal =<< readIORef componentVTree
+            vtree <- toJSVal =<< readIORef _componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
-            setProp "componentId" componentId obj
+            setProp "componentId" _componentId obj
             setProp "componentTree" vtree obj
             toJSVal obj
 
@@ -875,14 +815,14 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         -- Mock .domRef for use during hydration
         domRef <- toJSVal =<< create
         ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
-        vtree <- toJSVal =<< liftIO (readIORef componentVTree)
+        vtree <- toJSVal =<< liftIO (readIORef _componentVTree)
         FFI.set "parent" vcomp (Object vtree)
-        vcompId_ <- toJSVal componentId
+        vcompId_ <- toJSVal _componentId
         FFI.set "componentId" vcompId_ vcomp
         FFI.set "child" vtree vcomp
       Draw -> do
-        FFI.set "child" jsNull vcomp        
-      
+        FFI.set "child" jsNull vcomp
+
     setAttrs vcomp attrs snk (logLevel app) (events app)
     when (hydrate == Draw) (FFI.set "mount" mountCallback vcomp)
     FFI.set "unmount" unmountCallback vcomp
@@ -965,10 +905,10 @@ setAttrs vnode@(Object jval) attrs snk logLevel events =
         FFI.set k v (Object cssObj)
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
-registerComponent :: MonadIO m => ComponentState model action -> m ()
+registerComponent :: MonadIO m => ComponentState parent model action -> m ()
 registerComponent componentState = liftIO
   $ modifyIORef' components
-  $ IM.insert (componentId componentState) componentState
+  $ IM.insert (_componentId componentState) componentState
 -----------------------------------------------------------------------------
 -- | Renders styles
 --
@@ -1027,11 +967,10 @@ startSub
 startSub subKey sub = do
   ComponentInfo {..} <- ask
   io_ $ do
-    let vcompId = _componentId
-    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
+    IM.lookup _componentInfoId <$> liftIO (readIORef components) >>= \case
       Nothing -> pure ()
       Just compState@ComponentState {..} -> do
-        mtid <- liftIO (M.lookup (ms subKey) <$> readIORef componentSubThreads)
+        mtid <- liftIO (M.lookup (ms subKey) <$> readIORef _componentSubThreads)
         case mtid of
           Nothing ->
             startThread compState
@@ -1043,8 +982,8 @@ startSub subKey sub = do
               _ -> pure ()
   where
     startThread ComponentState {..} = do
-      tid <- forkIO (sub componentSink)
-      liftIO $ atomicModifyIORef' componentSubThreads $ \m ->
+      tid <- forkIO (sub _componentSink)
+      liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
         (M.insert (ms subKey) tid m, ())
 -----------------------------------------------------------------------------
 -- | Stops a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
@@ -1061,16 +1000,16 @@ startSub subKey sub = do
 -- @since 1.9.0.0
 stopSub :: ToMisoString subKey => subKey -> Effect parent model action
 stopSub subKey = do
-  vcompId <- asks _componentId
+  vcompId <- asks _componentInfoId
   io_ $ do
     IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
       Nothing -> do
         pure ()
       Just ComponentState {..} -> do
-        mtid <- liftIO (M.lookup (ms subKey) <$> readIORef componentSubThreads)
+        mtid <- liftIO (M.lookup (ms subKey) <$> readIORef _componentSubThreads)
         forM_ mtid $ \tid ->
           liftIO $ do
-            atomicModifyIORef' componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
+            atomicModifyIORef' _componentSubThreads $ \m -> (M.delete (ms subKey) m, ())
             killThread tid
 -----------------------------------------------------------------------------
 -- | Send any @ToJSON message => message@ to a t'Miso.Types.Component' mailbox, by 'ComponentId'
@@ -1085,13 +1024,10 @@ mail
   => ComponentId
   -> message
   -> Effect parent model action
-mail vcompId message = io_ $
-  IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
-    Nothing ->
-      -- dmj: TODO add DebugMail here
-      pure ()
-    Just ComponentState {..} ->
-      liftIO $ sendMail componentMailbox (toJSON message)
+mail vcompId _ = io_ $
+  modifyComponent vcompId $ do
+    pure ()
+    -- componentInbox %= (S.|> toJSON m)
 -----------------------------------------------------------------------------
 -- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
 --
@@ -1104,16 +1040,10 @@ mailParent
   :: ToJSON message
   => message
   -> Effect parent model action
-mailParent message = do
-  vcompId <- asks _componentParentId
-  io_ $ do
-    IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
-      Nothing ->
-        -- dmj: TODO add DebugMail here, if '0' then you're at the root
-        -- w/o a parent, so no message can be sent.
-        pure ()
-      Just ComponentState {..} ->
-        liftIO $ sendMail componentMailbox (toJSON message)
+mailParent _ = do
+  ComponentInfo {..} <- ask
+  io_ $ modifyComponent _componentInfoParentId $ do
+    pure () -- componentInbox %= (S.|> toJSON m)
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1149,11 +1079,10 @@ parent
 parent successful errorful = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
-    IM.lookup _componentParentId <$> liftIO (readIORef components) >>= \case
+    IM.lookup _componentInfoParentId <$> liftIO (readIORef components) >>= \case
       Nothing -> sink errorful
       Just ComponentState {..} -> do
-        model <- liftIO (readTVarIO componentModel)
-        sink (successful model)
+        sink (successful _componentModel)
 -----------------------------------------------------------------------------
 -- | Sends a message to all t'Miso.Types.Component' 'mailbox', excluding oneself.
 --
@@ -1168,13 +1097,13 @@ broadcast
   :: ToJSON message
   => message
   -> Effect parent model action
-broadcast message = do
+broadcast _ = do
   ComponentInfo {..} <- ask
-  io_ $ do
-    vcomps <- liftIO (readIORef components)
-    forM_ (IM.toList vcomps) $ \(vcompId, ComponentState {..}) ->
-      when (_componentId /= vcompId) $ do
-        liftIO $ sendMail componentMailbox (toJSON message)
+  io_ $ modifyComponents $ do
+    vcompId <- use componentId -- dmj: just use mapMaybe mailbox to insert into componentActions
+    when (vcompId /= _componentInfoId) $ do
+      pure ()
+      -- componentInbox %= (S.|> toJSON message)
 -----------------------------------------------------------------------------
 type Socket = JSVal
 -----------------------------------------------------------------------------
@@ -1329,17 +1258,17 @@ websocketCore core = do
   withSink $ \sink -> do
     webSocketId <- freshWebSocket
     socket <- core webSocketId sink
-    insertWebSocket _componentId webSocketId socket
+    insertWebSocket _componentInfoId webSocketId socket
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> IO ()
-    insertWebSocket componentId (WebSocket socketId) socket =
+    insertWebSocket componentId_ (WebSocket socketId) socket =
       liftIO $
         atomicModifyIORef' websocketConnections $ \websockets ->
           (update websockets, ())
       where
         update websockets =
           IM.unionWith IM.union websockets
-            $ IM.singleton componentId
+            $ IM.singleton componentId_
             $ IM.singleton socketId socket
 
     freshWebSocket :: IO WebSocket
@@ -1368,8 +1297,8 @@ websocketClose socketId = do
   io_ $ do
     result <- liftIO $
       atomicModifyIORef' websocketConnections $ \imap ->
-        dropWebSocket _componentId socketId imap =:
-          getWebSocket _componentId socketId imap
+        dropWebSocket _componentInfoId socketId imap =:
+          getWebSocket _componentInfoId socketId imap
     case result of
       Nothing ->
         pure ()
@@ -1393,7 +1322,7 @@ websocketSend
 websocketSend socketId msg = do
   ComponentInfo {..} <- ask
   io_ $ do
-    getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
+    getWebSocket _componentInfoId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Nothing -> pure ()
       Just socket ->
         case msg of
@@ -1414,7 +1343,7 @@ socketState :: WebSocket -> (SocketState -> action) -> Effect parent model actio
 socketState socketId callback = do
   ComponentInfo {..} <- ask
   withSink $ \sink -> do
-     getWebSocket _componentId socketId <$> liftIO (readIORef websocketConnections) >>= \case
+     getWebSocket _componentInfoId socketId <$> liftIO (readIORef websocketConnections) >>= \case
       Just socket -> do
         x <- socket ! ("socketState" :: MisoString)
         socketstate <- toEnum <$> fromJSValUnchecked x
@@ -1583,17 +1512,17 @@ eventSourceCore core = do
   withSink $ \sink -> do
     eventSourceId <- freshEventSource
     socket <- core eventSourceId sink
-    insertEventSource _componentId eventSourceId socket
+    insertEventSource _componentInfoId eventSourceId socket
   where
     insertEventSource :: ComponentId -> EventSource -> Socket -> IO ()
-    insertEventSource componentId (EventSource socketId) socket =
+    insertEventSource componentId_ (EventSource socketId) socket =
       liftIO $
         atomicModifyIORef' eventSourceConnections $ \eventSources ->
           (update eventSources, ())
       where
         update eventSources =
           IM.unionWith IM.union eventSources
-            $ IM.singleton componentId
+            $ IM.singleton componentId_
             $ IM.singleton socketId socket
 
     freshEventSource :: IO EventSource
@@ -1607,8 +1536,8 @@ eventSourceClose socketId = do
   io_ $ do
     result <- liftIO $
       atomicModifyIORef' eventSourceConnections $ \imap ->
-        dropEventSource _componentId socketId imap =:
-          getEventSource _componentId socketId imap
+        dropEventSource _componentInfoId socketId imap =:
+          getEventSource _componentInfoId socketId imap
     case result of
       Nothing ->
         pure ()

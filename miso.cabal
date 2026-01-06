@@ -205,4 +205,3 @@ library
     transformers  < 0.6.2.0,
     mtl           < 2.4,
     text          < 2.2,
-    stm >= 2.4 && < 2.6

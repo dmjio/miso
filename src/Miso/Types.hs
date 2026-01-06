@@ -94,7 +94,6 @@ import           GHC.Generics
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
-import           Miso.Concurrent (Mail)
 import           Miso.DSL
 import           Miso.Effect (Effect, Sub, Sink, DOMRef, ComponentId)
 import           Miso.Event.Types
@@ -145,7 +144,7 @@ data Component parent model action
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
   , logLevel :: LogLevel
   -- ^ Debugging configuration for prerendering and event delegation
-  , mailbox :: Mail -> Maybe action
+  , mailbox :: Value -> Maybe action
   -- ^ Receives mail from other components
   --
   -- @since 1.9.0.0

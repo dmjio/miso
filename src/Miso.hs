@@ -181,7 +181,7 @@ renderApp renderer vcomp =
 initComponent
   :: (Eq parent, Eq model)
   => Component parent model action
-  -> IO (ComponentState model action)
+  -> IO (ComponentState parent model action)
 initComponent vcomp@Component {..} = do
   root <- mountElement (getMountPoint mountPoint)
   initialize rootComponentId Draw isRoot vcomp (pure root)
