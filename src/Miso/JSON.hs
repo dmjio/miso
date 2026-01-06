@@ -59,6 +59,7 @@ module Miso.JSON
   , parseEither
   , eitherDecode
   , typeMismatch
+  , encodePretty
   -- * FFI
   , fromJSVal_Value
   , toJSVal_Value
@@ -426,6 +427,32 @@ decode :: FromJSON a => MisoString -> Maybe a
 decode s
   | Right x <- eitherDecode s = Just x
   | otherwise = Nothing
+-----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+foreign import javascript unsafe
+  "$r = JSON.stringify($1, null, 2)"
+  encodePretty_ffi :: JSVal -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+foreign import javascript unsafe
+  "(($1) => { return JSON.stringify($1, null, 2); })"
+  encodePretty_ffi :: JSVal -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign import javascript unsafe
+  "return JSON.stringify($1, null, 2);"
+  encodePretty_ffi :: JSVal -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef VANILLA
+encodePretty :: ToJSON a => a -> MisoString
+encodePretty _ = undefined
+#else
+encodePretty :: ToJSON a => a -> MisoString
+encodePretty x = unsafePerformIO (encodePretty_ffi =<< toJSVal_Value (toJSON x))
+#endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe
