@@ -287,15 +287,6 @@ instance (GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
 instance GFromJSON U1 where
   gParseJSON _ _ = pure U1
 ----------------------------------------------------------------------------
-instance {-# overlaps #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (Maybe a))) where
-  gParseJSON opts = \case
-    Object o ->
-      M1 . K1 <$> o .:? ms field
-    v ->
-      M1 . K1 <$> parseJSON v
-    where
-      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
-----------------------------------------------------------------------------
 instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
   gParseJSON opts = \case
     Object o ->
