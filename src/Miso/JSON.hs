@@ -59,7 +59,9 @@ module Miso.JSON
   , parseEither
   , eitherDecode
   , typeMismatch
+  -- * Pretty
   , encodePretty
+  , Config (..)
   -- * FFI
   , fromJSVal_Value
   , toJSVal_Value
@@ -421,29 +423,45 @@ decode s
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe
-  "$r = JSON.stringify($1, null, 2)"
-  encodePretty_ffi :: JSVal -> IO MisoString
+  "$r = JSON.stringify($1, null, $2)"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_NEW
 foreign import javascript unsafe
-  "(($1) => { return JSON.stringify($1, null, 2); })"
-  encodePretty_ffi :: JSVal -> IO MisoString
+  "(($1) => { return JSON.stringify($1, null, $2); })"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
 foreign import javascript unsafe
-  "return JSON.stringify($1, null, 2);"
-  encodePretty_ffi :: JSVal -> IO MisoString
+  "return JSON.stringify($1, null, $2);"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
 #endif
 -----------------------------------------------------------------------------
 #ifdef VANILLA
+encodePretty' :: ToJSON a => Config -> a -> MisoString
+encodePretty' = undefined
+-----------------------------------------------------------------------------
 encodePretty :: ToJSON a => a -> MisoString
 encodePretty _ = undefined
+-----------------------------------------------------------------------------
 #else
+-----------------------------------------------------------------------------
+encodePretty' :: ToJSON a => Config -> a -> MisoString
+encodePretty' (Config s) x = unsafePerformIO (flip encodePretty_ffi s =<< toJSVal_Value (toJSON x))
+-----------------------------------------------------------------------------
 encodePretty :: ToJSON a => a -> MisoString
-encodePretty x = unsafePerformIO (encodePretty_ffi =<< toJSVal_Value (toJSON x))
+encodePretty = encodePretty' defConfig
 #endif
+-----------------------------------------------------------------------------
+newtype Config
+  = Config
+  { spaces :: Int
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+defConfig :: Config
+defConfig = Config 4
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe
