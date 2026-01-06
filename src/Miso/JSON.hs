@@ -59,6 +59,9 @@ module Miso.JSON
   , parseEither
   , eitherDecode
   , typeMismatch
+  -- * Pretty
+  , encodePretty
+  , Config (..)
   -- * FFI
   , fromJSVal_Value
   , toJSVal_Value
@@ -286,15 +289,6 @@ instance (GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
 instance GFromJSON U1 where
   gParseJSON _ _ = pure U1
 ----------------------------------------------------------------------------
-instance {-# overlaps #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (Maybe a))) where
-  gParseJSON opts = \case
-    Object o ->
-      M1 . K1 <$> o .:? ms field
-    v ->
-      M1 . K1 <$> parseJSON v
-    where
-      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
-----------------------------------------------------------------------------
 instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
   gParseJSON opts = \case
     Object o ->
@@ -426,6 +420,48 @@ decode :: FromJSON a => MisoString -> Maybe a
 decode s
   | Right x <- eitherDecode s = Just x
   | otherwise = Nothing
+-----------------------------------------------------------------------------
+#ifdef GHCJS_OLD
+foreign import javascript unsafe
+  "$r = JSON.stringify($1, null, $2)"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef GHCJS_NEW
+foreign import javascript unsafe
+  "(($1) => { return JSON.stringify($1, null, $2); })"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef WASM
+foreign import javascript unsafe
+  "return JSON.stringify($1, null, $2);"
+  encodePretty_ffi :: JSVal -> Int -> IO MisoString
+#endif
+-----------------------------------------------------------------------------
+#ifdef VANILLA
+encodePretty' :: ToJSON a => Config -> a -> MisoString
+encodePretty' = undefined
+-----------------------------------------------------------------------------
+encodePretty :: ToJSON a => a -> MisoString
+encodePretty _ = undefined
+-----------------------------------------------------------------------------
+#else
+-----------------------------------------------------------------------------
+encodePretty' :: ToJSON a => Config -> a -> MisoString
+encodePretty' (Config s) x = unsafePerformIO (flip encodePretty_ffi s =<< toJSVal_Value (toJSON x))
+-----------------------------------------------------------------------------
+encodePretty :: ToJSON a => a -> MisoString
+encodePretty = encodePretty' defConfig
+#endif
+-----------------------------------------------------------------------------
+newtype Config
+  = Config
+  { spaces :: Int
+  } deriving (Show, Eq)
+-----------------------------------------------------------------------------
+defConfig :: Config
+defConfig = Config 4
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe
