@@ -754,7 +754,7 @@ main = withJS $ do
       it "Should have parent field present on VDOM nodes" $ do
         _ <- liftIO (startApp testComponent)
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
-        VTree (Object ref) <- liftIO (readIORef componentVTree)
+        VTree (Object ref) <- liftIO (readIORef _componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
         childParentField <- liftIO (ref ! "children" !! 0 ! "parent")
         childParentFieldDOMRef <- liftIO (childParentField ! "domRef")
