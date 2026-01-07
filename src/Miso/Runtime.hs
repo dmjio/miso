@@ -127,7 +127,7 @@ import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
-import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, Value) -- toJSON
+import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, jsonStringify, Value, toJSON)
 import           Miso.Lens hiding (view)
 import           Miso.String hiding (reverse, drop)
 import           Miso.Types
@@ -201,8 +201,8 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
             (n, sss) -> (n, ss <> sss)) (model_, []) actions
 
   let _componentModelDirty = \currentModel updatedModel -> do
-       currentName <- liftIO (currentModel `seq` makeStableName currentModel)
-       updatedName <- liftIO (updatedModel `seq` makeStableName updatedModel)
+       currentName <- currentModel `seq` makeStableName currentModel
+       updatedName <- updatedModel `seq` makeStableName updatedModel
        pure (currentName /= updatedName && currentModel /= updatedModel)
 
   let vcomp = ComponentState
@@ -271,11 +271,10 @@ modifyComponents go = liftIO $ do
     (IM.map (execState go) vcomps, ())
 -----------------------------------------------------------------------------
 commit :: ComponentId -> [Event action] -> IO ()
-commit vcompId _ = do
+commit vcompId events = do
   -- todo: handle topics, bindings
   ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
-  let actions = mempty -- mapMaybe _componentMailbox (toList _componentInbox) <> (event <$> events)
-  case _componentApplyActions actions _componentModel of
+  case _componentApplyActions (event <$> events) _componentModel of
     (updated, schedules) -> do
       forM_ schedules $ \case
         Schedule Async action ->
@@ -357,8 +356,7 @@ data Event action
   , event :: action
   }
 -----------------------------------------------------------------------------
-getBatch
-  :: IO (Maybe (ComponentId, [Event action]))
+getBatch :: IO (Maybe (ComponentId, [Event action]))
 getBatch = do
   liftIO $ atomicModifyIORef' globalEvents $ \case
     S.Empty -> (mempty, Nothing)
@@ -383,6 +381,12 @@ isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty =
 -----------------------------------------------------------------------------
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
+-----------------------------------------------------------------------------
+componentMailbox :: Lens (ComponentState parent model action) (Value -> Maybe action) 
+componentMailbox = lens _componentMailbox $ \record field -> record { _componentMailbox = field }
+-----------------------------------------------------------------------------
+componentSink :: Lens (ComponentState parent model action) (action -> IO ()) 
+componentSink = lens _componentSink $ \record field -> record { _componentSink = field }
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
@@ -943,8 +947,8 @@ renderScripts scripts =
         FFI.set k v imports
       FFI.set "imports" imports o
       FFI.addScriptImportMap
-        =<< fromJSValUnchecked
-        =<< do jsg "JSON" # "stringify" $ [o]
+        =<< jsonStringify
+        =<< toJSVal o
 -----------------------------------------------------------------------------
 -- | Starts a named 'Sub' dynamically, during the life of a t'Miso.Types.Component'.
 -- The 'Sub' can be stopped by calling @Ord subKey => stop subKey@ from the 'update' function.
@@ -1024,10 +1028,14 @@ mail
   => ComponentId
   -> message
   -> Effect parent model action
-mail vcompId _ = io_ $
-  modifyComponent vcompId $ do
-    pure ()
-    -- componentInbox %= (S.|> toJSON m)
+mail vcompId msg = io_ $
+  IM.lookup vcompId <$> readIORef components >>= \case
+    Nothing -> pure ()
+    Just ComponentState{..} ->
+      case _componentMailbox (toJSON msg) of
+        Nothing -> pure ()
+        Just action ->
+          _componentSink action
 -----------------------------------------------------------------------------
 -- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
 --
@@ -1040,10 +1048,9 @@ mailParent
   :: ToJSON message
   => message
   -> Effect parent model action
-mailParent _ = do
+mailParent msg = do
   ComponentInfo {..} <- ask
-  io_ $ modifyComponent _componentInfoParentId $ do
-    pure () -- componentInbox %= (S.|> toJSON m)
+  mail _componentInfoParentId msg
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1097,13 +1104,18 @@ broadcast
   :: ToJSON message
   => message
   -> Effect parent model action
-broadcast _ = do
+broadcast msg = do
   ComponentInfo {..} <- ask
-  io_ $ modifyComponents $ do
-    vcompId <- use componentId -- dmj: just use mapMaybe mailbox to insert into componentActions
-    when (vcompId /= _componentInfoId) $ do
-      pure ()
-      -- componentInbox %= (S.|> toJSON message)
+  io_ $ do
+    vcompIds <- IM.keys <$> readIORef components
+    forM_ vcompIds $ \vcompId ->
+      when (_componentInfoId /= vcompId) $ do
+        IM.lookup vcompId <$> readIORef components >>= \case
+          Nothing -> pure ()
+          Just ComponentState{..} ->
+            case _componentMailbox (toJSON msg) of
+              Nothing -> pure ()
+              Just action -> _componentSink action
 -----------------------------------------------------------------------------
 type Socket = JSVal
 -----------------------------------------------------------------------------
