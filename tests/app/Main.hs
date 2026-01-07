@@ -62,7 +62,7 @@ nodeLength = do
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
-getComponentById :: ComponentId -> Test (ComponentState m a)
+getComponentById :: ComponentId -> Test (ComponentState p m a)
 getComponentById vcompId = (IM.! vcompId) <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
 testComponent :: Component parent Int Action
