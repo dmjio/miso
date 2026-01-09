@@ -98,7 +98,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IM
-import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef, modifyIORef')
+import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
@@ -209,6 +209,7 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
         { _componentEvents = events
         , _componentMailbox = mailbox
         , _componentBindings = bindings
+        , _componentTopics = mempty
         , ..
         }
 
@@ -244,7 +245,7 @@ renderComponents = do
   componentIds_ <- IM.keys <$> liftIO (readIORef components)
   forM_ componentIds_ $ \vcompId ->
     IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
-      Nothing -> pure () -- component unmounted
+      Nothing -> pure ()
       Just ComponentState {..} -> do
         when _componentIsDirty (_componentDraw _componentModel)
         modifyComponent _componentId (isDirty .= False)
@@ -260,15 +261,6 @@ modifyComponent vcompId go = liftIO $ do
     case IM.lookup vcompId vcomps of
       Nothing -> (vcomps, ())
       Just vcomp -> (IM.insert vcompId (execState go vcomp) vcomps, ())
------------------------------------------------------------------------------
--- | Runs a t'State' monad action across all t'ComponentState'.
-modifyComponents
-  :: MonadIO m
-  => State (ComponentState parent model action) a
-  -> m ()
-modifyComponents go = liftIO $ do
-  atomicModifyIORef' components $ \vcomps ->
-    (IM.map (execState go) vcomps, ())
 -----------------------------------------------------------------------------
 commit :: ComponentId -> [Event action] -> IO ()
 commit vcompId events = do
@@ -330,8 +322,6 @@ initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} =
             liftIO $ do -- dmj: reset state
               atomicWriteIORef components IM.empty
               atomicWriteIORef componentIds topLevelComponentId
-              atomicWriteIORef subscribers mempty
-              -- atomicWriteIORef mailboxes mempty
             newTree <- buildVTree _componentParentId _componentId Draw _componentSink logLevel events (view initializedModel)
             Diff.diff Nothing (Just newTree) _componentDOMRef
             liftIO (atomicWriteIORef _componentVTree newTree)
@@ -376,17 +366,14 @@ globalWaiter = unsafePerformIO waiter
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
 -----------------------------------------------------------------------------
+componentTopics :: Lens (ComponentState parent model action) (Map MisoString (Value -> IO ()))
+componentTopics = lens _componentTopics $ \record field -> record { _componentTopics = field }
+-----------------------------------------------------------------------------
 isDirty :: Lens (ComponentState parent model action) Bool
 isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty = field }
 -----------------------------------------------------------------------------
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
------------------------------------------------------------------------------
-componentMailbox :: Lens (ComponentState parent model action) (Value -> Maybe action) 
-componentMailbox = lens _componentMailbox $ \record field -> record { _componentMailbox = field }
------------------------------------------------------------------------------
-componentSink :: Lens (ComponentState parent model action) (action -> IO ()) 
-componentSink = lens _componentSink $ \record field -> record { _componentSink = field }
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
@@ -423,6 +410,7 @@ data ComponentState parent model action
   , _componentDraw :: model -> IO ()
   , _componentModelDirty :: model -> model -> IO Bool
   , _componentApplyActions :: [action] -> model -> (model, [Schedule action])
+  , _componentTopics :: Map MisoString (Value -> IO ())
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -479,14 +467,6 @@ newtype Topic a = Topic MisoString
 topic :: MisoString -> Topic a
 topic = Topic
 -----------------------------------------------------------------------------
--- mailboxes :: IORef (Map (Topic a) Mailbox)
--- {-# NOINLINE mailboxes #-}
--- mailboxes = unsafePerformIO $ liftIO (newIORef mempty)
------------------------------------------------------------------------------
-subscribers :: IORef (Map (ComponentId, Topic a) ThreadId)
-{-# NOINLINE subscribers #-}
-subscribers = unsafePerformIO $ liftIO (newIORef mempty)
------------------------------------------------------------------------------
 -- | Subscribes to a @Topic@, provides callback function that writes to t'Miso.Types.Component' 'Sink'
 --
 -- If a @Topic message@ does not exist when calling 'subscribe' it is generated dynamically.
@@ -536,8 +516,15 @@ subscribe
   -> (message -> action)
   -> (MisoString -> action)
   -> Effect parent model action
-subscribe _ _ _ = undefined
--- subscribe topicName successful errorful = undefined
+subscribe (Topic topicName) successful errorful = do
+  ComponentInfo {..} <- ask
+  withSink $ \sink ->
+    modifyComponent _componentInfoId $ do
+      componentTopics %= do
+        M.insert topicName $ \value ->
+          sink (case fromJSON value of
+                  Success s -> successful s
+                  Error e -> errorful e)
 -----------------------------------------------------------------------------
 -- Pub / Sub implementation
 --
@@ -568,31 +555,18 @@ subscribe _ _ _ = undefined
 --
 -- N.B. Components can be both publishers and subscribers to their own topics.
 -----------------------------------------------------------------------------
--- | Unsubscribe to a t'Topic'
+-- | Unsubscribe from a t'Topic'
 --
 -- Unsubscribes a t'Miso.Types.Component' from receiving messages from t'Topic'
 --
 -- See 'subscribe' for more use.
 --
 -- @since 1.9.0.0
--- unsubscribe :: Topic message -> Effect parent model action
--- unsubscribe _ = undefined
-  -- ComponentInfo {..} <- ask
-  -- io_ (unsubscribe_ topicName _componentId)
------------------------------------------------------------------------------
--- | Internal unsubscribe used in component unmounting and in 'unsubscribe'
-unsubscribe :: Topic message -> ComponentId -> IO ()
-unsubscribe _ _ = undefined
-  -- let key = (vcompId, topicName)
-  -- subscribersMap <- liftIO (readIORef subscribers)
-  -- case M.lookup key subscribersMap of
-  --   Just threadId -> do
-  --     liftIO $ do
-  --       killThread threadId
-  --       atomicModifyIORef' subscribers $ \m ->
-  --         (M.delete key m, ())
-  --   Nothing ->
-  --     pure ()
+unsubscribe :: Topic message -> Effect parent model action
+unsubscribe (Topic topicName) = do
+  ComponentInfo {..} <- ask
+  io_ $ modifyComponent _componentInfoId $ do
+    (componentTopics %= M.delete topicName)
 -----------------------------------------------------------------------------
 -- | Publish to a t'Topic message'
 --
@@ -637,15 +611,15 @@ publish
   :: ToJSON message
   => Topic message
   -> message
-  -> Effect parent model action
-publish _ _ = undefined
-  -- result <- M.lookup topicName <$> liftIO (readIORef _mailboxes)
-  -- case result of
-  --   Just mailbox ->
-  --     liftIO $ sendMail mailbox (toJSON value)
-  --   Nothing -> liftIO $ do
-  --     mailbox <- newMailbox
-  --     void $ atomicModifyIORef' mailboxes $ \m -> (M.insert topicName mailbox m, ())
+  -> IO ()
+publish (Topic topicName) message = mapM_ go =<< IM.elems <$> readIORef components
+  where
+    go ComponentState {..} = do
+      case M.lookup topicName _componentTopics of
+        Nothing ->
+          pure ()
+        Just f -> do
+          liftIO (f (toJSON message))
 -----------------------------------------------------------------------------
 subIds :: IORef Int
 {-# NOINLINE subIds #-}
@@ -758,18 +732,12 @@ unmount
 unmount app cs@ComponentState {..} = do
   liftIO $ do
     mapM_ killThread =<< readIORef _componentSubThreads
-  killSubscribers _componentId
   drain app cs
   finalizeWebSockets _componentId
   finalizeEventSources _componentId
   unloadScripts cs
   freeLifecycleHooks cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
------------------------------------------------------------------------------
-killSubscribers :: ComponentId -> IO ()
-killSubscribers _ = pure ()
-  -- mapM_ (flip unsubscribe_ componentId) =<<
-  --   M.keys <$> liftIO (readIORef _mailboxes)
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -910,9 +878,9 @@ setAttrs vnode@(Object jval) attrs snk logLevel events =
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState parent model action -> m ()
-registerComponent componentState = liftIO
-  $ modifyIORef' components
-  $ IM.insert (_componentId componentState) componentState
+registerComponent componentState = liftIO $
+  atomicModifyIORef' components $ \cs ->
+    (IM.insert (_componentId componentState) componentState cs, ())
 -----------------------------------------------------------------------------
 -- | Renders styles
 --
