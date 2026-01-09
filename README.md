@@ -754,7 +754,6 @@ Become a [financial contributor](https://opencollective.com/miso/contribute) and
 
   - Moses Tschanz
   - [@MaxGabriel](https://github.com/MaxGabriel)
-  - [@DigitalOcean](https://github.com/DigitalOcean)
   - [@maybetonyfu](https://github.com/maybetonyfu)
   - [@jhrcek](https://github.com/jhrcek)
   - etc.
