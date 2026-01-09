@@ -779,7 +779,9 @@ lens getter setter = Lens getter (flip setter)
 -- @since 1.9.0.0
 class At at where
   type family Index at :: Type
+  -- ^ Index of the container
   type family IxValue at :: Type
+  -- ^ Indexed value of the container
   at :: Index at -> Lens at (Maybe (IxValue at))
 ----------------------------------------------------------------------------
 instance Ord k => At (Map k v) where
