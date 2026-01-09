@@ -771,7 +771,10 @@ lens
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
--- | Class for getting and setting indexable types
+-- | Class for getting and setting values across various container types.
+--
+-- > M.singleton 'a' "foo" & at 'a' .~ Just "bar"
+-- > -- fromList [('a',"bar")]
 --
 -- @since 1.9.0.0
 class At at where
