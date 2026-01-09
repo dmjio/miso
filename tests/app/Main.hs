@@ -143,12 +143,16 @@ main = withJS $ do
         (this //~ 2) 4 `shouldBe` 2.0
       it "Should %=" $ do
         (execState (this %= (+1)) 0) `shouldBe` 1
+      it "Should modifying" $ do
+        (execState (modifying this (+1)) 0) `shouldBe` 1
       it "Should %?=" $ do
         (execState (this %?= (+1)) Nothing) `shouldBe` Just 1
       it "Should +=" $ do
         (execState (this += 1) 0) `shouldBe` 1
       it "Should -=" $ do
         (execState (this -= 1) 0) `shouldBe` (-1)
+      it "Should %?=" $ do
+        (execState (this %?= (+1)) (Just 0)) `shouldBe` (Just 1)
       it "Should use" $ do
         (execState (use this) 0) `shouldBe` 0
       it "Should view" $ do
