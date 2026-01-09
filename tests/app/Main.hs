@@ -14,6 +14,7 @@
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
+import           Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Prelude hiding ((!!))
@@ -110,6 +111,50 @@ withJS action = void $ do
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Lens tests" $ do
+      it "Should ^." $ do
+        (0 ^. this) `shouldBe` 0
+      it "Should at" $ do
+        flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' ?= 10) `shouldBe`
+          M.singleton 'a' 10
+        flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' .= Nothing) `shouldBe`
+          mempty
+      it "Should _1" $ do
+        ((1,2) ^. _1) `shouldBe` 1
+      it "Should compose" $ do
+        ((1,(2, 3)) ^. (_1 `compose` _2)) `shouldBe` 3
+      it "Should _2" $ do
+        ((1,2) ^. _2) `shouldBe` 2
+      it "Should .~" $ do
+        (this .~ 0) 1 `shouldBe` 0
+      it "Should set" $ do
+        (Miso.Lens.set this 0) 1 `shouldBe` 0
+      it "Should %~" $ do
+        (this %~ (+1)) 0 `shouldBe` 1
+      it "Should over" $ do
+        (over this (+1)) 0 `shouldBe` 1
+      it "Should +~" $ do
+        (this +~ 1) 0 `shouldBe` 1
+      it "Should -~" $ do
+        (this -~ 1) 0 `shouldBe` (-1)
+      it "Should //~" $ do
+        (this //~ 2) 4 `shouldBe` 2.0
+      it "Should %=" $ do
+        (execState (this %= (+1)) 0) `shouldBe` 1
+      it "Should %?=" $ do
+        (execState (this %?= (+1)) Nothing) `shouldBe` Just 1
+      it "Should +=" $ do
+        (execState (this += 1) 0) `shouldBe` 1
+      it "Should -=" $ do
+        (execState (this -= 1) 0) `shouldBe` (-1)
+      it "Should use" $ do
+        (execState (use this) 0) `shouldBe` 0
+      it "Should view" $ do
+        (runReader (Miso.Lens.view this) 0) `shouldBe` 0
+      it "Should .=" $ do
+        (execState (this .= 1) 0) `shouldBe` 1
+      it "Should ?~" $ do
+        (this ?~ 0) (Just 1) `shouldBe` (Just 0)
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
