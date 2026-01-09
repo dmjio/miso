@@ -135,6 +135,8 @@ main = withJS $ do
         (over this (+1)) 0 `shouldBe` 1
       it "Should +~" $ do
         (this +~ 1) 0 `shouldBe` 1
+      it "Should *~" $ do
+        (this *~ 2) 2 `shouldBe` 4
       it "Should -~" $ do
         (this -~ 1) 0 `shouldBe` (-1)
       it "Should //~" $ do
