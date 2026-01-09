@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 -----------------------------------------------------------------------------
@@ -144,6 +145,8 @@ module Miso.Lens
   , _2
   , _id
   , this
+  -- *** Containers
+  , At (..)
   -- *** Re-exports
   , compose
   -- *** Conversion
@@ -161,6 +164,14 @@ import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
 import Data.Kind (Type)
+import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
+import qualified Data.Set as S
+import Data.Set (Set)
+import qualified Data.IntMap.Strict as IM
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntSet as IS
+import Data.IntSet (IntSet)
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
@@ -759,4 +770,62 @@ lens
   -> (record -> field -> record)
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
+----------------------------------------------------------------------------
+-- | Class for getting and setting values across various container types.
+--
+-- > M.singleton 'a' "foo" & at 'a' .~ Just "bar"
+-- > -- fromList [('a',"bar")]
+--
+-- > update (SetValue value)
+-- >   at 10 ?= value
+--
+-- @since 1.9.0.0
+class At at where
+  type family Index at :: Type
+  -- ^ Index of the container
+  type family IxValue at :: Type
+  -- ^ Indexed value of the container
+  at :: Index at -> Lens at (Maybe (IxValue at))
+----------------------------------------------------------------------------
+instance Ord k => At (Map k v) where
+  type Index (Map k v) = k
+  type IxValue (Map k v) = v
+  at key = lens (M.lookup key) $ \m value ->
+    case value of
+      Nothing -> M.delete key m
+      Just v -> M.insert key v m
+----------------------------------------------------------------------------
+instance At (IntMap v) where
+  type Index (IntMap v) = Int
+  type IxValue (IntMap v) = v
+  at key = lens (IM.lookup key) $ \m value ->
+    case value of
+      Nothing -> IM.delete key m
+      Just v -> IM.insert key v m
+----------------------------------------------------------------------------
+instance Ord k => At (Set k) where
+  type Index (Set k) = k
+  type IxValue (Set k) = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> S.delete key m
+          Just () -> S.insert key m
+      _get m
+        | S.member key m = Just ()
+        | otherwise = Nothing
+----------------------------------------------------------------------------
+instance At IntSet where
+  type Index IntSet = Int
+  type IxValue IntSet = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> IS.delete key m
+          Just () -> IS.insert key m
+      _get m
+        | IS.member key m = Just ()
+        | otherwise = Nothing
 ----------------------------------------------------------------------------
