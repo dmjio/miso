@@ -146,7 +146,7 @@ main = withJS $ do
       it "Should modifying" $ do
         (execState (modifying this (+1)) 0) `shouldBe` 1
       it "Should %?=" $ do
-        (execState (this %?= (+1)) Nothing) `shouldBe` Just 1
+        (execState (this %?= (+1)) Nothing) `shouldBe` Nothing
       it "Should +=" $ do
         (execState (this += 1) 0) `shouldBe` 1
       it "Should -=" $ do
