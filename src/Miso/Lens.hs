@@ -776,6 +776,9 @@ lens getter setter = Lens getter (flip setter)
 -- > M.singleton 'a' "foo" & at 'a' .~ Just "bar"
 -- > -- fromList [('a',"bar")]
 --
+-- > update (SetValue value)
+-- >   at 10 ?= value
+--
 -- @since 1.9.0.0
 class At at where
   type family Index at :: Type
