@@ -1,8 +1,5 @@
 options: self: super: {
 
-  nixosPkgsSrc =
-    "https://github.com/nixos/nixpkgs/archive/6d1a044fc9ff3cc96fca5fa3ba9c158522bbf2a5.tar.gz";
-
   haskell = super.haskell // {
     packages = super.haskell.packages // {
       ghc865 = super.haskell.packages.ghc865.override {
