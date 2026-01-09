@@ -122,7 +122,7 @@ main = withJS $ do
       it "Should _1" $ do
         ((1,2) ^. _1) `shouldBe` 1
       it "Should compose" $ do
-        ((1,(2, 3)) ^. (_1 `compose` _2)) `shouldBe` 3
+        ((1,(2, 3)) ^. (_1 `compose` _2)) `shouldBe` 2
       it "Should _2" $ do
         ((1,2) ^. _2) `shouldBe` 2
       it "Should .~" $ do
