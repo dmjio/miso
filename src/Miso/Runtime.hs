@@ -175,12 +175,6 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
   _componentVTree <- liftIO $ newIORef (VTree (Object jsNull))
   _componentSubThreads <- liftIO (newIORef M.empty)
 
-  forM_ subs $ \sub -> do
-    threadId <- forkIO (sub _componentSink)
-    subKey <- liftIO freshSubId
-    liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
-      (M.insert subKey threadId m, ())
-
   frame <- newEmptyMVar :: IO (MVar Double)
   _componentModel <- liftIO (pure initializedModel)
   _componentMailbox <- pure S.empty
@@ -222,6 +216,11 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
 
   initialDraw initializedModel hydrate isRoot comp vcomp
   forM_ initialAction _componentSink
+  forM_ subs $ \sub -> do
+    threadId <- forkIO (sub _componentSink)
+    subKey <- liftIO freshSubId
+    liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
+      (M.insert subKey threadId m, ())
   when isRoot $ void (forkIO scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
