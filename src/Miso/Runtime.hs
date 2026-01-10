@@ -266,7 +266,7 @@ scheduler = do
             modifyComponent _componentId $ do
               isDirty .= True
               componentModel .= updatedModel
-            -- propagateBindings
+            propagateBindings
           pure dirty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
@@ -285,7 +285,7 @@ scheduler = do
             modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'
--- 
+--
 -- Auxiliary function
 modifyComponent
   :: MonadIO m
@@ -299,9 +299,11 @@ modifyComponent vcompId go = liftIO $ do
         (vcomps, ())
       Just vcomp ->
         (IM.insert vcompId (execState go vcomp) vcomps, ())
------------------------------------------------------------------------------
+----------------------------------------------------------------------------
+-- | Bindings processor, BFS the Component graph, update state at the
+-- granularity of a Lens.
 propagateBindings :: IO ()
-propagateBindings = error "not implemented"
+propagateBindings = pure ()
   where
     -----------------------------------------------------------------------------
     -- | Propagate bindings out to all the other Component.
@@ -375,20 +377,31 @@ getBatch = do
       S.Empty ->
         (mempty, Nothing)
       (vcompId S.:<| rest) ->
-        (rest, Just vcompId)
-
+        (S.filter (/= vcompId) rest, Just vcompId)
   case maybeComponentId of
-    Nothing ->
-      pure Nothing
-    Just vcompId ->
-      liftIO (atomicModifyIORef' globalEvents $ \imap ->
-        case IM.lookup vcompId imap of
-          Nothing ->
-            (imap, Nothing)
-          Just S.Empty ->
-            (mempty, Nothing)
-          Just events ->
-            (IM.insert vcompId S.Empty imap, Just (vcompId, toList events)))
+    Nothing -> pure Nothing
+    Just vcompId -> getBatchAt vcompId
+-----------------------------------------------------------------------------
+-- | Helper for event extraction at a specific 'ComponentId'
+getBatchAt :: ComponentId -> IO (Maybe (IM.Key, [a]))
+getBatchAt vcompId =
+  liftIO (atomicModifyIORef' globalEvents $ \imap ->
+    case IM.lookup vcompId imap of
+      Nothing ->
+        (imap, Nothing)
+      Just S.Empty ->
+        (mempty, Nothing)
+      Just events ->
+        (IM.insert vcompId S.Empty imap, Just (vcompId, toList events)))
+-----------------------------------------------------------------------------
+-- | Used in `unmount`, scheduler will no longer process actions at ComponentId
+drainQueueAt :: ComponentId -> IO ()
+drainQueueAt vcompId =
+  liftIO $ atomicModifyIORef' globalQueue $ \case
+    S.Empty ->
+      (mempty, ())
+    rest ->
+      (S.filter (/= vcompId) rest, ())
 -----------------------------------------------------------------------------
 globalEvents :: IORef (IntMap (Seq action))
 {-# NOINLINE globalEvents #-}
@@ -712,44 +725,20 @@ evalScheduled Async x = void (forkIO (x `catch` (void . exception)))
 exception :: SomeException -> IO ()
 exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 -----------------------------------------------------------------------------
--- | Helper for processing effects in the event loop.
-foldEffects
-  :: (action -> Effect parent model action)
-  -> Bool
-  -- ^ Whether or not the Component is unmounting
-  -> ComponentInfo parent
-  -> Sink action
-  -> [action]
-  -> model
-  -> IO model
-foldEffects _ _ _ _ [] m = pure m
-foldEffects update drainSink info snk (e:es) o =
-  case runEffect (update e) info o of
-    (n, subs) -> do
-      forM_ subs $ \(Schedule synchronicity sub) -> do
-        let
-          action = sub snk `catch` (void . exception)
-        if drainSink
-          then evalScheduled Sync action
-          else evalScheduled synchronicity action
-      foldEffects update drainSink info snk es n
------------------------------------------------------------------------------
 -- | Drains the event queue before unmounting, executed synchronously
 drain
-  :: Component parent model action
-  -> ComponentState parent model action
+  :: ComponentState parent model action
   -> IO ()
-drain app@Component{..} cs@ComponentState {..} = do
-  actions <- undefined
-  -- liftIO $ atomicModifyIORef' componentActions $ \actions -> (S.empty, actions)
-  let info = ComponentInfo _componentId _componentParentId _componentDOMRef
-  if S.null actions then pure () else go info actions
-      where
-        go info actions = do
-          x <- pure _componentModel
-          _ <- foldEffects update True info _componentSink (toList actions) x
-          -- liftIO $ atomically (writeTVar componentModel y)
-          drain app cs
+drain cs@ComponentState {..} = do
+  getBatchAt _componentId >>= \case
+    Nothing -> pure ()
+    Just (_, actions) -> do
+       case _componentApplyActions actions _componentModel of
+         (updated, schedules :: [Schedule action]) -> do
+           forM_ schedules $ \case
+             -- dmj: process all actions synchronously during unmount
+             Schedule _ action -> action _componentSink
+           drain cs { _componentModel = updated }
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState parent model action -> IO ()
@@ -770,12 +759,12 @@ freeLifecycleHooks ComponentState {..} = do
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmount
-  :: Component parent model action
-  -> ComponentState parent model action
+  :: ComponentState parent model action
   -> IO ()
-unmount app cs@ComponentState {..} = do
+unmount cs@ComponentState {..} = do
   liftIO (mapM_ killThread =<< readIORef _componentSubThreads)
-  drain app cs
+  drainQueueAt _componentId
+  drain cs
   finalizeWebSockets _componentId
   finalizeEventSources _componentId
   unloadScripts cs
@@ -823,7 +812,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
         IM.lookup componentId_ <$> readIORef components >>= \case
           Nothing -> pure ()
           Just componentState ->
-            unmount app componentState
+            unmount componentState
 
     case hydrate of
       Hydrate -> do
