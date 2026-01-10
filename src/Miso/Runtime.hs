@@ -145,6 +145,7 @@ initialize
   -> IO (ComponentState parent model action)
 initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
   _componentId <- liftIO freshComponentId
+
   let
     _componentSink = \action -> liftIO $ do
       atomicModifyIORef' globalEvents $ \imap ->
@@ -216,13 +217,17 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
 
   initialDraw initializedModel hydrate isRoot comp vcomp
   forM_ initialAction _componentSink
-  forM_ subs $ \sub -> do
-    threadId <- forkIO (sub _componentSink)
+  initSubs subs _componentSubThreads _componentSink
+  when isRoot $ void (forkIO scheduler)
+  pure vcomp
+-----------------------------------------------------------------------------
+initSubs :: [ Sub action ] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
+initSubs subs_ _componentSubThreads _componentSink = do
+  forM_ subs_ $ \sub_ -> do
+    threadId <- forkIO (sub_ _componentSink)
     subKey <- liftIO freshSubId
     liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
-  when isRoot $ void (forkIO scheduler)
-  pure vcomp
 -----------------------------------------------------------------------------
 -- | Diffs two models, returning an if a redraw is necessary
 modelCheck :: Eq model => model -> model -> IO Bool
