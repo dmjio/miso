@@ -17,6 +17,8 @@ module Main where
 import           Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
+import qualified Data.IntMap.Strict as IM
+import           Data.IntMap.Strict (IntMap)
 import           Prelude hiding ((!!))
 import           GHC.Generics
 import           Control.Monad
@@ -112,12 +114,19 @@ main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
     describe "Miso.Lens tests" $ do
+      it "Should convert between VL and Miso.Lens.Lens" $ do
+        (fromVL (toVL this) %~ (+1)) 0 `shouldBe` 1
       it "Should ^." $ do
         (0 ^. this) `shouldBe` 0
-      it "Should at" $ do
+      it "Should at on IntMap" $ do
+        flip execState (mempty :: IntMap Int) (Miso.Lens.at 0 ?= 10) `shouldBe`
+          IM.singleton 0 10
+        flip execState (IM.singleton 0 10 :: IntMap Int) (Miso.Lens.at 0 .= Nothing) `shouldBe`
+          mempty
+      it "Should at on Map" $ do
         flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' ?= 10) `shouldBe`
           M.singleton 'a' 10
-        flip execState (mempty :: Map Char Int) (Miso.Lens.at 'a' .= Nothing) `shouldBe`
+        flip execState (M.singleton 'a' 10 :: Map Char Int) (Miso.Lens.at 'a' .= Nothing) `shouldBe`
           mempty
       it "Should _1" $ do
         ((1,2) ^. _1) `shouldBe` 1
@@ -159,6 +168,25 @@ main = withJS $ do
         (runReader (Miso.Lens.view this) 0) `shouldBe` 0
       it "Should .=" $ do
         (execState (this .= 1) 0) `shouldBe` 1
+      it "Should assign" $ do
+        (execState (assign this 1) 0) `shouldBe` 1
+      it "Should *=" $ do
+        (execState (this *= 2) 2) `shouldBe` 4
+      it "Should <~" $ do
+        (execState (this <~ pure 10) 0) `shouldBe` 10
+      -- here
+      it "Should <%=" $ do
+        (evalState (this <%= (+1)) 0) `shouldBe` 1
+      it "Should <.=" $ do
+        (evalState (this <.= 1) 0) `shouldBe` 1
+      it "Should <?=" $ do
+        (evalState (this <?= 10) Nothing) `shouldBe` 10
+      it "Should <<.=" $ do
+        (runState (this <<.= 10) 0) `shouldBe` (0,10)
+      it "Should <<%=" $ do
+        (runState (this <<%= (+1)) 10) `shouldBe` (10,11)
+      it "Should <>~" $ do
+        (this <>~ ['b']) ['a'] `shouldBe` ['a','b']
       it "Should ?~" $ do
         (this ?~ 0) (Just 1) `shouldBe` (Just 0)
     describe "Inline JS tests" $ do
