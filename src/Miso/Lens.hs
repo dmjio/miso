@@ -484,7 +484,7 @@ l <.= b = do
 infix 4 <?=
 (<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
 l <?= b = do
-  l .= Just b
+  l ?= b
   return b
 ----------------------------------------------------------------------------
 -- | Assign the field of a record in a @MonadState@ to a value using a t'Lens'.
