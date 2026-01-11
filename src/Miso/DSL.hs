@@ -178,7 +178,7 @@ instance FromJSVal a => FromJSVal [a] where
       Nothing -> pure Nothing
       Just xs -> sequence <$> mapM fromJSVal xs
 -----------------------------------------------------------------------------
-instance ToJSVal a => ToJSVal [a] where
+instance {-# OVERLAPPABLE #-} ToJSVal a => ToJSVal [a] where
   toJSVal = toJSVal_List <=< mapM toJSVal
 -----------------------------------------------------------------------------
 instance ToJSVal String where
