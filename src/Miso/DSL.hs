@@ -172,13 +172,19 @@ instance ToJSVal a => ToJSVal (Maybe a) where
     Nothing -> pure jsNull
     Just x -> toJSVal x
 -----------------------------------------------------------------------------
-instance FromJSVal a => FromJSVal [a] where
+instance {-# OVERLAPPABLE #-} FromJSVal a => FromJSVal [a] where
   fromJSVal jsval_ = do
     fromJSVal_List jsval_ >>= \case
       Nothing -> pure Nothing
       Just xs -> sequence <$> mapM fromJSVal xs
 -----------------------------------------------------------------------------
-instance ToJSVal a => ToJSVal [a] where
+instance FromJSVal [Char] where
+  fromJSVal jsval_ = fmap unpack <$> fromJSVal jsval_
+-----------------------------------------------------------------------------
+instance ToJSVal [Char] where
+  toJSVal = toJSVal . toMisoString
+-----------------------------------------------------------------------------
+instance {-# OVERLAPPABLE #-} ToJSVal a => ToJSVal [a] where
   toJSVal = toJSVal_List <=< mapM toJSVal
 -----------------------------------------------------------------------------
 instance ToJSVal JSVal where
