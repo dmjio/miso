@@ -181,6 +181,9 @@ instance FromJSVal a => FromJSVal [a] where
 instance ToJSVal a => ToJSVal [a] where
   toJSVal = toJSVal_List <=< mapM toJSVal
 -----------------------------------------------------------------------------
+instance ToJSVal String where
+  toJSVal = toJSVal . toMisoString
+-----------------------------------------------------------------------------
 instance ToJSVal JSVal where
   toJSVal = pure
 -----------------------------------------------------------------------------
