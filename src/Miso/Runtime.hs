@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE BlockArguments             #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
@@ -285,11 +286,9 @@ scheduler =
     renderComponents = do
       componentIds_ <- IM.keys <$> liftIO (readIORef components)
       forM_ componentIds_ $ \vcompId ->
-        IM.lookup vcompId <$> liftIO (readIORef components) >>= \case
-          Nothing -> pure ()
-          Just ComponentState {..} -> do
-            when _componentIsDirty (_componentDraw _componentModel)
-            modifyComponent _componentId (isDirty .= False)
+        IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
+          when _componentIsDirty (_componentDraw _componentModel)
+          modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'
 --
