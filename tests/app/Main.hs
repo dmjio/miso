@@ -732,7 +732,7 @@ main = withJS $ do
       it "Should marshal a (Bool,Double)" $ do
         (`shouldBe` Just (True,pi)) =<< liftIO (fromJSVal =<< toJSVal (True,pi))
       it "Should marshal a [Double]" $ do
-        (`shouldBe` Just [pi,pi]) =<< liftIO (fromJSVal =<< toJSVal [pi,pi])
+        (`shouldBe` Just [pi,pi :: Double]) =<< liftIO (fromJSVal =<< toJSVal [pi,pi :: Double])
         (`shouldBe` Just ([] :: [Bool])) =<< liftIO (fromJSVal =<< toJSVal ([] :: [Bool]))
       it "Should marshal a Char" $ do
         (`shouldBe` Just ('o' :: Char)) =<< liftIO (fromJSVal =<< toJSVal ('o' :: Char))
