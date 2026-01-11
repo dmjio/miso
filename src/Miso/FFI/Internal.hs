@@ -192,7 +192,11 @@ addEventListener
   -- the event will be passed to it as a parameter.
   -> IO Function
 addEventListener self name cb = do
+#ifdef GHCJS_BOTH
+  cb_ <- Function <$> syncCallback1 cb
+#else
   cb_ <- Function <$> asyncCallback1 cb
+#endif
   void $ self # "addEventListener" $ (name, cb_)
   pure cb_
 -----------------------------------------------------------------------------
