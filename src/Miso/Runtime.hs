@@ -2,12 +2,14 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE NamedFieldPuns             #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
@@ -230,18 +232,18 @@ initSubs subs_ _componentSubThreads _componentSink = do
       (M.insert subKey threadId m, ())
 -----------------------------------------------------------------------------
 -- | Diffs two models, returning an if a redraw is necessary
-modelCheck :: Eq model => model -> model -> IO Bool
-modelCheck currentModel updatedModel = do
-  currentName <- currentModel `seq` makeStableName currentModel
-  updatedName <- updatedModel `seq` makeStableName updatedModel
-  pure (currentName /= updatedName && currentModel /= updatedModel)
+modelCheck :: Eq model => model -> model -> Bool
+modelCheck c n = unsafePerformIO $ do
+  currentName <- c `seq` makeStableName c
+  updatedName <- n `seq` makeStableName n
+  pure (currentName /= updatedName && c /= n)
 -----------------------------------------------------------------------------
 -- | The scheduler processes all events in the system and is responsible
 -- for propagating state changes across model states both asynchronously
 -- and synchronously (synchronously is done for 'Binding'). It also is responsible for
 -- top-down rendering of the UI Component tree.
 scheduler :: IO ()
-scheduler = do
+scheduler =
   forever $ do
     wait globalWaiter
     mapM_ (uncurry run) =<< getBatch
@@ -252,7 +254,9 @@ scheduler = do
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
       shouldRender <- commit vcompId actions
-      when shouldRender renderComponents
+      when shouldRender $ do
+        propagateBindings vcompId
+        renderComponents
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO Bool
@@ -265,12 +269,11 @@ scheduler = do
               evalScheduled Async (action _componentSink)
             Schedule Sync action ->
               evalScheduled Sync (action _componentSink)
-          dirty <- _componentModelDirty _componentModel updatedModel
+          let dirty = _componentModelDirty _componentModel updatedModel
           when dirty $ do
             modifyComponent _componentId $ do
               isDirty .= True
               componentModel .= updatedModel
-            propagateBindings
           pure dirty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
@@ -292,10 +295,9 @@ scheduler = do
 --
 -- Auxiliary function
 modifyComponent
-  :: MonadIO m
-  => ComponentId
+  :: ComponentId
   -> State (ComponentState parent model action) a
-  -> m ()
+  -> IO ()
 modifyComponent vcompId go = liftIO $ do
   atomicModifyIORef' components $ \vcomps ->
     case IM.lookup vcompId vcomps of
@@ -306,30 +308,37 @@ modifyComponent vcompId go = liftIO $ do
 ----------------------------------------------------------------------------
 -- | Bindings processor, BFS the Component graph, update state at the
 -- granularity of a Lens.
-propagateBindings :: IO ()
-propagateBindings = pure ()
-  where
-    -----------------------------------------------------------------------------
-    -- | Propagate bindings out to all the other Component.
-    _crawl :: ComponentId -> IO ()
-    _crawl compId = evalStateT go [compId]
+propagateBindings
+  :: ComponentId
+  -> IO ()
+propagateBindings vcompId = atomicModifyIORef' components $ \cs -> do
+  let iterations = 10_000
+  (propagate vcompId 0 iterations cs, ())
+----------------------------------------------------------------------------
+propagate
+  :: ComponentId
+  -> Int
+  -> Int
+  -> IntMap (ComponentState p m a)
+  -> IntMap (ComponentState p m a)
+propagate vcompId !n iterations cs
+  | n > iterations = cs
+  | solved cs ns = ns
+  | otherwise = propagate vcompId (n + 1) iterations ns
       where
-        go :: StateT [ComponentId] IO ()
-        go = get >>= \case
-          [] -> pure ()
-          nextId : _ -> do
-            ComponentState {} <- (IM.! nextId) <$> liftIO (readIORef components)
-            pure ()
-    -----------------------------------------------------------------------------
-    _pop :: StateT [s] IO (Maybe s)
-    _pop = get >>= \case
-      [] -> pure Nothing
-      (x:xs) -> do
-        put xs
-        pure (Just x)
-    -----------------------------------------------------------------------------
-    _push :: s -> StateT [s] IO ()
-    _push s = modify (s:)
+        ns = execState (synch vcompId) cs
+-----------------------------------------------------------------------------
+synch :: ComponentId -> State (IntMap (ComponentState p m a)) ()
+synch _ = pure ()
+-----------------------------------------------------------------------------
+solved
+  :: IntMap (ComponentState p m a)
+  -> IntMap (ComponentState p m a)
+  -> Bool
+solved cs ns = and $
+  Prelude.zipWith (\x y -> not $ (_componentModelDirty x) (_componentModel x) (_componentModel y))
+    (IM.elems cs)
+    (IM.elems ns)
 -----------------------------------------------------------------------------
 initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState p m a -> IO ()
 initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} = do
@@ -467,7 +476,7 @@ data ComponentState parent model action
   -- ^ Mailbox for asynchronous Component communication
   , _componentDraw :: model -> IO ()
   -- ^ Helper function for component rendering
-  , _componentModelDirty :: model -> model -> IO Bool
+  , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions :: [action] -> model -> (model, [Schedule action])
   -- ^ Component actions application
@@ -1105,7 +1114,8 @@ parent successful errorful = do
 --
 -- @since 1.9.0.0
 broadcast
-  :: ToJSON message
+  :: Eq model
+  => ToJSON message
   => message
   -> Effect parent model action
 broadcast msg = do
