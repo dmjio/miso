@@ -133,6 +133,7 @@ library
     Miso.Mathml.Property
     Miso.Media
     Miso.Navigator
+    Miso.Prelude
     Miso.Property
     Miso.PubSub
     Miso.Router

@@ -36,5 +36,9 @@ executable app
     Main.hs
   build-depends:
     base, miso
+  mixins:
+    miso,
+    miso (Miso.Prelude as Prelude),
+    base hiding (Prelude)
   default-language:
     Haskell2010
