@@ -149,6 +149,7 @@ module Miso.Lens
   , this
     -- ** Prism Combinators
   , preview
+  , preuse
   , review
   , _Nothing
   , _Just
@@ -790,8 +791,11 @@ data Prism s a
 review :: Prism s a -> a -> s
 review = _up
 ----------------------------------------------------------------------------
-preview :: Prism s a -> s -> Maybe a
-preview = _down
+preview :: MonadReader r m => Prism r a -> m (Maybe a)
+preview = asks . preview
+----------------------------------------------------------------------------
+preuse :: MonadState s m => Prism s a -> m (Maybe a)
+preuse = gets . preview
 ----------------------------------------------------------------------------
 _Left :: Prism (Either a b) a
 _Left = prism Left $ either Just (const Nothing)
@@ -806,6 +810,7 @@ _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
 infixl 8 ^?
+(^?) :: s -> Prism s a -> Maybe a 
 (^?) = flip preview
 ----------------------------------------------------------------------------
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
