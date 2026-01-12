@@ -88,11 +88,14 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
+import qualified Data.Set as Set
+import           Data.Set (Set)
+import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever)
 import           Control.Monad.Reader (ask, asks)
-import           Control.Monad.State
+import           Control.Monad.State hiding (state)
 import           Data.Foldable (toList)
 import qualified Data.List as List
 import           Data.Maybe
@@ -107,7 +110,7 @@ import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatu
 #ifdef WASM
 import qualified Language.Haskell.TH as TH
 #endif
-import           Prelude hiding (null)
+import           Prelude hiding (null, (.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 #ifdef BENCH
@@ -224,7 +227,7 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
   when isRoot $ void (forkIO scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
-initSubs :: [ Sub action ] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
+initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
 initSubs subs_ _componentSubThreads _componentSink = do
   forM_ subs_ $ \sub_ -> do
     threadId <- forkIO (sub_ _componentSink)
@@ -311,7 +314,7 @@ propagateBindings
   :: ComponentId
   -> IO ()
 propagateBindings vcompId = atomicModifyIORef' components $ \cs -> do
-  let iterations = 10_000
+  let iterations = 128 -- dmj: sane default? fibonacci-esque
   (propagate vcompId 0 iterations cs, ())
 ----------------------------------------------------------------------------
 propagate
@@ -325,21 +328,54 @@ propagate vcompId !n iterations cs
   | solved cs ns = ns
   | otherwise = propagate vcompId (n + 1) iterations ns
       where
-        ns = execState (synch vcompId) cs
+        ns = _state (execState (synch vcompId) (BFS cs mempty [vcompId]))
 -----------------------------------------------------------------------------
-synch :: ComponentId -> State (IntMap (ComponentState p m a)) ()
-synch _ = pure ()
+-- | Create an empty BFS state
+bfs :: IntMap (ComponentState p m a) -> ComponentId -> BFS p m a
+bfs cs vcompId = BFS cs mempty [vcompId]
+-----------------------------------------------------------------------------
+data BFS p m a
+  = BFS
+  { _state :: IntMap (ComponentState p m a)
+    -- ^ global component state to alter
+  , _visited :: Set ComponentId
+    -- ^ visited set
+  , _queue :: [ComponentId]
+    -- ^ neighbors queue
+  }
+-----------------------------------------------------------------------------
+visited :: Lens (BFS p m a) (Set ComponentId)
+visited = lens _visited $ \r x -> r { _visited = x }
+-----------------------------------------------------------------------------
+state :: Lens (BFS p m a) (IntMap (ComponentState p m a))
+state = lens _state $ \r x -> r { _state = x }
+-----------------------------------------------------------------------------
+queue :: Lens (BFS p m a) [ComponentId] 
+queue = lens _queue $ \r x -> r { _queue = x }
+-----------------------------------------------------------------------------
+synch :: ComponentId -> State (BFS p m a) ()
+synch vcompId = go =<< use (at vcompId . state)
+  where
+    go cs = undefined
 -----------------------------------------------------------------------------
 solved
   :: IntMap (ComponentState p m a)
   -> IntMap (ComponentState p m a)
   -> Bool
 solved cs ns = and $
-  Prelude.zipWith (\x y -> not $ (_componentModelDirty x) (_componentModel x) (_componentModel y))
+  Prelude.zipWith
+    (\x y -> not ((_componentModelDirty x) (_componentModel x) (_componentModel y)))
     (IM.elems cs)
     (IM.elems ns)
 -----------------------------------------------------------------------------
-initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState p m a -> IO ()
+initialDraw
+  :: Eq m
+  => m
+  -> Hydrate
+  -> Bool
+  -> Component p m a
+  -> ComponentState p m a
+  -> IO ()
 initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} = do
 #ifdef BENCH
   start <- FFI.now
@@ -362,7 +398,9 @@ initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} =
             liftIO $ do -- dmj: reset state
               atomicWriteIORef components IM.empty
               atomicWriteIORef componentIds topLevelComponentId
-            newTree <- buildVTree _componentParentId _componentId Draw _componentSink logLevel events (view initializedModel)
+            newTree <-
+              buildVTree _componentParentId _componentId Draw
+                _componentSink logLevel events (view initializedModel)
             Diff.diff Nothing (Just newTree) _componentDOMRef
             liftIO (atomicWriteIORef _componentVTree newTree)
 -----------------------------------------------------------------------------
@@ -454,7 +492,7 @@ data ComponentState parent model action
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentSubThreads :: IORef (Map MisoString ThreadId)
-  -- ^ Mapping of all 'Sub' in use by Component
+  -- ^ Mapping of all 'Sub' in use by t'Miso.Types.Component'
   , _componentDOMRef :: DOMRef
   -- ^ The DOM reference the t'Miso.Types.Component' is mounted on
   , _componentVTree :: IORef VTree
@@ -468,19 +506,19 @@ data ComponentState parent model action
   , _componentScripts :: [DOMRef]
   -- ^ DOM references for \<script\> and \<style\> appended to \<head\>
   , _componentEvents :: Events
-  -- ^ List of events a Component listens on
+  -- ^ List of events a t'Miso.Types.Component' listens on
   , _componentBindings :: [Binding parent model]
-  -- ^ Declarative bindings between 'Component' 'model'.
+  -- ^ Declarative bindings between t'Miso.Types.Component' 'model'.
   , _componentMailbox :: Value -> Maybe action
-  -- ^ Mailbox for asynchronous Component communication
+  -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
   , _componentDraw :: model -> IO ()
-  -- ^ Helper function for component rendering
+  -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions :: [action] -> model -> (model, [Schedule action])
-  -- ^ Component actions application
+  -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
-  -- ^ Component topics using for Pub Sub async communication.
+  -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
