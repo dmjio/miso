@@ -88,7 +88,7 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
-import qualified Data.Set as Set
+-- import qualified Data.Set as Set
 import           Data.Set (Set)
 import           Control.Category ((.))
 import           Control.Concurrent
@@ -110,7 +110,7 @@ import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatu
 #ifdef WASM
 import qualified Language.Haskell.TH as TH
 #endif
-import           Prelude hiding (null, (.))
+import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
 #ifdef BENCH
@@ -134,7 +134,8 @@ import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
 import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, jsonStringify, Value, toJSON)
 import           Miso.Lens hiding (view)
-import           Miso.String hiding (reverse, drop)
+import qualified Miso.String as MS
+import           Miso.String (ToMisoString(..), FromMisoString(..))
 import           Miso.Types
 import           Miso.Util
 -----------------------------------------------------------------------------
@@ -257,13 +258,13 @@ scheduler =
     -- of the entire Component tree.
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
-      shouldRender <- commit vcompId actions
+      (shouldRender, hasBindings) <- commit vcompId actions
       when shouldRender $ do
-        propagateBindings vcompId
+        when hasBindings (propagateBindings vcompId)
         renderComponents
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO Bool
+    commit :: ComponentId -> [action] -> IO (Bool, Bool)
     commit vcompId events = do
       ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
       case _componentApplyActions events _componentModel of
@@ -278,7 +279,7 @@ scheduler =
             modifyComponent _componentId $ do
               isDirty .= True
               componentModel .= updatedModel
-          pure dirty
+          pure (dirty, not (null _componentBindings))
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -362,11 +363,10 @@ solved
   :: IntMap (ComponentState p m a)
   -> IntMap (ComponentState p m a)
   -> Bool
-solved cs ns = and $
-  Prelude.zipWith
-    (\x y -> not ((_componentModelDirty x) (_componentModel x) (_componentModel y)))
-    (IM.elems cs)
-    (IM.elems ns)
+solved cs ns = and $ Prelude.zipWith condition (IM.elems cs) (IM.elems ns)
+  where
+    condition x y = not $
+      (_componentModelDirty x) (_componentModel x) (_componentModel y)
 -----------------------------------------------------------------------------
 initialDraw
   :: Eq m
