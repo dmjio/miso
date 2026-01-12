@@ -96,3 +96,9 @@ jobs:
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (GHCJS) Miso integration tests
+       run: nix-build -A playwright-ghcjs && ./result/bin/playwright
