@@ -357,7 +357,7 @@ foreign import javascript unsafe
 #if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
 #else
-  "$r = ($1).toString();"
+  "$r = String($1);"
 #endif
   toString_Int :: Int -> JSString
 -----------------------------------------------------------------------------
@@ -365,7 +365,7 @@ foreign import javascript unsafe
 #if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
 #else
-  "$r = ($1).toString();"
+  "$r = String($1);"
 #endif
   toString_Double :: Double -> JSString
 -----------------------------------------------------------------------------
@@ -373,7 +373,7 @@ foreign import javascript unsafe
 #if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
 #else
-  "$r = ($1).toString();"
+  "$r = String($1);"
 #endif
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------
@@ -381,7 +381,7 @@ foreign import javascript unsafe
 #if GHCJS_NEW
   "(($1) => { return ($1).toString(); })"
 #else
-  "$r = ($1).toString();"
+  "$r = String($1);"
 #endif
   toString_Word :: Word -> JSString
 -----------------------------------------------------------------------------
