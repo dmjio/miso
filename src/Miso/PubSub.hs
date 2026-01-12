@@ -6,6 +6,8 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Publish / Subscribe primitives for communication between components.
 ----------------------------------------------------------------------------
 module Miso.PubSub
   ( -- ** Publishers / Subscribers

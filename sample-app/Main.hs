@@ -5,8 +5,11 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import Miso
-import Miso.Lens
+import           Miso
+import           Miso.Run
+import qualified Miso.Html as H
+import qualified Miso.Html.Property as P
+import           Miso.Lens
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -26,11 +29,17 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
+#ifdef INTERACTIVE
+main = reload (startApp app)
+#else
 main = run (startApp app)
+#endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
+#ifndef INTERACTIVE
 foreign export javascript "hs_start" main :: IO ()
+#endif
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
@@ -52,11 +61,14 @@ updateModel = \case
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
-viewModel x = div_ []
-  [ button_ [ onClick AddOne ] [ text "+" ]
-  , text $ ms (x ^. counter)
-  , button_ [ onClick SubtractOne ] [ text "-" ]
-  , br_ []
-  , button_ [ onClick SayHelloWorld ] [ text "Alert Hello World!" ]
-  ]
+viewModel x =
+  H.div_
+    [ P.className "counter"
+    ]
+    [ H.button_ [ H.onClick AddOne ] [ text "+" ]
+    , text $ ms (x ^. counter)
+    , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
+    , H.br_ []
+    , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+    ]
 ----------------------------------------------------------------------------

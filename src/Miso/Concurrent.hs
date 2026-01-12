@@ -10,9 +10,11 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Concurrent
-  ( -- * Synchronization primitives
+  ( -- ** Synchronization primitives
     Waiter (..)
   , waiter
+  , oneshot
+  -- ** Mailbox
   , Mailbox
   , Mail
   , newMailbox
@@ -24,29 +26,47 @@ module Miso.Concurrent
 -----------------------------------------------------------------------------
 import Control.Concurrent
 import Control.Concurrent.STM
-import Data.Aeson
+-----------------------------------------------------------------------------
+import Miso.JSON
 -----------------------------------------------------------------------------
 -- | Synchronization primitive for event loop
 data Waiter
   = Waiter
   { wait :: IO ()
     -- ^ Blocks on MVar
-  , serve :: IO ()
+  , notify :: IO ()
     -- ^ Unblocks threads waiting on MVar
   }
 -----------------------------------------------------------------------------
--- | Creates a new 'Waiter'
+-- | Creates a new @Waiter@
+--
+-- Useful for multiple threads to wake-up / notify a single thread running in an
+-- infinite loop, waiting for work (e.g. to process an event queue).
+--
 waiter :: IO Waiter
 waiter = do
   mvar <- newEmptyMVar
   pure Waiter
     { wait = takeMVar mvar
-    , serve = do
+    , notify = do
         _ <- tryPutMVar mvar ()
         pure ()
     }
 -----------------------------------------------------------------------------
--- | Type for expressing 'Mail' (or message payloads) put into a 'Mailbox' for delivery
+-- | Creates a new @Waiter@
+--
+-- Useful for a single thread to wake-up multiple threads that are waiting 
+-- to run a oneshot task (e.g. like forking a thread).
+--
+oneshot :: IO Waiter
+oneshot = do
+  mvar <- newEmptyMVar
+  pure Waiter
+    { wait = readMVar mvar
+    , notify = putMVar mvar ()
+    }
+-----------------------------------------------------------------------------
+-- | Type for expressing @Mail@ (or message payloads) put into a 'Mailbox' for delivery
 type Mail = Value
 -----------------------------------------------------------------------------
 -- | Publish / Subscribe concurrency primitive
@@ -59,9 +79,9 @@ type Mail = Value
 --
 -- All the above are supported as well in a bidirectional setting.
 --
--- * Bidirectional (multicast / broadcast / unicast) (n:m)
+-- * Bidirectional (multicast \/ broadcast \/ unicast) (n:m)
 --
--- Practically this pattern resembles cloud notifcation services like
+-- Practically this pattern resembles cloud notification services like
 --
 -- * Amazon SNS
 -- * Google Pub/Sub
@@ -76,8 +96,8 @@ newMailbox = newBroadcastTChanIO
 copyMailbox :: Mailbox -> IO Mailbox
 copyMailbox mailbox = atomically (dupTChan mailbox)
 -----------------------------------------------------------------------------
--- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'
--- Messages in original 'Mailbox' are retained (unlike `copyMailbox`).
+-- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'.
+-- Messages in the original 'Mailbox' are retained (unlike `copyMailbox`).
 cloneMailbox :: Mailbox -> IO Mailbox
 cloneMailbox mailbox = atomically (cloneTChan mailbox)
 -----------------------------------------------------------------------------

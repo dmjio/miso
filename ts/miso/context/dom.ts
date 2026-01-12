@@ -1,114 +1,171 @@
-import { Context } from '../types';
+import
+  { CSS
+  , DrawingContext
+  , EventContext
+  , EventCapture
+  , ComponentId
+  , HydrationContext
+  , DOMRef
+  , ComponentContext
+  , VTree
+  , VTreeType
+  } from '../types';
 
-const context : Context = {
-  'addEventListener' : (mount, event, listener, capture) => {
+import { drill } from '../dom'; 
+
+export const eventContext : EventContext<DOMRef> = {
+  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
       mount.addEventListener(event, listener, capture);
   },
-  'firstChild' : (node) => {
-    return node.firstChild;
+  removeEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
+      mount.removeEventListener(event, listener, capture);
   },
-  'lastChild' : (node) => {
-    return node.lastChild;
+  isEqual: (x: DOMRef, y: DOMRef) : boolean => {
+    return x === y;
   },
-  'parentNode' : (node) => {
-    return node.parentNode;
+  getTarget: (e : Event) : DOMRef => {
+    return e.target as DOMRef;
   },
-  'createTextNode' : (s: string) => {
-    return document.createTextNode(s);
+  parentNode : (node: DOMRef): DOMRef => {
+    return node.parentNode as DOMRef;
   },
-  'createElementNS' : (ns : string, tag : string) => {
-    return document.createElementNS(ns, tag);
+};
+
+export const hydrationContext : HydrationContext<DOMRef> = {
+  getInlineStyle: (node: DOMRef, key: string) => {
+    return node.style[key];
   },
-  'appendChild' : (parent : Element, child : Element) => {
+  firstChild : (node: DOMRef) => {
+    return node.firstChild as DOMRef;
+  },
+  lastChild : (node : DOMRef) => {
+    return node.lastChild as DOMRef;
+  },
+  getAttribute: (node: DOMRef, key: string) => {
+    if (key === 'class') return node.className;
+    if (key in node) return node[key];
+    return node.getAttribute(key);
+  },
+  getTag: (node: DOMRef) => {
+    return node.nodeName;
+  },
+  getTextContent: (node: DOMRef) => {
+    return node.textContent;
+  },
+  children: (node: DOMRef) => {
+    return node.childNodes as any;
+  },
+};
+
+export const componentContext : ComponentContext = {
+    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
+        return;
+    },
+    unmountComponent : function (componentId: ComponentId) : void {
+        return;
+    },
+    modelHydration : function (model: Object) : void {
+        return;
+    }
+};
+
+export const drawingContext : DrawingContext<DOMRef> = {
+  nextSibling : (node: VTree<DOMRef>) => {
+    if (node.nextSibling) {
+      switch (node.nextSibling.type) {
+        case VTreeType.VComp:
+          return drill(node.nextSibling) as DOMRef;
+        default:
+          return node.nextSibling.domRef as DOMRef;
+      }
+    }
+    return null;
+  },
+  createTextNode : (s: string) => {
+    return document.createTextNode(s) as any; // dmj: hrm
+  },
+  createElementNS : (ns: string, tag: string) => {
+    return document.createElementNS(ns, tag) as DOMRef;
+  },
+  appendChild : (parent: DOMRef, child: DOMRef) => {
     return parent.appendChild (child);
   },
-  'replaceChild' : (parent, n, old) => {
+  replaceChild : (parent: DOMRef, n: DOMRef, old: DOMRef) => {
     return parent.replaceChild (n, old);
   },
-  'removeChild' : (parent, child) => {
+  removeChild : (parent: DOMRef, child: DOMRef) => {
     return parent.removeChild (child);
   },
-  'createElement' : (tag :string) => {
+  createElement : (tag: string) => {
     return document.createElement(tag);
   },
-  'insertBefore' : (parent, child, node) => {
+  addClass : (className: string, domRef: DOMRef) => {
+    if (className) domRef.classList.add(className);
+  },
+  removeClass : (className: string, domRef: DOMRef) => {
+    if (className) domRef.classList.remove(className);
+  },
+  insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },
-  'swapDOMRefs' : (a: Node, b: Node, p: Node) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+  swapDOMRefs : (oLast: DOMRef, oFirst: DOMRef, p: DOMRef) => {
+    const tmp = oLast.nextSibling;
+    p.insertBefore(oLast, oFirst);
+    p.insertBefore(oFirst, tmp);
     return;
   },
-  'querySelectorAll': (sel: string) => {
-    return document.querySelectorAll(sel);
-  },
-  'setInlineStyle' : (cCss, nCss, node) => {
+  setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {
      var result: string;
      /* is current attribute in new attribute list? */
      for (const key in cCss) {
        result = nCss[key];
        if (!result) {
          /* current key is not in node */
-         node.style[key] = '';
+         if (key in node.style) {
+           node.style[key] = '';
+         } else {
+           node.style.setProperty(key, '');
+         }
        } else if (result !== cCss[key]) {
+         if (key in node.style) {
            node.style[key] = result;
+         } else {
+           node.style.setProperty(key,result);
+         }
        }
      }
      /* add remaining */
      for (const n in nCss) {
        if (cCss && cCss[n]) continue;
-       node.style[n] = nCss[n];
+       if (n in node.style) {
+         node.style[n] = nCss[n];
+       } else {
+         node.style.setProperty(n,nCss[n]);
+       }
      }
     return;
   },
-  'getInlineStyle' : (node, key) => {
-    return node.style[key];
-  },
-  'setAttribute' : (node, key, value) => {
+  setAttribute: (node: DOMRef, key: string, value: any) => {
     return node.setAttribute(key, value)
   },
-  'getAttribute' : (node, key) => {
-      if (key === 'class') return node.className;
-      if (key in node) return node[key];
-      return node.getAttribute(key);
-  },
-  'setAttributeNS' : (node, ns, key, value) => {
+  setAttributeNS: (node: DOMRef, ns: string, key: string, value: any) => {
     return node.setAttributeNS(ns, key, value)
   },
-  'removeAttribute' : (node, key) => {
+  removeAttribute : (node: DOMRef, key: string) => {
     return node.removeAttribute(key);
   },
-  'setTextContent' : (node, text) => {
+  setTextContent : (node: DOMRef, text: string) => {
     node.textContent = text;
     return;
   },
-  'getTag' : (node) => {
-    return node.nodeName;
-  },
-  'getTextContent' : (node) => {
-    return node.textContent;
-  },
-  'children' : (node) => {
-    return node.childNodes;
-  },
-  'isEqual' : (x, y) => {
-    return x === y;
-  },
-  'getTarget' : (e : Event) => {
-    return e.target;
-  },
-  'requestAnimationFrame' : (callback: (timestamp: number) => void): void => {
-     return window.requestAnimationFrame (callback);
-  },
-  'flush' : (): void => {
+  flush: (): void => {
     return;
   },
-  'getRoot' : () => {
+  /** @since 1.9.0.0 */
+  getHead : function () {
+    return document.head;
+  },
+  getRoot : function () {
     return document.body
   },
-};
-
-export {
-  context
 };

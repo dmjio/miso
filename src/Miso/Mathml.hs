@@ -10,7 +10,7 @@
 -- Example usage:
 --
 -- @
--- xSquared :: View action
+-- xSquared :: View model action
 -- xSquared  =
 --     math_ []
 --         [ msup_ []
@@ -26,10 +26,7 @@
 module Miso.Mathml
    ( -- * Elements
      module Miso.Mathml.Element
-     -- * Properties
-   , module Miso.Mathml.Property
    ) where
 -----------------------------------------------------------------------------
 import Miso.Mathml.Element
-import Miso.Mathml.Property hiding (align_)
 -----------------------------------------------------------------------------

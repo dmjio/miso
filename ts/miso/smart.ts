@@ -1,35 +1,31 @@
 /* smart constructors for VTree */
-import { VText, VTree, VNode, VComp } from './types';
-import { shouldSync } from './util';
+import { Mount, VText, VTree, VNode, VComp, VTreeType } from './types';
 
 /* vtext factory */
-export function vtext(input: string) : VText {
+export function vtext<T>(input: string) : VText<T> {
     return {
       ns : 'text',
       text: input,
-      type: 'vtext',
+      type: VTreeType.VText,
       domRef : null,
       key : null,
+      parent : null,
+      nextSibling: null,
     };
 }
 
-export function vtextKeyed(input: string, key: string) : VText {
-    return union(vtext(input), { key });
+export function vtextKeyed<T>(input: string, key: string) : VText<T> {
+    return union(vtext<T>(input), { key });
 }
 
 /* vtree factory */
-export function vnode(props: Partial<VNode>): VNode {
-  var node = union(mkVNode(), props);
-  /* dmj: If the property is already set the check is bypassed.
-     By setting 'shouldSync' manually in  'vnode' you are implicitly
-     saying all keys exist and should be synched.
-   */
-  if (!node['shouldSync']) node['shouldSync'] = shouldSync(node);
+export function vnode<T>(props: Partial<VNode<T>>): VNode<T> {
+  var node = union(mkVNode<T>(), props);
   return node;
 }
 
-export function vcomp(props: Partial<VComp>): VComp {
-  return union(mkVComp(), props);
+export function vcomp<T>(props: Partial<VComp<T>>): VComp<T> {
+  return union(mkVComp<T>(), props);
 }
 
 /* set union */
@@ -38,15 +34,15 @@ function union<T extends object>(obj: T, updates: Partial<T>): T {
 }
 
 /* smart constructors */
-export function vnodeKeyed(tag:string, key:string): VNode {
-  return vnode({
+export function vnodeKeyed<T>(tag:string, key:string): VNode<T> {
+  return vnode<T>({
     tag: tag,
-    children: [vtext(key)],
+    children: [vtext<T>(key)],
     key: key,
   });
 }
 
-export function vnodeKids(tag:string, kids:Array<VTree>): VNode {
+export function vnodeKids<T>(tag:string, kids:Array<VTree<T>>): VNode<T> {
   return vnode({
     tag: tag,
     children: kids,
@@ -54,10 +50,11 @@ export function vnodeKids(tag:string, kids:Array<VTree>): VNode {
 }
 
 /* "smart" helper for constructing an empty virtual DOM */
-function mkVNode() : VNode {
+function mkVNode<T>() : VNode<T> {
   return {
     props: {},
     css: {},
+    classList: null,
     children: [],
     ns: 'html',
     domRef: null,
@@ -68,15 +65,16 @@ function mkVNode() : VNode {
     onBeforeDestroyed: () => {},
     onCreated: () => {},
     onBeforeCreated: () => {},
-    shouldSync: false,
-    type : 'vnode',
+    type : VTreeType.VNode,
+    nextSibling: null,
+    parent : null,
   };
 }
 
-function mkVComp() : VComp {
-  return union(mkVNode() as any, {
-    type : 'vcomp',
-    mount: () => {},
+function mkVComp<T>() : VComp<T> {
+  return union(mkVNode<T>() as any, {
+    type : VTreeType.VComp,
+    mount: (_parent: T): Mount<T> => ({ componentId: 0, componentTree: mkVNode<T>() }),
     unmount: () => {},
     onUnmounted: () => {},
     onBeforeUnmounted: () => {},

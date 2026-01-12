@@ -3,20 +3,40 @@ import { delegate, undelegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
-   shouldSync,
    version,
    callFocus,
    callBlur,
-   fetchJSON,
-   getParentComponentId,
+   callSelect,
+   callSetSelectionRange,
+   fetchCore,
    websocketConnect,
    websocketClose,
    websocketSend,
    eventSourceConnect,
-   eventSourceClose
+   eventSourceClose,
+   populateClass,
+   updateRef,
+   inline,
+   typeOf,
 } from './miso/util';
 
-import { VTree, VNode, VText, VComp, Props, CSS, Events, NS, DOMRef, EventCapture, EventObject, Options } from './miso/types';
+import {
+    VTree,
+    VNode,
+    VText,
+    VComp,
+    Props,
+    CSS,
+    Events,
+    NS,
+    DOMRef,
+    EventCapture,
+    EventObject,
+    Options,
+} from './miso/types';
+
+import { patch } from './miso/patch';
+
 import { vcomp, vnode, vtext } from './miso/smart';
 
 /* top level re-export */
@@ -28,17 +48,22 @@ export {
   delegate,
   callBlur,
   callFocus,
+  callSelect,
+  callSetSelectionRange,
   eventJSON,
-  fetchJSON,
+  fetchCore,
   undelegate,
   integrityCheck,
-  shouldSync,
-  getParentComponentId,
   websocketConnect,
   websocketClose,
   websocketSend,
   eventSourceConnect,
   eventSourceClose,
+  patch,
+  populateClass,
+  updateRef,
+  inline,
+  typeOf,
 
   /* Types */
   VTree,

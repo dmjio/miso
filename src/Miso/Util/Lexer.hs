@@ -10,10 +10,10 @@
 module Miso.Util.Lexer
   ( -- ** Types
     Lexer (..)
-  , Location (..)
-  , Located (..)
-  , LexerError (..)
   , Stream (..)
+  , Located (..)
+  , Location (..)
+  , LexerError (..)
     -- ** Combinators
   , getStartColumn
   , zeroLocation
@@ -34,11 +34,13 @@ module Miso.Util.Lexer
   , withLocation
   ) where
 ----------------------------------------------------------------------------
+import           Control.Monad
 import           Control.Applicative
 ----------------------------------------------------------------------------
 import           Miso.String (MisoString, ToMisoString)
 import qualified Miso.String as MS
 ----------------------------------------------------------------------------
+-- | Potential errors during lexing
 data LexerError
   = LexerError MisoString Location
   | UnexpectedEOF Location
@@ -50,6 +52,7 @@ instance Show LexerError where
   show (LexerError xs loc) =
     "Unexpected \"" <> take 5 (MS.unpack xs) <> "\"... at " <> show loc
 ----------------------------------------------------------------------------
+-- | Type to hold the location (line and column) of a Token
 data Location
   = Location
   { line :: Int
@@ -59,37 +62,48 @@ data Location
 instance Show Location where
   show (Location l col) = show l <> " " <> show col
 ----------------------------------------------------------------------------
+-- | Helper for extracting column from t'Location'
 getStartColumn :: Location -> Int
 getStartColumn = fst . column
 ----------------------------------------------------------------------------
+-- | Initial t'Location'
 initialLocation :: Location
 initialLocation = Location 1 (1,1)
 ----------------------------------------------------------------------------
+-- | Empty t'Location'
 zeroLocation :: Location
 zeroLocation = Location 0 (0,0)
 ----------------------------------------------------------------------------
+-- | A Lexer is a state monad with optional failure the abides by the
+-- maximal munch rule in its 'Alternative' instance.
 newtype Lexer token
   = Lexer
-  { runLexer
-      :: Stream
-      -> Either LexerError (token, Stream)
+  { runLexer :: Stream -> Either LexerError (token, Stream)
   }
 ----------------------------------------------------------------------------
+-- | Combinator that always fails to lex
 oops :: Lexer token
 oops = Lexer $ \s -> Left (streamError s)
 ----------------------------------------------------------------------------
+-- | Smart constructor for t'LexerError'
 streamError :: Stream -> LexerError
 streamError (Stream xs l) = unexpected xs l
 ----------------------------------------------------------------------------
+-- | Smart constructor for t'Stream'
 mkStream :: MisoString -> Stream
 mkStream xs = Stream xs initialLocation
 ----------------------------------------------------------------------------
+-- | A t'Stream' of text used as input to lexing
 data Stream
   = Stream
   { stream :: MisoString
+    -- ^ Current t'Stream' of text
   , currentLocation :: Location
+    -- ^ current t'Location' in the t'Stream'
   } deriving Eq
 ----------------------------------------------------------------------------
+-- | A t'Located' token holds the lexed output the t'Location' at which
+-- the successful lex occurred.
 data Located token
   = Located
   { token :: token
@@ -127,6 +141,10 @@ instance Alternative Lexer where
         then Right (x, Stream s sl)
         else Right (y, Stream t tl)
 ----------------------------------------------------------------------------
+instance MonadPlus Lexer where
+  mplus = (<|>)
+----------------------------------------------------------------------------
+-- | Fetches the first character in the t'Stream', does not consume input
 peek :: Lexer (Maybe Char)
 peek = Lexer $ \ys ->
   pure $ case ys of
@@ -135,6 +153,7 @@ peek = Lexer $ \ys ->
         Nothing -> (Nothing, Stream mempty l)
         Just (z,zs) -> (Just z, Stream (MS.singleton z <> zs) l)
 ----------------------------------------------------------------------------
+-- | Predicate combinator that consumes matching input
 satisfy :: (Char -> Bool) -> Lexer Char
 satisfy predicate = Lexer $ \ys ->
   case ys of
@@ -145,33 +164,43 @@ satisfy predicate = Lexer $ \ys ->
           | predicate z -> Right (z, Stream zs l)
           | otherwise -> Left (unexpected zs l)
 ----------------------------------------------------------------------------
+-- | Smart constructor for t'LexerError'
+-- If the input is empty, an 'UnexpectedEOF' is issued.
 unexpected :: MisoString -> Location -> LexerError
 unexpected xs loc | MS.null xs = UnexpectedEOF loc
 unexpected cs loc = LexerError cs loc
 ----------------------------------------------------------------------------
+-- | Retrieves current input from t'Lexer'
 getInput :: Lexer Stream
 getInput = Lexer $ \s -> Right (s, s)
 ----------------------------------------------------------------------------
+-- | Overrides current t'Stream' in t'Lexer' to user-specified t'Stream'.
 putInput :: Stream -> Lexer ()
 putInput s = Lexer $ \_ -> Right ((), s)
 ----------------------------------------------------------------------------
+-- | Retrieves the current t'Stream' t'Location'
 getLocation :: Lexer Location
 getLocation = Lexer $ \(Stream s l) -> pure (l, Stream s l)
 ----------------------------------------------------------------------------
+-- | Sets the current t'Stream' t'Location'
 setLocation :: Location -> Lexer ()
 setLocation l = Lexer $ \(Stream s _) -> pure ((), Stream s l)
 ----------------------------------------------------------------------------
+-- | Modifies a t'Stream'
 modifyInput :: (Stream -> Stream) -> Lexer ()
 modifyInput f = do
   s <- getInput
   putInput (f s)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'Char'
 char :: Char -> Lexer Char
 char c = satisfy (== c)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'String'
 string' :: String -> Lexer String
 string' = traverse char
 ----------------------------------------------------------------------------
+-- | Lexer combinator for matching a 'MisoString'
 string :: MisoString -> Lexer MisoString
 string prefix = Lexer $ \s ->
   case s of
@@ -181,6 +210,7 @@ string prefix = Lexer $ \s ->
       | otherwise ->
           Left (unexpected ys l)
 ----------------------------------------------------------------------------
+-- | Lexer combinator for executing a t'Lexer' with annotated t'Location' information
 withLocation :: ToMisoString token => Lexer token -> Lexer (Located token)
 withLocation lexer = do
   result <- lexer

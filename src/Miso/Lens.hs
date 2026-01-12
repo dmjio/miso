@@ -2,7 +2,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE KindSignatures      #-}
-{-# LANGUAGE ExplicitForAll      #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 -----------------------------------------------------------------------------
 -- |
@@ -13,7 +14,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This modules exposes a very simple 'Lens' formulation that is compatible with other lens libraries.
+-- This modules exposes a very simple t'Miso.Lens.Lens' formulation that is compatible with other lens libraries.
 --
 -- For state management of miso applications, this module should meet all of your needs. It also
 -- ensures a smaller payload size during compilation.
@@ -34,11 +35,10 @@
 --
 -- This module is at fixity and interface parity with @lens@ and @microlens@ and can therefore
 -- be used interchangeably with them. Simply replace the @Miso.Lens@ import with @Control.Lens@.
--- For convenience we re-export the 'Lens'' synonym to ease the transition into @lens@ or
--- @microlens@.
+-- For convenience we re-export the t'Miso.Lens.Lens'' synonym to ease the transition into [lens](https://hackage.haskell.org/package/lens) or [microlens](https://hackage.haskell.org/package/microlens)
 --
--- For the curious reader, if you'd like more information on @lens@ and the van Laarhoven
--- formulation, we recommend the @lens@ library <https://hackage.haskell.org/package/lens>.
+-- For the curious reader, if you'd like more information on 'lens' and the van Laarhoven
+-- formulation, we recommend the [lens](https://hackage.haskell.org/package/lens) library.
 --
 -- @
 -- -- Person type
@@ -80,11 +80,11 @@
 -- main :: IO ()
 -- main = print $ john '&' address '.~' Address "10012"
 --
--- > Person
--- >  { _name = "john"
--- >  , _age = 33
--- >  , _address = Address {_zipCode = "10012"}
--- >  }
+-- -- Person
+-- --  { _name = "john"
+-- --  , _age = 33
+-- --  , _address = Address {_zipCode = "10012"}
+-- --  }
 -- @
 --
 -- Example usage with miso's @Effect@ @Monad@
@@ -97,19 +97,19 @@
 --
 -- data Action = AddOne | SubtractOne
 --
--- updateModel :: Action -> 'Effect' Model Action
--- updateModel AddOne      = value '+=' 1
--- updateModel SubtractOne = value '-=' 1
+-- updateModel :: Action -> Transition Model Action
+-- updateModel = \\case 
+--   AddOne -> value '+=' 1
+--   SubtractOne -> value '-=' 1
 -- @
 ----------------------------------------------------------------------------
 module Miso.Lens
   ( -- ** Types
     Lens (..)
   , Prism (..)
-  , Getter
-  , Setter
     -- ** Smart constructor
   , lens
+  , prism
     -- ** Re-exports
   , (&)
   , (<&>)
@@ -125,6 +125,7 @@ module Miso.Lens
   , (//~)
   , (-~)
   , (%=)
+  , (%?=)
   , modifying
   , (+=)
   , (*=)
@@ -147,7 +148,6 @@ module Miso.Lens
   , _id
   , this
     -- ** Prism Combinators
-  , prism
   , preview
   , review
   , _Nothing
@@ -155,6 +155,8 @@ module Miso.Lens
   , _Left
   , _Right
   , (^?)
+  -- *** Containers
+  , At (..)
   -- *** Re-exports
   , compose
   -- *** Conversion
@@ -172,42 +174,44 @@ import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
 import Data.Kind (Type)
+import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
+import qualified Data.Set as S
+import Data.Set (Set)
+import qualified Data.IntMap.Strict as IM
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntSet as IS
+import Data.IntSet (IntSet)
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
 ----------------------------------------------------------------------------
--- | A @Lens@ is a generalized getter and setter.
+-- | A t'Lens' is a generalized getter and setter.
 --
 -- Lenses allow both the retrieval of values from fields in a record and the
--- assignment of values to fields in a record. The power of a @Lens@ comes
+-- assignment of values to fields in a record. The power of a t'Lens' comes
 -- from its ability to be composed with other lenses.
 --
 -- In the context of building applications with miso, the @model@ is
 -- often a deeply nested product type. This makes it highly conducive
--- to @Lens@ operations (as defined below).
+-- to t'Lens' operations (as defined below).
 --
 data Lens record field
   = Lens
-  { _get :: Getter record field
+  { _get :: record -> field
     -- ^ Retrieves a field from a record
-  , _set :: Setter record field
+  , _set :: field -> record -> record
     -- ^ Sets a field on a record
   }
 ----------------------------------------------------------------------------
--- | Type to express a getter on a @Lens@
-type Getter record field = record -> field
-----------------------------------------------------------------------------
--- | Type to express a setter on a @Lens@
-type Setter record field = field -> record -> record
-----------------------------------------------------------------------------
--- | van Laarhoven formulation, used for conversion w/ 'miso' @Lens@.
+-- | van Laarhoven formulation, used for conversion w/ 'Miso.miso' t'Lens'.
 type Lens' s a = forall (f :: Type -> Type). Functor f => (a -> f a) -> s -> f s
 ----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 toVL :: Lens record field -> Lens' record field
 toVL Lens {..} = \f record -> flip _set record <$> f (_get record)
 ----------------------------------------------------------------------------
--- | Convert from `miso` @Lens@ to van Laarhoven @Lens'@
+-- | Convert from 'Miso.miso' t'Lens' to van Laarhoven t'Lens''
 fromVL
   :: Lens' record field
   -> Lens record field
@@ -216,7 +220,7 @@ fromVL lens_ = Lens {..}
     _get record = getConst (lens_ Const record)
     _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
--- | Lens are Categories, and can therefore be composed.
+-- | t'Lens' form a 'Category', and can therefore be composed.
 instance Category Lens where
   id = Lens Prelude.id const
   Lens g1 s1 . Lens g2 s2 = Lens
@@ -278,7 +282,7 @@ infixr 4 %~
 over :: Lens record field -> (field -> field) -> record -> record
 over = (%~)
 ----------------------------------------------------------------------------
--- | Read a field from a record using a 'Lens'
+-- | Read a field from a record using a t'Lens'
 --
 -- @
 -- newtype Person = Person { _name :: String }
@@ -294,7 +298,7 @@ infixl 8 ^.
 (^.) :: record -> Lens record field -> field
 (^.) = flip _get
 ----------------------------------------------------------------------------
--- | Increment a @Num@eric field on a record using a @Lens@
+-- | Increment a @Num field => field@ on a record using a t'Lens'
 --
 -- @
 -- newtype Person = Person { _age :: Int }
@@ -309,7 +313,7 @@ infixr 4 +~
 (+~) :: Num field => Lens record field -> field -> record -> record
 (+~) _lens x record = record & _lens %~ (+x)
 ----------------------------------------------------------------------------
--- | Multiply a @Num@eric field on a record using a @Lens@
+-- | Multiply a @Num@eric field on a record using a t'Lens'
 --
 -- @
 -- newtype Circle = Circle { _radius :: Int }
@@ -324,7 +328,7 @@ infixr 4 *~
 (*~) :: Num field => Lens record field -> field -> record -> record
 (*~) _lens x record = record & _lens %~ (*x)
 ----------------------------------------------------------------------------
--- | Divide a @Fractional@ field on a record using a @Lens@
+-- | Divide a @Fractional@ field on a record using a t'Lens'
 --
 -- @
 -- newtype Circle = Circle { _radius :: Int }
@@ -339,7 +343,7 @@ infixr 4 //~
 (//~) :: Fractional field => Lens record field -> field -> record -> record
 (//~) _lens x record = record & _lens %~ (/x)
 ----------------------------------------------------------------------------
--- | Increment a @Num@eric field on a record using a @Lens@
+-- | Increment a @Num@eric field on a record using a t'Lens'
 --
 -- @
 -- newtype Person = Person { _age :: Int }
@@ -354,7 +358,7 @@ infixr 4 -~
 (-~) :: Num field => Lens record field -> field -> record -> record
 (-~) _lens x record = record & _lens %~ subtract x
 ----------------------------------------------------------------------------
--- | Monoidally append a field in a record using a @Lens@
+-- | Monoidally append a field in a record using a t'Lens'
 --
 -- @
 -- newtype List = List { _values :: [Int] }
@@ -376,7 +380,7 @@ infixr 4 <>~
 -- | Execute a monadic action in @MonadState@ that returns a field. Sets the
 -- return value equal to the field in the record.
 --
--- As a reasonable mnemonic, this lets you store the result of a monadic action in a 'Lens' rather than
+-- As a reasonable mnemonic, this lets you store the result of a monadic action in a t'Lens' rather than
 -- in a local variable.
 --
 -- @
@@ -391,14 +395,14 @@ infixr 4 <>~
 --    ...
 -- @
 --
--- will store the result in field focused by the 'Lens'.
+-- will store the result in field focused by the t'Lens'.
 infixr 2 <~
 (<~) :: MonadState record m => Lens record field -> m field -> m ()
 l <~ mb = do
   b <- mb
   l .= b
 ----------------------------------------------------------------------------
--- | Modify a record in @MonadState@ monad at a field using a @Lens@
+-- | Modify a record in @MonadState@ monad at a field using a t'Lens'
 --
 -- @
 -- newtype Model = Model { _value :: Int }
@@ -408,7 +412,7 @@ l <~ mb = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update AddOne = do
 --   value %= (+1)
 -- @
@@ -420,7 +424,7 @@ infix 4 %=
 modifying :: MonadState record m => Lens record field -> (field -> field) -> m ()
 modifying = (%=)
 ----------------------------------------------------------------------------
--- | Modify the field of a record in @MonadState@ using a @Lens@, then
+-- | Modify the field of a record in @MonadState@ using a t'Lens', then
 -- return the newly modified field from the updated record.
 --
 -- @
@@ -434,7 +438,7 @@ modifying = (%=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update AddOne = do
 --   result <- value <%= (+1)
 --   io_ $ consoleLog (ms result)
@@ -445,7 +449,7 @@ l <%= f = do
   l %= f
   use l
 ----------------------------------------------------------------------------
--- | Assign the field of a record in @MonadState@ to a value using a @Lens@
+-- | Assign the field of a record in @MonadState@ to a value using a t'Lens'
 -- Return the value after assignment.
 --
 -- @
@@ -458,7 +462,7 @@ l <%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Assign x) = do
 --   result <- value <.= x
 --   io_ $ consoleLog (ms result) -- x
@@ -470,7 +474,7 @@ l <.= b = do
   return b
 ----------------------------------------------------------------------------
 -- | Assign the field of a record in a @MonadState@ to a value (wrapped in a 'Just')
--- using a @Lens@. Return the value after assignment.
+-- using a t'Lens'. Return the value after assignment.
 --
 -- @
 -- import Miso.String (ms)
@@ -482,7 +486,7 @@ l <.= b = do
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SetValue x) = do
 --   result <- value <?= x
 --   io_ $ consoleLog (ms result) -- Just 1
@@ -490,10 +494,10 @@ l <.= b = do
 infix 4 <?=
 (<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
 l <?= b = do
-  l .= Just b
+  l ?= b
   return b
 ----------------------------------------------------------------------------
--- | Assign the field of a record in a @MonadState@ to a value using a @Lens@.
+-- | Assign the field of a record in a @MonadState@ to a value using a t'Lens'.
 -- Returns the /previous/ value, before assignment.
 --
 -- @
@@ -508,7 +512,7 @@ l <?= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Assign x) = do
 --   value .= x
 --   previousValue <- value <<.= 1
@@ -521,7 +525,7 @@ l <<.= b = do
   l .= b
   return old
 ----------------------------------------------------------------------------
--- | Retrieves the field associated with a record in @MonadReader@ using a @Lens@.
+-- | Retrieves the field associated with a record in @MonadReader@ using a t'Lens'.
 --
 -- @
 -- import Miso.String (ms)
@@ -534,7 +538,7 @@ l <<.= b = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update PrintInt = do
 --   Model x <- view value
 --   io_ $ consoleLog (ms x) -- prints model value
@@ -543,7 +547,7 @@ l <<.= b = do
 view :: MonadReader record m => Lens record field -> m field
 view lens_ = asks (^. lens_)
 ----------------------------------------------------------------------------
--- | Modifies the field of a record in @MonadState@ using a @Lens@.
+-- | Modifies the field of a record in @MonadState@ using a t'Lens'.
 -- Returns the /previous/ value, before modification.
 --
 -- @
@@ -557,7 +561,7 @@ view lens_ = asks (^. lens_)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (Modify f) = do
 --   value .= 2
 --   result <- value <<%= f
@@ -570,7 +574,7 @@ l <<%= f = do
   l %= f
   return old
 ----------------------------------------------------------------------------
--- | Sets the value of a field in a record using @MonadState@ and a @Lens@
+-- | Sets the value of a field in a record using @MonadState@ and a t'Lens'
 --
 -- @
 -- newtype Model = Model { _value :: Int }
@@ -581,7 +585,7 @@ l <<%= f = do
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update' :: Action -> Effect Model Action
+-- update' :: Action -> Transition Model Action
 -- update' (SetValue v) = value .= v
 -- @
 infix 4 .=
@@ -592,7 +596,7 @@ infix 4 .=
 assign :: MonadState record m => Lens record field -> field -> m ()
 assign = (.=)
 ----------------------------------------------------------------------------
--- | Retrieves the value of a field in a record using a @Lens@ inside @MonadState@
+-- | Retrieves the value of a field in a record using a t'Lens' inside @MonadState@
 --
 -- @
 -- import Miso.String (ms)
@@ -605,16 +609,16 @@ assign = (.=)
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SetValue x) = do
 --   value .= x
 --   result <- use value
---   io_ $ consoleLog (ms result) -- prints the value of 'x'
+--   io_ $ consoleLog (ms result) -- prints the value of x
 -- @
 use :: MonadState record m => Lens record field -> m field
 use _lens = gets (^. _lens)
 ----------------------------------------------------------------------------
--- | Sets the value of a field in a record using a @Lens@ inside a @MonadState@
+-- | Sets the value of a field in a record using a t'Lens' inside a @MonadState@
 -- The value is wrapped in a @Just@ before being assigned.
 --
 -- @
@@ -626,14 +630,35 @@ use _lens = gets (^. _lens)
 -- value :: Lens Model (Maybe Int)
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (AssignValue x) = value ?= x
 -- @
 infix 4 ?=
 (?=) :: MonadState record m => Lens record (Maybe field) -> field -> m ()
 (?=) _lens value = _lens .= Just value
 ----------------------------------------------------------------------------
--- | Increments the value of a @Num@eric field of a record using a @Lens@
+-- | Alters the @Just@ value of a field in a record using a t'Lens' inside a @MonadState@
+--
+-- @
+-- newtype Model = Model { _value :: Maybe Int }
+--   deriving (Show, Eq)
+--
+-- data Action = IncrementIfJust
+--
+-- value :: Lens Model (Maybe Int)
+-- value = lens _value $ \\p x -> p { _value = x }
+--
+-- update :: Action -> Transition Model Action
+-- update IncrementIfJust = value %?= (+1)
+--
+-- @
+infix 4 %?=
+(%?=) :: MonadState record m => Lens record (Maybe field) -> (field -> field) -> m ()
+(%?=) _lens f = _lens %= \case
+  Nothing -> Nothing
+  Just x -> Just (f x)
+----------------------------------------------------------------------------
+-- | Increments the value of a @Num@eric field of a record using a t'Lens'
 -- inside a @State@ Monad.
 --
 -- @
@@ -645,14 +670,14 @@ infix 4 ?=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (IncrementBy x) = value += x
 -- @
 infix 4 +=
 (+=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
 (+=) _lens f = modify (\r -> r & _lens +~ f)
 ----------------------------------------------------------------------------
--- | Multiplies the value of a @Num@eric field of a record using a @Lens@
+-- | Multiplies the value of a @Num@eric field of a record using a t'Lens'
 -- inside a @State@ Monad.
 --
 -- @
@@ -664,14 +689,14 @@ infix 4 +=
 -- value :: Lens Model Int
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (MultiplyBy x) = value *= x
 -- @
 infix 4 *=
 (*=) :: (MonadState record m, Num field)  => Lens record field -> field -> m ()
 (*=) _lens f = modify (\r -> r & _lens *~ f)
 ----------------------------------------------------------------------------
--- | Divides the value of a @Fractional@ field of a record using a @Lens@
+-- | Divides the value of a @Fractional@ field of a record using a t'Lens'
 -- inside a @State@ Monad.
 --
 -- @
@@ -683,14 +708,14 @@ infix 4 *=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (DivideBy x) = value //= x
 -- @
 infix 4 //=
 (//=) :: (MonadState record m, Fractional field)  => Lens record field -> field -> m ()
 (//=) _lens f = modify (\r -> r & _lens %~ (/ f))
 ----------------------------------------------------------------------------
--- | Subtracts the value of a @Num@eric field of a record using a @Lens@
+-- | Subtracts the value of a @Num@eric field of a record using a t'Lens'
 -- inside of a @State@ Monad.
 --
 -- @
@@ -702,14 +727,14 @@ infix 4 //=
 -- value :: Lens Model Double
 -- value = lens _value $ \\p x -> p { _value = x }
 --
--- update :: Action -> Effect Model Action
+-- update :: Action -> Transition Model Action
 -- update (SubtractBy x) = value -= x
 -- @
 infix 4 -=
 (-=) :: (MonadState record m, Num field) => Lens record field -> field -> m ()
 (-=) _lens f = modify (\r -> r & _lens -~ f)
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on the first element of a tuple
+-- | t'Lens' that operates on the first element of a tuple
 --
 -- @
 -- update AddOne = do
@@ -718,7 +743,7 @@ infix 4 -=
 _1 :: Lens (a,b) a
 _1 = lens fst $ \(_,b) x -> (x,b)
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on the second element of a tuple
+-- | t'Lens' that operates on the second element of a tuple
 --
 -- @
 -- update AddOne = do
@@ -727,7 +752,7 @@ _1 = lens fst $ \(_,b) x -> (x,b)
 _2 :: Lens (a,b) b
 _2 = lens snd $ \(a,_) x -> (a,x)
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on itself
+-- | t'Lens' that operates on itself
 --
 -- @
 -- update AddOne = do
@@ -736,7 +761,7 @@ _2 = lens snd $ \(a,_) x -> (a,x)
 _id :: Lens a a
 _id = Control.Category.id
 ---------------------------------------------------------------------------------
--- | @Lens@ that operates on itself
+-- | t'Lens' that operates on itself
 --
 -- @
 -- update AddOne = do
@@ -745,7 +770,7 @@ _id = Control.Category.id
 this :: Lens a a
 this = _id
 ---------------------------------------------------------------------------------
--- | Smart constructor @lens@ function. Used to easily construct a @Lens@
+-- | Smart constructor 'lens' function. Used to easily construct a t'Lens'
 --
 -- > name :: Lens Person String
 -- > name = lens _name $ \p n -> p { _name = n }
@@ -785,4 +810,62 @@ infixl 8 ^?
 ----------------------------------------------------------------------------
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
 prism = Prism
+----------------------------------------------------------------------------
+-- | Class for getting and setting values across various container types.
+--
+-- > M.singleton 'a' "foo" & at 'a' .~ Just "bar"
+-- > -- fromList [('a',"bar")]
+--
+-- > update (SetValue value)
+-- >   at 10 ?= value
+--
+-- @since 1.9.0.0
+class At at where
+  type family Index at :: Type
+  -- ^ Index of the container
+  type family IxValue at :: Type
+  -- ^ Indexed value of the container
+  at :: Index at -> Lens at (Maybe (IxValue at))
+----------------------------------------------------------------------------
+instance Ord k => At (Map k v) where
+  type Index (Map k v) = k
+  type IxValue (Map k v) = v
+  at key = lens (M.lookup key) $ \m value ->
+    case value of
+      Nothing -> M.delete key m
+      Just v -> M.insert key v m
+----------------------------------------------------------------------------
+instance At (IntMap v) where
+  type Index (IntMap v) = Int
+  type IxValue (IntMap v) = v
+  at key = lens (IM.lookup key) $ \m value ->
+    case value of
+      Nothing -> IM.delete key m
+      Just v -> IM.insert key v m
+----------------------------------------------------------------------------
+instance Ord k => At (Set k) where
+  type Index (Set k) = k
+  type IxValue (Set k) = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> S.delete key m
+          Just () -> S.insert key m
+      _get m
+        | S.member key m = Just ()
+        | otherwise = Nothing
+----------------------------------------------------------------------------
+instance At IntSet where
+  type Index IntSet = Int
+  type IxValue IntSet = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> IS.delete key m
+          Just () -> IS.insert key m
+      _get m
+        | IS.member key m = Just ()
+        | otherwise = Nothing
 ----------------------------------------------------------------------------

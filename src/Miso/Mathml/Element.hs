@@ -42,11 +42,12 @@ module Miso.Mathml.Element
   , munder_
   , munderover_
   , semantics_
+  , mfenced_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'MATHML' 'node' in 'View'.
+-- | Low-level helper used to construct 'MATHML' 'node' in 'Miso.Types.View'.
 -- Most View helpers in this module are defined in terms of it.
 nodeMathml :: MisoString -> [Attribute action] -> [View model action] -> View model action
 nodeMathml nodeName = node MATHML nodeName
@@ -224,4 +225,10 @@ munderover_ = nodeMathml "munderover"
 -- @since 1.9.0.0
 semantics_ :: [Attribute action] -> [View model action] -> View model action
 semantics_ = nodeMathml "semantics"
+-----------------------------------------------------------------------------
+-- | [\<semantics\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Element/mfenced)
+--
+-- @since 1.9.0.0
+mfenced_ :: [Attribute action] -> [View model action] -> View model action
+mfenced_ = nodeMathml "mfenced"
 -----------------------------------------------------------------------------

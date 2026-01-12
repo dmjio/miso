@@ -1,7 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE CPP                        #-}
 -----------------------------------------------------------------------------
 -- |
@@ -11,10 +8,14 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions and types for working with [Server Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)
+--
 ----------------------------------------------------------------------------
 module Miso.EventSource
   ( -- *** EventSource
-    connect
+    connectText
+  , connectJSON
   , close
   , socketState
   -- *** Defaults
@@ -22,24 +23,40 @@ module Miso.EventSource
   -- *** Types
   , EventSource (..)
   , URL
+  -- *** Re-exports
+  , Payload (..)
   ) where
+-----------------------------------------------------------------------------
+import           Miso.JSON
 -----------------------------------------------------------------------------
 import           Miso.Effect
 import           Miso.Runtime
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
+import           Miso.String
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
-connect
+connectText
   :: URL
   -> (EventSource -> action)
   -- ^ onOpen
-  -> (JSVal -> action)
+  -> (MisoString -> action)
   -- ^ onMessage
-  -> (JSVal -> action)
+  -> (MisoString -> action)
   -- ^ onError
   -> Effect parent model action
-connect = eventSourceConnect
+connectText = eventSourceConnectText
+-----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource>
+connectJSON
+  :: FromJSON value
+  => URL
+  -> (EventSource -> action)
+  -- ^ onOpen
+  -> (value -> action)
+  -- ^ onMessage
+  -> (MisoString -> action)
+  -- ^ onError
+  -> Effect parent model action
+connectJSON = eventSourceConnectJSON
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/API/EventSource/close>
 close

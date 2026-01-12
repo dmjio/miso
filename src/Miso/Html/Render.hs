@@ -1,63 +1,53 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE CPP                   #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Render
+-- Module      :  Miso.Html.Render
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- 'Miso.Types.View' serialization
+--
 ----------------------------------------------------------------------------
-module Miso.Render
+module Miso.Html.Render
   ( -- *** Classes
     ToHtml (..)
-    -- *** Combinator
-  , HTML
   ) where
 ----------------------------------------------------------------------------
-import           Data.Aeson
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
-import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
-import qualified Network.HTTP.Media as M
-import           Servant.API (Accept (..), MimeRender (..))
 import           Unsafe.Coerce (unsafeCoerce)
+#ifdef SSR
+import           Control.Exception (SomeException, catch)
+import           System.IO.Unsafe (unsafePerformIO)
+#endif
 ----------------------------------------------------------------------------
+import           Miso.JSON
 import           Miso.String hiding (intercalate)
+import qualified Miso.String as MS
 import           Miso.Types
-----------------------------------------------------------------------------
--- | HTML MimeType used for servant APIs
---
--- > type Home = "home" :> Get '[HTML] (Component model action)
---
-data HTML
-----------------------------------------------------------------------------
--- | @text/html;charset=utf-8@
-instance Accept HTML where
-  contentTypes _ =
-    "text" M.// "html" M./: ("charset", "utf-8") NE.:|
-      ["text" M.// "html"]
 ----------------------------------------------------------------------------
 -- | Class for rendering HTML
 class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
--- | Render a @View@ to a @L.ByteString@
-instance ToHtml (View m a) where
+-- | Render a @Miso.Types.View@ to a @L.ByteString@
+instance ToHtml (Miso.Types.View m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
--- | Render a @[View]@ to a @L.ByteString@
-instance ToHtml [View m a] where
+-- | Render a @[Miso.Types.View]@ to a @L.ByteString@
+instance ToHtml [Miso.Types.View m a] where
   toHtml = foldMap renderView
-----------------------------------------------------------------------------
--- | Render HTML from a servant API
-instance ToHtml a => MimeRender HTML a where
-  mimeRender _ = toHtml
 ----------------------------------------------------------------------------
 renderView :: View m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
@@ -72,35 +62,58 @@ intercalate sep (x:xs) =
   , intercalate sep xs
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: View m a -> Builder
-renderBuilder (VText "")    = fromMisoString " "
-renderBuilder (VText s)     = fromMisoString s
-renderBuilder (VTextRaw "") = fromMisoString " "
-renderBuilder (VTextRaw s)  = fromMisoString s
+renderBuilder :: Miso.Types.View m a -> Builder
+renderBuilder (VText _ "")    = fromMisoString " "
+renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
-renderBuilder (VNode _ tag attrs children) =
-  mconcat
+renderBuilder (VNode ns tag attrs children) = mconcat
   [ "<"
   , fromMisoString tag
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
             | not (Prelude.null attrs)
             ]
-  , ">"
+  , if tag `elem` selfClosing then "/>" else ">"
   , mconcat
     [ mconcat
       [ foldMap renderBuilder (collapseSiblingTextNodes children)
       , "</" <> fromMisoString tag <> ">"
       ]
-    | tag `notElem` ["img", "input", "br", "hr", "meta", "link"]
+    | tag `notElem` selfClosing
     ]
-  ]
-renderBuilder (VComp ns tag attrs (SomeComponent Component {..})) =
-  renderBuilder (VNode ns tag attrs [ unsafeCoerce (view model) ])
-  -- dmj: Just trust me bro moment.
-  -- This is fine to do because we don't need the polymorphism here
-  -- when monomorphizing to Builder. Release the skolems.
+  ] where
+      selfClosing = htmls <> svgs <> mathmls
+      htmls = [ x
+              | x <- [ "area", "base", "col", "embed", "img", "input", "br", "hr", "meta", "link", "param", "source", "track", "wbr" ]
+              , ns == HTML
+              ]
+      svgs  = [ x
+              | x <- [ "circle", "line", "rect", "path", "ellipse", "polygon", "polyline", "use", "image"]
+              , ns == SVG
+              ]
+      mathmls =
+              [ x
+              | x <- ["mglyph", "mprescripts", "none", "maligngroup", "malignmark" ]
+              , ns == MATHML
+              ]
+
+renderBuilder (VComp _ (SomeComponent vcomp)) =
+  foldMap renderBuilder vkids
+    where
+#ifdef SSR
+      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
+#else
+      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
+#endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
+renderAttrs (ClassList classes) =
+  mconcat
+  [ "class"
+  , stringUtf8 "=\""
+  , fromMisoString (MS.unwords classes)
+  , stringUtf8 "\""
+  ]
+renderAttrs (Property "key" _) = mempty
 renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key
@@ -108,7 +121,7 @@ renderAttrs (Property key value) =
   , toHtmlFromJSON value
   , stringUtf8 "\""
   ]
-renderAttrs (Event _) = mempty
+renderAttrs (On _) = mempty
 renderAttrs (Styles styles) =
   mconcat
   [ "style"
@@ -130,8 +143,8 @@ renderAttrs (Styles styles) =
 -- this means we must collapse adjacent text nodes during hydration.
 collapseSiblingTextNodes :: [View m a] -> [View m a]
 collapseSiblingTextNodes [] = []
-collapseSiblingTextNodes (VText x : VText y : xs) =
-  collapseSiblingTextNodes (VText (x <> y) : xs)
+collapseSiblingTextNodes (VText _ x : VText k y : xs) =
+  collapseSiblingTextNodes (VText k (x <> y) : xs)
 collapseSiblingTextNodes (x:xs) =
   x : collapseSiblingTextNodes xs
 ----------------------------------------------------------------------------
@@ -145,4 +158,21 @@ toHtmlFromJSON (Bool False) = "false"
 toHtmlFromJSON Null         = "null"
 toHtmlFromJSON (Object o)   = fromMisoString $ ms (show o)
 toHtmlFromJSON (Array a)    = fromMisoString $ ms (show a)
+-----------------------------------------------------------------------------
+#ifdef SSR
+-- | Used for server-side model hydration, internally only in 'renderView'.
+--
+-- We use 'unsafePerformIO' here because @servant@'s 'MimeRender' is a pure function
+-- yet we need to allow the users to hydrate in 'IO'.
+--
+getInitialComponentModel :: Component parent model action -> model
+getInitialComponentModel Component {..} =
+  case hydrateModel of
+    Nothing -> model
+    Just action -> unsafePerformIO $
+      action `catch` (\(e :: SomeException) -> do
+        putStrLn "Encountered exception during model hydration, falling back to default model"
+        print e
+        pure model)
 ----------------------------------------------------------------------------
+#endif

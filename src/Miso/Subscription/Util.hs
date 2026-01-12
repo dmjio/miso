@@ -1,6 +1,4 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
------------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.Util
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -14,20 +12,19 @@ module Miso.Subscription.Util
      createSub
    ) where
 ----------------------------------------------------------------------------
-import           Control.Monad.IO.Class (liftIO)
+import           Control.Exception (bracket)
 import           Control.Concurrent.MVar (newEmptyMVar, takeMVar)
-import           Language.Javascript.JSaddle (JSM, bracket)
 -----------------------------------------------------------------------------
 import           Miso.Effect
 -----------------------------------------------------------------------------
 -- | Utility function to allow resource finalization on 'Sub'.
 createSub
-  :: JSM a
+  :: IO a
   -- ^ Acquire resource
-  -> (a -> JSM b)
+  -> (a -> IO b)
   -- ^ Release resource
   -> Sub action
 createSub acquire release = \_ -> do
-  mvar <- liftIO newEmptyMVar
-  bracket acquire release (\_ -> liftIO (takeMVar mvar))
+  mvar <- newEmptyMVar
+  bracket acquire release (\_ -> takeMVar mvar)
 ----------------------------------------------------------------------------

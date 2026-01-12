@@ -1,49 +1,51 @@
-import { Context, VTree, EventCapture, EventObject, Options } from './types';
+import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
+import { getDOMRef } from './dom';
 
 /* event delegation algorithm */
-export function delegate(
-  mount: HTMLElement,
+export function delegate<T> (
+  mount: T,
   events: Array<EventCapture>,
-  getVTree: (vtree: VTree) => void,
+  getVTree: (vtree: VTree<T>) => void,
   debug: boolean,
-  context: Context,
+  context: EventContext<T>,
 ): void {
 
   for (const event of events) {
    context.addEventListener (
       mount,
-      event['name'],
+      event.name,
       function (e: Event) {
         listener(e, mount, getVTree, debug, context);
       },
-      event['capture'],
+      event.capture,
     );
   }
 }
 /* event undelegation */
-export function undelegate(
-  mount: HTMLElement,
+export function undelegate<T> (
+  mount: T,
   events: Array<EventCapture>,
-  getVTree: (vtree: VTree) => void,
+  getVTree: (vtree: VTree<T>) => void,
   debug: boolean,
-  context: Context,
+  context: EventContext<T>,
 ): void {
   for (const event of events) {
-    mount.removeEventListener(
-      event['name'],
+    context.removeEventListener (
+      mount,
+      event.name,
       function (e: Event) {
         listener(e, mount, getVTree, debug, context);
       },
-      event['capture'],
+      event.capture,
     );
   }
 }
 /* the event listener shared by both delegator and undelegator */
-function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => void, debug: boolean, context: Context): void {
-  getVTree(function (vtree: VTree) {
+function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: EventContext<T>): void {
+  getVTree(function (vtree: VTree<T>) {
       if (Array.isArray(e)) {
           for (const key of e) {
-              dispatch(key, vtree, mount, debug, context);
+            dispatch (key, vtree, mount, debug, context);
           }
       } else {
           dispatch (e, vtree, mount, debug, context);
@@ -51,21 +53,21 @@ function listener(e: Event | [Event], mount: HTMLElement, getVTree: (VTree) => v
   });
 }
 
-function dispatch (ev, vtree, mount, debug, context) {
-  var target = context['getTarget'](ev);
+function dispatch <T> (ev: Event, vtree : VTree<T>, mount: T, debug: boolean, context : EventContext<T>) {
+  var target = context.getTarget(ev);
   if (target) {
-     var stack = buildTargetToElement(mount, target, context);
-     delegateEvent(ev, vtree, stack, [], debug, context);
+     let stack = buildTargetToElement(mount, target, context);
+     delegateEvent(ev, vtree, stack, debug, context);
    }
 }
 
 /* Create a stack of ancestors used to index into the virtual DOM */
-function buildTargetToElement(element: HTMLElement, target: ParentNode, context: Context): Array<HTMLElement> {
+function buildTargetToElement<T>(element: T, target: T, context: EventContext<T>): Array<T> {
   var stack = [];
-  while (!context['isEqual'](element, target)) {
+  while (!context.isEqual(element, target)) {
     stack.unshift(target);
-    if (target && target.parentNode) {
-      target = context['parentNode'](target);
+    if (target && context.parentNode(target)) {
+      target = context.parentNode(target);
     } else {
       return stack;
     }
@@ -75,13 +77,12 @@ function buildTargetToElement(element: HTMLElement, target: ParentNode, context:
 /* Finds event in virtual dom via pointer equality
    Accumulate parent stack as well for propagation up the vtree
 */
-function delegateEvent(
+function delegateEvent <T>(
   event: Event,
-  obj: VTree,
-  stack: Array<HTMLElement>,
-  parentStack: Array<VTree>,
+  obj: VTree<T>,
+  stack: Array<T>,
   debug: boolean,
-  context: Context,
+  context: EventContext<T>,
 ): void {
   /* base case, not found */
   if (!stack.length) {
@@ -95,46 +96,108 @@ function delegateEvent(
     return;
   } /* stack not length 1, recurse */
   else if (stack.length > 1) {
-    parentStack.unshift(obj);
-    for (var c in obj['children']) {
-      var child = obj['children'][c];
-      if (child['type'] === 'vcomp') continue;
-      if (context['isEqual'](child['domRef'], stack[1])) {
-        delegateEvent(event, child, stack.slice(1), parentStack, debug, context);
-        break;
+      if (obj.type === VTreeType.VText) {
+        return;
       }
-    }
-  } /* stack.length == 1 */
-  else {
-    const eventObj: EventObject = obj['events'][event.type];
-    if (eventObj) {
-      const options: Options = eventObj['options'];
-      if (options['preventDefault']) {
-        event.preventDefault();
+      else if (obj.type === VTreeType.VComp) {
+        if (!obj.child) {
+          if (debug) {
+            console.error('VComp has no child property set during event delegation', obj);
+            console.error('This means the Component has not been fully mounted, this should never happen');
+            throw new Error('VComp has no .child property set during event delegation');
+          }
+          return;
+        }
+        return delegateEvent(event, obj.child, stack, debug, context);
       }
-      /* dmj: stack[0] represents the domRef that raised the event */
-      eventObj['runEvent'](event, stack[0]);
-      if (!options['stopPropagation']) {
-        propagateWhileAble(parentStack, event);
+      else if (obj.type === VTreeType.VNode) {
+        if (context.isEqual(obj.domRef, stack[0])) {
+          const eventObj: EventObject<T> = obj.events.captures[event.type];
+          if (eventObj) {
+            const options: Options = eventObj.options;
+            if (options.preventDefault) event.preventDefault();
+            if (!event['captureStopped']) {
+              eventObj.runEvent(event, obj.domRef);
+            }
+            if (options.stopPropagation) {
+               /* If stopPropagation set, stop capturing */
+               event['captureStopped'] = true;
+            }
+          }
+          stack.splice(0,1);
+          for (const child of obj.children) {
+            if (context.isEqual(getDOMRef(child), stack[0])) {
+              delegateEvent(event, child, stack, debug, context);
+            }
+          }
+        }
+        return;
       }
     } else {
-      /* still propagate to parent handlers even if event not defined */
-      propagateWhileAble(parentStack, event);
+    /* stack.length === 1, we're at the target */
+    if (obj.type === VTreeType.VComp) {
+      /* VComp doesn't have events directly, delegate to its child */
+      if (obj.child) {
+        delegateEvent(event, obj.child, stack, debug, context);
+      }
+    } else if (obj.type === VTreeType.VNode) {
+    /* captures run first */
+      const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
+      if (eventCaptureObj && !event['captureStopped']) {
+        const options: Options = eventCaptureObj.options;
+        /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault) event.preventDefault();
+          eventCaptureObj.runEvent(event, stack[0]);
+          if (options.stopPropagation) event['captureStopped'] = true;
+        }
+      }
+      /* bubble runs second, and propagates */
+      const eventObj: EventObject<T> = obj.events.bubbles[event.type];
+      if (eventObj && !event['captureStopped']) {
+        const options: Options = eventObj.options;
+        /* dmj: stack[0] represents the domRef that raised the event, this is the found case */
+        if (context.isEqual(stack[0], obj.domRef)) {
+          if (options.preventDefault) event.preventDefault();
+          eventObj.runEvent(event, stack[0]);
+          if (!options.stopPropagation) {
+            propagateWhileAble(obj.parent, event);
+          }
+        }
+      } else {
+         /* still propagate to parent handlers even if event not defined */
+          if (!event['captureStopped']) {
+            propagateWhileAble(obj.parent, event);
+          }
+      }
     }
   }
 }
 /* Propagate the event up the chain, invoking other event handlers as encountered */
-function propagateWhileAble(parentStack: Array<VTree>, event: Event): void {
-  for (const vtree of parentStack) {
-    if (vtree['events'][event.type]) {
-      const eventObj = vtree['events'][event.type],
-        options = eventObj['options'];
-      if (options['preventDefault']) event.preventDefault();
-      eventObj['runEvent'](event, vtree['domRef']);
-      if (options['stopPropagation']) {
-        event.stopPropagation();
+function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
+  while (vtree) {
+    switch (vtree.type) {
+      case VTreeType.VText:
+        /* impossible case */
         break;
-      }
+      case VTreeType.VNode:
+        const eventObj = vtree.events.bubbles[event.type];
+        if (eventObj) {
+          const options = eventObj.options;
+          if (options.preventDefault) event.preventDefault();
+          eventObj.runEvent(event, vtree.domRef);
+          if (options.stopPropagation) {
+             /* if stop propagation set, stop bubbling */
+             return;
+           }
+        }
+        vtree = vtree.parent;
+        break;
+      case VTreeType.VComp:
+        /* We've reached the Component barrier, bail if disallowed */
+        if (!vtree.eventPropagation) return;
+        vtree = vtree.parent;
+        break;
     }
   }
 }

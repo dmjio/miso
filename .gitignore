@@ -27,9 +27,11 @@ tags
 package-lock.json
 node_modules/
 coverage/
+tests/public
 
 # typescript
 *.js
 
 # haddocks
 haddocks/
+/sample-app/public/

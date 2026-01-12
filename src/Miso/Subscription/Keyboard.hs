@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.Keyboard
@@ -24,13 +24,13 @@ import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.IntSet
 import qualified Data.IntSet as S
-import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
+import           Miso.DSL hiding (new)
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
--- | type for arrow keys currently pressed
+-- | Type for arrow keys currently pressed.
 --
 --  * 37 left arrow  ( x = -1 )
 --  * 38 up arrow    ( y =  1 )
@@ -59,22 +59,23 @@ toArrows (up, down, left, right) set' = Arrows
   } where
       check = any (`S.member` set')
 -----------------------------------------------------------------------------
--- | Maps @Arrows@ onto a Keyboard subscription
+-- | Maps t'Arrows' onto a Keyboard subscription.
 arrowsSub :: (Arrows -> action) -> Sub action
 arrowsSub = directionSub ([38], [40], [37], [39])
 -----------------------------------------------------------------------------
--- | Maps @Arrows@ onto a Keyboard subscription for directions (W+A+S+D keys)
+-- | Maps t'Arrows' onto a Keyboard subscription for directions (W+A+S+D keys).
 wasdSub :: (Arrows -> action) -> Sub action
 wasdSub = directionSub ([87], [83], [65], [68])
 -----------------------------------------------------------------------------
--- | Maps a specified list of keys to directions (up, down, left, right)
+-- | Maps a specified list of keys to directions (up, down, left, right).
+-- The Ints represent [keyCode](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode)s for each direction.
 directionSub
   :: ([Int], [Int], [Int], [Int])
   -> (Arrows -> action)
   -> Sub action
 directionSub dirs = keyboardSub . (. toArrows dirs)
 -----------------------------------------------------------------------------
--- | Returns @Subscription@ for keyboard.
+-- | Returns 'Sub' for keyboard events.
 -- The callback will be called with the Set of currently pressed @keyCode@s.
 keyboardSub :: (IntSet -> action) -> Sub action
 keyboardSub f sink = createSub acquire release sink
@@ -96,14 +97,14 @@ keyboardSub f sink = createSub acquire release sink
                  let !new = S.insert key keys
                  in (new, new)
               sink (f newKeys)
-    
+
           keyUpCallback keySetRef = \keyUpEvent -> do
               key <- fromJSValUnchecked =<< getProp "keyCode" (Object keyUpEvent)
               newKeys <- liftIO $ atomicModifyIORef' keySetRef $ \keys ->
                  let !new = S.delete key keys
                  in (new, new)
               sink (f newKeys)
-    
+
           -- Assume keys are released the moment focus is lost. Otherwise going
           -- back and forth to the app can cause keys to get stuck.
           blurCallback keySetRef = \_ -> do

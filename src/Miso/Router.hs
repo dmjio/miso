@@ -1,11 +1,18 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE PolyKinds             #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE LambdaCase                 #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE PolyKinds                  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Router
@@ -14,206 +21,581 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
-----------------------------------------------------------------------------
+--
+-- This module introduces a 'Router' that produces "correct-by-construction" URL
+-- encoding and decoding from any Haskell algebraic data type. This @Router@ can be used
+-- in conjunction with 'Miso.Subscription.History.uriSub' or 'Miso.Subscription.History.routerSub'
+-- to perform client-side routing. Further
+-- it also supports the construction of type-safe links in any @View model action@ via
+-- the 'href_' function exported from this module.
+--
+-- This module can be used in two ways, one is the manual construction of a @Router@
+-- as seen below.
+--
+-- @
+--
+-- data Route = Widget Int
+--    deriving (Show, Eq)
+--
+-- instance Router Route where
+--   routeParser = routes [ Widget \<$\> (path "widget" *\> capture) ]
+--   fromRoute (Widget value) = [ toPath "widget", toCapture value ]
+--
+-- main :: IO ()
+-- main = print (runRouter "\/widget\/10" router)
+--
+-- > Right (Widget "widget" 10)
+-- @
+--
+-- The second way is using the @Generic@ deriving mechanism. This should ensure that
+--
+-- @
+--
+-- {-# LANGUAGE DerivingStrategies #-}
+-- {-# LANGUAGE DeriveAnyClass     #-}
+-- {-# LANGUAGE DeriveGeneric      #-}
+--
+-- data Route
+--  = About
+--  | Home
+--  | Widget (Capture "thing" Int) (Path "foo") (Capture "other" MisoString) (QueryParam "bar" Int)
+--  deriving stock (Generic, Show)
+--  deriving anyclass Router
+-- @
+--
+-- The @Generic@ deriving works by converting the constructor name to a path so
+--
+-- > test :: Either RoutingError Route
+-- > test = toRoute "/widget/23/foo/okay?bar=0"
+--
+-- Decodes as
+--
+-- > Right (Widget (Capture 23) (Path "foo") (Capture "okay") (QueryParam (Just 0)))
+--
+-- The order of t`Capture` and t`Path` matters when defined on your sum type. The order of t`QueryParam` and t`QueryFlag` does not.
+--
+-- The router is "reversible" which means it can produce type-safe links using the `href_` function.
+--
+-- > prettyRoute $ Widget (Capture 23) (Path ("foo")) (Capture ("okay")) (QueryParam (Just 0))
+-- > "/widget/23/foo/okay?bar=0"
+--
+-- This can be used in conjunction with the @href_@ field below to embed type safe links into 'Miso.miso' @View model action@ code.
+--
+-- > button_ [ Miso.Router.href_ (Widget 10) ] [ "click me" ]
+--
+-- Note: the 'Miso.Router.Index' constructor is name special, it is used to encode the `"/"` path.
+--
+-- @
+--
+-- data Route = Index
+--   deriving stock (Show, Eq)
+--   deriving anyclass (Router)
+--
+-- main :: IO ()
+-- main = print (fromRoute Index)
+--
+-- -- "/"
+-- @
+--
+-- Lastly, camel-case constructors only use the first hump of the camel.
+--
+-- @
+--
+-- data Route = Index | FooBar
+--   deriving anyclass Router
+--   deriving stock (Show, Eq, Generic)
+--
+-- main :: IO ()
+-- main = print (prettyRoute FooBar)
+--
+-- "/foo"
+-- @
+--
+-----------------------------------------------------------------------------
 module Miso.Router
   ( -- ** Classes
-    HasRouter (..)
+    Router (..)
+  , RouteParser
+  , GRouter (..)
     -- ** Types
+  , Capture (..)
+  , Path (..)
+  , QueryParam (..)
+  , QueryFlag (..)
+  , Token (..)
+  , URI (..)
+    -- ** Errors
   , RoutingError (..)
-  , Router
-    -- ** Routing
-  , route
+    -- ** Functions
+  , parseURI
+  , prettyURI
+  , prettyQueryString
+    -- ** Manual Routing
+  , runRouter
+  , routes
+    -- ** Construction
+  , toQueryParam
+  , toCapture
+  , toPath
+  , emptyURI
+    -- ** Parser combinators
+  , queryFlag
+  , queryParam
+  , capture
+  , path
+    -- ** Lexing
+  , lexTokens
+  , tokensToURI
   ) where
 -----------------------------------------------------------------------------
-import qualified Data.ByteString.Char8 as BS
-import           Data.Kind
+import qualified Data.Map.Strict as M
+import           Data.Maybe
+import           Data.Functor
 import           Data.Proxy
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Text.Encoding
+import qualified Data.Char as C
+import           Data.String
+import           Control.Applicative
+import           Control.Monad
+import           GHC.Generics
 import           GHC.TypeLits
-import           Network.HTTP.Types hiding (Header)
-import           Network.URI
-import           Servant.API
-import           Web.HttpApiData
 -----------------------------------------------------------------------------
 import           Miso.Types hiding (model)
+import           Miso.Util
+import qualified Miso.Html.Property as P
+import           Miso.Util.Parser hiding (NoParses)
+import qualified Miso.Util.Lexer as L
+import           Miso.Util.Lexer (Lexer)
+import           Miso.String (ToMisoString, FromMisoString, fromMisoStringEither)
+import qualified Miso.String as MS
 -----------------------------------------------------------------------------
--- | Router terminator.
--- The @HasRouter@ instance for @View@ finalizes the router.
---
--- Example:
---
--- > type MyApi = "books" :> Capture "bookId" Int :> View
+-- | Type used for representing capture variables
+newtype Capture sym a = Capture a
+  deriving stock (Eq, Show)
+  deriving newtype (ToMisoString, FromMisoString)
+-----------------------------------------------------------------------------
+-- | Type used for representing URL paths
+newtype Path (path :: Symbol) = Path MisoString
+  deriving stock (Eq, Show)
+  deriving newtype (ToMisoString, IsString)
+-----------------------------------------------------------------------------
+-- | Type used for representing query flags
+newtype QueryFlag (path :: Symbol) = QueryFlag Bool
+  deriving stock (Eq, Show)
+-----------------------------------------------------------------------------
+-- | Type used for representing query parameters
+newtype QueryParam (path :: Symbol) a = QueryParam (Maybe a)
+  deriving stock (Eq, Show)
+-----------------------------------------------------------------------------
+instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
+  toMisoString (QueryParam maybeVal) =
+    maybe mempty (\param -> "?" <> param <> "=" <> val) (ms <$> maybeVal)
+      where
+        val = ms $ symbolVal (Proxy @path)
+-----------------------------------------------------------------------------
+instance (FromMisoString a, KnownSymbol path) => FromMisoString (QueryParam path a) where
+  fromMisoStringEither x =
+    case fromMisoStringEither @a x of
+      Right r -> Right $ QueryParam (Just r)
+      Left v -> Left v
+-----------------------------------------------------------------------------
+instance KnownSymbol name => ToMisoString (QueryFlag name) where
+  toMisoString = \case
+    QueryFlag True ->
+      "?" <> ms (symbolVal (Proxy @name))
+    QueryFlag False ->
+      mempty
+-----------------------------------------------------------------------------
+-- | A list of tokens are returned from a successful lex of a t'URI'
+data Token
+  = QueryParamTokens [(MisoString, Maybe MisoString)]
+  | QueryParamToken MisoString (Maybe MisoString)
+  | CaptureOrPathToken MisoString
+  | FragmentToken MisoString
+  | IndexToken
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a 'QueryParamToken'
+toQueryParam :: ToMisoString s => MisoString -> s -> Token
+toQueryParam k v = QueryParamToken k (Just (ms v))
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a capture variable
+toCapture :: ToMisoString string => string -> Token
+toCapture = CaptureOrPathToken . ms
+-----------------------------------------------------------------------------
+-- | Smart constructor for building a path fragment
+toPath :: MisoString -> Token
+toPath = CaptureOrPathToken
+-----------------------------------------------------------------------------
+-- | Converts a list of @[Token]@ into an actual @URI@.
+tokensToURI :: [Token] -> URI
+tokensToURI tokens = URI
+  { uriPath =
+      case tokens of
+        IndexToken : _ -> ""
+        _ ->
+          MS.intercalate "/"
+          [ x
+          | CaptureOrPathToken x <- filter isPathRelated tokens
+          ]
+  , uriQueryString =
+      M.unions
+        [ case queryToken of
+            QueryParamTokens queryParams_ ->
+              M.fromList queryParams_
+            QueryParamToken k v ->
+              M.singleton k v
+            _ ->
+              mempty
+        | queryToken <- filter isQuery tokens
+        ]
+  , uriFragment =
+      foldMap ms (filter isFragment tokens)
+  } where
+      isFragment = \case
+        FragmentToken{} -> True
+        _ -> False
+      isQuery = \case
+        QueryParamToken{} -> True
+        _ -> False
+      isPathRelated = \case
+        CaptureOrPathToken {} -> True
+        IndexToken {} -> True
+        _ -> False
+-----------------------------------------------------------------------------
+instance ToMisoString Token where
+  toMisoString = \case
+    CaptureOrPathToken x -> "/" <> x
+    FragmentToken x -> "#" <> x
+    QueryParamTokens params ->
+      "?" <> MS.intercalate "&"
+        [ case value of
+            Nothing -> key
+            Just v -> key <> "=" <> v
+        | (key, value) <- params
+        ]
+    QueryParamToken k (Just v) ->
+      "?" <> k <> "=" <> v
+    QueryParamToken k Nothing ->
+      "?" <> k
+    IndexToken -> "/"
+-----------------------------------------------------------------------------
+-- | An error that can occur during lexing / parsing of a URI into a user-defined
+-- data type
+data RoutingError
+  = ParseError MisoString [Token]
+  | AmbiguousParse MisoString [Token]
+  | LexError MisoString MisoString
+  | LexErrorEOF MisoString
+  | NoParses MisoString
+  deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | State monad for parsing URI
+type RouteParser = ParserT URI [Token] []
+-----------------------------------------------------------------------------
+-- | Combinator for parsing a capture variable out of a URI
+capture :: FromMisoString value => RouteParser value
+capture = do
+  CaptureOrPathToken capture_ <- captureOrPathToken
+  case fromMisoStringEither capture_ of
+    Left msg -> fail (fromMisoString (ms msg))
+    Right token -> pure token
+-----------------------------------------------------------------------------
+-- | Combinator for parsing a path out of a URI
+path :: MisoString -> RouteParser MisoString
+path specified = do
+  CaptureOrPathToken parsed <- captureOrPathToken
+  when (specified /= parsed) (fail "path")
+  pure specified
+-----------------------------------------------------------------------------
+index :: MisoString -> RouteParser MisoString
+index specified = do
+  IndexToken <- indexToken
+  when (specified /= "index") (fail "index")
+  pure "/"
+-----------------------------------------------------------------------------
+-- | URI parsing
+parseURI :: MisoString -> Either MisoString URI
+parseURI txt =
+  case lexTokens txt of
+    Left (L.LexerError err _) -> Left err
+    Left (L.UnexpectedEOF eof) -> Left ("EOF: " <> ms (show eof))
+    Right tokens -> Right (tokensToURI tokens)
+-----------------------------------------------------------------------------
+-- | Class used to facilitate routing for miso applications
+class Router route where
+  fromRoute :: route -> [Token]
+  default fromRoute :: (Generic route, GRouter (Rep route)) => route -> [Token]
+  fromRoute = gFromRoute . from
 
--- | @Location@ is used to split the path and query of a URI into components.
-data Location = Location
-  { locPath  :: [Text]
-  , locQuery :: Query
-  } deriving (Show, Eq, Ord)
+  -- | Convert a 'Router route => route' into a t'URI'
+  toURI :: route -> URI
+  toURI = tokensToURI . fromRoute
+
+  -- | Map a URI back to a route
+  route :: URI -> Either RoutingError route
+  route = toRoute . prettyURI
+
+  -- | Convenience for specifying a URL as a hyperlink reference in 'Miso.Types.View'
+  href_ :: route -> Attribute action
+  href_ = P.href_ . prettyRoute
+
+  -- | Route pretty printing
+  prettyRoute :: route -> MisoString
+  prettyRoute = prettyURI . tokensToURI . fromRoute
+
+  -- | Route debugging
+  dumpURI :: route -> MisoString
+  dumpURI = ms . show . tokensToURI . fromRoute
+
+  -- | Route parsing from a 'MisoString'
+  toRoute :: MisoString -> Either RoutingError route
+  toRoute input = parseRoute input routeParser
+
+  routeParser :: RouteParser route
+  default routeParser :: (Generic route, GRouter (Rep route)) => RouteParser route
+  routeParser = to <$> gRouteParser
 -----------------------------------------------------------------------------
--- | When routing, the router may fail to match a location.
-data RoutingError = Fail
-  deriving (Show, Eq, Ord)
+-- | Smart constructor for building a @RouteParser@
+--
+-- @
+--
+-- data Route = Widget MisoString Int
+--
+-- instance Router Route where
+--   routeParser = routes [ Widget \<$\> path "widget" \<*\> capture ]
+--   fromRoute (Widget path value) = [ toPath path, toCapture value ]
+--
+-- router :: Router router => RouteParser router
+-- router = routes [ Widget \<$\> path "widget" \<*\> capture ]
+--
+-- > Right (Widget "widget" 10)
+-- @
+--
 -----------------------------------------------------------------------------
--- | A @Router@ contains the information necessary to execute a handler.
-data Router a where
-  RChoice       :: Router a -> Router a -> Router a
-  RCapture      :: FromHttpApiData x => (x -> Router a) -> Router a
-  RQueryParam   :: (FromHttpApiData x, KnownSymbol sym)
-                   => Proxy sym -> (Maybe x -> Router a) -> Router a
-  RQueryParams  :: (FromHttpApiData x, KnownSymbol sym)
-                   => Proxy sym -> ([x] -> Router a) -> Router a
-  RQueryFlag    :: KnownSymbol sym
-                   => Proxy sym -> (Bool -> Router a) -> Router a
-  RPath         :: KnownSymbol sym => Proxy sym -> Router a -> Router a
-  RPage         :: a -> Router a
+runRouter :: MisoString -> RouteParser route -> Either RoutingError route
+runRouter = parseRoute
 -----------------------------------------------------------------------------
--- | This is similar to the @HasServer@ class from @servant-server@.
--- It is the class responsible for making API combinators routable.
--- @RouteT@ is used to build up the handler types. @Router@ is returned.
-class HasRouter layout where
-  -- | Type family for route dispatch
-  type RouteT layout a :: Type
-  -- | Transform a mkRouter handler into a @Router@.
-  mkRouter :: Proxy layout -> Proxy a -> RouteT layout a -> Router a
+-- | Convenience for specifying multiple routes
+routes :: [ RouteParser route ] -> RouteParser route
+routes = foldr (<|>) empty
 -----------------------------------------------------------------------------
--- | Alternative
-instance (HasRouter x, HasRouter y) => HasRouter (x :<|> y) where
-  type RouteT (x :<|> y) a = RouteT x a :<|> RouteT y a
-  mkRouter _ (a :: Proxy a) ((x :: RouteT x a) :<|> (y :: RouteT y a)) =
-    RChoice (mkRouter (Proxy :: Proxy x) a x) (mkRouter (Proxy :: Proxy y) a y)
+-- | Generic deriving for 'Router'
+class GRouter f where
+  gFromRoute :: f route -> [Token]
+  gRouteParser :: RouteParser (f route)
 -----------------------------------------------------------------------------
--- | Capture
-instance (HasRouter sublayout, FromHttpApiData x) =>
-  HasRouter (Capture sym x :> sublayout) where
-  type RouteT (Capture sym x :> sublayout) a = x -> RouteT sublayout a
-  mkRouter _ a f = RCapture (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
+instance GRouter next => GRouter (D1 m next) where
+  gFromRoute (M1 x) = gFromRoute x
+  gRouteParser = M1 <$> gRouteParser
 -----------------------------------------------------------------------------
--- | QueryParam
-instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
-         => HasRouter (QueryParam sym x :> sublayout) where
-  type RouteT (QueryParam sym x :> sublayout) a = Maybe x -> RouteT sublayout a
-  mkRouter _ a f = RQueryParam (Proxy :: Proxy sym)
-    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
+instance (KnownSymbol name, GRouter next) => GRouter (C1 ('MetaCons name x y) next) where
+  gFromRoute (M1 x) =
+    case name of
+      "index" -> [IndexToken]
+      _ -> CaptureOrPathToken name : gFromRoute x
+      where
+        name = lowercaseStrip $ symbolVal (Proxy @name)
+  gRouteParser = do
+    case name of
+      "index" -> do
+        void (index name)
+        M1 <$> gRouteParser
+      _ -> do
+        void (path name)
+        M1 <$> gRouteParser
+      where
+        name = lowercaseStrip $ symbolVal (Proxy @name)
 -----------------------------------------------------------------------------
--- | QueryParams
-instance (HasRouter sublayout, FromHttpApiData x, KnownSymbol sym)
-         => HasRouter (QueryParams sym x :> sublayout) where
-  type RouteT (QueryParams sym x :> sublayout) a = [x] -> RouteT sublayout a
-  mkRouter _ a f = RQueryParams
-    (Proxy :: Proxy sym)
-    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
+instance GRouter next => GRouter (S1 m next) where
+  gFromRoute (M1 x) = gFromRoute x
+  gRouteParser = M1 <$> gRouteParser
 -----------------------------------------------------------------------------
--- | QueryFlag
-instance (HasRouter sublayout, KnownSymbol sym)
-         => HasRouter (QueryFlag sym :> sublayout) where
-  type RouteT (QueryFlag sym :> sublayout) a = Bool -> RouteT sublayout a
-  mkRouter _ a f = RQueryFlag
-    (Proxy :: Proxy sym)
-    (\x -> mkRouter (Proxy :: Proxy sublayout) a (f x))
+instance {-# OVERLAPS #-} forall path m . KnownSymbol path => GRouter (K1 m (Path path)) where
+  gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
+  gRouteParser = K1 (Path chunk) <$ path chunk
+    where
+      chunk = ms $ symbolVal (Proxy :: Proxy path)
 -----------------------------------------------------------------------------
--- | Header
-instance HasRouter sublayout => HasRouter (Header sym (x :: Type) :> sublayout) where
-    type RouteT (Header sym x :> sublayout) a = Maybe x -> RouteT sublayout a
-    mkRouter _ a f = mkRouter (Proxy :: Proxy sublayout) a (f Nothing)
+instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (Capture sym a)) where
+  gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
+  gRouteParser = K1 <$> capture
 -----------------------------------------------------------------------------
--- | Path
-instance (HasRouter sublayout, KnownSymbol path)
-         => HasRouter (path :> sublayout) where
-  type RouteT (path :> sublayout) a = RouteT sublayout a
-  mkRouter _ a page = RPath
-    (Proxy :: Proxy path)
-    (mkRouter (Proxy :: Proxy sublayout) a page)
+instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, KnownSymbol param) =>
+  GRouter (K1 m (QueryParam param a)) where
+    gFromRoute (K1 (QueryParam maybeParam)) = do
+      let key = ms (symbolVal (Proxy @param))
+      case maybeParam of
+        Nothing -> [QueryParamToken key Nothing]
+        Just v -> [QueryParamToken key (Just (ms v))]
+    gRouteParser = K1 <$> queryParam
 -----------------------------------------------------------------------------
--- | View
-instance HasRouter (View m a) where
-  type RouteT (View m a) x = x
-  mkRouter _ _ a = RPage a
+-- | Query parameter parser from a route
+queryParam
+  :: forall param a . (FromMisoString a, KnownSymbol param)
+  => RouteParser (QueryParam param a)
+queryParam = do
+  URI {..} <- askParser
+  QueryParam <$> do
+    case M.lookup (ms (symbolVal (Proxy @param))) uriQueryString of
+      Just (Just value) ->
+        case fromMisoStringEither value of
+          Left _ -> pure Nothing
+          Right parsed -> pure (Just parsed)
+      _ -> pure Nothing
 -----------------------------------------------------------------------------
--- | Verb
-instance HasRouter (Verb m s c a) where
-  type RouteT (Verb m s c a) x = x
-  mkRouter _ _ a = RPage a
+instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
+  gFromRoute (K1 (QueryFlag specified))
+    | specified = [ QueryParamToken flag Nothing ]
+    | otherwise = []
+        where
+          flag = ms (symbolVal (Proxy @flag))
+  gRouteParser = K1 <$> queryFlag
 -----------------------------------------------------------------------------
--- | Raw
-instance HasRouter Raw where
-  type RouteT Raw x = x
-  mkRouter _ _ a = RPage a
+-- | Query flag parser from a route
+queryFlag :: forall flag . KnownSymbol flag => RouteParser (QueryFlag flag)
+queryFlag = do
+  URI {..} <- askParser
+  pure $ QueryFlag $ isJust (M.lookup flag uriQueryString)
+    where
+      flag = ms $ symbolVal (Proxy @flag)
 -----------------------------------------------------------------------------
--- | Use a handler to @mkRouter@ as @Location@.
--- Normally @runRoute@ should be used instead, unless you want custom
--- handling of string failing to parse as 'URI'.
-runRouteLoc :: forall layout a. HasRouter layout
-            => Location -> Proxy layout -> RouteT layout a ->  Either RoutingError a
-runRouteLoc loc layout page =
-  let routing = mkRouter layout (Proxy :: Proxy a) page
-  in routeLoc loc routing
+instance Router a => GRouter (K1 m a) where
+  gFromRoute (K1 x) = fromRoute x
+  gRouteParser = K1 <$> routeParser
 -----------------------------------------------------------------------------
--- | Use a computed 'Router' to mkRouter a 'Location'.
-routeLoc :: Location -> Router a -> Either RoutingError a
-routeLoc loc r = case r of
-  RChoice a b -> do
-    case routeLoc loc a of
-      Left Fail -> routeLoc loc b
-      Right x -> Right x
-  RCapture f -> case locPath loc of
-    [] -> Left Fail
-    capture:paths ->
-      case parseUrlPieceMaybe capture of
-        Nothing -> Left Fail
-        Just x -> routeLoc loc { locPath = paths } (f x)
-  RQueryParam sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-    Nothing -> routeLoc loc (f Nothing)
-    Just Nothing -> Left Fail
-    Just (Just txt) -> case parseQueryParamMaybe (decodeUtf8 txt) of
-      Nothing -> Left Fail
-      Just x -> routeLoc loc (f (Just x))
-  RQueryParams sym f -> maybe (Left Fail) (\x -> routeLoc loc (f x)) $ do
-    ps <- mapM snd $ Prelude.filter
-      (\(k, _) -> k == BS.pack (symbolVal sym)) (locQuery loc)
-    mapM (parseQueryParamMaybe . decodeUtf8) ps
-  RQueryFlag sym f -> case lookup (BS.pack $ symbolVal sym) (locQuery loc) of
-    Nothing -> routeLoc loc (f False)
-    Just Nothing -> routeLoc loc (f True)
-    Just (Just _) -> Left Fail
-  RPath sym a -> case locPath loc of
-    [] -> Left Fail
-    p:paths -> if p == T.pack (symbolVal sym)
-      then routeLoc (loc { locPath = paths }) a
-      else Left Fail
-  RPage a ->
-    case locPath loc of
-      [] -> Right a
-      [""] -> Right a
-      _ -> Left Fail
+instance GRouter U1 where
+  gFromRoute U1 = []
+  gRouteParser = pure U1
 -----------------------------------------------------------------------------
--- | Use a handler to mkRouter a location, represented as a 'String'.
--- All handlers must, in the end, return @m a@.
--- 'routeLoc' will choose a mkRouter and return its result.
-runRoute
-  :: HasRouter layout
-  => Proxy layout
-  -> RouteT layout a
-  -> URI
-  -> Either RoutingError a
-runRoute layout handler u = runRouteLoc (uriToLocation u) layout handler
+instance (GRouter left, GRouter right) => GRouter (left :*: right) where
+  gFromRoute (left :*: right) = gFromRoute left <> gFromRoute right
+  gRouteParser = liftA2 (:*:) gRouteParser gRouteParser
 -----------------------------------------------------------------------------
--- | Executes router
--- This is most likely the function you want to use. See <https://gitub.com/haskell-miso.org/shared/Common.hs> for usage.
-route
-  :: HasRouter layout
-  => Proxy layout
-  -> RouteT layout (m -> a)
-  -> (m -> URI)
-  -> m
-  -> Either RoutingError a
-route layout pages getURI model = ($ model) <$> runRoute layout pages (getURI model)
+instance (GRouter left, GRouter right) => GRouter (left :+: right) where
+  gFromRoute = \case
+    L1 m1 -> gFromRoute m1
+    R1 m1 -> gFromRoute m1
+  gRouteParser = foldr (<|>) empty
+    [ L1 <$> gRouteParser
+    , R1 <$> gRouteParser
+    ]
 -----------------------------------------------------------------------------
--- | Convert a 'URI' to a 'Location'.
-uriToLocation :: URI -> Location
-uriToLocation uri = Location
-  { locPath = decodePathSegments $ BS.pack (uriPath uri)
-  , locQuery = parseQuery $ BS.pack (uriQuery uri)
-  }
+captureOrPathToken :: RouteParser Token
+captureOrPathToken = satisfy $ \case
+  CaptureOrPathToken {} -> True
+  _ -> False
+-----------------------------------------------------------------------------
+indexToken :: RouteParser Token
+indexToken = satisfy $ \case
+  IndexToken {} -> True
+  _ -> False
+-----------------------------------------------------------------------------
+-- | Lexing for a URI
+uriLexer :: Lexer [Token]
+uriLexer = do
+  tokens <- some lexer
+  void $ optional (L.char '/')
+  pure (postProcess tokens)
+    where
+      postProcess :: [Token] -> [Token]
+      postProcess = concatMap $ \case
+        QueryParamTokens queryParams_ ->
+          [ QueryParamToken k v
+          | (k,v) <- queryParams_
+          ]
+        x -> pure x
+      lexer = msum
+        [ captureOrPathLexer
+        , queryParamLexer
+        , fragmentLexer
+        , indexLexer
+        ] where
+            indexLexer =
+              IndexToken <$ L.char '/'
+            captureOrPathLexer = do
+              void (L.char '/')
+              CaptureOrPathToken <$> chars
+            fragmentLexer = do
+              void (L.char '#')
+              FragmentToken <$> fragment
+            queryParamLexer = QueryParamTokens <$> do
+              void (L.char '?')
+              sepBy (L.char '&') $ do
+                key <- query
+                maybeValue <-
+                  optional $ do
+                    void (L.char '=')
+                    query
+                pure (key, maybeValue)
+-----------------------------------------------------------------------------
+chars :: Lexer MisoString
+chars = MS.concat <$> some pchar
+-----------------------------------------------------------------------------
+pchar :: Lexer MisoString
+pchar = unreserved <|> pctEncoded <|> subDelims <|> L.string ":" <|> L.string "@"
+-----------------------------------------------------------------------------
+fragment :: Lexer MisoString
+fragment = query
+-----------------------------------------------------------------------------
+query :: Lexer MisoString
+query = foldr (<|>) empty
+  [ MS.concat <$> some pchar
+  ]
+-----------------------------------------------------------------------------
+subDelims :: Lexer MisoString
+subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$'()*+,;" :: String)
+-----------------------------------------------------------------------------
+unreserved :: Lexer MisoString
+unreserved = ms <$> do
+  L.satisfy $ \x -> or
+    [ C.isAlphaNum x
+    , x == '-'
+    , x == '.'
+    , x == '_'
+    , x == '~'
+    ]
+-----------------------------------------------------------------------------
+pctEncoded :: Lexer MisoString
+pctEncoded = do
+  pct <- L.char '%'
+  d1 <- hexDig
+  d2 <- hexDig
+  pure (ms pct <> ms d1 <> ms d2)
+-----------------------------------------------------------------------------
+hexDig :: Lexer Char
+hexDig = L.satisfy C.isHexDigit
+-----------------------------------------------------------------------------
+lexTokens :: MisoString -> Either L.LexerError [Token]
+lexTokens input =
+  case L.runLexer uriLexer (L.mkStream input) of
+    Right (tokens, _) -> Right tokens
+    Left x -> Left x
+-----------------------------------------------------------------------------
+parseRoute :: MisoString -> RouteParser a -> Either RoutingError a
+parseRoute input parser =
+  case L.runLexer uriLexer (L.mkStream input) of
+    Left (L.LexerError lexErrorMessage _) ->
+      Left (LexError input lexErrorMessage)
+    Left (L.UnexpectedEOF _) ->
+      Left (LexErrorEOF input)
+    Right (tokens, _) -> do
+      let
+        uri = tokensToURI tokens
+        isCapturePathOrIndex = \case
+          CaptureOrPathToken{} -> True
+          IndexToken{} -> True
+          _ -> False
+      case runParserT parser uri (filter isCapturePathOrIndex tokens) of
+        [(x, [])]  ->
+          Right x
+        [(_, leftovers)]  ->
+          Left $ ParseError input leftovers
+        []  ->
+          Left $ NoParses input
+        (_, leftovers) : _  ->
+          Left $ AmbiguousParse input leftovers
+-----------------------------------------------------------------------------
+lowercaseStrip :: String -> MisoString
+lowercaseStrip (x:xs) = ms (C.toLower x : takeWhile C.isLower xs)
+lowercaseStrip x = ms x
 -----------------------------------------------------------------------------

@@ -26,14 +26,6 @@
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Miso uses this for FFI
-    jsaddle.url =
-      "github:ghcjs/jsaddle?rev=2513cd19184376ac8a2f0e3797a1ae7d2e522e87";
-
-    # Miso uses this for routing
-    servant.url =
-      "github:haskell-servant/servant?rev=e07e92abd62641fc0f199a33e5131de273140cb0";
-
     # Miso uses this compiling for WebAssembly
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
@@ -81,9 +73,19 @@
           # Default GHC shell
           default =
             pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
-              buildInputs = with pkgs; drv.buildInputs ++
-                [ just bun
-                ];
+              buildInputs = with pkgs;
+                drv.buildInputs ++
+                  [ just bun ormolu cabal-install ghcid tailwindcss_4
+                  ];
+            });
+
+          # Shell for hls dev
+          hls =
+            pkgs.haskell.packages.ghc9122.miso.env.overrideAttrs (drv: {
+              buildInputs = with pkgs; with haskell.packages.ghc9122;
+                drv.buildInputs ++
+                  [ just bun ormolu haskell-language-server cabal-install ghcid tailwindcss_4
+                  ];
             });
 
           # Shell for JavaScript / TypeScript development
@@ -97,11 +99,13 @@
           wasm =
             pkgs.mkShell {
               name = "The miso ${system} GHC WASM 9.12.2 shell";
-              packages = [
+              packages = with pkgs; [
                  inputs.ghc-wasm-meta.packages.${system}.all_9_12
-                 pkgs.gnumake
-                 pkgs.http-server
-                 pkgs.cabal-install
+                 gnumake bun
+                 http-server
+                 cabal-install
+                 tailwindcss_4
+                 ghciwatch
                ];
               shellHook = ''
                 function build () {
@@ -112,6 +116,13 @@
                 }
                 function update () {
                    wasm32-wasi-cabal update
+                }
+                function repl () {
+                   wasm32-wasi-cabal repl $1 -finteractive \
+                     --repl-options='-fghci-browser -fghci-browser-port=8080'
+                }
+                function repl-watch () {
+                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci-browser -fghci-browser-port=8080"'
                 }
               '';
             };
@@ -141,11 +152,13 @@
               '';
               packages = with pkgs; [
                  pkgsCross.ghcjs.haskell.packages.ghc9122.ghc
+                 bun
                  gnumake
                  http-server
                  cabal-install
                  nodejs
                  emscripten
+                 tailwindcss_4
               ];
             };
 
@@ -166,15 +179,15 @@
                    cabal update
                 }
               '';
-              packages = [
-                 pkgs.pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
-                 pkgs.gnumake
-                 pkgs.http-server
-                 pkgs.cabal-install
-                 pkgs.emscripten
+              packages = with pkgs; [
+                 pkgsCross.ghcjs.haskell.packages.ghcNative.ghc
+                 gnumake
+                 http-server
+                 cabal-install
+                 emscripten
+                 tailwindcss_4
               ];
             };
-
-        };
+          };
       });
 }

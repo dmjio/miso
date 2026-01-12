@@ -11,25 +11,16 @@
 --
 -- @
 -- import Miso
+-- import Miso.String
 --
 -- data IntAction = Add | Subtract
 --
--- intView :: Int -> View IntAction
--- intView n
---  = div_
---  [ class_ "main"
---  ]
---  [ btn_
---    [ onClick Add
---    ]
---    [ text_ "+"
---    ]
---  , text_ $ pack (show n)
---  , btn_
---    [ onClick Subtract
---    ]
---    [ text_ "-"
---    ]
+-- counterView :: Int -> View IntAction
+-- counterView n = div_
+--  [ class_ "main" ]
+--  [ btn_ [ onClick Add ] [ text_ "+" ]
+--  , text_ (ms n)
+--  , btn_ [ onClick Subtract ] [ text_ "-" ]
 --  ]
 -- @
 --
@@ -41,13 +32,13 @@
 module Miso.Html
    ( -- ** Elements
      module Miso.Html.Element
-     -- ** Attributes
-   , module Miso.Html.Property
      -- ** Events
    , module Miso.Html.Event
+     -- ** Render
+   , module Miso.Html.Render
    ) where
 -----------------------------------------------------------------------------
-import Miso.Html.Element hiding (data_, title_) -- conflicts with helpers from Miso.Html.Property
+import Miso.Html.Element
 import Miso.Html.Event
-import Miso.Html.Property
+import Miso.Html.Render
 -----------------------------------------------------------------------------

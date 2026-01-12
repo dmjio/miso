@@ -8,6 +8,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Predefined list of HTML elements
+--
 ----------------------------------------------------------------------------
 module Miso.Html.Element
   ( -- ** Smart constructors
@@ -121,7 +124,7 @@ module Miso.Html.Element
     , button_
     , datalist_
     , fieldset_
-    , form
+    , form_
     , input_
     , label_
     , legend_
@@ -147,7 +150,7 @@ import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
 -----------------------------------------------------------------------------
--- | Low-level helper used to construct 'HTML' 'node' in 'View'.
+-- | Low-level helper used to construct 'HTML' 'node' in 'Miso.Types.View'.
 -- Almost all functions in this module, like 'div_', 'table_' etc. are defined in terms of it.
 nodeHtml :: MisoString -> [Attribute action] -> [View model action] -> View model action
 nodeHtml nodeName = node HTML nodeName
@@ -202,16 +205,16 @@ button_ = nodeHtml "button"
 -----------------------------------------------------------------------------
 -- | [\<form\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/form)
 --
--- For usage in a real-world application with the 'onSubmit' event.
+-- For usage in a real-world application with the @onSubmit@ event.
 --
 -- > view :: Model -> View model action
--- > view model = form [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
+-- > view model = form_ [ onSubmit NoOp ] [ input [ type_ "submit" ] ]
 --
 -- Note: @onSubmit@ will use @preventDefault = True@. This will keep
 -- the form from submitting to the server.
 --
-form :: [Attribute action] -> [View model action] -> View model action
-form = nodeHtml "form"
+form_ :: [Attribute action] -> [View model action] -> View model action
+form_ = nodeHtml "form"
 -----------------------------------------------------------------------------
 -- | [\<p\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/p)
 p_ :: [Attribute action] -> [View model action] -> View model action
@@ -549,14 +552,17 @@ link_ = flip (nodeHtml "link") []
 -- This takes the raw text to be put in the style tag.
 --
 -- That means that if any part of the text is not trusted there's
--- a potential CSS injection. Read more at
--- https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client-side_Testing/05-Testing_for_CSS_Injection
+-- a potential [CSS injection](https://owasp.org/www-project-web-security-testing-guide/stable/4-Web_Application_Security_Testing/11-Client-side_Testing/05-Testing_for_CSS_Injection).
 --
 -- You can also easily shoot yourself in the foot with something like:
 --
--- @'style_' [] "\</style\>"@
+-- @
+-- style_ [] "\</style\>"
+-- @
+--
+-- You can use 'Miso.CSS.style_' as a safer anternative.
 style_ :: [Attribute action] -> MisoString -> View model action
-style_ attrs rawText = node HTML "style" attrs [textRaw rawText]
+style_ attrs rawText = node HTML "style" attrs [text rawText]
 -----------------------------------------------------------------------------
 -- | [\<script\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script)
 --

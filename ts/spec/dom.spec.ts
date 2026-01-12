@@ -1,8 +1,8 @@
 import { diff } from '../miso/dom';
 import { vnode, vcomp, vtext, vnodeKeyed, vtextKeyed } from '../miso/smart';
-import { VNode, VTree } from '../miso/types';
+import { VNode, VText, VTree, DOMRef } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { context } from '../miso/context/dom';
+import { drawingContext } from '../miso/context/dom';
 
 /* silence */
 beforeAll(() => {
@@ -19,49 +19,49 @@ afterEach(() => {
 
 describe('DOM tests', () => {
   test('Should be null when diffing two null virtual DOMs', () => {
-    diff(null, null, document.body, context);
+    diff<DOMRef>(null, null, document.body, drawingContext);
     expect(document.body.childNodes.length).toBe(0);
   });
 
   test('Should create a new text node', () => {
-    var newNode = vtext('foo');
-    diff(null, newNode, document.body, context);
+    var newNode = vtext<DOMRef>('foo');
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(newNode.domRef.textContent).toBe('foo');
   });
 
   test('Should window diff two identical text nodes', () => {
-    var currentNode = vtext('foo');
-    diff(null, currentNode, document.body, context);
+    var currentNode = vtext<DOMRef>('foo');
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef.textContent).toBe('foo');
-    var newNode = vtext('foo');
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vtext<DOMRef>('foo');
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect('foo').toBe(newNode.domRef.textContent);
   });
 
   test('Should window diff two window different text nodes', () => {
-    var currentNode = vtext('foo');
-    diff(null, currentNode, document.body, context);
+    var currentNode = vtext<DOMRef>('foo');
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef.textContent).toBe('foo');
-    var newNode = vtext('bar');
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vtext<DOMRef>('bar');
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef.textContent).toBe('bar');
   });
 
   test('Should create a new DOM node', () => {
-    var newNode = vnode({});
-    diff(null, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({});
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create an SVG DOM node', () => {
-    var newNode = vnode({ ns: 'svg' });
-    diff(null, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({ ns: 'svg' });
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(document.body.children[0]).toBe(newNode.domRef);
   });
 
   test('Should create a MathML DOM node', () => {
-    var newNode = vnode({ ns: 'mathml', tag: 'math' });
-    diff(null, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({ ns: 'mathml', tag: 'math' });
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(document.body.children[0].namespaceURI).toBe(
       'http://www.w3.org/1998/Math/MathML',
     );
@@ -69,26 +69,26 @@ describe('DOM tests', () => {
 
   test('Should draw the canvas if we need to', () => {
     var drawCount = 0;
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag: 'canvas',
       draw: () => {
         drawCount++;
       },
       ns: 'html'
     });
-    diff(null, tree, document.body, context);
+    diff<DOMRef>(null, tree, document.body, drawingContext);
     expect(drawCount).toBe(1);
   });
 
   test('Should create an SVG DOM node, with href attribute', () => {
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         href: 'https://google.com',
       },
     });
-    diff(null, tree, document.body, context);
+    diff<DOMRef>(null, tree, document.body, drawingContext);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
@@ -98,28 +98,28 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with href attribute, and change it', () => {
-    var tree1 = vnode({
+    var tree1 = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         href: 'https://google.com',
       },
     });
-    diff(null, tree1, document.body, context);
+    diff<DOMRef>(null, tree1, document.body, drawingContext);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
         'href',
       ),
     ).toBe('https://google.com');
-    var tree2 = vnode({
+    var tree2 = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         href: 'https://yahoo.com',
       },
     });
-    diff(tree1, tree2, document.body, context);
+    diff<DOMRef>(tree1, tree2, document.body, drawingContext);
     expect(
       document.body.children[0].getAttributeNS(
         'http://www.w3.org/1999/xlink',
@@ -129,49 +129,49 @@ describe('DOM tests', () => {
   });
 
   test('Should create an SVG DOM node, with regular attribute', () => {
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         rx: '100',
       },
     });
-    diff(null, tree, document.body, context);
+    diff<DOMRef>(null, tree, document.body, drawingContext);
     expect(document.body.children[0].getAttribute('rx')).toBe('100');
   });
 
   test('Should create an SVG DOM node, with regular attribute, and change it', () => {
-    var tree1 = vnode({
+    var tree1 = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         rx: '100',
       },
     });
-    diff(null, tree1, document.body, context);
+    diff<DOMRef>(null, tree1, document.body, drawingContext);
     expect(document.body.children[0].getAttribute('rx')).toBe('100');
-    var tree2 = vnode({
+    var tree2 = vnode<DOMRef>({
       tag: 'ellipse',
       ns: 'svg',
       props: {
         rx: '200',
       },
     });
-    diff(tree1, tree2, document.body, context);
+    diff<DOMRef>(tree1, tree2, document.body, drawingContext);
     expect(document.body.children[0].getAttribute('rx')).toBe('200');
   });
 
   test('Should replace a Node with a new Node of a window different tag', () => {
     // populate DOM
-    var tree1 = vnode({ tag: 'div' });
-    diff(null, tree1, document.body, context);
+    var tree1 = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(null, tree1, document.body, drawingContext);
 
     // Test node was populated
     expect(document.body.children.length).toBe(1);
 
     // Replace node
-    var tree2 = vnode({ tag: 'a' });
-    diff(tree1, tree2, document.body, context);
+    var tree2 = vnode<DOMRef>({ tag: 'a' });
+    diff<DOMRef>(tree1, tree2, document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('A');
@@ -179,44 +179,44 @@ describe('DOM tests', () => {
 
   test('Should create children', () => {
     // populate DOM
-    var tree = vnode({ children: [vnode({})] });
-    diff(null, tree, document.body, context);
+    var tree = vnode<DOMRef>({ children: [vnode<DOMRef>({})] });
+    diff<DOMRef>(null, tree, document.body, drawingContext);
     expect(tree.domRef.children.length).toBe(1);
     expect(tree.children.length).toBe(1);
   });
 
   test('Should remove a child', () => {
     // populate DOM
-    var tree1 = vnode({ children: [vnode({})] });
-    diff(null, tree1, document.body, context);
+    var tree1 = vnode<DOMRef>({ children: [vnode<DOMRef>({})] });
+    diff<DOMRef>(null, tree1, document.body, drawingContext);
     expect(tree1.domRef.children.length).toBe(1);
 
     // remove children from DOM
-    var tree2 = vnode({ children: [] });
-    diff(tree1, tree2, document.body, context);
+    var tree2 = vnode<DOMRef>({ children: [] });
+    diff<DOMRef>(tree1, tree2, document.body, drawingContext);
     expect(tree2.domRef.childNodes.length).toBe(0);
   });
 
   test('Should replace Node with TextNode', () => {
-    var node = vnode({});
-    diff(null, node, document.body, context);
+    var node = vnode<DOMRef>({});
+    diff<DOMRef>(null, node, document.body, drawingContext);
     expect(document.body.childNodes.length).toBe(1);
-    var textNode = vtext('fooo');
-    diff(node, textNode, document.body, context);
+    var textNode = vtext<DOMRef>('fooo');
+    diff<DOMRef>(node, textNode, document.body, drawingContext);
     expect(document.body.childNodes[0].textContent).toBe('fooo');
   });
 
   test('Should replace TextNode with Node', () => {
     // populate DOM
-    var textNode = vtext('fooo');
-    diff(null, textNode, document.body, context);
+    var textNode = vtext<DOMRef>('fooo');
+    diff<DOMRef>(null, textNode, document.body, drawingContext);
 
     // Test node was populated
     expect(document.body.childNodes.length).toBe(1);
 
     // Replace node
-    var node = vnode({});
-    diff(textNode, node, document.body, context);
+    var node = vnode<DOMRef>({});
+    diff<DOMRef>(textNode, node, document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.children[0].tagName).toBe('DIV');
@@ -224,14 +224,14 @@ describe('DOM tests', () => {
 
   test('Should remove a DOM node', () => {
     // populate DOM
-    var newNode = vnode({});
-    diff(null, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({});
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
 
     // Test node was populated
     expect(document.body.children.length).toBe(1);
 
     // Remove node
-    diff(newNode, null, document.body, context);
+    diff<DOMRef>(newNode, null, document.body, drawingContext);
 
     // Test node is removed from DOM
     expect(document.body.children.length).toBe(0);
@@ -239,171 +239,171 @@ describe('DOM tests', () => {
 
   test('Should create a new property on a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       props: { id: 'a' },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef['id']).toBe('a');
   });
 
   test('Should skip if window diffing identical properties', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       props: { id: 'a' },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
 
-    var newNode = vnode({
+    var newNode = vnode<DOMRef>({
       props: { id: 'a' },
     });
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(currentNode.domRef).toBe(newNode.domRef);
   });
 
   test('Should create a custom attribute on a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       props: {
         lol: 'lol2',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
   });
 
   test('Should change a custom attribute on a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       props: {
         lol: 'lol2',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
 
-    var newNode = vnode({
+    var newNode = vnode<DOMRef>({
       props: {
         lol: 'lolz',
       },
     });
 
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lolz');
   });
 
   test('Should remove a custom attribute from a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       props: {
         lol: 'lol2',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef.getAttribute('lol')).toBe('lol2');
 
     // test property change
-    var newNode = vnode({});
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({});
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef.getAttribute('lol')).toBe(null);
   });
 
   test('Should remove a property from DOM node', () => {
     // populate DOM
-    var currentNode = vnode({ props: { id: 'someid' } });
-    diff(null, currentNode, document.body, context);
+    var currentNode = vnode<DOMRef>({ props: { id: 'someid' } });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
-    var newNode = vnode({});
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({});
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef['id']).toBe('');
   });
 
   test('Should change a property from DOM node', () => {
     // populate DOM
-    var currentNode = vnode({ props: { id: 'someid' } });
-    diff(null, currentNode, document.body, context);
+    var currentNode = vnode<DOMRef>({ props: { id: 'someid' } });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(currentNode.domRef['id']).toBe('someid');
 
     // test property change
-    var newNode = vnode({ props: { id: 'foo' } });
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({ props: { id: 'foo' } });
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef['id']).toBe('foo');
   });
 
   test('Should create css on a DOM node', () => {
     // populate DOM
-    var newNode = vnode({
+    var newNode = vnode<DOMRef>({
       css: {
         color: 'red',
       },
     });
-    diff(null, newNode, document.body, context);
+    diff<DOMRef>(null, newNode, document.body, drawingContext);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
   test('Should remove css from DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       css: {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
 
     // test css change
-    var newNode = vnode({});
-    diff(currentNode, newNode, document.body, context);
+    var newNode = vnode<DOMRef>({});
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef.style['color']).toBe('');
   });
 
   test('Should change css on a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       css: {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
 
     // test css change
-    var newNode = vnode({
+    var newNode = vnode<DOMRef>({
       css: {
         color: 'blue',
       },
     });
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef.style['color']).toBe('blue');
   });
 
   test('Should no-op change to css on a DOM node', () => {
     // populate DOM
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       css: {
         color: 'red',
       },
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
 
     // test css no-op change
-    var newNode = vnode({
+    var newNode = vnode<DOMRef>({
       css: {
         color: 'red',
       },
     });
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.domRef.style['color']).toBe('red');
   });
 
   test('Should call onBeforeCreated', () => {
     // populate DOM
     let beforeCreated = 0;
-    const currentNode = vnode({
+    const currentNode = vnode<DOMRef>({
       onBeforeCreated: () => {
         beforeCreated++;
       }
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(beforeCreated).toBe(1);
   });
 
@@ -411,7 +411,7 @@ describe('DOM tests', () => {
     // populate DOM
     let create = 0,
       destroy = 0;
-    const currentNode = vnode({
+    const currentNode = vnode<DOMRef>({
       onCreated: () => {
         create++;
       },
@@ -420,10 +420,10 @@ describe('DOM tests', () => {
       },
     });
 
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(create).toBe(1);
 
-    diff(currentNode, null, document.body, context);
+    diff<DOMRef>(currentNode, null, document.body, drawingContext);
     expect(destroy).toBe(1);
   });
 
@@ -434,13 +434,18 @@ describe('DOM tests', () => {
     let beforeUnmounted = 0;
     let unmounted = 0;
     let unmount = 0;
-    const currentNode = vcomp({
+    const currentNode = vcomp<DOMRef>({
       onBeforeMounted: () => {
         beforeMounted++;
       },
-      mount: () => {
+      onMounted : () => {
+        mounted++;
+      },
+      mount: (domRef) => {
         mount++;
-        mounted++; //dmj : 'onMounted' is called inside of 'mount' callback in dom.ts
+        const child = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, child, domRef, drawingContext);
+        return { componentId: 0, componentTree: child };
       },
       onBeforeUnmounted: () => {
         beforeUnmounted++;
@@ -452,12 +457,12 @@ describe('DOM tests', () => {
         unmount++;
       }
     });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(beforeMounted).toBe(1);
     expect(mount).toBe(1);
     expect(mounted).toBe(1);
 
-    diff(currentNode, null, document.body, context);
+    diff<DOMRef>(currentNode, null, document.body, drawingContext);
     expect(beforeUnmounted).toBe(1);
     expect(unmounted).toBe(1);
     expect(unmount).toBe(1);
@@ -468,7 +473,7 @@ describe('DOM tests', () => {
   test('Should call onCreated and onBeforeDestroyed', () => {
     let create = 0,
       destroy = 0;
-    const currentNode = vnode({
+    const currentNode = vnode<DOMRef>({
       onCreated: () => {
         create++;
       },
@@ -477,30 +482,30 @@ describe('DOM tests', () => {
       },
     });
 
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(create).toBe(1);
 
-    diff(currentNode, null, document.body, context);
+    diff<DOMRef>(currentNode, null, document.body, drawingContext);
     expect(destroy).toBe(1);
   });
 
   test('Should call onDestroyed recursively', () => {
     let destroy = 0,
       childDestroy = 0;
-    const child = vnode({
+    const child = vnode<DOMRef>({
       onDestroyed: () => {
         childDestroy++;
       },
     });
 
-    const parent = vnode({
+    const parent = vnode<DOMRef>({
       onDestroyed: () => {
         destroy++;
       },
       children: [child],
     });
-    diff(null, parent, document.body, context);
-    diff(parent, null, document.body, context);
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    diff<DOMRef>(parent, null, document.body, drawingContext);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
@@ -509,53 +514,53 @@ describe('DOM tests', () => {
     var destroy = 0;
     var childDestroy = 0;
 
-    const child = vnode({
+    const child = vnode<DOMRef>({
       onDestroyed: () => {
         childDestroy++;
       }
     });
 
-    const parent = vnode({
+    const parent = vnode<DOMRef>({
       onBeforeDestroyed: () => {
         destroy++;
       },
       children: [child],
     });
-    diff(null, parent, document.body, context);
-    diff(parent, null, document.body, context);
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    diff<DOMRef>(parent, null, document.body, drawingContext);
     expect(destroy).toBe(1);
     expect(childDestroy).toBe(1);
   });
 
   test('Should recreate a DOM node when tags are the same but keys are different', () => {
     var destroy = 0;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           onDestroyed : () => {
               destroy++;
           },
       });
-    diff(null, currentNode, document.body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+      var newNode = vnode<DOMRef>({
           onDestroyed : () => {
               destroy++;
           },
       });
-    diff(null, currentNode, document.body, context);
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
     expect(destroy).toBe(0);
-    diff(currentNode, newNode, document.body, context);
-      var newKeyedNode = vnode({
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
+      var newKeyedNode = vnode<DOMRef>({
           onDestroyed : () => {
               destroy++;
           },
           key : 'key-2'
       });
-    diff(currentNode, newKeyedNode, document.body, context);
+    diff<DOMRef>(currentNode, newKeyedNode, document.body, drawingContext);
     expect(destroy).toBe(1);
   });
 
   test('Should execute left-hand side happy path key-window diffing case', () => {
     var body = document.body;
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       children: [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -563,8 +568,8 @@ describe('DOM tests', () => {
       ],
       key: 'key-1',
     });
-    diff(null, currentNode, body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+    var newNode = vnode<DOMRef>({
       children: [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -572,12 +577,12 @@ describe('DOM tests', () => {
       ],
       key: 'key-1',
     });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
       expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-      expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+      expect((newNode.children[i] as VNode<DOMRef>).domRef).toBe((currentNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -585,19 +590,19 @@ describe('DOM tests', () => {
 
   test('Should diff keys properly when keys are prepended', () => {
     var body = document.body;
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       children : [vnodeKeyed('div', '1')],
     });
-    diff(null, currentNode, body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+    var newNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', '2'), vnodeKeyed('div', '1')],
     });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -605,19 +610,19 @@ describe('DOM tests', () => {
 
   test('Should execute right-hand side happy path key-window diffing case', () => {
     var body = document.body;
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c')],
     });
-    diff(null, currentNode, body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode = vnode<DOMRef>({
           children : [vnodeKeyed('div', 'z'), vnodeKeyed('div', 'c')],
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -625,19 +630,19 @@ describe('DOM tests', () => {
 
   test('Should swap nodes', () => {
     var body = document.body;
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b')],
     });
-    diff(null, currentNode, body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+    var newNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(2);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -645,19 +650,19 @@ describe('DOM tests', () => {
 
   test('Should execute flip-flop case', () => {
     var body = document.body;
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'c')],
     });
-    diff(null, currentNode, body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+    var newNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'c'), vnodeKeyed('div', 'b'), vnodeKeyed('div', 'a')],
     });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -669,12 +674,12 @@ describe('DOM tests', () => {
 
   test('Should execute swapped case on 1k nodes', () => {
     var body = document.body;
-    var kids : Array<VNode> = [];
+    var kids : Array<VNode<DOMRef>> = [];
     for (var i = 1; i < 1001; i++) kids.push(vnodeKeyed('div', i.toString()));
-      var currentNode : any = vnode({
+      var currentNode : any = vnode<DOMRef>({
           children : kids
       });
-    var newKids : Array<VTree> = [];
+    var newKids : Array<VTree<DOMRef>> = [];
     for (i = 1; i < 1001; i++) {
       if (i == 3) {
         newKids.push(vnodeKeyed('div', '999'));
@@ -684,11 +689,11 @@ describe('DOM tests', () => {
         newKids.push(vnodeKeyed('div', i.toString()));
       }
     }
-    diff(null, currentNode, body, context);
-      var newNode : any = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode : any = vnode<DOMRef>({
           children : newKids,
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(1000);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
@@ -710,7 +715,7 @@ describe('DOM tests', () => {
 
   test('Should execute top-left and bottom-right match case', () => {
     var body = document.body;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
@@ -719,8 +724,8 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
       ],
       });
-    diff(null, currentNode, body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+    var newNode = vnode<DOMRef>({
         children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'b'),
@@ -729,12 +734,12 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'd'),
         ],
     });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -742,7 +747,7 @@ describe('DOM tests', () => {
 
   test('Should handle duplicate keys case', () => {
     var body = document.body;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'a'),
@@ -751,8 +756,8 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
           ],
       });
-    diff(null, currentNode, body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'b'),
@@ -761,12 +766,12 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'a'),
       ],
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -774,7 +779,7 @@ describe('DOM tests', () => {
 
   test('Should execute top-right and bottom-left match case', () => {
     var body = document.body;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'd'),
         vnodeKeyed('div', 'a'),
@@ -782,8 +787,8 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'b'),
       ],
       });
-    diff(null, currentNode, body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'b'),
         vnodeKeyed('div', 'g'),
@@ -791,12 +796,12 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'a'),
       ],
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(4);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -804,19 +809,19 @@ describe('DOM tests', () => {
 
   test('Should match nothing', () => {
     var body = document.body;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [vnodeKeyed('div', 'e'), vnodeKeyed('div', 'k'), vnodeKeyed('div', 'l')],
       });
-    diff(null, currentNode, body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode = vnode<DOMRef>({
           children : [vnodeKeyed('div', 'b'), vnodeKeyed('div', 'z'), vnodeKeyed('div', 'j')]
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
@@ -824,7 +829,7 @@ describe('DOM tests', () => {
 
   test('Should handle nothing matches case where new key is found in old map', () => {
     var body = document.body;
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [
         vnodeKeyed('div', 'a'),
         vnodeKeyed('div', 'k'),
@@ -833,8 +838,8 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'g'),
       ]
       });
-    diff(null, currentNode, body, context);
-      var newNode = vnode({
+    diff<DOMRef>(null, currentNode, body, drawingContext);
+      var newNode = vnode<DOMRef>({
           children:
       [
         vnodeKeyed('div', 'b'),
@@ -844,36 +849,36 @@ describe('DOM tests', () => {
         vnodeKeyed('div', 'k'),
       ]
       });
-    diff(currentNode, newNode, body, context);
+    diff<DOMRef>(currentNode, newNode, body, drawingContext);
     expect(newNode.children.length).toBe(5);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(currentNode.children[i].key).toEqual(newNode.children[i].key);
-        expect(currentNode.children[i].domRef).toEqual(newNode.children[i].domRef);
+        expect((currentNode.children[i] as VNode<DOMRef>).domRef).toEqual((newNode.children[i] as VNode<DOMRef>).domRef);
     }
     expect(currentNode.domRef.children).toEqual(newNode.domRef.children);
     expect(currentNode.domRef.childNodes).toEqual(newNode.domRef.childNodes);
   });
 
   test('Should append new nodes in keys patch', () => {
-      var currentNode = vnode({
+      var currentNode = vnode<DOMRef>({
           children : [vnodeKeyed('div', 'a')]
       });
-    diff(null, currentNode, document.body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    var newNode = vnode<DOMRef>({
         children : [vnodeKeyed('div', 'a'), vnodeKeyed('div', 'c'), vnodeKeyed('div', 'k')]
     });
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.children.length).toBe(3);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
       expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-      expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+      expect((newNode.children[i] as VNode<DOMRef>).domRef).toBe((currentNode.children[i] as VNode<DOMRef>).domRef);
     }
   });
 
   test('Should diff keyed text nodes', () => {
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       tag: 'div',
       children: [
         vtextKeyed('foo','1'),
@@ -881,8 +886,8 @@ describe('DOM tests', () => {
         vtextKeyed('baz','3'),
       ]
     });
-    diff(null, currentNode, document.body, context);
-    var newNode = vnode({
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    var newNode = vnode<DOMRef>({
       tag: 'div',
       children: [
         vtextKeyed ('baz','3'),
@@ -890,12 +895,546 @@ describe('DOM tests', () => {
         vtextKeyed ('baz','1'),
       ]
     });
-    diff(currentNode, newNode, document.body, context);
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
     expect(newNode.children.length).toBe(currentNode.children.length);
     for (var i = 0; i < newNode.children.length; i++) {
         expect(newNode.children[i].key).toBe(currentNode.children[i].key);
-        expect(newNode.children[i].domRef).toBe(currentNode.children[i].domRef);
+        expect((newNode.children[i] as VNode<DOMRef>).domRef).toBe((currentNode.children[i] as VNode<DOMRef>).domRef);
     }
+  });
+
+  test('Should destroy VText nodes', () => {
+    var currentNode = vtext<DOMRef>('foo');
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    diff<DOMRef>(currentNode, null, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('Should add classes when none existed', () => {
+    var node = vnode<DOMRef>({
+      classList: new Set(['foo', 'bar'])
+    });
+    diff<DOMRef>(null, node, document.body, drawingContext);
+    expect(node.domRef.classList.contains('foo')).toBe(true);
+    expect(node.domRef.classList.contains('bar')).toBe(true);
+  });
+
+  test('Should remove classes when going from classes to no classes', () => {
+    var currentNode = vnode<DOMRef>({
+      classList: new Set(['foo', 'bar'])
+    });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    expect(currentNode.domRef.classList.contains('foo')).toBe(true);
+    expect(currentNode.domRef.classList.contains('bar')).toBe(true);
+    
+    var newNode = vnode<DOMRef>({});
+    (newNode as any).domRef = currentNode.domRef;
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
+    expect(newNode.domRef.classList.contains('foo')).toBe(false);
+    expect(newNode.domRef.classList.contains('bar')).toBe(false);
+  });
+
+  test('Should handle class updates with removals and additions', () => {
+    var currentNode = vnode<DOMRef>({
+      classList: new Set(['foo', 'bar', 'baz'])
+    });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    
+    var newNode = vnode<DOMRef>({
+      classList: new Set(['bar', 'qux'])
+    });
+    (newNode as any).domRef = currentNode.domRef;
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
+    
+    expect(newNode.domRef.classList.contains('foo')).toBe(false);
+    expect(newNode.domRef.classList.contains('bar')).toBe(true);
+    expect(newNode.domRef.classList.contains('baz')).toBe(false);
+    expect(newNode.domRef.classList.contains('qux')).toBe(true);
+  });
+
+  test('Should create VText with INSERT_BEFORE operation', () => {
+    var first = vnode<DOMRef>({});
+    diff<DOMRef>(null, first, document.body, drawingContext);
+
+    var second = vnode<DOMRef>({});
+    diff<DOMRef>(null, second, document.body, drawingContext);
+    
+    // Create a tree that will use INSERT_BEFORE for a text node
+    var container = vnode<DOMRef>({
+      children: [vtext<DOMRef>('a')]
+    });
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, container, document.body, drawingContext);
+    
+    var updated = vnode<DOMRef>({
+      children: [vtext<DOMRef>('x'), vtext<DOMRef>('a')]
+    });
+    (updated as VNode<DOMRef>).domRef = (container as VNode<DOMRef>).domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = ((container as VNode<DOMRef>).children[0] as VText<DOMRef>).domRef;
+    diff<DOMRef>(container, updated, document.body, drawingContext);
+    
+    expect(document.body.children[0].childNodes.length).toBe(2);
+  });
+
+  test('Should create VText with REPLACE operation', () => {
+    var first = vtext<DOMRef>('foo');
+    diff<DOMRef>(null, first, document.body, drawingContext);
+    expect(first.domRef.textContent).toBe('foo');
+    
+    var second = vtext<DOMRef>('bar');
+    diff<DOMRef>(first, second, document.body, drawingContext);
+    expect(second.domRef.textContent).toBe('bar');
+  });
+
+  test('Should create VNode with INSERT_BEFORE operation', () => {
+    var first = vnode<DOMRef>({ tag: 'span' });
+    diff<DOMRef>(null, first, document.body, drawingContext);
+    
+    var container = vnode<DOMRef>({
+      children: [first]
+    });
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, container, document.body, drawingContext);
+    
+    var newFirst = vnode<DOMRef>({ tag: 'div' });
+    var updated = vnode<DOMRef>({
+      children: [newFirst, first]
+    });
+    (updated as VNode<DOMRef>).domRef = (container as VNode<DOMRef>).domRef;
+    (updated.children[1] as VNode<DOMRef>).domRef = ((container as VNode<DOMRef>).children[0] as VNode<DOMRef>).domRef;
+    diff<DOMRef>(container, updated, document.body, drawingContext);
+    
+    expect(document.body.children[0].children.length).toBe(2);
+  });
+
+  test('Should create VNode with onBeforeCreated hook', () => {
+    let beforeCreatedCalled = false;
+    var node = vnode<DOMRef>({
+      onBeforeCreated: () => {
+        beforeCreatedCalled = true;
+      }
+    });
+    diff<DOMRef>(null, node, document.body, drawingContext);
+    expect(beforeCreatedCalled).toBe(true);
+  });
+
+  test('Should handle shouldSync with arrays having null/undefined keys', () => {
+    var currentNode = vnode<DOMRef>({
+      children: [
+        vnodeKeyed('div', 'a'),
+        vnodeKeyed('div', null as any)
+      ]
+    });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    
+    var newNode = vnode<DOMRef>({
+      children: [
+        vnodeKeyed('div', 'a'),
+        vnodeKeyed('div', 'b')
+      ]
+    });
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
+    // Should not use sync algorithm and just diff normally
+    expect(newNode.children.length).toBe(2);
+  });
+
+  test('Should handle shouldSync with new array having undefined keys', () => {
+    var currentNode = vnode<DOMRef>({
+      children: [
+        vnodeKeyed('div', 'a')
+      ]
+    });
+    diff<DOMRef>(null, currentNode, document.body, drawingContext);
+    
+    var newNode = vnode<DOMRef>({
+      children: [
+        vnodeKeyed('div', 'a'),
+        vnodeKeyed('div', undefined as any)
+      ]
+    });
+    diff<DOMRef>(currentNode, newNode, document.body, drawingContext);
+    // Should not use sync algorithm
+    expect(newNode.children.length).toBe(2);
+  });
+
+  test('Should preserve VComp child when keys match', () => {
+    let componentMounted = false;
+    let componentMounted2 = false;
+    
+    const comp1 = vcomp<DOMRef>({
+      mount: (parent) => {
+        componentMounted = true;
+        const tree = vnode<DOMRef>({});
+        diff<DOMRef>(null, tree, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: tree };
+      },
+      unmount: () => {}
+    });
+    comp1.key = 'test-comp';
+    
+    diff<DOMRef>(null, comp1, document.body, drawingContext);
+    expect(componentMounted).toBe(true);
+    
+    const comp2 = vcomp<DOMRef>({
+      mount: (parent) => {
+        componentMounted2 = true;
+        const tree = vnode<DOMRef>({});
+        diff<DOMRef>(null, tree, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: tree };
+      },
+      unmount: () => {}
+    });
+    comp2.key = 'test-comp';
+    
+    diff<DOMRef>(comp1, comp2, document.body, drawingContext);
+    // Should not have called mount2 because keys matched
+    expect(componentMounted2).toBe(false);
+    // Should have preserved child from comp1
+    expect(comp2.child).toBe(comp1.child);
+  });
+
+  test('Should handle recursive drill for nested components', () => {
+    let outerComponentMounted = false;
+    const outerComp = vcomp<DOMRef>({
+      mount: (parent) => {
+        outerComponentMounted = true;
+        const vn = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    
+    diff<DOMRef>(null, outerComp, document.body, drawingContext);
+    expect(outerComponentMounted).toBe(true);
+    expect(outerComp.child).toBeTruthy();
+  });
+
+  test('Should handle component with same key not remounting', () => {
+    let mountCount = 0;
+    
+    const comp = vcomp<DOMRef>({
+      mount: (parent) => {
+        mountCount++;
+        const vn = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    comp.key = 'same-key';
+    
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    expect(mountCount).toBe(1);
+    
+    const comp2 = vcomp<DOMRef>({
+      mount: (parent) => {
+        mountCount++;
+        const vn = vnode<DOMRef>({ tag: 'span' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    comp2.key = 'same-key';
+    
+    // Should preserve child and not mount again
+    diff<DOMRef>(comp, comp2, document.body, drawingContext);
+    expect(mountCount).toBe(1);
+    expect(comp2.child).toBe(comp.child);
+  });
+
+  test('Should call VNode onCreated hook in callCreated', () => {
+    let onCreatedCalled = false;
+    const node = vnode<DOMRef>({
+      onCreated: () => {
+        onCreatedCalled = true;
+      }
+    });
+    
+    // Use callCreated directly
+    const { callCreated } = require('../miso/dom');
+    callCreated(document.body, node, drawingContext);
+    expect(onCreatedCalled).toBe(true);
+  });
+
+  test('Should handle VNode createElement with APPEND operation', () => {
+    var node = vnode<DOMRef>({ tag: 'div' });
+    var container = vnode<DOMRef>({
+      children: [node]
+    });
+    
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, container, document.body, drawingContext);
+    
+    expect(document.body.children[0].children.length).toBe(1);
+    expect(document.body.children[0].children[0]).toBe(node.domRef);
+  });
+
+  test('Should handle VNode createElement with REPLACE operation', () => {
+    var oldNode = vnode<DOMRef>({ tag: 'span' });
+    diff<DOMRef>(null, oldNode, document.body, drawingContext);
+    
+    var newNode = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(oldNode, newNode, document.body, drawingContext);
+    
+    expect(document.body.children[0]).toBe(newNode.domRef);
+    expect(newNode.domRef.tagName).toBe('DIV');
+  });
+
+  test('Should call onBeforeCreated hook for VNode', () => {
+    let beforeCreatedCalled = false;
+    let createdCalled = false;
+    
+    const node = vnode<DOMRef>({
+      tag: 'div',
+      onBeforeCreated: () => {
+        beforeCreatedCalled = true;
+        expect(createdCalled).toBe(false);
+      },
+      onCreated: () => {
+        createdCalled = true;
+      }
+    });
+    
+    diff<DOMRef>(null, node, document.body, drawingContext);
+    
+    expect(beforeCreatedCalled).toBe(true);
+    expect(createdCalled).toBe(true);
+  });
+
+  test('Should handle VNode createElement with INSERT_BEFORE', () => {
+    // Create a parent with first child
+    const first = vnode<DOMRef>({ tag: 'span', key: 'first' });
+    const parent = vnode<DOMRef>({
+      children: [first]
+    });
+    
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    const parentDom = parent.domRef;
+    
+    // Now create a parent with new first child inserted before existing
+    const newFirst = vnode<DOMRef>({ tag: 'div', key: 'new' });
+    const updated = vnode<DOMRef>({
+      children: [newFirst, first]
+    });
+    (updated as VNode<DOMRef>).domRef = parentDom;
+    (updated.children[1] as VNode<DOMRef>).domRef = (first as VNode<DOMRef>).domRef;
+    (updated.children[1] as VNode<DOMRef>).key = (first as VNode<DOMRef>).key;
+    
+    diff<DOMRef>(parent, updated, document.body, drawingContext);
+    
+    expect(parentDom.children.length).toBe(2);
+    expect(parentDom.children[0]).toBe(newFirst.domRef);
+    expect(parentDom.children[1]).toBe(first.domRef);
+  });
+
+  test('Should handle VComp creation with OP.APPEND', () => {
+    let mountCalled = false;
+    const comp = vcomp<DOMRef>({
+      mount: (parent) => {
+        mountCalled = true;
+        const vn = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    
+    expect(mountCalled).toBe(true);
+    expect(comp.child).toBeTruthy();
+  });
+
+  test('Should handle nested VComp with final VNode', () => {
+    let outerMounted = false;
+    
+    const outerComp = vcomp<DOMRef>({
+      mount: (parent) => {
+        outerMounted = true;
+        const vn = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    
+    diff<DOMRef>(null, outerComp, document.body, drawingContext);
+    
+    expect(outerMounted).toBe(true);
+    expect(outerComp.child).toBeTruthy();
+    expect(outerComp.child.type).toBe(1); // VNode type
+  });
+
+  test('Should handle canvas draw callback', () => {
+    let drawCalled = false;
+    const canvas = vnode<DOMRef>({
+      tag: 'canvas',
+      draw: (domRef) => {
+        drawCalled = true;
+        expect(domRef).toBe(canvas.domRef);
+      }
+    });
+    
+    diff<DOMRef>(null, canvas, document.body, drawingContext);
+    expect(drawCalled).toBe(true);
+  });
+
+  test('Should replace VComp with another VComp', () => {
+    let firstUnmounted = false;
+    let secondMounted = false;
+    
+    const first = vcomp<DOMRef>({
+      mount: (parent) => {
+        const vn = vnode<DOMRef>({ tag: 'span' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {
+        firstUnmounted = true;
+      }
+    });
+    
+    diff<DOMRef>(null, first, document.body, drawingContext);
+    
+    const second = vcomp<DOMRef>({
+      mount: (parent) => {
+        secondMounted = true;
+        const vn = vnode<DOMRef>({ tag: 'div' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 2 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    second.key = 'different-key';
+    
+    diff<DOMRef>(first, second, document.body, drawingContext);
+    expect(firstUnmounted).toBe(true);
+    expect(secondMounted).toBe(true);
+  });
+
+  test('Should replace VNode with another VNode via replace', () => {
+    const first = vnode<DOMRef>({ tag: 'span' });
+    diff<DOMRef>(null, first, document.body, drawingContext);
+    
+    const second = vnode<DOMRef>({ tag: 'div', key: 'different' });
+    diff<DOMRef>(first, second, document.body, drawingContext);
+    
+    expect(document.body.children[0]).toBe(second.domRef);
+    expect(second.domRef.tagName).toBe('DIV');
+  });
+
+  test('Should handle mountComponent callback with non-VComp child', () => {
+    let mounted = false;
+    const comp = vcomp<DOMRef>({
+      mount: (parent) => {
+        mounted = true;
+        const vn = vnode<DOMRef>({ tag: 'article' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    expect(mounted).toBe(true);
+    expect(comp.child.type).toBe(1);  // VNode
+  });
+
+  test('Should get DOM reference from drilled VComp', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (parent) => {
+        const vn = vnode<DOMRef>({ tag: 'section' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 1 as any, componentTree: vn };
+      },
+      unmount: () => {}
+    });
+    
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    
+    // Verify that mount callback was invoked and child was set
+    expect(comp.child).toBeTruthy();
+    expect(comp.componentId).toBe(1);
+  });
+
+  test('Should create VText with INSERT_BEFORE in createElement', () => {
+    // Create initial text nodes
+    const first = vtext<DOMRef>('first');
+    const second = vtext<DOMRef>('second');
+    
+    const parent = vnode<DOMRef>({
+      children: [first, second]
+    });
+    
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    
+    // Insert new text before second
+    const newFirst = vtext<DOMRef>('new');
+    const updated = vnode<DOMRef>({
+      children: [newFirst, first, second]
+    });
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = (first as VText<DOMRef>).domRef;
+    (updated.children[2] as VText<DOMRef>).domRef = (second as VText<DOMRef>).domRef;
+    
+    diff<DOMRef>(parent, updated, document.body, drawingContext);
+    
+    expect(parent.domRef.childNodes.length).toBe(3);
+    expect((parent.domRef.childNodes[0] as any).textContent).toBe('new');
+  });
+
+  test('Should create VText with REPLACE in createElement', () => {
+    const first = vtext<DOMRef>('foo');
+    const second = vtext<DOMRef>('bar');
+    
+    const parent = vnode<DOMRef>({
+      children: [first, second]
+    });
+    
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    
+    // Replace first text
+    const updated = vnode<DOMRef>({
+      children: [vtext<DOMRef>('replaced'), second]
+    });
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VText<DOMRef>).domRef = (second as VText<DOMRef>).domRef;
+    
+    diff<DOMRef>(parent, updated, document.body, drawingContext);
+    
+    expect(parent.domRef.childNodes.length).toBe(2);
+    expect((parent.domRef.childNodes[0] as any).textContent).toBe('replaced');
+  });
+
+  test('Should create VNode with REPLACE in createElement', () => {
+    const first = vnode<DOMRef>({ tag: 'span' });
+    const second = vnode<DOMRef>({ tag: 'p' });
+    
+    const parent = vnode<DOMRef>({
+      children: [first, second]
+    });
+    
+    document.body.innerHTML = '';
+    diff<DOMRef>(null, parent, document.body, drawingContext);
+    
+    // Replace first node
+    const newFirst = vnode<DOMRef>({ tag: 'div' });
+    const updated = vnode<DOMRef>({
+      children: [newFirst, second]
+    });
+    (updated as VNode<DOMRef>).domRef = parent.domRef;
+    (updated.children[1] as VNode<DOMRef>).domRef = (second as VNode<DOMRef>).domRef;
+    
+    diff<DOMRef>(parent, updated, document.body, drawingContext);
+    
+    expect(parent.domRef.children[0]).toBe(newFirst.domRef);
+    expect(parent.domRef.children[0].tagName).toBe('DIV');
   });
 
 });

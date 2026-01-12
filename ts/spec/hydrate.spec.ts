@@ -1,9 +1,9 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
-import { vnode, vtext, vnodeKids } from '../miso/smart';
-import { VText } from '../miso/types';
+import { vnode, vtext, vcomp } from '../miso/smart';
+import { VText, VNode, DOMRef, VComp } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-import { context } from '../miso/context/dom';
+import { hydrationContext, drawingContext } from '../miso/context/dom';
 
 /* silence */
 beforeAll(() => {
@@ -28,11 +28,13 @@ describe ("Hydration tests", () => {
     div.appendChild(nestedDiv);
     var txt = document.createTextNode('foo');
     nestedDiv.appendChild(txt);
-    var currentNode : any = vnode({
-      children: [vnode({ children: [vtext('foo')] })],
+
+    const currentNode : VNode<DOMRef> = vnode<DOMRef>({
+      children: [vnode<DOMRef>({ children: [vtext('foo')] })],
     });
-    hydrate(false, document.body, currentNode, context);
-    expect(currentNode.children[0].children[0].text).toEqual('foo');
+    const result = hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect(((currentNode.children[0] as VNode<DOMRef>).children[0] as VText<DOMRef>).text).toEqual('foo');
   });
 
   test('Should fail because of expecting text node', () => {
@@ -40,8 +42,8 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var nestedDiv = document.createElement('div');
     div.appendChild(nestedDiv);
-    var currentNode = vnode({ children: [vtext('foo')] });
-    expect(hydrate(false, document.body, currentNode, context)).toEqual(false);
+    var currentNode = vnode<DOMRef>({ children: [vtext('foo')] });
+    expect(hydrate(false, document.body, currentNode, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should fail to hydrate because of expecting element', () => {
@@ -49,10 +51,10 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
-    var currentNode = vnode({
-      children: [vnode({})],
+    var currentNode = vnode<DOMRef>({
+      children: [vnode<DOMRef>({})],
     });
-    expect(hydrate(false, document.body, currentNode, context)).toEqual(false);
+    expect(hydrate(false, document.body, currentNode, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should fail to hydrate because of non-matching text', () => {
@@ -60,8 +62,8 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foo');
     div.appendChild(txt);
-    var currentNode = vnode({ children: [vtext('bar')] });
-    expect(hydrate(false, document.body, currentNode, context)).toEqual(false);
+    var currentNode = vnode<DOMRef>({ children: [vtext('bar')] });
+    expect(hydrate(false, document.body, currentNode, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should fail to hydrate because of non-matching DOM and VDOM', () => {
@@ -69,8 +71,8 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foobar');
     div.appendChild(txt);
-    var currentNode = vnode({ children: [vtext('foo')] });
-    expect(hydrate(false, document.body, currentNode, context)).toEqual(false);
+    var currentNode = vnode<DOMRef>({ children: [vtext('foo')] });
+    expect(hydrate(false, document.body, currentNode, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should copy DOM into VTree with multiple consecutive text nodes and collapse them', () => {
@@ -78,89 +80,24 @@ describe ("Hydration tests", () => {
     document.body.appendChild(div);
     var txt = document.createTextNode('foobarbaz');
     div.appendChild(txt);
-    var currentNode = vnode({
+    var currentNode = vnode<DOMRef>({
       children: [vtext('foo'), vtext('bar'), vtext('baz')],
     });
-    hydrate(false, document.body, currentNode, context);
+    const result = hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
+    expect(result).toBe(true);
     expect(div.childNodes[0].textContent).toEqual('foobarbaz');
-  });
-
-  test('Should copy DOM into VTree with multiple consecutive text nodes and collapse them without mount point', () => {
-    const div = document.createElement('div');
-    document.body.appendChild(div);
-    const txt = document.createTextNode('foobarbaz');
-    div.appendChild(txt);
-    const currentNode = vnode({
-      children: [
-        vtext('foo'),
-        vtext('bar'),
-        vtext('baz'),
-        vnode({}),
-        vtext('foo'),
-        vtext('bar'),
-        vtext('baz'),
-      ],
-    });
-    hydrate(false, null, currentNode, context);
-    //Expect "foobarbaz" to be split up into three nodes in the DOM
-    expect(div.childNodes[0].textContent).toEqual('foobarbaz');
-    expect(div.childNodes[2].textContent).toEqual('foobarbaz');
-  });
-
-  test('Should copy DOM into VTree at mountPoint', () => {
-    var unrelatedDiv = document.createElement('div');
-    document.body.appendChild(document.createElement('script'));
-    document.body.appendChild(document.createTextNode('test'));
-    document.body.appendChild(unrelatedDiv);
-    var unrelatedTxt = document.createTextNode('Not part of Miso app');
-    unrelatedDiv.appendChild(unrelatedTxt);
-    var misoDiv = document.createElement('div');
-    document.body.appendChild(misoDiv);
-    var nestedDiv1 = document.createElement('div');
-    misoDiv.appendChild(nestedDiv1);
-    var nestedDiv2 = document.createElement('div');
-    nestedDiv1.appendChild(nestedDiv2);
-    var txt = document.createTextNode('foo');
-    nestedDiv2.appendChild(txt);
-    var tree:any = vnode({ children: [vnode({ children: [vtext('foo')] })] });
-    var succeeded = hydrate(false, misoDiv, tree, context);
-    expect(tree.children[0].children[0].domRef).toEqual(txt);
-    expect(succeeded).toEqual(true);
-  });
-
-  test('Should copy DOM into VTree at body w/ script / text siblings', () => {
-    var unrelatedDiv = document.createElement('div');
-    document.body.appendChild(document.createElement('script'));
-    document.body.appendChild(document.createTextNode('test'));
-    document.body.appendChild(unrelatedDiv);
-    var unrelatedTxt = document.createTextNode('Not part of Miso app');
-    unrelatedDiv.appendChild(unrelatedTxt);
-    var misoDiv = document.createElement('div');
-    document.body.appendChild(misoDiv);
-    var nestedDiv1 = document.createElement('div');
-    misoDiv.appendChild(nestedDiv1);
-    var nestedDiv2 = document.createElement('div');
-    nestedDiv1.appendChild(nestedDiv2);
-    var txt = document.createTextNode('foo');
-    nestedDiv2.appendChild(txt);
-    var currentNode : any = vnodeKids('div', [vnodeKids('div', [vtext('foo')])]);
-    var succeeded = hydrate(true, document.body, currentNode, context);
-    expect(currentNode.children[0].children[0].domRef.textContent).toEqual(
-        new Text('foo').textContent
-    );
-    expect(succeeded).toEqual(false);
   });
 
   test('Should fail to mount on a text node', () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(misoTxt);
-    var tree = vnode({ children: [vnode({ children: [vtext('foo')] })] });
-    expect(hydrate(true, misoTxt, tree, context)).toEqual(false);
+    var tree = vnode<DOMRef>({ children: [vnode<DOMRef>({ children: [vtext('foo')] })] });
+    expect(hydrate(true, misoTxt, tree, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should not hydrate on an empty page', () => {
-    var tree = vnode({ children: [vnode({ children: [vtext('foo')] })] });
-    expect(hydrate(true, null, tree, context)).toEqual(false);
+    var tree = vnode<DOMRef>({ children: [vnode<DOMRef>({ children: [vtext('foo')] })] });
+    expect(hydrate(true, null, tree, hydrationContext,drawingContext)).toEqual(false);
   });
 
   test('Should pass integrity check', () => {
@@ -169,9 +106,9 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({ children: [vtext('foo')] });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    var tree = vnode<DOMRef>({ children: [vtext('foo')] });
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
   });
 
   test('Should fail integrity check on bad tag', () => {
@@ -179,11 +116,11 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({ children: [vtext('foo')] });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    var tree = vnode<DOMRef>({ children: [vtext('foo')] });
+    expect(hydrate(false, document.body, tree, hydrationContext, drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.tag = 'lol';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on bad tag in hydrate w/ logging enabled', () => {
@@ -191,8 +128,8 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({ children: [vtext('fool')] });
-    expect(hydrate(true, document.body, tree, context)).toEqual(false);
+    var tree = vnode<DOMRef>({ children: [vtext('fool')] });
+    expect(hydrate(true, document.body, tree, hydrationContext, drawingContext)).toEqual(false);
   });
 
   test('Should fail integrity check on differing vtext', () => {
@@ -200,13 +137,13 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       children: [vtext('foo')],
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
-    (tree.children[0] as VText).text = 'oops';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
+    (tree.children[0] as VText<DOMRef>).text = 'oops';
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing child lengths', () => {
@@ -214,86 +151,86 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       children: [vtext('foo')],
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.children = [];
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
-    tree.css['background-color'] = 'green';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
+    tree.css['backgroundColor'] = 'green';
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles, for color', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.style['color'] = '#cccccc';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       children: [vtext('foo')],
-      css: { 'background-color': 'red', color: '#cccccc' },
+      css: { 'backgroundColor': 'red', color: '#cccccc' },
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.css['color'] = '#dddddd';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing props', () => {
     var child = document.createElement('div');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.className = 'something';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       props: { class: 'something' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.props['class'] = 'something-else';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing height / width', () => {
     var child = document.createElement('img');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.className = 'something';
     child.height = 100;
     child.width = 100;
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag : 'img',
       props: { class: 'something', height: '100', width: '100' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.props['height'] = '200';
     tree.props['width'] = '200';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on random property (title)', () => {
@@ -302,54 +239,54 @@ describe ("Hydration tests", () => {
     child['title'] = 'bar';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       props: { title: 'bar' },
       children: [vtext('foo')],
     });
-    expect(hydrate(false, document.body, tree, context)).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.props['title'] = 'woz';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on href', () => {
     var child = document.createElement('a');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag : 'a',
       props: { href: 'google.com' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
-    const result = hydrate(false, document.body, tree, context);
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     tree.props['href'] = 'notgoogle.com';
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on vtext domRef', () => {
     var child = document.createElement('a');
     var misoTxt = document.createTextNode('foo');
-    child.style['background-color'] = 'red';
+    child.style['backgroundColor'] = 'red';
     child.href = 'google.com';
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag : 'a',
       props: { href: 'google.com' },
       children: [vtext('foo')],
-      css: { 'background-color': 'red' },
+      css: { 'backgroundColor': 'red' },
     });
-    const result = hydrate(false, document.body, tree, context);
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(true);
-    tree.children[0].domRef = document.createElement('div');
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
+    (tree.children[0] as VNode<DOMRef>).domRef = document.createElement('div');
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on unknown property test', () => {
@@ -357,14 +294,194 @@ describe ("Hydration tests", () => {
     var misoTxt = document.createTextNode('foo');
     document.body.appendChild(child);
     child.appendChild(misoTxt);
-    var tree = vnode({
+    var tree = vnode<DOMRef>({
       tag : 'a',
       props: { foobah: 'lol' },
       children: [vtext('foo')],
     });
-    const result = hydrate(false, document.body, tree, context);
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, context)).toBe(false);
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
+  });
+
+  test('Should not call mountComponent when hydrating VComp', () => {
+    const txt = document.createTextNode('component content');
+    const div = document.createElement('div');
+    div.appendChild(txt);
+    document.body.appendChild(div);
+
+    let mountCalled = false;
+    let componentId: any = null;
+    let componentTree: any = null;
+
+    const comp = vcomp<DOMRef>({
+      key: 'test-comp',
+      componentId : 1,
+      child: vnode({ children: [vtext<DOMRef>('component content')] }),
+      mount: (_parent: any) => {
+        mountCalled = true;
+        return { componentId, componentTree } as any;
+      },
+      unmount: () => {},
+    }) as VComp<DOMRef>;
+
+    const result = hydrate(false, document.body, comp, hydrationContext, drawingContext);
+
+    expect(result).toBe(true);
+    expect(mountCalled).toBe(false);
+    expect(comp.componentId).toBe(1);
+    expect(comp.child).toBeTruthy();
+  });
+
+  test('Should call mountComponent with onBeforeMounted hook', () => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+
+    let beforeMountedCalled = false;
+    let onMountedCalled = false;
+
+    const comp = vcomp<DOMRef>({
+      key: 'test-comp-hooks',
+      onBeforeMounted: () => {
+        beforeMountedCalled = true;
+      },
+      onMounted: () => {
+        onMountedCalled = true;
+      },
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
+      child : vnode<DOMRef> ({}),
+      unmount: () => {},
+    }) as VComp<DOMRef>;
+
+    expect(hydrate(false, document.body, comp, hydrationContext, drawingContext)).toBe(true);
+    expect(beforeMountedCalled).toBe(true);
+    expect(onMountedCalled).toBe(true);
+  });
+
+  test('Should handle VComp with nested child VTree', () => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+
+    let childComponentTree: any = null;
+
+    const comp = vcomp<DOMRef>({
+      key: 'nested-comp',
+      child: vnode<DOMRef>({
+        tag: 'span',
+        children: [vtext<DOMRef>('nested child')],
+      }),
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
+      unmount: () => {},
+    }) as VComp<DOMRef>;
+
+    const tree = vnode<DOMRef>({
+      children: [comp],
+    });
+
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(result).toBe(false); // Hydration fails, falls back to mounting
+    expect((comp.child as VNode<DOMRef>).tag).toBe('span');
+  });
+
+  test('Should log warning when hydration fails with logLevel enabled', () => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+
+    // Create mismatched structure - DOM has div, VTree expects span
+    const tree = vnode<DOMRef>({ tag: 'span', children: [vtext<DOMRef>('mismatch')] });
+
+    const result = hydrate(true, document.body, tree, hydrationContext, drawingContext);
+
+    expect(result).toBe(false);
+  });
+
+  test('Should log success when hydration succeeds with logLevel enabled', () => {
+    const div = document.createElement('div');
+    document.body.appendChild(div);
+    const txt = document.createTextNode('test');
+    div.appendChild(txt);
+
+    const tree = vnode<DOMRef>({
+      children: [vtext<DOMRef>('test')],
+    });
+
+    const result = hydrate(true, document.body, tree, hydrationContext, drawingContext);
+
+    expect(result).toBe(true);
+  });
+
+  test('Should handle preamble with no mount point children after scripts', () => {
+    // Create mount point with only script tags
+    const mountDiv = document.createElement('div');
+    const script1 = document.createElement('script');
+    const script2 = document.createElement('script');
+    mountDiv.appendChild(script1);
+    mountDiv.appendChild(script2);
+    document.body.appendChild(mountDiv);
+
+    const tree = vnode<DOMRef>({
+      children: [vtext<DOMRef>('content')],
+    });
+
+    const result = hydrate(false, mountDiv as any, tree, hydrationContext, drawingContext);
+
+    // Should create a new div since only scripts are present
+    expect(result).toBe(false);
+  });
+
+  test('Should parse RGB color correctly', () => {
+    const div = document.createElement('div');
+    div.style.color = 'rgb(255, 128, 64)';
+    document.body.appendChild(div);
+
+    const tree = vnode<DOMRef>({
+      css: { color: 'rgb(255, 128, 64)' },
+    });
+
+    const hydrated = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(hydrated).toBe(true);      
+
+    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
+  });
+
+  test('Should successfully walk and hydrate VComp in DOM', () => {
+    const div = document.createElement('div');
+    const span = document.createElement('span');
+    div.appendChild(span);
+    document.body.appendChild(div);
+
+    const comp = vcomp<DOMRef>({
+      key: 'walk-comp',
+      componentId: 6,
+      child: vnode<DOMRef>({ tag: 'span' }),
+      mount: (_parent: any) => ({ componentId: 6, componentTree: vnode<DOMRef>({ tag: 'span' }) } as any),
+      unmount: () => {},
+    }) as VComp<DOMRef>;
+
+    const tree = vnode<DOMRef>({
+      children: [comp],
+    });
+
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect(comp.componentId).toBe(6);
+    expect(comp.child).toBeDefined();
+  });
+
+  test('Should handle VNode with VNode child in walk function', () => {
+    const div = document.createElement('div');
+    const child = document.createElement('span');
+    div.appendChild(child);
+    document.body.appendChild(div);
+
+    const tree = vnode<DOMRef>({
+      children: [vnode<DOMRef>({ tag: 'span' })],
+    });
+
+    const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
+
+    expect(result).toBe(true);
+    expect(tree.domRef).toBeDefined();
   });
 
 });

@@ -6,9 +6,9 @@ license:             BSD-3-Clause
 license-file:        LICENSE
 author:              David M. Johnson <code@dmj.io>
 maintainer:          David M. Johnson <code@dmj.io>
-homepage:            http://github.com/dmjio/miso
+homepage:            https://haskell-miso.org/
 copyright:           Copyright (c) 2016-2025 David M. Johnson
-bug-reports:         https://github.com/dmjio/miso/issues
+bug-reports:         https://github.com/haskell-miso/miso/issues
 build-type:          Simple
 extra-source-files:  README.md
 synopsis:            A tasty Haskell front-end web framework
@@ -20,7 +20,7 @@ extra-source-files:
 
 source-repository head
    type: git
-   location: https://github.com/dmjio/miso.git
+   location: https://github.com/haskell-miso/miso.git
 
 common cpp
   if impl(ghcjs) || arch(javascript)
@@ -38,40 +38,20 @@ common cpp
   else
     cpp-options:
       -DVANILLA
+
   if flag(production)
     cpp-options:
       -DPRODUCTION
 
-common string-selector
-  if impl(ghcjs) || arch(javascript) || flag (jsstring-only) || arch(wasm32)
-    hs-source-dirs:
-      jsstring-src
-  else
-    hs-source-dirs:
-      text-src
+  if flag(ssr)
+    cpp-options:
+      -DSSR
 
-common jsaddle
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
-    build-depends:
-      jsaddle-warp < 0.10,
-      wai-middleware-static < 0.10,
-      wai < 3.3,
-      warp < 3.5,
-      websockets < 0.14
-
-  if !(impl(ghcjs) || arch(javascript))
-    build-depends:
-      file-embed < 0.1
-
-  if arch(wasm32)
-    build-depends:
-      jsaddle-wasm >= 0.1.2 && < 0.2
+  if flag(benchmark)
+    cpp-options:
+      -DBENCH
 
 common client
-  if impl(ghcjs) || arch(javascript)
-    build-depends:
-      ghcjs-base -any
-
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(production)
       js-sources:
@@ -79,6 +59,15 @@ common client
     else
       js-sources:
         js/miso.js
+
+flag benchmark
+  manual:
+    True
+  default:
+    False
+  description:
+    When enabled this outputs (in milliseconds) the time it
+    takes to build the virtual DOM on page load.
 
 flag production
   manual:
@@ -89,6 +78,15 @@ flag production
     Uses miso's production quality JS (miso.prod.js).
     This is built from calling "bun build --production"
 
+flag ssr
+  manual:
+    True
+  default:
+    False
+  description:
+    Used to indicate if SSR (server-side rendering) is being used. Defaults to false.
+    Enable when performing hydration / server rendering of Html using ToHtml.
+
 flag template-haskell
   manual:
     True
@@ -97,26 +95,8 @@ flag template-haskell
   description:
     Checks if template-haskell is enabled. If so, allows Miso.Lens.TH
 
-flag tests
-  manual:
-    True
-  default:
-    False
-  description:
-    Builds Miso's tests
-
-flag jsstring-only
-  manual:
-    True
-  default:
-    False
-  description:
-    Always set MisoString = JSString
-
 library
   import:
-    string-selector,
-    jsaddle,
     client,
     cpp
   default-language:
@@ -124,12 +104,16 @@ library
   other-modules:
     Miso.Delegate
     Miso.Diff
+    Miso.DSL.FFI
+    Miso.Hydrate
     Miso.FFI.Internal
     Miso.Runtime
   exposed-modules:
     Miso
+    Miso.Binding
     Miso.Canvas
     Miso.Concurrent
+    Miso.DSL
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -141,22 +125,26 @@ library
     Miso.Html.Element
     Miso.Html.Event
     Miso.Html.Property
+    Miso.Html.Render
+    Miso.JSON
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property
     Miso.Media
+    Miso.Navigator
     Miso.Property
     Miso.PubSub
-    Miso.Render
     Miso.Router
     Miso.Run
+    Miso.Runtime.Internal
     Miso.State
     Miso.Subscription
     Miso.Subscription.History
     Miso.Subscription.Keyboard
     Miso.Subscription.Mouse
     Miso.Subscription.Window
+    Miso.Subscription.OnLine
     Miso.Subscription.Util
     Miso.Svg
     Miso.Svg.Property
@@ -164,39 +152,56 @@ library
     Miso.Svg.Event
     Miso.Storage
     Miso.String
-    Miso.Style
-    Miso.Style.Color
-    Miso.Style.Types
+    Miso.CSS
+    Miso.CSS.Color
+    Miso.CSS.Types
     Miso.Types
     Miso.Util
     Miso.Util.Lexer
     Miso.Util.Parser
     Miso.WebSocket
 
+  -- FFI declarations
+  if arch(javascript) || impl(ghcjs)
+    hs-source-dirs:
+      ffi/js
+    build-depends:
+      ghcjs-base -any
+
+    if impl(ghcjs)
+      build-depends:
+        ghcjs-prim
+
+  elif arch(wasm32)
+    hs-source-dirs:
+      ffi/wasm
+    build-depends:
+      ghc-experimental,
+      template-haskell >= 2.21 && < 2.24
+    exposed-modules:
+      Miso.DSL.TH
+    other-modules:
+      Data.JSString
+  else
+    hs-source-dirs:
+      ffi/ghc
+
   if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
       Miso.String.QQ
     build-depends:
-      template-haskell < 2.24
+      template-haskell >= 2.21 && < 2.24
 
   ghc-options:
     -Wall
   hs-source-dirs:
     src
   build-depends:
-    aeson         < 2.3,
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,
-    http-api-data < 0.9,
-    http-media    < 0.9,
-    http-types    < 0.13,
-    jsaddle       < 0.10,
+    transformers  < 0.6.2.0,
     mtl           < 2.4,
-    network-uri   < 2.7,
-    servant       > 0.15 && < 0.21,
-    tagsoup       < 0.15,
     text          < 2.2,
-    transformers  < 0.7,
     stm >= 2.4 && < 2.6

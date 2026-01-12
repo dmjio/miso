@@ -56,24 +56,26 @@ module Miso.Mathml.Property
   , symmetric_
   , voffset_
   , width_
+  , close_
+  , open_
   ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
 import           Miso.Property
 -----------------------------------------------------------------------------
--- | [<\dir\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
+-- | [dir](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/dir)
 --
 -- @since 1.9.0.0
 dir_ :: MisoString -> Attribute action
 dir_ = textProp "dir"
 -----------------------------------------------------------------------------
--- | [<\displaystyle\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/displaystyle)
+-- | [displaystyle](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/displaystyle)
 --
 -- @since 1.9.0.0
 displaystyle_ :: MisoString -> Attribute action
 displaystyle_ = textProp "displaystyle"
 ------------------------------------------------------------------------------
--- | [<\scriptlevel\>](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/scriptlevel)
+-- | [scriptlevel](https://developer.mozilla.org/en-US/docs/Web/MathML/Reference/Global_attributes/scriptlevel)
 --
 -- @since 1.9.0.0
 scriptlevel_ :: Int -> Attribute action
@@ -219,4 +221,12 @@ voffset_ = textProp "voffset"
 -- | @since 1.9.0.0
 width_ :: MisoString -> Attribute action
 width_ = textProp "width"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+close_ :: MisoString -> Attribute action
+close_ = textProp "close"
+-----------------------------------------------------------------------------
+-- | @since 1.9.0.0
+open_ :: MisoString -> Attribute action
+open_ = textProp "open"
 -----------------------------------------------------------------------------

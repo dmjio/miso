@@ -1,0 +1,66 @@
+cabal-version:      2.2
+name:               miso-tests
+version:            0.1.0.0
+synopsis:           Integration tests for Haskell miso Components
+description:        An hspec-like library for testing miso Components
+homepage:           https://haskell-miso.org
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             dmjio
+maintainer:         code@dmj.io
+copyright:          dmjio @ 2026
+category:           Web
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+extra-source-files:
+
+flag interactive
+  default: False
+  manual: True
+
+common warnings
+  ghc-options: -Wall
+
+common options
+  if arch(wasm32)
+    ghc-options:
+      -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+    cpp-options:
+      -DWASM
+
+  if flag (interactive)
+    cpp-options:
+      -DINTERACTIVE
+
+  if arch(javascript)
+     ld-options:
+       -sEXPORTED_RUNTIME_METHODS=HEAP8
+
+executable component-tests
+  import:
+    options
+  main-is:
+    Main.hs
+  build-depends:
+    base, miso, miso-tests, containers, mtl, stm, text
+  hs-source-dirs:
+    app
+
+  if arch(javascript) || impl(ghcjs)
+    cpp-options:
+      -DGHCJS_BROWSER
+
+  default-language:
+    Haskell2010
+
+library
+  import:
+    warnings
+  hs-source-dirs:
+    src
+  default-language:
+    Haskell2010
+  exposed-modules:
+    Miso.Test
+  build-depends:
+    base, miso, containers, mtl, stm

@@ -1,13 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Style.Types
+-- Module      :  Miso.CSS.Types
 -- Copyright   :  (C) 2016-2025 David M. Johnson (@dmjio)
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Types for CSS, including inline styles and [StyleSheets](https://developer.mozilla.org/en-US/docs/Web/API/StyleSheet).
+--
 ----------------------------------------------------------------------------
-module Miso.Style.Types
+module Miso.CSS.Types
   ( -- *** Types
     Style
   , Styles (..)
@@ -16,7 +19,7 @@ module Miso.Style.Types
 -----------------------------------------------------------------------------
 import Miso.String (MisoString)
 -----------------------------------------------------------------------------
--- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to 'Styles'.
+-- | Type for a CSS StyleSheet. Internally it maps From CSS selectors to t'Styles'.
 --
 -- @
 -- testSheet :: StyleSheet

@@ -3,7 +3,7 @@
 {-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE TemplateHaskellQuotes     #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
@@ -23,6 +23,19 @@ import Language.Haskell.TH.Quote
 ----------------------------------------------------------------------------
 import Miso.String (toMisoString)
 ----------------------------------------------------------------------------
+-- | QuasiQuoter for specifying multiline 'Miso.String.MisoString'
+--
+-- @
+-- {-# LANGUAGE QuasiQuotes #-}
+--
+-- test :: MisoString
+-- test = [misoString| foo
+--   bar
+--     baz
+-- |]
+--
+-- @
+--
 misoString :: QuasiQuoter
 misoString = QuasiQuoter
   { quoteExp  = \string -> [| toMisoString string |]

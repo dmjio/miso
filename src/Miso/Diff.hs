@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -8,22 +9,21 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Functions and helpers for Virtual DOM diffing.
+--
 ----------------------------------------------------------------------------
 module Miso.Diff
   ( diff
   , mountElement
   ) where
 -----------------------------------------------------------------------------
-import           GHCJS.Foreign.Internal hiding (Object)
-import           GHCJS.Types
-import           JavaScript.Object.Internal
-import           Language.Javascript.JSaddle
------------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
+import           Miso.DSL
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
-diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
+diff :: Maybe VTree -> Maybe VTree -> JSVal -> IO ()
 diff current new_ mountEl =
   case (current, new_) of
     (Nothing, Nothing) -> pure ()
@@ -38,7 +38,8 @@ diff current new_ mountEl =
       FFI.flush
 -----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body
-mountElement :: MisoString -> JSM JSVal
-mountElement "body" = FFI.getBody
-mountElement e = FFI.getElementById e
+mountElement :: MisoString -> IO JSVal
+mountElement = \case
+  "body" -> FFI.getBody
+  e -> FFI.getElementById e
 -----------------------------------------------------------------------------

@@ -21,28 +21,28 @@ module Miso.Subscription.Window
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Language.Javascript.JSaddle
-import           Data.Aeson.Types (parseEither)
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
+import           Miso.JSON hiding (Options, defaultOptions)
 import           Miso.String
 import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
 -----------------------------------------------------------------------------
 -- | Captures window coordinates changes as they occur and writes them to
--- an event sink
+-- an event sink.
 windowCoordsSub :: (Coord -> action) -> Sub action
 windowCoordsSub f = windowPointerMoveSub (f . client)
 -----------------------------------------------------------------------------
 -- | @windowSub eventName decoder toAction@ provides a subscription
--- to listen to window level events.
+-- to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
 windowSub :: MisoString -> Decoder r -> (r -> action) -> Sub action
 windowSub = windowSubWithOptions defaultOptions
 -----------------------------------------------------------------------------
 -- | @windowSubWithOptions options eventName decoder toAction@ provides a
--- subscription to listen to window level events.
+-- subscription to listen to [window level events](https://developer.mozilla.org/en-US/docs/Web/API/Window#events).
 windowSubWithOptions
   :: Options
   -> MisoString
@@ -60,14 +60,14 @@ windowSubWithOptions Options{..} eventName Decoder {..} toAction sink =
           v <- fromJSValUnchecked =<< FFI.eventJSON decodeAtVal e
           case parseEither decoder v of
             Left s ->
-              error $ "windowSubWithOptions: Parse error on " <> unpack eventName <> ": " <> s
+              FFI.consoleError ("windowSubWithOptions: Parse error on " <> eventName <> ": " <> ms s)
             Right r -> do
-              when stopPropagation (FFI.eventStopPropagation e)
-              when preventDefault (FFI.eventPreventDefault e)
+              when _stopPropagation (FFI.eventStopPropagation e)
+              when _preventDefault (FFI.eventPreventDefault e)
               sink (toAction r)
 -----------------------------------------------------------------------------
 -- | @window.addEventListener ("pointermove", (event) => handle(event))@
--- A 'Sub' to handle @PointerEvent@s on window
+-- A 'Sub' to handle t'PointerEvent's on window.
 windowPointerMoveSub :: (PointerEvent -> action) -> Sub action
 windowPointerMoveSub = windowSub "pointermove" pointerDecoder
 -----------------------------------------------------------------------------

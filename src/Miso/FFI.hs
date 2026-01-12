@@ -6,57 +6,98 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Foreign Function Interface (FFI) utilities for interacting with JavaScript.
+--
 ----------------------------------------------------------------------------
 module Miso.FFI
-  ( -- ** Functions
+  ( -- ** Object
     set
+    -- ** Performance
   , now
+    -- ** Logging
   , consoleLog
   , consoleLog'
   , consoleError
   , consoleWarn
+    -- ** DOM
   , getElementById
   , focus
   , blur
+  , select
+  , setSelectionRange
   , alert
-  , reload
+  , getProperty
+  , callFunction
+  , castJSVal
+  , removeChild
+    -- ** Styles
   , addStyle
   , addStyleSheet
-  , addEventListener
+    -- ** Callbacks
   , syncCallback
   , syncCallback1
   , asyncCallback
   , asyncCallback1
   , asyncCallback2
+    -- ** Drawing
   , flush
   , setDrawingContext
-  , jsonStringify
-  , jsonParse
+    -- ** Window
   , windowInnerWidth
   , windowInnerHeight
-  -- ** Image
+  , locationReload
+    -- ** Image
   , Image (..)
   , newImage
-  -- ** Date
+    -- ** Date
   , Date (..)
   , newDate
   , toLocaleString
   , getSeconds
   , getMilliseconds
-  -- ** Component
-  , getParentComponentId
-  , getComponentId
-  -- ** DOM
+    -- ** DOM Traversal
   , nextSibling
   , previousSibling
-  -- ** Element
+    -- ** Element
   , click
+  , setValue
+    -- ** File Input
   , files
-  -- ** Re-exports
-  , JSVal
+    -- ** Navigator
+  , isOnLine
+    -- ** ArrayBuffer
+  , ArrayBuffer (..)
+    -- ** Blob
+  , Blob (..)
+    -- ** Uint8Array
+  , Uint8Array (..)
+    -- ** FormData
+  , FormData (..)
+    -- ** File
+  , File (..)
+    -- ** URLSearchParams
+  , URLSearchParams (..)
+    -- ** FileReader
+  , FileReader (..)
+  , newFileReader
+    -- ** Fetch API
+  , fetch
+  , Response (..)
+    -- ** Event
+  , addEventListener
+  , removeEventListener
+  , dispatchEvent
+  , newEvent
+  , newCustomEvent
+  , Event (..)
+  , eventPreventDefault
+  , eventStopPropagation
+    -- ** Inline JS
+  , inline
+    -- ** Scroll
+  , scrollIntoView
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal
------------------------------------------------------------------------------
-import           Language.Javascript.JSaddle (JSVal)
 -----------------------------------------------------------------------------

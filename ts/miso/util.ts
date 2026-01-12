@@ -1,4 +1,4 @@
-import { VNode } from './types';
+import { VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -20,99 +20,123 @@ export function callBlur(id: string, delay: number): void {
   delay > 0 ? setTimeout(setBlur, delay) : setBlur();
 }
 
-export function fetchJSON (
+export function callSelect(id: string, delay: number): void {
+  var setSelect = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['select'] === 'function') (e as HTMLInputElement).select();
+  };
+  delay > 0 ? setTimeout(setSelect, delay) : setSelect();
+}
+
+export function callSetSelectionRange(id: string, start: number, end: number, delay: number): void {
+  var setSetSelectionRange = function () {
+    var e = document.getElementById(id);
+    if (e && typeof e['setSelectionRange'] === 'function') (e as HTMLInputElement).setSelectionRange(start, end, 'none');
+  };
+  delay > 0 ? setTimeout(setSetSelectionRange, delay) : setSetSelectionRange();
+}
+
+export function fetchCore (
   url : string,
   method : string,
   body : any,
-  headers : Record<string,string>,
-  successful: (string) => void,
-  errorful: (string) => void
-): void
+  requestHeaders : Record<string,string>,
+  successful: (response: Response) => void,
+  errorful: (response: Response) => void,
+  responseType: string /* dmj: expected response type */
+): any
 {
-  var options = { method, headers };
+  var options = { method, headers: requestHeaders };
   if (body) {
     options['body'] = body;
   }
-  fetch (url, options)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        return response.json();
-      })
-    .then(successful) /* success callback */
-    .catch(errorful); /* error callback */
-}
-
-/*
-   'shouldSync'
-   dmj: Used to determine if we should enter `syncChildren`
-
-*/
-export function shouldSync (
-  node: VNode
-): boolean {
-    /* cannot sync on null children */
-    if (node.children.length === 0) {
-        return false;
-    }
-    /* only sync if keys exist on all children  */
-    var enterSync = true;
-    for (const child of node.children) {
-        if (!child.key) {
-          enterSync = false;
-          break;
-        }
-    }
-    return enterSync;
-}
-
-/*
-   'getParentComponentId'
-   dmj: Used to fetch the parent's componentId
-
-   Climbs up the tree, finds the immediate component ancestor (parent) and returns its componentId
-   This should be called on the DOMRef of a VComp, otherwise it will return the current componentId.
-
-*/
-export function getParentComponentId (
-  vcompNode: ParentNode
-): number {
-    var climb = function (node : ParentNode) {
-      let parentComponentId = null;
-      while (node && node.parentNode) {
-          if ('componentId' in node.parentNode) {
-              parentComponentId = node.parentNode['componentId'];
-              break;
+  let headers = {};
+  let status = null;
+  try {
+    fetch (url, options)
+        .then(response => {
+          status = response.status;
+          for (const [key, value] of response.headers) {
+             headers[key] = value;
           }
-          node = node.parentNode;
-      }
-      return parentComponentId;
-    }
-    return climb (vcompNode);
+          if (!response.ok) {
+            throw new Error(response.statusText);
+          }
+          if (responseType == 'json') {
+            return response.json();
+          } else if (responseType == 'text') {
+            return response.text();
+          } else if (responseType === 'arrayBuffer') {
+            return response.arrayBuffer();
+          } else if (responseType === 'blob') {
+            return response.blob();
+          } else if (responseType === 'bytes') {
+            return response.bytes();
+          } else if (responseType === 'formData') {
+            return response.formData();
+          } else if (responseType === 'none') {
+            return successful({error:null, body: null, headers, status});
+          }
+        })
+        .then((body) => successful({error: null, body, headers, status}))
+        .catch((body) => errorful({error: null, body, headers, status})); /* error callback */
+  } catch (err) {
+      errorful({ body: null, error: err.message, headers, status});
+  }
 }
 
 export function websocketConnect (
     url: string,
     onOpen,
     onClose,
+    onMessageText,
+    onMessageJSON,
+    onMessageBLOB,
+    onMessageArrayBuffer,
     onError,
-    onMessage,
+    textOnly : boolean,
 ): WebSocket {
-  let socket = new WebSocket(url);
-  socket.onopen = function () {
-    onOpen();
-  };
-  socket.onclose = function (e) {
-    onClose(e);
-  };
-  socket.onerror = function (error) {
-    onError(error);
-  };
-  socket.onmessage = function (msg) {
-    onMessage(msg.data);
-  };
-  return socket;
+  try {
+    let socket = new WebSocket(url);
+    socket.onopen = function () {
+      onOpen();
+    };
+    socket.onclose = function (e) {
+      onClose(e);
+    };
+    socket.onerror = function (error) {
+      console.error (error);
+      onError("WebSocket error received");
+    };
+    socket.onmessage = function (msg) {
+      if (typeof msg.data === "string") {
+        try {
+            if (textOnly) {
+              if (onMessageText) onMessageText(msg.data)
+              return;
+            }
+            const json = JSON.parse (msg.data);
+            if (onMessageJSON) onMessageJSON(json);
+        } catch (err) {
+            if (textOnly && onMessageText) {
+              onMessageText(msg.data)
+            } else {
+              onError(err.message)
+            }
+        }
+      } else if (msg.data instanceof Blob) {
+          if (onMessageBLOB) onMessageBLOB (msg.data)
+      } else if (msg.data instanceof ArrayBuffer) {
+          if (onMessageArrayBuffer) onMessageArrayBuffer (msg.data)
+      } else {
+        console.error ("Received unknown message type from WebSocket", msg);
+        onError ("Unknown message received from WebSocket");
+      }
+    };
+    return socket;
+  } catch (err) {
+    onError (err.message);
+  }
 }
 
 export function websocketClose (
@@ -135,20 +159,39 @@ export function websocketSend (
 export function eventSourceConnect (
     url: string,
     onOpen,
-    onMessage,
+    onMessageText,
+    onMessageJSON,
     onError,
+    textOnly: boolean,
 ): EventSource {
-  let eventSource = new EventSource(url);
-  eventSource.onopen = function () {
-    onOpen();
-  };
-  eventSource.onerror = function (error) {
-    onError(error);
-  };
-  eventSource.onmessage = function (msg) {
-    onMessage(msg.data);
-  };
-  return eventSource;
+  try {
+    let eventSource = new EventSource(url);
+    eventSource.onopen = function () {
+        onOpen();
+    };
+    eventSource.onerror = function () {
+        onError('EventSource error received');
+    };
+    eventSource.onmessage = function (msg) {
+       try {
+            if (textOnly) {
+              if (onMessageText) onMessageText(msg.data)
+              return;
+            }
+            const json = JSON.parse (msg.data);
+            if (onMessageJSON) onMessageJSON(json);
+        } catch (err) {
+            if (textOnly && onMessageText) {
+              onMessageText(msg.data)
+            } else {
+              onError(err.message)
+            }
+        }
+    };
+    return eventSource;
+  } catch (err) {
+      onError (err.message);
+  }
 }
 
 export function eventSourceClose (
@@ -160,3 +203,54 @@ export function eventSourceClose (
   }
 }
 
+/* Initializes the classList field to an Empty Set
+   Populates with the contents of 'classes'
+ */
+export function populateClass<T> (
+  vnode: VNode<T>,
+  classes: Array<string>
+): void {
+    if (!(vnode.classList)) {
+      vnode.classList = new Set();
+    }
+    for (const str of classes) {
+        for (const c of str.trim().split(' ')) {
+           if (c) vnode.classList.add(c);
+        }
+    }
+}
+
+export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
+  if (!(current.parent)) {
+     return; // at root, do nothing
+  }
+  latest.nextSibling = current.nextSibling ? null : current.nextSibling;
+  latest.parent = current.parent;
+  // invariant, parent is always VComp<T>, safe cast
+  (current.parent as VComp<T>).child = latest;
+}
+
+export function inline(code, context = {}) {
+  const keys = Object.keys(context);
+  const values = Object.values(context);
+  const func = new Function(...keys, code);
+  return func(...values);
+}
+
+/*
+--- Determine typeOf for FromJSVal Value instance
+--- 0. null
+--- 1. number
+--- 2. string
+--- 3. bool
+--- 4. array
+--- 5. object
+*/
+export function typeOf (x) : number {
+  if (x === null || x === undefined) return 0;
+  if (typeof(x) === 'number') return 1;
+  if (typeof(x) === 'string') return 2;
+  if (typeof(x) === 'boolean') return 3;
+  if (Array.isArray(x)) return 4;
+  return 5;
+}

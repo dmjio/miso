@@ -9,6 +9,9 @@
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
+--
+-- Types and functions related to [event delegation](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling#event_delegation)
+--
 ----------------------------------------------------------------------------
 module Miso.Delegate
   ( delegator
@@ -18,8 +21,9 @@ module Miso.Delegate
 import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (create, JSM, JSVal, Object(..), ToJSVal(toJSVal))
-import           Miso.Types (VTree(..))
+-----------------------------------------------------------------------------
+import           Miso.DSL (create, JSVal, Object(..), ToJSVal(toJSVal))
+import           Miso.Types (VTree(..), Events, Phase)
 import           Miso.String (MisoString)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
@@ -28,7 +32,7 @@ data Event
   = Event
   { name :: MisoString
   -- ^ Event name
-  , capture :: Bool
+  , capture :: Phase
   -- ^ Capture settings for event
   } deriving (Show, Eq)
 -----------------------------------------------------------------------------
@@ -44,9 +48,9 @@ instance ToJSVal Event where
 delegator
   :: JSVal
   -> IORef VTree
-  -> M.Map MisoString Bool
+  -> Events
   -> Bool
-  -> JSM ()
+  -> IO ()
 delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
   FFI.delegateEvent mountPointElement evts debug $ do
@@ -59,7 +63,7 @@ undelegator
   -> IORef VTree
   -> M.Map MisoString Bool
   -> Bool
-  -> JSM ()
+  -> IO ()
 undelegator mountPointElement vtreeRef es debug = do
   events <- toJSVal (M.toList es)
   FFI.undelegateEvent mountPointElement events debug $ do
