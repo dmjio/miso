@@ -88,7 +88,7 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
--- import qualified Data.Set as Set
+import qualified Data.Set as Set
 import           Data.Set (Set)
 import           Control.Category ((.))
 import           Control.Concurrent
@@ -134,8 +134,7 @@ import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
 import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, jsonStringify, Value, toJSON)
 import           Miso.Lens hiding (view)
-import qualified Miso.String as MS
-import           Miso.String (ToMisoString(..), FromMisoString(..))
+import           Miso.String (ToMisoString(..))
 import           Miso.Types
 import           Miso.Util
 -----------------------------------------------------------------------------
@@ -211,6 +210,7 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
         , _componentBindings = bindings
         , _componentTopics = mempty
         , _componentModelDirty = modelCheck
+        , _componentChildren = mempty
         , ..
         }
 
@@ -477,6 +477,9 @@ isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty =
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
+componentChildren :: Lens (ComponentState parent model action) (Set ComponentId)
+componentChildren = lens _componentChildren $ \record field -> record { _componentChildren = field }
+-----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
 data Hydrate
@@ -519,6 +522,7 @@ data ComponentState parent model action
   -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
+  , _componentChildren :: Set ComponentId
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -820,6 +824,9 @@ unmount cs@ComponentState {..} = do
   unloadScripts cs
   freeLifecycleHooks cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  liftIO $ modifyComponent _componentParentId $ do
+    at _componentId . componentChildren .= Nothing
+  liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
@@ -843,6 +850,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     vcomp <- create
 
     mountCallback <- do
+      modifyComponent parentId (componentChildren %= Set.insert vcompId)
       if hydrate == Hydrate
         then
           toJSVal jsNull
@@ -867,6 +875,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     case hydrate of
       Hydrate -> do
         -- Mock .domRef for use during hydration
+        modifyComponent parentId (componentChildren %= Set.insert vcompId)
         domRef <- toJSVal =<< create
         ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef _componentVTree)
