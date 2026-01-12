@@ -106,12 +106,14 @@
 module Miso.Lens
   ( -- ** Types
     Lens (..)
+  , Prism (..)
     -- ** Smart constructor
   , lens
+  , prism
     -- ** Re-exports
   , (&)
   , (<&>)
-    -- ** Combinators
+    -- ** Lens Combinators
   , (.~)
   , (?~)
   , set
@@ -145,6 +147,14 @@ module Miso.Lens
   , _2
   , _id
   , this
+    -- ** Prism Combinators
+  , preview
+  , review
+  , _Nothing
+  , _Just
+  , _Left
+  , _Right
+  , (^?)
   -- *** Containers
   , At (..)
   -- *** Re-exports
@@ -770,6 +780,36 @@ lens
   -> (record -> field -> record)
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
+----------------------------------------------------------------------------
+data Prism s a
+  = Prism
+  { _up :: a -> s
+  , _down :: s -> Maybe a
+  }
+----------------------------------------------------------------------------
+review :: Prism s a -> a -> s
+review = _up
+----------------------------------------------------------------------------
+preview :: Prism s a -> s -> Maybe a
+preview = _down
+----------------------------------------------------------------------------
+_Left :: Prism (Either a b) a
+_Left = prism Left $ either Just (const Nothing)
+----------------------------------------------------------------------------
+_Right :: Prism (Either a b) b
+_Right = prism Right (either (const Nothing) Just)
+----------------------------------------------------------------------------
+_Just :: Prism (Maybe a) a
+_Just = prism Just Prelude.id
+----------------------------------------------------------------------------
+_Nothing :: Prism (Maybe a) a
+_Nothing = prism (const Nothing) Prelude.id
+----------------------------------------------------------------------------
+infixl 8 ^?
+(^?) = flip preview
+----------------------------------------------------------------------------
+prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
+prism = Prism
 ----------------------------------------------------------------------------
 -- | Class for getting and setting values across various container types.
 --
