@@ -5,7 +5,6 @@
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
-import           Miso
 import           Miso.Run
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
