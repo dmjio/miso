@@ -19,7 +19,6 @@ import Miso.Html
     , html_
     , head_
     , meta_
-    , link_
     , body_
     , script_
     )
@@ -27,8 +26,6 @@ import Miso.Html.Property
     ( charset_
     , name_
     , content_
-    , rel_
-    , href_
     , type_
     , class_
     , src_
@@ -44,7 +41,6 @@ import Miso
     ( MisoString
     , mount
     )
-import Data.Aeson (ToJSON)
 import qualified Network.Wai.Handler.Warp             as Wai
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import Data.Text.Lazy (toStrict)
@@ -63,7 +59,7 @@ import qualified TestApp as App
 
 type ServerRoutes = Routes (Get '[HTML] IndexPageData)
 
-data IndexPageData = forall b. (ToJSON b) => IndexPageData (b, App.MainComponent)
+newtype IndexPageData = IndexPageData (App.TestData, App.MainComponent)
 
 type RouteIndexPage a = a
 type Routes a = RouteIndexPage a
@@ -90,11 +86,10 @@ instance ToHtml IndexPageData where
                     ]
                     (toMisoString $ toStrict $ encodeToLazyText initial_data)
 
-                , title_ [] [ "Chandlr" ]
+                , title_ [] [ "Miso Tests" ]
 
-                , js_wasm $ static_root <> "/init.js"
+                -- , js_wasm $ static_root <> "/init.js"
                 -- , js_js $ static_root <> "/all.js" -- Uncomment this and comment out the previous line to load the javascript version (TODO: make this a commandline flag or something)
-                , css $ static_root <> "/style.css"
                 ]
             , body_ [] [ mount (app :: App.MainComponent) ]
             ]
@@ -103,13 +98,6 @@ instance ToHtml IndexPageData where
         where
             static_root :: MisoString
             static_root = "/static"
-
-            css href =
-                link_
-                    [ rel_ "stylesheet"
-                    , type_ "text/css"
-                    , href_ $ toMisoString href
-                    ]
 
             js_wasm href =
                 script_
@@ -128,44 +116,51 @@ instance ToHtml IndexPageData where
 
 
 server :: FilePath -> App.TestData -> Wai.Application
-server serve_static_dir_path initial_data =
+server serve_static_dir_path_ appData =
     serve
         (Proxy @API)
-        (staticHandler :<|> mainView initial_data)
+        (staticHandler :<|> mainView appData)
 
     where
         staticHandler :: Server StaticRoute
-        staticHandler = Servant.serveDirectoryFileServer serve_static_dir_path
+        staticHandler = Servant.serveDirectoryFileServer serve_static_dir_path_
 
 
 mainView :: App.TestData -> Handler IndexPageData
-mainView initial_data = pure $ IndexPageData (initial_data, App.app)
+mainView appData = pure $ IndexPageData (appData, App.app appData)
 
-prop_testIO :: Property
-prop_testIO = forAll (chooseAny :: Gen Int) $
+
+prop_testIO :: EnvSettings -> Property
+prop_testIO envSettings = forAll (chooseAny :: Gen Int) $
     \i -> ioProperty $ do
         print i
+        let appData = App.TestData { App.randomSeed = i } :: App.TestData
+
+        putStrLn $ "Beginning to listen on " <> show port_
+        Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
         return $ i == i
 
-testMain :: IO ()
-testMain = do
-    putStrLn "Begin Quickchecks"
-    quickCheck prop_testIO
+    where
+        port_ = port envSettings
+        serve_static_dir_path_ = serve_static_dir_path envSettings
+
+
+data EnvSettings = EnvSettings
+    { serve_static_dir_path :: FilePath
+    , port :: Int
+    }
 
 
 main :: IO ()
 main = do
     cwd <- getCurrentDirectory
 
-    let serve_static_dir_path = cwd <> "/static"
-
     portStr <- lookupEnv "PORT"
-    let port = maybe 8888 read portStr
 
-    let initialData = App.TestData { App.randomSeed = 1 } :: App.TestData
+    let envSettings = EnvSettings
+            { serve_static_dir_path = cwd <> "/static"
+            , port = maybe 8888 read portStr
+            }
 
-    putStrLn $ "Beginning to listen on " <> show port
-
-    testMain
-
-    -- Wai.run port $ Wai.logStdout (server serve_static_dir_path initialData)
+    putStrLn "Begin Quickchecks"
+    quickCheck $ prop_testIO envSettings

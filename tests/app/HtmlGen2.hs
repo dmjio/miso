@@ -10,54 +10,46 @@ import Test.QuickCheck
 import Control.Monad (replicateM)
 
 -- | Safe HTML generator for hydration testing
-genHtml :: Int -> Gen (View model action)
-genHtml seed = sized $ \size -> do
-  let maxDepth = min 4 (max 1 (size `div` 10))  -- Control tree depth
-  bodyContent <- genSubtree maxDepth
-  return $
-    html_ []
-      [ head_ []
-          [ meta_ [ charset_ "UTF-8" ]
-          ]
-      , body_ []
-          [ div_
-              [ id_ "app"
-              , data_ "hydration-seed" (toMisoString $ show seed)
-              ]
-              [ bodyContent
-              ]
-          ]
-      ]
+genHtml :: Gen (View model action)
+genHtml = -- sized genSubtree
+    genSubtree 10
 
--- | Generate subtree with controlled depth
+-- | Generate subtree with guaranteed depth
 genSubtree :: Int -> Gen (View model action)
 genSubtree depth
-  | depth <= 0 = genLeaf
-  | otherwise = frequency
-      [ (3, genLeaf)  -- Prefer leaves to limit nesting
-      , (1, genParent depth)
-      ]
+  | depth <= 1 = genText
+  | otherwise = do        -- Above max depth, always generate parents
+      makeEl <- elements nonVoidElements
+      -- attrs <- genSafeAttributes
+      siblingCount <- choose (0, depth)
+      siblings <- replicateM siblingCount $ do
+        oneof
+            [ genLeaf
+            , do
+                mkSibling <- elements nonVoidElements
+                -- siblingAttrs <- genSafeAttributes
+                siblingContent <- genLeaf
+                return $ mkSibling [] [ siblingContent ]
+            ]
 
--- | Generate parent element with children
-genParent :: Int -> Gen (View model action)
-genParent depth = do
-  makeEl <- elements nonVoidElements
-  attrs <- genSafeAttributes
-  let childDepth = max 0 (depth - 1)
-  numChildren <- choose (1, 3)  -- Limit children count
-  children <- replicateM numChildren (genSubtree childDepth)
-  return (makeEl attrs children)
+      children <- genSubtree (depth - 1)
+      return $ makeEl [] (siblings ++ [ children ])
+
+
+genText :: Gen (View model action)
+genText = text . toMisoString <$> genSafeString
+
 
 -- | Generate leaf nodes (text or void elements)
 genLeaf :: Gen (View model action)
 genLeaf = oneof
-  [ text . toMisoString <$> genSafeString
+  [ genText
   , do
       makeVoid <- elements voidElements
-      makeVoid <$> genSafeAttributes
+      -- makeVoid <$> genSafeAttributes
+      return $ makeVoid []
   ]
 
--- | SAFE NON-VOID ELEMENTS (hydration-friendly)
 nonVoidElements :: [[Attribute action] -> [View model action] -> View model action]
 nonVoidElements =
   [ div_, span_, p_, ul_, ol_, li_
@@ -68,7 +60,6 @@ nonVoidElements =
   , dl_, dt_, dd_, figure_, figcaption_
   ]
 
--- | SAFE VOID ELEMENTS (with required attributes enforced)
 voidElements :: [[Attribute action] -> View model action]
 voidElements =
   [ hr_
