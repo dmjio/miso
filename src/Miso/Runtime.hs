@@ -88,8 +88,6 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
-import Debug.Trace
-import           Unsafe.Coerce
 import qualified Data.Set as Set
 import           Data.Set (Set)
 import           Control.Category ((.))
@@ -118,6 +116,7 @@ import           System.Mem.StableName (makeStableName)
 #ifdef BENCH
 import           Text.Printf
 #endif
+import           Unsafe.Coerce (unsafeCoerce)
 -----------------------------------------------------------------------------
 import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.CSS (renderStyleSheet)
@@ -260,13 +259,13 @@ scheduler =
     -- of the entire Component tree.
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
-      (shouldRender, hasBindings) <- commit vcompId actions
+      shouldRender <- commit vcompId actions
       when shouldRender $ do
-        when hasBindings (propagateBindings vcompId)
+        propagateBindings vcompId
         renderComponents
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO (Bool, Bool)
+    commit :: ComponentId -> [action] -> IO Bool
     commit vcompId events = do
       ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
       case _componentApplyActions events _componentModel of
@@ -283,7 +282,7 @@ scheduler =
             modifyComponent _componentId $ do
               isDirty .= True
               componentModel .= updatedModel
-          pure (dirty, not (null _componentBindings))
+          pure dirty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -313,7 +312,7 @@ modifyComponent vcompId go = liftIO $ do
       Just vcomp ->
         (IM.insert vcompId (execState go vcomp) vcomps, ())
 ----------------------------------------------------------------------------
--- | Bindings processor, BFS the Component graph, update state at the
+-- | Bindings processor, DFS the Component graph, update state at the
 -- granularity of a Lens.
 propagateBindings
   :: ComponentId
@@ -322,7 +321,6 @@ propagateBindings vcompId = do
   atomicModifyIORef' components $ \cs -> do
     let iterations = 128 -- dmj: sane default?
     (propagate vcompId 0 iterations cs, ())
-  putStrLn "done!"
 ----------------------------------------------------------------------------
 propagate
   :: ComponentId
@@ -331,8 +329,8 @@ propagate
   -> IntMap (ComponentState p m a)
   -> IntMap (ComponentState p m a)
 propagate vcompId !n iterations cs
-  | n > iterations = traceShow (iterations :: Int, "done" :: String) cs
-  | solved cs _state _visited = traceShow (iterations :: Int, "done" :: String) _state
+  | n > iterations = cs
+  | solved cs _state _visited = _state
   | otherwise = propagate vcompId (n + 1) iterations _state
       where
         DFS {..} = execState synch (dfs cs vcompId)
@@ -415,10 +413,9 @@ propagateParent
    . ComponentState p m a
   -> ComponentId
   -> Synch p m a ()
-propagateParent currentState parentId_ = do
-  (IM.lookup parentId_) <$> use state >>= \case
-    Nothing -> pure ()
-    Just parentState -> do
+propagateParent currentState parentId_ =
+  IM.lookup parentId_ <$> use state >>= mapM_ \case
+    parentState -> do
       updatedParent <- unsafeCoerce <$>
         foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
       let isParentDirty =
@@ -968,13 +965,13 @@ buildVTree parentId_ vcompId hydrate snk logLevel_ events_ = \case
     vcomp <- create
 
     mountCallback <- do
-      modifyComponent parentId_ (children %= Set.insert vcompId)
       if hydrate == Hydrate
         then
           toJSVal jsNull
         else
           syncCallback1' $ \parent_ -> do
             ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
+            modifyComponent vcompId (children %= Set.insert _componentId)
             vtree <- toJSVal =<< readIORef _componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
@@ -993,9 +990,9 @@ buildVTree parentId_ vcompId hydrate snk logLevel_ events_ = \case
     case hydrate of
       Hydrate -> do
         -- Mock .domRef for use during hydration
-        modifyComponent parentId_ (children %= Set.insert vcompId)
         domRef <- toJSVal =<< create
         ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
+        modifyComponent vcompId (children %= Set.insert _componentId)
         vtree <- toJSVal =<< liftIO (readIORef _componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId_ <- toJSVal _componentId
