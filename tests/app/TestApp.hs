@@ -46,14 +46,3 @@ app td =
 
             where
                 qcGen = mkQCGen r
-
-
--- TODO:
---  Take Elements module and make a data structure from the defs
---  do the same with props list i guess
---  need to do this because we need a function to generate
---  appropriate attributes for an Element
---      - actually still don't need to do this
---        can just define appropriate pairs of function, attribute generator
---  Make a graph from the data structure
---  Render graph
