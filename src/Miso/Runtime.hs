@@ -88,12 +88,14 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
+import Debug.Trace
+import           Unsafe.Coerce
 import qualified Data.Set as Set
 import           Data.Set (Set)
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever)
+import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Data.Foldable (toList)
@@ -271,9 +273,11 @@ scheduler =
         (updatedModel, schedules) -> do
           forM_ schedules $ \case
             Schedule Async action ->
-              evalScheduled Async (action _componentSink)
+              evalScheduled Async
+                (action _componentSink)
             Schedule Sync action ->
-              evalScheduled Sync (action _componentSink)
+              evalScheduled Sync
+                (action _componentSink)
           let dirty = _componentModelDirty _componentModel updatedModel
           when dirty $ do
             modifyComponent _componentId $ do
@@ -314,9 +318,11 @@ modifyComponent vcompId go = liftIO $ do
 propagateBindings
   :: ComponentId
   -> IO ()
-propagateBindings vcompId = atomicModifyIORef' components $ \cs -> do
-  let iterations = 128 -- dmj: sane default? fibonacci-esque
-  (propagate vcompId 0 iterations cs, ())
+propagateBindings vcompId = do
+  atomicModifyIORef' components $ \cs -> do
+    let iterations = 128 -- dmj: sane default?
+    (propagate vcompId 0 iterations cs, ())
+  putStrLn "done!"
 ----------------------------------------------------------------------------
 propagate
   :: ComponentId
@@ -325,48 +331,154 @@ propagate
   -> IntMap (ComponentState p m a)
   -> IntMap (ComponentState p m a)
 propagate vcompId !n iterations cs
-  | n > iterations = cs
-  | solved cs ns = ns
-  | otherwise = propagate vcompId (n + 1) iterations ns
+  | n > iterations = traceShow (iterations :: Int, "done" :: String) cs
+  | solved cs _state _visited = traceShow (iterations :: Int, "done" :: String) _state
+  | otherwise = propagate vcompId (n + 1) iterations _state
       where
-        ns = _state (execState (synch vcompId) (BFS cs mempty [vcompId]))
+        DFS {..} = execState synch (dfs cs vcompId)
 -----------------------------------------------------------------------------
--- | Create an empty BFS state
-bfs :: IntMap (ComponentState p m a) -> ComponentId -> BFS p m a
-bfs cs vcompId = BFS cs mempty [vcompId]
+-- | Create an empty DFS state
+dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
+dfs cs vcompId = DFS cs mempty (pure vcompId)
 -----------------------------------------------------------------------------
-data BFS p m a
-  = BFS
+data DFS p m a
+  = DFS
   { _state :: IntMap (ComponentState p m a)
     -- ^ global component state to alter
   , _visited :: Set ComponentId
     -- ^ visited set
-  , _queue :: [ComponentId]
+  , _stack :: [ComponentId]
     -- ^ neighbors queue
   }
 -----------------------------------------------------------------------------
-visited :: Lens (BFS p m a) (Set ComponentId)
+type Synch p m a x = State (DFS p m a) x
+-----------------------------------------------------------------------------
+visited :: Lens (DFS p m a) (Set ComponentId)
 visited = lens _visited $ \r x -> r { _visited = x }
 -----------------------------------------------------------------------------
-state :: Lens (BFS p m a) (IntMap (ComponentState p m a))
+state :: Lens (DFS p m a) (IntMap (ComponentState p m a))
 state = lens _state $ \r x -> r { _state = x }
 -----------------------------------------------------------------------------
-queue :: Lens (BFS p m a) [ComponentId] 
-queue = lens _queue $ \r x -> r { _queue = x }
+stack :: Lens (DFS p m a) [ComponentId]
+stack = lens _stack $ \r x -> r { _stack = x }
 -----------------------------------------------------------------------------
-synch :: ComponentId -> State (BFS p m a) ()
-synch vcompId = go =<< use (at vcompId . state)
+synch :: Synch p m a ()
+synch = mapM_ go =<< pop
   where
-    go cs = undefined
+    go :: ComponentState p m a -> Synch p m a ()
+    go cs = do
+      seen <- Set.member (cs ^. componentId) <$> use visited
+      when (not seen) $ do
+        propagateParent cs (cs ^. parentId)
+        propagateChildren cs (cs ^. children)
+        markVisited (cs ^. componentId)
+        synch
+-----------------------------------------------------------------------------
+propagateChildren
+  :: forall p m a
+   . ComponentState p m a
+  -> Set ComponentId
+  -> Synch p m a ()
+propagateChildren currentState childComponents = do
+  forM_ childComponents $ \childId -> do
+    childState <- unsafeCoerce (IM.! childId) <$> use state
+    updatedChild <- unsafeCoerce <$>
+      foldM process childState (childState ^. componentBindings)
+    let isChildDirty =
+          (_componentModelDirty childState)
+          (_componentModel childState)
+          (_componentModel updatedChild)
+    when isChildDirty $ do
+      at childId . state ?= updatedChild { _componentIsDirty = True }
+      visit childId
+    where
+      process
+        :: ComponentState m child a
+        -> Binding m child
+        -> Synch p m a (ComponentState m child a)
+      process childState = \case
+        ParentToChild getCurrentField setChildField -> do
+          let currentChildModel = childState ^. componentModel
+              currentFieldValue = getCurrentField (currentState ^. componentModel)
+              updatedChildModel = setChildField currentFieldValue currentChildModel
+          pure (childState & componentModel .~ updatedChildModel)
+        Bidirectional getCurrentField _ _ setChildField -> do
+          let currentChildModel = _componentModel childState
+              currentFieldValue = getCurrentField (currentState ^. componentModel)
+              updatedChildModel = setChildField currentFieldValue currentChildModel
+          pure (childState & componentModel .~ updatedChildModel)
+        _ ->
+          pure childState
+-----------------------------------------------------------------------------
+propagateParent
+  :: forall p m a
+   . ComponentState p m a
+  -> ComponentId
+  -> Synch p m a ()
+propagateParent currentState parentId_ = do
+  (IM.lookup parentId_) <$> use state >>= \case
+    Nothing -> pure ()
+    Just parentState -> do
+      updatedParent <- unsafeCoerce <$>
+        foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
+      let isParentDirty =
+            (_componentModelDirty parentState)
+            (_componentModel parentState)
+            (_componentModel updatedParent)
+      when isParentDirty $ do
+        at parentId_ . state ?= updatedParent { _componentIsDirty = True }
+        visit parentId_
+  where
+    process
+      :: ComponentState x p a
+      -> Binding p m
+      -> Synch p m a (ComponentState x p a)
+    process parentState = \case
+      ChildToParent setParentField getCurrentField -> do
+        let currentParentModel = parentState ^. componentModel
+            currentFieldValue = getCurrentField (currentState ^. componentModel)
+            updatedParentModel = setParentField currentFieldValue currentParentModel
+        pure (parentState & componentModel .~ updatedParentModel)
+      Bidirectional _ setParentField getCurrentField _ -> do
+        let currentParentModel = parentState ^. componentModel
+            currentFieldValue = getCurrentField (currentState ^. componentModel)
+            updatedParentModel = setParentField currentFieldValue currentParentModel
+        pure (parentState & componentModel .~ updatedParentModel)
+      _ ->
+        pure parentState
+-----------------------------------------------------------------------------
+markVisited :: ComponentId -> Synch p m a ()
+markVisited vcompId = at vcompId . visited .= Just ()
+-----------------------------------------------------------------------------
+visit :: ComponentId -> Synch p m a ()
+visit vcompId = stack %= (vcompId:)
+-----------------------------------------------------------------------------
+pop :: Synch p m a (Maybe (ComponentState p m a))
+pop = do
+  use stack >>= \case
+    [] -> pure Nothing
+    x : xs -> do
+       stack .= xs
+       use (at x . state) >>= \case
+         Nothing -> do
+           pure Nothing
+         Just cs -> do
+           pure (Just cs)
 -----------------------------------------------------------------------------
 solved
   :: IntMap (ComponentState p m a)
   -> IntMap (ComponentState p m a)
+  -> Set ComponentId
   -> Bool
-solved cs ns = and $ Prelude.zipWith condition (IM.elems cs) (IM.elems ns)
-  where
-    condition x y = not $
-      (_componentModelDirty x) (_componentModel x) (_componentModel y)
+solved old_ new_ seen = and
+  [ case (IM.lookup s old_, IM.lookup s new_) of
+      (Just x, Just y) ->
+        (_componentModelDirty x)
+          (_componentModel x)
+          (_componentModel y)
+      _ -> True
+  | s <- Set.toList seen
+  ]
 -----------------------------------------------------------------------------
 initialDraw
   :: Eq m
@@ -468,6 +580,12 @@ globalWaiter = unsafePerformIO waiter
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
 -----------------------------------------------------------------------------
+parentId :: Lens (ComponentState parent model action) ComponentId
+parentId = lens _componentParentId $ \record field -> record { _componentParentId = field }
+-----------------------------------------------------------------------------
+children :: Lens (ComponentState parent model action) (Set ComponentId)
+children = lens _componentChildren $ \record field -> record { _componentChildren = field }
+-----------------------------------------------------------------------------
 componentTopics :: Lens (ComponentState parent model action) (Map MisoString (Value -> IO ()))
 componentTopics = lens _componentTopics $ \record field -> record { _componentTopics = field }
 -----------------------------------------------------------------------------
@@ -477,8 +595,8 @@ isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty =
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
-componentChildren :: Lens (ComponentState parent model action) (Set ComponentId)
-componentChildren = lens _componentChildren $ \record field -> record { _componentChildren = field }
+componentBindings :: Lens (ComponentState p m a) [Binding p m]
+componentBindings = lens _componentBindings $ \record field -> record { _componentBindings = field }
 -----------------------------------------------------------------------------
 -- | Hydrate avoids calling @diff@, and instead calls @hydrate@
 -- 'Draw' invokes 'Miso.Diff.diff'
@@ -825,7 +943,7 @@ unmount cs@ComponentState {..} = do
   freeLifecycleHooks cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
   liftIO $ modifyComponent _componentParentId $ do
-    at _componentId . componentChildren .= Nothing
+    at _componentId . children .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
@@ -845,12 +963,12 @@ buildVTree
   -> Events
   -> View model action
   -> IO VTree
-buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
+buildVTree parentId_ vcompId hydrate snk logLevel_ events_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
 
     mountCallback <- do
-      modifyComponent parentId (componentChildren %= Set.insert vcompId)
+      modifyComponent parentId_ (children %= Set.insert vcompId)
       if hydrate == Hydrate
         then
           toJSVal jsNull
@@ -875,7 +993,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
     case hydrate of
       Hydrate -> do
         -- Mock .domRef for use during hydration
-        modifyComponent parentId (componentChildren %= Set.insert vcompId)
+        modifyComponent parentId_ (children %= Set.insert vcompId)
         domRef <- toJSVal =<< create
         ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef _componentVTree)
@@ -902,7 +1020,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
       where
         procreate parentVTree = do
           kidsViews <- forM kids $ \kid -> do
-            VTree child <- buildVTree parentId vcompId hydrate snk logLevel_ events_ kid
+            VTree child <- buildVTree parentId_ vcompId hydrate snk logLevel_ events_ kid
             FFI.set "parent" parentVTree child
             pure child
           setNextSibling kidsViews
