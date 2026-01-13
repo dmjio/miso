@@ -473,7 +473,7 @@ solved
 solved old_ new_ seen = and
   [ case (IM.lookup s old_, IM.lookup s new_) of
       (Just x, Just y) ->
-        (_componentModelDirty x)
+        not $ (_componentModelDirty x)
           (_componentModel x)
           (_componentModel y)
       _ -> True
