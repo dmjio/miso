@@ -387,7 +387,7 @@ propagateChildren currentState childComponents = do
           (_componentModel childState)
           (_componentModel updatedChild)
     when isChildDirty $ do
-      at childId . state ?= updatedChild { _componentIsDirty = True }
+      state.at childId ?= updatedChild { _componentIsDirty = True }
       visit childId
     where
       process
@@ -423,7 +423,7 @@ propagateParent currentState parentId_ =
             (_componentModel parentState)
             (_componentModel updatedParent)
       when isParentDirty $ do
-        at parentId_ . state ?= updatedParent { _componentIsDirty = True }
+        state.at parentId_ ?= updatedParent { _componentIsDirty = True }
         visit parentId_
   where
     process
@@ -445,7 +445,7 @@ propagateParent currentState parentId_ =
         pure parentState
 -----------------------------------------------------------------------------
 markVisited :: ComponentId -> Synch p m a ()
-markVisited vcompId = at vcompId . visited .= Just ()
+markVisited vcompId = visited.at vcompId ?= ()
 -----------------------------------------------------------------------------
 visit :: ComponentId -> Synch p m a ()
 visit vcompId = stack %= (vcompId:)
@@ -456,7 +456,7 @@ pop = do
     [] -> pure Nothing
     x : xs -> do
        stack .= xs
-       use (at x . state) >>= \case
+       use (state.at x) >>= \case
          Nothing -> do
            pure Nothing
          Just cs -> do
@@ -940,7 +940,7 @@ unmount cs@ComponentState {..} = do
   freeLifecycleHooks cs
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
   liftIO $ modifyComponent _componentParentId $ do
-    at _componentId . children .= Nothing
+    children.at _componentId .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
