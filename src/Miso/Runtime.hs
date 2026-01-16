@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE KindSignatures             #-}
 {-# LANGUAGE BlockArguments             #-}
 {-# LANGUAGE NamedFieldPuns             #-}
@@ -155,17 +156,7 @@ initialize _componentParentId hydrate isRoot comp@Component {..} getComponentMou
 
   let
     _componentSink = \action -> liftIO $ do
-      atomicModifyIORef' globalEvents $ \imap ->
-        (IM.insertWith (flip (<>)) _componentId (S.singleton action) imap, ())
-
-      atomicModifyIORef' globalQueue $ \case
-        S.Empty -> (S.singleton _componentId, ())
-        vcompIds@(vcompId S.:<| _)
-          | vcompId == _componentId ->
-              (vcompIds, ())
-          | otherwise ->
-              (_componentId S.:<| vcompIds, ())
-
+      atomicModifyIORef' globalQueue (\q -> (enqueue _componentId action q, ()))
       notify globalWaiter
 
   initializedModel <-
@@ -251,8 +242,9 @@ modelCheck c n = unsafePerformIO $ do
 scheduler :: IO ()
 scheduler =
   forever $ do
-    wait globalWaiter
-    mapM_ (uncurry run) =<< getBatch
+    getBatch >>= \case
+      Nothing -> wait globalWaiter
+      Just (vcompId, actions) -> run vcompId actions
   where
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
@@ -531,44 +523,90 @@ addToDelegatedEvents logLevel events = do
 -- its events.
 getBatch :: IO (Maybe (ComponentId, [action]))
 getBatch = do
-  maybeComponentId <-
-    liftIO $ atomicModifyIORef' globalQueue $ \case
-      S.Empty ->
-        (mempty, Nothing)
-      (vcompId S.:<| rest) ->
-        (S.filter (/= vcompId) rest, Just vcompId)
-  case maybeComponentId of
-    Nothing -> pure Nothing
-    Just vcompId -> getBatchAt vcompId
+  liftIO $ atomicModifyIORef' globalQueue $ \q ->
+    case dequeue q of
+      Nothing -> (q, Nothing)
+      Just (vcompId, actions, newQueue) ->
+        (newQueue, Just (vcompId, actions))
 -----------------------------------------------------------------------------
 -- | Helper for event extraction at a specific 'ComponentId'
-getBatchAt :: ComponentId -> IO (Maybe (IM.Key, [a]))
-getBatchAt vcompId =
-  liftIO (atomicModifyIORef' globalEvents $ \imap ->
-    case IM.lookup vcompId imap of
-      Nothing ->
-        (imap, Nothing)
-      Just S.Empty ->
-        (mempty, Nothing)
-      Just events ->
-        (IM.insert vcompId S.Empty imap, Just (vcompId, toList events)))
+drainQueueAt :: ComponentId -> IO [a]
+drainQueueAt vcompId = liftIO $ atomicModifyIORef' globalQueue (dequeueAt vcompId)
 -----------------------------------------------------------------------------
--- | Used in `unmount`, scheduler will no longer process actions at ComponentId
-drainQueueAt :: ComponentId -> IO ()
-drainQueueAt vcompId =
-  liftIO $ atomicModifyIORef' globalQueue $ \case
-    S.Empty ->
-      (mempty, ())
-    rest ->
-      (S.filter (/= vcompId) rest, ())
+-- | Data type for holding the events in the system along with
+-- the schedule of what events should be processed next
+data Queue action
+  = Queue
+  { _queue :: IntMap (Seq action)
+  , _queueSchedule :: Seq ComponentId
+  } deriving (Show, Eq)
 -----------------------------------------------------------------------------
-globalEvents :: IORef (IntMap (Seq action))
-{-# NOINLINE globalEvents #-}
-globalEvents = unsafePerformIO (newIORef mempty)
+emptyQueue :: Queue action
+emptyQueue = mempty
 -----------------------------------------------------------------------------
-globalQueue :: IORef (Seq ComponentId)
+instance Semigroup (Queue action) where
+  Queue q1 s1 <> Queue q2 s2 = Queue (q1 <> q2) (s1 <> s2)
+-----------------------------------------------------------------------------
+instance Monoid (Queue action) where
+  mempty = Queue mempty mempty
+-----------------------------------------------------------------------------
+queue :: Lens (Queue action) (IntMap (Seq action))
+queue = lens _queue $ \r f -> r { _queue = f }
+-----------------------------------------------------------------------------
+queueSchedule :: Lens (Queue action) (Seq ComponentId)
+queueSchedule = lens _queueSchedule $ \r f -> r { _queueSchedule = f }
+-----------------------------------------------------------------------------
+enqueue :: ComponentId -> action -> Queue action -> Queue action
+enqueue vcompId action q =
+  q & queue %~ IM.insertWith (flip (<>)) vcompId (S.singleton action)
+    & queueSchedule %~ (S.|> vcompId)
+-----------------------------------------------------------------------------
+-- | Case on queue schedule, get first item, span on the rest of queueSchedule, get length.
+-- set schedule with whatever remains.
+--
+-- Take the length of the queue schedule found, looking up with vcompId (from first element)
+-- in the queue, splitAt the queue.
+--
+dequeue
+  :: forall action
+   . Queue action
+  -> Maybe (ComponentId, [action], Queue action)
+dequeue q =
+  case q ^. queueSchedule of
+    S.Empty -> Nothing
+    sched@(vcompId S.:<| leftover) ->
+      case q ^. queue . at vcompId of
+        Nothing -> -- dmj: if unmount occurred, just pop the schedule
+          Just (vcompId, [], q & queueSchedule .~ leftover)
+        Just actions ->
+          case S.spanl (==vcompId) sched of
+            (scheduled, remaining) ->
+              case S.splitAt (length scheduled) actions of
+                (process, rest) -> do
+                  let updated =
+                        q & queueSchedule .~ remaining
+                          & queue.at vcompId ?~ rest
+                  Just (vcompId, toList process, updated)
+-----------------------------------------------------------------------------
+-- | Dequeus everything from the Queue at a specific t'ComponentId', draining
+-- both the queue events and the queue schedule
+dequeueAt
+  :: forall action
+   . ComponentId
+  -> Queue action
+  -> (Queue action, [action])
+dequeueAt vcompId q =
+  case q ^. queue . at vcompId of
+    Nothing -> (q, [])
+    Just actions -> do
+      -- dmj: remove from schedule, extract all events
+      let updated = q & queueSchedule %~ S.filter (/=vcompId)
+                      & queue.at vcompId .~ Nothing
+      (updated, toList actions)
+-----------------------------------------------------------------------------
+globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
-globalQueue = unsafePerformIO (newIORef mempty)
+globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
 globalWaiter :: Waiter
 {-# NOINLINE globalWaiter #-}
@@ -899,9 +937,8 @@ drain
   :: ComponentState parent model action
   -> IO ()
 drain cs@ComponentState {..} = do
-  getBatchAt _componentId >>= \case
-    Nothing -> pure ()
-    Just (_, actions) -> do
+  drainQueueAt _componentId >>= \case
+    actions -> do
        case _componentApplyActions actions _componentModel of
          (updated, schedules :: [Schedule action]) -> do
            forM_ schedules $ \case
@@ -932,7 +969,6 @@ unmount
   -> IO ()
 unmount cs@ComponentState {..} = do
   liftIO (mapM_ killThread =<< readIORef _componentSubThreads)
-  drainQueueAt _componentId
   drain cs
   finalizeWebSockets _componentId
   finalizeEventSources _componentId
