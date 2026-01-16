@@ -261,7 +261,7 @@ scheduler =
     run vcompId actions = do
       shouldRender <- commit vcompId actions
       when shouldRender $ do
-        propagateBindings vcompId
+        _converged <- propagateBindings vcompId
         renderComponents
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
@@ -316,21 +316,21 @@ modifyComponent vcompId go = liftIO $ do
 -- granularity of a Lens.
 propagateBindings
   :: ComponentId
-  -> IO ()
+  -> IO Bool
 propagateBindings vcompId = do
   atomicModifyIORef' components $ \cs -> do
-    let iterations = 128 -- dmj: sane default?
-    (propagate vcompId 0 iterations cs, ())
+    let iterations = 2 -- dmj: once two mutate, twice to converge
+    propagate vcompId 0 iterations cs
 ----------------------------------------------------------------------------
 propagate
   :: ComponentId
   -> Int
   -> Int
   -> IntMap (ComponentState p m a)
-  -> IntMap (ComponentState p m a)
+  -> (IntMap (ComponentState p m a), Bool)
 propagate vcompId !n iterations cs
-  | n > iterations = cs
-  | solved cs _state _visited = _state
+  | n > iterations = (cs, False)
+  | solved cs _state _visited = (_state, True)
   | otherwise = propagate vcompId (n + 1) iterations _state
       where
         DFS {..} = execState synch (dfs cs vcompId)
