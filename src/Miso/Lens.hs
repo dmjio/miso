@@ -105,7 +105,8 @@
 ----------------------------------------------------------------------------
 module Miso.Lens
   ( -- ** Types
-    Lens (..)
+    Lens
+  , LensCore (..)
   , Prism (..)
     -- ** Smart constructor
   , lens
@@ -170,7 +171,7 @@ import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
 import Control.Monad.Identity (Identity(..))
 import Control.Category (Category (..))
-import Control.Arrow ((<<<))
+import Control.Arrow ((>>>))
 import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
@@ -197,7 +198,11 @@ import Miso.Util (compose)
 -- often a deeply nested product type. This makes it highly conducive
 -- to t'Lens' operations (as defined below).
 --
-data Lens record field
+type Lens s a = LensCore a s
+----------------------------------------------------------------------------
+-- | t'LensCore' is an internal type used to reverse composition like
+-- VL libraries do.
+data LensCore field record
   = Lens
   { _get :: record -> field
     -- ^ Retrieves a field from a record
@@ -222,11 +227,11 @@ fromVL lens_ = Lens {..}
     _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
 -- | t'Lens' form a 'Category', and can therefore be composed.
-instance Category Lens where
+instance Category LensCore where
   id = Lens Prelude.id const
   Lens g1 s1 . Lens g2 s2 = Lens
-    { _get = g1 <<< g2
-    , _set = \f r -> s2 (s1 f (g2 r)) r
+    { _get = g1 >>> g2
+    , _set = \f r -> s1 (s2 f (g1 r)) r
     }
 ----------------------------------------------------------------------------
 -- | Set a field on a record

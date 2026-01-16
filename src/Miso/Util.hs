@@ -124,6 +124,6 @@ k =: v = (k,v)
 -- test :: Int -> Int
 -- test = (+1) \`compose\` (+1)
 -- @
-compose :: Category cat => cat b c -> cat a b -> cat a c
-compose = (.)
+compose :: Category cat => cat a b -> cat b c -> cat a c
+compose = flip (.)
 ----------------------------------------------------------------------------

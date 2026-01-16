@@ -32,7 +32,7 @@ module Miso.Binding
 import Data.Functor.Const (Const(..))
 import Control.Monad.Identity (Identity(..))
 ----------------------------------------------------------------------------
-import Miso.Lens (Lens(..), Lens')
+import Miso.Lens (Lens, Lens', LensCore(..))
 ----------------------------------------------------------------------------
 -- | t'Binding' is used to synchronize parent and child model changes at the granularity specified by a t'Miso.Lens.Lens'
 --
