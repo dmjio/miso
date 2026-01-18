@@ -1,5 +1,5 @@
 import { diff } from './miso/dom';
-import { delegate, undelegate, eventJSON } from './miso/event';
+import { delegate, eventJSON } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
@@ -52,7 +52,6 @@ export {
   callSetSelectionRange,
   eventJSON,
   fetchCore,
-  undelegate,
   integrityCheck,
   websocketConnect,
   websocketClose,

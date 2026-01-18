@@ -120,9 +120,6 @@ data Component parent model action
   -- ^ Draws 'View'
   , subs :: [ Sub action ]
   -- ^ Subscriptions to run during application lifetime
-  , events :: Events
-  -- ^ Delegated events that the body element will listen for.
-  --   You can start with 'Miso.Event.Types.defaultEvents' and modify as needed.
   , styles :: [CSS]
   -- ^ CSS styles expressed as either a URL ('Href') or as 'Style' text.
   -- These styles are appended dynamically to the \<head\> section of your HTML page
@@ -216,7 +213,6 @@ component m u v = Component
   , update = u
   , view = v
   , subs = []
-  , events = defaultEvents
   , styles = []
   , scripts = []
   , mountPoint = Nothing
