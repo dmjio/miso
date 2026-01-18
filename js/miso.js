@@ -415,13 +415,6 @@ function delegate(mount, events, getVTree, debug, context) {
     }, event.capture);
   }
 }
-function undelegate(mount, events, getVTree, debug, context) {
-  for (const event of events) {
-    context.removeEventListener(mount, event.name, function(e) {
-      listener(e, mount, getVTree, debug, context);
-    }, event.capture);
-  }
-}
 function listener(e, mount, getVTree, debug, context) {
   getVTree(function(vtree) {
     if (Array.isArray(e)) {
@@ -1130,7 +1123,6 @@ globalThis["miso"] = {
   websocketConnect,
   websocketClose,
   websocketSend,
-  undelegate,
   updateRef,
   inline,
   typeOf,

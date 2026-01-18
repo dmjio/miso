@@ -130,11 +130,11 @@ import           Miso.Util
 -- main :: IO ()
 -- main = run (miso (\\uri -> ..))
 -- @
-miso :: Eq model => (URI -> App model action) -> IO ()
-miso f = withJS $ do
+miso :: Eq model => Events -> (URI -> App model action) -> IO ()
+miso events f = withJS $ do
   vcomp <- f <$> getURI
   body <- FFI.getBody
-  initialize rootComponentId Hydrate isRoot vcomp (pure body)
+  initialize events rootComponentId Hydrate isRoot vcomp (pure body)
 -----------------------------------------------------------------------------
 -- | Synonym for 'startComponent'.
 --
@@ -144,16 +144,16 @@ miso f = withJS $ do
 -- main :: IO ()
 -- main = run (startApp app)
 -- @
-startApp :: Eq model => App model action -> IO ()
+startApp :: Eq model => Events -> App model action -> IO ()
 startApp = startComponent
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
-(🍜) :: Eq model => (URI -> App model action) -> IO ()
+(🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
 (🍜) = miso
 ----------------------------------------------------------------------------
 -- | Runs a miso application
-startComponent :: Eq model => Component ROOT model action -> IO ()
-startComponent vcomp = withJS (initComponent vcomp)
+startComponent :: Eq model => Events -> Component ROOT model action -> IO ()
+startComponent events vcomp = withJS (initComponent events vcomp)
 ----------------------------------------------------------------------------
 -- | Runs a 'miso' application, but with a custom rendering engine.
 --
@@ -169,22 +169,24 @@ startComponent vcomp = withJS (initComponent vcomp)
 -- @
 renderApp
   :: Eq model
-  => MisoString
+  => Events
+  -> MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
   -> IO ()
-renderApp renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
+renderApp events renderer vcomp =
+  withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
 initComponent
   :: (Eq parent, Eq model)
-  => Component parent model action
+  => Events
+  -> Component parent model action
   -> IO (ComponentState model action)
-initComponent vcomp@Component {..} = do
+initComponent events vcomp@Component {..} = do
   root <- mountElement (getMountPoint mountPoint)
-  initialize rootComponentId Draw isRoot vcomp (pure root)
+  initialize events rootComponentId Draw isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True

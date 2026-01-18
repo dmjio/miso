@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { delegate, undelegate } from '../miso/event';
+import { delegate } from '../miso/event';
 import { DOMRef, EventCapture, VNode } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe ('Event tests', () => {
 
-  test('Should delegate and undelegate button click', () => {
+  test('Should delegate button click', () => {
     var body = document.body;
     var count = 0;
     var events = {
@@ -71,8 +71,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(2);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should warn when clicking mount with no target handler (empty stack)', () => {
@@ -88,7 +86,6 @@ describe ('Event tests', () => {
     // Click on the mount itself to produce an empty stack in delegateEvent
     (body as HTMLElement).click();
 
-    undelegate(body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should propagate to parent when target has no bubble handler', () => {
@@ -118,7 +115,6 @@ describe ('Event tests', () => {
 
     expect(count).toBe(1);
 
-    undelegate(body, delegatedEvents, getVTree, true, eventContext);
   });
 
 
@@ -185,8 +181,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(2);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should *not* propagate an event between components', () => {
@@ -252,8 +246,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(1);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should *not* propagate an event when stopPropagation is set', () => {
@@ -319,8 +311,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(1);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should call capture, bubble and target handlers in order', () => {
@@ -379,8 +369,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1,1,2,2]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
 
@@ -440,8 +428,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('If stopPropagation called during bubble phase, capture and target still get executed', () => {
@@ -500,8 +486,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1,1,2]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should delegate events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
@@ -578,8 +562,6 @@ describe ('Event tests', () => {
     /* check results - event should propagate through the component hierarchy */
     expect(count).toEqual(2);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
 });

@@ -129,7 +129,8 @@ import           Miso.Effect ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
   :: (Eq parent, Eq model)
-  => ComponentId
+  => Events
+  -> ComponentId
   -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
@@ -137,7 +138,7 @@ initialize
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState model action)
-initialize componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
+initialize events componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
   Waiter {..} <- liftIO waiter
   componentActions <- liftIO (newIORef S.empty)
   let
@@ -180,7 +181,7 @@ initialize componentParentId hydrate isRoot comp@Component {..} getComponentMoun
       updatedName <- liftIO $ updatedModel `seq` makeStableName updatedModel
       isDirty <- liftIO (readTVarIO componentIsDirty)
       when ((currentName /= updatedName && currentModel /= updatedModel) || isDirty) $ do
-        newVTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view updatedModel)
+        newVTree <- buildVTree events componentParentId componentId Draw componentSink logLevel (view updatedModel)
         oldVTree <- liftIO (readIORef componentVTree)
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
@@ -234,22 +235,27 @@ initialize componentParentId hydrate isRoot comp@Component {..} getComponentMoun
         }
 
   registerComponent vcomp
-  if isRoot
-    then
-      delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
-    else
-      addToDelegatedEvents logLevel events
-  initialDraw initializedModel hydrate isRoot comp vcomp
+  when isRoot $ do
+    delegator componentDOMRef componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ initialAction componentSink
   _ <- forkIO eventLoop
   pure vcomp
 -----------------------------------------------------------------------------
-initialDraw :: Eq m => m -> Hydrate -> Bool -> Component p m a -> ComponentState m a -> IO ()
-initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} = do
+initialDraw
+  :: Eq m
+  => m
+  -> Events
+  -> Hydrate
+  -> Bool
+  -> Component p m a
+  -> ComponentState m a
+  -> IO ()
+initialDraw initializedModel events hydrate isRoot Component {..} ComponentState {..} = do
 #ifdef BENCH
   start <- FFI.now
 #endif
-  vtree <- buildVTree componentParentId componentId hydrate componentSink logLevel events (view initializedModel)
+  vtree <- buildVTree events componentParentId componentId hydrate componentSink logLevel (view initializedModel)
 #ifdef BENCH
   end <- FFI.now
   when isRoot $ FFI.consoleLog $ ms (printf "buildVTree: %.3f ms" (end - start) :: String)
@@ -269,7 +275,7 @@ initialDraw initializedModel hydrate isRoot Component {..} ComponentState {..} =
               atomicWriteIORef componentIds topLevelComponentId
               atomicWriteIORef subscribers mempty
               atomicWriteIORef mailboxes mempty
-            newTree <- buildVTree componentParentId componentId Draw componentSink logLevel events (view initializedModel)
+            newTree <- buildVTree events componentParentId componentId Draw componentSink logLevel (view initializedModel)
             Diff.diff Nothing (Just newTree) componentDOMRef
             liftIO (atomicWriteIORef componentVTree newTree)
 -----------------------------------------------------------------------------
@@ -303,20 +309,6 @@ synchronizeChildToParent parentId componentModel componentDiffs bindings = do
         liftIO $ do
           atomically $ writeTVar (componentIsDirty parentComponentState) True
           componentNotify parentComponentState
------------------------------------------------------------------------------
-addToDelegatedEvents :: LogLevel -> Events -> IO ()
-addToDelegatedEvents logLevel events = do
-  root <- (IM.! topLevelComponentId) <$> liftIO (readIORef components)
-  delegated <- M.unions . fmap componentEvents . IM.elems <$>
-    liftIO (readIORef components)
-  forM_ (M.assocs events) $ \(eventName, capture) ->
-    case M.lookup eventName delegated of
-      Just delegatedCapture
-        | delegatedCapture == capture -> pure ()
-      _ ->
-        delegator (componentDOMRef root) (componentVTree root)
-          (M.singleton eventName capture)
-          (logLevel `elem` [DebugEvents, DebugAll])
 -----------------------------------------------------------------------------
 bindChildToParent
   :: forall parent model action
@@ -836,15 +828,15 @@ killSubscribers componentId =
 -- process we go between the Haskell heap and the JS heap.
 buildVTree
   :: Eq model
-  => ComponentId
+  => Events
+  -> ComponentId
   -> ComponentId
   -> Hydrate
   -> Sink action
   -> LogLevel
-  -> Events
   -> View model action
   -> IO VTree
-buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
+buildVTree events_ parentId vcompId hydrate snk logLevel_ = \case
   VComp attrs (SomeComponent app) -> do
     vcomp <- create
 
@@ -854,7 +846,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
           toJSVal jsNull
         else
           syncCallback1' $ \parent_ -> do
-            ComponentState {..} <- initialize vcompId Draw False app (pure parent_)
+            ComponentState {..} <- initialize events_ vcompId Draw False app (pure parent_)
             vtree <- toJSVal =<< readIORef componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
@@ -874,7 +866,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
       Hydrate -> do
         -- Mock .domRef for use during hydration
         domRef <- toJSVal =<< create
-        ComponentState {..} <- initialize vcompId hydrate False app (pure domRef)
+        ComponentState {..} <- initialize events_ vcompId hydrate False app (pure domRef)
         vtree <- toJSVal =<< liftIO (readIORef componentVTree)
         FFI.set "parent" vcomp (Object vtree)
         vcompId_ <- toJSVal componentId
@@ -883,7 +875,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
       Draw -> do
         FFI.set "child" jsNull vcomp        
       
-    setAttrs vcomp attrs snk (logLevel app) (events app)
+    setAttrs vcomp attrs snk (logLevel app) events_
     when (hydrate == Draw) (FFI.set "mount" mountCallback vcomp)
     FFI.set "unmount" unmountCallback vcomp
     FFI.set "eventPropagation" (eventPropagation app) vcomp
@@ -899,7 +891,7 @@ buildVTree parentId vcompId hydrate snk logLevel_ events_ = \case
       where
         procreate parentVTree = do
           kidsViews <- forM kids $ \kid -> do
-            VTree child <- buildVTree parentId vcompId hydrate snk logLevel_ events_ kid
+            VTree child <- buildVTree events_ parentId vcompId hydrate snk logLevel_ kid
             FFI.set "parent" parentVTree child
             pure child
           setNextSibling kidsViews
