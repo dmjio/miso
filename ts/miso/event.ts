@@ -21,25 +21,6 @@ export function delegate<T> (
     );
   }
 }
-/* event undelegation */
-export function undelegate<T> (
-  mount: T,
-  events: Array<EventCapture>,
-  getVTree: (vtree: VTree<T>) => void,
-  debug: boolean,
-  context: EventContext<T>,
-): void {
-  for (const event of events) {
-    context.removeEventListener (
-      mount,
-      event.name,
-      function (e: Event) {
-        listener(e, mount, getVTree, debug, context);
-      },
-      event.capture,
-    );
-  }
-}
 /* the event listener shared by both delegator and undelegator */
 function listener<T>(e: Event | [Event], mount: T, getVTree: (VTree) => void, debug: boolean, context: EventContext<T>): void {
   getVTree(function (vtree: VTree<T>) {

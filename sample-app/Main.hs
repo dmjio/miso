@@ -31,7 +31,7 @@ main :: IO ()
 #ifdef INTERACTIVE
 main = reload (startApp app)
 #else
-main = run (startApp app)
+main = run (startApp defaultEvents app)
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.

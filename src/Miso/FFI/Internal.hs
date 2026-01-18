@@ -67,7 +67,6 @@ module Miso.FFI.Internal
    , castJSVal
    -- * Events
    , delegateEvent
-   , undelegateEvent
    , dispatchEvent
    , newEvent
    , newCustomEvent
@@ -459,13 +458,6 @@ delegateEvent mountPoint events debug getVTree = do
   cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
   delegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
--- | Deinitialize event delegation from a mount point.
-undelegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
-undelegateEvent mountPoint events debug getVTree = do
-  ctx <- getEventContext
-  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
-  undelegate mountPoint events debug (Function cb) ctx
------------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function
 delegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> IO ()
 delegate mountPoint events debug callback ctx = do
@@ -473,13 +465,6 @@ delegate mountPoint events debug callback ctx = do
   cb <- toJSVal callback
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "delegate" $ [mountPoint,events,cb,d,ctx]
------------------------------------------------------------------------------
-undelegate :: JSVal -> JSVal -> Bool -> Function -> JSVal -> IO ()
-undelegate mountPoint events debug callback ctx = do
-  d <- toJSVal debug
-  cb <- toJSVal callback
-  moduleMiso <- jsg "miso"
-  void $ moduleMiso # "undelegate" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
 --
