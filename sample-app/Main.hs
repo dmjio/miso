@@ -29,7 +29,7 @@ data Action
 -- | Entry point for a miso application
 main :: IO ()
 #ifdef INTERACTIVE
-main = reload (startApp app)
+main = reload (startApp defaultEvents app)
 #else
 main = run (startApp defaultEvents app)
 #endif
