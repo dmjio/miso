@@ -748,11 +748,11 @@ main = withJS $ do
 
     describe "Component tests" $ do
       it "Should mount one component" $ do
-        liftIO (startApp testComponent)
+        liftIO (startApp mempty testComponent)
         mountedComponents >>= (`shouldBe` 1)
 
       it "Should have parent field present on VDOM nodes" $ do
-        _ <- liftIO (startApp testComponent)
+        _ <- liftIO (startApp mempty testComponent)
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
         VTree (Object ref) <- liftIO (readIORef componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
@@ -764,7 +764,7 @@ main = withJS $ do
         parentFieldUndefined `shouldBe` False
 
       it "Should mount 1000 components" $ do
-        liftIO $ startApp $
+        liftIO $ startApp mempty $
           component (0 :: Int) noop $ \_ ->
             div_ [] (replicate 999 (mount testComponent))
         mountedComponents >>= (`shouldBe` 1000)
