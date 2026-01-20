@@ -227,49 +227,7 @@ Now that your project files are populated, development can begin.
 
 ## Hot Reload 🔥
 
-With `GHC` and `cabal` on `$PATH`, call `cabal repl`
-
-```bash
-$ cabal repl
-```
-
-You should see the following output in your terminal.
-
-```bash
-[1 of 2] Compiling Main             ( Main.hs, interpreted )
-Ok, one module loaded.
-ghci>
-```
-
-Now call the `main` function in the `GHCi` REPL.
-
-```bash
-ghci> main
-Running on port 8008...
-<a href="http://localhost:8008">run</a>
-ghci>
-```
-
-> [!NOTE]
-> The code running in this example is not compiled to JavaScript or WebAssembly, rather it is running the client side application on the server. It works by sending commands to a small javascript interpreter over a websocket to render elements on the page. This is provided by the [jsaddle](https://github.com/ghcjs/jsaddle) library.
-
-If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in `GHCi`, and the application will update on the screen.
-
-> [!NOTE]
-> Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
-
-> [!TIP]
-> For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
-
-Below is an example of usage with `ghcid`
-
-```bash
-$ ghcid -c 'cabal repl app' -T=Main.main
-```
-
-This screenshot shows the hot-reload functionality in action. This is using `ghcid`, `jsaddle` and `miso`.
-
-![Image](https://github.com/user-attachments/assets/4c5e7191-e4a9-4270-a28b-2f5f71ad6f40)
+See the [WASM browser mode](https://github.com/haskell-miso/miso-sampler/blob/main/README.md#browser-mode-) section of the [miso-sampler](https://github.com/haskell-miso/miso-sampler) repository for usage of hot reload development w/ [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch). Also see this [blog post](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/).
 
 ## Compilation
 
