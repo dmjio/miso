@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
-import           Data.Text (Text)
+import           Data.Text (Text, pack)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
 data JSVal = JSVal
@@ -189,14 +189,14 @@ parseFloat :: Text -> Maybe Float
 parseFloat = undefined
 -----------------------------------------------------------------------------
 toString_Int :: Int -> Text
-toString_Int = undefined
+toString_Int = pack . show
 -----------------------------------------------------------------------------
 toString_Word :: Word -> Text
-toString_Word = undefined
+toString_Word = pack . show
 -----------------------------------------------------------------------------
 toString_Float :: Float -> Text
-toString_Float = undefined
+toString_Float = pack . show
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
-toString_Double = undefined
+toString_Double = pack . show
 -----------------------------------------------------------------------------
