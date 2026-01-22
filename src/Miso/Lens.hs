@@ -184,6 +184,7 @@ import qualified Data.IntMap.Strict as IM
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntSet as IS
 import Data.IntSet (IntSet)
+import Data.List ((!?))
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
@@ -878,4 +879,13 @@ instance At IntSet where
       _get m
         | IS.member key m = Just ()
         | otherwise = Nothing
+----------------------------------------------------------------------------
+instance At [a] where
+    type Index [a] = Int
+    type IxValue [a] = a
+    at key = Lens {..}
+        where
+            _set Nothing m = take key m <> drop (key + 1) m
+            _set (Just v) m = take key m <> (v:drop(key+1)m)
+            _get = (!? key)
 ----------------------------------------------------------------------------
