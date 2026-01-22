@@ -184,7 +184,6 @@ import qualified Data.IntMap.Strict as IM
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntSet as IS
 import Data.IntSet (IntSet)
-import Data.List ((!?))
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
@@ -885,7 +884,7 @@ instance At [a] where
     type IxValue [a] = a
     at key = Lens {..}
         where
-            _set Nothing m = take key m <> drop (key + 1) m
-            _set (Just v) m = take key m <> (v:drop(key+1)m)
-            _get = (!? key)
+            _set Nothing m = splitAt key m & \(lhs,rhs) -> lhs <> drop 1 rhs 
+            _set (Just v) m = splitAt key m & \(lhs,rhs) -> lhs <> (v:rhs)
+            _get = lookup key . zip [0..]
 ----------------------------------------------------------------------------
