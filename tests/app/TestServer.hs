@@ -5,6 +5,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
+import Data.Int (Int32)
 import System.Directory (getCurrentDirectory)
 import Data.Proxy
 import Servant.Server
@@ -89,7 +90,7 @@ instance ToHtml IndexPageData where
                 , title_ [] [ "Miso Tests" ]
 
                 -- , js_wasm $ static_root <> "/init.js"
-                -- , js_js $ static_root <> "/all.js" -- Uncomment this and comment out the previous line to load the javascript version (TODO: make this a commandline flag or something)
+                , js_js $ static_root <> "/all.js" -- Uncomment this and comment out the previous line to load the javascript version (TODO: make this a commandline flag or something)
                 ]
             , body_ [] [ mount (app :: App.MainComponent) ]
             ]
@@ -131,10 +132,10 @@ mainView appData = pure $ IndexPageData (appData, App.app appData)
 
 
 prop_testIO :: EnvSettings -> Property
-prop_testIO envSettings = forAll (chooseAny :: Gen Int) $
+prop_testIO envSettings = forAll (chooseAny :: Gen Int32) $
     \i -> ioProperty $ do
         print i
-        let appData = App.TestData { App.randomSeed = i } :: App.TestData
+        let appData = App.TestData { App.randomSeed = fromEnum i } :: App.TestData
 
         putStrLn $ "Beginning to listen on " <> show port_
         Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)

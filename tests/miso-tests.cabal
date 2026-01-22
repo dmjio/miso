@@ -36,6 +36,7 @@ flag jsdom
 
 executable component-tests
   import:
+    warnings,
     options
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
@@ -44,7 +45,7 @@ executable component-tests
     buildable: False
 
   main-is:
-    main.hs
+    Main.hs
   build-depends:
     base, miso, miso-tests, containers, mtl, jsaddle, stm
   hs-source-dirs:
@@ -58,6 +59,40 @@ executable component-tests
   else
     cpp-options:
       -dghcjs_browser
+
+  default-language:
+    Haskell2010
+
+executable integration-tests-client
+  import:
+    warnings,
+    options
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: True
+  else
+    buildable: False
+
+  hs-source-dirs:
+    app
+
+  build-depends:
+    base,
+    text,
+    aeson,
+    miso,
+    QuickCheck == 2.17.1.0,
+    hashable,
+    jsaddle,
+    lens
+
+  main-is:
+    TestClient.hs
+
+  other-modules:    
+    TestApp
+    HtmlGen
+    HtmlGen2
 
   default-language:
     Haskell2010
@@ -92,7 +127,7 @@ executable integration-tests-server
     servant-miso-router,
     servant-miso-html,
     directory,
-    QuickCheck,
+    QuickCheck == 2.17.1.0,
     hashable
   hs-source-dirs:
     app

@@ -1,3 +1,7 @@
+-- Disclaimer: This is 99% vibe coded
+-- Generates an html tree of depth n, with only one path down to the bottom, with
+-- some extra sibling nodes along the way.
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
 
@@ -14,7 +18,11 @@ import Data.Function (on)
 
 -- | Safe HTML generator for hydration testing
 genHtml :: Gen (View model action)
-genHtml = sized $ \n -> genSubtree (n `mod` 20)
+genHtml = -- sized $ \n -> genSubtree (n `mod` 20)
+    do
+        -- n <- choose (1, 10)
+        genSubtree 30
+--genHtml = genSubtree 3
 
 -- | Generate subtree with guaranteed depth
 genSubtree :: Int -> Gen (View model action)
@@ -166,9 +174,16 @@ voidElementSpecs =
   ]
 
 -- | Generate valid CSS identifiers
+-- genCssIdent :: Gen MisoString
+-- genCssIdent = sized $ \n -> toMisoString <$> do
+--   len <- choose (1, max 1 (min n 15))
+--   first <- elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
+--   rest <- replicateM (len - 1) $ elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "_-"
+--   return (first:rest)
+
 genCssIdent :: Gen MisoString
-genCssIdent = sized $ \n -> toMisoString <$> do
-  len <- choose (1, max 1 (min n 15))
+genCssIdent = toMisoString <$> do
+  len <- choose (1, 15)
   first <- elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
   rest <- replicateM (len - 1) $ elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "_-"
   return (first:rest)
