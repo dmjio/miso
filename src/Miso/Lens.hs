@@ -885,6 +885,11 @@ instance At [a] where
   at key = Lens {..}
     where
       _set Nothing m = splitAt key m & \(lhs, rhs) -> lhs <> drop 1 rhs
-      _set (Just v) m = splitAt key m & \(lhs, rhs) -> lhs <> (v : drop 1 rhs)
+      _set (Just v) m
+        | key < 0 = m
+        | otherwise = splitAt key m & \(lhs, rhs) ->
+            case rhs of
+              [] -> lhs
+              _ : xs -> lhs <> (v : xs)
       _get = lookup key . zip [0..]
 ----------------------------------------------------------------------------
