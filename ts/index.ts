@@ -19,6 +19,7 @@ import {
   updateRef,
   inline,
   typeOf,
+  splitmix32,
 } from './miso';
 
 import {
@@ -52,6 +53,7 @@ globalThis['miso'] = {
     updateRef,
     inline,
     typeOf,
+    splitmix32,
     populateClass,
     integrityCheck,
     setDrawingContext : function (name) {

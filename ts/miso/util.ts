@@ -254,3 +254,16 @@ export function typeOf (x) : number {
   if (Array.isArray(x)) return 4;
   return 5;
 }
+
+/* Add splitmix32 random seed functionality */
+export function splitmix32(a : number) : number {
+  return function() {
+    a |= 0;
+    a = a + 0x9e3779b9 | 0;
+    let t = a ^ a >>> 16;
+    t = Math.imul(t, 0x21f0aaad);
+    t = t ^ t >>> 15;
+    t = Math.imul(t, 0x735a2d97);
+    return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+   }
+}

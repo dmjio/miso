@@ -79,6 +79,9 @@ module Miso
     -- * Run
     -- | Support for running and live-reloading of miso applications.
   , module Miso.Run
+    -- * Random
+    -- | Support for PRNG using the splitmix32 algorithm.
+  , module Miso.Random
     -- * Subscriptions
     -- | Subscriptions for external events (mouse, keyboard, window, history, etc.).
   , module Miso.Subscription
@@ -111,6 +114,7 @@ import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Property
 import           Miso.PubSub
+import           Miso.Random
 import           Miso.Router
 import           Miso.Run
 import           Miso.Runtime

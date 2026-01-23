@@ -18,6 +18,7 @@ import {
    updateRef,
    inline,
    typeOf,
+   splitmix32,
 } from './miso/util';
 
 import {
@@ -39,8 +40,9 @@ import { patch } from './miso/patch';
 
 import { vcomp, vnode, vtext } from './miso/smart';
 
-/* top level re-export */
+/* Top-level re-export */
 export {
+
   /* Functions */
   diff,
   hydrate,
@@ -63,6 +65,7 @@ export {
   updateRef,
   inline,
   typeOf,
+  splitmix32,
 
   /* Types */
   VTree,

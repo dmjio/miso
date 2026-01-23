@@ -73,6 +73,7 @@ module Miso.DSL
   , asyncCallback1
   , asyncCallback2
   , asyncCallback3
+  , apply
   ) where
 -----------------------------------------------------------------------------
 import           Control.Applicative
@@ -418,6 +419,12 @@ infixr 2 #
   func <- getProp_ffi k o'
   args' <- toJSVal =<< toArgs args
   invokeFunction func o' args'
+-----------------------------------------------------------------------------
+apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
+apply (Function func) args = do
+  o <- toJSVal global
+  fromJSValUnchecked =<< do
+    invokeFunction func o =<< toJSVal (toArgs args)
 -----------------------------------------------------------------------------
 -- | Instantiates a new JS t'Object'.
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal

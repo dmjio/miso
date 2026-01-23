@@ -97,6 +97,8 @@ module Miso.FFI
   , inline
     -- ** Scroll
   , scrollIntoView
+    -- ** SplitMix32
+  , splitmix32
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

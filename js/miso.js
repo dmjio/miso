@@ -945,6 +945,17 @@ function typeOf(x) {
     return 4;
   return 5;
 }
+function splitmix32(a) {
+  return function() {
+    a |= 0;
+    a = a + 2654435769 | 0;
+    let t = a ^ a >>> 16;
+    t = Math.imul(t, 569420461);
+    t = t ^ t >>> 15;
+    t = Math.imul(t, 1935289751);
+    return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+  };
+}
 
 // ts/miso/context/dom.ts
 var eventContext = {
@@ -1126,6 +1137,7 @@ globalThis["miso"] = {
   updateRef,
   inline,
   typeOf,
+  splitmix32,
   populateClass,
   integrityCheck,
   setDrawingContext: function(name) {

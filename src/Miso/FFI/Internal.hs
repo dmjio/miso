@@ -142,6 +142,8 @@ module Miso.FFI.Internal
    , updateRef
    -- * Inline JS
    , inline
+   -- * Randomness
+   , splitmix32
    ) where
 -----------------------------------------------------------------------------
 import           Data.Map.Strict (Map)
@@ -151,7 +153,6 @@ import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.String
-import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> IO ()
@@ -422,7 +423,7 @@ getElementById e = getDocument # "getElementById" $ [e]
 -- Note: custom renderers should implement this method.
 --
 -- @since 1.9.0.0
-getHead :: IO DOMRef
+getHead :: IO JSVal
 getHead = do
   context <- getDrawingContext
   context # "getHead" $ ()
@@ -432,7 +433,7 @@ getHead = do
 -- Calls @miso.drawingContext.removeChild(parent, child)@.
 --
 -- @since 1.9.0.0
-removeChild :: DOMRef -> DOMRef -> IO ()
+removeChild :: JSVal -> JSVal -> IO ()
 removeChild parent child = do
   context <- getDrawingContext
   void $ context # "removeChild" $ (parent, child)
@@ -554,7 +555,7 @@ addScript useModule js_ = do
 --   setValue domRef ("" :: MisoString)
 -- @
 --
-setValue :: DOMRef -> MisoString -> IO ()
+setValue :: JSVal -> MisoString -> IO ()
 setValue domRef value = setField domRef "value" value
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
@@ -1016,4 +1017,9 @@ newEvent args = Event <$> new (jsg "Event") args
 --
 newCustomEvent :: ToArgs args => args -> IO Event
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
+-----------------------------------------------------------------------------
+-- | Uses the 'splitmix' function to develop a random t'Seed'.
+--
+splitmix32 :: Maybe Double -> IO JSVal
+splitmix32 arg = jsg "miso" # "splitmix32" $ [arg]
 -----------------------------------------------------------------------------

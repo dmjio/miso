@@ -136,6 +136,7 @@ library
     Miso.Prelude
     Miso.Property
     Miso.PubSub
+    Miso.Random
     Miso.Router
     Miso.Run
     Miso.Runtime.Internal

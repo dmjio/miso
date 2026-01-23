@@ -64,7 +64,7 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Data.Foldable (for_)
-import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
+import           Control.Monad.RWS (RWS, put, tell, execRWS, censor)
 -----------------------------------------------------------------------------
 import           Miso.Lens
 import           Miso.DSL.FFI
