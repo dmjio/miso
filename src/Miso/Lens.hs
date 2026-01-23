@@ -884,7 +884,9 @@ instance At [a] where
   type IxValue [a] = a
   at key = Lens {..}
     where
-      _set Nothing m = splitAt key m & \(lhs, rhs) -> lhs <> drop 1 rhs
+      _set Nothing m
+        | key < 0 = m
+        | otherwise = splitAt key m & \(lhs, rhs) -> lhs <> drop 1 rhs
       _set (Just v) m
         | key < 0 = m
         | otherwise = splitAt key m & \(lhs, rhs) ->
