@@ -1,7 +1,8 @@
 -----------------------------------------------------------------------------
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
-import           Data.Text (Text)
+import           Data.Text (Text, pack, unpack)
+import           Text.Read (readMaybe)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
 data JSVal = JSVal
@@ -177,26 +178,26 @@ syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' = undefined
 -----------------------------------------------------------------------------
 parseInt :: Text -> Maybe Int
-parseInt = undefined
+parseInt = readMaybe . unpack
 -----------------------------------------------------------------------------
 parseDouble :: Text -> Maybe Double
-parseDouble = undefined
+parseDouble = readMaybe . unpack
 -----------------------------------------------------------------------------
 parseWord :: Text -> Maybe Word
-parseWord = undefined
+parseWord = readMaybe . unpack
 -----------------------------------------------------------------------------
 parseFloat :: Text -> Maybe Float
-parseFloat = undefined
+parseFloat = readMaybe . unpack
 -----------------------------------------------------------------------------
 toString_Int :: Int -> Text
-toString_Int = undefined
+toString_Int = pack . show
 -----------------------------------------------------------------------------
 toString_Word :: Word -> Text
-toString_Word = undefined
+toString_Word = pack . show
 -----------------------------------------------------------------------------
 toString_Float :: Float -> Text
-toString_Float = undefined
+toString_Float = pack . show
 -----------------------------------------------------------------------------
 toString_Double :: Double -> Text
-toString_Double = undefined
+toString_Double = pack . show
 -----------------------------------------------------------------------------

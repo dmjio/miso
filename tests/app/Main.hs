@@ -185,6 +185,17 @@ main = withJS $ do
         (this <>~ ['b']) ['a'] `shouldBe` ['a','b']
       it "Should ?~" $ do
         (this ?~ 0) (Just 1) `shouldBe` (Just 0)
+      it "Should At [a]" $ do
+        (['a','b','c'] ^. Miso.Lens.at 1) `shouldBe` Just 'b'
+        (['a','b','c'] & Miso.Lens.at 1 .~ (Just 'd')) `shouldBe` ['a','d','c']
+        (['a','b','c'] & Miso.Lens.at 1 .~ Nothing) `shouldBe` ['a','c']
+      it "Should At [a] edge cases" $ do
+          ([0..10::Int] ^. Miso.Lens.at 100) `shouldBe` Nothing
+          ([0..10::Int] ^. Miso.Lens.at (-100)) `shouldBe` Nothing
+          ([0..10::Int] & Miso.Lens.at 100 .~ Just 5) `shouldBe` [0..10]
+          ([0..10::Int] & Miso.Lens.at (-100) .~ Just 5) `shouldBe` [0..10]
+          ([0..10::Int] & Miso.Lens.at 100 .~ Nothing) `shouldBe` [0..10]
+          ([0..10::Int] & Miso.Lens.at (-100) .~ Nothing) `shouldBe` [0..10]
     describe "Inline JS tests" $ do
      it "Should use inline js" $ do
        (`shouldBe` 42) =<< liftIO (getAge (Person "larry" 42))
