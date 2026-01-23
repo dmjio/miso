@@ -953,7 +953,7 @@ function splitmix32(a) {
     t = Math.imul(t, 569420461);
     t = t ^ t >>> 15;
     t = Math.imul(t, 1935289751);
-    return ((t = t ^ t >>> 15) >>> 0) / 4294967296;
+    return ((t ^ t >>> 15) >>> 0) / 4294967296;
   };
 }
 
