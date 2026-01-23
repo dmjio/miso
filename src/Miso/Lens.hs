@@ -880,11 +880,11 @@ instance At IntSet where
         | otherwise = Nothing
 ----------------------------------------------------------------------------
 instance At [a] where
-    type Index [a] = Int
-    type IxValue [a] = a
-    at key = Lens {..}
-        where
-            _set Nothing m = splitAt key m & \(lhs,rhs) -> lhs <> drop 1 rhs 
-            _set (Just v) m = splitAt key m & \(lhs,rhs) -> lhs <> (v:rhs)
-            _get = lookup key . zip [0..]
+  type Index [a] = Int
+  type IxValue [a] = a
+  at key = Lens {..}
+    where
+      _set Nothing m = splitAt key m & \(lhs, _:rhs) -> lhs <> rhs
+      _set (Just v) m = splitAt key m & \(lhs, _:rhs) -> lhs <> (v:rhs)
+      _get = lookup key . zip [0..]
 ----------------------------------------------------------------------------
