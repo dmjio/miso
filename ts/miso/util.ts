@@ -257,13 +257,16 @@ export function typeOf (x) : number {
 
 /* Add splitmix32 random seed functionality */
 export function splitmix32(a : number) : number {
+  if (a === null || a === undefined) {
+    a = (performance.now() + Math.random() + 1) >>> 0;
+  }
   return function() {
     a |= 0;
-    a = a + 0x9e3779b9 | 0;
+    a = a + 2654435769 | 0;
     let t = a ^ a >>> 16;
-    t = Math.imul(t, 0x21f0aaad);
+    t = Math.imul(t, 569420461);
     t = t ^ t >>> 15;
-    t = Math.imul(t, 0x735a2d97);
+    t = Math.imul(t, 1935289751);
     return ((t ^ t >>> 15) >>> 0) / 4294967296;
-   }
+  };
 }

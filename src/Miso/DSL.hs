@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE DeriveAnyClass       #-}
@@ -424,7 +424,8 @@ apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
 apply (Function func) args = do
   o <- toJSVal global
   fromJSValUnchecked =<< do
-    invokeFunction func o =<< toJSVal (toArgs args)
+    invokeFunction func o =<<
+      toJSVal (toArgs args)
 -----------------------------------------------------------------------------
 -- | Instantiates a new JS t'Object'.
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal

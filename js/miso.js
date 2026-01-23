@@ -946,6 +946,9 @@ function typeOf(x) {
   return 5;
 }
 function splitmix32(a) {
+  if (a === null || a === undefined) {
+    a = performance.now() + Math.random() + 1 >>> 0;
+  }
   return function() {
     a |= 0;
     a = a + 2654435769 | 0;

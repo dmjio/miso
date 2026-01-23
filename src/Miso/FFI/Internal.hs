@@ -1021,5 +1021,5 @@ newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -- | Uses the 'splitmix' function to develop a random t'Seed'.
 --
 splitmix32 :: Maybe Double -> IO JSVal
-splitmix32 arg = jsg "miso" # "splitmix32" $ [arg]
+splitmix32 d = jsg "miso" # "splitmix32" $ [d]
 -----------------------------------------------------------------------------
