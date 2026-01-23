@@ -48,6 +48,6 @@ newStdGen = StdGen . Function <$> FFI.splitmix32 Nothing
 -- | Get the next 'StdGen', extracting the value, useful with 'State'.
 next :: StdGen -> (Double, StdGen)
 next (StdGen func) = unsafePerformIO $ do
-  result <- apply func ([] :: [JSVal])
+  result <- apply func ()
   pure (result, StdGen func)
 -----------------------------------------------------------------------------
