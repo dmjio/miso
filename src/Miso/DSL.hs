@@ -53,6 +53,7 @@ module Miso.DSL
   , call
   , new
   , create
+  , createWith
   , setProp
   , getProp
   , eval
@@ -439,6 +440,24 @@ new constr args = do
 -- | Creates a new JS t'Object'
 create :: IO Object
 create = Object <$> create_ffi
+-----------------------------------------------------------------------------
+-- | Creates a new JS t'Object' populated with key-value pairs specified
+-- in the list. Meant for use with 'inline' JS functionality.
+--
+-- @
+-- update = \case
+--  Highlight domRef -> do
+--    3 <- inline "hljs.highlight(domRef); return 3;" =<<
+--      createWith [ "domRef" =: domRef ]
+--    pure ()
+-- @
+--
+createWith :: ToJSVal val => [(MisoString, val)] -> IO Object
+createWith kvs = do
+  o <- create
+  forM_ kvs $ \(k,v) ->
+    flip (setProp k) o =<< toJSVal v
+  pure o
 -----------------------------------------------------------------------------
 -- | Sets a property on a JS t'Object'
 setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
