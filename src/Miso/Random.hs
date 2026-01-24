@@ -21,7 +21,7 @@ module Miso.Random
   , Seed
     -- ** Functions
   , newStdGen
-  , newStdGen'
+  , mkStdGen
   , next
   ) where
 -----------------------------------------------------------------------------
@@ -36,9 +36,9 @@ newtype StdGen = StdGen Function
 -- | An initial 'Seed' value, useful for simulations or reproducing test failures
 type Seed = Int
 -----------------------------------------------------------------------------
--- | Like 'Miso.Random.newStdGen' but takes a t'Seed' as an argument.
-newStdGen' :: Seed -> IO StdGen
-newStdGen' seed = StdGen . Function <$> FFI.splitmix32 (fromIntegral seed)
+-- | Like 'Miso.Random.newStdGen' but takes a t'Seed' as an argument and is pure.
+mkStdGen :: Seed -> StdGen
+mkStdGen seed = StdGen $ Function $ unsafePerformIO $ FFI.splitmix32 (fromIntegral seed)
 -----------------------------------------------------------------------------
 -- | Create a new t'StdGen', defaulting to a random t'Seed'.
 newStdGen :: IO StdGen

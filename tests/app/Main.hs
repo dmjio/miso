@@ -112,8 +112,7 @@ main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
     describe "Miso.Random tests" $ do
       it "Should generate some random numbers" $ do
-        stdgen <- liftIO (newStdGen' 0)
-        let xs = flip evalState stdgen $ replicateM 10 (state next)
+        let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
         length xs `shouldBe` 10
 
       it "Should pick a random seed every time" $ do
@@ -124,17 +123,13 @@ main = withJS $ do
         xs `shouldNotBe` ys
 
       it "Should generate the same random numbers using the same seed" $ do
-        stdgen <- liftIO (newStdGen' 0)
-        let xs = flip evalState stdgen $ replicateM 10 (state next)
-        stdgen' <- liftIO (newStdGen' 0)
-        let ys = flip evalState stdgen' $ replicateM 10 (state next)
+        let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
+        let ys = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
         xs `shouldBe` ys
 
       it "Should generate different random numbers using different seeds" $ do
-        stdgen <- liftIO (newStdGen' 1)
-        let xs = flip evalState stdgen $ replicateM 10 (state next)
-        stdgen' <- liftIO (newStdGen' 2)
-        let ys = flip evalState stdgen' $ replicateM 10 (state next)
+        let xs = flip evalState (mkStdGen 1) $ replicateM 10 (state next)
+        let ys = flip evalState (mkStdGen 2) $ replicateM 10 (state next)
         xs `shouldNotBe` ys
 
     describe "Miso.Lens tests" $ do
