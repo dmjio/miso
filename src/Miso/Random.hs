@@ -34,18 +34,21 @@ import qualified Miso.FFI.Internal as FFI
 -- | t'StdGen' holds a JS t'Function'.
 newtype StdGen = StdGen Function
 -----------------------------------------------------------------------------
--- | An initial Seed value, useful for simulations or reproducing test failures
-type Seed = Double
+-- | An initial 'Seed' value, useful for simulations or reproducing test failures
+type Seed = Int
 -----------------------------------------------------------------------------
 -- | Like 'Miso.Random.newStdGen' but takes a t'Seed' as an argument.
 newStdGen' :: Seed -> IO StdGen
-newStdGen' seed = StdGen . Function <$> FFI.splitmix32 seed
+newStdGen' seed = StdGen . Function <$> FFI.splitmix32 (fromIntegral seed)
 -----------------------------------------------------------------------------
--- | Create a new t'StdGen', defaulting to a random seed.
+-- | Create a new t'StdGen', defaulting to a random t'Seed'.
 newStdGen :: IO StdGen
 newStdGen = do
-  seed <- (*) <$> FFI.now <*> FFI.mathRandom
-  StdGen . Function <$> FFI.splitmix32 (seed + 1)
+  perf <- FFI.now
+  rand <- FFI.mathRandom
+  mili <- FFI.getMilliseconds =<< FFI.newDate
+  StdGen . Function <$> do
+    FFI.splitmix32 (mili * perf * rand + 1)
 -----------------------------------------------------------------------------
 -- | Get the next t'StdGen', extracting the value, useful with t'State'.
 next :: StdGen -> (Double, StdGen)
