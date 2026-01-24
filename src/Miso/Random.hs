@@ -20,7 +20,6 @@ module Miso.Random
     StdGen (..)
   , Seed
     -- ** Functions
-  , new
   , newStdGen
   , newStdGen'
   , next
