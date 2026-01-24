@@ -956,6 +956,10 @@ function splitmix32(a) {
     return ((t ^ t >>> 16) >>> 0) / 4294967296;
   };
 }
+function getRandomValues() {
+  const array = new Uint32Array(1);
+  return crypto.getRandomValues(array)[0];
+}
 function mathRandom() {
   return Math.random();
 }
@@ -1141,6 +1145,7 @@ globalThis["miso"] = {
   inline,
   typeOf,
   mathRandom,
+  getRandomValues,
   splitmix32,
   populateClass,
   integrityCheck,

@@ -267,6 +267,12 @@ export function splitmix32(a : number) : number {
   }
 }
 
+/* crypto.getRandomValues() */
+export function getRandomValues () : number {
+  const array = new Uint32Array(1);
+  return crypto.getRandomValues(array)[0];
+}
+
 /* Math.random() */
 export function mathRandom() : number {
   return Math.random();

@@ -146,6 +146,8 @@ module Miso.FFI.Internal
    , splitmix32
    -- * Math
    , mathRandom
+   -- * Crypto
+   , getRandomValue
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_, (<=<), when)
@@ -1030,4 +1032,10 @@ splitmix32 x = jsg "miso" # "splitmix32" $ [x]
 mathRandom :: IO Double
 mathRandom = fromJSValUnchecked =<< do
   jsg "miso" # "mathRandom" $ ()
+-----------------------------------------------------------------------------
+-- | Uses the first element of 'crypto.getRandomValues()'.
+--
+getRandomValue :: IO Double
+getRandomValue = fromJSValUnchecked =<< do
+  jsg "miso" # "getRandomValues" $ ()
 -----------------------------------------------------------------------------

@@ -44,11 +44,8 @@ newStdGen' seed = StdGen . Function <$> FFI.splitmix32 (fromIntegral seed)
 -- | Create a new t'StdGen', defaulting to a random t'Seed'.
 newStdGen :: IO StdGen
 newStdGen = do
-  perf <- FFI.now
-  rand <- FFI.mathRandom
-  mili <- FFI.getMilliseconds =<< FFI.newDate
-  StdGen . Function <$> do
-    FFI.splitmix32 (mili * perf * rand + 1)
+  seed <- FFI.getRandomValue
+  StdGen . Function <$> FFI.splitmix32 seed
 -----------------------------------------------------------------------------
 -- | Get the next t'StdGen', extracting the value, useful with t'State'.
 next :: StdGen -> (Double, StdGen)

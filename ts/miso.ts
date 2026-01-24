@@ -19,6 +19,7 @@ import {
    inline,
    typeOf,
    mathRandom,
+   getRandomValues,
    splitmix32,
 } from './miso/util';
 
@@ -67,6 +68,7 @@ export {
   inline,
   typeOf,
   mathRandom,
+  getRandomValues,
   splitmix32,
 
   /* Types */

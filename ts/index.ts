@@ -20,6 +20,7 @@ import {
   inline,
   typeOf,
   mathRandom,
+  getRandomValues,
   splitmix32,
 } from './miso';
 
@@ -55,6 +56,7 @@ globalThis['miso'] = {
     inline,
     typeOf,
     mathRandom,
+    getRandomValues,
     splitmix32,
     populateClass,
     integrityCheck,
