@@ -26,7 +26,9 @@
 module Miso.DSL
   ( -- * Classes
     ToJSVal (..)
+  , GToJSVal (..)
   , FromJSVal (..)
+  , GFromJSVal (..)
   , ToArgs (..)
   , ToObject (..)
     -- * Types
