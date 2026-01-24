@@ -5,7 +5,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
-import Data.Int (Int32)
 import System.Directory (getCurrentDirectory)
 import Data.Proxy
 import Servant.Server
@@ -50,12 +49,14 @@ import System.Environment (lookupEnv)
 import Test.QuickCheck
     ( forAll
     , quickCheck
-    , chooseAny
+    , arbitrary
     , ioProperty
     , Gen
     , Property
     )
+import Data.Aeson (encode)
 
+import qualified HtmlGen3 as Html
 import qualified TestApp as App
 
 type ServerRoutes = Routes (Get '[HTML] IndexPageData)
@@ -132,14 +133,14 @@ mainView appData = pure $ IndexPageData (appData, App.app appData)
 
 
 prop_testIO :: EnvSettings -> Property
-prop_testIO envSettings = forAll (chooseAny :: Gen Int32) $
-    \i -> ioProperty $ do
-        print i
-        let appData = App.TestData { App.randomSeed = fromEnum i } :: App.TestData
+prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
+    \html -> ioProperty $ do
+        print (encode html)
+        let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
         putStrLn $ "Beginning to listen on " <> show port_
         Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
-        return $ i == i
+        return True
 
     where
         port_ = port envSettings

@@ -111,6 +111,7 @@ inputAttributes = do
                      "submit"   -> [value_ "Submit"]
                      _          -> [value_ "test-value"]
   return $ nubBy ((==) `on` attrName) (typeAttr : base ++ extraAttrs)
+
   where
     attrName (Property n _) = n
     attrName _ = ""
@@ -238,5 +239,6 @@ genUnicodeString = listOf1 $ oneof
 -- | Constants for safety
 placeholderImage :: MisoString
 placeholderImage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
 placeholderAltText :: MisoString
 placeholderAltText = "Test image"

@@ -13,23 +13,17 @@ import Miso
     , LogLevel (..)
     )
 import qualified Miso as M
-import Miso.Html (div_)
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
-import Test.QuickCheck.Gen (unGen)
-import Test.QuickCheck.Random (mkQCGen)
 
-import HtmlGen2 (genHtml)
-import HtmlGen (genBodyContent)
-
-import Debug.Trace (trace)
+import HtmlGen3 (HTML, render)
 
 type MainComponent = App TestData ()
 
 type MainView = View TestData ()
 
 data TestData = TestData
-    { randomSeed :: Int
+    { randomHtml :: HTML
     } deriving (Generic, ToJSON, FromJSON, Eq)
 
 app :: TestData -> MainComponent
@@ -45,15 +39,4 @@ app td =
             return ()
 
         view :: TestData -> MainView
-        view TestData { randomSeed = r } =
-            unGen genHtml qcGen 30
-
-            where
-                qcGen = mkQCGen (trace ("mkQCGen with seed: " ++ show r) r)
-
-        view2 :: TestData -> MainView
-        view2 TestData { randomSeed = r } = div_ [] $
-            unGen genBodyContent qcGen 30
-
-            where
-                qcGen = mkQCGen r
+        view TestData { randomHtml = html } = render html

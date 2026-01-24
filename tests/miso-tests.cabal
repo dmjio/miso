@@ -81,7 +81,7 @@ executable integration-tests-client
     text,
     aeson,
     miso,
-    QuickCheck == 2.17.1.0,
+    QuickCheck,
     hashable,
     jsaddle,
     lens
@@ -91,8 +91,7 @@ executable integration-tests-client
 
   other-modules:    
     TestApp
-    HtmlGen
-    HtmlGen2
+    HtmlGen3
 
   default-language:
     Haskell2010
@@ -111,8 +110,7 @@ executable integration-tests-server
 
   other-modules:    
     TestApp
-    HtmlGen
-    HtmlGen2
+    HtmlGen3
 
   build-depends:
     base,
@@ -127,7 +125,7 @@ executable integration-tests-server
     servant-miso-router,
     servant-miso-html,
     directory,
-    QuickCheck == 2.17.1.0,
+    QuickCheck,
     hashable
   hs-source-dirs:
     app
