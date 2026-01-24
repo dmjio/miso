@@ -99,6 +99,8 @@ module Miso.FFI
   , scrollIntoView
     -- ** SplitMix32
   , splitmix32
+    -- ** Math.random()
+  , mathRandom
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

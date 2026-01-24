@@ -19,6 +19,7 @@ import {
   updateRef,
   inline,
   typeOf,
+  mathRandom,
   splitmix32,
 } from './miso';
 
@@ -53,6 +54,7 @@ globalThis['miso'] = {
     updateRef,
     inline,
     typeOf,
+    mathRandom,
     splitmix32,
     populateClass,
     integrityCheck,

@@ -144,11 +144,13 @@ module Miso.FFI.Internal
    , inline
    -- * Randomness
    , splitmix32
+   -- * Math
+   , mathRandom
    ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (void, forM_, (<=<), when)
 import           Data.Map.Strict (Map)
 import           Data.Maybe
-import           Control.Monad (void, forM_, (<=<), when)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -171,7 +173,7 @@ getProperty = (!)
 -- | Calls a function on a 'JSVal'
 --
 -- Example usage:
--- 
+--
 -- > callFunction domRef "focus" ()
 -- > callFunction domRef "setSelectionRange" (0, 3, "none")
 callFunction :: (ToArgs args) => JSVal -> MisoString -> args -> IO JSVal
@@ -1020,6 +1022,12 @@ newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
 -- | Uses the 'splitmix' function to generate a PRNG.
 --
-splitmix32 :: Maybe Double -> IO JSVal
-splitmix32 d = jsg "miso" # "splitmix32" $ [d]
+splitmix32 :: Double -> IO JSVal
+splitmix32 x = jsg "miso" # "splitmix32" $ [x]
+-----------------------------------------------------------------------------
+-- | Uses the 'Math.random()' function.
+--
+mathRandom :: IO Double
+mathRandom = fromJSValUnchecked =<< do
+  jsg "miso" # "mathRandom" $ ()
 -----------------------------------------------------------------------------

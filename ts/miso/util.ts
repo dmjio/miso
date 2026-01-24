@@ -257,9 +257,7 @@ export function typeOf (x) : number {
 
 /* Add splitmix32 random seed functionality */
 export function splitmix32(a : number) : number {
-  if (a === null || a === undefined) {
-    a = (performance.now() + Math.random() + 1) >>> 0;
-  }
+  a = a >>> 0;
   return function() {
     a |= 0;
     a = a + 2654435769 | 0;
@@ -269,4 +267,9 @@ export function splitmix32(a : number) : number {
     t = Math.imul(t, 1935289751);
     return ((t ^ t >>> 15) >>> 0) / 4294967296;
   };
+}
+
+/* Math.random() */
+export function mathRandom() : number {
+  return Math.random();
 }

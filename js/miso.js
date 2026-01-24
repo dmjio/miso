@@ -946,9 +946,7 @@ function typeOf(x) {
   return 5;
 }
 function splitmix32(a) {
-  if (a === null || a === undefined) {
-    a = performance.now() + Math.random() + 1 >>> 0;
-  }
+  a = a >>> 0;
   return function() {
     a |= 0;
     a = a + 2654435769 | 0;
@@ -958,6 +956,9 @@ function splitmix32(a) {
     t = Math.imul(t, 1935289751);
     return ((t ^ t >>> 15) >>> 0) / 4294967296;
   };
+}
+function mathRandom() {
+  return Math.random();
 }
 
 // ts/miso/context/dom.ts
@@ -1140,6 +1141,7 @@ globalThis["miso"] = {
   updateRef,
   inline,
   typeOf,
+  mathRandom,
   splitmix32,
   populateClass,
   integrityCheck,

@@ -18,6 +18,7 @@ import {
    updateRef,
    inline,
    typeOf,
+   mathRandom,
    splitmix32,
 } from './miso/util';
 
@@ -65,6 +66,7 @@ export {
   updateRef,
   inline,
   typeOf,
+  mathRandom,
   splitmix32,
 
   /* Types */
