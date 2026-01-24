@@ -23,8 +23,15 @@ module Miso.Random
   , newStdGen
   , mkStdGen
   , next
+  , replicateRM
+    -- ** Globals
+  , globalStdGen
   ) where
 -----------------------------------------------------------------------------
+import           Data.Tuple (swap)
+import           Control.Monad.State (state, runState)
+import           Control.Monad (replicateM)
+import           Data.IORef
 import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -51,4 +58,22 @@ next :: StdGen -> (Double, StdGen)
 next (StdGen func) = unsafePerformIO $ do
   result <- apply func ()
   pure (result, StdGen func)
+-----------------------------------------------------------------------------
+-- | Global 'StdGen', used by 'replicateRM' and others.
+globalStdGen :: IORef StdGen
+{-# NOINLINE globalStdGen #-}
+globalStdGen = unsafePerformIO $ do
+  seed <- floor . (*1e7) <$> FFI.mathRandom
+  newIORef (mkStdGen seed)
+-----------------------------------------------------------------------------
+-- | Generate n amount of random numbers. Uses the global PRNG 'globalStdGen'.
+--
+-- @
+-- replicateRM 10 :: IO [Double]
+-- @
+--
+replicateRM :: Int -> IO [Double]
+replicateRM n = do
+  atomicModifyIORef globalStdGen $ \gen -> do
+    swap $ flip runState gen $ replicateM n (state next)
 -----------------------------------------------------------------------------
