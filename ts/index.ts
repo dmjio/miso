@@ -19,6 +19,9 @@ import {
   updateRef,
   inline,
   typeOf,
+  mathRandom,
+  getRandomValues,
+  splitmix32,
 } from './miso';
 
 import {
@@ -52,6 +55,9 @@ globalThis['miso'] = {
     updateRef,
     inline,
     typeOf,
+    mathRandom,
+    getRandomValues,
+    splitmix32,
     populateClass,
     integrityCheck,
     setDrawingContext : function (name) {

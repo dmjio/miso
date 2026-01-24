@@ -945,6 +945,24 @@ function typeOf(x) {
     return 4;
   return 5;
 }
+function splitmix32(a) {
+  return function() {
+    a |= 0;
+    a = a + 2654435769 | 0;
+    var t = a ^ a >>> 15;
+    t = Math.imul(t, 2246822507);
+    t = t ^ t >>> 13;
+    t = Math.imul(t, 3266489909);
+    return ((t ^ t >>> 16) >>> 0) / 4294967296;
+  };
+}
+function getRandomValues() {
+  const array = new Uint32Array(1);
+  return crypto.getRandomValues(array)[0];
+}
+function mathRandom() {
+  return Math.random();
+}
 
 // ts/miso/context/dom.ts
 var eventContext = {
@@ -1126,6 +1144,9 @@ globalThis["miso"] = {
   updateRef,
   inline,
   typeOf,
+  mathRandom,
+  getRandomValues,
+  splitmix32,
   populateClass,
   integrityCheck,
   setDrawingContext: function(name) {
