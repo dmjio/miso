@@ -98,7 +98,7 @@ import           GHC.Generics
 import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
-import           Miso.String (MisoString, ms, singleton)
+import           Miso.String (MisoString, ms, singleton, pack)
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import Control.Monad.Trans.Maybe
@@ -247,6 +247,11 @@ instance ToJSON Integer where toJSON = Number . fromInteger
 ----------------------------------------------------------------------------
 newtype Parser a = P { unP :: Either MisoString a }
   deriving (Functor, Applicative, Monad)
+----------------------------------------------------------------------------
+#ifndef GHCJS_OLD
+instance MonadFail Parser where
+  fail = pfail . pack
+#endif
 ----------------------------------------------------------------------------
 instance Alternative Parser where
   empty = P (Left mempty)
