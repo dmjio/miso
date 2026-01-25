@@ -86,6 +86,9 @@ import qualified GHCJS.Marshal as Marshal
 #endif
 ----------------------------------------------------------------------------
 import           Control.Applicative
+#ifndef GHCJS_OLD
+import           Control.Monad.Fail
+#endif
 import           Control.Monad
 import           Data.Char
 import qualified Data.Map.Strict as M
