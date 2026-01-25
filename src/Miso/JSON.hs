@@ -261,6 +261,8 @@ instance Alternative Parser where
   P (Left _) <|> r = r
   l <|> _ = l
 ----------------------------------------------------------------------------
+instance MonadPlus Parser
+----------------------------------------------------------------------------
 parseMaybe :: (a -> Parser b) -> a -> Maybe b
 parseMaybe m v =
   case parseEither m v of
