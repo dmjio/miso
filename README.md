@@ -575,7 +575,7 @@ If you want to interact with an HTTP API, we recommend one of the following appr
      source-repository-package
        type: git
        location: https://github.com/haskell-miso/servant-miso-client
-       tag: 13b6ec09bf4f09436ffe6518795eb50a81c6c896
+       tag: master
      ```
 
 ## Coverage ✅
