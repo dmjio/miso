@@ -142,16 +142,21 @@ module Miso.FFI.Internal
    , updateRef
    -- * Inline JS
    , inline
+   -- * Randomness
+   , splitmix32
+   -- * Math
+   , mathRandom
+   -- * Crypto
+   , getRandomValue
    ) where
 -----------------------------------------------------------------------------
+import           Control.Monad (void, forM_, (<=<), when)
 import           Data.Map.Strict (Map)
 import           Data.Maybe
-import           Control.Monad (void, forM_, (<=<), when)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
 import           Miso.String
-import           Miso.Effect (DOMRef)
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> IO ()
@@ -170,7 +175,7 @@ getProperty = (!)
 -- | Calls a function on a 'JSVal'
 --
 -- Example usage:
--- 
+--
 -- > callFunction domRef "focus" ()
 -- > callFunction domRef "setSelectionRange" (0, 3, "none")
 callFunction :: (ToArgs args) => JSVal -> MisoString -> args -> IO JSVal
@@ -422,7 +427,7 @@ getElementById e = getDocument # "getElementById" $ [e]
 -- Note: custom renderers should implement this method.
 --
 -- @since 1.9.0.0
-getHead :: IO DOMRef
+getHead :: IO JSVal
 getHead = do
   context <- getDrawingContext
   context # "getHead" $ ()
@@ -432,7 +437,7 @@ getHead = do
 -- Calls @miso.drawingContext.removeChild(parent, child)@.
 --
 -- @since 1.9.0.0
-removeChild :: DOMRef -> DOMRef -> IO ()
+removeChild :: JSVal -> JSVal -> IO ()
 removeChild parent child = do
   context <- getDrawingContext
   void $ context # "removeChild" $ (parent, child)
@@ -554,7 +559,7 @@ addScript useModule js_ = do
 --   setValue domRef ("" :: MisoString)
 -- @
 --
-setValue :: DOMRef -> MisoString -> IO ()
+setValue :: JSVal -> MisoString -> IO ()
 setValue domRef value = setField domRef "value" value
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
@@ -1016,4 +1021,21 @@ newEvent args = Event <$> new (jsg "Event") args
 --
 newCustomEvent :: ToArgs args => args -> IO Event
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
+-----------------------------------------------------------------------------
+-- | Uses the 'splitmix' function to generate a PRNG.
+--
+splitmix32 :: Double -> IO JSVal
+splitmix32 x = jsg "miso" # "splitmix32" $ [x]
+-----------------------------------------------------------------------------
+-- | Uses the 'Math.random()' function.
+--
+mathRandom :: IO Double
+mathRandom = fromJSValUnchecked =<< do
+  jsg "miso" # "mathRandom" $ ()
+-----------------------------------------------------------------------------
+-- | Uses the first element of 'crypto.getRandomValues()'.
+--
+getRandomValue :: IO Double
+getRandomValue = fromJSValUnchecked =<< do
+  jsg "miso" # "getRandomValues" $ ()
 -----------------------------------------------------------------------------

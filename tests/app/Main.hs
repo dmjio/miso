@@ -32,6 +32,7 @@ import qualified Data.IntMap.Strict as IM
 -----------------------------------------------------------------------------
 import           Miso
 import qualified Miso.JSON as JSON
+import           Miso.Random
 import           Miso.Router
 import qualified Miso.String as S
 import           Miso.DSL
@@ -109,6 +110,28 @@ withJS action = void $ do
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Random tests" $ do
+      it "Should generate some random numbers" $ do
+        let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
+        length xs `shouldBe` 10
+
+      it "Should pick a random seed every time" $ do
+        stdgen <- liftIO newStdGen
+        let xs = flip evalState stdgen $ replicateM 10 (state next)
+        stdgen' <- liftIO newStdGen
+        let ys = flip evalState stdgen' $ replicateM 10 (state next)
+        xs `shouldNotBe` ys
+
+      it "Should generate the same random numbers using the same seed" $ do
+        let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
+        let ys = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
+        xs `shouldBe` ys
+
+      it "Should generate different random numbers using different seeds" $ do
+        let xs = flip evalState (mkStdGen 1) $ replicateM 10 (state next)
+        let ys = flip evalState (mkStdGen 2) $ replicateM 10 (state next)
+        xs `shouldNotBe` ys
+
     describe "Miso.Lens tests" $ do
       it "Should convert between VL and Miso.Lens.Lens" $ do
         (fromVL (toVL this) %~ (+1)) 0 `shouldBe` 1

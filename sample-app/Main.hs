@@ -6,6 +6,7 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Miso.Run
+import           Miso.Random
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens

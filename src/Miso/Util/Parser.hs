@@ -31,6 +31,7 @@ module Miso.Util.Parser
 import           Control.Monad.Fail (MonadFail (..))
 #endif
 import           Control.Applicative
+import           Control.Monad
 ----------------------------------------------------------------------------
 import           Miso.Util.Lexer (LexerError)
 ----------------------------------------------------------------------------
@@ -89,7 +90,9 @@ instance Monad (ParserT r token []) where
     runParserT (k x) r tokens'
 ----------------------------------------------------------------------------
 instance MonadFail (ParserT r token []) where
-  fail _ = Parser $ \_ _ -> []
+  fail _ = empty
+----------------------------------------------------------------------------
+instance MonadPlus (ParserT r token [])
 ----------------------------------------------------------------------------
 -- | Predicate combinator used as a base to construct other high-level
 -- parser combinators.

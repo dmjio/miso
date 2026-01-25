@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE DerivingStrategies   #-}
 {-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE DeriveAnyClass       #-}
@@ -26,7 +26,9 @@
 module Miso.DSL
   ( -- * Classes
     ToJSVal (..)
+  , GToJSVal (..)
   , FromJSVal (..)
+  , GFromJSVal (..)
   , ToArgs (..)
   , ToObject (..)
     -- * Types
@@ -51,6 +53,7 @@ module Miso.DSL
   , call
   , new
   , create
+  , createWith
   , setProp
   , getProp
   , eval
@@ -73,6 +76,7 @@ module Miso.DSL
   , asyncCallback1
   , asyncCallback2
   , asyncCallback3
+  , apply
   ) where
 -----------------------------------------------------------------------------
 import           Control.Applicative
@@ -419,6 +423,13 @@ infixr 2 #
   args' <- toJSVal =<< toArgs args
   invokeFunction func o' args'
 -----------------------------------------------------------------------------
+apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
+apply (Function func) args = do
+  o <- toJSVal global
+  fromJSValUnchecked =<< do
+    invokeFunction func o =<<
+      toJSVal (toArgs args)
+-----------------------------------------------------------------------------
 -- | Instantiates a new JS t'Object'.
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
 new constr args = do
@@ -429,6 +440,24 @@ new constr args = do
 -- | Creates a new JS t'Object'
 create :: IO Object
 create = Object <$> create_ffi
+-----------------------------------------------------------------------------
+-- | Creates a new JS t'Object' populated with key-value pairs specified
+-- in the list. Meant for use with 'inline' JS functionality.
+--
+-- @
+-- update = \case
+--  Highlight domRef -> do
+--    3 <- inline "hljs.highlight(domRef); return 3;" =<<
+--      createWith [ "domRef" =: domRef ]
+--    pure ()
+-- @
+--
+createWith :: ToJSVal val => [(MisoString, val)] -> IO Object
+createWith kvs = do
+  o <- create
+  forM_ kvs $ \(k,v) ->
+    flip (setProp k) o =<< toJSVal v
+  pure o
 -----------------------------------------------------------------------------
 -- | Sets a property on a JS t'Object'
 setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()

@@ -254,3 +254,26 @@ export function typeOf (x) : number {
   if (Array.isArray(x)) return 4;
   return 5;
 }
+
+/* Add splitmix32 random seed functionality */
+export function splitmix32(a : number) : number {
+  return function() {
+    a |= 0; a = a + 0x9e3779b9 | 0;
+    var t = a ^ a >>> 15;
+    t = Math.imul(t, 0x85ebca6b);
+    t = t ^ t >>> 13;
+    t = Math.imul(t, 0xc2b2ae35);
+    return ((t ^ t >>> 16) >>> 0) / 4294967296;
+  }
+}
+
+/* crypto.getRandomValues() */
+export function getRandomValues () : number {
+  const array = new Uint32Array(1);
+  return crypto.getRandomValues(array)[0];
+}
+
+/* Math.random() */
+export function mathRandom() : number {
+  return Math.random();
+}

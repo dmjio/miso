@@ -85,6 +85,14 @@ Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) b
 > [!TIP]
 > We have a [template repository](https://github.com/haskell-miso/miso-sampler) that includes a sample counter application and build scripts for all platforms.
 
+```bash
+# Install nix (flakes enabled by default)
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install 
+# Clone and build
+git clone https://github.com/haskell-miso/miso-sampler && cd miso-sampler
+nix develop .#wasm --command bash -c 'make && make serve'
+```
+
 The fastest way to get started is to clone and build the [miso sampler](https://github.com/haskell-miso/miso-sampler) repository 🍱 This has build scripts for Web Assembly, JS and vanilla [GHC](https://haskell.org/ghc). This requires [Nix Flakes](https://wiki.nixos.org/wiki/Flakes) usage. See also the section on using [miso's binary cache](#binary-cache).
 
 ## Getting started
@@ -569,7 +577,7 @@ If you want to interact with an HTTP API, we recommend one of the following appr
      source-repository-package
        type: git
        location: https://github.com/haskell-miso/servant-miso-client
-       tag: 13b6ec09bf4f09436ffe6518795eb50a81c6c896
+       tag: master
      ```
 
 ## Coverage ✅
