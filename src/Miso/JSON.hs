@@ -87,6 +87,9 @@ import qualified GHCJS.Marshal as Marshal
 ----------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Monad
+#if __GLASGOW_HASKELL__ <= 865
+import           Control.Monad.Fail
+#endif
 import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
@@ -248,10 +251,8 @@ instance ToJSON Integer where toJSON = Number . fromInteger
 newtype Parser a = P { unP :: Either MisoString a }
   deriving (Functor, Applicative, Monad)
 ----------------------------------------------------------------------------
-#ifndef GHCJS_OLD
 instance MonadFail Parser where
   fail = pfail . pack
-#endif
 ----------------------------------------------------------------------------
 instance Alternative Parser where
   empty = P (Left mempty)
