@@ -24,6 +24,7 @@ module Miso.Random
   , mkStdGen
   , next
   , replicateRM
+  , getStdGen
     -- ** Globals
   , globalStdGen
   ) where
@@ -65,6 +66,10 @@ globalStdGen :: IORef StdGen
 globalStdGen = unsafePerformIO $ do
   seed <- floor . (*1e7) <$> FFI.mathRandom
   newIORef (mkStdGen seed)
+-----------------------------------------------------------------------------
+-- | Read the `globalStdGen`
+getStdGen :: IO StdGen
+getStdGen = readIORef globalStdGen
 -----------------------------------------------------------------------------
 -- | Generate n amount of random numbers. Uses the global PRNG 'globalStdGen'.
 --
