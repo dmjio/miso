@@ -97,7 +97,7 @@ import           Control.Exception (SomeException, catch)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
-import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON, Value(Null))
+import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
 import           Data.Foldable (toList)
 import qualified Data.List as List
 import           Data.Maybe
@@ -135,7 +135,7 @@ import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
 import           Miso.FFI.Internal (Blob(..), ArrayBuffer(..))
 import qualified Miso.Hydrate as Hydrate
-import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, encode, jsonStringify, Value, toJSON)
+import           Miso.JSON (encode, jsonStringify, Value)
 import           Miso.Lens hiding (view)
 import           Miso.String (ToMisoString(..))
 import           Miso.Types
@@ -1459,13 +1459,13 @@ websocketCore core = do
     insertWebSocket _componentInfoId webSocketId socket
   where
     insertWebSocket :: ComponentId -> WebSocket -> Socket -> IO ()
-    insertWebSocket componentId (WebSocket socketId) socket =
+    insertWebSocket componentId_ (WebSocket socketId) socket =
       atomicModifyIORef' websocketConnections $ \websockets ->
           (update websockets, ())
       where
         update websockets =
           IM.unionWith IM.union websockets
-            $ IM.singleton componentId
+            $ IM.singleton componentId_
             $ IM.singleton socketId socket
 
     freshWebSocket :: IO WebSocket
