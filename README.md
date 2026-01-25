@@ -86,8 +86,10 @@ Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) b
 > We have a [template repository](https://github.com/haskell-miso/miso-sampler) that includes a sample counter application and build scripts for all platforms.
 
 ```bash
-git clone https://github.com/haskell-miso/miso-sampler
-cd miso-sampler
+# Install nix (flakes enabled by default)
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install 
+# Clone and build
+git clone https://github.com/haskell-miso/miso-sampler && cd miso-sampler
 nix develop .#wasm --command bash -c 'make && make serve'
 ```
 
