@@ -25,6 +25,7 @@ module Miso.Util.Parser
   , allTokens
   , modifyTokens
   , askParser
+  , endOfInput
   ) where
 ----------------------------------------------------------------------------
 #if __GLASGOW_HASKELL__ <= 881
@@ -32,6 +33,7 @@ import           Control.Monad.Fail (MonadFail (..))
 #endif
 import           Control.Applicative
 import           Control.Monad
+import           Data.Maybe (isNothing)
 ----------------------------------------------------------------------------
 import           Miso.Util.Lexer (LexerError)
 ----------------------------------------------------------------------------
@@ -94,13 +96,25 @@ instance MonadFail (ParserT r token []) where
 ----------------------------------------------------------------------------
 instance MonadPlus (ParserT r token [])
 ----------------------------------------------------------------------------
--- | Predicate combinator used as a base to construct other high-level
--- parser combinators.
-satisfy :: (a -> Bool) -> ParserT r [a] [] a
-satisfy f = Parser $ \_ input ->
+-- | Match any token.
+anyToken :: ParserT r [a] [] a
+anyToken = Parser $ \_ input ->
   case input of
-    t : ts | f t -> [(t, ts)]
+    t : ts -> [(t, ts)]
     _ -> []
+----------------------------------------------------------------------------
+-- | Succeeds for any token for which the predicate @f@ returns 'True'.
+-- Returns the parsed token.
+satisfy :: (a -> Bool) -> ParserT r [a] [] a
+satisfy f = do
+    t <- anyToken
+    guard $ f t
+    pure t
+----------------------------------------------------------------------------
+-- | Succeeds if the next token in the stream matches the given one.
+-- Returns the parsed token.
+token_ :: Eq token => token -> Parser token token
+token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
 -- | Returns all input from a parser
 allTokens :: ParserT r a [] a
@@ -109,10 +123,6 @@ allTokens = Parser $ \_ input -> [(input, input)]
 -- | Modifies tokens
 modifyTokens :: (t -> t) -> ParserT r t [] ()
 modifyTokens f = Parser $ \_ input -> [((), f input)]
-----------------------------------------------------------------------------
--- | Smart constructor for building a token parser combinator
-token_ :: Eq token => token -> Parser token token
-token_ t = satisfy (==t)
 ----------------------------------------------------------------------------
 -- | Retrieves read-only state from a Parser
 askParser :: ParserT r token [] r
@@ -128,4 +138,8 @@ peek = Parser $ \_ tokens ->
 -- | Parser combinator that always fails
 errorOut :: errorToken -> ParserT r errorToken [] ()
 errorOut x = Parser $ \_ _ -> [((),x)]
+----------------------------------------------------------------------------
+-- | Parser combinator that only succeeds if there are no more tokens.
+endOfInput :: Parser a ()
+endOfInput = guard . isNothing =<< optional anyToken
 ----------------------------------------------------------------------------
