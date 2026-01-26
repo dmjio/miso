@@ -186,11 +186,18 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         liftIO (atomicWriteIORef _componentVTree newVTree)
 
-  let _componentApplyActions = \actions model_ -> do
+  let _componentApplyActions = \(actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
-        List.foldl' (\(m, ss) a ->
+        let cs = comps IM.! _componentId
+        List.foldl' (\(vcomps, m, ss) a ->
           case runEffect (update a) info m of
-            (n, sss) -> (n, ss <> sss)) (model_, []) actions
+            (n, sss) -> do
+              let newComps
+                    | modelCheck m n =
+                        propagate _componentId
+                          (IM.insert _componentId (cs { _componentModel = n }) vcomps)
+                    | otherwise = vcomps
+              (newComps, n, ss <> sss)) (comps, model_, []) actions
 
   let vcomp = ComponentState
         { _componentEvents = events
@@ -218,7 +225,7 @@ initSubs subs_ _componentSubThreads _componentSink = do
     liftIO $ atomicModifyIORef' _componentSubThreads $ \m ->
       (M.insert subKey threadId m, ())
 -----------------------------------------------------------------------------
--- | Diffs two models, returning an if a redraw is necessary
+-- | Diffs two models, returning True if a redraw is necessary
 modelCheck :: Eq model => model -> model -> Bool
 modelCheck c n = unsafePerformIO $ do
   currentName <- c `seq` makeStableName c
@@ -226,8 +233,8 @@ modelCheck c n = unsafePerformIO $ do
   pure (currentName /= updatedName && c /= n)
 -----------------------------------------------------------------------------
 -- | The scheduler processes all events in the system and is responsible
--- for propagating state changes across model states both asynchronously
--- and synchronously (synchronously is done for 'Binding'). It also is responsible for
+-- for propagating changes across model states both asynchronously
+-- and synchronously (via 'Binding'). It also is responsible for
 -- top-down rendering of the UI Component tree.
 scheduler :: IO ()
 scheduler =
@@ -242,29 +249,28 @@ scheduler =
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
       shouldRender <- commit vcompId actions
-      when shouldRender $ do
-        _converged <- propagateBindings vcompId
-        renderComponents
+      when shouldRender renderComponents
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO Bool
     commit vcompId events = do
-      ComponentState {..} <- (IM.! vcompId) <$> liftIO (readIORef components)
-      case _componentApplyActions events _componentModel of
-        (updatedModel, schedules) -> do
-          forM_ schedules $ \case
-            Schedule Async action ->
-              evalScheduled Async
-                (action _componentSink)
-            Schedule Sync action ->
-              evalScheduled Sync
-                (action _componentSink)
-          let dirty = _componentModelDirty _componentModel updatedModel
-          when dirty $ do
-            modifyComponent _componentId $ do
-              isDirty .= True
-              componentModel .= updatedModel
-          pure dirty
+      (updatedModel, schedules, ComponentState{..}) <- do
+        atomicModifyIORef' components $ \vcomps -> do
+          let cs@ComponentState {..} = vcomps IM.! vcompId
+          case _componentApplyActions events _componentModel vcomps of
+            (x, updatedModel, schedules) ->
+              (x, (updatedModel, schedules, cs))
+      forM_ schedules $ \case
+        Schedule Async action ->
+          evalScheduled Async (action _componentSink)
+        Schedule Sync action ->
+          evalScheduled Sync (action _componentSink)
+      let dirty = _componentModelDirty _componentModel updatedModel
+      when dirty $ do
+        modifyComponent _componentId $ do
+          isDirty .= True
+          componentModel .= updatedModel
+      pure dirty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -279,7 +285,7 @@ scheduler =
           when _componentIsDirty (_componentDraw _componentModel)
           modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
--- | Modify a single t'Component p m a' at a t'ComponentId'
+-- | Modify a single t'Component p m a' at a t'ComponentId'.
 --
 -- Auxiliary function
 modifyComponent
@@ -294,28 +300,11 @@ modifyComponent vcompId go = liftIO $ do
       Just vcomp ->
         (IM.insert vcompId (execState go vcomp) vcomps, ())
 ----------------------------------------------------------------------------
--- | Bindings processor, DFS the Component graph, update state at the
--- granularity of a Lens.
-propagateBindings
-  :: ComponentId
-  -> IO Bool
-propagateBindings vcompId = do
-  atomicModifyIORef' components $ \cs -> do
-    let iterations = 2 -- dmj: once two mutate, twice to converge
-    propagate vcompId 0 iterations cs
-----------------------------------------------------------------------------
 propagate
   :: ComponentId
-  -> Int
-  -> Int
   -> IntMap (ComponentState p m a)
-  -> (IntMap (ComponentState p m a), Bool)
-propagate vcompId !n iterations cs
-  | n > iterations = (cs, False)
-  | solved cs _state _visited = (_state, True)
-  | otherwise = propagate vcompId (n + 1) iterations _state
-      where
-        DFS {..} = execState synch (dfs cs vcompId)
+  -> IntMap (ComponentState p m a)
+propagate vcompId vcomps = _state (execState synch (dfs vcomps vcompId))
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
@@ -444,21 +433,6 @@ pop = do
          Just cs -> do
            pure (Just cs)
 -----------------------------------------------------------------------------
-solved
-  :: IntMap (ComponentState p m a)
-  -> IntMap (ComponentState p m a)
-  -> Set ComponentId
-  -> Bool
-solved old_ new_ seen = and
-  [ case (IM.lookup s old_, IM.lookup s new_) of
-      (Just x, Just y) ->
-        not $ (_componentModelDirty x)
-          (_componentModel x)
-          (_componentModel y)
-      _ -> True
-  | s <- Set.toList seen
-  ]
------------------------------------------------------------------------------
 initialDraw
   :: Eq m
   => m
@@ -566,7 +540,7 @@ dequeue q =
                   Just (vcompId, toList process, updated)
 -----------------------------------------------------------------------------
 -- | Dequeus everything from the Queue at a specific t'ComponentId', draining
--- both the queue events and the queue schedule
+-- both the queue events and the queue schedule.
 dequeueAt
   :: forall action
    . ComponentId
@@ -648,7 +622,11 @@ data ComponentState parent model action
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
-  , _componentApplyActions :: [action] -> model -> (model, [Schedule action])
+  , _componentApplyActions
+      :: [action]
+      -> model
+      -> IntMap (ComponentState parent model action)
+      -> (IntMap (ComponentState parent model action), model, [Schedule action])
   -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
@@ -909,19 +887,23 @@ evalScheduled Async x = void (forkIO (x `catch` (void . exception)))
 exception :: SomeException -> IO ()
 exception ex = FFI.consoleError ("[EXCEPTION]: " <> ms ex)
 -----------------------------------------------------------------------------
--- | Drains the event queue before unmounting, executed synchronously
+-- | Drains the event queue before unmounting, executed synchronously.
 drain
   :: ComponentState parent model action
   -> IO ()
-drain cs@ComponentState {..} = do
+drain ComponentState {..} = do
   drainQueueAt _componentId >>= \case
     actions -> do
-       case _componentApplyActions actions _componentModel of
-         (updated, schedules :: [Schedule action]) -> do
+       vcomps <- readIORef components
+       case _componentApplyActions actions _componentModel vcomps of
+         (newVComps, _, schedules) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
              Schedule _ action -> action _componentSink
-           drain cs { _componentModel = updated }
+             -- dmj: Don't recurse on drain, we only fire-off the last set
+             -- of events for 'onBeforeUnmounted' hooks. The queue will
+             -- ignore the rest of these.
+           atomicWriteIORef components newVComps
 -----------------------------------------------------------------------------
 -- | Post unmount call to drop the <style> and <script> in <head>
 unloadScripts :: ComponentState parent model action -> IO ()
