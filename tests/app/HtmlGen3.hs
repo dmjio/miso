@@ -43,6 +43,7 @@ data ChildHavingHtmlTag
     = Div
     | Span
     | P
+    | Pre
     | Ul
     | Ol
     | Li
@@ -103,7 +104,26 @@ instance Arbitrary HTML where
 
 
 type MkTag model action = [ Attribute action ] -> [ View model action ] -> View model action
+
 type MkTag2 model action = [ Attribute action ] -> View model action
+
+type Tag = Either ChildlessHtmlTag ChildHavingHtmlTag
+
+type TagGen = Gen Tag
+
+
+nextGenerator :: Tag -> TagGen
+nextGenerator (Right Ul) = return $ Right Li
+nextGenerator (Right Ol) = return $ Right Li
+nextGenerator (Right Table) = Right <$> elements [ Thead, Tbody, Tr ]
+nextGenerator (Right Thead) = return $ Right Tr
+nextGenerator (Right Tbody) = return $ Right Tr
+nextGenerator (Right Tr) = Right <$> elements [ Th, Td ]
+nextGenerator (Right Th) = safeBlockElem
+nextGenerator (Right Td) = safeBlockElem
+nextGenerator (Right Dl) = Right <$> elements [ Dt, Dd ]
+nextGenerator (Right Dt) = Right <$> elements [ Dt, Dd ]
+-- nextGenerator _ = safeBlockElem
 
 
 render :: HTML -> View model action
@@ -142,6 +162,7 @@ t :: ChildHavingHtmlTag -> MkTag model action
 t Div = div_
 t Span = span_
 t P = p_
+t Pre = pre_
 t Ul = ul_
 t Ol = ol_
 t Li = li_
@@ -175,6 +196,19 @@ t Figcaption = figcaption_
 t A = a_
 
 
+safeBlocklTags :: [ ChildHavingHtmlTag ]
+safeBlocklTags = [ Div, P, Pre, Ul, Ol, Section, Header, Footer, Nav, Article,
+    H1, H2, H3, H4, Table, Form, Fieldset, Dl, Figure, Figcaption ]
+
+
+safeBlockElem :: TagGen
+safeBlockElem = Right <$> elements safeBlocklTags
+
+
+inlineTags :: [ ChildHavingHtmlTag ]
+inlineTags = [Span, Strong, Em, Label, Button, Legend, A]
+
+
 -- get appropriate miso constructor for childless elem
 vt :: ChildlessHtmlTag -> MkTag2 model action
 vt Hr = hr_
@@ -185,26 +219,30 @@ vt Wbr = wbr_
 
 
 genHtml :: Gen HTML
-genHtml = sized $ \n -> genSubtree (n `mod` maxDepth)
+-- genHtml = sized $ \n -> genSubtree (n `mod` maxDepth)
+genHtml = genSubtree 3 safeBlockElem
 
 
-genSubtree :: Int -> Gen HTML
-genSubtree depth
+genSubtree :: Int -> TagGen -> Gen HTML
+genSubtree depth gen
   | depth <= 1 = genText
   | otherwise = do
-        nonVoidTag <- arbitrary
-        siblingCount <- choose (0, depth)
-        siblings <- replicateM siblingCount $ oneof
-            [ genLeaf
-            , do
-                siblingTag <- arbitrary
-                siblingAttrs <- getAttributeGen siblingTag
-                siblingContent <- genLeaf
-                return $ Elem siblingTag siblingAttrs [ siblingContent ]
-            ]
-        attrs <- getAttributeGen nonVoidTag
-        children <- genSubtree (depth - 1)
-        return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
+        tag <- gen
+        case tag of
+            Left voidTag -> undefined
+            Right nonVoidTag -> do
+                siblingCount <- choose (0, depth)
+                siblings <- replicateM siblingCount $ oneof
+                    [ genLeaf
+                    , do
+                        siblingTag <- arbitrary
+                        siblingAttrs <- getAttributeGen siblingTag
+                        siblingContent <- genLeaf
+                        return $ Elem siblingTag siblingAttrs [ siblingContent ]
+                    ]
+                attrs <- getAttributeGen nonVoidTag
+                children <- genSubtree (depth - 1) (nextGenerator nonVoidTag)
+                return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
 
 
 genLeaf :: Gen HTML
