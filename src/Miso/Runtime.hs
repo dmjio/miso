@@ -1186,7 +1186,7 @@ stopSub subKey = do
 -- | Send any @ToJSON message => message@ to a t'Miso.Types.Component' mailbox, by 'ComponentId'
 --
 -- @
--- mail componentId ("test message" :: MisoString) :: Effect parent model action
+-- io_ $ mail componentId ("test message" :: MisoString) :: Effect parent model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1194,8 +1194,8 @@ mail
   :: ToJSON message
   => ComponentId
   -> message
-  -> Effect parent model action
-mail vcompId msg = io_ $
+  -> IO ()
+mail vcompId msg =
   IM.lookup vcompId <$> readIORef components >>= \case
     Nothing -> pure ()
     Just ComponentState{..} ->
@@ -1217,7 +1217,7 @@ mailParent
   -> Effect parent model action
 mailParent msg = do
   ComponentInfo {..} <- ask
-  mail _componentInfoParentId msg
+  io_ (mail _componentInfoParentId msg)
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
