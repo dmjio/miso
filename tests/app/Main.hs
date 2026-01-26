@@ -63,7 +63,7 @@ nodeLength = do
 mountedComponents :: Test Int
 mountedComponents = IM.size <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
-getComponentById :: ComponentId -> Test (ComponentState m a)
+getComponentById :: ComponentId -> Test (ComponentState p m a)
 getComponentById vcompId = (IM.! vcompId) <$> liftIO (readIORef components)
 -----------------------------------------------------------------------------
 testComponent :: Component parent Int Action
@@ -788,7 +788,7 @@ main = withJS $ do
       it "Should have parent field present on VDOM nodes" $ do
         _ <- liftIO (startApp mempty testComponent)
         ComponentState {..} <- liftIO $ (IM.! 1) <$> readIORef components
-        VTree (Object ref) <- liftIO (readIORef componentVTree)
+        VTree (Object ref) <- liftIO (readIORef _componentVTree)
         parentDomRef <- liftIO (ref ! "domRef")
         childParentField <- liftIO (ref ! "children" !! 0 ! "parent")
         childParentFieldDOMRef <- liftIO (childParentField ! "domRef")

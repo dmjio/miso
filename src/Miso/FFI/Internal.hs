@@ -460,7 +460,7 @@ diff (Object a) (Object b) c = do
 delegateEvent :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 delegateEvent mountPoint events debug getVTree = do
   ctx <- getEventContext
-  cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
+  cb <- asyncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
   delegate mountPoint events debug (Function cb) ctx
 -----------------------------------------------------------------------------
 -- | Call 'delegateEvent' JavaScript function

@@ -183,7 +183,7 @@ initComponent
   :: (Eq parent, Eq model)
   => Events
   -> Component parent model action
-  -> IO (ComponentState model action)
+  -> IO (ComponentState parent model action)
 initComponent events vcomp@Component {..} = do
   root <- mountElement (getMountPoint mountPoint)
   initialize events rootComponentId Draw isRoot vcomp (pure root)
