@@ -188,12 +188,12 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   let _componentApplyActions = \(actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
-        let cs = comps IM.! _componentId
         List.foldl' (\(vcomps, m, ss) a ->
           case runEffect (update a) info m of
             (n, sss) -> do
               let newComps
-                    | modelCheck m n =
+                    | modelCheck m n = do
+                        let cs = vcomps IM.! _componentId
                         propagate _componentId
                           (IM.insert _componentId (cs { _componentModel = n }) vcomps)
                     | otherwise = vcomps
