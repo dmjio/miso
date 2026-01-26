@@ -84,6 +84,7 @@ module Miso.Runtime
   , modifyComponent
   -- ** Scheduler
   , scheduler
+  , withGlobalLock
 #ifdef WASM
   , evalFile
 #endif
@@ -211,7 +212,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
-  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
+  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]) withGlobalLock)
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ initialAction _componentSink
   when isRoot $ void (forkIO scheduler)
@@ -249,7 +250,7 @@ scheduler =
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
       shouldRender <- commit vcompId actions
-      when shouldRender renderComponents
+      when shouldRender (withGlobalLock renderComponents)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO Bool
@@ -555,13 +556,20 @@ dequeueAt vcompId q =
                       & queue.at vcompId .~ Nothing
       (updated, toList actions)
 -----------------------------------------------------------------------------
+globalWaiter :: Waiter
+{-# NOINLINE globalWaiter #-}
+globalWaiter = unsafePerformIO waiter
+-----------------------------------------------------------------------------
 globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
-globalWaiter :: Waiter
-{-# NOINLINE globalWaiter #-}
-globalWaiter = unsafePerformIO waiter
+globalLock :: MVar ()
+{-# NOINLINE globalLock #-}
+globalLock = unsafePerformIO (newMVar ())
+-----------------------------------------------------------------------------
+withGlobalLock :: IO a -> IO a
+withGlobalLock f = withMVar globalLock $ \() -> f
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
