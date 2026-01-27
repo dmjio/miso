@@ -58,7 +58,6 @@ updateModel = \case
   SubtractOne   -> counter -= 1
   SayHelloWorld -> io_ $ do
     consoleLog "Hello World"
-    consoleLog =<< ms <$> fac 5
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
