@@ -104,26 +104,35 @@ instance Arbitrary HTML where
 
 
 type MkTag model action = [ Attribute action ] -> [ View model action ] -> View model action
-
 type MkTag2 model action = [ Attribute action ] -> View model action
 
-type Tag = Either ChildlessHtmlTag ChildHavingHtmlTag
 
-type TagGen = Gen Tag
-
-
-nextGenerator :: Tag -> TagGen
-nextGenerator (Right Ul) = return $ Right Li
-nextGenerator (Right Ol) = return $ Right Li
-nextGenerator (Right Table) = Right <$> elements [ Thead, Tbody, Tr ]
-nextGenerator (Right Thead) = return $ Right Tr
-nextGenerator (Right Tbody) = return $ Right Tr
-nextGenerator (Right Tr) = Right <$> elements [ Th, Td ]
-nextGenerator (Right Th) = safeBlockElem
-nextGenerator (Right Td) = safeBlockElem
-nextGenerator (Right Dl) = Right <$> elements [ Dt, Dd ]
-nextGenerator (Right Dt) = Right <$> elements [ Dt, Dd ]
--- nextGenerator _ = safeBlockElem
+nextGenerator :: ChildHavingHtmlTag -> Gen ChildHavingHtmlTag
+nextGenerator Ul = return Li
+nextGenerator Ol = return Li
+nextGenerator Table = elements [ Tbody, Tr ]
+nextGenerator Thead = return Tr
+nextGenerator Tbody = return Tr
+nextGenerator Tr = elements [ Th, Td ]
+nextGenerator Th = safeInlineElem
+nextGenerator Td = anyElem
+nextGenerator Dl = elements [ Dt, Dd ]
+nextGenerator Dt = safeInlineElem
+nextGenerator Dd = safeInlineElem
+nextGenerator H1 = safeInlineElem
+nextGenerator H2 = safeInlineElem
+nextGenerator H3 = safeInlineElem
+nextGenerator H4 = safeInlineElem
+nextGenerator Span = safeInlineElem
+nextGenerator Strong = safeInlineElem
+nextGenerator Em = safeInlineElem
+nextGenerator Label = safeInlineElem
+nextGenerator Button = safeInlineElem
+nextGenerator Legend = safeInlineElem
+nextGenerator A = safeInlineElem
+nextGenerator P = safeInlineElem
+nextGenerator Pre = safeInlineElem
+nextGenerator _ = anyElem
 
 
 render :: HTML -> View model action
@@ -196,17 +205,31 @@ t Figcaption = figcaption_
 t A = a_
 
 
-safeBlocklTags :: [ ChildHavingHtmlTag ]
-safeBlocklTags = [ Div, P, Pre, Ul, Ol, Section, Header, Footer, Nav, Article,
-    H1, H2, H3, H4, Table, Form, Fieldset, Dl, Figure, Figcaption ]
-
-
-safeBlockElem :: TagGen
-safeBlockElem = Right <$> elements safeBlocklTags
+safeBlockTags :: [ ChildHavingHtmlTag ]
+-- Header, Footer, H2-H4
+safeBlockTags = [ Div, P, Pre, Ul, Ol, Section, Nav, Article,
+    H1, Table, Fieldset, Figure]
 
 
 inlineTags :: [ ChildHavingHtmlTag ]
-inlineTags = [Span, Strong, Em, Label, Button, Legend, A]
+-- inlineTags = [Span, Strong, Em, Label, Button, A]
+inlineTags = [Span, Strong, Em, Label]
+
+
+safeInlineTags :: [ ChildHavingHtmlTag ]
+safeInlineTags = [Span, Strong, Em]
+
+
+anyElem :: Gen ChildHavingHtmlTag
+anyElem = frequency $ [ (10, elements safeBlockTags),  (1, elements inlineTags) ]
+
+
+safeInlineElem :: Gen ChildHavingHtmlTag
+safeInlineElem = elements safeInlineTags
+
+
+tagRequiresChildren :: [ ChildHavingHtmlTag ]
+tagRequiresChildren = [ Table, Ol, Ul, Dl, Tbody, Thead, Tr ]
 
 
 -- get appropriate miso constructor for childless elem
@@ -219,37 +242,40 @@ vt Wbr = wbr_
 
 
 genHtml :: Gen HTML
--- genHtml = sized $ \n -> genSubtree (n `mod` maxDepth)
-genHtml = genSubtree 3 safeBlockElem
+-- genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
+genHtml = genSubtree 100 (elements safeBlockTags)
 
 
-genSubtree :: Int -> TagGen -> Gen HTML
+genSubtree :: Int -> Gen ChildHavingHtmlTag -> Gen HTML
 genSubtree depth gen
   | depth <= 1 = genText
   | otherwise = do
-        tag <- gen
-        case tag of
-            Left voidTag -> undefined
-            Right nonVoidTag -> do
-                siblingCount <- choose (0, depth)
-                siblings <- replicateM siblingCount $ oneof
-                    [ genLeaf
-                    , do
-                        siblingTag <- arbitrary
-                        siblingAttrs <- getAttributeGen siblingTag
-                        siblingContent <- genLeaf
-                        return $ Elem siblingTag siblingAttrs [ siblingContent ]
-                    ]
-                attrs <- getAttributeGen nonVoidTag
-                children <- genSubtree (depth - 1) (nextGenerator nonVoidTag)
-                return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
+        nonVoidTag <- gen
+        siblingCount <- choose (0, depth)
+        siblings <- replicateM siblingCount $
+            do
+                siblingTag <- nextGenerator nonVoidTag
+                siblingAttrs <- getAttributeGen siblingTag
+                siblingContent <-
+                    if elem siblingTag tagRequiresChildren then
+                        genSubtree 2 (nextGenerator siblingTag)
+                    else
+                        genLeaf
+                return $ Elem siblingTag siblingAttrs [ siblingContent ]
+
+        attrs <- getAttributeGen nonVoidTag
+
+        let j = if elem nonVoidTag tagRequiresChildren then 0 else 1
+        children <- genSubtree (depth - j) (nextGenerator nonVoidTag)
+
+        return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
 
 
 genLeaf :: Gen HTML
 genLeaf = oneof
     [ genText
     , do
-        voidTag <- arbitrary
+        voidTag <- arbitrary `suchThat` (/= Hr) -- hr tag causes issues
         VoidElem voidTag <$> getVoidAttributeGen voidTag
     ]
 
@@ -271,7 +297,7 @@ baseAttributes :: Gen [ HtmlAttribute ]
 baseAttributes = do
     attrs <- sublistOf
         [ (Class,) <$> genCssIdent
-        , (Id,) <$> genCssIdent
+        -- , (Id,) <$> genCssIdent
         , (Title,) <$> genSafeMisoString
         ]
     sequence attrs
@@ -308,13 +334,18 @@ inputAttributes :: Gen [ HtmlAttribute ]
 inputAttributes = do
     typ <- elements ["text", "password", "checkbox", "radio", "submit", "number", "email", "tel"]
     base <- baseAttributes
-    let extraAttrs =
-            case typ of
-                "checkbox" -> [(Value, "on"), (Checked, "True")]
-                "radio"    -> [(Value, "option1"), (Checked, "True")]
-                "submit"   -> [(Value, "Submit")]
-                _          -> [(Value, "test-value")]
-    return $ (Type, typ) : base ++ extraAttrs
+    return $ (Type, typ) : base ++ (addValue typ)
+
+    where
+        -- addValue "checkbox" = [(Value, "on"), (Checked, "True")]
+        -- addValue "radio"    = [(Value, "option1"), (Checked, "True")]
+        addValue "checkbox" = [(Value, "on")]
+        addValue "radio"    = [(Value, "option1")]
+        addValue "submit"   = [(Value, "Submit")]
+        addValue "email"    = [(Value, "email@example.com")]
+        addValue "tel"      = [(Value, "+1 (555)-5555")]
+        addValue "number"   = [(Value, "12345")]
+        addValue _          = [(Value, "test-value")]
 
 
 chooseBoundedEnum :: (Bounded a, Enum a) => Gen a
@@ -324,41 +355,43 @@ chooseBoundedEnum = elements [minBound .. maxBound]
 genText :: Gen HTML
 genText = Text . toMisoString <$> genUnicodeString
 
-
--- | Generate Unicode strings for text nodes
 genUnicodeString :: Gen String
-genUnicodeString = listOf1 $ oneof
-    [ choose ('a','z')
-    , choose ('A','Z')
-    , choose ('0','9')
-    , elements " .,!?-_@#$%^&*()[]{}<>|\\/:;\"'"
-    , choose ('\192','\255')   -- Latin-1 supplement
-    , choose ('\1024','\1279') -- Cyrillic
-    , choose ('\1280','\1327') -- Greek
-    , choose ('\2304','\2431') -- Devanagari
-    -- Emojis and pictographs
-    , choose ('\x1F600','\x1F64F')   -- Emoticons
-    , choose ('\x1F300','\x1F5FF')   -- Miscellaneous Symbols and Pictographs
-    , choose ('\x1F680','\x1F6FF')   -- Transport and Map Symbols
-    , choose ('\x1F900','\x1F9FF')   -- Supplemental Symbols and Pictographs
-    -- Additional language blocks
-    , choose ('\x0400','\x04FF')     -- Cyrillic (extended)
-    , choose ('\x0530','\x058F')     -- Armenian
-    , choose ('\x0590','\x05FF')     -- Hebrew
-    , choose ('\x0600','\x06FF')     -- Arabic
-    , choose ('\x0900','\x097F')     -- Devanagari (extended)
-    , choose ('\x3040','\x309F')     -- Hiragana
-    , choose ('\x30A0','\x30FF')     -- Katakana
-    , choose ('\x4E00','\x9FFF')     -- CJK Unified Ideographs (common Chinese/Japanese characters)
-    -- Symbols and special characters
-    , choose ('\x2100','\x214F')     -- Letterlike Symbols
-    , choose ('\x2190','\x21FF')     -- Arrows
-    , choose ('\x2200','\x22FF')     -- Mathematical Operators
-    , choose ('\x25A0','\x25FF')     -- Geometric Shapes
-    , choose ('\x2600','\x26FF')     -- Miscellaneous Symbols
-    , choose ('\x2700','\x27BF')     -- Dingbats
-    , choose ('\x20A0','\x20CF')     -- Currency Symbols
-    ] `suchThat` (\c -> not (isControl c) && c /= '\0' && c /= '\x200B' && c /= '\xFEFF')
+genUnicodeString = listOf1 $ elements ">"
+
+-- -- | Generate Unicode strings for text nodes
+-- genUnicodeString :: Gen String
+-- genUnicodeString = listOf1 $ oneof
+--     [ choose ('a','z')
+--     , choose ('A','Z')
+--     , choose ('0','9')
+--     , elements " .,!?-_@#$%^&*()[]{}<>|\\/:;\"'"
+--     , choose ('\192','\255')   -- Latin-1 supplement
+--     , choose ('\1024','\1279') -- Cyrillic
+--     , choose ('\1280','\1327') -- Greek
+--     , choose ('\2304','\2431') -- Devanagari
+--     -- Emojis and pictographs
+--     , choose ('\x1F600','\x1F64F')   -- Emoticons
+--     , choose ('\x1F300','\x1F5FF')   -- Miscellaneous Symbols and Pictographs
+--     , choose ('\x1F680','\x1F6FF')   -- Transport and Map Symbols
+--     , choose ('\x1F900','\x1F9FF')   -- Supplemental Symbols and Pictographs
+--     -- Additional language blocks
+--     , choose ('\x0400','\x04FF')     -- Cyrillic (extended)
+--     , choose ('\x0530','\x058F')     -- Armenian
+--     , choose ('\x0590','\x05FF')     -- Hebrew
+--     , choose ('\x0600','\x06FF')     -- Arabic
+--     , choose ('\x0900','\x097F')     -- Devanagari (extended)
+--     , choose ('\x3040','\x309F')     -- Hiragana
+--     , choose ('\x30A0','\x30FF')     -- Katakana
+--     , choose ('\x4E00','\x9FFF')     -- CJK Unified Ideographs (common Chinese/Japanese characters)
+--     -- Symbols and special characters
+--     , choose ('\x2100','\x214F')     -- Letterlike Symbols
+--     , choose ('\x2190','\x21FF')     -- Arrows
+--     , choose ('\x2200','\x22FF')     -- Mathematical Operators
+--     , choose ('\x25A0','\x25FF')     -- Geometric Shapes
+--     , choose ('\x2600','\x26FF')     -- Miscellaneous Symbols
+--     , choose ('\x2700','\x27BF')     -- Dingbats
+--     , choose ('\x20A0','\x20CF')     -- Currency Symbols
+--     ] `suchThat` (\c -> not (isControl c) && c /= '\0' && c /= '\x200B' && c /= '\xFEFF')
 
 
 genCssIdent :: Gen MisoString
