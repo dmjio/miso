@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
 {-# LANGUAGE NamedFieldPuns            #-}
@@ -108,6 +109,7 @@ import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
+import           Miso.FFI.QQ (js)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Property
 import           Miso.PubSub
@@ -203,3 +205,11 @@ withJS action = void $ do
 #endif
   action
 -----------------------------------------------------------------------------
+fac :: Int -> IO Int
+fac n = [js|
+  let x = 0;
+  for (i = 0; i < ${n}; i++) {
+    x *= i;
+  }
+  return x;
+|]
