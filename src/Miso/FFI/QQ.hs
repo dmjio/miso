@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                   #-}
 {-# LANGUAGE LambdaCase            #-}
@@ -47,6 +49,7 @@ import           Data.Typeable
 import           Control.Monad
 import qualified Data.Set as S
 import           Data.Set (Set)
+import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 ----------------------------------------------------------------------------
@@ -54,12 +57,13 @@ import           Miso.String
 import           Miso.Util.Lexer
 import qualified Miso.String as MS
 import qualified Miso.FFI as FFI
+import qualified Miso.DSL as DSL
 ----------------------------------------------------------------------------
 -- | QuasiQuoter for specifying multiline 'Miso.String.MisoString'
 --
 js :: QuasiQuoter
 js = QuasiQuoter
-  { quoteExp  = dataToExpQ (withString `extQ` inlineJS) . pack
+  { quoteExp  = \s -> dataToExpQ (withString `extQ` inlineJS) (pack s)
   , quotePat  = \_ -> fail "quotePat: not implemented"
   , quoteType = \_ -> fail "quoteType: not implemented"
   , quoteDec  = \_ -> fail "quoteDec: not implemented"
@@ -67,17 +71,13 @@ js = QuasiQuoter
 ----------------------------------------------------------------------------
 inlineJS :: MisoString -> Maybe (Q Exp)
 inlineJS jsString = pure $ do
-  varMap <- typeCheck vars
-  obj <- makeObject varMap
-  [| FFI.inline (formatVars jsString vars) obj |]
-     where
-       vars = getVariables jsString
-       makeObject varMap =
-         [| do o <- create
-               forM_ varMap $ \(k,v) -> do
-                 flip (setProp k o) =<< toJSVal v
-               pure o
-          |]
+  kvs <- forM (S.toList vars) $ \s -> do
+    k <- [| MS.pack $(stringE (MS.unpack s)) |]
+    let v = mkName (MS.unpack s)
+    pure $ tupE [ pure k, pure (VarE v) ]
+  [| FFI.inline (formatVars jsString vars) =<< createWith $(listE kvs) |]
+    where
+      vars = getVariables jsString
 ----------------------------------------------------------------------------
 extQ :: (Typeable a, Typeable b) => (a -> c) -> (b -> c) -> a -> c
 extQ f g a = maybe (f a) g (cast a)
@@ -93,12 +93,12 @@ formatVars = Prelude.foldl' go
       where
         needle = "${" <> var <> "}"
 ----------------------------------------------------------------------------
-typeCheck :: Set MisoString -> Q (Map MisoString Name)
+typeCheck :: Set MisoString -> Q (Map MisoString Exp)
 typeCheck xs = M.unions <$> do
   forM (S.toList xs) $ \x ->
     lookupValueName (unpack x) >>= \case
       Nothing -> fail (MS.unpack x <> " is not in scope")
-      Just info -> pure (M.singleton x info)
+      Just v -> pure (M.singleton x (VarE v))
 ---------------------------------------------------------------------------
 getVariables :: MisoString -> Set MisoString
 getVariables s =
