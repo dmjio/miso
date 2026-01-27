@@ -185,6 +185,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
+        FFI.updateRef oldVTree newVTree
         liftIO (atomicWriteIORef _componentVTree newVTree)
 
   let _componentApplyActions = \(actions :: [action]) model_ comps -> do
