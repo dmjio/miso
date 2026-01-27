@@ -114,10 +114,10 @@ withJS action = void $ do
   action
 -----------------------------------------------------------------------------
 #ifndef GHCJS_OLD
-fac :: Int -> IO Int
-fac n = [js|
-  let x = 0;
-  for (i = 0; i < ${n}; i++) {
+fact :: Int -> IO Int
+fact n = [js|
+  let x = 1;
+  for (i = 1; i <= ${n}; i++) {
     x *= i;
   }
   return x;
