@@ -1,11 +1,14 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                   #-}
+{-# LANGUAGE DeriveLift            #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE BlockArguments        #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
@@ -42,10 +45,8 @@ module Miso.FFI.QQ
   ( js
   ) where
 ----------------------------------------------------------------------------
-import qualified Data.Map.Strict as M
-import           Data.Map.Strict (Map)
 import           Control.Applicative
-import           Data.Typeable
+import           Data.Data
 import           Control.Monad
 import qualified Data.Set as S
 import           Data.Set (Set)
@@ -57,7 +58,6 @@ import           Miso.String
 import           Miso.Util.Lexer
 import qualified Miso.String as MS
 import qualified Miso.FFI as FFI
-import qualified Miso.DSL as DSL
 ----------------------------------------------------------------------------
 -- | QuasiQuoter for specifying multiline 'Miso.String.MisoString'
 --
@@ -71,11 +71,13 @@ js = QuasiQuoter
 ----------------------------------------------------------------------------
 inlineJS :: MisoString -> Maybe (Q Exp)
 inlineJS jsString = pure $ do
-  kvs <- forM (S.toList vars) $ \s -> do
+  found <- typeCheck vars
+  kvs <- forM (S.toList found) $ \s -> do
     k <- [| MS.pack $(stringE (MS.unpack s)) |]
     let v = mkName (MS.unpack s)
     pure $ tupE [ pure k, pure (VarE v) ]
-  [| FFI.inline (formatVars jsString vars) =<< createWith $(listE kvs) |]
+  [| FFI.inline $(stringE (MS.unpack (formatVars jsString vars))) =<<
+        createWith $(listE kvs) |]
     where
       vars = getVariables jsString
 ----------------------------------------------------------------------------
@@ -93,12 +95,12 @@ formatVars = Prelude.foldl' go
       where
         needle = "${" <> var <> "}"
 ----------------------------------------------------------------------------
-typeCheck :: Set MisoString -> Q (Map MisoString Exp)
-typeCheck xs = M.unions <$> do
+typeCheck :: Set MisoString -> Q (Set MisoString)
+typeCheck xs = S.unions <$> do
   forM (S.toList xs) $ \x ->
     lookupValueName (unpack x) >>= \case
       Nothing -> fail (MS.unpack x <> " is not in scope")
-      Just v -> pure (M.singleton x (VarE v))
+      Just _ -> pure (S.singleton x)
 ---------------------------------------------------------------------------
 getVariables :: MisoString -> Set MisoString
 getVariables s =
