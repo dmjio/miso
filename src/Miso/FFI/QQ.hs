@@ -65,13 +65,13 @@ import qualified Miso.FFI as FFI
 --
 js :: QuasiQuoter
 js = QuasiQuoter
-  { quoteExp  = \s -> dataToExpQ (withString `extQ` inlineJS) (pack s)
+  { quoteExp  = \s -> dataToExpQ (withString `extQ` inlineJS) s
   , quotePat  = \_ -> fail "quotePat: not implemented"
   , quoteType = \_ -> fail "quoteType: not implemented"
   , quoteDec  = \_ -> fail "quoteDec: not implemented"
   }
 ----------------------------------------------------------------------------
-inlineJS :: MisoString -> Maybe (Q Exp)
+inlineJS :: String -> Maybe (Q Exp)
 inlineJS jsString = pure $ do
   found <- typeCheck vars
   kvs <- forM (S.toList found) $ \s -> do
@@ -79,10 +79,10 @@ inlineJS jsString = pure $ do
     let v = mkName (MS.unpack s)
     val <- [| unsafePerformIO $ toJSVal $(varE v) |]
     pure $ tupE [ pure k, pure val ]
-  [| FFI.inline $(stringE (MS.unpack (formatVars jsString vars))) =<<
-        createWith $(listE kvs) |]
+  [| FFI.inline $(stringE (MS.unpack (formatVars (MS.pack jsString) vars))) =<< createWith $(listE kvs)
+   |]
     where
-      vars = getVariables jsString
+      vars = getVariables (MS.pack jsString)
 ----------------------------------------------------------------------------
 extQ :: (Typeable a, Typeable b) => (a -> c) -> (b -> c) -> a -> c
 extQ f g a = maybe (f a) g (cast a)
