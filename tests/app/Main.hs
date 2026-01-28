@@ -40,7 +40,7 @@ import           Miso.Router
 import qualified Miso.String as S
 import           Miso.DSL
 #ifndef GHCJS_OLD
-import           Miso.DSL.FFI (js)
+import           Miso.FFI.QQ (js)
 #endif
 import           Miso.Lens
 import           Miso.Test
