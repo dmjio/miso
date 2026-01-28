@@ -902,6 +902,7 @@ drain
   -> IO ()
 drain ComponentState {..} = do
   drainQueueAt _componentId >>= \case
+    [] -> pure ()
     actions -> do
        vcomps <- readIORef components
        case _componentApplyActions actions _componentModel vcomps of
