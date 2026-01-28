@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}

@@ -10,6 +10,9 @@
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE DerivingStrategies  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+#ifndef GHCJS_OLD
+{-# LANGUAGE QuasiQuotes #-}
+#endif
 -----------------------------------------------------------------------------
 module Main where
 -----------------------------------------------------------------------------
@@ -36,6 +39,9 @@ import           Miso.Random
 import           Miso.Router
 import qualified Miso.String as S
 import           Miso.DSL
+#ifndef GHCJS_OLD
+import           Miso.FFI.QQ (js)
+#endif
 import           Miso.Lens
 import           Miso.Test
 import           Miso.Html
@@ -107,9 +113,25 @@ withJS action = void $ do
 #endif
   action
 -----------------------------------------------------------------------------
+#ifndef GHCJS_OLD
+fact :: Int -> IO Int
+fact n = [js|
+  let x = 1;
+  for (i = 1; i <= ${n}; i++) {
+    x *= i;
+  }
+  return x;
+|]
+#endif
+-----------------------------------------------------------------------------
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+#ifndef GHCJS_OLD
+    describe "inline JS QQ tests" $
+      it "should use inline JS QQ to calc factorial" $
+        (`shouldBe` 120) =<< liftIO (fact 5)
+#endif
     describe "Miso.Random tests" $ do
       it "Should generate some random numbers" $ do
         let xs = flip evalState (mkStdGen 0) $ replicateM 10 (state next)
