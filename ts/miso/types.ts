@@ -42,7 +42,6 @@ export type VComp<T> = {
 };
 
 export type Mount<T> = {
-  componentId: ComponentId;
   componentTree: VTree<T>;
 };
 
