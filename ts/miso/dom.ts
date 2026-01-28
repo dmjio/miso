@@ -376,10 +376,6 @@ function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: Dr
   context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
 } 
 
-function removeChild<T>(parent: T, n: VTree<T>, context: DrawingContext<T>): void {
-  context.removeChild(parent, getDOMRef(n));
-}
-
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
   context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
 }
@@ -429,7 +425,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
     else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        removeChild(parent, os[oldLastIndex--], context);
+        destroy(os[oldLastIndex--], parent, context);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;
