@@ -128,8 +128,8 @@ main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
 #ifndef GHCJS_OLD
-    describe "inline Js test" $
-      it "should use inline JS to calc fac" $
+    describe "inline JS QQ tests" $
+      it "should use inline JS QQ to calc factorial" $
         (`shouldBe` 120) =<< liftIO (fact 5)
 #endif
     describe "Miso.Random tests" $ do

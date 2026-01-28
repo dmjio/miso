@@ -50,12 +50,14 @@ import           Data.Data
 import           Control.Monad
 import qualified Data.Set as S
 import           Data.Set (Set)
+import           System.IO.Unsafe (unsafePerformIO)
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 ----------------------------------------------------------------------------
 import           Miso.String
 import           Miso.Util.Lexer
+import           Miso.DSL
 import qualified Miso.String as MS
 import qualified Miso.FFI as FFI
 ----------------------------------------------------------------------------
@@ -75,7 +77,8 @@ inlineJS jsString = pure $ do
   kvs <- forM (S.toList found) $ \s -> do
     k <- [| MS.pack $(stringE (MS.unpack s)) |]
     let v = mkName (MS.unpack s)
-    pure $ tupE [ pure k, pure (VarE v) ]
+    val <- [| unsafePerformIO $ toJSVal $(varE v) |]
+    pure $ tupE [ pure k, pure val ]
   [| FFI.inline $(stringE (MS.unpack (formatVars jsString vars))) =<<
         createWith $(listE kvs) |]
     where
