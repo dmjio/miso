@@ -11,6 +11,8 @@ function diff(c, n, parent, context) {
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
     if (n.key === c.key) {
       n.child = c.child;
+      if (c.child)
+        c.child.parent = n;
       return;
     }
     replace(c, n, parent, context);
