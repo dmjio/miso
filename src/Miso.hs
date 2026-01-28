@@ -129,7 +129,7 @@ import           Miso.Util
 --
 -- @
 -- main :: IO ()
--- main = run (miso (\\uri -> ..))
+-- main = miso defaultEvents (\\uri -> ..))
 -- @
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
@@ -143,7 +143,7 @@ miso events f = withJS $ do
 --
 -- @
 -- main :: IO ()
--- main = run (startApp app)
+-- main = startApp defaultEvents app
 -- @
 startApp :: Eq model => Events -> App model action -> IO ()
 startApp = startComponent
@@ -166,7 +166,7 @@ startComponent events vcomp = withJS (initComponent events vcomp)
 --
 -- @
 -- main :: IO ()
--- main = run (renderApp "my-context" app)
+-- main = renderApp defaultEvents "my-context" app
 -- @
 renderApp
   :: Eq model
