@@ -128,10 +128,9 @@ main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
 #ifndef GHCJS_OLD
-    describe "inline Js test" $ do
-      it "should use inline JS to calc fac" $ do
-        x <- fact 5
-        x `shouldBe` 120
+    describe "inline Js test" $
+      it "should use inline JS to calc fac" $
+        (`shouldBe` 120) =<< liftIO (fact 5)
 #endif
     describe "Miso.Random tests" $ do
       it "Should generate some random numbers" $ do
