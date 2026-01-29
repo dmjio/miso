@@ -465,9 +465,6 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
         if hydrated
           then atomicWriteIORef _componentVTree vtree
           else do
-            liftIO $ do -- dmj: reset state
-              atomicWriteIORef components IM.empty
-              atomicWriteIORef componentIds topLevelComponentId
             newTree <-
               buildVTree events _componentParentId _componentId Draw
                 _componentSink logLevel (view initializedModel)
