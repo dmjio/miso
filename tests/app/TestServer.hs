@@ -155,6 +155,7 @@ httpGet url = do
     return $ statusCode $ responseStatus response
 
 
+failFilename :: FilePath
 failFilename = "/tmp/failing_case.json"
 
 
@@ -207,13 +208,21 @@ serveFailed envSettings = do
 
 main :: IO ()
 main = do
-    cwd <- getCurrentDirectory
+    staticDir_ <- lookupEnv "STATIC_DIR"
+    staticDir <-
+            case staticDir_ of
+                Nothing -> do
+                    cwd <- getCurrentDirectory
+                    return $ cwd <> "/static"
+                Just d -> return d
+
+
 
     portStr <- lookupEnv "PORT"
     playwrightPortStr <- lookupEnv "PLAYWRIGHT_PORT"
 
     let envSettings = EnvSettings
-            { serve_static_dir_path = cwd <> "/static"
+            { serve_static_dir_path = staticDir
             , port = maybe 8888 read portStr
             , playwrightPort = maybe 8888 read playwrightPortStr
             }

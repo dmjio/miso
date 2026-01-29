@@ -3,7 +3,7 @@
 with (import ./nix { inherit overlays; });
 
 with pkgs.haskell.lib;
-{
+rec {
   inherit pkgs legacyPkgs;
 
   # hackage release
@@ -70,7 +70,7 @@ with pkgs.haskell.lib;
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     PW_API_PORT=8060
     bun install playwright@1.53
-    http-server -p 8061 ${pkgs.pkgsCross.ghcjs.haskell.packages.ghc9122.miso-tests}/bin/component-tests.jsexe &
+    http-server -p 8061 ${miso-tests}/bin/component-tests.jsexe &
     HTTP_SERVER_PID=$!
     echo $HTTP_SERVER_PID
     PORT=$PW_API_PORT bun run ./ts/playwright.ts &
@@ -79,6 +79,11 @@ with pkgs.haskell.lib;
     until curl -sf "http://localhost:$PW_API_PORT/ready"; do sleep 0.1; done
     echo "Playwright server ready, asking it to start test."
     curl --fail "http://localhost:$PW_API_PORT/test?port=8061&wait=true"
+    exit_code=$?
+    PORT=8062 \
+      PLAYWRIGHT_PORT=$PW_API_PORT \
+      STATIC_DIR="${miso-tests}/bin/integration-tests-client.jsexe/" \
+      ${miso-tests-ghc}/bin/integration-tests-server
     exit_code=$?
     kill $HTTP_SERVER_PID
     kill $PLAYWRIGHT_SERVER_PID

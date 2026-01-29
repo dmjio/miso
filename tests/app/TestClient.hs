@@ -57,13 +57,13 @@ main = run $ do
 
     rawTestData <- getScriptContents "initial-data"
 
-    consoleLog $ "stringified data: " <> toMisoString (show rawTestData)
+    -- consoleLog $ "stringified data: " <> toMisoString (show rawTestData)
 
     let mTestData =
             (decodeStrict . fromMisoString) =<< rawTestData
 
     case mTestData of
         Nothing -> consoleLog "ERROR - client couldn't load initial-data"
-        Just testData -> do
-            consoleLog $ toMisoString $ encode testData
+        Just testData ->
+            -- consoleLog $ toMisoString $ encode testData
             miso $ const $ App.app testData

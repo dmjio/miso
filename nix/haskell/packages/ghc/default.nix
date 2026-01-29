@@ -6,7 +6,7 @@ with pkgs.haskell.lib;
 self: super:
 rec {
   /* miso */
-  miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell" {};
+  miso = self.callCabal2nixWithOptions "miso" source.miso "-ftemplate-haskell -fssr" {};
 
   /* miso utils */
   miso-from-html = self.callCabal2nix "miso-from-html" source.miso-from-html {};

@@ -354,43 +354,45 @@ chooseBoundedEnum = elements [minBound .. maxBound]
 genText :: Gen HTML
 genText = Text . toMisoString <$> genUnicodeString
 
-genUnicodeString :: Gen String
-genUnicodeString = listOf1 $ elements ">"
 
--- -- | Generate Unicode strings for text nodes
 -- genUnicodeString :: Gen String
--- genUnicodeString = listOf1 $ oneof
---     [ choose ('a','z')
---     , choose ('A','Z')
---     , choose ('0','9')
---     , elements " .,!?-_@#$%^&*()[]{}<>|\\/:;\"'"
---     , choose ('\192','\255')   -- Latin-1 supplement
---     , choose ('\1024','\1279') -- Cyrillic
---     , choose ('\1280','\1327') -- Greek
---     , choose ('\2304','\2431') -- Devanagari
---     -- Emojis and pictographs
---     , choose ('\x1F600','\x1F64F')   -- Emoticons
---     , choose ('\x1F300','\x1F5FF')   -- Miscellaneous Symbols and Pictographs
---     , choose ('\x1F680','\x1F6FF')   -- Transport and Map Symbols
---     , choose ('\x1F900','\x1F9FF')   -- Supplemental Symbols and Pictographs
---     -- Additional language blocks
---     , choose ('\x0400','\x04FF')     -- Cyrillic (extended)
---     , choose ('\x0530','\x058F')     -- Armenian
---     , choose ('\x0590','\x05FF')     -- Hebrew
---     , choose ('\x0600','\x06FF')     -- Arabic
---     , choose ('\x0900','\x097F')     -- Devanagari (extended)
---     , choose ('\x3040','\x309F')     -- Hiragana
---     , choose ('\x30A0','\x30FF')     -- Katakana
---     , choose ('\x4E00','\x9FFF')     -- CJK Unified Ideographs (common Chinese/Japanese characters)
---     -- Symbols and special characters
---     , choose ('\x2100','\x214F')     -- Letterlike Symbols
---     , choose ('\x2190','\x21FF')     -- Arrows
---     , choose ('\x2200','\x22FF')     -- Mathematical Operators
---     , choose ('\x25A0','\x25FF')     -- Geometric Shapes
---     , choose ('\x2600','\x26FF')     -- Miscellaneous Symbols
---     , choose ('\x2700','\x27BF')     -- Dingbats
---     , choose ('\x20A0','\x20CF')     -- Currency Symbols
---     ] `suchThat` (\c -> not (isControl c) && c /= '\0' && c /= '\x200B' && c /= '\xFEFF')
+-- genUnicodeString = listOf1 $ elements ">\""
+
+
+-- | Generate Unicode strings for text nodes
+genUnicodeString :: Gen String
+genUnicodeString = listOf1 $ oneof
+    [ choose ('a','z')
+    , choose ('A','Z')
+    , choose ('0','9')
+    , elements " .,!?-_@#$%^&*()[]{}<>|\\/:;\"'"
+    , choose ('\192','\255')   -- Latin-1 supplement
+    , choose ('\1024','\1279') -- Cyrillic
+    , choose ('\1280','\1327') -- Greek
+    , choose ('\2304','\2431') -- Devanagari
+    -- Emojis and pictographs
+    , choose ('\x1F600','\x1F64F')   -- Emoticons
+    , choose ('\x1F300','\x1F5FF')   -- Miscellaneous Symbols and Pictographs
+    , choose ('\x1F680','\x1F6FF')   -- Transport and Map Symbols
+    , choose ('\x1F900','\x1F9FF')   -- Supplemental Symbols and Pictographs
+    -- Additional language blocks
+    , choose ('\x0400','\x04FF')     -- Cyrillic (extended)
+    , choose ('\x0530','\x058F')     -- Armenian
+    , choose ('\x0590','\x05FF')     -- Hebrew
+    , choose ('\x0600','\x06FF')     -- Arabic
+    , choose ('\x0900','\x097F')     -- Devanagari (extended)
+    , choose ('\x3040','\x309F')     -- Hiragana
+    , choose ('\x30A0','\x30FF')     -- Katakana
+    , choose ('\x4E00','\x9FFF')     -- CJK Unified Ideographs (common Chinese/Japanese characters)
+    -- Symbols and special characters
+    , choose ('\x2100','\x214F')     -- Letterlike Symbols
+    , choose ('\x2190','\x21FF')     -- Arrows
+    , choose ('\x2200','\x22FF')     -- Mathematical Operators
+    , choose ('\x25A0','\x25FF')     -- Geometric Shapes
+    , choose ('\x2600','\x26FF')     -- Miscellaneous Symbols
+    , choose ('\x2700','\x27BF')     -- Dingbats
+    , choose ('\x20A0','\x20CF')     -- Currency Symbols
+    ] `suchThat` (\c -> not (isControl c) && c /= '\0' && c /= '\x200B' && c /= '\xFEFF')
 
 
 genCssIdent :: Gen MisoString
