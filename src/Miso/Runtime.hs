@@ -90,8 +90,8 @@ module Miso.Runtime
 #endif
   ) where
 -----------------------------------------------------------------------------
-import qualified Data.Set as Set
-import           Data.Set (Set)
+import qualified Data.IntSet as IS
+import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
@@ -312,11 +312,13 @@ propagate vcompId vcomps = _state (execState synch (dfs vcomps vcompId))
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
 dfs cs vcompId = DFS cs mempty (pure vcompId)
 -----------------------------------------------------------------------------
+type ComponentIds = IntSet
+-----------------------------------------------------------------------------
 data DFS p m a
   = DFS
   { _state :: IntMap (ComponentState p m a)
     -- ^ global component state to alter
-  , _visited :: Set ComponentId
+  , _visited :: ComponentIds
     -- ^ visited set
   , _stack :: [ComponentId]
     -- ^ neighbors queue
@@ -324,7 +326,7 @@ data DFS p m a
 -----------------------------------------------------------------------------
 type Synch p m a x = State (DFS p m a) x
 -----------------------------------------------------------------------------
-visited :: Lens (DFS p m a) (Set ComponentId)
+visited :: Lens (DFS p m a) (ComponentIds)
 visited = lens _visited $ \r x -> r { _visited = x }
 -----------------------------------------------------------------------------
 state :: Lens (DFS p m a) (IntMap (ComponentState p m a))
@@ -338,7 +340,7 @@ synch = mapM_ go =<< pop
   where
     go :: ComponentState p m a -> Synch p m a ()
     go cs = do
-      seen <- Set.member (cs ^. componentId) <$> use visited
+      seen <- IS.member (cs ^. componentId) <$> use visited
       when (not seen) $ do
         propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
@@ -348,10 +350,10 @@ synch = mapM_ go =<< pop
 propagateChildren
   :: forall p m a
    . ComponentState p m a
-  -> Set ComponentId
+  -> ComponentIds
   -> Synch p m a ()
 propagateChildren currentState childComponents = do
-  forM_ childComponents $ \childId -> do
+  forM_ (IS.toList childComponents) $ \childId -> do
     childState <- unsafeCoerce (IM.! childId) <$> use state
     updatedChild <- unsafeCoerce <$>
       foldM process childState (childState ^. componentBindings)
@@ -578,7 +580,7 @@ componentId = lens _componentId $ \record field -> record { _componentId = field
 parentId :: Lens (ComponentState parent model action) ComponentId
 parentId = lens _componentParentId $ \record field -> record { _componentParentId = field }
 -----------------------------------------------------------------------------
-children :: Lens (ComponentState parent model action) (Set ComponentId)
+children :: Lens (ComponentState parent model action) (ComponentIds)
 children = lens _componentChildren $ \record field -> record { _componentChildren = field }
 -----------------------------------------------------------------------------
 componentTopics :: Lens (ComponentState parent model action) (Map MisoString (Value -> IO ()))
@@ -639,7 +641,7 @@ data ComponentState parent model action
   -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
-  , _componentChildren :: Set ComponentId
+  , _componentChildren :: ComponentIds
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -975,7 +977,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         else
           syncCallback1' $ \parent_ -> do
             ComponentState {..} <- initialize events_ vcompId Draw False app (pure parent_)
-            modifyComponent vcompId (children %= Set.insert _componentId)
+            modifyComponent vcompId (children %= IS.insert _componentId)
             vtree <- toJSVal =<< readIORef _componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
