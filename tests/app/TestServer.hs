@@ -5,6 +5,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TypeOperators #-}
 
+import Prelude hiding (writeFile, readFile)
 import System.Directory (getCurrentDirectory)
 import Data.Proxy
 import Servant.Server
@@ -54,7 +55,20 @@ import Test.QuickCheck
     , Gen
     , Property
     )
-import Data.Aeson (encode)
+import Data.Aeson (encode, decode)
+import Control.Concurrent (forkIO, killThread)
+import Network.HTTP.Client
+    ( defaultManagerSettings
+    , newManager
+    , httpLbs
+    , parseRequest
+    , Response (responseStatus)
+    , responseBody
+    )
+import Network.HTTP.Types (statusCode)
+import Data.ByteString.Lazy (writeFile, readFile)
+import Control.Monad (unless)
+import Data.Maybe (fromJust)
 
 import qualified HtmlGen3 as Html
 import qualified TestApp as App
@@ -132,15 +146,36 @@ mainView :: App.TestData -> Handler IndexPageData
 mainView appData = pure $ IndexPageData (appData, App.app appData)
 
 
+httpGet :: String -> IO Int
+httpGet url = do
+    httpManager <- newManager defaultManagerSettings
+    request <- parseRequest url
+    response <- httpLbs request httpManager
+    print $ responseBody response
+    return $ statusCode $ responseStatus response
+
+
+failFilename = "/tmp/failing_case.json"
+
+
 prop_testIO :: EnvSettings -> Property
 prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
     \html -> ioProperty $ do
-        print (encode html)
         let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
         putStrLn $ "Beginning to listen on " <> show port_
-        Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
-        return True
+        serverTid <- forkIO $ Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
+
+        playwrightResponse <- httpGet $ "http://localhost:" ++ show (playwrightPort envSettings) ++ "/test?port=" ++ show port_ ++ "&wait=true"
+
+        killThread serverTid
+
+        let ok = 200 <= playwrightResponse && playwrightResponse <= 300
+
+        unless ok $
+            writeFile failFilename (encode html)
+
+        return ok
 
     where
         port_ = port envSettings
@@ -150,7 +185,24 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
 data EnvSettings = EnvSettings
     { serve_static_dir_path :: FilePath
     , port :: Int
+    , playwrightPort :: Int
     }
+
+
+serveFailed :: EnvSettings -> IO ()
+serveFailed envSettings = do
+    bytes <- readFile failFilename
+    let html = fromJust $ decode bytes
+
+    let appData = App.TestData { App.randomHtml = html } :: App.TestData
+
+    putStrLn $ "Beginning to listen on " <> show port_
+    Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
+
+    where
+        port_ = port envSettings
+        serve_static_dir_path_ = serve_static_dir_path envSettings
+
 
 
 main :: IO ()
@@ -158,11 +210,14 @@ main = do
     cwd <- getCurrentDirectory
 
     portStr <- lookupEnv "PORT"
+    playwrightPortStr <- lookupEnv "PLAYWRIGHT_PORT"
 
     let envSettings = EnvSettings
             { serve_static_dir_path = cwd <> "/static"
             , port = maybe 8888 read portStr
+            , playwrightPort = maybe 8888 read playwrightPortStr
             }
 
+    -- serveFailed envSettings
     putStrLn "Begin Quickchecks"
     quickCheck $ prop_testIO envSettings

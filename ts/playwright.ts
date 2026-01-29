@@ -71,7 +71,10 @@ async function executeTestCore(page, port, timeout) {
     
     const consoleHandler = (msg) => {
       if (testCompleted) return;
-      const text = msg.text();
+      let text = msg.text();
+      if (text === '[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff') {
+          text = 'ERROR';
+      }
       
       if (text === 'SUCCESS' || text === 'ERROR') {
         testCompleted = true;

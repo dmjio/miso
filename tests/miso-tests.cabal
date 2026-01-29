@@ -126,7 +126,10 @@ executable integration-tests-server
     servant-miso-html,
     directory,
     QuickCheck,
-    hashable
+    hashable,
+    http-client,
+    http-types,
+    bytestring
   hs-source-dirs:
     app
   default-language:

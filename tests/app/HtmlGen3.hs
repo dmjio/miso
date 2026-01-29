@@ -110,7 +110,7 @@ type MkTag2 model action = [ Attribute action ] -> View model action
 nextGenerator :: ChildHavingHtmlTag -> Gen ChildHavingHtmlTag
 nextGenerator Ul = return Li
 nextGenerator Ol = return Li
-nextGenerator Table = elements [ Tbody, Tr ]
+nextGenerator Table = return Tbody
 nextGenerator Thead = return Tr
 nextGenerator Tbody = return Tr
 nextGenerator Tr = elements [ Th, Td ]
@@ -242,8 +242,7 @@ vt Wbr = wbr_
 
 
 genHtml :: Gen HTML
--- genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
-genHtml = genSubtree 100 (elements safeBlockTags)
+genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
 
 
 genSubtree :: Int -> Gen ChildHavingHtmlTag -> Gen HTML
