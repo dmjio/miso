@@ -304,13 +304,12 @@ function drawCanvas(c) {
 function unmountComponent(c) {
   if (c.onUnmounted)
     c.onUnmounted();
-  c.unmount(c.componentId);
+  c.unmount();
 }
 function mountComponent(parent, op, replacing, n, context) {
   if (n.onBeforeMounted)
     n.onBeforeMounted();
   let mounted = n.mount(parent);
-  n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== 0 /* VComp */) {

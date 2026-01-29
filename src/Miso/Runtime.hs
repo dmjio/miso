@@ -979,14 +979,12 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             vtree <- toJSVal =<< readIORef _componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
-            setProp "componentId" _componentId obj
             setProp "componentTree" vtree obj
             toJSVal obj
 
     unmountCallback <- toJSVal =<< do
-      FFI.syncCallback1 $ \vcompId_ -> do
-        componentId_ <- fromJSValUnchecked vcompId_
-        IM.lookup componentId_ <$> readIORef components >>= \case
+      FFI.syncCallback $ do
+        IM.lookup vcompId <$> readIORef components >>= \case
           Nothing -> pure ()
           Just componentState ->
             unmount componentState
