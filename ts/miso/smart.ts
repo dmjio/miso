@@ -74,7 +74,7 @@ function mkVNode<T>() : VNode<T> {
 function mkVComp<T>() : VComp<T> {
   return union(mkVNode<T>() as any, {
     type : VTreeType.VComp,
-    mount: (_parent: T): Mount<T> => ({ componentId: 0, componentTree: mkVNode<T>() }),
+    mount: (_parent: T): Mount<T> => ({ componentTree: mkVNode<T>() }),
     unmount: () => {},
     onUnmounted: () => {},
     onBeforeUnmounted: () => {},

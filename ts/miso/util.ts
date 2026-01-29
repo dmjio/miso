@@ -1,4 +1,4 @@
-import { VComp, VNode, VTree, Response } from './types';
+import { PRNG, VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -256,7 +256,7 @@ export function typeOf (x) : number {
 }
 
 /* Add splitmix32 random seed functionality */
-export function splitmix32(a : number) : number {
+export function splitmix32(a : number) : PRNG {
   return function() {
     a |= 0; a = a + 0x9e3779b9 | 0;
     var t = a ^ a >>> 15;
