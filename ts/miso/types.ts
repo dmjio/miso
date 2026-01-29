@@ -38,7 +38,7 @@ export type VComp<T> = {
   onBeforeUnmounted: () => void;
   onUnmounted: () => void;
   mount: (parent: T) => Mount<T>;
-  unmount: (componentId: ComponentId) => void;
+  unmount: () => void;
 };
 
 export type Mount<T> = {
@@ -120,6 +120,8 @@ export type HydrationContext<T> = {
   lastChild : (node: T) => T;
   getAttribute : (node: T, string) => string;
 };
+
+export type PRNG = (() => (number));
 
 export type ComponentContext = {
   mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
