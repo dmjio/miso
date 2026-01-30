@@ -13,18 +13,18 @@
 -- import Miso
 -- import Miso.String
 --
--- data IntAction = Add | Subtract
+-- data Action = Add | Subtract
 --
--- counterView :: Int -> View IntAction
--- counterView n = div_
+-- view_ :: Int -> View Int Action
+-- view_ n = div_
 --  [ class_ "main" ]
---  [ btn_ [ onClick Add ] [ text_ "+" ]
+--  [ button_ [ onClick Add ] [ text_ "+" ]
 --  , text_ (ms n)
---  , btn_ [ onClick Subtract ] [ text_ "-" ]
+--  , button_ [ onClick Subtract ] [ text_ "-" ]
 --  ]
 -- @
 --
--- More information on how to use miso is available on GitHub
+-- More information on how to use @miso@ is available on GitHub.
 --
 -- <http://github.com/dmjio/miso>
 --
