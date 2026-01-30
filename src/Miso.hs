@@ -114,7 +114,6 @@ import           Miso.Property
 import           Miso.PubSub
 import           Miso.Reload
 import           Miso.Router
-import           Miso.Reload
 import           Miso.Runtime
 import           Miso.State
 import           Miso.Storage
