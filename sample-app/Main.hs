@@ -6,8 +6,6 @@
 module Main where
 ----------------------------------------------------------------------------
 import           Miso
-import           Miso.Run
-import           Miso.Random
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
@@ -33,7 +31,7 @@ main :: IO ()
 #ifdef INTERACTIVE
 main = reload (startApp defaultEvents app)
 #else
-main = run (startApp defaultEvents app)
+main = startApp defaultEvents app
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
