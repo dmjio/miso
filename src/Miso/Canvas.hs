@@ -127,14 +127,14 @@ canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
     initCallback :: Attribute action
     initCallback = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
-        FFI.syncCallback1 $ \domRef -> do
+        FFI.asyncCallback1 $ \domRef -> do
           initialState <- initialize_ domRef
           FFI.set "state" initialState (Object domRef)
 
     drawCallack :: Attribute action
     drawCallack = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
-        FFI.syncCallback1 $ \domRef -> do
+        FFI.asyncCallback1 $ \domRef -> do
           state <- fromJSValUnchecked =<< domRef ! ("state" :: MisoString)
           draw_ state
 -----------------------------------------------------------------------------
@@ -158,7 +158,7 @@ canvas attributes initialize draw = node HTML "canvas" attrs []
     initCallback :: Attribute action
     initCallback = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "onCreated") vtree =<< do
-        FFI.syncCallback1 $ \domRef -> do
+        FFI.asyncCallback1 $ \domRef -> do
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
           initialState <- runReaderT (initialize domRef) ctx
           FFI.set "state" initialState (Object domRef)
@@ -166,7 +166,7 @@ canvas attributes initialize draw = node HTML "canvas" attrs []
     drawCallack :: Attribute action
     drawCallack = On $ \_ (VTree vtree) _ _ -> do
       flip (FFI.set "draw") vtree =<< do
-        FFI.syncCallback1 $ \domRef -> do
+        FFI.asyncCallback1 $ \domRef -> do
           jval <- domRef ! ("state" :: MisoString)
           initialState <- fromJSValUnchecked jval
           ctx <- domRef # ("getContext" :: MisoString) $ ["2d" :: MisoString]
