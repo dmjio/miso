@@ -52,7 +52,8 @@ module Miso.JSON
   , withBool
     -- * Type conversion
   , FromJSON(parseJSON)
-  , Parser, parseMaybe
+  , Parser (..)
+  , parseMaybe
   , ToJSON(toJSON)
   -- * Misc.
   , fromJSON
