@@ -52,7 +52,8 @@ module Miso.JSON
   , withBool
     -- * Type conversion
   , FromJSON(parseJSON)
-  , Parser, parseMaybe
+  , Parser (..)
+  , parseMaybe
   , ToJSON(toJSON)
   -- * Misc.
   , fromJSON
@@ -248,15 +249,15 @@ instance ToJSON Word64 where  toJSON = Number . realToFrac
 -- | Possibly lossy due to conversion to 'Double'
 instance ToJSON Integer where toJSON = Number . fromInteger
 ----------------------------------------------------------------------------
-newtype Parser a = P { unP :: Either MisoString a }
+newtype Parser a = Parser { unParser :: Either MisoString a }
   deriving (Functor, Applicative, Monad)
 ----------------------------------------------------------------------------
 instance MonadFail Parser where
   fail = pfail . pack
 ----------------------------------------------------------------------------
 instance Alternative Parser where
-  empty = P (Left mempty)
-  P (Left _) <|> r = r
+  empty = Parser (Left mempty)
+  Parser (Left _) <|> r = r
   l <|> _ = l
 ----------------------------------------------------------------------------
 instance MonadPlus Parser
@@ -268,10 +269,10 @@ parseMaybe m v =
     Right r -> Just r 
 ----------------------------------------------------------------------------
 parseEither :: (a -> Parser b) -> a -> Either MisoString b
-parseEither m v = unP (m v)
+parseEither m v = unParser (m v)
 ----------------------------------------------------------------------------
 pfail :: MisoString -> Parser a
-pfail message = P (Left message)
+pfail message = Parser (Left message)
 ----------------------------------------------------------------------------
 class FromJSON a where
   parseJSON :: Value -> Parser a
