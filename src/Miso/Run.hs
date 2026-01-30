@@ -3,42 +3,41 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Miso.Run
+-- Module      :  Miso.Reload
 -- Copyright   :  (C) 2016-2025 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Support for running and live-reloading of miso applications.
+-- Support for live-reload of miso applications.
 ----------------------------------------------------------------------------
-module Miso.Run
+module Miso.Reload
   ( -- ** Live reload
-    run
-  , reload
+    reload
   ) where
 -----------------------------------------------------------------------------
-import           Miso.String
-import           Miso.DSL
+import           Miso.String (MisoString)
+import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
--- | Entry point for a miso application.
+-- | Clears the <body> and <head> on each reload.
 --
-run
-  :: IO ()
-  -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
-  -> IO ()
-run = id
------------------------------------------------------------------------------
--- | Like 'run', but clears the <body> and <head> on each reload.
+-- Meant to be used with WASM browser mode.
 --
--- Meant to be used with WASM browser mode
+-- This function executes an t'IO' action, clearing both the body and head
+-- of the current page in the process.
+--
+-- @
+-- main :: IO ()
+-- main = reload (startApp defaultEvents app)
+-- @
 --
 -- @since 1.9.0.0
 reload
   :: IO ()
-  -- ^ A JSM action typically created using 'Miso.miso' or 'Miso.startApp'
+  -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-reload action = run (clear >> action)
+reload = (clear >>)
   where
     clear :: IO ()
     clear = do

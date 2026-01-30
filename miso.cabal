@@ -138,7 +138,7 @@ library
     Miso.PubSub
     Miso.Random
     Miso.Router
-    Miso.Run
+    Miso.Reload
     Miso.Runtime.Internal
     Miso.State
     Miso.Subscription
