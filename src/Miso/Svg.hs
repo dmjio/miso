@@ -13,8 +13,8 @@
 -- import Miso
 -- import Miso.Svg
 --
--- intView :: Int -> View IntAction
--- intView n = svg_ [ height_ "100", width "100" ] [
+-- view_ :: Int -> View Int action
+-- view_ n = svg_ [ height_ "100", width "100" ] [
 --    circle_ [ cx_ "50", cy_ "50", r_ "40", stroke_ "green", strokeWidth_ "4", fill_ "yellow" ] []
 --  ]
 -- @

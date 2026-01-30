@@ -77,9 +77,9 @@ module Miso
     -- * Property
     -- | Construct custom properties on DOM elements.
   , module Miso.Property
-    -- * Run
-    -- | Support for running and live-reloading of miso applications.
-  , module Miso.Run
+    -- * Reload
+    -- | Support for clearing the page during live-reloading w/ WASM browser mode.
+  , module Miso.Reload
     -- * Subscriptions
     -- | Subscriptions for external events (mouse, keyboard, window, history, etc.).
   , module Miso.Subscription
@@ -112,8 +112,9 @@ import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Property
 import           Miso.PubSub
+import           Miso.Reload
 import           Miso.Router
-import           Miso.Run
+import           Miso.Reload
 import           Miso.Runtime
 import           Miso.State
 import           Miso.Storage
