@@ -73,9 +73,18 @@ import Data.Maybe (fromJust)
 import qualified HtmlGen3 as Html
 import qualified TestApp as App
 
+data Backend = GHCJS | WASM deriving (Show, Read)
+
+data EnvSettings = EnvSettings
+    { serve_static_dir_path :: FilePath
+    , port :: Int
+    , playwrightPort :: Int
+    , backend :: Backend
+    } deriving Show
+
 type ServerRoutes = Routes (Get '[HTML] IndexPageData)
 
-newtype IndexPageData = IndexPageData (App.TestData, App.MainComponent)
+newtype IndexPageData = IndexPageData (Backend, App.TestData, App.MainComponent)
 
 type RouteIndexPage a = a
 type Routes a = RouteIndexPage a
@@ -85,7 +94,7 @@ type StaticRoute = "static" :> Servant.Raw
 type API = StaticRoute :<|> ServerRoutes
 
 instance ToHtml IndexPageData where
-    toHtml (IndexPageData (initial_data, app)) = toHtml
+    toHtml (IndexPageData (backend_, initial_data, app)) = toHtml
         [ doctype_
         , html_
             []
@@ -103,9 +112,7 @@ instance ToHtml IndexPageData where
                     (toMisoString $ toStrict $ encodeToLazyText initial_data)
 
                 , title_ [] [ "Miso Tests" ]
-
-                -- , js_wasm $ static_root <> "/init.js"
-                , js_js $ static_root <> "/all.js" -- Uncomment this and comment out the previous line to load the javascript version (TODO: make this a commandline flag or something)
+                , js backend_
                 ]
             , body_ [] [ mount (app :: App.MainComponent) ]
             ]
@@ -114,6 +121,9 @@ instance ToHtml IndexPageData where
         where
             static_root :: MisoString
             static_root = "/static"
+
+            js WASM = js_wasm $ static_root <> "/init_integration_wasm_client.js"
+            js GHCJS = js_js $ static_root <> "/all.js"
 
             js_wasm href =
                 script_
@@ -131,19 +141,20 @@ instance ToHtml IndexPageData where
                     ""
 
 
-server :: FilePath -> App.TestData -> Wai.Application
-server serve_static_dir_path_ appData =
+server :: EnvSettings -> FilePath -> App.TestData -> Wai.Application
+server envSettings serve_static_dir_path_ appData =
     serve
         (Proxy @API)
-        (staticHandler :<|> mainView appData)
+        (staticHandler :<|> mainHandler envSettings appData)
 
     where
         staticHandler :: Server StaticRoute
         staticHandler = Servant.serveDirectoryFileServer serve_static_dir_path_
 
 
-mainView :: App.TestData -> Handler IndexPageData
-mainView appData = pure $ IndexPageData (appData, App.app appData)
+mainHandler :: EnvSettings -> App.TestData -> Handler IndexPageData
+mainHandler envSettings appData = pure $
+    IndexPageData (backend envSettings, appData, App.app appData)
 
 
 httpGet :: String -> IO Int
@@ -165,7 +176,7 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
         let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
         putStrLn $ "Beginning to listen on " <> show port_
-        serverTid <- forkIO $ Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
+        serverTid <- forkIO $ Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
 
         playwrightResponse <- httpGet $ "http://localhost:" ++ show (playwrightPort envSettings) ++ "/test?port=" ++ show port_ ++ "&wait=true"
 
@@ -183,13 +194,6 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
         serve_static_dir_path_ = serve_static_dir_path envSettings
 
 
-data EnvSettings = EnvSettings
-    { serve_static_dir_path :: FilePath
-    , port :: Int
-    , playwrightPort :: Int
-    }
-
-
 serveFailed :: EnvSettings -> IO ()
 serveFailed envSettings = do
     bytes <- readFile failFilename
@@ -198,12 +202,11 @@ serveFailed envSettings = do
     let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
     putStrLn $ "Beginning to listen on " <> show port_
-    Wai.run port_ $ Wai.logStdout (server serve_static_dir_path_ appData)
+    Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
 
     where
         port_ = port envSettings
         serve_static_dir_path_ = serve_static_dir_path envSettings
-
 
 
 main :: IO ()
@@ -216,16 +219,18 @@ main = do
                     return $ cwd <> "/static"
                 Just d -> return d
 
-
-
     portStr <- lookupEnv "PORT"
     playwrightPortStr <- lookupEnv "PLAYWRIGHT_PORT"
+    backendStr <- lookupEnv "BACKEND"
 
     let envSettings = EnvSettings
             { serve_static_dir_path = staticDir
             , port = maybe 8888 read portStr
-            , playwrightPort = maybe 8888 read playwrightPortStr
+            , playwrightPort = maybe 8889 read playwrightPortStr
+            , backend = maybe GHCJS read backendStr
             }
+
+    putStrLn $ "TestServer settings: " ++ show envSettings
 
     -- serveFailed envSettings
     putStrLn "Begin Quickchecks"
