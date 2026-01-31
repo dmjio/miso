@@ -129,7 +129,8 @@ executable integration-tests-server
     hashable,
     http-client,
     http-types,
-    bytestring
+    bytestring,
+    jsaddle
   hs-source-dirs:
     app
   default-language:

@@ -70,7 +70,7 @@ import Data.ByteString.Lazy (writeFile, readFile)
 import Control.Monad (unless)
 import Data.Maybe (fromJust)
 
-import qualified HtmlGen3 as Html
+import qualified HtmlGen as Html
 import qualified TestApp as App
 
 data Backend = GHCJS | WASM deriving (Show, Read)
@@ -177,6 +177,7 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
 
         putStrLn $ "Beginning to listen on " <> show port_
         serverTid <- forkIO $ Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
+        -- Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
 
         playwrightResponse <- httpGet $ "http://localhost:" ++ show (playwrightPort envSettings) ++ "/test?port=" ++ show port_ ++ "&wait=true"
 

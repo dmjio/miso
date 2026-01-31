@@ -97,6 +97,7 @@ data HTML
     = Elem ChildHavingHtmlTag [ HtmlAttribute ] [ HTML ]
     | VoidElem ChildlessHtmlTag [ HtmlAttribute ]
     | Text MisoString
+    | UserSuppliedElement
     deriving (Eq, Generic, ToJSON, FromJSON, Show)
 
 instance Arbitrary HTML where
@@ -135,12 +136,13 @@ nextGenerator Pre = safeInlineElem
 nextGenerator _ = anyElem
 
 
-render :: HTML -> View model action
-render (Elem tag attrs children)
-    = t tag (renderAttrs attrs) (map render children)
-render (VoidElem tag attrs)
+render :: View model action -> HTML -> View model action
+render v (Elem tag attrs children)
+    = t tag (renderAttrs attrs) (map (render v) children)
+render _ (VoidElem tag attrs)
     = vt tag (renderAttrs attrs)
-render (Text s) = text s
+render _ (Text s) = text s
+render v UserSuppliedElement = v
 
 
 renderAttrs :: [ HtmlAttribute ] -> [ Attribute action ]
@@ -247,7 +249,7 @@ genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
 
 genSubtree :: Int -> Gen ChildHavingHtmlTag -> Gen HTML
 genSubtree depth gen
-  | depth <= 1 = genText
+  | depth <= 1 = return UserSuppliedElement
   | otherwise = do
         nonVoidTag <- gen
         siblingCount <- choose (0, depth)
