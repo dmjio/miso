@@ -66,6 +66,7 @@ rec {
 
   playwright-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
+    set -e
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
@@ -93,17 +94,19 @@ rec {
 
   playwright-wasm = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
+    set -e
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
     bun install playwright@1.53
+    pushd tests
     nix develop .#wasm --command bash -c 'make'
-    http-server -p 8061 ./tests/public &
+    http-server -p 8061 ./public &
     HTTP_SERVER_PID=$!
     echo $HTTP_SERVER_PID
     PW_API_PORT=8060
     echo pwd:
     pwd
-    PORT=$PW_API_PORT bun run ./ts/playwright.ts &
+    PORT=$PW_API_PORT bun run ../ts/playwright.ts &
     PLAYWRIGHT_SERVER_PID=$!
     echo $PLAYWRIGHT_SERVER_PID
     until curl -sf "http://localhost:$PW_API_PORT/ready"; do sleep 0.1; done
@@ -111,7 +114,7 @@ rec {
     curl --fail "http://localhost:$PW_API_PORT/test?port=8061&wait=true"
     PORT=8062 \
       PLAYWRIGHT_PORT=$PW_API_PORT \
-      STATIC_DIR=./tests/public \
+      STATIC_DIR=./public \
       BACKEND=WASM \
       ${miso-tests-ghc}/bin/integration-tests-server
     exit_code=$?
