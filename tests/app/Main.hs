@@ -25,7 +25,6 @@ import           Prelude hiding ((!!))
 import           GHC.Generics
 import           Control.Monad
 import           Control.Concurrent
-import           Control.Concurrent.STM
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
