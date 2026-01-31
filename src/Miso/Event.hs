@@ -118,17 +118,6 @@ onWithOptions phase options eventName Decoder{..} toAction =
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)
 -----------------------------------------------------------------------------
--- | @onMounted action@ is an event that gets called after the actual DOM
--- element is created.
---
--- @since 1.9.0.0
---
-onMounted :: action -> Attribute action
-onMounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onMounted" callback object
------------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
 --
@@ -160,28 +149,6 @@ onDestroyed action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
------------------------------------------------------------------------------
--- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM.
---
--- @since 1.9.0.0
---
-onUnmounted :: action -> Attribute action
-onUnmounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onUnmounted" callback object
------------------------------------------------------------------------------
--- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
--- is removed from the DOM.
---
--- @since 1.9.0.0
---
-onBeforeUnmounted :: action -> Attribute action
-onBeforeUnmounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM.
