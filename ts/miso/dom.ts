@@ -11,6 +11,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     else if (c.type === VTreeType.VComp && n.type === VTreeType.VComp) {
         if (n.key === c.key) {
           n.child = c.child;
+          n.componentId = c.componentId;
           if (c.child) c.child.parent = n;
           return;
         }
