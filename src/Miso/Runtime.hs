@@ -564,12 +564,8 @@ globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
-globalLock :: MVar ()
-{-# NOINLINE globalLock #-}
-globalLock = unsafePerformIO (newMVar ())
------------------------------------------------------------------------------
 withGlobalLock :: IO a -> IO a
-withGlobalLock f = withMVar globalLock $ \() -> f
+withGlobalLock f = f
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
