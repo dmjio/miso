@@ -564,12 +564,8 @@ globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
 -----------------------------------------------------------------------------
-globalLock :: MVar ()
-{-# NOINLINE globalLock #-}
-globalLock = unsafePerformIO (newMVar ())
------------------------------------------------------------------------------
 withGlobalLock :: IO a -> IO a
-withGlobalLock f = withMVar globalLock $ \() -> f
+withGlobalLock f = f
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
@@ -978,12 +974,14 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             vtree <- toJSVal =<< readIORef _componentVTree
             FFI.set "parent" vcomp (Object vtree)
             obj <- create
+            setProp "componentId" _componentId obj
             setProp "componentTree" vtree obj
             toJSVal obj
 
     unmountCallback <- toJSVal =<< do
-      FFI.syncCallback $ do
-        IM.lookup vcompId <$> readIORef components >>= \case
+      FFI.syncCallback1 $ \vcompId_ -> do
+        componentId_ <- fromJSValUnchecked vcompId_
+        IM.lookup componentId_ <$> readIORef components >>= \case
           Nothing -> pure ()
           Just componentState ->
             unmount componentState

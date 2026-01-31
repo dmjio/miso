@@ -11,6 +11,7 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     else if (c.type === VTreeType.VComp && n.type === VTreeType.VComp) {
         if (n.key === c.key) {
           n.child = c.child;
+          n.componentId = c.componentId;
           if (c.child) c.child.parent = n;
           return;
         }
@@ -342,7 +343,7 @@ function drawCanvas<T> (c: VNode<T>) {
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
   if (c.onUnmounted) c.onUnmounted();
-  c.unmount();
+  c.unmount(c.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -352,6 +353,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
   // 'mount()' should be executed synchronously, including its callback function argument.
   let mounted: Mount<T> = n.mount(parent); 
   // mount() gives us the VTree from the Haskell side
+  n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== VTreeType.VComp) {

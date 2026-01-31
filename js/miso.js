@@ -11,6 +11,7 @@ function diff(c, n, parent, context) {
   } else if (c.type === 0 /* VComp */ && n.type === 0 /* VComp */) {
     if (n.key === c.key) {
       n.child = c.child;
+      n.componentId = c.componentId;
       if (c.child)
         c.child.parent = n;
       return;
@@ -304,12 +305,13 @@ function drawCanvas(c) {
 function unmountComponent(c) {
   if (c.onUnmounted)
     c.onUnmounted();
-  c.unmount();
+  c.unmount(c.componentId);
 }
 function mountComponent(parent, op, replacing, n, context) {
   if (n.onBeforeMounted)
     n.onBeforeMounted();
   let mounted = n.mount(parent);
+  n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== 0 /* VComp */) {
