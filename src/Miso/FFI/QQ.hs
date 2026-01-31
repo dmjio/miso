@@ -77,9 +77,10 @@ inlineJS jsString = pure $ do
   kvs <- forM (S.toList found) $ \s -> do
     k <- [| MS.pack $(stringE (MS.unpack s)) |]
     let v = mkName (MS.unpack s)
-    val <- [| unsafePerformIO $ toJSVal $(varE v) |]
+    val <- [| unsafePerformIO (toJSVal $(varE v)) :: JSVal |]
     pure $ tupE [ pure k, pure val ]
-  [| FFI.inline $(stringE (MS.unpack (formatVars (MS.pack jsString) vars))) =<< createWith $(listE kvs) |]
+  [| FFI.inline $(stringE (MS.unpack (formatVars (MS.pack jsString) vars))) =<<
+      createWith ($(listE kvs) :: [(MisoString, JSVal)]) |]
     where
       vars = getVariables (MS.pack jsString)
 ----------------------------------------------------------------------------
