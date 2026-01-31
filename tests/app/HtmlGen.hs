@@ -1,397 +1,424 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use <&>" #-}
 
 module HtmlGen where
 
+import GHC.Generics
+import Data.Aeson (ToJSON, FromJSON)
+import Miso hiding (on, Src, Checked)
+import Miso.Html.Element hiding (title_, data_)
+import Miso.Html.Property hiding (label_, form_)
 import Test.QuickCheck
+import Data.Char (isControl, isSpace)
 import Control.Monad (replicateM)
-import Miso
-import Miso.Html.Element hiding (title_)
-import Miso.Html.Property
-import Data.Maybe (catMaybes)
 
--- Generate body content with appropriate structure
-genBodyContent :: Gen [View model action]
-genBodyContent = sized $ \size ->
-  if size <= 0
-    then pure [text "Base content"]
-    else do
-      n <- choose (1, min 5 (size `div` 2))
-      vectorOf n (resize (max 1 (size `div` n)) genSectionalElement)
+maxDepth :: Int
+maxDepth = 20
 
--- Elements that can be direct children of body
-genSectionalElement :: Gen (View model action)
-genSectionalElement = oneof [
-    genHeader,
-    genNav,
-    genMain,
-    genArticle,
-    genSection,
-    genAside,
-    genFooter,
-    genDiv
-  ]
+type HtmlAttributeValue = MisoString
 
--- Generate a header element
-genHeader :: Gen (View model action)
-genHeader = sized $ \size -> do
-  attrs <- genCommonAttributes "header"
-  let contentSize = max 0 (size - 1)
-  children <- genHeaderContent contentSize
-  return (header_ attrs children)
+type HtmlAttribute = (HtmlAttributeType, HtmlAttributeValue)
 
-genHeaderContent :: Int -> Gen [View model action]
-genHeaderContent size = do
-  n <- choose (0, min 3 size)
-  replicateM n $ oneof [
-    genHeading,
-    genNav,
-    genDiv,
-    pure (img_ [src_ "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-                alt_ "Logo"])
-    ]
-
--- Generate a section element (rewritten for consistency)
-genSection :: Gen (View model action)
-genSection = sized $ \size -> do
-  attrs <- genCommonAttributes "section"
-  let contentSize = max 0 (size - 1)
-  children <- genSectionContent contentSize
-  return (section_ attrs children)
-
-genSectionContent :: Int -> Gen [View model action]
-genSectionContent size = do
-  n <- choose (0, min 4 size)
-  replicateM n $ oneof [
-    genHeading,
-    genParagraph,
-    genList,
-    genDiv,
-    genTable
-    ]
-
--- Generate a table with valid structure
-genTable :: Gen (View model action)
-genTable = sized $ \size -> do
-  attrs <- genCommonAttributes "table"
-  let tableSize = max 0 (size - 1)
-  
-  -- Always include a caption for accessibility testing
-  caption <- genCaption
-  
-  -- Table head is optional but recommended
-  hasHead <- choose (True, False)
-  thead <- if hasHead 
-           then Just <$> genTableHead (tableSize `div` 3)
-           else pure Nothing
-  
-  -- Table body is required
-  tbody <- genTableBody (tableSize `div` 2)
-  
-  -- Table foot is optional
-  hasFoot <- choose (True, False)
-  tfoot <- if hasFoot && size > 3
-           then Just <$> genTableFoot (tableSize `div` 4)
-           else pure Nothing
-  
-  return $ table_ attrs $ catMaybes [
-    Just caption,
-    fmap (thead_ []) thead,
-    Just (tbody_ [] tbody),
-    fmap (tfoot_ []) tfoot
-    ]
-
-genCaption :: Gen (View model action)
-genCaption = do
-  textContent <- elements ["Test Data", "Sample Information", "Metrics"]
-  return (caption_ [] [text textContent])
-
-genTableHead :: Int -> Gen [View model action]
-genTableHead size = do
-  nRows <- choose (1, min 2 size)
-  replicateM nRows $ do
-    nCells <- choose (1, min 4 size)
-    cells <- replicateM nCells $ do
-      content <- elements ["Header", "Column", "Field", "Value"]
-      return (th_ [scope_ "col"] [text content])
-    return (tr_ [] cells)
-
-genTableBody :: Int -> Gen [View model action]
-genTableBody size = do
-  nRows <- choose (1, min 3 size)
-  replicateM nRows $ do
-    nCells <- choose (1, min 4 size)
-    cells <- replicateM nCells $ do
-      content <- elements ["Data", "Info", "Value", "Item"]
-      return (td_ [] [text content])
-    return (tr_ [] cells)
-
-genTableFoot :: Int -> Gen [View model action]
-genTableFoot size = do
-  nRows <- choose (1, min 1 size)  -- Usually just one row for footer
-  replicateM nRows $ do
-    nCells <- choose (1, min 4 size)
-    cells <- replicateM nCells $ do
-      content <- elements ["Total", "Summary", "Average"]
-      return (td_ [] [text content])
-    return (tr_ [] cells)
-
--- Generate heading elements (h1-h6)
-genHeading :: Gen (View model action)
-genHeading = do
-  level <- choose (1 :: Int, 6)
-  textContent <- elements ["Introduction", "Main Content", "Section Title", "Important Note", "Summary"]
-  let attrs = [class_ ("heading heading-" <> toMisoString (show level))]
-  case level of
-    1 -> return (h1_ attrs [text textContent])
-    2 -> return (h2_ attrs [text textContent])
-    3 -> return (h3_ attrs [text textContent])
-    4 -> return (h4_ attrs [text textContent])
-    5 -> return (h5_ attrs [text textContent])
-    _ -> return (h6_ attrs [text textContent])
-
--- Generate a paragraph with inline elements
-genParagraph :: Gen (View model action)
-genParagraph = do
-  attrs <- genCommonAttributes "p"
-  content <- genParagraphContent
-  return (p_ attrs content)
-
-genParagraphContent :: Gen [View model action]
-genParagraphContent = do
-  n <- choose (1, 4)
-  replicateM n $ frequency [
-    (5, text <$> elements ["Simple text ", "More content ", "Additional information "]),
-    (2, genInlineElement),
-    (1, pure (br_ []))
-    ]
-
--- Generate inline elements for text content
-genInlineElement :: Gen (View model action)
-genInlineElement = oneof [
-    genSpan,
-    genStrong,
-    genEm,
-    genA,
-    genCode
-  ]
-
-genSpan :: Gen (View model action)
-genSpan = do
-  attrs <- genCommonAttributes "span"
-  content <- text <$> elements ["highlighted text", "special content", "formatted text"]
-  return (span_ attrs [content])
-
-genStrong :: Gen (View model action)
-genStrong = do
-  content <- text <$> elements ["important", "critical", "essential"]
-  return (strong_ [class_ "emphasis"] [content])
-
-genEm :: Gen (View model action)
-genEm = do
-  content <- text <$> elements ["emphasis", "note", "caution"]
-  return (em_ [] [content])
-
-genA :: Gen (View model action)
-genA = do
-  attrs <- pure [href_ "#", class_ "test-link"]
-  content <- text <$> elements ["click here", "more details", "external resource"]
-  return (a_ attrs [content])
-
-genCode :: Gen (View model action)
-genCode = do
-  content <- text <$> elements ["code()", "function{}", "variable"]
-  return (code_ [class_ "code-sample"] [content])
-
--- Generate a simple list
-genList :: Gen (View model action)
-genList = do
-  isOrdered <- choose (True, False)
-  nItems <- choose (1, 4)
-  items <- replicateM nItems $ do
-    content <- genListItemContent
-    return (li_ [] content)
-  
-  if isOrdered
-    then return (ol_ [] items)
-    else return (ul_ [] items)
-
-genListItemContent :: Gen [View model action]
-genListItemContent = do
-  hasNested <- choose (True, False)
-
-  if hasNested && False -- disabled for now to keep structure simpler
-    then oneof [
-      (:[]) <$>genList,
-      (:[]) <$> genParagraph
-      ]
-    else do
-        elem_ <- elements ["List item", "Bullet point", "Menu option"]
-        return [text elem_]
-
--- Generate a simple div with content
-genDiv :: Gen (View model action)
-genDiv = sized $ \size -> do
-  attrs <- genCommonAttributes "div"
-  children <- if size > 1
-              then resize (size - 1) genDivContent
-              else pure [text "Simple content"]
-  return (div_ attrs children)
-
-genDivContent :: Gen [View model action]
-genDivContent = sized $ \size -> do
-  n <- choose (0, min 3 size)
-  replicateM n $ frequency [
-    (5, genTextInline),
-    (3, genInlineElement),
-    (2, genParagraph),
-    (1, genList)
-    ]
-
-genTextInline :: Gen (View model action)
-genTextInline = text <$> elements [
-    "Hello world",
-    "Test content",
-    "Sample text",
-    "Some data",
-    "More information"
-  ]
-
--- Generate common safe attributes
-genCommonAttributes :: MisoString -> Gen [Attribute action]
-genCommonAttributes elemType = do
-  idInt <- chooseAny :: Gen Int
-
-  let baseAttrs =
-          [ class_ ("test-" <> elemType <> "-" <> toMisoString (show idInt))
-          , id_ ("id-" <> elemType)
-          ]
-  
-  extraAttrs <- case elemType of
-    "input" -> pure [type_ "text", placeholder_ "Test input"]
-    "img" -> pure [alt_ "Test image"]
-    "a" -> pure [href_ "#"]
-    "button" -> pure [type_ "button"]
-    _ -> pure []
-  
-  n <- choose (0, 2)
-  extra <- vectorOf n $ elements [
-      hidden_ False,
-      lang_ "en",
-      draggable_ True,
-      title_ ("Test " <> elemType)
-    ]
-  
-  return (baseAttrs <> extraAttrs <> extra)
+data HtmlAttributeType
+    = Class
+    | Id
+    | Title
+    | Colspan
+    | Rowspan
+    | Method
+    | Action
+    | Alt
+    | Src
+    | Value
+    | Type
+    | Checked
+    deriving (Eq, Generic, ToJSON, FromJSON, Show)
 
 
--- Generate a nav element
-genNav :: Gen (View model action)
-genNav = sized $ \size -> do
-  attrs <- genCommonAttributes "nav"
-  let contentSize = max 0 (size - 1)
-  children <- genNavContent contentSize
-  return (nav_ attrs children)
+data ChildHavingHtmlTag
+    = Div
+    | Span
+    | P
+    | Pre
+    | Ul
+    | Ol
+    | Li
+    | Section
+    | Header
+    | Footer
+    | Nav
+    | Article
+    | H1
+    | H2
+    | H3
+    | H4
+    | Strong
+    | Em
+    | Table
+    | Thead
+    | Tbody
+    | Tr
+    | Td
+    | Th
+    | Form
+    | Label
+    | Button
+    | Fieldset
+    | Legend
+    | Dl
+    | Dt
+    | Dd
+    | Figure
+    | Figcaption
+    | A
+    deriving (Eq, Enum, Bounded, Generic, ToJSON, FromJSON, Show)
 
-genNavContent :: Int -> Gen [View model action]
-genNavContent size = do
-  n <- choose (0, min 3 size)
-  replicateM n $ oneof [
-    genList,
-    genA,
-    genDiv
+instance Arbitrary ChildHavingHtmlTag where
+  arbitrary = chooseBoundedEnum
+
+
+data ChildlessHtmlTag
+    = Hr
+    | Br
+    | Img
+    | Input
+    | Wbr
+    deriving (Eq, Enum, Bounded, Generic, ToJSON, FromJSON, Show)
+
+instance Arbitrary ChildlessHtmlTag where
+  arbitrary = chooseBoundedEnum
+
+
+data HTML
+    = Elem ChildHavingHtmlTag [ HtmlAttribute ] [ HTML ]
+    | VoidElem ChildlessHtmlTag [ HtmlAttribute ]
+    | Text MisoString
+    deriving (Eq, Generic, ToJSON, FromJSON, Show)
+
+instance Arbitrary HTML where
+  arbitrary = genHtml
+
+
+type MkTag model action = [ Attribute action ] -> [ View model action ] -> View model action
+type MkTag2 model action = [ Attribute action ] -> View model action
+
+
+nextGenerator :: ChildHavingHtmlTag -> Gen ChildHavingHtmlTag
+nextGenerator Ul = return Li
+nextGenerator Ol = return Li
+nextGenerator Table = return Tbody
+nextGenerator Thead = return Tr
+nextGenerator Tbody = return Tr
+nextGenerator Tr = elements [ Th, Td ]
+nextGenerator Th = safeInlineElem
+nextGenerator Td = anyElem
+nextGenerator Dl = elements [ Dt, Dd ]
+nextGenerator Dt = safeInlineElem
+nextGenerator Dd = safeInlineElem
+nextGenerator H1 = safeInlineElem
+nextGenerator H2 = safeInlineElem
+nextGenerator H3 = safeInlineElem
+nextGenerator H4 = safeInlineElem
+nextGenerator Span = safeInlineElem
+nextGenerator Strong = safeInlineElem
+nextGenerator Em = safeInlineElem
+nextGenerator Label = safeInlineElem
+nextGenerator Button = safeInlineElem
+nextGenerator Legend = safeInlineElem
+nextGenerator A = safeInlineElem
+nextGenerator P = safeInlineElem
+nextGenerator Pre = safeInlineElem
+nextGenerator _ = anyElem
+
+
+render :: HTML -> View model action
+render (Elem tag attrs children)
+    = t tag (renderAttrs attrs) (map render children)
+render (VoidElem tag attrs)
+    = vt tag (renderAttrs attrs)
+render (Text s) = text s
+
+
+renderAttrs :: [ HtmlAttribute ] -> [ Attribute action ]
+renderAttrs = map renderAttr
+
+
+renderAttr :: HtmlAttribute -> Attribute action
+renderAttr = uncurry mkAttr
+
+
+mkAttr :: HtmlAttributeType -> MisoString -> Attribute action
+mkAttr Class = class_
+mkAttr Id = id_
+mkAttr Title = title_
+mkAttr Colspan = colspan_
+mkAttr Rowspan = rowspan_
+mkAttr Action = action_
+mkAttr Method = method_
+mkAttr Src = src_
+mkAttr Alt = alt_
+mkAttr Value = value_
+mkAttr Type = type_
+mkAttr Checked = checked_ . read . fromMisoString
+
+
+-- get appropriate miso constructor for element having children
+t :: ChildHavingHtmlTag -> MkTag model action
+t Div = div_
+t Span = span_
+t P = p_
+t Pre = pre_
+t Ul = ul_
+t Ol = ol_
+t Li = li_
+t Section = section_
+t Header = header_
+t Footer = footer_
+t Nav = nav_
+t Article = article_
+t H1 = h1_
+t H2 = h2_
+t H3 = h3_
+t H4 = h4_
+t Strong = strong_
+t Em = em_
+t Table = table_
+t Thead = thead_
+t Tbody = tbody_
+t Tr = tr_
+t Td = td_
+t Th = th_
+t Form = form_
+t Label = label_
+t Button = button_
+t Fieldset = fieldset_
+t Legend = legend_
+t Dl = dl_
+t Dt = dt_
+t Dd = dd_
+t Figure = figure_
+t Figcaption = figcaption_
+t A = a_
+
+
+safeBlockTags :: [ ChildHavingHtmlTag ]
+-- Header, Footer, H2-H4
+safeBlockTags = [ Div, P, Pre, Ul, Ol, Section, Nav, Article,
+    H1, Table, Fieldset, Figure]
+
+
+inlineTags :: [ ChildHavingHtmlTag ]
+-- inlineTags = [Span, Strong, Em, Label, Button, A]
+inlineTags = [Span, Strong, Em, Label]
+
+
+safeInlineTags :: [ ChildHavingHtmlTag ]
+safeInlineTags = [Span, Strong, Em]
+
+
+anyElem :: Gen ChildHavingHtmlTag
+anyElem = frequency $ [ (10, elements safeBlockTags),  (1, elements inlineTags) ]
+
+
+safeInlineElem :: Gen ChildHavingHtmlTag
+safeInlineElem = elements safeInlineTags
+
+
+tagRequiresChildren :: [ ChildHavingHtmlTag ]
+tagRequiresChildren = [ Table, Ol, Ul, Dl, Tbody, Thead, Tr ]
+
+
+-- get appropriate miso constructor for childless elem
+vt :: ChildlessHtmlTag -> MkTag2 model action
+vt Hr = hr_
+vt Br = br_
+vt Img = img_
+vt Input = input_
+vt Wbr = wbr_
+
+
+genHtml :: Gen HTML
+genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
+
+
+genSubtree :: Int -> Gen ChildHavingHtmlTag -> Gen HTML
+genSubtree depth gen
+  | depth <= 1 = genText
+  | otherwise = do
+        nonVoidTag <- gen
+        siblingCount <- choose (0, depth)
+        siblings <- replicateM siblingCount $
+            do
+                siblingTag <- nextGenerator nonVoidTag
+                siblingAttrs <- getAttributeGen siblingTag
+                siblingContent <-
+                    if elem siblingTag tagRequiresChildren then
+                        genSubtree 2 (nextGenerator siblingTag)
+                    else
+                        genLeaf
+                return $ Elem siblingTag siblingAttrs [ siblingContent ]
+
+        attrs <- getAttributeGen nonVoidTag
+
+        let j = if elem nonVoidTag tagRequiresChildren then 0 else 1
+        children <- genSubtree (depth - j) (nextGenerator nonVoidTag)
+
+        return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
+
+
+genLeaf :: Gen HTML
+genLeaf = oneof
+    [ genText
+    , do
+        voidTag <- arbitrary `suchThat` (/= Hr) -- hr tag causes issues
+        VoidElem voidTag <$> getVoidAttributeGen voidTag
     ]
 
 
--- Generate a main element
-genMain :: Gen (View model action)
-genMain = sized $ \size -> do
-  attrs <- genCommonAttributes "main"
-  let contentSize = max 0 (size - 1)
-  children <- genMainContent contentSize
-  return (main_ attrs children)
-
-genMainContent :: Int -> Gen [View model action]
-genMainContent size = do
-  n <- choose (0, min 4 size)
-  replicateM n $ oneof [
-    genHeading,
-    genParagraph,
-    genArticle,
-    genSection,
-    genAside,
-    genDiv
-    ]
+getAttributeGen :: ChildHavingHtmlTag -> Gen [ HtmlAttribute ]
+getAttributeGen Table = tableAttributes
+getAttributeGen Td = tableAttributes
+getAttributeGen Th = tableAttributes
+getAttributeGen _ = baseAttributes
 
 
--- Generate an article element
-genArticle :: Gen (View model action)
-genArticle = sized $ \size -> do
-  attrs <- genCommonAttributes "article"
-  let contentSize = max 0 (size - 1)
-  children <- genArticleContent contentSize
-  return (article_ attrs children)
-
-genArticleContent :: Int -> Gen [View model action]
-genArticleContent size = do
-  n <- choose (0, min 4 size)
-  replicateM n $ oneof [
-    genHeading,
-    genParagraph,
-    genSection,
-    genAside,
-    genDiv,
-    genList
-    ]
+getVoidAttributeGen :: ChildlessHtmlTag -> Gen [ HtmlAttribute ]
+getVoidAttributeGen Img = imageAttributes
+getVoidAttributeGen Input = inputAttributes
+getVoidAttributeGen _ = baseAttributes
 
 
--- Generate an aside element
-genAside :: Gen (View model action)
-genAside = sized $ \size -> do
-  attrs <- genCommonAttributes "aside"
-  let contentSize = max 0 (size - 1)
-  children <- genAsideContent contentSize
-  return (aside_ attrs children)
-
-genAsideContent :: Int -> Gen [View model action]
-genAsideContent size = do
-  n <- choose (0, min 3 size)
-  replicateM n $ oneof [
-    genHeading,
-    genParagraph,
-    genList,
-    genDiv
-    ]
+baseAttributes :: Gen [ HtmlAttribute ]
+baseAttributes = do
+    attrs <- sublistOf
+        [ (Class,) <$> genCssIdent
+        -- , (Id,) <$> genCssIdent
+        , (Title,) <$> genSafeMisoString
+        ]
+    sequence attrs
 
 
--- Generate a footer element
-genFooter :: Gen (View model action)
-genFooter = sized $ \size -> do
-  attrs <- genCommonAttributes "footer"
-  let contentSize = max 0 (size - 1)
-  children <- genFooterContent contentSize
-  return (footer_ attrs children)
+tableAttributes :: Gen [ HtmlAttribute ]
+tableAttributes = baseAttributes
 
-genFooterContent :: Int -> Gen [View model action]
-genFooterContent size = do
-  n <- choose (0, min 3 size)
-  replicateM n $ oneof [
-    genParagraph,
-    genAddress,
-    genDiv,
-    pure (text "© 2026 Example Corp")
-    ]
 
--- Helper for address content (used in footer)
-genAddress :: Gen (View model action)
-genAddress = do
-  attrs <- genCommonAttributes "address"
-  content <- genAddressContent
-  return (address_ attrs content)
+tableCellAttributes :: Gen [ HtmlAttribute ]
+tableCellAttributes = do
+    base <- baseAttributes
+    col <- frequency [(3, pure []), (1, pure [(Colspan, "2")])]
+    row <- frequency [(3, pure []), (1, pure [(Rowspan, "2")])]
+    return (base ++ col ++ row)
 
-genAddressContent :: Gen [View model action]
-genAddressContent = do
-  n <- choose (1, 3)
-  replicateM n $ oneof [
-    elements ["Example Corp", "123 Main St", "contact@example.com"],
-    pure $ br_ []
-    ]
+
+formAttributes :: Gen [ HtmlAttribute ]
+formAttributes = do
+  base <- baseAttributes
+  return (base ++ [(Action, "/submit"), (Method, "post")])
+
+
+imageAttributes :: Gen [ HtmlAttribute ]
+imageAttributes = baseAttributes >>=
+    return .
+        (++
+        [ (Src, placeholderImage)
+        , (Alt, placeholderAltText)
+        ])
+
+
+inputAttributes :: Gen [ HtmlAttribute ]
+inputAttributes = do
+    typ <- elements ["text", "password", "checkbox", "radio", "submit", "number", "email", "tel"]
+    base <- baseAttributes
+    return $ (Type, typ) : base ++ (addValue typ)
+
+    where
+        -- addValue "checkbox" = [(Value, "on"), (Checked, "True")]
+        -- addValue "radio"    = [(Value, "option1"), (Checked, "True")]
+        addValue "checkbox" = [(Value, "on")]
+        addValue "radio"    = [(Value, "option1")]
+        addValue "submit"   = [(Value, "Submit")]
+        addValue "email"    = [(Value, "email@example.com")]
+        addValue "tel"      = [(Value, "+1 (555)-5555")]
+        addValue "number"   = [(Value, "12345")]
+        addValue _          = [(Value, "test-value")]
+
+
+chooseBoundedEnum :: (Bounded a, Enum a) => Gen a
+chooseBoundedEnum = elements [minBound .. maxBound]
+
+
+genText :: Gen HTML
+genText = Text . toMisoString <$> genUnicodeString
+
+
+-- genUnicodeString :: Gen String
+-- genUnicodeString = listOf1 $ elements ">\""
+
+
+-- | Generate Unicode strings for text nodes
+genUnicodeString :: Gen String
+genUnicodeString = listOf1 $ oneof
+    [ choose ('a','z')
+    , choose ('A','Z')
+    , choose ('0','9')
+    , elements " .,!?-_@#$%^&*()[]{}<>|\\/:;\"'"
+    , choose ('\192','\255')   -- Latin-1 supplement
+    , choose ('\1024','\1279') -- Cyrillic
+    , choose ('\1280','\1327') -- Greek
+    , choose ('\2304','\2431') -- Devanagari
+    -- Emojis and pictographs
+    , choose ('\x1F600','\x1F64F')   -- Emoticons
+    , choose ('\x1F300','\x1F5FF')   -- Miscellaneous Symbols and Pictographs
+    , choose ('\x1F680','\x1F6FF')   -- Transport and Map Symbols
+    , choose ('\x1F900','\x1F9FF')   -- Supplemental Symbols and Pictographs
+    -- Additional language blocks
+    , choose ('\x0400','\x04FF')     -- Cyrillic (extended)
+    , choose ('\x0530','\x058F')     -- Armenian
+    , choose ('\x0590','\x05FF')     -- Hebrew
+    , choose ('\x0600','\x06FF')     -- Arabic
+    , choose ('\x0900','\x097F')     -- Devanagari (extended)
+    , choose ('\x3040','\x309F')     -- Hiragana
+    , choose ('\x30A0','\x30FF')     -- Katakana
+    , choose ('\x4E00','\x9FFF')     -- CJK Unified Ideographs (common Chinese/Japanese characters)
+    -- Symbols and special characters
+    , choose ('\x2100','\x214F')     -- Letterlike Symbols
+    , choose ('\x2190','\x21FF')     -- Arrows
+    , choose ('\x2200','\x22FF')     -- Mathematical Operators
+    , choose ('\x25A0','\x25FF')     -- Geometric Shapes
+    , choose ('\x2600','\x26FF')     -- Miscellaneous Symbols
+    , choose ('\x2700','\x27BF')     -- Dingbats
+    , choose ('\x20A0','\x20CF')     -- Currency Symbols
+    ] `suchThat` (\c -> not (isControl c) && c /= '\0' && c /= '\x200B' && c /= '\xFEFF')
+
+
+genCssIdent :: Gen MisoString
+genCssIdent = toMisoString <$> do
+    len <- choose (1, 15)
+    first <- elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['_']
+    rest <- replicateM (len - 1) $ elements $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] ++ "_-"
+    return (first:rest)
+
+
+genSafeMisoString :: Gen MisoString
+genSafeMisoString = toMisoString <$> genSafeString
+
+
+genSafeString :: Gen String
+genSafeString = listOf1 $ oneof
+  [ choose ('a','z')
+  , choose ('A','Z')
+  , choose ('0','9')
+  , elements " .,!?-_"
+  ] `suchThat` (not . isSpace)
+
+
+placeholderImage :: MisoString
+placeholderImage = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+
+placeholderAltText :: MisoString
+placeholderAltText = "Test image"

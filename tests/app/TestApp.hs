@@ -16,7 +16,7 @@ import qualified Miso as M
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
 
-import HtmlGen3 (HTML, render)
+import HtmlGen (HTML, render)
 
 type MainComponent = App TestData ()
 
@@ -34,9 +34,8 @@ app td =
         }
 
     where
-        update _ = do
+        update _ =
             io_ $ consoleLog "SUCCESS"
-            return ()
 
         view :: TestData -> MainView
         view TestData { randomHtml = html } = render html

@@ -19,7 +19,7 @@ import Language.Javascript.JSaddle
     , jsg
     )
 import Control.Lens.Operators ((^.))
-import Data.Aeson (decodeStrict, encode)
+import Data.Aeson (decodeStrict)
 
 import qualified TestApp as App
 

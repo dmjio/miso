@@ -91,7 +91,7 @@ executable integration-tests-client
 
   other-modules:    
     TestApp
-    HtmlGen3
+    HtmlGen
 
   default-language:
     Haskell2010
@@ -110,7 +110,7 @@ executable integration-tests-server
 
   other-modules:    
     TestApp
-    HtmlGen3
+    HtmlGen
 
   build-depends:
     base,
