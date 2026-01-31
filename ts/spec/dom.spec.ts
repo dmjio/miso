@@ -1349,7 +1349,7 @@ describe('DOM tests', () => {
       mount: (parent) => {
         const vn = vnode<DOMRef>({ tag: 'section' });
         diff<DOMRef>(null, vn, parent, drawingContext);
-        return { componentTree: vn };
+        return { componentId: 1 as any, componentTree: vn };
       },
       unmount: () => {}
     });
@@ -1358,6 +1358,7 @@ describe('DOM tests', () => {
     
     // Verify that mount callback was invoked and child was set
     expect(comp.child).toBeTruthy();
+    expect(comp.componentId).toBe(1);
   });
 
   test('Should create VText with INSERT_BEFORE in createElement', () => {

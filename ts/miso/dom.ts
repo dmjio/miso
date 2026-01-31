@@ -342,7 +342,7 @@ function drawCanvas<T> (c: VNode<T>) {
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
   if (c.onUnmounted) c.onUnmounted();
-  c.unmount();
+  c.unmount(c.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
@@ -352,6 +352,7 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
   // 'mount()' should be executed synchronously, including its callback function argument.
   let mounted: Mount<T> = n.mount(parent); 
   // mount() gives us the VTree from the Haskell side
+  n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== VTreeType.VComp) {
