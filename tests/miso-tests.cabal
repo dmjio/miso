@@ -58,7 +58,7 @@ executable component-tests
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, stm, text
+    base, miso, miso-tests, containers, mtl, text
   hs-source-dirs:
     app
 
@@ -79,4 +79,4 @@ library
   exposed-modules:
     Miso.Test
   build-depends:
-    base, miso, containers, mtl, stm
+    base, miso, containers, mtl
