@@ -130,7 +130,6 @@ function callDestroyed<T>(c: VNode<T> | VComp<T>): void {
 function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   switch (c.type) {
       case VTreeType.VComp:
-          if (c.onBeforeUnmounted) c.onBeforeUnmounted();
           break;
       case VTreeType.VNode:
           if (c.onBeforeDestroyed) c.onBeforeDestroyed();
@@ -342,14 +341,12 @@ function drawCanvas<T> (c: VNode<T>) {
 
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
-  if (c.onUnmounted) c.onUnmounted();
   c.unmount(c.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>, context: DrawingContext<T>): void {
-  if (n.onBeforeMounted) n.onBeforeMounted();
   // 'mount()' should be executed synchronously, including its callback function argument.
   let mounted: Mount<T> = n.mount(parent); 
   // mount() gives us the VTree from the Haskell side
@@ -366,7 +363,6 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
     }
       // For OP.APPEND, this happens naturally in mount()
   }
-  if (n.onMounted) n.onMounted();
 }
 
 // Creates nodes on virtual dom (vtext, vcomp, vnode)

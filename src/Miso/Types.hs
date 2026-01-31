@@ -132,10 +132,6 @@ data Component parent model action
   -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
-  , initialAction :: Maybe action
-  -- ^ Initial action run after the application has loaded, optional
-  --
-  -- @since 1.9.0.0
   , mountPoint :: Maybe MountPoint
   -- ^ ID of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
@@ -153,6 +149,14 @@ data Component parent model action
   -- ^ Should events bubble up past the t'Miso.Types.Component' barrier.
   --
   -- Defaults to False
+  --
+  -- @since 1.9.0.0
+  , onMounted :: Maybe action
+  -- ^ action to execute during t'Miso.Types.Component' mount phase.
+  --
+  -- @since 1.9.0.0
+  , onUnmounted :: Maybe action
+  -- ^ action to execute during t'Miso.Types.Component' unmount phase.
   --
   -- @since 1.9.0.0
   }
@@ -217,10 +221,11 @@ component m u v = Component
   , scripts = []
   , mountPoint = Nothing
   , logLevel = Off
-  , initialAction = Nothing
   , mailbox = const Nothing
   , bindings = []
   , eventPropagation = False
+  , onMounted = Nothing
+  , onUnmounted = Nothing
   }
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.

@@ -33,12 +33,8 @@ export type VComp<T> = {
   parent: Parent<T>;
   nextSibling: VTree<T>;
   eventPropagation: boolean;
-  onBeforeMounted: () => void;
-  onMounted: () => void;
-  onBeforeUnmounted: () => void;
-  onUnmounted: () => void;
   mount: (parent: T) => Mount<T>;
-  unmount: () => void;
+  unmount: (vcompId: ComponentId) => void;
 };
 
 export type Mount<T> = {

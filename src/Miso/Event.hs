@@ -20,10 +20,6 @@ module Miso.Event
    , onWithOptions
    , Phase (..)
    -- *** Lifecycle events
-   , onMounted
-   , onBeforeMounted
-   , onUnmounted
-   , onBeforeUnmounted
    , onCreated
    , onCreatedWith
    , onBeforeCreated
@@ -132,17 +128,6 @@ onMounted action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onMounted" callback object
------------------------------------------------------------------------------
--- | @onBeforeMounted action@ is an event that gets called before the actual DOM
--- element is created.
---
--- @since 1.9.0.0
---
-onBeforeMounted :: action -> Attribute action
-onBeforeMounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onBeforeMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.

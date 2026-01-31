@@ -428,45 +428,24 @@ describe('DOM tests', () => {
   });
 
   test('Should call entire mounting lifecycle', () => {
-    let beforeMounted = 0;
     let mount = 0;
-    let mounted = 0;
-    let beforeUnmounted = 0;
-    let unmounted = 0;
     let unmount = 0;
     const currentNode = vcomp<DOMRef>({
-      onBeforeMounted: () => {
-        beforeMounted++;
-      },
-      onMounted : () => {
-        mounted++;
-      },
       mount: (domRef) => {
         mount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
         return { componentId: 0, componentTree: child };
       },
-      onBeforeUnmounted: () => {
-        beforeUnmounted++;
-      },
-      onUnmounted: () => {
-        unmounted++;
-      },
       unmount: () => {
         unmount++;
       }
     });
     diff<DOMRef>(null, currentNode, document.body, drawingContext);
-    expect(beforeMounted).toBe(1);
     expect(mount).toBe(1);
-    expect(mounted).toBe(1);
 
     diff<DOMRef>(currentNode, null, document.body, drawingContext);
-    expect(beforeUnmounted).toBe(1);
-    expect(unmounted).toBe(1);
     expect(unmount).toBe(1);
-    expect(mounted).toBe(1);
   });
 
 

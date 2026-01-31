@@ -215,7 +215,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   initSubs subs _componentSubThreads _componentSink
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]) withGlobalLock)
   initialDraw initializedModel events hydrate isRoot comp vcomp
-  forM_ initialAction _componentSink
+  forM_ onMounted _componentSink
   when isRoot $ void (forkIO scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
@@ -926,10 +926,6 @@ unloadScripts ComponentState {..} = do
 freeLifecycleHooks :: ComponentState parent model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
   VTree (Object vcomp) <- liftIO (readIORef _componentVTree)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onUnmounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
 -----------------------------------------------------------------------------
@@ -989,7 +985,8 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         componentId_ <- fromJSValUnchecked vcompId_
         IM.lookup componentId_ <$> readIORef components >>= \case
           Nothing -> pure ()
-          Just componentState ->
+          Just componentState -> do
+            forM_ (onUnmounted app) (_componentSink componentState)
             unmount componentState
 
     case hydrate of
