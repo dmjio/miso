@@ -174,15 +174,6 @@ import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
 ----------------------------------------------------------------------------
--- | Component model state
-data Model
-  = Model
-  { _counter :: Int
-  } deriving (Show, Eq)
-----------------------------------------------------------------------------
-counter :: Lens Model Int
-counter = lens _counter $ \record field -> record { _counter = field }
-----------------------------------------------------------------------------
 -- | Sum type for App events
 data Action
   = AddOne
@@ -192,7 +183,7 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startApp defaultEvents app)
+main = startApp defaultEvents app
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
@@ -200,24 +191,20 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-app :: App Model Action
-app = component emptyModel updateModel viewModel
-----------------------------------------------------------------------------
--- | Empty application state
-emptyModel :: Model
-emptyModel = Model 0
+app :: App Int Action
+app = component 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Transition Model Action
+updateModel :: Action -> Transition Int Action
 updateModel = \case
-  AddOne        -> counter += 1
-  SubtractOne   -> counter -= 1
+  AddOne        -> this += 1
+  SubtractOne   -> this -= 1
   SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Model Action
+viewModel :: Int -> View Int Action
 viewModel x =
   H.div_
     [ P.className "counter"
