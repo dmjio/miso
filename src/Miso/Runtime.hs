@@ -234,6 +234,10 @@ modelCheck c n = unsafePerformIO $ do
   updatedName <- n `seq` makeStableName n
   pure (currentName /= updatedName && c /= n)
 -----------------------------------------------------------------------------
+-- | Checks if the Component is mounted before executing actions
+isMounted :: ComponentId -> IO Bool
+isMounted vcompId = isJust . IM.lookup vcompId <$> readIORef components
+-----------------------------------------------------------------------------
 -- | The scheduler processes all events in the system and is responsible
 -- for propagating changes across model states both asynchronously
 -- and synchronously (via 'Binding'). It also is responsible for
@@ -243,7 +247,9 @@ scheduler =
   forever $ do
     getBatch >>= \case
       Nothing -> wait globalWaiter
-      Just (vcompId, actions) -> run vcompId actions
+      Just (vcompId, actions) -> do
+        mounted <- isMounted vcompId
+        when mounted (run vcompId actions)
   where
     -----------------------------------------------------------------------------
     -- | Execute the commit phase against the model, perform top-down render
