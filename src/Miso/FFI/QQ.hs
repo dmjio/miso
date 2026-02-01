@@ -48,14 +48,12 @@ module Miso.FFI.QQ
 import           Control.Applicative
 import           Data.Data
 import           Control.Monad
-import qualified Data.Set as S
-import           Data.Set (Set)
 import           System.IO.Unsafe (unsafePerformIO)
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 ----------------------------------------------------------------------------
-import           Miso.String
+import           Miso.String (MisoString)
 import           Miso.Util.Lexer
 import           Miso.DSL
 import qualified Miso.String as MS
@@ -74,15 +72,16 @@ js = QuasiQuoter
 inlineJS :: String -> Maybe (Q Exp)
 inlineJS jsString = pure $ do
   found <- typeCheck vars
-  kvs <- forM (S.toList found) $ \s -> do
-    k <- [| MS.pack $(stringE (MS.unpack s)) |]
-    let v = mkName (MS.unpack s)
+  kvs <- forM found $ \(var, key) -> do
+    k <- [| MS.pack $(stringE (MS.unpack key)) |]
+    let v = mkName (MS.unpack var)
     val <- [| unsafePerformIO (toJSVal $(varE v)) :: JSVal |]
     pure $ tupE [ pure k, pure val ]
-  [| FFI.inline $(stringE (MS.unpack (formatVars (MS.pack jsString) vars))) =<<
-      createWith ($(listE kvs) :: [(MisoString, JSVal)]) |]
-    where
-      vars = getVariables (MS.pack jsString)
+  [| do o <- createWith ($(listE kvs) :: [(MisoString, JSVal)])
+        FFI.inline $(stringE (MS.unpack (formatVars (MS.pack jsString) found)))
+          o
+   |] where
+        vars = getVariables (MS.pack jsString)
 ----------------------------------------------------------------------------
 extQ :: (Typeable a, Typeable b) => (a -> c) -> (b -> c) -> a -> c
 extQ f g a = maybe (f a) g (cast a)
@@ -90,22 +89,36 @@ extQ f g a = maybe (f a) g (cast a)
 withString :: (Quote m, Typeable a) => a -> Maybe (m Exp)
 withString a = liftString <$> cast a
 ----------------------------------------------------------------------------
-formatVars :: MisoString -> Set MisoString -> MisoString
-formatVars = Prelude.foldl' go
-  where
-    go :: MisoString -> MisoString -> MisoString
-    go haystack var = replace needle var haystack
-      where
-        needle = "${" <> var <> "}"
+-- | Use `isPrefixOf` as you traverse the string in lex order and do a replace
+formatVars :: MisoString -> [(MisoString, MisoString)] -> MisoString
+formatVars s [] = s
+formatVars s table@((var,key):xs) =
+  case MS.uncons s of
+    Nothing ->
+      mempty
+    Just ('$', cs) -> do
+      let needle = "{" <> var <> "}"
+      if needle `MS.isPrefixOf` cs
+        then
+          formatVars (key <> MS.drop (MS.length needle) cs) xs
+        else
+          formatVars cs table
+    Just (c,cs) ->
+      MS.cons c (formatVars cs table)
 ----------------------------------------------------------------------------
-typeCheck :: Set MisoString -> Q (Set MisoString)
-typeCheck xs = S.unions <$> do
-  forM (S.toList xs) $ \x ->
-    lookupValueName (unpack x) >>= \case
-      Nothing -> fail (MS.unpack x <> " is not in scope")
-      Just _ -> pure (S.singleton x)
+keys :: [MisoString]
+keys = do
+  (x,y) <- (,) <$> ['a'..'z'] <*> ['0'..'9']
+  pure (MS.pack [x,y])
+----------------------------------------------------------------------------
+typeCheck :: [MisoString] -> Q [(MisoString, MisoString)]
+typeCheck vars = do
+  forM (Prelude.zip vars keys) $ \(var, key) ->
+    lookupValueName (MS.unpack var) >>= \case
+      Nothing -> fail (MS.unpack var <> " is not in scope")
+      Just _ -> pure (var, key)
 ---------------------------------------------------------------------------
-getVariables :: MisoString -> Set MisoString
+getVariables :: MisoString -> [MisoString]
 getVariables s =
   case runLexer lexer (mkStream s) of
     Left _ -> mempty
@@ -121,7 +134,7 @@ getVariables s =
     anything :: Lexer MisoString
     anything = mempty <$ satisfy (const True)
 
-    lexer :: Lexer (Set MisoString)
-    lexer = S.filter (/="") . S.fromList <$>
+    lexer :: Lexer [MisoString]
+    lexer = Prelude.filter (/="") <$>
       many (varLexer <|> anything)
 ----------------------------------------------------------------------------
