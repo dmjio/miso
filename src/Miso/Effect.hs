@@ -270,7 +270,7 @@ io action = withSink (action >>=)
 -- Note: The result of @IO a@ is discarded.
 --
 -- @since 1.9.0.0
-io_ :: IO a -> Effect parent model action
+io_ :: IO () -> Effect parent model action
 io_ action = withSink (\_ -> void action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
