@@ -307,7 +307,7 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 mount_
   :: Eq child
   => Component model child a
-  -> View model a
+  -> View model action
 mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
