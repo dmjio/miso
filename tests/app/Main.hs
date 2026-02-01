@@ -113,13 +113,18 @@ withJS action = void $ do
   action
 -----------------------------------------------------------------------------
 #ifndef GHCJS_OLD
-fact :: Int -> IO Int
-fact n = [js|
+factorial :: Int -> IO Int
+factorial n = [js|
   let x = 1;
   for (i = 1; i <= ${n}; i++) {
     x *= i;
   }
   return x;
+|]
+-----------------------------------------------------------------------------
+square :: Int -> IO Int
+square n = [js|
+  return ${n} * ${n};
 |]
 #endif
 -----------------------------------------------------------------------------
@@ -127,9 +132,11 @@ main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
 #ifndef GHCJS_OLD
-    describe "inline JS QQ tests" $
-      it "should use inline JS QQ to calc factorial" $
-        (`shouldBe` 120) =<< liftIO (fact 5)
+    describe "inline JS QQ tests" $ do
+      it "should use inline JS to calc factorial" $
+        (`shouldBe` 120) =<< liftIO (factorial 5)
+      it "should use inline JS to square a number" $
+        (`shouldBe` 25) =<< liftIO (square 5)
 #endif
     describe "Miso.Random tests" $ do
       it "Should generate some random numbers" $ do
