@@ -55,7 +55,7 @@ module Miso
   -- ** JS file embedding
   , evalFile
 #endif
-#ifndef GHCJS_OLD
+#ifdef TH
     -- * QuasiQuotation
     -- | Write inline JavaScript via QuasiQuotation
   , js
@@ -113,7 +113,7 @@ import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
-#ifndef GHCJS_OLD
+#ifndef TH
 import           Miso.FFI.QQ (js)
 #endif
 import qualified Miso.FFI.Internal as FFI
