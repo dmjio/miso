@@ -55,6 +55,11 @@ module Miso
   -- ** JS file embedding
   , evalFile
 #endif
+#ifndef GHCJS_OLD
+    -- * QuasiQuotation
+    -- | Write inline JavaScript via QuasiQuotation
+  , js
+#endif
     -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
@@ -108,6 +113,9 @@ import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
+#ifndef GHCJS_OLD
+import           Miso.FFI.QQ (js)
+#endif
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Property
 import           Miso.PubSub
