@@ -821,5 +821,5 @@ main = withJS $ do
       it "Should mount 1000 components" $ do
         liftIO $ startApp mempty $
           component (0 :: Int) noop $ \_ ->
-            div_ [] (replicate 999 (mount testComponent))
+            div_ [] (replicate 999 (mount_ testComponent))
         mountedComponents >>= (`shouldBe` 1000)
