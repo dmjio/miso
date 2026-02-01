@@ -179,7 +179,7 @@ library
       ffi/wasm
     build-depends:
       ghc-experimental,
-      template-haskell >= 2.21 && < 2.24
+      template-haskell >= 2.21 && < 2.25
     exposed-modules:
       Miso.DSL.TH
     other-modules:
@@ -194,7 +194,7 @@ library
       Miso.String.QQ
       Miso.FFI.QQ
     build-depends:
-      template-haskell >= 2.21 && < 2.24
+      template-haskell >= 2.21 && < 2.25
 
   ghc-options:
     -Wall
@@ -206,4 +206,4 @@ library
     containers    < 0.9,
     transformers  < 0.6.2.0,
     mtl           < 2.4,
-    text          < 2.2,
+    text          < 2.2
