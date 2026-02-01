@@ -1,13 +1,11 @@
 ----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE CPP               #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
 import           Miso
-import           Miso.FFI.QQ (js)
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
@@ -56,7 +54,7 @@ updateModel :: Action -> Transition Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> io_ [js| return console.log('hello world'); |]
+  SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action
