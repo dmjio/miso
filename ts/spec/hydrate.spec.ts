@@ -337,25 +337,14 @@ describe ("Hydration tests", () => {
     const div = document.createElement('div');
     document.body.appendChild(div);
 
-    let beforeMountedCalled = false;
-    let onMountedCalled = false;
-
     const comp = vcomp<DOMRef>({
       key: 'test-comp-hooks',
-      onBeforeMounted: () => {
-        beforeMountedCalled = true;
-      },
-      onMounted: () => {
-        onMountedCalled = true;
-      },
       mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
       child : vnode<DOMRef> ({}),
       unmount: () => {},
     }) as VComp<DOMRef>;
 
     expect(hydrate(false, document.body, comp, hydrationContext, drawingContext)).toBe(true);
-    expect(beforeMountedCalled).toBe(true);
-    expect(onMountedCalled).toBe(true);
   });
 
   test('Should handle VComp with nested child VTree', () => {

@@ -112,8 +112,6 @@ function callDestroyed(c) {
 function callBeforeDestroyed(c) {
   switch (c.type) {
     case 0 /* VComp */:
-      if (c.onBeforeUnmounted)
-        c.onBeforeUnmounted();
       break;
     case 1 /* VNode */:
       if (c.onBeforeDestroyed)
@@ -303,13 +301,9 @@ function drawCanvas(c) {
     c.draw(c.domRef);
 }
 function unmountComponent(c) {
-  if (c.onUnmounted)
-    c.onUnmounted();
   c.unmount(c.componentId);
 }
 function mountComponent(parent, op, replacing, n, context) {
-  if (n.onBeforeMounted)
-    n.onBeforeMounted();
   let mounted = n.mount(parent);
   n.componentId = mounted.componentId;
   n.child = mounted.componentTree;
@@ -322,8 +316,6 @@ function mountComponent(parent, op, replacing, n, context) {
       context.insertBefore(parent, childDomRef, replacing);
     }
   }
-  if (n.onMounted)
-    n.onMounted();
 }
 function create(n, parent, context) {
   createElement(parent, 0 /* APPEND */, null, n, context);
@@ -700,13 +692,9 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
-      if (vtree.onBeforeMounted)
-        vtree.onBeforeMounted();
       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
         return false;
       }
-      if (vtree.onMounted)
-        vtree.onMounted();
       break;
     case 2 /* VText */:
       if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {

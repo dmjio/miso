@@ -63,7 +63,6 @@ module Miso.Types
   , (<---)
   -- ** Component mounting
   , (+>)
-  , mount
   , mount_
   -- ** Utils
   , getMountPoint
@@ -132,10 +131,6 @@ data Component parent model action
   -- before the initial draw on \<body\> occurs.
   --
   -- @since 1.9.0.0
-  , initialAction :: Maybe action
-  -- ^ Initial action run after the application has loaded, optional
-  --
-  -- @since 1.9.0.0
   , mountPoint :: Maybe MountPoint
   -- ^ ID of the root element for DOM diff.
   -- If 'Nothing' is provided, the entire document body is used as a mount point.
@@ -152,7 +147,15 @@ data Component parent model action
   , eventPropagation :: Bool
   -- ^ Should events bubble up past the t'Miso.Types.Component' barrier.
   --
-  -- Defaults to False
+  -- Defaults to t'False'
+  --
+  -- @since 1.9.0.0
+  , mount :: Maybe action
+  -- ^ action to execute during t'Miso.Types.Component' mount phase.
+  --
+  -- @since 1.9.0.0
+  , unmount :: Maybe action
+  -- ^ action to execute during t'Miso.Types.Component' unmount phase.
   --
   -- @since 1.9.0.0
   }
@@ -217,10 +220,11 @@ component m u v = Component
   , scripts = []
   , mountPoint = Nothing
   , logLevel = Off
-  , initialAction = Nothing
   , mailbox = const Nothing
   , bindings = []
   , eventPropagation = False
+  , mount = Nothing
+  , unmount = Nothing
   }
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
@@ -288,21 +292,6 @@ data SomeComponent parent
 infixr 0 +>
 key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
--- | t'Miso.Types.Component' mounting combinator. Takes '[Attribute a]' as arguments.
---
--- @
---   mount_ [ key_ "foo", onMounted Mounted ] $ component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
--- @
---
--- @since 1.9.0.0
-mount_
-  :: Eq m
-  => [Attribute action]
-  -> Component p m a
-  -> View p action
-mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
------------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
 -- Note: only use this if you're certain you won't be diffing two t'Miso.Types.Component'
@@ -310,16 +299,16 @@ mount_ attrs vcomp = VComp attrs (SomeComponent vcomp)
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- @
---   mount $ component model noop $ \\m ->
+--   mount_ $ component model noop $ \\m ->
 --     div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
-mount
-  :: Eq m
-  => Component p m a
-  -> View p action
-mount = mount_ []
+mount_
+  :: Eq child
+  => Component model child a
+  -> View model action
+mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data NS

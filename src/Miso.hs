@@ -30,7 +30,6 @@ module Miso
   , component
   , (+>)
   , mount
-  , mount_
     -- ** Sink
   , withSink
   , Sink

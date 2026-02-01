@@ -215,7 +215,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   initSubs subs _componentSubThreads _componentSink
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]) withGlobalLock)
   initialDraw initializedModel events hydrate isRoot comp vcomp
-  forM_ initialAction _componentSink
+  forM_ mount _componentSink
   when isRoot $ void (forkIO scheduler)
   pure vcomp
 -----------------------------------------------------------------------------
@@ -926,18 +926,14 @@ unloadScripts ComponentState {..} = do
 freeLifecycleHooks :: ComponentState parent model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
   VTree (Object vcomp) <- liftIO (readIORef _componentVTree)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onMounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onUnmounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeMounted" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("onBeforeUnmounted" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
   mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
-unmount
+unmountComponent
   :: ComponentState parent model action
   -> IO ()
-unmount cs@ComponentState {..} = do
+unmountComponent cs@ComponentState {..} = do
   liftIO (mapM_ killThread =<< readIORef _componentSubThreads)
   drain cs
   finalizeWebSockets _componentId
@@ -989,8 +985,9 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
         componentId_ <- fromJSValUnchecked vcompId_
         IM.lookup componentId_ <$> readIORef components >>= \case
           Nothing -> pure ()
-          Just componentState ->
-            unmount componentState
+          Just componentState -> do
+            forM_ (unmount app) (_componentSink componentState)
+            unmountComponent componentState
 
     case hydrate of
       Hydrate -> do
