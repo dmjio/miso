@@ -113,7 +113,7 @@ import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
-#ifndef TH
+#ifdef TH
 import           Miso.FFI.QQ (js)
 #endif
 import qualified Miso.FFI.Internal as FFI
