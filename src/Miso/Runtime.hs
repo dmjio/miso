@@ -534,8 +534,9 @@ dequeue q =
     S.Empty -> Nothing
     sched@(vcompId S.:<| leftover) ->
       case q ^. queue . at vcompId of
-        Nothing -> -- dmj: if unmount occurred, just pop the schedule
-          Just (vcompId, [], q & queueSchedule .~ leftover)
+        Nothing -> -- dmj: if unmount occurred, pop the schedule, drop the empty queue.
+          Just (vcompId, [], q & queueSchedule .~ leftover
+                               & queue . at vcompId .~ Nothing)
         Just actions ->
           case S.spanl (==vcompId) sched of
             (scheduled, remaining) ->
