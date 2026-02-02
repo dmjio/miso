@@ -543,7 +543,7 @@ dequeue q =
                 (process, rest) -> do
                   let updated =
                         q & queueSchedule .~ remaining
-                          & queue.at vcompId ?~ rest
+                          & queue.at vcompId .~ do if null rest then Nothing else Just rest
                   Just (vcompId, toList process, updated)
 -----------------------------------------------------------------------------
 -- | Dequeus everything from the Queue at a specific t'ComponentId', draining
