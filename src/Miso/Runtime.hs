@@ -432,16 +432,12 @@ visit :: ComponentId -> Synch p m a ()
 visit vcompId = stack %= (vcompId:)
 -----------------------------------------------------------------------------
 pop :: Synch p m a (Maybe (ComponentState p m a))
-pop = do
-  use stack >>= \case
-    [] -> pure Nothing
-    x : xs -> do
-       stack .= xs
-       use (state.at x) >>= \case
-         Nothing -> do
-           pure Nothing
-         Just cs -> do
-           pure (Just cs)
+pop = use stack >>= \case
+  [] -> 
+    pure Nothing
+  x : xs -> do
+    stack .= xs
+    use (state . at x)
 -----------------------------------------------------------------------------
 initialDraw
   :: Eq m
