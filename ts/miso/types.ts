@@ -102,11 +102,15 @@ export type EventCapture = {
 
 export type EventContext<T> = {
   addEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
-  removeEventListener : (mount : T, event : string, listener : any, capture : boolean) => void;
   isEqual : (n1: T, n2: T) => boolean;
   getTarget : (e: Event) => T;
   parentNode : (node: T) => T;
-}
+  delegator : (mount: T,
+    events: Array<EventCapture>,
+    getVTree: ((vtree : VTree<T>) => void),
+    debug: boolean,
+    context: EventContext<T>) => void;
+};
 
 export type HydrationContext<T> = {
   getTextContent : (node) => string;

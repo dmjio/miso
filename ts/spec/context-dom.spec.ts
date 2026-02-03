@@ -38,7 +38,7 @@ describe('EventContext tests', () => {
     div.click();
     expect(clickCount).toBe(1);
 
-    eventContext.removeEventListener(div as DOMRef, 'click', listener, false);
+    div.removeEventListener('click', listener, false);
     div.click();
     expect(clickCount).toBe(1); // Should not increment
   });

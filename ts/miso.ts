@@ -1,5 +1,5 @@
 import { diff } from './miso/dom';
-import { delegate, eventJSON } from './miso/event';
+import { eventJSON, delegateEvent } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
@@ -39,7 +39,6 @@ import {
 } from './miso/types';
 
 import { patch } from './miso/patch';
-
 import { vcomp, vnode, vtext } from './miso/smart';
 
 /* Top-level re-export */
@@ -49,7 +48,6 @@ export {
   diff,
   hydrate,
   version,
-  delegate,
   callBlur,
   callFocus,
   callSelect,
@@ -70,6 +68,7 @@ export {
   mathRandom,
   getRandomValues,
   splitmix32,
+  delegateEvent,
 
   /* Types */
   VTree,

@@ -11,14 +11,20 @@ import
   , VTreeType
   } from '../types';
 
-import { drill } from '../dom'; 
+import { drill } from '../dom';
+import { delegator } from '../event';
 
 export const eventContext : EventContext<DOMRef> = {
-  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.addEventListener(event, listener, capture);
+  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) : void => {
+    mount.addEventListener(event, listener, capture);
   },
-  removeEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.removeEventListener(event, listener, capture);
+  delegator :
+     (mount: DOMRef,
+      events: Array<EventCapture>,
+      getVTree: ((vtree : VTree<DOMRef>) => void),
+      debug: boolean,
+      ctx : EventContext<DOMRef>) : void => {
+    delegator(mount, events, getVTree, debug, ctx);
   },
   isEqual: (x: DOMRef, y: DOMRef) : boolean => {
     return x === y;

@@ -2,7 +2,6 @@ import {
   diff,
   hydrate,
   version,
-  delegate,
   callBlur,
   callFocus,
   callSelect,
@@ -22,6 +21,7 @@ import {
   mathRandom,
   getRandomValues,
   splitmix32,
+  delegateEvent,
 } from './miso';
 
 import {
@@ -40,7 +40,6 @@ globalThis['miso'] = {
     diff,
     hydrate,
     version,
-    delegate,
     callBlur,
     callFocus,
     callSelect,
@@ -60,6 +59,8 @@ globalThis['miso'] = {
     splitmix32,
     populateClass,
     integrityCheck,
+    delegateEvent,
+    delegate : eventContext.delegator,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context
       // to be used when targetting custom renderers (e.g. lynxjs).
