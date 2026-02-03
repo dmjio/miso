@@ -1135,7 +1135,7 @@ globalThis["miso"] = {
   populateClass,
   integrityCheck,
   delegateEvent,
-  delegate: eventContext.delegator,
+  delegator: eventContext.delegator,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
     const events = globalThis[name]["eventContext"];

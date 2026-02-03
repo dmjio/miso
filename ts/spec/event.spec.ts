@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe ('Event tests', () => {
 
-  test('Should delegator button click', () => {
+  test('Should delegate button click', () => {
     var body = document.body;
     var count = 0;
     var events = {
@@ -488,7 +488,7 @@ describe ('Event tests', () => {
 
   });
 
-  test('Should delegator events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
+  test('Should delegate events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
     var body = document.body;
     var count = 0;
     var events = {

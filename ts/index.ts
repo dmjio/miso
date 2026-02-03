@@ -60,7 +60,7 @@ globalThis['miso'] = {
     populateClass,
     integrityCheck,
     delegateEvent,
-    delegate : eventContext.delegator,
+    delegator : eventContext.delegator,
     setDrawingContext : function (name) {
       // dmj: this looks for a custom globally defined rendering / event context
       // to be used when targetting custom renderers (e.g. lynxjs).
