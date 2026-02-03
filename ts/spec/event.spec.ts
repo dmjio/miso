@@ -1,5 +1,5 @@
 import { diff } from '../miso/dom';
-import { delegate } from '../miso/event';
+import { delegator } from '../miso/event';
 import { DOMRef, EventCapture, VNode } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
@@ -63,7 +63,7 @@ describe ('Event tests', () => {
       cb(vtreeParent);
     };
     const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    delegator(body, delegatedEvents, getVTree, true, eventContext);
 
     /* initiate click event */
    (vtreeChild.domRef as HTMLElement).click();
@@ -81,7 +81,7 @@ describe ('Event tests', () => {
 
     const getVTree = (cb: any) => cb(parent);
     const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    delegator(body, delegatedEvents, getVTree, true, eventContext);
 
     // Click on the mount itself to produce an empty stack in delegateEvent
     (body as HTMLElement).click();
@@ -108,8 +108,8 @@ describe ('Event tests', () => {
     diff(null, parent, body, drawingContext);
 
     const getVTree = (cb: any) => cb(parent);
-    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     (child.domRef as HTMLElement).click();
 
@@ -172,8 +172,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -237,8 +237,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -302,8 +302,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -360,8 +360,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -419,8 +419,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -477,8 +477,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -552,8 +552,8 @@ describe ('Event tests', () => {
     var getVTree = (cb: any) => {
       cb(outerVComp);
     };
-    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event on the button inside nested components */
     const button = buttonNode.domRef as HTMLElement;

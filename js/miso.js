@@ -398,7 +398,7 @@ function swap(os, l, r) {
 }
 
 // ts/miso/event.ts
-function delegate(mount, events, getVTree, debug, context) {
+function delegator(mount, events, getVTree, debug, context) {
   for (const event of events) {
     context.addEventListener(mount, event.name, function(e) {
       listener(e, mount, getVTree, debug, context);
@@ -955,8 +955,8 @@ var eventContext = {
   addEventListener: (mount, event, listener2, capture) => {
     mount.addEventListener(event, listener2, capture);
   },
-  removeEventListener: (mount, event, listener2, capture) => {
-    mount.removeEventListener(event, listener2, capture);
+  delegator: (mount, events, getVTree, debug, ctx) => {
+    delegator(mount, events, getVTree, debug, ctx);
   },
   isEqual: (x, y) => {
     return x === y;
@@ -1115,7 +1115,6 @@ globalThis["miso"] = {
   diff,
   hydrate,
   version,
-  delegate,
   callBlur,
   callFocus,
   callSelect,
@@ -1135,6 +1134,8 @@ globalThis["miso"] = {
   splitmix32,
   populateClass,
   integrityCheck,
+  delegateEvent,
+  delegator: eventContext.delegator,
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
     const events = globalThis[name]["eventContext"];

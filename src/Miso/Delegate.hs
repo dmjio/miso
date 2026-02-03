@@ -53,7 +53,7 @@ delegator
   -> IO ()
 delegator mountPointElement vtreeRef es debug withGlobalLock = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
-  FFI.delegateEvent mountPointElement evts debug $ withGlobalLock $ do
+  FFI.delegator mountPointElement evts debug $ withGlobalLock $ do
     VTree (Object vtree) <- liftIO (readIORef vtreeRef)
     pure vtree
 -----------------------------------------------------------------------------
