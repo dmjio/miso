@@ -1,4 +1,4 @@
-import { ComponentId, NodeId, EventCapture, DrawingContext } from './types';
+import { ComponentId, EventCapture, DrawingContext } from './types';
 
 /* The components record contains a mapping from componentId to component and a read-only JSON rep. of its model
 
@@ -122,7 +122,7 @@ export type PATCH
   | Flush;
 
 export type AddEventListeners = {
-  events: Record<string, boolean>,
+  events: Array<EventCapture>,
   type: "addEventListeners"
 };
 

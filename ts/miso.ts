@@ -53,6 +53,7 @@ export {
   /* Context */
   EventContext,
   DrawingContext,
+  HydrationContext,
   patchDrawingContext,
 
   /* Functions */

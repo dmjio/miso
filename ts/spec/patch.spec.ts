@@ -20,9 +20,7 @@ import {
     RemoveAttribute,
     AddClass,
     RemoveClass,
-    Components,
     Runtime,
-    Component
 } from '../miso/patch';
 import { patchDrawingContext, getPatches } from '../miso/context/patch';
 import { drawingContext } from '../miso/context/dom';
