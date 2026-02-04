@@ -43,7 +43,7 @@ import {
     VTreeType,
 } from './miso/types';
 
-import { patch, PATCH, Components, Component, Runtime } from './miso/patch';
+import { patch, PATCH, Component, Runtime } from './miso/patch';
 import { patchDrawingContext } from './miso/context/patch';
 import { vcomp, vnode, vtext } from './miso/smart';
 
@@ -100,7 +100,6 @@ export {
   PATCH,
   Runtime,
   Component,
-  Components,
 
   /* Smart constructors */
   vnode,
