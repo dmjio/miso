@@ -36,13 +36,25 @@ import {
     EventCapture,
     EventObject,
     Options,
+    EventContext,
+    DrawingContext,
+    HydrationContext,
+    NodeId,
+    VTreeType,
 } from './miso/types';
 
-import { patch } from './miso/patch';
+import { patch, PATCH, Components, Component, Runtime } from './miso/patch';
+import { patchDrawingContext } from './miso/context/patch';
 import { vcomp, vnode, vtext } from './miso/smart';
 
 /* Top-level re-export */
 export {
+
+  /* Context */
+  EventContext,
+  DrawingContext,
+  HydrationContext,
+  patchDrawingContext,
 
   /* Functions */
   diff,
@@ -72,6 +84,7 @@ export {
 
   /* Types */
   VTree,
+  VTreeType,
   VComp,
   VText,
   VNode,
@@ -83,6 +96,12 @@ export {
   Events,
   NS,
   DOMRef,
+  NodeId,
+  PATCH,
+  Runtime,
+  Component,
+  Components,
+
   /* Smart constructors */
   vnode,
   vtext,
