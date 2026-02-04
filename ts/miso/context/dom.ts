@@ -11,7 +11,7 @@ import
   , VTreeType
   } from '../types';
 
-import { drill } from '../dom';
+import { drill } from '../util';
 import { delegator } from '../event';
 
 export const eventContext : EventContext<DOMRef> = {

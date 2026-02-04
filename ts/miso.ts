@@ -21,6 +21,7 @@ import {
    mathRandom,
    getRandomValues,
    splitmix32,
+   getDOMRef
 } from './miso/util';
 
 import {
@@ -41,9 +42,37 @@ import {
     HydrationContext,
     NodeId,
     VTreeType,
+    ComponentId
 } from './miso/types';
 
-import { patch, PATCH, Component, Runtime } from './miso/patch';
+import {
+  patch,
+  PATCH,
+  Component,
+  Runtime,
+  InsertBefore,
+  SwapDOMRefs,
+  CreateElement,
+  CreateElementNS,
+  CreateTextNode,
+  SetAttribute,
+  SetAttributeNS,
+  AppendChild,
+  RemoveChild,
+  ReplaceChild,
+  RemoveAttribute,
+  SetTextContent,
+  SetInlineStyle,
+  MountComponent,
+  UnmountComponent,
+  ModelHydration,
+  AddClass,
+  RemoveClass,
+  ProcessEvent,
+  AddEventListeners,
+  Flush,
+} from './miso/patch';
+
 import { patchDrawingContext } from './miso/context/patch';
 import { vcomp, vnode, vtext } from './miso/smart';
 
@@ -81,6 +110,7 @@ export {
   getRandomValues,
   splitmix32,
   delegateEvent,
+  getDOMRef,
 
   /* Types */
   VTree,
@@ -88,6 +118,7 @@ export {
   VComp,
   VText,
   VNode,
+  ComponentId,
   EventCapture,
   EventObject,
   Options,
@@ -98,6 +129,27 @@ export {
   DOMRef,
   NodeId,
   PATCH,
+  InsertBefore,
+  SwapDOMRefs,
+  CreateElement,
+  CreateElementNS,
+  CreateTextNode,
+  SetAttribute,
+  SetAttributeNS,
+  AppendChild,
+  RemoveChild,
+  ReplaceChild,
+  RemoveAttribute,
+  SetTextContent,
+  SetInlineStyle,
+  MountComponent,
+  UnmountComponent,
+  ModelHydration,
+  AddClass,
+  RemoveClass,
+  ProcessEvent,
+  AddEventListeners,
+  Flush,
   Runtime,
   Component,
 

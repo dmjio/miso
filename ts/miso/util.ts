@@ -1,4 +1,4 @@
-import { PRNG, VComp, VNode, VTree, Response } from './types';
+import { VTreeType, PRNG, VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';
@@ -276,4 +276,25 @@ export function getRandomValues () : number {
 /* Math.random() */
 export function mathRandom() : number {
   return Math.random();
+}
+
+// Extract DOM reference from any VTree (handles VComp drilling)
+export function getDOMRef<T>(tree: VTree<T>): T {
+  switch (tree.type) {
+    case VTreeType.VComp:
+      return drill(tree);
+    default:
+      return tree.domRef;
+  }
+}
+
+//c.child should never be null
+export function drill<T>(c: VComp<T>): T {
+  if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
+  switch (c.child.type) {
+    case VTreeType.VComp:
+      return drill (c.child)
+    default:
+      return c.child.domRef;
+  }
 }

@@ -9,7 +9,7 @@ import {
   VTreeType,
 } from '../types';
 
-import { drill } from '../dom';
+import { drill } from '../util';
 
 /*
 

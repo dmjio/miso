@@ -1,4 +1,5 @@
 import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { getDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -34,28 +35,6 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
   n.domRef = c.domRef;
   return;
 }
-
-//c.child should never be null
-export function drill<T>(c: VComp<T>): T {
-  if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
-  switch (c.child.type) {
-    case VTreeType.VComp:
-      return drill (c.child)
-    default:
-      return c.child.domRef;
-  }
-}
-
-// Extract DOM reference from any VTree (handles VComp drilling)
-export function getDOMRef<T>(tree: VTree<T>): T {
-  switch (tree.type) {
-    case VTreeType.VComp:
-      return drill(tree);
-    default:
-      return tree.domRef;
-  }
-}
-
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
