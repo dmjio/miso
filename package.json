@@ -1,6 +1,6 @@
 {
   "name": "haskell-miso",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "miso: A tasty Haskell web and mobile framework",
   "scripts": {
     "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete && rm -rf out-tsc",
