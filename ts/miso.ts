@@ -21,6 +21,7 @@ import {
    mathRandom,
    getRandomValues,
    splitmix32,
+   getDOMRef
 } from './miso/util';
 
 import {
@@ -81,6 +82,7 @@ export {
   getRandomValues,
   splitmix32,
   delegateEvent,
+  getDOMRef,
 
   /* Types */
   VTree,
