@@ -17,8 +17,24 @@
     "build-test": "bun build --outfile=./tests/js/test.js ./ts/tests.ts --target=bun",
     "js": "bun run build && bun run prod"
   },
+  "main": "./js/miso.js",
+  "module": "./ts/miso.ts",
+  "types": "./ts/miso.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./ts/miso.ts",
+        "default": "./ts/miso.ts"
+      },
+      "require": {
+        "types": "./ts/miso.ts",
+        "default": "./js/miso.js"
+      },
+      "default": "./ts/miso.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "type": "module",
-  "module": "ts/miso.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dmjio/miso.git"
