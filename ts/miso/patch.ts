@@ -1,26 +1,18 @@
 import { ComponentId, EventCapture, DrawingContext } from './types';
 
-/* The components record contains a mapping from componentId to component and a read-only JSON rep. of its model
-
-   N.B. no virtual DOM is present here.
-
-   'T' is abstract over any render tree Node type.
-*/
-export type Components<T> = Record <ComponentId, Component<T>>;
-
 /* Information about the current component that lives on the render thread */
-export type Component<T> = {
+export type Component = {
   model : Object,
   /* updated model sent from bg to main */
   mainThreadEvents : Record <string, ((o:Object) => void)>,
   /* dmj: these will need to be sent from bg to main on app load*/
-  rootId : T,
+  rootId : number,
   /* the root node to diff from */
 }
 
 export type Runtime<T> = {
   nodes : Record <number, T>,
-  components : Record <ComponentId, Component<T>>
+  components : Record <ComponentId, Component>
 };
 
 /* Convenience table to allow O(1) application of DOM references */
@@ -30,13 +22,17 @@ export type NodeMap<T> = Record <number, T>;
 export function patch<T> (context: DrawingContext<T>, patch: PATCH, runtime: Runtime<T>) {
   switch (patch.type) {
     case "mount":
-        console.log('mount');
+        runtime.components[patch.componentId] = {
+          model : patch.model,
+          mainThreadEvents : {},
+          rootId : patch.mountPoint
+        };
         break;
     case "unmount":
-        console.log('unmount');
+        delete runtime.components[patch.componentId];
         break;
     case "modelHydration":
-        console.log('model hydration');
+        runtime.components[patch.componentId].model = patch.model;
         break;
     case "createElement":
         runtime.nodes[patch.nodeId] = context.createElement (patch.tag);
