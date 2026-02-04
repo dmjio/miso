@@ -4,14 +4,18 @@
 
 <a href="https://haskell-miso.org">
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
+
    </a>
 <p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> framework 🍜</p>
 </p>
 
-<p align="center">
+<p align="center"> 
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
     <img src="https://img.shields.io/badge/matrix.org-miso-FF4B33.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
   </a>
+  <a href="https://www.npmjs.com/package/haskell-miso">  
+    <img src="https://img.shields.io/npm/v/haskell-miso?style=for-the-badge" />
+  </a>  
   <a href="https://haskell-miso-cachix.cachix.org">
     <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=for-the-badge" alt="Cachix">
   </a>
