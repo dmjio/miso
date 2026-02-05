@@ -190,16 +190,17 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   let _componentApplyActions = \(actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
-        List.foldl' (\(vcomps, m, ss) a ->
+        List.foldl' (\(vcomps, m, ss, dirtySet) a ->
           case runEffect (update a) info m of
-            (n, sss) -> do
-              let newComps
-                    | modelCheck m n = do
+            (n, sss) ->
+              let (newComps, newDirty)
+                    | modelCheck m n =
                         let cs = vcomps IM.! _componentId
-                        propagate _componentId
+                        in propagate _componentId
                           (IM.insert _componentId (cs { _componentModel = n }) vcomps)
-                    | otherwise = vcomps
-              (newComps, n, ss <> sss)) (comps, model_, []) actions
+                    | otherwise = (vcomps, mempty)
+              in (newComps, n, ss <> sss, dirtySet <> newDirty)
+          ) (comps, model_, [], mempty) actions
 
   let vcomp = ComponentState
         { _componentEvents = events
@@ -256,39 +257,39 @@ scheduler =
     -- of the entire Component tree.
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
-      shouldRender <- commit vcompId actions
-      when shouldRender (withGlobalLock renderComponents)
+      dirtySet <- commit vcompId actions
+      when (not (IS.null dirtySet)) (withGlobalLock (renderComponents dirtySet))
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO Bool
+    commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
-      (updatedModel, schedules, ComponentState{..}) <- do
+      (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
           case _componentApplyActions events _componentModel vcomps of
-            (x, updatedModel, schedules) ->
-              (x, (updatedModel, schedules, cs))
+            (x, updatedModel, schedules, dirtySet) ->
+              (x, (updatedModel, schedules, dirtySet, cs))
       forM_ schedules $ \case
         Schedule Async action ->
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
       let dirty = _componentModelDirty _componentModel updatedModel
+          dirtySet' = if dirty then IS.insert vcompId dirtySet else dirtySet
       when dirty $ do
         modifyComponent _componentId $ do
           isDirty .= True
           componentModel .= updatedModel
-      pure dirty
+      pure dirtySet'
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
     -- We lookup the components each time to account for unmounting.
     -- Reset the dirty bit if a render occurs
     --
-    renderComponents :: IO ()
-    renderComponents = do
-      componentIds_ <- IM.keys <$> liftIO (readIORef components)
-      forM_ componentIds_ $ \vcompId ->
+    renderComponents :: ComponentIds -> IO ()
+    renderComponents dirtySet = do
+      forM_ (IS.toList dirtySet) $ \vcompId ->
         IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
           when _componentIsDirty (_componentDraw _componentModel)
           modifyComponent _componentId (isDirty .= False)
@@ -311,8 +312,10 @@ modifyComponent vcompId go = liftIO $ do
 propagate
   :: ComponentId
   -> IntMap (ComponentState p m a)
-  -> IntMap (ComponentState p m a)
-propagate vcompId vcomps = _state (execState synch (dfs vcomps vcompId))
+  -> (IntMap (ComponentState p m a), ComponentIds)
+propagate vcompId vcomps =
+  let dfsState = execState synch (dfs vcomps vcompId)
+  in (_state dfsState, _visited dfsState)
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
@@ -628,11 +631,11 @@ data ComponentState parent model action
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
-  , _componentApplyActions
+    , _componentApplyActions
       :: [action]
       -> model
       -> IntMap (ComponentState parent model action)
-      -> (IntMap (ComponentState parent model action), model, [Schedule action])
+      -> (IntMap (ComponentState parent model action), model, [Schedule action], ComponentIds)
   -- ^ t'Miso.Types.Component' actions application
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
@@ -903,7 +906,7 @@ drain ComponentState {..} = do
     actions -> do
        vcomps <- readIORef components
        case _componentApplyActions actions _componentModel vcomps of
-         (newVComps, _, schedules) -> do
+         (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
              Schedule _ action -> action _componentSink
