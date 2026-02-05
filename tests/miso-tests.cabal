@@ -111,6 +111,7 @@ executable integration-tests-server
   other-modules:    
     TestApp
     HtmlGen
+    TestBindingsApp
 
   build-depends:
     base,

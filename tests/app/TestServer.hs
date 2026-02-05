@@ -41,6 +41,7 @@ import Servant.Miso.Html (HTML)
 import Miso
     ( MisoString
     , mount
+    , App
     )
 import qualified Network.Wai.Handler.Warp             as Wai
 import qualified Network.Wai.Middleware.RequestLogger as Wai
@@ -55,7 +56,7 @@ import Test.QuickCheck
     , Gen
     , Property
     )
-import Data.Aeson (encode, decode)
+import Data.Aeson (encode, decode, ToJSON)
 import Control.Concurrent (forkIO, killThread)
 import Network.HTTP.Client
     ( defaultManagerSettings
@@ -69,9 +70,11 @@ import Network.HTTP.Types (statusCode)
 import Data.ByteString.Lazy (writeFile, readFile)
 import Control.Monad (unless)
 import Data.Maybe (fromJust)
+import Control.Exception (bracket)
 
 import qualified HtmlGen as Html
 import qualified TestApp as App
+import qualified TestBindingsApp as AppB
 
 data Backend = GHCJS | WASM deriving (Show, Read)
 
@@ -82,18 +85,19 @@ data EnvSettings = EnvSettings
     , backend :: Backend
     } deriving Show
 
-type ServerRoutes = Routes (Get '[HTML] IndexPageData)
+type ServerRoutes model action = Routes (Get '[HTML] (IndexPageData model action))
 
-newtype IndexPageData = IndexPageData (Backend, App.TestData, App.MainComponent)
+data IndexPageData model action =
+    (ToJSON model, Eq model) => IndexPageData (Backend, model, App model action)
 
 type RouteIndexPage a = a
 type Routes a = RouteIndexPage a
 
 type StaticRoute = "static" :> Servant.Raw
 
-type API = StaticRoute :<|> ServerRoutes
+type API model action = StaticRoute :<|> ServerRoutes model action
 
-instance ToHtml IndexPageData where
+instance ToHtml (IndexPageData model action) where
     toHtml (IndexPageData (backend_, initial_data, app)) = toHtml
         [ doctype_
         , html_
@@ -114,7 +118,7 @@ instance ToHtml IndexPageData where
                 , title_ [] [ "Miso Tests" ]
                 , js backend_
                 ]
-            , body_ [] [ mount (app :: App.MainComponent) ]
+            , body_ [] [ mount app ]
             ]
         ]
 
@@ -141,20 +145,31 @@ instance ToHtml IndexPageData where
                     ""
 
 
-server :: EnvSettings -> FilePath -> App.TestData -> Wai.Application
-server envSettings serve_static_dir_path_ appData =
+server
+    :: (ToJSON model, Eq model)
+    => EnvSettings
+    -> Proxy (API model action)
+    -> App model action
+    -> model
+    -> Wai.Application
+server envSettings apiProxy app appData =
     serve
-        (Proxy @API)
-        (staticHandler :<|> mainHandler envSettings appData)
+        apiProxy
+        (staticHandler :<|> mainHandler envSettings app appData)
 
     where
         staticHandler :: Server StaticRoute
-        staticHandler = Servant.serveDirectoryFileServer serve_static_dir_path_
+        staticHandler = Servant.serveDirectoryFileServer (serve_static_dir_path envSettings)
 
 
-mainHandler :: EnvSettings -> App.TestData -> Handler IndexPageData
-mainHandler envSettings appData = pure $
-    IndexPageData (backend envSettings, appData, App.app appData)
+mainHandler
+    :: (ToJSON model, Eq model)
+    => EnvSettings
+    -> App model action
+    -> model
+    -> Handler (IndexPageData model action)
+mainHandler envSettings app appData = pure $
+    IndexPageData (backend envSettings, appData, app)
 
 
 httpGet :: String -> IO Int
@@ -176,12 +191,25 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
         let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
         putStrLn $ "Beginning to listen on " <> show port_
-        serverTid <- forkIO $ Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
         -- Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
 
-        playwrightResponse <- httpGet $ "http://localhost:" ++ show (playwrightPort envSettings) ++ "/test?port=" ++ show port_ ++ "&wait=true"
-
-        killThread serverTid
+        playwrightResponse <- bracket
+            ( forkIO $ Wai.run port_ $ Wai.logStdout
+                ( server
+                    envSettings
+                    (Proxy @(API App.TestData App.Action))
+                    (App.app appData)
+                    appData
+                )
+            )
+            killThread
+            ( const $
+                httpGet $
+                    "http://localhost:"
+                    ++ show (playwrightPort envSettings)
+                    ++ "/test?port=" ++ show port_
+                    ++ "&wait=true"
+            )
 
         let ok = 200 <= playwrightResponse && playwrightResponse <= 300
 
@@ -192,7 +220,24 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
 
     where
         port_ = port envSettings
-        serve_static_dir_path_ = serve_static_dir_path envSettings
+
+
+prop_testBindings :: EnvSettings -> Property
+prop_testBindings envSettings = forAll (arbitrary :: Gen Int) $
+    \nnodes -> ioProperty $ do
+        putStrLn $ "Beginning to listen on " <> show port_
+        Wai.run port_ $ Wai.logStdout
+            ( server
+                envSettings
+                (Proxy @(API Int AppB.Action))
+                (AppB.app nnodes)
+                nnodes
+            )
+        return $ 1 == (1 :: Int)
+
+    where
+        port_ = port envSettings
+
 
 
 serveFailed :: EnvSettings -> IO ()
@@ -203,11 +248,16 @@ serveFailed envSettings = do
     let appData = App.TestData { App.randomHtml = html } :: App.TestData
 
     putStrLn $ "Beginning to listen on " <> show port_
-    Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
+    Wai.run port_ $ Wai.logStdout
+        ( server
+            envSettings
+            (Proxy @(API App.TestData App.Action))
+            (App.app appData)
+            appData
+        )
 
     where
         port_ = port envSettings
-        serve_static_dir_path_ = serve_static_dir_path envSettings
 
 
 main :: IO ()
@@ -220,9 +270,9 @@ main = do
                     return $ cwd <> "/static"
                 Just d -> return d
 
-    portStr <- lookupEnv "PORT"
+    portStr           <- lookupEnv "PORT"
     playwrightPortStr <- lookupEnv "PLAYWRIGHT_PORT"
-    backendStr <- lookupEnv "BACKEND"
+    backendStr        <- lookupEnv "BACKEND"
 
     let envSettings = EnvSettings
             { serve_static_dir_path = staticDir
@@ -236,3 +286,5 @@ main = do
     -- serveFailed envSettings
     putStrLn "Begin Quickchecks"
     quickCheck $ prop_testIO envSettings
+    quickCheck $ prop_testBindings envSettings
+    -- quickCheck $ prop_testBindings (envSettings { port = port envSettings + 1 })
