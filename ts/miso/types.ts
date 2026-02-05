@@ -107,7 +107,7 @@ export type EventContext<T> = {
   parentNode : (node: T) => T;
   delegator : (mount: T,
     events: Array<EventCapture>,
-    getVTree: ((vtree : VTree<T>) => void),
+    getVTree: ((callback: (vtree : VTree<T>) => void) => void),
     debug: boolean,
     context: EventContext<T>) => void;
 };
