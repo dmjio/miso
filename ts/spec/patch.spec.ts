@@ -1,11 +1,12 @@
 /* imports */
 import { diff } from '../miso/dom';
 import { vtext, vnode } from '../miso/smart';
-import { VNode, DOMRef, DrawingContext, NodeId, VText } from '../miso/types';
-import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
-// import { context } from '../miso/context/dom';
 import {
-    patch,
+    VNode,
+    DOMRef,
+    DrawingContext,
+    NodeId,
+    VText,
     CreateElement,
     CreateElementNS,
     CreateTextNode,
@@ -21,6 +22,11 @@ import {
     AddClass,
     RemoveClass,
     Runtime,
+} from '../miso/types';
+import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
+// import { context } from '../miso/context/dom';
+import {
+    patch,
 } from '../miso/patch';
 import { patchDrawingContext, getPatches } from '../miso/context/patch';
 import { drawingContext } from '../miso/context/dom';

@@ -7,18 +7,6 @@ import {
   ComponentContext,
   VTree,
   VTreeType,
-} from '../types';
-
-import { drill } from '../util';
-
-/*
-
-  This file is used to provide testing for miso-lynx, or other patch-based architectures
-  that use the 2-phase patch + diffing approach.
-
-*/
-
-import {
   PATCH,
   CreateTextNode,
   CreateElement,
@@ -38,7 +26,16 @@ import {
   ModelHydration,
   AddClass,
   RemoveClass,
-} from '../patch';
+} from '../types';
+
+import { drill } from '../util';
+
+/*
+
+  This file is used to provide testing for miso-lynx, or other patch-based architectures
+  that use the 2-phase patch + diffing approach.
+
+*/
 
 export function addPatch (patch : PATCH) : void {
   globalThis['patches'].push(patch);
