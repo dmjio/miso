@@ -21,7 +21,7 @@ export const eventContext : EventContext<DOMRef> = {
   delegator :
      (mount: DOMRef,
       events: Array<EventCapture>,
-      getVTree: ((vtree : VTree<DOMRef>) => void),
+      getVTree: ((callback: (vtree : VTree<DOMRef>) => void) => void),
       debug: boolean,
       ctx : EventContext<DOMRef>) : void => {
     delegator(mount, events, getVTree, debug, ctx);
