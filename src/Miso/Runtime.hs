@@ -274,14 +274,12 @@ scheduler =
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
-      let dirty = _componentModelDirty _componentModel updatedModel
-          dirtySet' = if dirty then IS.insert vcompId dirtySet else dirtySet
-      if dirty
+      if _componentModelDirty _componentModel updatedModel
         then
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure dirtySet'
+          pure dirtySet
         else
           pure mempty
     -----------------------------------------------------------------------------
