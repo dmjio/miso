@@ -50,7 +50,7 @@ emptyModel :: Model
 emptyModel = Model 0
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Transition Model Action
+updateModel :: Action -> Effect parent Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
