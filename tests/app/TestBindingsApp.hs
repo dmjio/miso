@@ -20,17 +20,18 @@ module TestBindingsApp where
 
 import Miso
     ( View
-    -- , App
+    , App
     , Effect
-    -- , ROOT
     , component
     , text
     , Component
     , toMisoString
     , mount
     )
+import qualified Miso as M
 import qualified Miso.Html as M
 import Miso.Lens (Lens (..))
+import Miso.Binding ((-->), (<--))
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
 
@@ -69,31 +70,42 @@ valueBLens = Lens valueB (\x m -> m { valueB = x } )
 
 type AppAction = ()
 type AppModel = Model
-type AppComponent a = Component a AppModel AppAction
+type AppComponent = Component Model AppModel AppAction
 
-innerApp :: Int -> AppComponent a
-innerApp idx = component initialModel update view
-    where
-        initialModel :: AppModel
-        initialModel = Model 0 0
+rootApp :: Int -> App AppModel AppAction
+rootApp depth =
+    (component initialModel update (view depth))
+        { M.logLevel = M.DebugAll }
 
-        update :: AppAction -> Effect a AppModel AppAction
-        update = const $ return ()
-
-        view :: AppModel -> View AppModel AppAction
-        view m =
-            M.div_ []
-                ( modelElems m
-                ++
-                [ mount $ innerApp idx ]
-                )
-
-        modelElems :: AppModel -> [ View AppModel AppAction ]
-        modelElems m =
-            [ M.div_ []
-                [ text (toMisoString $ show $ valueA m)
-                ]
-            , M.div_ []
-                [ text (toMisoString $ show $ valueB m)
-                ]
+innerApp :: Int -> AppComponent
+innerApp idx =
+    (component initialModel update (view idx))
+        { M.logLevel = M.DebugAll
+        , M.bindings =
+            [ valueALens --> valueALens
             ]
+        }
+
+initialModel :: AppModel
+initialModel = Model 0 0
+
+update :: AppAction -> Effect a AppModel AppAction
+update = const $ return ()
+
+view :: Int -> AppModel -> View AppModel AppAction
+view idx m =
+    M.div_ []
+        ( modelElems m
+        ++
+        [ mount $ innerApp (idx - 1) ]
+        )
+
+modelElems :: AppModel -> [ View AppModel AppAction ]
+modelElems m =
+    [ M.div_ []
+        [ text (toMisoString $ show $ valueA m)
+        ]
+    , M.div_ []
+        [ text (toMisoString $ show $ valueB m)
+        ]
+    ]

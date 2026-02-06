@@ -230,7 +230,7 @@ prop_testBindings envSettings = forAll (arbitrary :: Gen Int) $
             ( server
                 envSettings
                 (Proxy @(API AppB.Model AppB.Action))
-                (AppB.innerApp nnodes)
+                (AppB.rootApp nnodes)
                 (AppB.Model 0 0)
             )
         return $ 1 == (1 :: Int)
