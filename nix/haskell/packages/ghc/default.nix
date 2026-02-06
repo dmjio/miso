@@ -25,8 +25,7 @@ rec {
   };
 
   /* examples */
-  jsaddle = self.callCabal2nix "jsaddle" "${source.jsaddle}/jsaddle" {};
-  jsaddle-warp = dontCheck (self.callCabal2nix "jsaddle-warp" "${source.jsaddle}/jsaddle-warp" {});
+  sample-app = self.callCabal2nix "app" source.sample-app {};
 
   /* cruft */
   crypton = dontCheck super.crypton;

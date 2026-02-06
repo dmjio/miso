@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
@@ -27,10 +28,10 @@ module Miso.Event.Decoder
   ) where
 -----------------------------------------------------------------------------
 import Control.Applicative
-import Data.Aeson.Types
-import Language.Javascript.JSaddle (ToJSVal(toJSVal))
 -----------------------------------------------------------------------------
+import Miso.DSL (ToJSVal(toJSVal))
 import Miso.Event.Types
+import Miso.JSON
 import Miso.String
 -----------------------------------------------------------------------------
 -- | Data type representing path (consisting of field names) within event object
@@ -43,8 +44,9 @@ data DecodeTarget
 -----------------------------------------------------------------------------
 -- | `ToJSVal` instance for t'DecodeTarget'.
 instance ToJSVal DecodeTarget where
-  toJSVal (DecodeTarget xs) = toJSVal xs
-  toJSVal (DecodeTargets xs) = toJSVal xs
+  toJSVal = \case
+    DecodeTarget xs -> toJSVal xs
+    DecodeTargets xs -> toJSVal xs
 -----------------------------------------------------------------------------
 -- | t'Decoder' data type for parsing events
 data Decoder a

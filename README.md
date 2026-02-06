@@ -4,14 +4,18 @@
 
 <a href="https://haskell-miso.org">
   <img width=10% src="https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png">
+
    </a>
 <p align="center">A <i>tasty</i> <a href="https://www.haskell.org/"><strong>Haskell</strong></a> web and <a href="https://github.com/haskell-miso/miso-lynx">mobile</a> framework 🍜</p>
 </p>
 
-<p align="center">
+<p align="center"> 
   <a href="https://matrix.to/#/#haskell-miso:matrix.org">
     <img src="https://img.shields.io/badge/matrix.org-miso-FF4B33.svg?style=for-the-badge" alt="Matrix #haskell-miso:matrix.org">
   </a>
+  <a href="https://www.npmjs.com/package/haskell-miso">  
+    <img src="https://img.shields.io/npm/v/haskell-miso?style=for-the-badge" />
+  </a>  
   <a href="https://haskell-miso-cachix.cachix.org">
     <img src="https://img.shields.io/badge/build-cachix-yellow.svg?style=for-the-badge" alt="Cachix">
   </a>
@@ -29,7 +33,7 @@
 
 **Miso** makes heavy use of the [GHC Javascript FFI](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html#javascript-ffi-in-the-wasm-backend) and therefore has minimal dependencies. **Miso** can be considered a shallow [embedded domain-specific language](https://wiki.haskell.org/Embedded_domain_specific_language) for modern web programming.
 
-**Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses the [jsaddle](https://github.com/ghcjs/jsaddle) library. When used with [ghcid](https://github.com/ndmitchell/ghcid) and [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
+**Miso** supports compilation to both [JavaScript](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/javascript.html) and [WebAssembly](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/wasm.html) using [GHC](https://www.haskell.org/ghc/). For hot-reload, `miso` uses [WASM browser mode](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/). When used with [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) this enables a rapid development workflow.
 
 > [!IMPORTANT]
 > Check out the new [Haskell miso Organization](https://github.com/haskell-miso) 🍜
@@ -84,6 +88,14 @@ Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) b
 
 > [!TIP]
 > We have a [template repository](https://github.com/haskell-miso/miso-sampler) that includes a sample counter application and build scripts for all platforms.
+
+```bash
+# Install nix (flakes enabled by default)
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install 
+# Clone and build
+git clone https://github.com/haskell-miso/miso-sampler && cd miso-sampler
+nix develop .#wasm --command bash -c 'make && make serve'
+```
 
 The fastest way to get started is to clone and build the [miso sampler](https://github.com/haskell-miso/miso-sampler) repository 🍱 This has build scripts for Web Assembly, JS and vanilla [GHC](https://haskell.org/ghc). This requires [Nix Flakes](https://wiki.nixos.org/wiki/Flakes) usage. See also the section on using [miso's binary cache](#binary-cache).
 
@@ -166,15 +178,6 @@ import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
 ----------------------------------------------------------------------------
--- | Component model state
-data Model
-  = Model
-  { _counter :: Int
-  } deriving (Show, Eq)
-----------------------------------------------------------------------------
-counter :: Lens Model Int
-counter = lens _counter $ \record field -> record { _counter = field }
-----------------------------------------------------------------------------
 -- | Sum type for App events
 data Action
   = AddOne
@@ -184,7 +187,7 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startApp app)
+main = startApp defaultEvents app
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
@@ -192,24 +195,20 @@ foreign export javascript "hs_start" main :: IO ()
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
-app :: App Model Action
-app = component emptyModel updateModel viewModel
-----------------------------------------------------------------------------
--- | Empty application state
-emptyModel :: Model
-emptyModel = Model 0
+app :: App Int Action
+app = component 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Transition Model Action
+updateModel :: Action -> Transition Int Action
 updateModel = \case
-  AddOne        -> counter += 1
-  SubtractOne   -> counter -= 1
+  AddOne        -> this += 1
+  SubtractOne   -> this -= 1
   SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Model Action
+viewModel :: Int -> View Int Action
 viewModel x =
   H.div_
     [ P.className "counter"
@@ -227,49 +226,7 @@ Now that your project files are populated, development can begin.
 
 ## Hot Reload 🔥
 
-With `GHC` and `cabal` on `$PATH`, call `cabal repl`
-
-```bash
-$ cabal repl
-```
-
-You should see the following output in your terminal.
-
-```bash
-[1 of 2] Compiling Main             ( Main.hs, interpreted )
-Ok, one module loaded.
-ghci>
-```
-
-Now call the `main` function in the `GHCi` REPL.
-
-```bash
-ghci> main
-Running on port 8008...
-<a href="http://localhost:8008">run</a>
-ghci>
-```
-
-> [!NOTE]
-> The code running in this example is not compiled to JavaScript or WebAssembly, rather it is running the client side application on the server. It works by sending commands to a small javascript interpreter over a websocket to render elements on the page. This is provided by the [jsaddle](https://github.com/ghcjs/jsaddle) library.
-
-If you visit [http://localhost:8008](http://localhost:8008), the application will be live. You can now edit `Main.hs`, call `:r` and `main` in `GHCi`, and the application will update on the screen.
-
-> [!NOTE]
-> Instead of typing `:r` and `main` manually inside of `GHCi` on every file change, you can use [ghcid](https://github.com/ndmitchell/ghcid) or [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch) tools to do it automatically.
-
-> [!TIP]
-> For users accustomed to a react.js worfklow, we highly recommend using either `ghcid` or `ghciwatch`.
-
-Below is an example of usage with `ghcid`
-
-```bash
-$ ghcid -c 'cabal repl app' -T=Main.main
-```
-
-This screenshot shows the hot-reload functionality in action. This is using `ghcid`, `jsaddle` and `miso`.
-
-![Image](https://github.com/user-attachments/assets/4c5e7191-e4a9-4270-a28b-2f5f71ad6f40)
+See the [WASM browser mode](https://github.com/haskell-miso/miso-sampler/blob/main/README.md#browser-mode-) section of the [miso-sampler](https://github.com/haskell-miso/miso-sampler) repository for usage of hot reload development w/ [ghciwatch](https://github.com/MercuryTechnologies/ghciwatch). Also see this [blog post](https://www.tweag.io/blog/2025-04-17-wasm-ghci-browser/).
 
 ## Compilation
 
@@ -572,14 +529,13 @@ For real-world examples of Haskell `miso` applications, see below.
 | **Snake**             | The classic Snake game                    | [Source](https://github.com/haskell-miso/miso-snake)          | [Demo](https://snake.haskell-miso.org/)        | [@lbonn](https://github.com/lbonn)                |
 | **SVG**               | An example showcasing SVG rendering       | [Source](https://github.com/haskell-miso/miso-svg)            | [Demo](https://svg.haskell-miso.org/)          | [@dmjio](https://github.com/dmjio)                |
 | **Fetch**             | An example demonstrating AJAX requests    | [Source](https://github.com/haskell-miso/miso-fetch)          | [Demo](https://fetch.haskell-miso.org)         | [@dmjio](https://github.com/dmjio)                |
-| **File Reader**       | A FileReader API example                  | [Source](https://github.com/haskell-miso/miso-filereader)     | [Demo](https://filereader.haskell-miso.org)    | [@dmjio](https://github.com/dmjio)                |
+| **File Reader**       | A FileReader API example                  | [Source](https://github.com/haskell-miso/miso-filereader)     | [Demo](https://file-reader.haskell-miso.org/)    | [@dmjio](https://github.com/dmjio)                |
 | **Mario**             | A Super Mario physics example             | [Source](https://github.com/haskell-miso/miso-mario)          | [Demo](https://mario.haskell-miso.org)         | [@dmjio](https://github.com/dmjio)                |
 | **WebSocket**         | A simple WebSocket example                | [Source](https://github.com/haskell-miso/miso-websocket)      | [Demo](https://websocket.haskell-miso.org)     | [@dmjio](https://github.com/dmjio)                |
 | **Router**            | A client-side routing example             | [Source](https://github.com/haskell-miso/miso-router)         | [Demo](https://router.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
 | **Canvas 2D**         | A 2D Canvas rendering example             | [Source](https://github.com/haskell-miso/miso-canvas2d)       | [Demo](https://canvas.haskell-miso.org)      | [@dmjio](https://github.com/dmjio)                |
-| **Components**        | A simple pub/sub setup for Component      | [Source](https://github.com/haskell-miso/miso-components)     | [Demo](https://components.haskell-miso.org)    | [@dmjio](https://github.com/dmjio)                |
 | **MathML**            | A MathML example                          | [Source](https://github.com/haskell-miso/miso-mathml)         | [Demo](https://mathml.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
-| **Simple**            | A simple counter example                  | [Source](https://github.com/haskell-miso/miso-simple)         | [Demo](https://simple.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
+| **Simple**            | A simple counter example                  | [Source](https://github.com/haskell-miso/miso-sampler)         | [Demo](https://counter.haskell-miso.org)        | [@dmjio](https://github.com/dmjio)                |
 | **SSE**               | SSE (Server-sent events) Example          | [Source](https://github.com/haskell-miso/miso-sse)            | [Demo](https://sse.haskell-miso.org)           | [@dmjio](https://github.com/dmjio)                |
 | **Three.js**          | A 3D rendering example using Three.JS     | [Source](https://github.com/haskell-miso/three-miso)          | [Demo](https://threejs.haskell-miso.org/)        | [@juliendehos](https://github.com/juliendehos)    |
 | **Space Invaders**    | A Space-Invaders-like game                | [Source](https://github.com/haskell-miso/miso-invaders)       | [Demo](https://space-invaders.haskell-miso.org/)     | [@juliendehos](https://github.com/juliendehos)    |
@@ -612,7 +568,7 @@ If you want to interact with an HTTP API, we recommend one of the following appr
      source-repository-package
        type: git
        location: https://github.com/haskell-miso/servant-miso-client
-       tag: 13b6ec09bf4f09436ffe6518795eb50a81c6c896
+       tag: master
      ```
 
 ## Coverage ✅
@@ -638,20 +594,26 @@ $ bun install && bun run test
 ```
 
 ```bash
---------------------|---------|---------|-------------------
-File                | % Funcs | % Lines | Uncovered Line #s
---------------------|---------|---------|-------------------
-All files           |   92.37 |   85.48 |
- ts/happydom.ts     |  100.00 |  100.00 |
- ts/miso/dom.ts     |  100.00 |  100.00 |
- ts/miso/event.ts   |   90.91 |   81.62 |
- ts/miso/hydrate.ts |   80.00 |   91.24 |
- ts/miso/smart.ts   |  100.00 |  100.00 |
- ts/miso/util.ts    |   83.33 |   40.00 |
---------------------|---------|---------|-------------------
+--------------------------|---------|---------|-------------------
+File                      | % Funcs | % Lines | Uncovered Line #s
+--------------------------|---------|---------|-------------------
+All files                 |   93.50 |   92.28 |
+ ts/happydom.ts           |  100.00 |  100.00 |
+ ts/miso/context/dom.ts   |  100.00 |  100.00 |
+ ts/miso/context/patch.ts |   75.00 |   81.17 | 68-76,79-84,87-93,99-107,193-202
+ ts/miso/dom.ts           |  100.00 |   98.86 | 41,302-303
+ ts/miso/event.ts         |  100.00 |   92.75 | 28-30,52,81,85-90,116,161
+ ts/miso/hydrate.ts       |  100.00 |   98.15 | 11-12
+ ts/miso/patch.ts         |  100.00 |   80.00 | 26-32,36,38,42-43,85-86,91,93
+ ts/miso/smart.ts         |   85.00 |   93.33 | 45-48
+ ts/miso/types.ts         |  100.00 |  100.00 |
+ ts/miso/util.ts          |   75.00 |   78.53 | 79,83,122,137,169,172,175-186,197-202,223-229,233-236,249-254
+--------------------------|---------|---------|-------------------
 
- 84 pass
+ 223 pass
  0 fail
+ 7598 expect() calls
+Ran 223 tests across 9 files. [497.00ms]
 ```
 
 ## Isomorphic ☯️
@@ -754,7 +716,6 @@ Become a [financial contributor](https://opencollective.com/miso/contribute) and
 
   - Moses Tschanz
   - [@MaxGabriel](https://github.com/MaxGabriel)
-  - [@DigitalOcean](https://github.com/DigitalOcean)
   - [@maybetonyfu](https://github.com/maybetonyfu)
   - [@jhrcek](https://github.com/jhrcek)
   - etc.

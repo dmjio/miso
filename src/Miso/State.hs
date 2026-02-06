@@ -32,7 +32,9 @@ module Miso.State
   , gets
   , put
   , tell
+  , liftIO
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
+import Control.Monad.IO.Class (liftIO)
 ----------------------------------------------------------------------------

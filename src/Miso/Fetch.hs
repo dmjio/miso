@@ -62,10 +62,10 @@ module Miso.Fetch
   , fetch
   ) where
 ----------------------------------------------------------------------------
-import           Data.Aeson
+import           Miso.JSON
 import qualified Data.Map.Strict as M
-import           Language.Javascript.JSaddle (toJSVal, FromJSVal(..), JSVal)
 ----------------------------------------------------------------------------
+import           Miso.DSL (toJSVal, FromJSVal(..), JSVal)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Effect (Effect, withSink)
 import           Miso.String (MisoString, ms)
@@ -144,7 +144,7 @@ postJSON
   -> Effect parent model action
 postJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
@@ -168,7 +168,7 @@ postJSON'
   -> Effect parent model action
 postJSON' url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) jsonHeaders_
       (handleJSON sink)
       (sink . errorful)
@@ -210,7 +210,7 @@ putJSON
   -> Effect parent model action
 putJSON url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "PUT" (Just bodyVal) jsonHeaders_
       (sink . successful)
       (sink . errorful)
@@ -255,7 +255,7 @@ postText
   -> Effect parent model action
 postText url body_ headers_ successful errorful =
   withSink $ \sink -> do
-    bodyVal <- FFI.jsonStringify body_
+    bodyVal <- toJSVal (encode body_)
     FFI.fetch url "POST" (Just bodyVal) textHeaders_
       (sink . successful)
       (sink . errorful)

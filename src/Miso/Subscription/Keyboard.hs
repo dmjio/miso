@@ -24,8 +24,8 @@ import           Control.Monad.IO.Class
 import           Data.IORef
 import           Data.IntSet
 import qualified Data.IntSet as S
-import           Language.Javascript.JSaddle hiding (new)
 -----------------------------------------------------------------------------
+import           Miso.DSL hiding (new)
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util (createSub)
 import qualified Miso.FFI.Internal as FFI

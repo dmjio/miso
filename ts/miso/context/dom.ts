@@ -11,14 +11,20 @@ import
   , VTreeType
   } from '../types';
 
-import { drill } from '../dom'; 
+import { drill } from '../util';
+import { delegator } from '../event';
 
 export const eventContext : EventContext<DOMRef> = {
-  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.addEventListener(event, listener, capture);
+  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) : void => {
+    mount.addEventListener(event, listener, capture);
   },
-  removeEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.removeEventListener(event, listener, capture);
+  delegator :
+     (mount: DOMRef,
+      events: Array<EventCapture>,
+      getVTree: ((callback: (vtree : VTree<DOMRef>) => void) => void),
+      debug: boolean,
+      ctx : EventContext<DOMRef>) : void => {
+    delegator(mount, events, getVTree, debug, ctx);
   },
   isEqual: (x: DOMRef, y: DOMRef) : boolean => {
     return x === y;
@@ -160,6 +166,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   },
   flush: (): void => {
     return;
+  },
+  /** @since 1.9.0.0 */
+  getHead : function () {
+    return document.head;
   },
   getRoot : function () {
     return document.body

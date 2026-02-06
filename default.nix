@@ -64,6 +64,19 @@ rec {
   inherit (pkgs)
     bun;
 
+  playwright-ghcjs = pkgs.writeScriptBin "playwright" ''
+    #!${pkgs.stdenv.shell}
+    export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+    export PATH="${pkgs.lib.makeBinPath [ pkgs.http-server pkgs.bun ]}:$PATH"
+    bun install playwright@1.53
+    http-server ${legacyPkgs.haskell.packages.ghcjs.miso-tests}/bin/component-tests.jsexe &
+    cd tests
+    bun run ../ts/playwright.ts
+    exit_code=$?
+    pkill http-server
+    exit "$exit_code"
+  '';
+
   playwright-js = pkgs.writeScriptBin "playwright" ''
     #!${pkgs.stdenv.shell}
     set -e

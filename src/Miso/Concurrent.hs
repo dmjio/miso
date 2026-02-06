@@ -10,21 +10,13 @@
 -- Portability :  non-portable
 ----------------------------------------------------------------------------
 module Miso.Concurrent
-  ( -- * Synchronization primitives
+  ( -- ** Synchronization primitives
     Waiter (..)
   , waiter
-  , Mailbox
-  , Mail
-  , newMailbox
-  , copyMailbox
-  , cloneMailbox
-  , sendMail
-  , readMail
+  , oneshot
   ) where
 -----------------------------------------------------------------------------
 import Control.Concurrent
-import Control.Concurrent.STM
-import Data.Aeson
 -----------------------------------------------------------------------------
 -- | Synchronization primitive for event loop
 data Waiter
@@ -36,6 +28,10 @@ data Waiter
   }
 -----------------------------------------------------------------------------
 -- | Creates a new @Waiter@
+--
+-- Useful for multiple threads to wake-up / notify a single thread running in an
+-- infinite loop, waiting for work (e.g. to process an event queue).
+--
 waiter :: IO Waiter
 waiter = do
   mvar <- newEmptyMVar
@@ -46,47 +42,16 @@ waiter = do
         pure ()
     }
 -----------------------------------------------------------------------------
--- | Type for expressing @Mail@ (or message payloads) put into a 'Mailbox' for delivery
-type Mail = Value
------------------------------------------------------------------------------
--- | Publish / Subscribe concurrency primitive
+-- | Creates a new @Waiter@
 --
--- A 'Mailbox' is a broadcast 'TChan' that can express the following concurrency patterns
+-- Useful for a single thread to wake-up multiple threads that are waiting 
+-- to run a oneshot task (e.g. like forking a thread).
 --
--- * Broadcast (one-to-all, 1:n)
--- * Multicast (one-to-many, 1:n)
--- * Unicast (one-to-one, 1:1)
---
--- All the above are supported as well in a bidirectional setting.
---
--- * Bidirectional (multicast \/ broadcast \/ unicast) (n:m)
---
--- Practically this pattern resembles cloud notification services like
---
--- * Amazon SNS
--- * Google Pub/Sub
---
-type Mailbox = TChan Mail
------------------------------------------------------------------------------
--- | Constructs a new 'Mailbox'
-newMailbox :: IO Mailbox
-newMailbox = newBroadcastTChanIO
------------------------------------------------------------------------------
--- | Duplicates a 'Mailbox', all new 'Mail' is sent to all duplicated 'Mailbox'
-copyMailbox :: Mailbox -> IO Mailbox
-copyMailbox mailbox = atomically (dupTChan mailbox)
------------------------------------------------------------------------------
--- | Duplicates a 'Mailbox', all new 'Mail' is sent to all cloned 'Mailbox'.
--- Messages in the original 'Mailbox' are retained (unlike `copyMailbox`).
-cloneMailbox :: Mailbox -> IO Mailbox
-cloneMailbox mailbox = atomically (cloneTChan mailbox)
------------------------------------------------------------------------------
--- | Sends mail to a mailbox, all duplicated 'Mailbox' receive the same message.
-sendMail :: Mailbox -> Mail -> IO ()
-sendMail mailbox mail = atomically (writeTChan mailbox mail)
------------------------------------------------------------------------------
--- | Reads mail from a 'Mailbox'. This only works on a duplicated 'Mailbox'.
--- So call this function only on 'Mailbox' that have been created from 'copyMailbox'.
-readMail :: Mailbox -> IO Mail
-readMail mailbox = atomically (readTChan mailbox)
+oneshot :: IO Waiter
+oneshot = do
+  mvar <- newEmptyMVar
+  pure Waiter
+    { wait = readMVar mvar
+    , notify = putMVar mvar ()
+    }
 -----------------------------------------------------------------------------

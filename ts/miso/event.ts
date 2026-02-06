@@ -1,36 +1,17 @@
 import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
-import { getDOMRef } from './dom';
+import { getDOMRef } from './util';
 
 /* event delegation algorithm */
-export function delegate<T> (
+export function delegator<T> (
   mount: T,
   events: Array<EventCapture>,
-  getVTree: (vtree: VTree<T>) => void,
+  getVTree: ((callback: (vtree : VTree<T>) => void) => void),
   debug: boolean,
   context: EventContext<T>,
 ): void {
 
   for (const event of events) {
    context.addEventListener (
-      mount,
-      event.name,
-      function (e: Event) {
-        listener(e, mount, getVTree, debug, context);
-      },
-      event.capture,
-    );
-  }
-}
-/* event undelegation */
-export function undelegate<T> (
-  mount: T,
-  events: Array<EventCapture>,
-  getVTree: (vtree: VTree<T>) => void,
-  debug: boolean,
-  context: EventContext<T>,
-): void {
-  for (const event of events) {
-    context.removeEventListener (
       mount,
       event.name,
       function (e: Event) {
@@ -77,7 +58,7 @@ function buildTargetToElement<T>(element: T, target: T, context: EventContext<T>
 /* Finds event in virtual dom via pointer equality
    Accumulate parent stack as well for propagation up the vtree
 */
-function delegateEvent <T>(
+export function delegateEvent <T> (
   event: Event,
   obj: VTree<T>,
   stack: Array<T>,

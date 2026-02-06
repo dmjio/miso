@@ -1,5 +1,5 @@
 /* smart constructors for VTree */
-import { VText, VTree, VNode, VComp, VTreeType } from './types';
+import { Mount, VText, VTree, VNode, VComp, VTreeType } from './types';
 
 /* vtext factory */
 export function vtext<T>(input: string) : VText<T> {
@@ -74,12 +74,8 @@ function mkVNode<T>() : VNode<T> {
 function mkVComp<T>() : VComp<T> {
   return union(mkVNode<T>() as any, {
     type : VTreeType.VComp,
-    mount: () => {},
+    mount: (_parent: T): Mount<T> => ({ componentId: 0, componentTree: mkVNode<T>() }),
     unmount: () => {},
-    onUnmounted: () => {},
-    onBeforeUnmounted: () => {},
-    onMounted: () => {},
-    onBeforeMounted: () => {},
     onCreated: () => {},
   });
 }

@@ -34,9 +34,6 @@ in
   miso-tests       = make-src-filter ../tests;
   sample-app       = make-src-filter ../sample-app;
 
-  # flake sources
-  jsaddle = fetchFromFlake (nodes.jsaddle);
-
   # non-flakified sources
   miso-from-html = fetchFromGitHub {
     owner = "dmjio";
@@ -57,5 +54,11 @@ in
     repo = "servant-miso-router";
     rev = "0c828e0ba30ee7a446ce8999288b32b7f6425dd1";
     sha256 = "sha256-2Vkheb2iNDFWNAToO+r8rMY3OAA6LlUtgxiCWRm0wAY=";
+
+  ghcjs-base = fetchFromGitHub {
+    owner = "ghcjs";
+    repo = "ghcjs-base";
+    rev = "b7ae2cafb082ff247d29ab50d651f4e955ada47a";
+    sha256 = "0az7xdvd5irsf4x18dgz8aqymrk01bxzmjwhwrmbqmi8kdp1dfb4";
   };
 }

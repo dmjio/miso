@@ -1,4 +1,5 @@
-import { Class, DrawingContext, CSS, VNode, VText, VComp, ComponentId, VTree, Props, VTreeType, OP } from './types';
+import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { getDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -11,6 +12,8 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     else if (c.type === VTreeType.VComp && n.type === VTreeType.VComp) {
         if (n.key === c.key) {
           n.child = c.child;
+          n.componentId = c.componentId;
+          if (c.child) c.child.parent = n;
           return;
         }
         replace(c, n, parent, context);
@@ -32,28 +35,6 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
   n.domRef = c.domRef;
   return;
 }
-
-//c.child should never be null
-export function drill<T>(c: VComp<T>): T {
-  if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
-  switch (c.child.type) {
-    case VTreeType.VComp:
-      return drill (c.child)
-    default:
-      return c.child.domRef;
-  }
-}
-
-// Extract DOM reference from any VTree (handles VComp drilling)
-export function getDOMRef<T>(tree: VTree<T>): T {
-  switch (tree.type) {
-    case VTreeType.VComp:
-      return drill(tree);
-    default:
-      return tree.domRef;
-  }
-}
-
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
@@ -128,7 +109,6 @@ function callDestroyed<T>(c: VNode<T> | VComp<T>): void {
 function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   switch (c.type) {
       case VTreeType.VComp:
-          if (c.onBeforeUnmounted) c.onBeforeUnmounted();
           break;
       case VTreeType.VNode:
           if (c.onBeforeDestroyed) c.onBeforeDestroyed();
@@ -289,15 +269,8 @@ function populateDomRef<T>(c: VNode<T>, context: DrawingContext<T>): void {
 }
 
 /* used in hydrate.ts */
-export function callCreated<T>(parent: T, n: VComp<T> | VNode<T>, context: DrawingContext<T>): void {
-  switch (n.type) {
-      case VTreeType.VComp:
-          mountComponent(parent, OP.APPEND, null, n, context);
-          break;
-      case VTreeType.VNode:
-          if (n.onCreated) n.onCreated(n.domRef);
-          break;
-  }
+export function callCreated<T>(parent: T, n: VNode<T>, context: DrawingContext<T>): void {
+   if (n.onCreated) n.onCreated(n.domRef);
 }
 
 function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>, context: DrawingContext<T>): void {
@@ -347,34 +320,28 @@ function drawCanvas<T> (c: VNode<T>) {
 
 // unmount components
 function unmountComponent<T>(c: VComp<T>): void {
-  if (c.onUnmounted) c.onUnmounted();
   c.unmount(c.componentId);
 }
 
 // mounts vcomp by calling into Haskell side.
 // unmount is handled with pre-destroy recursive hooks
 function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>, context: DrawingContext<T>): void {
-  if (n.onBeforeMounted) n.onBeforeMounted();
-
   // 'mount()' should be executed synchronously, including its callback function argument.
-  n.mount(parent, (componentId: ComponentId, componentTree: VTree<T>) => {
-    // mount() gives us the VTree from the Haskell side
-    n.componentId = componentId;
-    n.child = componentTree;
-    componentTree.parent = n;
-    if (componentTree.type !== VTreeType.VComp) {
-      // Handle DOM placement for non-VComp child nodes
-      const childDomRef = getDOMRef(componentTree);
-      if (op === OP.REPLACE && replacing) {
-        context.replaceChild(parent, childDomRef, replacing);
-      } else if (op === OP.INSERT_BEFORE) {
-        context.insertBefore(parent, childDomRef, replacing);
-      }
-      // For OP.APPEND, this happens naturally in mount()
+  let mounted: Mount<T> = n.mount(parent); 
+  // mount() gives us the VTree from the Haskell side
+  n.componentId = mounted.componentId;
+  n.child = mounted.componentTree;
+  mounted.componentTree.parent = n;
+  if (mounted.componentTree.type !== VTreeType.VComp) {
+    // Handle DOM placement for non-VComp child nodes
+    const childDomRef = getDOMRef(mounted.componentTree);
+    if (op === OP.REPLACE && replacing) {
+      context.replaceChild(parent, childDomRef, replacing);
+    } else if (op === OP.INSERT_BEFORE) {
+      context.insertBefore(parent, childDomRef, replacing);
     }
-  });
-
-  if (n.onMounted) n.onMounted();
+      // For OP.APPEND, this happens naturally in mount()
+  }
 }
 
 // Creates nodes on virtual dom (vtext, vcomp, vnode)
@@ -385,10 +352,6 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
   context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
 } 
-
-function removeChild<T>(parent: T, n: VTree<T>, context: DrawingContext<T>): void {
-  context.removeChild(parent, getDOMRef(n));
-}
 
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
   context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
@@ -439,7 +402,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
     else if (newFirstIndex > newLastIndex) {
       tmp = oldLastIndex;
       while (oldLastIndex >= oldFirstIndex) {
-        removeChild(parent, os[oldLastIndex--], context);
+        destroy(os[oldLastIndex--], parent, context);
       }
       os.splice(oldFirstIndex, tmp - oldFirstIndex + 1);
       break;

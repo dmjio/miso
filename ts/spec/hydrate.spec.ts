@@ -34,7 +34,7 @@ describe ("Hydration tests", () => {
     });
     const result = hydrate(false, document.body, currentNode, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect(currentNode.children[0].children[0].text).toEqual('foo');
+    expect(((currentNode.children[0] as VNode<DOMRef>).children[0] as VText<DOMRef>).text).toEqual('foo');
   });
 
   test('Should fail because of expecting text node', () => {
@@ -318,9 +318,9 @@ describe ("Hydration tests", () => {
       key: 'test-comp',
       componentId : 1,
       child: vnode({ children: [vtext<DOMRef>('component content')] }),
-      mount: (parent: any, callback: any) => {
+      mount: (_parent: any) => {
         mountCalled = true;
-        callback(componentId, componentTree);
+        return { componentId, componentTree } as any;
       },
       unmount: () => {},
     }) as VComp<DOMRef>;
@@ -337,26 +337,14 @@ describe ("Hydration tests", () => {
     const div = document.createElement('div');
     document.body.appendChild(div);
 
-    let beforeMountedCalled = false;
-    let onMountedCalled = false;
-
     const comp = vcomp<DOMRef>({
       key: 'test-comp-hooks',
-      onBeforeMounted: () => {
-        beforeMountedCalled = true;
-      },
-      onMounted: () => {
-        onMountedCalled = true;
-      },
-      mount: (parent: any, callback: any) => {
-      },
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
       child : vnode<DOMRef> ({}),
       unmount: () => {},
     }) as VComp<DOMRef>;
 
     expect(hydrate(false, document.body, comp, hydrationContext, drawingContext)).toBe(true);
-    expect(beforeMountedCalled).toBe(true);
-    expect(onMountedCalled).toBe(true);
   });
 
   test('Should handle VComp with nested child VTree', () => {
@@ -371,9 +359,7 @@ describe ("Hydration tests", () => {
         tag: 'span',
         children: [vtext<DOMRef>('nested child')],
       }),
-      mount: (parent: any, callback: any) => {
-
-      },
+      mount: (_parent: any) => ({ componentId: 0, componentTree: vnode<DOMRef>({}) } as any),
       unmount: () => {},
     }) as VComp<DOMRef>;
 
@@ -457,8 +443,7 @@ describe ("Hydration tests", () => {
       key: 'walk-comp',
       componentId: 6,
       child: vnode<DOMRef>({ tag: 'span' }),
-      mount: (parent: any, callback: any) => {
-      },
+      mount: (_parent: any) => ({ componentId: 6, componentTree: vnode<DOMRef>({ tag: 'span' }) } as any),
       unmount: () => {},
     }) as VComp<DOMRef>;
 

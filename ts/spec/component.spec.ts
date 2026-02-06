@@ -24,10 +24,10 @@ describe ('Component tests', () => {
     let unmounts = [];
     const build = (name, children) => {
         return vcomp<DOMRef> ({ 
-          mount: (domRef, callback) => {
+          mount: (domRef) => {
             const childVNode = vnode<DOMRef>({ tag: 'div', children });
             diff<DOMRef>(null, childVNode, domRef, drawingContext);
-            callback(0, childVNode);
+            return { componentId: 0, componentTree: childVNode };
           },
           unmount: () => {
             unmounts.push(name);
@@ -44,11 +44,11 @@ describe ('Component tests', () => {
     var mountCount = 0;
     var unmountCount = 0;
     var newNode = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       unmount: () => {
         unmountCount++;
@@ -64,11 +64,11 @@ describe ('Component tests', () => {
     var mountCount = 0;
     var compNode1 = vcomp<DOMRef>({
       key: 'comp1',
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div', css: { backgroundColor: 'red' } });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
     });
     diff<DOMRef>(null, compNode1, document.body, drawingContext);
@@ -82,11 +82,11 @@ describe ('Component tests', () => {
     mountCount = 0;
     var compNode2 = vcomp<DOMRef>({
       key: 'comp2',
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div', css: { backgroundColor: 'green' } });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       }
     });
     diff<DOMRef>(compNode1, compNode2, document.body, drawingContext);
@@ -101,11 +101,11 @@ describe ('Component tests', () => {
         unmount: () => {
             unmountCount++
         },
-        mount: (domRef, callback) => {
+      mount: (domRef) => {
             mountCount++;
             const child = vnode<DOMRef>({ tag: 'a' });
             diff<DOMRef>(null, child, domRef, drawingContext);
-            callback(0, child);
+        return { componentId: 0, componentTree: child };
         },
     });
     // dmj: tag always 'div' for component, this is just for a test to ensure swap property
@@ -118,11 +118,11 @@ describe ('Component tests', () => {
     // Replace node
     var comp2 = vcomp<DOMRef>({
       key : 'b',
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
     });
     diff<DOMRef>(comp1, comp2, document.body, drawingContext);
@@ -140,10 +140,10 @@ describe ('Component tests', () => {
     var unmountCount = 0
     var comp1 = vcomp<DOMRef>({
       key: 'a',
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       unmount: () => {
         unmountCount++
@@ -159,11 +159,11 @@ describe ('Component tests', () => {
     var mountCount = 0;
     var comp2 = vcomp<DOMRef>({
       key : 'a',
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
     });
     diff<DOMRef>(comp1, comp2, document.body, drawingContext);
@@ -186,11 +186,11 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var compNode = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
     });
     diff<DOMRef>(node, compNode, document.body, drawingContext);
@@ -211,11 +211,11 @@ describe ('Component tests', () => {
     // Replace node
     var mountCount = 0;
     var compNode = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
     });
     diff<DOMRef>(node, compNode, document.body, drawingContext);
@@ -227,11 +227,11 @@ describe ('Component tests', () => {
   test('Should replace Component with TextNode', () => {
     var mountCount = 0, unmountCount = 0;
     var component = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       unmount: () => {
         return unmountCount++;
@@ -257,11 +257,11 @@ describe ('Component tests', () => {
     var mountCount = 0,
       unmountCount = 0;
     var component = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       unmount: () => {
         unmountCount++;
@@ -289,11 +289,11 @@ describe ('Component tests', () => {
     let unmountCount = 0;
 
     let component = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         mountCount++;
         const child = vnode<DOMRef>({ tag: 'div' });
         diff<DOMRef>(null, child, domRef, drawingContext);
-        callback(0, child);
+        return { componentId: 0, componentTree: child };
       },
       unmount: () => {
         unmountCount++;
@@ -320,16 +320,16 @@ describe ('Component tests', () => {
   test('Should allow recursive Component mounting', () => {
     // populate DOM
     let component = vcomp<DOMRef>({
-      mount: (domRef, callback) => {
+      mount: (domRef) => {
         const childVComp = vcomp<DOMRef>({
-          mount: (ref, cb) => {
+          mount: (ref) => {
             const child1 = vnode<DOMRef>({ tag: 'div' });
             diff<DOMRef>(null, child1, ref, drawingContext);
-            cb(1, child1);
+            return { componentId: 1, componentTree: child1 };
           }
         });
         diff<DOMRef>(null, childVComp, domRef, drawingContext);
-        callback(0, childVComp);
+        return { componentId: 0, componentTree: childVComp };
       }
     });
 

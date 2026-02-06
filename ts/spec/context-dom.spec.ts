@@ -38,7 +38,7 @@ describe('EventContext tests', () => {
     div.click();
     expect(clickCount).toBe(1);
 
-    eventContext.removeEventListener(div as DOMRef, 'click', listener, false);
+    div.removeEventListener('click', listener, false);
     div.click();
     expect(clickCount).toBe(1); // Should not increment
   });
@@ -174,6 +174,10 @@ describe('ComponentContext tests', () => {
 });
 
 describe('DrawingContext tests', () => {
+  test('Should get head', () => {
+    expect(drawingContext.getHead()).toBe(document.head);
+  });
+
   test('Should get next sibling for VNode', () => {
     const node1 = vnode<DOMRef>({ tag: 'div' });
     const node2 = vnode<DOMRef>({ tag: 'span' });
@@ -184,10 +188,10 @@ describe('DrawingContext tests', () => {
   });
 
   test('Should get next sibling for VComp by drilling', () => {
-    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
-      cb (0, node1);
+      return { componentId: 0, componentTree: node1 };
     }});
 
     const node1 = vnode<DOMRef>({ tag: 'div' });
@@ -215,10 +219,10 @@ describe('DrawingContext tests', () => {
    });
 
   test('Should return undefined when no next sibling', () => {
-    const comp = vcomp<DOMRef>({ mount : (p, cb) => {
+    const comp = vcomp<DOMRef>({ mount : (p) => {
       const node1 = vnode<DOMRef>({ tag: 'div' });
       diff (null, node1, p, drawingContext);
-      cb (0, node1);
+      return { componentId: 0, componentTree: node1 };
     }});
 
     const node1 = vnode<DOMRef>({ tag: 'div' });

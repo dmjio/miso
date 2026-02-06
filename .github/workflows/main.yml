@@ -12,12 +12,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-     - uses: mathio/gha-cleanup@v1
+     - uses: ners/simply-nix@main
        with:
-         remove-browsers: true
-         verbose: true    
-         
-     - uses: nixbuild/nix-quick-install-action@v34
+         reclaim_space: true
      - uses: actions/checkout@v3.5.3
      - name: Cancel Previous Runs
        uses: styfle/cancel-workflow-action@0.9.1
@@ -96,3 +93,9 @@ jobs:
 
      - name: (WASM) Miso integration tests
        run: nix-build -A playwright-wasm && ./result/bin/playwright
+
+     - name: Nix garbage collection
+       run: cabal clean && nix-collect-garbage -d
+
+     - name: (GHCJS) Miso integration tests
+       run: nix-build -A playwright-ghcjs && ./result/bin/playwright

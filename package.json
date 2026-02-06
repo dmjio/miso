@@ -1,7 +1,7 @@
 {
   "name": "haskell-miso",
-  "version": "1.9.0",
-  "description": "miso: A tasty Haskell front-end web and mobile framework",
+  "version": "0.0.5",
+  "description": "miso: A tasty Haskell web and mobile framework",
   "scripts": {
     "clean": "tsc --build --clean && find ts -name '*~' -or -name '*.js' -delete && rm -rf out-tsc",
     "clean-hs": "find src -type f -name '*.o' -or -name '*.hi' -or -name '*~undo-tree~*' | xargs rm",
@@ -17,8 +17,24 @@
     "build-test": "bun build --outfile=./tests/js/test.js ./ts/tests.ts --target=bun",
     "js": "bun run build && bun run prod"
   },
+  "main": "./js/miso.js",
+  "module": "./ts/miso.ts",
+  "types": "./ts/miso.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./ts/miso.ts",
+        "default": "./ts/miso.ts"
+      },
+      "require": {
+        "types": "./ts/miso.ts",
+        "default": "./js/miso.js"
+      },
+      "default": "./ts/miso.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "type": "module",
-  "module": "ts/miso.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dmjio/miso.git"
@@ -70,7 +86,6 @@
   ],
   "dependencies": {
     "@lcov-viewer/cli": "^1.3.0",
-    "jsdom": "^27.2.0",
     "playwright": "1.53",
     "typescript": "^5.8.3"
   },

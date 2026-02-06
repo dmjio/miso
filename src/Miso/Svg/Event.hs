@@ -23,8 +23,6 @@ module Miso.Svg.Event
   , onError
   , onResize
   , onScroll
-  , onLoad
-  , onUnload
   , onZoom
     -- *** Graphical
   , onActivate
@@ -69,14 +67,6 @@ onResize action = on "resize" emptyDecoder $ \() _ -> action
 -- | onScroll event
 onScroll :: action -> Attribute action
 onScroll action = on "scroll" emptyDecoder $ \() _ -> action
------------------------------------------------------------------------------
--- | onLoad event
-onLoad :: action -> Attribute action
-onLoad action = on "load" emptyDecoder $ \() _ -> action
------------------------------------------------------------------------------
--- | onUnload event
-onUnload :: action -> Attribute action
-onUnload action = on "unload" emptyDecoder $ \() _ -> action
 -----------------------------------------------------------------------------
 -- | onZoom event
 onZoom :: action -> Attribute action

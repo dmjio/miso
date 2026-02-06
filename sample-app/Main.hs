@@ -28,11 +28,17 @@ data Action
 ----------------------------------------------------------------------------
 -- | Entry point for a miso application
 main :: IO ()
-main = run (startApp app)
+#ifdef INTERACTIVE
+main = reload (startApp defaultEvents app)
+#else
+main = startApp defaultEvents app
+#endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
 #ifdef WASM
+#ifndef INTERACTIVE
 foreign export javascript "hs_start" main :: IO ()
+#endif
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
@@ -48,9 +54,7 @@ updateModel :: Action -> Transition Model Action
 updateModel = \case
   AddOne        -> counter += 1
   SubtractOne   -> counter -= 1
-  SayHelloWorld -> io_ $ do
-    alert "Hello World"
-    consoleLog "Hello World"
+  SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
 viewModel :: Model -> View Model Action

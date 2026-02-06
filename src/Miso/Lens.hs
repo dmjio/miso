@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE RankNTypes          #-}
 -----------------------------------------------------------------------------
@@ -104,13 +105,16 @@
 ----------------------------------------------------------------------------
 module Miso.Lens
   ( -- ** Types
-    Lens (..)
+    Lens
+  , LensCore (..)
+  , Prism (..)
     -- ** Smart constructor
   , lens
+  , prism
     -- ** Re-exports
   , (&)
   , (<&>)
-    -- ** Combinators
+    -- ** Lens Combinators
   , (.~)
   , (?~)
   , set
@@ -144,6 +148,17 @@ module Miso.Lens
   , _2
   , _id
   , this
+    -- ** Prism Combinators
+  , preview
+  , preuse
+  , review
+  , _Nothing
+  , _Just
+  , _Left
+  , _Right
+  , (^?)
+  -- *** Containers
+  , At (..)
   -- *** Re-exports
   , compose
   -- *** Conversion
@@ -156,11 +171,19 @@ import Control.Monad.Reader (MonadReader, asks)
 import Control.Monad.State (MonadState, modify, gets)
 import Control.Monad.Identity (Identity(..))
 import Control.Category (Category (..))
-import Control.Arrow ((<<<))
+import Control.Arrow ((>>>))
 import Data.Functor.Const (Const(..))
 import Data.Function ((&))
 import Data.Functor((<&>))
 import Data.Kind (Type)
+import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
+import qualified Data.Set as S
+import Data.Set (Set)
+import qualified Data.IntMap.Strict as IM
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntSet as IS
+import Data.IntSet (IntSet)
 import Prelude hiding ((.))
 ----------------------------------------------------------------------------
 import Miso.Util (compose)
@@ -175,7 +198,11 @@ import Miso.Util (compose)
 -- often a deeply nested product type. This makes it highly conducive
 -- to t'Lens' operations (as defined below).
 --
-data Lens record field
+type Lens s a = LensCore a s
+----------------------------------------------------------------------------
+-- | t'LensCore' is an internal type used to reverse composition like
+-- VL libraries do.
+data LensCore field record
   = Lens
   { _get :: record -> field
     -- ^ Retrieves a field from a record
@@ -200,11 +227,11 @@ fromVL lens_ = Lens {..}
     _set field = runIdentity . lens_ (\_ -> Identity field)
 ----------------------------------------------------------------------------
 -- | t'Lens' form a 'Category', and can therefore be composed.
-instance Category Lens where
+instance Category LensCore where
   id = Lens Prelude.id const
   Lens g1 s1 . Lens g2 s2 = Lens
-    { _get = g1 <<< g2
-    , _set = \f r -> s2 (s1 f (g2 r)) r
+    { _get = g1 >>> g2
+    , _set = \f r -> s1 (s2 f (g1 r)) r
     }
 ----------------------------------------------------------------------------
 -- | Set a field on a record
@@ -473,7 +500,7 @@ l <.= b = do
 infix 4 <?=
 (<?=) :: MonadState record m => Lens record (Maybe field) -> field -> m field
 l <?= b = do
-  l .= Just b
+  l ?= b
   return b
 ----------------------------------------------------------------------------
 -- | Assign the field of a record in a @MonadState@ to a value using a t'Lens'.
@@ -759,4 +786,112 @@ lens
   -> (record -> field -> record)
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
+----------------------------------------------------------------------------
+data Prism s a
+  = Prism
+  { _up :: a -> s
+  , _down :: s -> Maybe a
+  }
+----------------------------------------------------------------------------
+review :: Prism s a -> a -> s
+review = _up
+----------------------------------------------------------------------------
+preview :: MonadReader r m => Prism r a -> m (Maybe a)
+preview = asks . preview
+----------------------------------------------------------------------------
+preuse :: MonadState s m => Prism s a -> m (Maybe a)
+preuse = gets . preview
+----------------------------------------------------------------------------
+_Left :: Prism (Either a b) a
+_Left = prism Left $ either Just (const Nothing)
+----------------------------------------------------------------------------
+_Right :: Prism (Either a b) b
+_Right = prism Right (either (const Nothing) Just)
+----------------------------------------------------------------------------
+_Just :: Prism (Maybe a) a
+_Just = prism Just Prelude.id
+----------------------------------------------------------------------------
+_Nothing :: Prism (Maybe a) a
+_Nothing = prism (const Nothing) Prelude.id
+----------------------------------------------------------------------------
+infixl 8 ^?
+(^?) :: s -> Prism s a -> Maybe a 
+(^?) = flip preview
+----------------------------------------------------------------------------
+prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
+prism = Prism
+----------------------------------------------------------------------------
+-- | Class for getting and setting values across various container types.
+--
+-- > M.singleton 'a' "foo" & at 'a' .~ Just "bar"
+-- > -- fromList [('a',"bar")]
+--
+-- > update (SetValue value)
+-- >   at 10 ?= value
+--
+-- @since 1.9.0.0
+class At at where
+  type family Index at :: Type
+  -- ^ Index of the container
+  type family IxValue at :: Type
+  -- ^ Indexed value of the container
+  at :: Index at -> Lens at (Maybe (IxValue at))
+----------------------------------------------------------------------------
+instance Ord k => At (Map k v) where
+  type Index (Map k v) = k
+  type IxValue (Map k v) = v
+  at key = lens (M.lookup key) $ \m value ->
+    case value of
+      Nothing -> M.delete key m
+      Just v -> M.insert key v m
+----------------------------------------------------------------------------
+instance At (IntMap v) where
+  type Index (IntMap v) = Int
+  type IxValue (IntMap v) = v
+  at key = lens (IM.lookup key) $ \m value ->
+    case value of
+      Nothing -> IM.delete key m
+      Just v -> IM.insert key v m
+----------------------------------------------------------------------------
+instance Ord k => At (Set k) where
+  type Index (Set k) = k
+  type IxValue (Set k) = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> S.delete key m
+          Just () -> S.insert key m
+      _get m
+        | S.member key m = Just ()
+        | otherwise = Nothing
+----------------------------------------------------------------------------
+instance At IntSet where
+  type Index IntSet = Int
+  type IxValue IntSet = ()
+  at key = Lens {..}
+    where
+      _set = \v m ->
+        case v of
+          Nothing -> IS.delete key m
+          Just () -> IS.insert key m
+      _get m
+        | IS.member key m = Just ()
+        | otherwise = Nothing
+----------------------------------------------------------------------------
+instance At [a] where
+  type Index [a] = Int
+  type IxValue [a] = a
+  at key = Lens {..}
+    where
+      _set Nothing m
+        | key < 0 = m
+        | otherwise = splitAt key m & \(lhs, rhs) -> lhs <> drop 1 rhs
+      _set (Just v) m
+        | key < 0 = m
+        | otherwise = splitAt key m & \(lhs, rhs) ->
+            case rhs of
+              [] -> lhs
+              _ : xs -> lhs <> (v : xs)
+      _get = lookup key . zip [0..]
 ----------------------------------------------------------------------------

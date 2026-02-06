@@ -1,5 +1,5 @@
 import { diff } from './miso/dom';
-import { delegate, undelegate, eventJSON } from './miso/event';
+import { eventJSON, delegateEvent } from './miso/event';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
@@ -16,6 +16,12 @@ import {
    eventSourceClose,
    populateClass,
    updateRef,
+   inline,
+   typeOf,
+   mathRandom,
+   getRandomValues,
+   splitmix32,
+   getDOMRef
 } from './miso/util';
 
 import {
@@ -31,26 +37,62 @@ import {
     EventCapture,
     EventObject,
     Options,
+    EventContext,
+    DrawingContext,
+    HydrationContext,
+    NodeId,
+    VTreeType,
+    ComponentId,
+    Component,
+    Runtime,
+    PATCH,
+    InsertBefore,
+    SwapDOMRefs,
+    CreateElement,
+    CreateElementNS,
+    CreateTextNode,
+    SetAttribute,
+    SetAttributeNS,
+    AppendChild,
+    RemoveChild,
+    ReplaceChild,
+    RemoveAttribute,
+    SetTextContent,
+    SetInlineStyle,
+    MountComponent,
+    UnmountComponent,
+    ModelHydration,
+    AddClass,
+    RemoveClass,
+    ProcessEvent,
+    AddEventListeners,
+    Flush
 } from './miso/types';
 
 import { patch } from './miso/patch';
 
+import { patchDrawingContext } from './miso/context/patch';
 import { vcomp, vnode, vtext } from './miso/smart';
 
-/* top level re-export */
+/* Top-level re-export */
 export {
+
+  /* Context */
+  EventContext,
+  DrawingContext,
+  HydrationContext,
+  patchDrawingContext,
+
   /* Functions */
   diff,
   hydrate,
   version,
-  delegate,
   callBlur,
   callFocus,
   callSelect,
   callSetSelectionRange,
   eventJSON,
   fetchCore,
-  undelegate,
   integrityCheck,
   websocketConnect,
   websocketClose,
@@ -60,12 +102,21 @@ export {
   patch,
   populateClass,
   updateRef,
+  inline,
+  typeOf,
+  mathRandom,
+  getRandomValues,
+  splitmix32,
+  delegateEvent,
+  getDOMRef,
 
   /* Types */
   VTree,
+  VTreeType,
   VComp,
   VText,
   VNode,
+  ComponentId,
   EventCapture,
   EventObject,
   Options,
@@ -74,6 +125,32 @@ export {
   Events,
   NS,
   DOMRef,
+  NodeId,
+  PATCH,
+  InsertBefore,
+  SwapDOMRefs,
+  CreateElement,
+  CreateElementNS,
+  CreateTextNode,
+  SetAttribute,
+  SetAttributeNS,
+  AppendChild,
+  RemoveChild,
+  ReplaceChild,
+  RemoveAttribute,
+  SetTextContent,
+  SetInlineStyle,
+  MountComponent,
+  UnmountComponent,
+  ModelHydration,
+  AddClass,
+  RemoveClass,
+  ProcessEvent,
+  AddEventListeners,
+  Flush,
+  Runtime,
+  Component,
+
   /* Smart constructors */
   vnode,
   vtext,
