@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module TestBindingsApp where
 
@@ -30,31 +31,13 @@ import Miso
     )
 import qualified Miso as M
 import qualified Miso.Html as M
-import Miso.Lens (Lens (..))
+import qualified Miso.Html.Property as M
+import Miso.Lens (Lens (..), (%=))
 import Miso.Binding ((-->), (<--))
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
 
 type Action = ()
-
--- type MainComponent = App Int Action
--- 
--- app :: Int -> MainComponent
--- app nnodes = component initialModel update view
---     where
---         initialModel :: Int
---         initialModel = nnodes
--- 
---         update :: a -> Effect ROOT Int Action
---         update = const $ return ()
--- 
---         view :: Int -> View Int Action
---         --view n = M.div_ [] [ text "Hello World" ]
---         view n = M.div_ [] (map (mount . getApp) [0..n])
---             where
---                 getApp :: Int -> AppComponent
---                 getApp = const innerApp
---             -- todo: view should map over the sub-components
 
 
 data Model = Model
@@ -62,37 +45,65 @@ data Model = Model
     , valueB :: Int
     } deriving (Generic, ToJSON, FromJSON, Eq)
 
+
 valueALens :: Lens Model Int
 valueALens = Lens valueA (\x m -> m { valueA = x } )
+
 
 valueBLens :: Lens Model Int
 valueBLens = Lens valueB (\x m -> m { valueB = x } )
 
-type AppAction = ()
-type AppModel = Model
-type AppComponent = Component Model AppModel AppAction
 
-rootApp :: Int -> App AppModel AppAction
+type AppModel = Model
+type AppComponent = Component Model AppModel Action
+
+
+rootApp :: Int -> App AppModel Action
 rootApp depth =
-    (component initialModel update (view depth))
+    (component initialModel update (rootView depth))
         { M.logLevel = M.DebugAll }
 
+
+rootView :: Int -> AppModel -> View AppModel Action
+rootView depth m =
+    M.div_ []
+    (
+        M.button_ [ M.id_ "CLICKME" ] [ text "Click Me" ]
+        : modelElems m
+        ++ [ mount $ innerApp depth ]
+    )
+
+
 innerApp :: Int -> AppComponent
+innerApp 0 =
+    (component initialModel update (view 0))
+        { M.logLevel = M.DebugAll
+        , M.bindings =
+            [ valueALens --> valueALens
+            , valueBLens <-- valueALens
+            ]
+        }
+
 innerApp idx =
     (component initialModel update (view idx))
         { M.logLevel = M.DebugAll
         , M.bindings =
             [ valueALens --> valueALens
+            , valueBLens <-- valueBLens
             ]
         }
+
 
 initialModel :: AppModel
 initialModel = Model 0 0
 
-update :: AppAction -> Effect a AppModel AppAction
-update = const $ return ()
 
-view :: Int -> AppModel -> View AppModel AppAction
+update :: Action -> Effect a AppModel Action
+update = const $ valueALens %= (+ 1)
+
+
+view :: Int -> AppModel -> View AppModel Action
+view 0 m = M.div_ [] ( modelElems m )
 view idx m =
     M.div_ []
         ( modelElems m
@@ -100,7 +111,8 @@ view idx m =
         [ mount $ innerApp (idx - 1) ]
         )
 
-modelElems :: AppModel -> [ View AppModel AppAction ]
+
+modelElems :: AppModel -> [ View AppModel Action ]
 modelElems m =
     [ M.div_ []
         [ text (toMisoString $ show $ valueA m)
