@@ -258,7 +258,7 @@ scheduler =
     run :: ComponentId -> [action] -> IO ()
     run vcompId actions = do
       dirtySet <- commit vcompId actions
-      when (not (IS.null dirtySet)) (withGlobalLock (renderComponents dirtySet))
+      when (not (IS.null dirtySet)) (renderComponents dirtySet)
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
@@ -276,11 +276,14 @@ scheduler =
           evalScheduled Sync (action _componentSink)
       let dirty = _componentModelDirty _componentModel updatedModel
           dirtySet' = if dirty then IS.insert vcompId dirtySet else dirtySet
-      when dirty $ do
-        modifyComponent _componentId $ do
-          isDirty .= True
-          componentModel .= updatedModel
-      pure dirtySet'
+      if dirty
+        then
+          modifyComponent _componentId $ do
+            isDirty .= True
+            componentModel .= updatedModel
+          pure dirtySet'
+        else
+          pure mempty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -289,7 +292,7 @@ scheduler =
     --
     renderComponents :: ComponentIds -> IO ()
     renderComponents dirtySet = do
-      forM_ (IS.toList dirtySet) $ \vcompId ->
+      forM_ (IS.toAscList dirtySet) $ \vcompId ->
         IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
           when _componentIsDirty (_componentDraw _componentModel)
           modifyComponent _componentId (isDirty .= False)
@@ -568,9 +571,6 @@ globalWaiter = unsafePerformIO waiter
 globalQueue :: IORef (Queue action)
 {-# NOINLINE globalQueue #-}
 globalQueue = unsafePerformIO (newIORef emptyQueue)
------------------------------------------------------------------------------
-withGlobalLock :: IO a -> IO a
-withGlobalLock f = f
 -----------------------------------------------------------------------------
 componentId :: Lens (ComponentState parent model action) ComponentId
 componentId = lens _componentId $ \record field -> record { _componentId = field }
