@@ -49,11 +49,10 @@ delegator
   -> IORef VTree
   -> Events
   -> Bool
-  -> (IO JSVal -> IO JSVal)
   -> IO ()
-delegator mountPointElement vtreeRef es debug withGlobalLock = do
+delegator mountPointElement vtreeRef es debug = do
   evts <- toJSVal (uncurry Event <$> M.toList es)
-  FFI.delegator mountPointElement evts debug $ withGlobalLock $ do
+  FFI.delegator mountPointElement evts debug $ do
     VTree (Object vtree) <- liftIO (readIORef vtreeRef)
     pure vtree
 -----------------------------------------------------------------------------

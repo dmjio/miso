@@ -84,7 +84,6 @@ module Miso.Runtime
   , modifyComponent
   -- ** Scheduler
   , scheduler
-  , withGlobalLock
 #ifdef WASM
   , evalFile
 #endif
@@ -214,7 +213,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
-  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]) withGlobalLock)
+  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ mount _componentSink
   when isRoot $ void (forkIO scheduler)
