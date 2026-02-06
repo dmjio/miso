@@ -44,7 +44,6 @@ module Miso.Types
   , MountPoint
   , DOMRef
   , ROOT
-  , Transition
   , Events
   , Phase         (..)
   , URI           (..)
@@ -241,10 +240,6 @@ instance Eq ROOT where _ == _ = True
 -- This is enforced by specializing the @parent@ type parameter to 'ROOT'.
 --
 type App model action = Component ROOT model action
------------------------------------------------------------------------------
--- | A specialized version of 'Effect' that can be used in the type of application 'update' function,
--- when t'Miso.Types.Component's are not in use. Also for pre-1.9 'Miso.miso' applications.
-type Transition model action = Effect ROOT model action
 -----------------------------------------------------------------------------
 -- | Logging configuration for debugging Miso internals (useful to see if prerendering is successful)
 data LogLevel
