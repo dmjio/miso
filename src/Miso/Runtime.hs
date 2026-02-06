@@ -543,7 +543,7 @@ dequeue q =
                           & queue.at vcompId .~ do if null rest then Nothing else Just rest
                   Just (vcompId, toList process, updated)
 -----------------------------------------------------------------------------
--- | Dequeus everything from the Queue at a specific t'ComponentId', draining
+-- | Dequeues everything from the Queue at a specific t'ComponentId', draining
 -- both the queue events and the queue schedule.
 dequeueAt
   :: forall action
