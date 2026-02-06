@@ -273,7 +273,7 @@ scheduler =
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
       if _componentModelDirty _componentModel updatedModel
-        then
+        then do
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
