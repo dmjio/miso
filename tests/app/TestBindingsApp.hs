@@ -13,44 +13,53 @@
  -          assert that A.b has been changed to A.a
  -}
 
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+
 module TestBindingsApp where
 
 import Miso
-    ( App
-    , View
+    ( View
+    -- , App
     , Effect
-    , ROOT
+    -- , ROOT
     , component
     , text
     , Component
     , toMisoString
+    , mount
     )
 import qualified Miso.Html as M
 import Miso.Lens (Lens (..))
+import GHC.Generics
+import Data.Aeson (ToJSON, FromJSON)
 
 type Action = ()
 
-type MainComponent = App Int Action
-
-app :: Int -> MainComponent
-app nnodes = component initialModel update view
-    where
-        initialModel :: Int
-        initialModel = nnodes
-
-        update :: a -> Effect ROOT Int Action
-        update = const $ return ()
-
-        view :: Int -> View Int Action
-        view _ = M.div_ [] [ text "Hello World" ]
-            -- todo: view should map over the sub-components
+-- type MainComponent = App Int Action
+-- 
+-- app :: Int -> MainComponent
+-- app nnodes = component initialModel update view
+--     where
+--         initialModel :: Int
+--         initialModel = nnodes
+-- 
+--         update :: a -> Effect ROOT Int Action
+--         update = const $ return ()
+-- 
+--         view :: Int -> View Int Action
+--         --view n = M.div_ [] [ text "Hello World" ]
+--         view n = M.div_ [] (map (mount . getApp) [0..n])
+--             where
+--                 getApp :: Int -> AppComponent
+--                 getApp = const innerApp
+--             -- todo: view should map over the sub-components
 
 
 data Model = Model
     { valueA :: Int
     , valueB :: Int
-    }
+    } deriving (Generic, ToJSON, FromJSON, Eq)
 
 valueALens :: Lens Model Int
 valueALens = Lens valueA (\x m -> m { valueA = x } )
@@ -60,24 +69,31 @@ valueBLens = Lens valueB (\x m -> m { valueB = x } )
 
 type AppAction = ()
 type AppModel = Model
-type AppComponent = Component MainComponent AppModel AppAction
+type AppComponent a = Component a AppModel AppAction
 
-innerApp :: AppComponent
-innerApp = component initialModel update view
+innerApp :: Int -> AppComponent a
+innerApp idx = component initialModel update view
     where
         initialModel :: AppModel
         initialModel = Model 0 0
 
-        update :: AppAction -> Effect MainComponent AppModel AppAction
+        update :: AppAction -> Effect a AppModel AppAction
         update = const $ return ()
 
         view :: AppModel -> View AppModel AppAction
         view m =
             M.div_ []
-                [ M.div_ []
-                    [ text (toMisoString $ show $ valueA m)
-                    ]
-                , M.div_ []
-                    [ text (toMisoString $ show $ valueB m)
-                    ]
+                ( modelElems m
+                ++
+                [ mount $ innerApp idx ]
+                )
+
+        modelElems :: AppModel -> [ View AppModel AppAction ]
+        modelElems m =
+            [ M.div_ []
+                [ text (toMisoString $ show $ valueA m)
                 ]
+            , M.div_ []
+                [ text (toMisoString $ show $ valueB m)
+                ]
+            ]

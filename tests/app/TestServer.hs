@@ -229,9 +229,9 @@ prop_testBindings envSettings = forAll (arbitrary :: Gen Int) $
         Wai.run port_ $ Wai.logStdout
             ( server
                 envSettings
-                (Proxy @(API Int AppB.Action))
-                (AppB.app nnodes)
-                nnodes
+                (Proxy @(API AppB.Model AppB.Action))
+                (AppB.innerApp nnodes)
+                (AppB.Model 0 0)
             )
         return $ 1 == (1 :: Int)
 
