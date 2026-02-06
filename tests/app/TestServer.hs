@@ -55,6 +55,7 @@ import Test.QuickCheck
     , ioProperty
     , Gen
     , Property
+    , NonNegative (..)
     )
 import Data.Aeson (encode, decode, ToJSON)
 import Control.Concurrent (forkIO, killThread)
@@ -75,6 +76,7 @@ import Control.Exception (bracket)
 import qualified HtmlGen as Html
 import qualified TestApp as App
 import qualified TestBindingsApp as AppB
+import TestTypes (TestData (..))
 
 data Backend = GHCJS | WASM deriving (Show, Read)
 
@@ -85,10 +87,12 @@ data EnvSettings = EnvSettings
     , backend :: Backend
     } deriving Show
 
-type ServerRoutes model action = Routes (Get '[HTML] (IndexPageData model action))
+type ServerRoutes model action =
+    Routes (Get '[HTML] (IndexPageData model action))
 
 data IndexPageData model action =
-    (ToJSON model, Eq model) => IndexPageData (Backend, model, App model action)
+    (ToJSON model, Eq model) =>
+    IndexPageData (Backend, TestData, App model action)
 
 type RouteIndexPage a = a
 type Routes a = RouteIndexPage a
@@ -150,12 +154,12 @@ server
     => EnvSettings
     -> Proxy (API model action)
     -> App model action
-    -> model
+    -> TestData
     -> Wai.Application
-server envSettings apiProxy app appData =
+server envSettings apiProxy app testData =
     serve
         apiProxy
-        (staticHandler :<|> mainHandler envSettings app appData)
+        (staticHandler :<|> mainHandler envSettings app testData)
 
     where
         staticHandler :: Server StaticRoute
@@ -166,10 +170,10 @@ mainHandler
     :: (ToJSON model, Eq model)
     => EnvSettings
     -> App model action
-    -> model
+    -> TestData
     -> Handler (IndexPageData model action)
-mainHandler envSettings app appData = pure $
-    IndexPageData (backend envSettings, appData, app)
+mainHandler envSettings app testData = pure $
+    IndexPageData (backend envSettings, testData, app)
 
 
 httpGet :: String -> IO Int
@@ -188,7 +192,7 @@ failFilename = "/tmp/failing_case.json"
 prop_testIO :: EnvSettings -> Property
 prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
     \html -> ioProperty $ do
-        let appData = App.TestData { App.randomHtml = html } :: App.TestData
+        let appData = App.Model { App.randomHtml = html } :: App.Model
 
         putStrLn $ "Beginning to listen on " <> show port_
         -- Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
@@ -197,9 +201,9 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
             ( forkIO $ Wai.run port_ $ Wai.logStdout
                 ( server
                     envSettings
-                    (Proxy @(API App.TestData App.Action))
+                    (Proxy @(API App.Model App.Action))
                     (App.app appData)
-                    appData
+                    (TestAppModel appData)
                 )
             )
             killThread
@@ -223,15 +227,15 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
 
 
 prop_testBindings :: EnvSettings -> Property
-prop_testBindings envSettings = forAll (arbitrary :: Gen Int) $
-    \nnodes -> ioProperty $ do
+prop_testBindings envSettings = forAll (arbitrary :: Gen (NonNegative Int)) $
+    \(NonNegative depth) -> ioProperty $ do
         putStrLn $ "Beginning to listen on " <> show port_
         Wai.run port_ $ Wai.logStdout
             ( server
                 envSettings
                 (Proxy @(API AppB.Model AppB.Action))
-                (AppB.rootApp nnodes)
-                (AppB.Model 0 0)
+                (AppB.rootApp depth)
+                (TestBindingsModel depth)
             )
         return $ 1 == (1 :: Int)
 
@@ -239,21 +243,20 @@ prop_testBindings envSettings = forAll (arbitrary :: Gen Int) $
         port_ = port envSettings
 
 
-
 serveFailed :: EnvSettings -> IO ()
 serveFailed envSettings = do
     bytes <- readFile failFilename
     let html = fromJust $ decode bytes
 
-    let appData = App.TestData { App.randomHtml = html } :: App.TestData
+    let appData = App.Model { App.randomHtml = html } :: App.Model
 
     putStrLn $ "Beginning to listen on " <> show port_
     Wai.run port_ $ Wai.logStdout
         ( server
             envSettings
-            (Proxy @(API App.TestData App.Action))
+            (Proxy @(API App.Model App.Action))
             (App.app appData)
-            appData
+            (TestAppModel appData)
         )
 
     where

@@ -92,6 +92,8 @@ executable integration-tests-client
   other-modules:    
     TestApp
     HtmlGen
+    TestBindingsApp
+    TestTypes
 
   default-language:
     Haskell2010
@@ -112,6 +114,7 @@ executable integration-tests-server
     TestApp
     HtmlGen
     TestBindingsApp
+    TestTypes
 
   build-depends:
     base,

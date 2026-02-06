@@ -25,15 +25,15 @@ import HtmlGen (HTML, render)
 
 data Action = Initialize | Clicked
 
-type MainComponent = App TestData Action
+type MainComponent = App Model Action
 
-type MainView = View TestData Action
+type MainView = View Model Action
 
-data TestData = TestData
+newtype Model = Model
     { randomHtml :: HTML
     } deriving (Generic, ToJSON, FromJSON, Eq)
 
-app :: TestData -> MainComponent
+app :: Model -> MainComponent
 app td =
     (component td update view)
         { M.initialAction = Just Initialize
@@ -41,7 +41,7 @@ app td =
         }
 
     where
-        update :: Action -> Effect ROOT TestData Action
+        update :: Action -> Effect ROOT Model Action
         update Clicked =
             io_ $ consoleLog "SUCCESS"
 
@@ -49,8 +49,8 @@ app td =
             mElem <- M.getElementById "CLICKME_CLICKME"
             mElem # ("click" :: JSString) $ ([] :: [ JSString ])
 
-        view :: TestData -> MainView
-        view TestData { randomHtml = html } = render aElem html
+        view :: Model -> MainView
+        view Model { randomHtml = html } = render aElem html
 
         aElem = M.a_
             [ M.id_ "CLICKME_CLICKME"

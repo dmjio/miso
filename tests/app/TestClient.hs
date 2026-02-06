@@ -22,6 +22,8 @@ import Control.Lens.Operators ((^.))
 import Data.Aeson (decodeStrict)
 
 import qualified TestApp as App
+import qualified TestBindingsApp as AppB
+import TestTypes
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
@@ -64,6 +66,7 @@ main = run $ do
 
     case mTestData of
         Nothing -> consoleLog "ERROR - client couldn't load initial-data"
-        Just testData ->
-            -- consoleLog $ toMisoString $ encode testData
-            miso $ const $ App.app testData
+        Just (TestAppModel appData) ->
+            miso $ const $ App.app appData
+        Just (TestBindingsModel depth) ->
+            miso $ const $ AppB.rootApp depth

@@ -28,6 +28,8 @@ import Miso
     , Component
     , toMisoString
     , mount
+    , io_
+    , consoleLog
     )
 import qualified Miso as M
 import qualified Miso.Html as M
@@ -68,7 +70,11 @@ rootView :: Int -> AppModel -> View AppModel Action
 rootView depth m =
     M.div_ []
     (
-        M.button_ [ M.id_ "CLICKME" ] [ text "Click Me" ]
+        M.button_
+            [ M.id_ "CLICKME"
+            , M.onClick ()
+            ]
+            [ text "Click Me" ]
         : modelElems m
         ++ [ mount $ innerApp depth ]
     )
@@ -99,11 +105,20 @@ initialModel = Model 0 0
 
 
 update :: Action -> Effect a AppModel Action
-update = const $ valueALens %= (+ 1)
+update = const $ do
+    io_ $ consoleLog "CLICKED"
+    valueALens %= (+ 1)
 
 
 view :: Int -> AppModel -> View AppModel Action
-view 0 m = M.div_ [] ( modelElems m )
+view 0 m = M.div_ []
+    (
+        M.button_
+            [ M.onClick () ]
+            [ text "Clickme (innermost)" ]
+        :
+        modelElems m
+    )
 view idx m =
     M.div_ []
         ( modelElems m
