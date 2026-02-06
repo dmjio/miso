@@ -255,10 +255,10 @@ scheduler =
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
     run :: ComponentId -> [action] -> IO ()
-    run vcompId = mapM_ renderComponents <=< commit vcompId
+    run vcompId = renderComponents <=< commit vcompId
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO (Maybe ComponentIds)
+    commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
@@ -276,9 +276,9 @@ scheduler =
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure (Just dirtySet)
+          pure dirtySet
         else
-          pure Nothing
+          pure mempty
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -626,7 +626,7 @@ data ComponentState parent model action
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
-    , _componentApplyActions
+  , _componentApplyActions
       :: [action]
       -> model
       -> IntMap (ComponentState parent model action)
