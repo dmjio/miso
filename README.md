@@ -199,7 +199,7 @@ app :: App Int Action
 app = component 0 updateModel viewModel
 ----------------------------------------------------------------------------
 -- | Updates model, optionally introduces side effects
-updateModel :: Action -> Transition Int Action
+updateModel :: Action -> Effect parent Int Action
 updateModel = \case
   AddOne        -> this += 1
   SubtractOne   -> this -= 1

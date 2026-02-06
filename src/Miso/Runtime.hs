@@ -821,7 +821,7 @@ unsubscribe (Topic topicName) = do
 --     [ onMountedWith Mount
 --     ]
 --   ] where
---       update_ :: Action -> Transition () Action
+--       update_ :: Action -> Effect parent () Action
 --       update_ = \case
 --         AddOne ->
 --           publish arithmetic Increment
