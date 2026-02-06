@@ -256,12 +256,10 @@ scheduler =
     -- | Execute the commit phase against the model, perform top-down render
     -- of the entire Component tree.
     run :: ComponentId -> [action] -> IO ()
-    run vcompId actions = do
-      dirtySet <- commit vcompId actions
-      when (not (IS.null dirtySet)) (renderComponents dirtySet)
+    run vcompId = mapM_ renderComponents <=< commit vcompId
     -----------------------------------------------------------------------------
     -- | Apply the actions across the model, evaluate async and sync IO.
-    commit :: ComponentId -> [action] -> IO ComponentIds
+    commit :: ComponentId -> [action] -> IO (Maybe ComponentIds)
     commit vcompId events = do
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
@@ -279,9 +277,9 @@ scheduler =
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure dirtySet
+          pure (Just dirtySet)
         else
-          pure mempty
+          pure Nothing
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
