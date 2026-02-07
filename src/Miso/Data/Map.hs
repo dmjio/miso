@@ -24,6 +24,7 @@ module Miso.Data.Map
     Map
     -- * Construction
   , new
+  , fromList
     -- * Operations
   , insert
   , lookup
@@ -31,7 +32,6 @@ module Miso.Data.Map
   , size
   , has
   , delete
-  , fromList
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
