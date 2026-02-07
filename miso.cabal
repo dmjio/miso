@@ -113,6 +113,8 @@ library
     Miso.Binding
     Miso.Canvas
     Miso.Concurrent
+    Miso.Data.Map
+    Miso.Data.Set
     Miso.DSL
     Miso.Effect
     Miso.Event
