@@ -34,6 +34,9 @@ module Miso.Data.Set
   , union
   , intersection
   , difference
+  , isSubset
+  , isSuperset
+  , isDisjoint
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
@@ -91,4 +94,19 @@ intersection (Set x) (Set y) = Set <$> callFunction x "intersection" [y]
 -- | The symmetric difference of two t'Set'
 difference :: ToJSVal key => Set key -> Set key -> IO (Set key)
 difference (Set x) (Set y) = Set <$> callFunction x "symmetricDifference" [y]
+-----------------------------------------------------------------------------
+-- | Checks if one t'Set' is a subset of another t'Set'
+isSubset :: ToJSVal key => Set key -> Set key -> IO Bool
+isSubset (Set x) (Set y) = DSL.fromJSValUnchecked =<<
+  callFunction x "isSubsetOf" [y]
+-----------------------------------------------------------------------------
+-- | Checks if one t'Set' is a superset of another t'Set'
+isSuperset :: ToJSVal key => Set key -> Set key -> IO Bool
+isSuperset (Set x) (Set y) = DSL.fromJSValUnchecked =<<
+  callFunction x "isSupersetOf" [y]
+-----------------------------------------------------------------------------
+-- | Checks if one t'Set' is disjoint from another t'Set'
+isDisjoint :: ToJSVal key => Set key -> Set key -> IO Bool
+isDisjoint (Set x) (Set y) = DSL.fromJSValUnchecked =<<
+  callFunction x "isDisjointFrom" [y]
 -----------------------------------------------------------------------------
