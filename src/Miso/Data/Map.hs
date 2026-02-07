@@ -56,7 +56,7 @@ insert key value (Map m) = do
 -----------------------------------------------------------------------------
 -- | Finds a value in the t'Map' by key.
 lookup :: (ToJSVal key, FromJSVal value) => key -> Map key value -> IO (Maybe value)
-lookup key (Map m) = DSL.fromJSVal =<< callFunction m "get" =<< DSL.toJSVal key
+lookup key (Map m) = DSL.fromJSValUnchecked =<< callFunction m "get" =<< DSL.toJSVal key
 -----------------------------------------------------------------------------
 -- | Empties the t'Map'.
 clear :: Map key value -> IO ()
