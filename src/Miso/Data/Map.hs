@@ -36,19 +36,12 @@ module Miso.Data.Map
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_)
 import           Prelude hiding (lookup)
-import           System.IO.Unsafe (unsafePerformIO)
 -----------------------------------------------------------------------------
-import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal)
+import           Miso.DSL (jsg, JSVal, ToJSVal, FromJSVal, (!))
 import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 -----------------------------------------------------------------------------
 newtype Map key value = Map JSVal deriving (FromJSVal, ToJSVal)
------------------------------------------------------------------------------
-instance ToMisoString (Map key value) where
-  toMisoString = unsafePerformIO toString
------------------------------------------------------------------------------
-instance Show (Map key value) where
-  show = MS.unpack . toMisoString
 -----------------------------------------------------------------------------
 -- | Constructs a new JS [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) in t'IO'.
 --
@@ -75,15 +68,11 @@ size (Map m) = DSL.fromJSValUnchecked =<< m ! "size"
 -----------------------------------------------------------------------------
 -- | Checks existence of a value by 'key', returns t'Bool.
 has :: ToJSVal key => key -> Map key value -> IO Bool
-has key (Map m) = DSL.fromJSValUnchecked =<< do callFunction m "has" =<< DSL.toJSVal key
+has key (Map m) = DSL.fromJSValUnchecked =<< callFunction m "has" =<< DSL.toJSVal key
 -----------------------------------------------------------------------------
 -- | Removes an entry from a list, returns if the value was removed as t'Bool'.
 delete :: ToJSVal key => key -> Map key value -> IO Bool
-delete key (Map m) = DSL.fromJSValUnchecked =<< do callFunction m "delete" =<< DSL.toJSVal key
------------------------------------------------------------------------------
--- | Removes an entry from a list, returns if the value was removed as t'Bool'.
-toString :: Map key value -> IO MisoString
-toString (Map m) = DSL.fromJSValUnchecked =<< do callFunction m "toString"
+delete key (Map m) = DSL.fromJSValUnchecked =<< callFunction m "delete" =<< DSL.toJSVal key
 -----------------------------------------------------------------------------
 -- | Construct a t'Map' from a list of key value pairs.
 fromList :: (ToJSVal key, ToJSVal value) => [(key, value)] -> IO (Map key value)
