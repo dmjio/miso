@@ -37,6 +37,7 @@ import qualified Miso.JSON as JSON
 import           Miso.Random
 import           Miso.Router
 import qualified Miso.String as S
+import qualified Miso.Data.Map as MM
 import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
@@ -131,6 +132,20 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Data.Map tests" $ do
+      it "should construct a Map from a list and perform operations" $ do
+        m <- liftIO (MM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
+        (`shouldBe` 2)            =<< liftIO (MM.size m)
+        (`shouldBe` (Just "foo")) =<< liftIO (MM.lookup 1 m)
+        (`shouldBe` (Just "bar")) =<< liftIO (MM.lookup 2 m)
+        (`shouldBe` Nothing)      =<< liftIO (MM.lookup 3 m)
+        (`shouldBe` True)         =<< liftIO (MM.has 1 m)
+        (`shouldBe` True)         =<< liftIO (MM.has 2 m)
+        (`shouldBe` False)        =<< liftIO (MM.has 3 m)
+        (`shouldBe` True)         =<< liftIO (MM.delete 1 m)
+        (`shouldBe` False)        =<< liftIO (MM.has 1 m)
+        (`shouldBe` ())           =<< liftIO (MM.clear m)
+        (`shouldBe` 0)            =<< liftIO (MM.size m)
 #ifndef GHCJS_OLD
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
