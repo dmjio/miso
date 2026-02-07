@@ -150,7 +150,7 @@ main = withJS $ do
 
     describe "Miso.Data.Set tests" $ do
       it "should construct a Set from a list and perform operations" $ do
-        m <- liftIO (MDS.fromList [1..10])
+        m <- liftIO (MDS.fromList [1 :: Int .. 10])
         (`shouldBe` 10)    =<< liftIO (MDS.size m)
         (`shouldBe` 10)    =<< liftIO (MDS.size m)
         (`shouldBe` True)  =<< liftIO (MDS.member 1 m)
@@ -159,8 +159,8 @@ main = withJS $ do
         (`shouldBe` 9)     =<< liftIO (MDS.size m)
         (`shouldBe` ())    =<< liftIO (MDS.clear m)
         (`shouldBe` 0)     =<< liftIO (MDS.size m)
-        x <- liftIO (MDS.fromList [1..10])
-        y <- liftIO (MDS.fromList [11..20])
+        x <- liftIO (MDS.fromList [1 :: Int .. 10])
+        y <- liftIO (MDS.fromList [11 :: Int .. 20])
         z <- liftIO (MDS.union x y)
         (`shouldBe` 20) =<< liftIO (MDS.size z)
         w <- liftIO (MDS.intersection x y)
