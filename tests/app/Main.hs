@@ -37,7 +37,8 @@ import qualified Miso.JSON as JSON
 import           Miso.Random
 import           Miso.Router
 import qualified Miso.String as S
-import qualified Miso.Data.Map as MM
+import qualified Miso.Data.Map as MDM
+import qualified Miso.Data.Set as MDS
 import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
@@ -134,18 +135,45 @@ main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
-        m <- liftIO (MM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
-        (`shouldBe` 2)            =<< liftIO (MM.size m)
-        (`shouldBe` (Just "foo")) =<< liftIO (MM.lookup 1 m)
-        (`shouldBe` (Just "bar")) =<< liftIO (MM.lookup 2 m)
-        (`shouldBe` Nothing)      =<< liftIO (MM.lookup 3 m)
-        (`shouldBe` True)         =<< liftIO (MM.has 1 m)
-        (`shouldBe` True)         =<< liftIO (MM.has 2 m)
-        (`shouldBe` False)        =<< liftIO (MM.has 3 m)
-        (`shouldBe` True)         =<< liftIO (MM.delete 1 m)
-        (`shouldBe` False)        =<< liftIO (MM.has 1 m)
-        (`shouldBe` ())           =<< liftIO (MM.clear m)
-        (`shouldBe` 0)            =<< liftIO (MM.size m)
+        m <- liftIO (MDM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
+        (`shouldBe` 2)            =<< liftIO (MDM.size m)
+        (`shouldBe` (Just "foo")) =<< liftIO (MDM.lookup 1 m)
+        (`shouldBe` (Just "bar")) =<< liftIO (MDM.lookup 2 m)
+        (`shouldBe` Nothing)      =<< liftIO (MDM.lookup 3 m)
+        (`shouldBe` True)         =<< liftIO (MDM.has 1 m)
+        (`shouldBe` True)         =<< liftIO (MDM.has 2 m)
+        (`shouldBe` False)        =<< liftIO (MDM.has 3 m)
+        (`shouldBe` True)         =<< liftIO (MDM.delete 1 m)
+        (`shouldBe` False)        =<< liftIO (MDM.has 1 m)
+        (`shouldBe` ())           =<< liftIO (MDM.clear m)
+        (`shouldBe` 0)            =<< liftIO (MDM.size m)
+
+    describe "Miso.Data.Set tests" $ do
+      it "should construct a Set from a list and perform operations" $ do
+        m <- liftIO (MDS.fromList [1..10])
+        (`shouldBe` 10)    =<< liftIO (MDS.size m)
+        (`shouldBe` 10)    =<< liftIO (MDS.size m)
+        (`shouldBe` True)  =<< liftIO (MDS.member 1 m)
+        (`shouldBe` False) =<< liftIO (MDS.member 11 m)
+        (`shouldBe` True)  =<< liftIO (MDS.delete 1 m)
+        (`shouldBe` 9)     =<< liftIO (MDS.size m)
+        (`shouldBe` ())    =<< liftIO (MDS.clear m)
+        (`shouldBe` 0)     =<< liftIO (MDS.size m)
+        x <- liftIO (MDS.fromList [1..10])
+        y <- liftIO (MDS.fromList [11..20])
+        z <- liftIO (MDS.union x y)
+        (`shouldBe` 20) =<< liftIO (MDS.size z)
+        w <- liftIO (MDS.intersection x y)
+        (`shouldBe` 0) =<< liftIO (MDS.size w)
+        k <- liftIO (MDS.difference x y)
+        (`shouldBe` 20) =<< liftIO (MDS.size k)
+        (`shouldBe` True) =<< liftIO (MDS.isSubset k k)
+        (`shouldBe` False) =<< liftIO (MDS.isSubset x y)
+        (`shouldBe` True) =<< liftIO (MDS.isSuperset k k)
+        (`shouldBe` False) =<< liftIO (MDS.isSuperset x y)
+        (`shouldBe` False) =<< liftIO (MDS.isDisjoint k k)
+        (`shouldBe` True) =<< liftIO (MDS.isDisjoint x y)
+
 #ifndef GHCJS_OLD
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
