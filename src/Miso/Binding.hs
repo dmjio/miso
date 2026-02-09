@@ -55,12 +55,14 @@ data Binding parent child
 -- | Unidirectionally binds a parent field to a child field
 --
 -- @since 1.9.0.0
+infixr 0 -->
 (-->) :: Lens parent a -> Lens model a -> Binding parent model
 parent --> child = ParentToChild (_get parent) (_set child)
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a child field to a parent field
 --
 -- @since 1.9.0.0
+infixl 0 <--
 (<--) :: Lens parent a  -> Lens model a -> Binding parent model
 parent <-- child = ChildToParent (_set parent) (_get child)
 -----------------------------------------------------------------------------
@@ -69,6 +71,7 @@ parent <-- child = ChildToParent (_set parent) (_get child)
 -- This is a bidirectional reactive combinator for a miso @Lens@.
 --
 -- @since 1.9.0.0
+infix 0 <-->
 (<-->) :: Lens parent field -> Lens child field -> Binding parent child
 p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
 -----------------------------------------------------------------------------
@@ -77,6 +80,7 @@ p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
 -- This is a bidirectional reactive combinator for a van Laarhoven @Lens'@
 --
 -- @since 1.9.0.0
+infix 0 <--->
 (<--->) :: Lens' parent field -> Lens' child field -> Binding parent child
 p <---> c = Bidirectional (get_ p) (set_ p) (get_ c) (set_ c)
   where
@@ -87,6 +91,7 @@ p <---> c = Bidirectional (get_ p) (set_ p) (get_ c) (set_ c)
 -- style @Lens'@
 --
 -- @since 1.9.0.0
+infixr 0 --->
 (--->) :: Lens' parent field -> Lens' child field -> Binding parent child
 p ---> c = ParentToChild (get_ p) (set_ c)
   where
@@ -97,6 +102,7 @@ p ---> c = ParentToChild (get_ p) (set_ c)
 -- style @Lens'@
 --
 -- @since 1.9.0.0
+infixl 0 <---
 (<---) :: Lens' parent field -> Lens' child field -> Binding parent child
 p <--- c = ChildToParent (set_ p) (get_ c)
   where
