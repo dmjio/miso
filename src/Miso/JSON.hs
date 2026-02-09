@@ -95,6 +95,7 @@ import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
+import           GHC.Natural (Natural,naturalToInteger,naturalFromInteger )
 import           Data.Kind
 import           Data.Word
 import           Data.String
@@ -249,6 +250,9 @@ instance ToJSON Word64 where  toJSON = Number . realToFrac
 -- | Possibly lossy due to conversion to 'Double'
 instance ToJSON Integer where toJSON = Number . fromInteger
 ----------------------------------------------------------------------------
+-- | Possibly lossy due to conversion to 'Double'
+instance ToJSON Natural where toJSON = Number . fromInteger . naturalToInteger
+----------------------------------------------------------------------------
 newtype Parser a = Parser { unParser :: Either MisoString a }
   deriving (Functor, Applicative, Monad)
 ----------------------------------------------------------------------------
@@ -331,6 +335,12 @@ instance FromJSON Float where
 ----------------------------------------------------------------------------
 instance FromJSON Integer where
   parseJSON = withNumber "Integer" (pure . round)
+----------------------------------------------------------------------------
+instance FromJSON Natural where
+  parseJSON = withNumber "Natural" parseNumber
+    where parseNumber d | d < 0 = pfail "cannot parse negative number as Natural"
+                        | isNaN d = pfail "cannot parse NaN as Natural"
+                        | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d 
 ----------------------------------------------------------------------------
 instance FromJSON Int where
   parseJSON = withNumber "Int" (pure . fromInteger . round)

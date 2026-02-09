@@ -28,6 +28,7 @@ import           Control.Concurrent
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
+import           GHC.Natural (Natural)
 import qualified Data.Text as T
 import           Control.Monad.State
 import qualified Data.IntMap.Strict as IM
@@ -825,6 +826,12 @@ main = withJS $ do
         (`shouldBe` Just (99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (99 :: Int))
         (`shouldBe` Just (-99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (-99 :: Int))
         (`shouldBe` Just (0 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (0 :: Int))
+      it "Should marshal a Natural" $ do
+        JSON.fromJSON (JSON.toJSON (99 :: Natural)) `shouldBe` (JSON.Success (99 :: Natural))
+        JSON.fromJSON (JSON.toJSON (0 :: Natural)) `shouldBe` (JSON.Success (0 :: Natural))
+        (JSON.fromJSON (JSON.Number $ -99.00) :: JSON.Result Natural) `shouldBe` JSON.Error "cannot parse negative number as Natural"
+        ((JSON.fromJSON (JSON.Number $ 0/0)) :: JSON.Result Natural) `shouldBe` JSON.Error "cannot parse NaN as Natural"
+        (JSON.fromJSON (JSON.Number $ 15.24) :: JSON.Result Natural) `shouldBe` JSON.Success 15
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
       it "Should marshal a (Maybe Bool)" $ do
