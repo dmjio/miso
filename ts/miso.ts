@@ -18,6 +18,7 @@ import {
    updateRef,
    inline,
    typeOf,
+   bts,
    mathRandom,
    getRandomValues,
    splitmix32,
@@ -109,6 +110,7 @@ export {
   splitmix32,
   delegateEvent,
   getDOMRef,
+  bts,
 
   /* Types */
   VTree,

@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE OverloadedStrings         #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
@@ -99,7 +100,7 @@ module Miso
   , module Miso.State
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (void)
+import           Control.Monad (void, when)
 -----------------------------------------------------------------------------
 import           Miso.Binding
 import           Miso.Diff
@@ -119,6 +120,7 @@ import           Miso.Storage
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
+import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
@@ -201,5 +203,17 @@ withJS action = void $ do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
 #endif
+#ifdef GHCJS_NEW
+  FFI.consoleLog "withJS"
+  onBTS <- FFI.bts
+  if onBTS
+    then do
+      FFI.consoleLog "on bts"
+      void action
+    else do
+      FFI.consoleLog "on mts, bailing"
+      pure ()
+#else
   action
+#endif
 -----------------------------------------------------------------------------

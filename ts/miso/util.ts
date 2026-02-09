@@ -298,3 +298,11 @@ export function drill<T>(c: VComp<T>): T {
       return c.child.domRef;
   }
 }
+
+export function bts () : boolean {
+  console.log(lynx, "getJSModule" in lynx);
+  if (lynx && 'getJSModule' in lynx) {
+    return true;
+  }
+  return false;
+}

@@ -22,6 +22,7 @@ import {
   getRandomValues,
   splitmix32,
   delegateEvent,
+  bts,
 } from './miso';
 
 import {
@@ -33,6 +34,7 @@ import {
 
 /* export globally */
 globalThis['miso'] = {
+    bts,
     hydrationContext,
     eventContext,
     drawingContext,

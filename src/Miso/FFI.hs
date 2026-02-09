@@ -101,6 +101,8 @@ module Miso.FFI
   , splitmix32
     -- ** Math.random()
   , mathRandom
+    -- ** Native helpers
+  , bts
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

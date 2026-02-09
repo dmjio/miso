@@ -148,6 +148,8 @@ module Miso.FFI.Internal
    , mathRandom
    -- * Crypto
    , getRandomValue
+   -- * Native
+   , bts
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_, (<=<), when)
@@ -460,14 +462,14 @@ diff (Object a) (Object b) c = do
 delegator :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
 delegator mountPoint events debug getVTree = do
   ctx <- getEventContext
+  d <- toJSVal debug
 #ifdef WASM
   cb <- asyncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
 #else
   cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
 #endif
-  d <- toJSVal debug
   moduleMiso <- jsg "miso"
-  void $ moduleMiso # "delegator" $ [mountPoint,events,cb,d,ctx]
+  void $ ctx # "delegator" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
 --
@@ -1036,4 +1038,7 @@ mathRandom = fromJSValUnchecked =<< do
 getRandomValue :: IO Double
 getRandomValue = fromJSValUnchecked =<< do
   jsg "miso" # "getRandomValues" $ ()
+-----------------------------------------------------------------------------
+bts :: IO Bool
+bts = fromJSValUnchecked =<< do jsg "miso" # "bts" $ ()
 -----------------------------------------------------------------------------
