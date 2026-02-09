@@ -339,6 +339,7 @@ instance FromJSON Integer where
 instance FromJSON Natural where
   parseJSON = withNumber "Natural" parseNumber
     where parseNumber d | d < 0 = pfail "cannot parse negative number as Natural"
+                        | isNaN d = pfail "cannot parse NaN as Natural"
                         | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d 
 ----------------------------------------------------------------------------
 instance FromJSON Int where

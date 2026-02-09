@@ -830,6 +830,7 @@ main = withJS $ do
         JSON.fromJSON (JSON.toJSON (99 :: Natural)) `shouldBe` (JSON.Success (99 :: Natural))
         JSON.fromJSON (JSON.toJSON (0 :: Natural)) `shouldBe` (JSON.Success (0 :: Natural))
         (JSON.fromJSON (JSON.Number $ -99.00) :: JSON.Result Natural) `shouldBe` (JSON.Error "cannot parse negative number as Natural")
+        (JSON.fromJSON (JSON.Number $ (0/0)::Natural) :: JSON.Result Natural) `shouldBe` (JSON.Error "cannot parse NaN as Natural")
         (JSON.fromJSON (JSON.Number $ 15.24) :: JSON.Result Natural) `shouldBe` (JSON.Success 15)
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
