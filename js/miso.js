@@ -239,8 +239,7 @@ function drill(c) {
   }
 }
 function bts() {
-  console.log(lynx, "getJSModule" in lynx);
-  if (lynx && "getJSModule" in lynx) {
+  if (lynx && !("__CreatePage" in globalThis)) {
     return true;
   }
   return false;
