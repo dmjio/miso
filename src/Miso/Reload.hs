@@ -33,6 +33,10 @@ import           Miso.DSL (jsg, (!), setField)
 -- main = reload (startApp defaultEvents app)
 -- @
 --
+-- N.B. This also resets the internal 'component' state. This means all currently
+-- mounted components become unmounted and t'ComponentId' are reset to their
+-- original form factory.
+--
 -- @since 1.9.0.0
 reload
   :: IO ()
