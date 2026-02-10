@@ -468,7 +468,6 @@ delegator mountPoint events debug getVTree = do
 #else
   cb <- syncCallback1 $ \continuation -> void (call continuation global =<< getVTree)
 #endif
-  moduleMiso <- jsg "miso"
   void $ ctx # "delegator" $ [mountPoint,events,cb,d,ctx]
 -----------------------------------------------------------------------------
 -- | Copies DOM pointers into virtual dom entry point into isomorphic javascript
