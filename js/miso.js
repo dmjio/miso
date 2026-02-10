@@ -239,10 +239,7 @@ function drill(c) {
   }
 }
 function bts() {
-  if (lynx && !("__CreatePage" in globalThis)) {
-    return true;
-  }
-  return false;
+  return __BACKGROUND__;
 }
 
 // ts/miso/dom.ts

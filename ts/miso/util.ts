@@ -300,8 +300,5 @@ export function drill<T>(c: VComp<T>): T {
 }
 
 export function bts () : boolean {
-  if (lynx && !('__CreatePage' in globalThis)) {
-    return true;
-  }
-  return false;
+  return __BACKGROUND__;
 }
