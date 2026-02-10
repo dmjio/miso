@@ -100,7 +100,7 @@ module Miso
   , module Miso.State
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (void, when)
+import           Control.Monad (void)
 -----------------------------------------------------------------------------
 import           Miso.Binding
 import           Miso.Diff
@@ -120,7 +120,6 @@ import           Miso.Storage
 import           Miso.Subscription
 import           Miso.Types
 import           Miso.Util
-import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
 -- Assumes the pre-rendered DOM is already present.
