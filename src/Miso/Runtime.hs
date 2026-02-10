@@ -941,6 +941,7 @@ unmountComponent cs@ComponentState {..} = do
 -----------------------------------------------------------------------------
 resetComponentState :: IO ()
 resetComponentState = do
+  atomicWriteIORef globalQueue mempty
   cs <- readIORef components
   forM_ cs unmountComponent
   atomicWriteIORef components mempty
