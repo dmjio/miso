@@ -18,6 +18,7 @@ module Miso.Reload
   ) where
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
+import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
 -- | Clears the <body> and <head> on each reload.
@@ -32,6 +33,10 @@ import           Miso.DSL (jsg, (!), setField)
 -- main = reload (startApp defaultEvents app)
 -- @
 --
+-- N.B. This also resets the internal 'component' state. This means all currently
+-- mounted components become unmounted and t'ComponentId' are reset to their
+-- original form factory.
+--
 -- @since 1.9.0.0
 reload
   :: IO ()
@@ -40,7 +45,7 @@ reload
 reload = (clear >>)
   where
     clear :: IO ()
-    clear = do
+    clear = resetComponentState >> do
       body_ <- jsg "document" ! ("body" :: MisoString)
       setField body_ "innerHTML" ("" :: MisoString)
       head_ <- jsg "document" ! ("head" :: MisoString)

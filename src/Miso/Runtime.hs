@@ -82,6 +82,7 @@ module Miso.Runtime
   , rootComponentId
   , componentId
   , modifyComponent
+  , resetComponentState
   -- ** Scheduler
   , scheduler
 #ifdef WASM
@@ -937,6 +938,14 @@ unmountComponent cs@ComponentState {..} = do
   liftIO $ modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+-----------------------------------------------------------------------------
+resetComponentState :: IO ()
+resetComponentState = do
+  cs <- readIORef components
+  forM_ cs unmountComponent
+  atomicWriteIORef components mempty
+  atomicWriteIORef componentIds topLevelComponentId
+  atomicWriteIORef subIds 0
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
