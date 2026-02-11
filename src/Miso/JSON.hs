@@ -104,6 +104,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.String (MisoString, ms, singleton, pack)
+import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import Control.Monad.Trans.Maybe
@@ -434,8 +435,31 @@ withNumber expected _ v          = typeMismatch expected v
 typeMismatch :: MisoString -> Value -> Parser a
 typeMismatch expected _ = pfail ("expected " <> expected)
 ----------------------------------------------------------------------------
+#ifdef VANILLA
+encode :: ToJSON a => a -> MisoString
+encode x = enc (toJSON x)
+  where
+    enc = \case
+      String s ->
+        ms s
+      Number n ->
+        ms n
+      Null ->
+        "null"
+      Array xs ->
+        "[" <> MS.intercalate "," (fmap enc xs) <> "]"
+      Bool True ->
+        "true"
+      Bool False ->
+        "false"
+      Object o ->
+        "{" <>
+          MS.intercalate "," [ k <> ":" <> enc v | (k,v) <- M.toList o ]
+        <> "}"
+#else
 encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
+#endif
 ----------------------------------------------------------------------------
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
