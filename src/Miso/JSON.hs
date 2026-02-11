@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# LANGUAGE KindSignatures             #-}
