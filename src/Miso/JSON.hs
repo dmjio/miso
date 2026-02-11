@@ -9,7 +9,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-#ifdef GHCJS_OLD
+#if __GLASGOW_HASKELL__ <= 865
 {-# LANGUAGE UndecidableInstances       #-}
 #endif
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
