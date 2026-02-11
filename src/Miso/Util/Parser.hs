@@ -18,6 +18,7 @@ module Miso.Util.Parser
   , ParseError (..)
     -- ** Combinators
   , parse
+  , anyToken
   , satisfy
   , peek
   , token_
