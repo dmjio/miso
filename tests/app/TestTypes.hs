@@ -1,10 +1,15 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE CPP #-}
 
 module TestTypes where
 
 import GHC.Generics
-import Data.Aeson (ToJSON, FromJSON)
+#ifdef VANILLA
+import Data.Aeson (FromJSON, ToJSON)
+#else
+import Miso.JSON (FromJSON, ToJSON)
+#endif
 
 import qualified TestApp as TA
 

@@ -80,7 +80,8 @@ executable component-tests
 executable integration-tests-client
   import:
     warnings,
-    options
+    options,
+    cpp
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     buildable: True
@@ -93,11 +94,9 @@ executable integration-tests-client
   build-depends:
     base,
     text,
-    aeson,
     miso,
     QuickCheck,
     hashable,
-    jsaddle,
     lens
 
   main-is:
@@ -114,7 +113,8 @@ executable integration-tests-client
 
 executable integration-tests-server
   import:
-    warnings
+    warnings,
+    cpp
 
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     buildable: False
@@ -133,7 +133,6 @@ executable integration-tests-server
   build-depends:
     base,
     text,
-    aeson,
     miso,
     warp,
     wai-extra,
@@ -148,7 +147,7 @@ executable integration-tests-server
     http-client,
     http-types,
     bytestring,
-    jsaddle
+    aeson
   hs-source-dirs:
     app
   default-language:

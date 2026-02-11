@@ -2,16 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <&>" #-}
 
 module HtmlGen where
 
 import GHC.Generics
-import Data.Aeson (ToJSON, FromJSON)
 import Miso hiding (on, Src, Checked)
 import Miso.Html.Element hiding (title_, data_)
 import Miso.Html.Property hiding (label_, form_)
+#ifdef VANILLA
+import Data.Aeson (FromJSON, ToJSON)
+#else
+import Miso.JSON (FromJSON, ToJSON)
+#endif
 import Test.QuickCheck
 import Data.Char (isControl, isSpace)
 import Control.Monad (replicateM)

@@ -45,8 +45,6 @@ import Miso
     )
 import qualified Network.Wai.Handler.Warp             as Wai
 import qualified Network.Wai.Middleware.RequestLogger as Wai
-import Data.Text.Lazy (toStrict)
-import Data.Aeson.Text (encodeToLazyText)
 import System.Environment (lookupEnv)
 import Test.QuickCheck
     ( forAll
@@ -57,7 +55,9 @@ import Test.QuickCheck
     , Property
     , NonNegative (..)
     )
-import Data.Aeson (encode, decode, ToJSON)
+import Data.Aeson (ToJSON)
+import Data.Text.Lazy (toStrict)
+import Data.Aeson.Text (encodeToLazyText)
 import Control.Concurrent (forkIO, killThread)
 import Network.HTTP.Client
     ( defaultManagerSettings
@@ -68,9 +68,6 @@ import Network.HTTP.Client
     , responseBody
     )
 import Network.HTTP.Types (statusCode)
-import Data.ByteString.Lazy (writeFile, readFile)
-import Control.Monad (unless)
-import Data.Maybe (fromJust)
 import Control.Exception (bracket)
 
 import qualified HtmlGen as Html
@@ -117,6 +114,7 @@ instance ToHtml (IndexPageData model action) where
                     [ class_ "initial-data"
                     , type_ "application/json"
                     ]
+                    -- (encode initial_data)
                     (toMisoString $ toStrict $ encodeToLazyText initial_data)
 
                 , title_ [] [ "Miso Tests" ]
@@ -185,10 +183,6 @@ httpGet url = do
     return $ statusCode $ responseStatus response
 
 
-failFilename :: FilePath
-failFilename = "/tmp/failing_case.json"
-
-
 prop_testIO :: EnvSettings -> Property
 prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
     \html -> ioProperty $ do
@@ -217,9 +211,6 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
 
         let ok = 200 <= playwrightResponse && playwrightResponse <= 300
 
-        unless ok $
-            writeFile failFilename (encode html)
-
         return ok
 
     where
@@ -238,26 +229,6 @@ prop_testBindings envSettings = forAll (arbitrary :: Gen (NonNegative Int)) $
                 (TestBindingsModel depth)
             )
         return $ 1 == (1 :: Int)
-
-    where
-        port_ = port envSettings
-
-
-serveFailed :: EnvSettings -> IO ()
-serveFailed envSettings = do
-    bytes <- readFile failFilename
-    let html = fromJust $ decode bytes
-
-    let appData = App.Model { App.randomHtml = html } :: App.Model
-
-    putStrLn $ "Beginning to listen on " <> show port_
-    Wai.run port_ $ Wai.logStdout
-        ( server
-            envSettings
-            (Proxy @(API App.Model App.Action))
-            (App.app appData)
-            (TestAppModel appData)
-        )
 
     where
         port_ = port envSettings
@@ -286,8 +257,6 @@ main = do
 
     putStrLn $ "TestServer settings: " ++ show envSettings
 
-    -- serveFailed envSettings
     putStrLn "Begin Quickchecks"
     quickCheck $ prop_testIO envSettings
     quickCheck $ prop_testBindings envSettings
-    -- quickCheck $ prop_testBindings (envSettings { port = port envSettings + 1 })

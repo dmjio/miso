@@ -16,6 +16,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module TestBindingsApp where
 
@@ -37,7 +38,11 @@ import qualified Miso.Html.Property as M
 import Miso.Lens (Lens, lens, (%=))
 import Miso.Binding ((-->), (<--))
 import GHC.Generics
-import Data.Aeson (ToJSON, FromJSON)
+#ifdef VANILLA
+import Data.Aeson (FromJSON, ToJSON)
+#else
+import Miso.JSON (FromJSON, ToJSON)
+#endif
 
 type Action = ()
 

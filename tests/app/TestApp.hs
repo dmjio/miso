@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module TestApp where
 
@@ -19,8 +20,12 @@ import Miso.DSL ((#))
 import qualified Miso as M
 import qualified Miso.Html as M
 import qualified Miso.Html.Property as M
+#ifdef VANILLA
+import Data.Aeson (FromJSON, ToJSON)
+#else
+import Miso.JSON (FromJSON, ToJSON)
+#endif
 import GHC.Generics
-import Data.Aeson (ToJSON, FromJSON)
 import Control.Monad (void)
 
 import HtmlGen (HTML, render)
