@@ -109,7 +109,7 @@ import           GHC.Generics
 import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
-import           Miso.String (MisoString, ms, singleton, pack)
+import           Miso.String (ToMisoString, MisoString, ms, singleton, pack)
 import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 #ifndef VANILLA
@@ -443,29 +443,30 @@ typeMismatch expected _ = pfail ("expected " <> expected)
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
-encode x = enc (toJSON x)
-  where
-    enc = \case
-      String s ->
-        "\"" <> s <> "\""
-      Number n ->
-        ms n
-      Null ->
-        "null"
-      Array xs ->
-        "[" <> MS.intercalate "," (fmap enc xs) <> "]"
-      Bool True ->
-        "true"
-      Bool False ->
-        "false"
-      Object o ->
-        "{" <>
-          MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> enc v | (k,v) <- M.toList o ]
-        <> "}"
+encode = ms . toJSON
 #else
 encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 #endif
+----------------------------------------------------------------------------
+instance ToMisoString Value where
+  toMisoString = \case
+    String s ->
+      "\"" <> s <> "\""
+    Number n ->
+      ms n
+    Null ->
+      "null"
+    Array xs ->
+      "[" <> MS.intercalate "," (fmap ms xs) <> "]"
+    Bool True ->
+      "true"
+    Bool False ->
+      "false"
+    Object o ->
+      "{" <>
+        MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
+      <> "}"
 ----------------------------------------------------------------------------
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
@@ -492,10 +493,10 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 #ifdef VANILLA
 encodePretty' :: ToJSON a => Config -> a -> MisoString
-encodePretty' = undefined
+encodePretty' = error "encodePretty': not implemented"
 -----------------------------------------------------------------------------
 encodePretty :: ToJSON a => a -> MisoString
-encodePretty _ = undefined
+encodePretty _ = error "encodePretty: not implemented"
 -----------------------------------------------------------------------------
 #else
 -----------------------------------------------------------------------------
@@ -534,7 +535,7 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 #ifdef VANILLA
 jsonStringify :: JSVal -> IO MisoString
-jsonStringify _ = undefined
+jsonStringify _ = error "jsonStringify: not implemented"
 #endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
@@ -557,7 +558,7 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 #ifdef VANILLA
 jsonParse :: MisoString -> IO JSVal
-jsonParse _ = undefined
+jsonParse _ = error "jsonParse: not implemented"
 #endif
 -----------------------------------------------------------------------------
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
@@ -675,10 +676,10 @@ fromJSVal_Value jsval = do
 #ifdef VANILLA
 -----------------------------------------------------------------------------
 fromJSVal_Value :: JSVal -> IO (Maybe Value)
-fromJSVal_Value = undefined
+fromJSVal_Value = error "fromJSVal_Value: not implemented"
 -----------------------------------------------------------------------------
 toJSVal_Value :: Value -> IO JSVal
-toJSVal_Value = undefined
+toJSVal_Value = error "toJSVal_Value: not implemented"
 -----------------------------------------------------------------------------
 #endif
 -----------------------------------------------------------------------------
