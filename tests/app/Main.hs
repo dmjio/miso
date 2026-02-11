@@ -28,6 +28,7 @@ import           Control.Concurrent
 import           Data.Either
 import           Data.IORef
 import           Data.Text (Text)
+import           GHC.Natural (Natural)
 import qualified Data.Text as T
 import           Control.Monad.State
 import qualified Data.IntMap.Strict as IM
@@ -37,6 +38,8 @@ import qualified Miso.JSON as JSON
 import           Miso.Random
 import           Miso.Router
 import qualified Miso.String as S
+import qualified Miso.Data.Map as MDM
+import qualified Miso.Data.Set as MDS
 import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
@@ -134,6 +137,47 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Data.Map tests" $ do
+      it "should construct a Map from a list and perform operations" $ do
+        m <- liftIO (MDM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
+        (`shouldBe` 2)            =<< liftIO (MDM.size m)
+        (`shouldBe` (Just "foo")) =<< liftIO (MDM.lookup 1 m)
+        (`shouldBe` (Just "bar")) =<< liftIO (MDM.lookup 2 m)
+        (`shouldBe` Nothing)      =<< liftIO (MDM.lookup 3 m)
+        (`shouldBe` True)         =<< liftIO (MDM.has 1 m)
+        (`shouldBe` True)         =<< liftIO (MDM.has 2 m)
+        (`shouldBe` False)        =<< liftIO (MDM.has 3 m)
+        (`shouldBe` True)         =<< liftIO (MDM.delete 1 m)
+        (`shouldBe` False)        =<< liftIO (MDM.has 1 m)
+        (`shouldBe` ())           =<< liftIO (MDM.clear m)
+        (`shouldBe` 0)            =<< liftIO (MDM.size m)
+
+    describe "Miso.Data.Set tests" $ do
+      it "should construct a Set from a list and perform operations" $ do
+        m <- liftIO (MDS.fromList [1 :: Int .. 10])
+        (`shouldBe` 10)    =<< liftIO (MDS.size m)
+        (`shouldBe` 10)    =<< liftIO (MDS.size m)
+        (`shouldBe` True)  =<< liftIO (MDS.member 1 m)
+        (`shouldBe` False) =<< liftIO (MDS.member 11 m)
+        (`shouldBe` True)  =<< liftIO (MDS.delete 1 m)
+        (`shouldBe` 9)     =<< liftIO (MDS.size m)
+        (`shouldBe` ())    =<< liftIO (MDS.clear m)
+        (`shouldBe` 0)     =<< liftIO (MDS.size m)
+        x <- liftIO (MDS.fromList [1 :: Int .. 10])
+        y <- liftIO (MDS.fromList [11 :: Int .. 20])
+        z <- liftIO (MDS.union x y)
+        (`shouldBe` 20) =<< liftIO (MDS.size z)
+        w <- liftIO (MDS.intersection x y)
+        (`shouldBe` 0) =<< liftIO (MDS.size w)
+        k <- liftIO (MDS.difference x y)
+        (`shouldBe` 20) =<< liftIO (MDS.size k)
+        (`shouldBe` True) =<< liftIO (MDS.isSubset k k)
+        (`shouldBe` False) =<< liftIO (MDS.isSubset x y)
+        (`shouldBe` True) =<< liftIO (MDS.isSuperset k k)
+        (`shouldBe` False) =<< liftIO (MDS.isSuperset x y)
+        (`shouldBe` False) =<< liftIO (MDS.isDisjoint k k)
+        (`shouldBe` True) =<< liftIO (MDS.isDisjoint x y)
+
 #ifndef GHCJS_OLD
     describe "inline JS QQ tests" $ do
       it "should use inline JS to calc factorial" $
@@ -785,6 +829,12 @@ main = withJS $ do
         (`shouldBe` Just (99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (99 :: Int))
         (`shouldBe` Just (-99 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (-99 :: Int))
         (`shouldBe` Just (0 :: Int)) =<< liftIO (fromJSVal =<< toJSVal (0 :: Int))
+      it "Should marshal a Natural" $ do
+        JSON.fromJSON (JSON.toJSON (99 :: Natural)) `shouldBe` (JSON.Success (99 :: Natural))
+        JSON.fromJSON (JSON.toJSON (0 :: Natural)) `shouldBe` (JSON.Success (0 :: Natural))
+        (JSON.fromJSON (JSON.Number $ -99.00) :: JSON.Result Natural) `shouldBe` JSON.Error "cannot parse negative number as Natural"
+        ((JSON.fromJSON (JSON.Number $ 0/0)) :: JSON.Result Natural) `shouldBe` JSON.Error "cannot parse NaN as Natural"
+        (JSON.fromJSON (JSON.Number $ 15.24) :: JSON.Result Natural) `shouldBe` JSON.Success 15
       it "Should marshal a MisoString" $ do
         (`shouldBe` Just ("foo" :: MisoString)) =<< liftIO (fromJSVal =<< toJSVal ("foo" :: MisoString))
       it "Should marshal a (Maybe Bool)" $ do

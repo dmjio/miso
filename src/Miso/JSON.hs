@@ -95,6 +95,7 @@ import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
+import           GHC.Natural (Natural,naturalToInteger,naturalFromInteger )
 import           Data.Kind
 import           Data.Word
 import           Data.String
@@ -103,6 +104,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.String (MisoString, ms, singleton, pack)
+import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import Control.Monad.Trans.Maybe
@@ -249,6 +251,9 @@ instance ToJSON Word64 where  toJSON = Number . realToFrac
 -- | Possibly lossy due to conversion to 'Double'
 instance ToJSON Integer where toJSON = Number . fromInteger
 ----------------------------------------------------------------------------
+-- | Possibly lossy due to conversion to 'Double'
+instance ToJSON Natural where toJSON = Number . fromInteger . naturalToInteger
+----------------------------------------------------------------------------
 newtype Parser a = Parser { unParser :: Either MisoString a }
   deriving (Functor, Applicative, Monad)
 ----------------------------------------------------------------------------
@@ -331,6 +336,12 @@ instance FromJSON Float where
 ----------------------------------------------------------------------------
 instance FromJSON Integer where
   parseJSON = withNumber "Integer" (pure . round)
+----------------------------------------------------------------------------
+instance FromJSON Natural where
+  parseJSON = withNumber "Natural" parseNumber
+    where parseNumber d | d < 0 = pfail "cannot parse negative number as Natural"
+                        | isNaN d = pfail "cannot parse NaN as Natural"
+                        | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d 
 ----------------------------------------------------------------------------
 instance FromJSON Int where
   parseJSON = withNumber "Int" (pure . fromInteger . round)
@@ -424,8 +435,31 @@ withNumber expected _ v          = typeMismatch expected v
 typeMismatch :: MisoString -> Value -> Parser a
 typeMismatch expected _ = pfail ("expected " <> expected)
 ----------------------------------------------------------------------------
+#ifdef VANILLA
+encode :: ToJSON a => a -> MisoString
+encode x = enc (toJSON x)
+  where
+    enc = \case
+      String s ->
+        ms s
+      Number n ->
+        ms n
+      Null ->
+        "null"
+      Array xs ->
+        "[" <> MS.intercalate "," (fmap enc xs) <> "]"
+      Bool True ->
+        "true"
+      Bool False ->
+        "false"
+      Object o ->
+        "{" <>
+          MS.intercalate "," [ k <> ":" <> enc v | (k,v) <- M.toList o ]
+        <> "}"
+#else
 encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
+#endif
 ----------------------------------------------------------------------------
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
