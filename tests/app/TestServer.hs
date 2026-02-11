@@ -40,7 +40,7 @@ import Miso.String (toMisoString)
 import Servant.Miso.Html (HTML)
 import Miso
     ( MisoString
-    , mount
+    , mount_
     , App
     )
 import qualified Network.Wai.Handler.Warp             as Wai
@@ -122,7 +122,7 @@ instance ToHtml (IndexPageData model action) where
                 , title_ [] [ "Miso Tests" ]
                 , js backend_
                 ]
-            , body_ [] [ mount app ]
+            , body_ [] [ mount_ app ]
             ]
         ]
 

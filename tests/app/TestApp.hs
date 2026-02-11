@@ -13,13 +13,15 @@ import Miso
     , LogLevel (..)
     , Effect
     , ROOT
+    , MisoString
     )
+import Miso.DSL ((#))
 import qualified Miso as M
 import qualified Miso.Html as M
 import qualified Miso.Html.Property as M
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
-import Language.Javascript.JSaddle ((#), JSString)
+import Control.Monad (void)
 
 import HtmlGen (HTML, render)
 
@@ -36,8 +38,8 @@ newtype Model = Model
 app :: Model -> MainComponent
 app td =
     (component td update view)
-        { M.mount = Just Initialize
-        , M.logLevel      = DebugAll
+        { M.mount    = Just Initialize
+        , M.logLevel = DebugAll
         }
 
     where
@@ -47,7 +49,7 @@ app td =
 
         update Initialize = io_ $ do
             mElem <- M.getElementById "CLICKME_CLICKME"
-            mElem # ("click" :: JSString) $ ([] :: [ JSString ])
+            void $ mElem # ("click" :: MisoString) $ ([] :: [ MisoString ])
 
         view :: Model -> MainView
         view Model { randomHtml = html } = render aElem html
