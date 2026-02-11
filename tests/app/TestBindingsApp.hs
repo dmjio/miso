@@ -27,14 +27,14 @@ import Miso
     , text
     , Component
     , toMisoString
-    , mount
+    , mount_
     , io_
     , consoleLog
     )
 import qualified Miso as M
 import qualified Miso.Html as M
 import qualified Miso.Html.Property as M
-import Miso.Lens (Lens (..), (%=))
+import Miso.Lens (Lens, lens, (%=))
 import Miso.Binding ((-->), (<--))
 import GHC.Generics
 import Data.Aeson (ToJSON, FromJSON)
@@ -49,11 +49,11 @@ data Model = Model
 
 
 valueALens :: Lens Model Int
-valueALens = Lens valueA (\x m -> m { valueA = x } )
+valueALens = lens valueA (\m x -> m { valueA = x })
 
 
 valueBLens :: Lens Model Int
-valueBLens = Lens valueB (\x m -> m { valueB = x } )
+valueBLens = lens valueB (\m x -> m { valueB = x })
 
 
 type AppModel = Model
@@ -76,7 +76,7 @@ rootView depth m =
             ]
             [ text "Click Me" ]
         : modelElems m
-        ++ [ mount $ innerApp depth ]
+        ++ [ mount_ $ innerApp depth ]
     )
 
 
@@ -123,7 +123,7 @@ view idx m =
     M.div_ []
         ( modelElems m
         ++
-        [ mount $ innerApp (idx - 1) ]
+        [ mount_ $ innerApp (idx - 1) ]
         )
 
 

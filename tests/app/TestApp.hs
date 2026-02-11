@@ -36,7 +36,7 @@ newtype Model = Model
 app :: Model -> MainComponent
 app td =
     (component td update view)
-        { M.initialAction = Just Initialize
+        { M.mount = Just Initialize
         , M.logLevel      = DebugAll
         }
 
