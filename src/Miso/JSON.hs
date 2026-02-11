@@ -456,7 +456,7 @@ encode x = enc (toJSON x)
         "false"
       Object o ->
         "{" <>
-          MS.intercalate "," [ k <> ":" <> enc v | (k,v) <- M.toList o ]
+          MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> enc v | (k,v) <- M.toList o ]
         <> "}"
 #else
 encode :: ToJSON a => a -> MisoString
