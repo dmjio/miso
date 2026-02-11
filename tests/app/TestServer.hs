@@ -55,9 +55,10 @@ import Test.QuickCheck
     , Property
     , NonNegative (..)
     )
-import Data.Aeson (ToJSON)
-import Data.Text.Lazy (toStrict)
-import Data.Aeson.Text (encodeToLazyText)
+import Miso.JSON (ToJSON, encode)
+-- import Data.Aeson (ToJSON)
+-- import Data.Text.Lazy (toStrict)
+-- import Data.Aeson.Text (encodeToLazyText)
 import Control.Concurrent (forkIO, killThread)
 import Network.HTTP.Client
     ( defaultManagerSettings
@@ -114,8 +115,8 @@ instance ToHtml (IndexPageData model action) where
                     [ class_ "initial-data"
                     , type_ "application/json"
                     ]
-                    -- (encode initial_data)
-                    (toMisoString $ toStrict $ encodeToLazyText initial_data)
+                    (encode initial_data)
+                    --(toMisoString $ toStrict $ encodeToLazyText initial_data)
 
                 , title_ [] [ "Miso Tests" ]
                 , js backend_

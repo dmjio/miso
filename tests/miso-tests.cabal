@@ -146,8 +146,7 @@ executable integration-tests-server
     hashable,
     http-client,
     http-types,
-    bytestring,
-    aeson
+    bytestring
   hs-source-dirs:
     app
   default-language:

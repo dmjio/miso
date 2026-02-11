@@ -73,7 +73,7 @@ main = do
 
     rawTestData <- getScriptContents "initial-data"
 
-    -- consoleLog $ "stringified data: " <> toMisoString (show rawTestData)
+    consoleLog $ "stringified data: " <> toMisoString (show rawTestData)
 
     let mTestData = decode =<< rawTestData
 
