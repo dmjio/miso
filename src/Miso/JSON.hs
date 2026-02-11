@@ -96,6 +96,7 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
 import           GHC.Natural (Natural,naturalToInteger,naturalFromInteger )
+import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
 import           Data.String
@@ -174,7 +175,7 @@ instance GToJSON a => GToJSON (C1 i a) where
 instance (GToJSON a, GToJSON b) => GToJSON (a :*: b) where
   gToJSON opts acc (x :*: y) = gToJSON opts acc x <> gToJSON opts acc y
 ----------------------------------------------------------------------------
-instance (GToJSON a, GToJSON b) => GToJSON (a :+: b) where
+instance (TypeError (Text "Sum types unsupported"), GToJSON a, GToJSON b) => GToJSON (a :+: b) where
   gToJSON opts acc = \case
     L1 x -> gToJSON opts acc x
     R1 x -> gToJSON opts acc x
@@ -441,7 +442,7 @@ encode x = enc (toJSON x)
   where
     enc = \case
       String s ->
-        ms s
+        "\"" <> s <> "\""
       Number n ->
         ms n
       Null ->
