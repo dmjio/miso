@@ -9,6 +9,9 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+#ifdef GHCJS_OLD
+{-# LANGUAGE UndecidableInstances       #-}
+#endif
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
@@ -91,12 +94,13 @@ import           Control.Applicative
 import           Control.Monad
 #if __GLASGOW_HASKELL__ <= 865
 import           Control.Monad.Fail
+import           GHC.Natural (Natural)
 #endif
 import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
-import           GHC.Natural (Natural,naturalToInteger,naturalFromInteger )
+import           GHC.Natural (naturalToInteger, naturalFromInteger)
 import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
@@ -109,7 +113,7 @@ import           Miso.String (MisoString, ms, singleton, pack)
 import qualified Miso.String as MS
 ----------------------------------------------------------------------------
 #ifndef VANILLA
-import Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.Maybe
 #endif
 ----------------------------------------------------------------------------
 (.=) :: ToJSON v => MisoString -> v -> Pair
@@ -176,7 +180,7 @@ instance GToJSON a => GToJSON (C1 i a) where
 instance (GToJSON a, GToJSON b) => GToJSON (a :*: b) where
   gToJSON opts acc (x :*: y) = gToJSON opts acc x <> gToJSON opts acc y
 ----------------------------------------------------------------------------
-instance (TypeError (Text "Sum types unsupported"), GToJSON a, GToJSON b) => GToJSON (a :+: b) where
+instance (TypeError ('Text "Sum types unsupported"), GToJSON a, GToJSON b) => GToJSON (a :+: b) where
   gToJSON opts acc = \case
     L1 x -> gToJSON opts acc x
     R1 x -> gToJSON opts acc x
