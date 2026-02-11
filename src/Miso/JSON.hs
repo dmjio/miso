@@ -441,7 +441,7 @@ encode x = enc (toJSON x)
   where
     enc = \case
       String s ->
-        ms s
+        "\"" <> s <> "\""
       Number n ->
         ms n
       Null ->
