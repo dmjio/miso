@@ -116,6 +116,7 @@ import qualified Miso.String as MS
 import           Control.Monad.Trans.Maybe
 #endif
 ----------------------------------------------------------------------------
+infixr 8 .=
 (.=) :: ToJSON v => MisoString -> v -> Pair
 k .= v  = (k, toJSON v)
 ----------------------------------------------------------------------------
