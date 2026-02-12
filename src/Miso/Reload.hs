@@ -42,10 +42,10 @@ reload
   :: IO ()
   -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-reload = (clear >>)
+reload action = clear >> action
   where
     clear :: IO ()
-    clear = resetComponentState >> do
+    clear = resetComponentState $ do
       body_ <- jsg "document" ! ("body" :: MisoString)
       setField body_ "innerHTML" ("" :: MisoString)
       head_ <- jsg "document" ! ("head" :: MisoString)

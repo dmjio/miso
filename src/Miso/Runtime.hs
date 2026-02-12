@@ -939,14 +939,14 @@ unmountComponent cs@ComponentState {..} = do
     children.at _componentId .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
 -----------------------------------------------------------------------------
-resetComponentState :: IO ()
-resetComponentState = do
+resetComponentState :: IO () -> IO ()
+resetComponentState clear = do
+  cs <- atomicModifyIORef' components $ \vcomps -> (mempty, vcomps)
   atomicWriteIORef globalQueue mempty
-  cs <- readIORef components
-  forM_ cs unmountComponent
-  atomicWriteIORef components mempty
   atomicWriteIORef componentIds topLevelComponentId
   atomicWriteIORef subIds 0
+  forM_ cs unmountComponent
+  clear
 -----------------------------------------------------------------------------
 -- | Internal function for construction of a Virtual DOM.
 --
