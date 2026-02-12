@@ -108,9 +108,9 @@ anyToken = Parser $ \_ input ->
 -- Returns the parsed token.
 satisfy :: (a -> Bool) -> ParserT r [a] [] a
 satisfy f = do
-    t <- anyToken
-    guard $ f t
-    pure t
+  t <- anyToken
+  guard (f t)
+  pure t
 ----------------------------------------------------------------------------
 -- | Succeeds if the next token in the stream matches the given one.
 -- Returns the parsed token.

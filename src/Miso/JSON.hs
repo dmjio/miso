@@ -111,12 +111,8 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Miso.DSL.FFI
 import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, singleton, pack)
 import qualified Miso.String as MS
-import qualified Miso.Util.Lexer as Lexer
-import qualified Miso.JSON.Lexer as Lexer
 import           Miso.JSON.Types
-import qualified Miso.Util.Parser as Parser
 import qualified Miso.JSON.Parser as Parser
-import           Data.Bifunctor (Bifunctor(first))
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
@@ -456,11 +452,7 @@ encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 #endif
 ----------------------------------------------------------------------------
 instance FromMisoString Value where
-  fromMisoStringEither =
-    first show
-      . either (Left . Parser.LexicalError) (Parser.parse Parser.value . fst)
-      . Lexer.runLexer Lexer.tokens
-      . Lexer.mkStream
+  fromMisoStringEither = Parser.decodePure
 ----------------------------------------------------------------------------
 instance ToMisoString Value where
   toMisoString = \case
@@ -481,10 +473,18 @@ instance ToMisoString Value where
         MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
       <> "}"
 ----------------------------------------------------------------------------
+#ifdef VANILLA
+decode :: FromJSON a => MisoString -> Maybe a
+decode s
+  | Right x <- Parser.decodePure s
+  , Success v <- fromJSON x = v
+  | otherwise = Nothing
+#else
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
   | Right x <- eitherDecode s = Just x
   | otherwise = Nothing
+#endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe

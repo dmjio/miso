@@ -47,6 +47,7 @@ import           Miso.FFI.QQ (js)
 import           Miso.Lens
 import           Miso.Test
 import           Miso.Html
+import           Miso.JSON.Parser (decodePure)
 import           Miso.Html.Property
 import           Miso.Runtime.Internal (ComponentState (..), components, componentIds)
 -----------------------------------------------------------------------------
@@ -134,6 +135,47 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.JSON decode tests" $ do
+      it "Should not decode \"foo\"" $ do
+        decodePure "foo" `shouldSatisfy` isLeft
+      it "Should decode an empty string \"\"" $ do
+        decodePure "\"\"" `shouldBe` Right (JSON.String "")
+      it "Should not decode empty input" $ do
+        decodePure "" `shouldSatisfy` isLeft
+      it "Should decode null" $ do
+        decodePure "null" `shouldBe` Right JSON.Null
+      it "Should decode true" $ do
+        decodePure "true" `shouldBe` Right (JSON.Bool True)
+      it "Should decode false" $ do
+        decodePure "false" `shouldBe` Right (JSON.Bool False)
+      it "Should decode a positive number" $ do
+        decodePure "2" `shouldBe` Right (JSON.Number 2.0)
+      it "Should decode a negative number" $ do
+        decodePure "-2" `shouldBe` Right (JSON.Number (-2.0))
+      it "Should decode a number w/ an exponential" $ do
+        decodePure "2.2e4" `shouldBe` Right (JSON.Number 2.2e4)
+        decodePure "2.2E4" `shouldBe` Right (JSON.Number 2.2e4)
+        decodePure "2.2E+4" `shouldBe` Right (JSON.Number 2.2e+4)
+        decodePure "2.2E-4" `shouldBe` Right (JSON.Number 2.2e-4)
+        decodePure "2.2e+4" `shouldBe` Right (JSON.Number 2.2e+4)
+        decodePure "2.2e-4" `shouldBe` Right (JSON.Number 2.2e-4)
+      it "Should decode a string" $ do
+        decodePure "\"a foo bar \"" `shouldBe` Right (JSON.String "a foo bar ")
+      it "Should decode an empty list" $ do
+        decodePure "[]" `shouldBe` Right (JSON.Array [])
+      it "Should decode an empty with an empty string" $ do
+        decodePure "[\"\"]" `shouldBe` Right (JSON.Array [ JSON.String "" ])
+      it "Should decode an empty object" $ do
+        decodePure "{}" `shouldBe` Right (JSON.Object mempty)
+      it "Should decode a homogenous list" $ do
+        decodePure "[1,2,3]" `shouldBe`
+          Right (JSON.Array [JSON.Number 1, JSON.Number 2, JSON.Number 3])
+      it "Should decode a heterogenous list" $ do
+        decodePure "[1,true,null]" `shouldBe`
+          Right (JSON.Array [JSON.Number 1, JSON.Bool True, JSON.Null])
+        decodePure "{\"a\":true,\"b\":1.1}"
+          `shouldBe` Right (JSON.Object (M.fromList [("a",JSON.Bool True),("b",JSON.Number 1.1)]))
+
     describe "Miso.Data.Map tests" $ do
       it "should construct a Map from a list and perform operations" $ do
         m <- liftIO (MDM.fromList [(1 :: Int, "foo" :: MisoString), (2 :: Int, "bar" :: MisoString)])
