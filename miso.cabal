@@ -183,6 +183,8 @@ library
   elif arch(wasm32)
     hs-source-dirs:
       ffi/wasm
+    c-sources:
+      cbits/foreign.c
     build-depends:
       ghc-experimental,
       template-haskell >= 2.21 && < 2.25

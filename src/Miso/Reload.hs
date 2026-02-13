@@ -21,6 +21,28 @@ import           Miso.String (MisoString)
 import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
+#ifdef WASM
+-----------------------------------------------------------------------------
+import           Foreign
+import           Foreign.C.Types
+import           Foreign.StablePtr
+import           Control.Monad (when)
+-----------------------------------------------------------------------------
+-- Foreign imports using StablePtr
+foreign import ccall unsafe "x_store"
+  x_store :: StablePtr a -> IO ()
+-----------------------------------------------------------------------------
+foreign import ccall unsafe "x_get"
+  x_get :: IO (StablePtr a)
+-----------------------------------------------------------------------------
+foreign import ccall unsafe "x_exists"
+  x_exists :: IO CInt
+-----------------------------------------------------------------------------
+foreign import ccall unsafe "x_clear"
+  x_clear :: IO ()
+-----------------------------------------------------------------------------
+#endif
+-----------------------------------------------------------------------------
 -- | Clears the <body> and <head> on each reload.
 --
 -- Meant to be used with WASM browser mode.
