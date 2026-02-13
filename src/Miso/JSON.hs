@@ -13,6 +13,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 #endif
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.JSON
@@ -104,18 +105,20 @@ import           GHC.Natural (naturalToInteger, naturalFromInteger )
 import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
-import           Data.String
 import           GHC.Generics
 import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
-import           Miso.String (ToMisoString, MisoString, ms, singleton, pack)
+import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, singleton, pack)
 import qualified Miso.String as MS
+import           Miso.JSON.Types
+import qualified Miso.JSON.Parser as Parser
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
 #endif
 ----------------------------------------------------------------------------
+infixr 8 .=
 (.=) :: ToJSON v => MisoString -> v -> Pair
 k .= v  = (k, toJSON v)
 ----------------------------------------------------------------------------
@@ -449,6 +452,9 @@ encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 #endif
 ----------------------------------------------------------------------------
+instance FromMisoString Value where
+  fromMisoStringEither = Parser.decodePure
+----------------------------------------------------------------------------
 instance ToMisoString Value where
   toMisoString = \case
     String s ->
@@ -468,10 +474,18 @@ instance ToMisoString Value where
         MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
       <> "}"
 ----------------------------------------------------------------------------
+#ifdef VANILLA
+decode :: FromJSON a => MisoString -> Maybe a
+decode s
+  | Right x <- Parser.decodePure s
+  , Success v <- fromJSON x = v
+  | otherwise = Nothing
+#else
 decode :: FromJSON a => MisoString -> Maybe a
 decode s
   | Right x <- eitherDecode s = Just x
   | otherwise = Nothing
+#endif
 -----------------------------------------------------------------------------
 #ifdef GHCJS_OLD
 foreign import javascript unsafe
@@ -570,27 +584,6 @@ eitherDecode string = unsafePerformIO $ do
       pure (case fromJSON result of
         Success x -> Right x
         Error err -> Left err)
-----------------------------------------------------------------------------
-data Value
-  = Number Double
-  | Bool Bool
-  | String MisoString
-  | Array [Value]
-  | Object (Map MisoString Value)
-  | Null
-  deriving (Show, Eq)
-----------------------------------------------------------------------------
-instance IsString Value where
-  fromString = String . fromString
-----------------------------------------------------------------------------
-type Pair = (MisoString, Value)
-----------------------------------------------------------------------------
-type Object = Map MisoString Value
-----------------------------------------------------------------------------
-data Result a
-  = Success a
-  | Error MisoString
-  deriving (Show, Eq)  
 ----------------------------------------------------------------------------
 fromJSON :: FromJSON a => Value -> Result a
 fromJSON value =

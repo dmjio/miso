@@ -129,6 +129,9 @@ library
     Miso.Html.Property
     Miso.Html.Render
     Miso.JSON
+    Miso.JSON.Lexer
+    Miso.JSON.Parser
+    Miso.JSON.Types
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
