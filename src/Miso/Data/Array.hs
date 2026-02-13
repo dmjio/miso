@@ -26,12 +26,14 @@ module Miso.Data.Array
     -- * Construction
   , new
   , fromList
+    -- * Deconstruction
+  , toList
     -- * Operations
   , insert
   , push
   , member
   , size
-  , delete
+  , splice
   , singleton
   , pop
   , shift
@@ -42,7 +44,7 @@ module Miso.Data.Array
   , reverse
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (void, forM_)
+import           Control.Monad (void, forM, forM_)
 import           Prelude hiding (lookup, null, reverse)
 -----------------------------------------------------------------------------
 import           Miso.DSL (jsg, JSVal, ToObject, ToJSVal, FromJSVal, (!))
@@ -94,9 +96,13 @@ null m = (== 0) <$> size m
 member :: ToJSVal value => value -> Array value -> IO Bool
 member value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "includes" =<< DSL.toJSVal value
 -----------------------------------------------------------------------------
--- | Removes an entry from a list, returns if the value was removed as t'Bool'.
-delete :: ToJSVal value => value -> Array value -> IO Bool
-delete value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "delete" =<< DSL.toJSVal value
+-- | Splices an array. See [splice](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice).
+splice :: ToJSVal value => Int -> Int -> [value] -> Array value -> IO (Array value)
+splice start deleteCount xs (Array m) = do
+  s <- DSL.toJSVal start
+  d <- DSL.toJSVal deleteCount
+  args <- mapM DSL.toJSVal xs
+  Array <$> do callFunction m "splice" $ [s,d] ++ args
 -----------------------------------------------------------------------------
 -- | Construct a t'Array' from a list of value value pairs.
 fromList :: ToJSVal value => [value] -> IO (Array value)
@@ -105,6 +111,12 @@ fromList xs = do
   forM_ (zip [0..] xs) $ \(k,v) ->
     insert k v m
   pure m
+-----------------------------------------------------------------------------
+-- | Converts an t'Array' to a list.
+toList :: FromJSVal value => Array value -> IO [value]
+toList m = do
+  len <- subtract 1 <$> size m
+  forM [0..len] (!? m)
 -----------------------------------------------------------------------------
 -- | Creates a new Array with a single element.
 --
@@ -128,7 +140,7 @@ shift (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "shift" ([] :: [
 unshift :: ToJSVal a => a -> Array a -> IO Int
 unshift x (Array arr) = DSL.fromJSValUnchecked =<< callFunction arr "unshift" [x]
 -----------------------------------------------------------------------------
--- | Reverses an array in place.
+-- | Reverses an array in-place.
 --
 reverse :: Array a -> IO ()
 reverse (Array arr) = void $ callFunction arr "reverse" ([] :: [JSVal])
