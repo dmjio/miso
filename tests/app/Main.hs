@@ -135,7 +135,7 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
-    describe "Miso.JSON decode tests" $ do
+    describe "Miso.JSON decodePure tests" $ do
       it "Should not decode \"foo\"" $ do
         decodePure "foo" `shouldSatisfy` isLeft
       it "Should decode an empty string \"\"" $ do
