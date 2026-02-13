@@ -138,43 +138,43 @@ main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do
-        (`shouldBe` 0) =<< liftIO (Array.size =<< Array.new)
+        (`shouldBe` 0) =<< liftIO (Array.size =<< (Array.new :: IO (Array.Array Int)))
 
       it "Should create a new array from a list" $ do
-        (`shouldBe` [1,2,3]) =<< liftIO (Array.toList =<< Array.fromList [1,2,3])
+        (`shouldBe` [1,2,3]) =<< liftIO (Array.toList =<< Array.fromList [1,2,3 :: Int])
         (`shouldBe` []) =<< liftIO (Array.toList =<< Array.fromList ([] :: [Int]))
 
       it "Should insert a new element into an array" $ do
-        array <- liftIO $ Array.fromList [0]
+        array <- liftIO $ Array.fromList [0 :: Int]
         liftIO (Array.insert 0 (1 :: Int) array)
-        (`shouldBe` [1]) =<<
+        (`shouldBe` [1 :: Int]) =<<
           liftIO (Array.toList array)
 
       it "Should push an element onto an array" $ do
-        array <- liftIO $ Array.fromList [1,2,3]
+        array <- liftIO $ Array.fromList [1,2,3 :: Int]
         liftIO (Array.push (4 :: Int) array)
-        (`shouldBe` [1,2,3,4]) =<< liftIO (Array.toList array)
+        (`shouldBe` [1,2,3 :: Int,4]) =<< liftIO (Array.toList array)
 
       it "Should lookup an element from an array" $ do
-        array <- liftIO $ Array.fromList [10]
+        array <- liftIO $ Array.fromList [10 :: Int]
         (`shouldBe` (Just 10)) =<< liftIO (Array.lookup (0 :: Int) array)
         (`shouldBe` Nothing) =<< liftIO (Array.lookup (1 :: Int) array)
 
       it "Should (!?) an element onto an array" $ do
-        array <- liftIO $ Array.fromList [10]
+        array <- liftIO $ Array.fromList [10 :: Int]
         (`shouldBe` 10) =<< liftIO ((0 :: Int) Array.!? array)
 
       it "Should size on an array" $ do
-        array <- liftIO $ Array.fromList [10]
+        array <- liftIO $ Array.fromList [10 :: Int]
         (`shouldBe` 1) =<< liftIO (Array.size array)
 
       it "Should null on an array" $ do
-        x <- liftIO $ Array.fromList [10]
+        x <- liftIO $ Array.fromList [10 :: Int]
         (`shouldBe` False) =<< liftIO (Array.null x)
         (`shouldBe` True) =<< liftIO (Array.null =<< Array.new)
 
       it "Should member on an array" $ do
-        x <- liftIO $ Array.fromList [10]
+        x <- liftIO $ Array.fromList [10 :: Int]
         (`shouldBe` True) =<<
           liftIO (Array.member (10 :: Int) x)
 
@@ -205,9 +205,9 @@ main = withJS $ do
         (`shouldBe` [3,2,1]) =<< liftIO (Array.toList xs)
 
       it "Should reverse an array" $ do
-        xs <- liftIO $ Array.fromList [1,2,3]
+        xs <- liftIO $ Array.fromList [1,2,3 :: Int]
         liftIO (Array.reverse xs)
-        (`shouldBe` [3,2,1]) =<< liftIO (Array.toList xs)
+        (`shouldBe` [3,2::Int, 1]) =<< liftIO (Array.toList xs)
 
       it "Should splice an array" $ do
         xs <- liftIO $ Array.fromList ["angel", "clown", "trumpet", "sturgeon" :: MisoString]
