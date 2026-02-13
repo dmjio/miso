@@ -418,6 +418,12 @@ instance FromJSON Ordering where
       "GT" -> pure GT
       _    -> pfail "expected {'LT','EQ','GT'}"
 ----------------------------------------------------------------------------
+instance FromJSON Char where
+  parseJSON = withText "Char" $ \xs ->
+    case xs of
+     x | MS.length x == 1 -> pure (MS.head x)
+       | otherwise -> pfail ("expected Char, received: " <> x)
+----------------------------------------------------------------------------
 instance FromJSON v => FromJSON (Map MisoString v) where
   parseJSON = withObject "Map MisoString v" $ mapM parseJSON
 ----------------------------------------------------------------------------
