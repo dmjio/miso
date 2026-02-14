@@ -88,6 +88,7 @@ module Miso.Runtime
 #ifdef WASM
   , evalFile
 #endif
+  , topLevelComponentId
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS

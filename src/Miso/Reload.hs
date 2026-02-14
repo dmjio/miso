@@ -15,20 +15,20 @@
 module Miso.Reload
   ( -- ** Live reload
     reload
+  , live
   ) where
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
-import           Miso.Runtime (resetComponentState)
+import           Miso.Runtime (resetComponentState, components, initialize, topLevelComponentId, Hydrate(Draw))
+import           Miso.Types (Component, Events)
 import           Miso.DSL (jsg, (!), setField)
+import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
-#ifdef WASM
------------------------------------------------------------------------------
+import           Data.IORef
 import           Foreign
 import           Foreign.C.Types
-import           Foreign.StablePtr
-import           Control.Monad (when)
 -----------------------------------------------------------------------------
--- Foreign imports using StablePtr
+-- | Foreign imports using t'StablePtr'
 foreign import ccall unsafe "x_store"
   x_store :: StablePtr a -> IO ()
 -----------------------------------------------------------------------------
@@ -40,8 +40,6 @@ foreign import ccall unsafe "x_exists"
 -----------------------------------------------------------------------------
 foreign import ccall unsafe "x_clear"
   x_clear :: IO ()
------------------------------------------------------------------------------
-#endif
 -----------------------------------------------------------------------------
 -- | Clears the <body> and <head> on each reload.
 --
@@ -72,4 +70,37 @@ reload action = clear >> action
       setField body_ "innerHTML" ("" :: MisoString)
       head_ <- jsg "document" ! ("head" :: MisoString)
       setField head_ "innerHTML" ("" :: MisoString)
+-----------------------------------------------------------------------------
+-- | Live reloading.
+live
+  :: (Eq parent, Eq model)
+  => Component parent model action
+  -> Events
+  -> IO ()
+live vcomp events = do
+  exists <- x_exists
+  if exists == 1
+    then do
+      -- dmj: Read the original ComponentState
+      -- Initialize the new ComponentState
+      -- Overwrite new models w/ old models (t'Dynamic' diff them eventually ...)
+
+      -- Deref old state, update new state, set pointer in C heap.
+      _oldState <- readIORef =<< deRefStablePtr =<< x_get
+      _ <- initialize events topLevelComponentId Draw False vcomp FFI.getBody
+      _newState <- readIORef components
+      -- Update current global 'components' with the results of oldstate
+
+      -- TODO: Do the "swap" here.
+      diffModels _oldState _newState
+      -- update old state with new state...
+
+      -- Set static ptr to use new state
+      x_store =<< newStablePtr components <* x_clear
+    else
+      -- dmj: This means its initial load, just store the pointer.
+      x_store =<< newStablePtr components
+  where
+    -- dmj: TODO implement, put old Component model into new Component model
+    diffModels _ _ = pure ()
 -----------------------------------------------------------------------------
