@@ -169,10 +169,6 @@ library
     Miso.Util.Parser
     Miso.WebSocket
 
-  -- Live reload (meant for WASM or Vanilla)
-  c-sources:
-    cbits/foreign.c
-
   -- FFI declarations
   if arch(javascript) || impl(ghcjs)
     hs-source-dirs:
@@ -185,6 +181,9 @@ library
         ghcjs-prim
 
   elif arch(wasm32)
+    -- Live reload (meant for WASM or Vanilla)
+    c-sources:
+      cbits/foreign.c
     hs-source-dirs:
       ffi/wasm
     build-depends:

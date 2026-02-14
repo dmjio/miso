@@ -15,13 +15,18 @@
 module Miso.Reload
   ( -- ** Live reload
     reload
+#ifdef WASM
   , live
+#endif
   ) where
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
-import           Miso.Runtime (resetComponentState, components, initialize, topLevelComponentId, Hydrate(Draw))
-import           Miso.Types (Component, Events)
+import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
+-----------------------------------------------------------------------------
+#ifdef WASM
+import           Miso.Runtime (components, initialize, topLevelComponentId, Hydrate(Draw))
+import           Miso.Types (Component, Events)
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
 import           Data.IORef
@@ -41,6 +46,7 @@ foreign import ccall unsafe "x_exists"
 foreign import ccall unsafe "x_clear"
   x_clear :: IO ()
 -----------------------------------------------------------------------------
+#endif
 -- | Clears the <body> and <head> on each reload.
 --
 -- Meant to be used with WASM browser mode.
@@ -71,6 +77,7 @@ reload action = clear >> action
       head_ <- jsg "document" ! ("head" :: MisoString)
       setField head_ "innerHTML" ("" :: MisoString)
 -----------------------------------------------------------------------------
+#ifdef WASM
 -- | Live reloading.
 live
   :: (Eq parent, Eq model)
@@ -97,6 +104,8 @@ live vcomp events = do
 
       -- Set static ptr to use new state
       x_store =<< newStablePtr components <* x_clear
+
+      -- Set all model to dirty and call `renderComponents`.
     else
       -- dmj: This means its initial load, just store the pointer.
       x_store =<< newStablePtr components
@@ -104,3 +113,4 @@ live vcomp events = do
     -- dmj: TODO implement, put old Component model into new Component model
     diffModels _ _ = pure ()
 -----------------------------------------------------------------------------
+#endif
