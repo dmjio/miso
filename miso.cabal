@@ -115,6 +115,7 @@ library
     Miso.Concurrent
     Miso.Data.Map
     Miso.Data.Set
+    Miso.Data.Array
     Miso.DSL
     Miso.Effect
     Miso.Event

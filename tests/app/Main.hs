@@ -40,6 +40,7 @@ import           Miso.Router
 import qualified Miso.String as S
 import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
+import qualified Miso.Data.Array as Array
 import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
@@ -138,7 +139,87 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
-    describe "Miso.JSON decode tests" $ do
+    describe "Miso.Data.Array tests" $ do
+      it "Should create a new array" $ do
+        (`shouldBe` 0) =<< liftIO (Array.size =<< (Array.new :: IO (Array.Array Int)))
+
+      it "Should create a new array from a list" $ do
+        (`shouldBe` [1,2,3]) =<< liftIO (Array.toList =<< Array.fromList [1,2,3 :: Int])
+        (`shouldBe` []) =<< liftIO (Array.toList =<< Array.fromList ([] :: [Int]))
+
+      it "Should insert a new element into an array" $ do
+        array <- liftIO $ Array.fromList [0 :: Int]
+        liftIO (Array.insert 0 (1 :: Int) array)
+        (`shouldBe` [1 :: Int]) =<<
+          liftIO (Array.toList array)
+
+      it "Should push an element onto an array" $ do
+        array <- liftIO $ Array.fromList [1,2,3 :: Int]
+        liftIO (Array.push (4 :: Int) array)
+        (`shouldBe` [1,2,3 :: Int,4]) =<< liftIO (Array.toList array)
+
+      it "Should lookup an element from an array" $ do
+        array <- liftIO $ Array.fromList [10 :: Int]
+        (`shouldBe` (Just 10)) =<< liftIO (Array.lookup (0 :: Int) array)
+        (`shouldBe` Nothing) =<< liftIO (Array.lookup (1 :: Int) array)
+
+      it "Should (!?) an element onto an array" $ do
+        array <- liftIO $ Array.fromList [10 :: Int]
+        (`shouldBe` 10) =<< liftIO ((0 :: Int) Array.!? array)
+
+      it "Should size on an array" $ do
+        array <- liftIO $ Array.fromList [10 :: Int]
+        (`shouldBe` 1) =<< liftIO (Array.size array)
+
+      it "Should null on an array" $ do
+        x <- liftIO $ Array.fromList [10 :: Int]
+        (`shouldBe` False) =<< liftIO (Array.null x)
+        (`shouldBe` True) =<< liftIO (Array.null =<< Array.new)
+
+      it "Should member on an array" $ do
+        x <- liftIO $ Array.fromList [10 :: Int]
+        (`shouldBe` True) =<<
+          liftIO (Array.member (10 :: Int) x)
+
+      it "Should singleton into an array" $ do
+        x <- liftIO $ Array.singleton (10 :: Int)
+        (`shouldBe` 1) =<< liftIO (Array.size x)
+
+      it "Should pop an array" $ do
+        arr <- liftIO $ Array.fromList [1,2,3 :: Int]
+        (`shouldBe` Just 3) =<< liftIO (Array.pop arr)
+        (`shouldBe` 2) =<< liftIO (Array.size arr)
+
+        x :: Array.Array Int <- liftIO Array.new
+        (`shouldBe` Nothing) =<< liftIO (Array.pop x)
+
+      it "Should shift an array" $ do
+        xs <- liftIO $ Array.fromList [1,2,3 :: Int]
+        (`shouldBe` Just 1) =<< liftIO (Array.shift xs)
+        (`shouldBe` Just 2) =<< liftIO (Array.shift xs)
+        (`shouldBe` Just 3) =<< liftIO (Array.shift xs)
+        (`shouldBe` Nothing) =<< liftIO (Array.shift xs)
+
+      it "Should unshift an array" $ do
+        xs <- liftIO Array.new
+        liftIO $ Array.unshift (1::Int) xs
+        liftIO $ Array.unshift (2::Int) xs
+        liftIO $ Array.unshift (3::Int) xs
+        (`shouldBe` [3,2,1]) =<< liftIO (Array.toList xs)
+
+      it "Should reverse an array" $ do
+        xs <- liftIO $ Array.fromList [1,2,3 :: Int]
+        liftIO (Array.reverse xs)
+        (`shouldBe` [3,2::Int, 1]) =<< liftIO (Array.toList xs)
+
+      it "Should splice an array" $ do
+        xs <- liftIO $ Array.fromList ["angel", "clown", "trumpet", "sturgeon" :: MisoString]
+        ys <- liftIO (Array.splice 0 2 ["parrot", "anemone", "blue" :: MisoString] xs)
+        (`shouldBe` ["parrot", "anemone", "blue", "trumpet", "sturgeon" :: MisoString])
+          =<< liftIO (Array.toList xs)
+        (`shouldBe` ["angel", "clown" :: MisoString]) =<< liftIO (Array.toList ys)
+
+    describe "Miso.JSON decodePure tests" $ do
       it "Should not decode \"foo\"" $ do
         decodePure "foo" `shouldSatisfy` isLeft
       it "Should decode an empty string \"\"" $ do
