@@ -79,7 +79,9 @@ main = do
 
     case mTestData of
         Nothing -> consoleLog "ERROR - client couldn't load initial-data"
-        Just (TestAppModel appData) ->
+        Just (TestAppModel appData) -> do
+            consoleLog "TestClient - load App TestAppModel"
             miso defaultEvents $ const $ App.app appData
-        Just (TestBindingsModel depth) ->
+        Just (TestBindingsModel depth) -> do
+            consoleLog $ "TestClient - load AppB TestBindingsModel " <> toMisoString (show depth)
             miso defaultEvents $ const $ AppB.rootApp depth

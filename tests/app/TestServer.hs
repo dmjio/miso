@@ -56,9 +56,6 @@ import Test.QuickCheck
     , NonNegative (..)
     )
 import Miso.JSON (ToJSON, encode)
--- import Data.Aeson (ToJSON)
--- import Data.Text.Lazy (toStrict)
--- import Data.Aeson.Text (encodeToLazyText)
 import Control.Concurrent (forkIO, killThread)
 import Network.HTTP.Client
     ( defaultManagerSettings
@@ -70,12 +67,25 @@ import Network.HTTP.Client
     )
 import Network.HTTP.Types (statusCode)
 import Control.Exception (bracket)
+import Network.Socket
+    ( Socket
+    , openSocket
+    , defaultHints
+    , close
+    , AddrInfoFlag (AI_PASSIVE)
+    , SocketType (Stream)
+    , getAddrInfo
+    , AddrInfo (..)
+    , SocketOption (ReuseAddr)
+    , setSocketOption
+    )
 
 import qualified HtmlGen as Html
 import qualified TestApp as App
 import qualified TestBindingsApp as AppB
 import TestTypes (TestData (..))
 
+-- Misnomer - this is the backend the front-end was compiled with
 data Backend = GHCJS | WASM deriving (Show, Read)
 
 data EnvSettings = EnvSettings
@@ -184,6 +194,21 @@ httpGet url = do
     return $ statusCode $ responseStatus response
 
 
+openTCPSocketOnPort :: Int -> IO Socket
+openTCPSocketOnPort p = do
+    addrInfo:_ <- getAddrInfo (Just hints) Nothing (Just $ show p)
+    sock <- openSocket addrInfo
+    setSocketOption sock ReuseAddr 1
+    return sock
+
+    where
+        hints =
+            defaultHints
+                { addrFlags = [ AI_PASSIVE ]
+                , addrSocketType = Stream
+                }
+
+
 prop_testIO :: EnvSettings -> Property
 prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
     \html -> ioProperty $ do
@@ -193,15 +218,27 @@ prop_testIO envSettings = forAll (arbitrary :: Gen Html.HTML) $
         -- Wai.run port_ $ Wai.logStdout (server envSettings serve_static_dir_path_ appData)
 
         playwrightResponse <- bracket
-            ( forkIO $ Wai.run port_ $ Wai.logStdout
-                ( server
-                    envSettings
-                    (Proxy @(API App.Model App.Action))
-                    (App.app appData)
-                    (TestAppModel appData)
-                )
+            ( do
+                sock <- openTCPSocketOnPort port_
+
+                let settings = Wai.setPort port_ Wai.defaultSettings
+
+                _ <- forkIO $ Wai.runSettingsSocket settings sock $ Wai.logStdout
+                    ( server
+                        envSettings
+                        (Proxy @(API App.Model App.Action))
+                        (App.app appData)
+                        (TestAppModel appData)
+                    )
+
+                return sock
             )
-            killThread
+            (\sock -> do
+                -- putStrLn "KILLING THREAD"
+                putStrLn "Closing socket"
+                close sock
+                -- killThread tid
+            )
             ( const $
                 httpGet $
                     "http://localhost:"

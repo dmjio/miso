@@ -8,10 +8,18 @@
 module HtmlGen where
 
 import GHC.Generics
-import Miso hiding (on, Src, Checked)
+import Miso hiding (on, Src, Checked, Object)
 import Miso.Html.Element hiding (title_, data_)
 import Miso.Html.Property hiding (label_, form_)
-import Miso.JSON (FromJSON, ToJSON)
+import Miso.JSON
+    ( FromJSON (..)
+    , ToJSON (..)
+    , object
+    , (.:)
+    , (.=)
+    , Value (..)
+    , Parser
+    )
 import Test.QuickCheck
 import Data.Char (isControl, isSpace)
 import Control.Monad (replicateM)
@@ -36,7 +44,21 @@ data HtmlAttributeType
     | Value
     | Type
     | Checked
-    deriving (Eq, Generic, ToJSON, FromJSON, Show)
+    deriving (Eq, Generic, FromJSON, Show)
+
+instance ToJSON HtmlAttributeType where
+    toJSON Class   = String "Class"
+    toJSON Id      = String "Id"
+    toJSON Title   = String "Title"
+    toJSON Colspan = String "Colspan"
+    toJSON Rowspan = String "Rowspan"
+    toJSON Method  = String "Method"
+    toJSON Action  = String "Action"
+    toJSON Alt     = String "Alt"
+    toJSON Src     = String "Src"
+    toJSON Value   = String "Value"
+    toJSON Type    = String "Type"
+    toJSON Checked = String "Checked"
 
 
 data ChildHavingHtmlTag
@@ -75,7 +97,44 @@ data ChildHavingHtmlTag
     | Figure
     | Figcaption
     | A
-    deriving (Eq, Enum, Bounded, Generic, ToJSON, FromJSON, Show)
+    deriving (Eq, Enum, Bounded, Generic, FromJSON, Show)
+
+instance ToJSON ChildHavingHtmlTag where
+    toJSON Div        = String "Div"
+    toJSON Span       = String "Span"
+    toJSON P          = String "P"
+    toJSON Pre        = String "Pre"
+    toJSON Ul         = String "Ul"
+    toJSON Ol         = String "Ol"
+    toJSON Li         = String "Li"
+    toJSON Section    = String "Section"
+    toJSON Header     = String "Header"
+    toJSON Footer     = String "Footer"
+    toJSON Nav        = String "Nav"
+    toJSON Article    = String "Article"
+    toJSON H1         = String "H1"
+    toJSON H2         = String "H2"
+    toJSON H3         = String "H3"
+    toJSON H4         = String "H4"
+    toJSON Strong     = String "Strong"
+    toJSON Em         = String "Em"
+    toJSON Table      = String "Table"
+    toJSON Thead      = String "Thead"
+    toJSON Tbody      = String "Tbody"
+    toJSON Tr         = String "Tr"
+    toJSON Td         = String "Td"
+    toJSON Th         = String "Th"
+    toJSON Form       = String "Form"
+    toJSON Label      = String "Label"
+    toJSON Button     = String "Button"
+    toJSON Fieldset   = String "Fieldset"
+    toJSON Legend     = String "Legend"
+    toJSON Dl         = String "Dl"
+    toJSON Dt         = String "Dt"
+    toJSON Dd         = String "Dd"
+    toJSON Figure     = String "Figure"
+    toJSON Figcaption = String "Figcaption"
+    toJSON A          = String "A"
 
 instance Arbitrary ChildHavingHtmlTag where
   arbitrary = chooseBoundedEnum
@@ -87,7 +146,14 @@ data ChildlessHtmlTag
     | Img
     | Input
     | Wbr
-    deriving (Eq, Enum, Bounded, Generic, ToJSON, FromJSON, Show)
+    deriving (Eq, Enum, Bounded, Generic, FromJSON, Show)
+
+instance ToJSON ChildlessHtmlTag where
+    toJSON Hr     = String "Hr"
+    toJSON Br     = String "Br"
+    toJSON Img    = String "Img"
+    toJSON Input  = String "Input"
+    toJSON Wbr    = String "Wbr"
 
 instance Arbitrary ChildlessHtmlTag where
   arbitrary = chooseBoundedEnum
@@ -98,7 +164,55 @@ data HTML
     | VoidElem ChildlessHtmlTag [ HtmlAttribute ]
     | Text MisoString
     | UserSuppliedElement
-    deriving (Eq, Generic, ToJSON, FromJSON, Show)
+    deriving (Eq, Show)
+
+instance ToJSON HTML where
+    toJSON (Text s) =
+        object
+            [ "type"  .= ("Text" :: MisoString)
+            , "value" .= s
+            ]
+
+    toJSON (Elem tag attrs children) =
+        object
+            [ "type"     .= ("Elem" :: MisoString)
+            , "tag"      .= tag
+            , "attrs"    .= attrs
+            , "children" .= children
+            ]
+
+    toJSON (VoidElem tag attrs) =
+        object
+            [ "type"  .= ("VoidElem" :: MisoString)
+            , "tag"   .= tag
+            , "attrs" .= attrs
+            ]
+
+    toJSON UserSuppliedElement =
+        object
+            [ "type" .= ("UserSuppliedElement" :: MisoString)
+            ]
+
+
+instance FromJSON HTML where
+    parseJSON (Object o) = do
+        typ <- (o .: "type") :: Parser MisoString
+
+        case typ of
+            "Text"     -> Text     <$> o .: "value"
+
+            "Elem"     -> Elem     <$> o .: "tag"
+                                   <*> o .: "attrs"
+                                   <*> o .: "children"
+
+            "Voidelem" -> VoidElem <$> o .: "tag"
+                                   <*> o .: "attrs"
+
+            "UserSuppliedElement" -> pure UserSuppliedElement
+            _          -> fail $ "Unknown HTML constructor type: " ++ show typ
+
+    parseJSON _ = fail "Expected JSON Object for HTML deserialization"
+
 
 instance Arbitrary HTML where
   arbitrary = genHtml
