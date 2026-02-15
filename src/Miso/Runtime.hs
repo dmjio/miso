@@ -171,7 +171,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
           Nothing ->
             pure model
           Just cs ->
-            -- * hot reload scenario, let it flow
+            -- hot reload scenario, let it flow
             pure (cs ^. componentModel)
       _ -> pure model
   _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
