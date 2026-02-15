@@ -25,10 +25,12 @@ import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
 #ifdef WASM
-import           Miso.Runtime (components, initialize, topLevelComponentId, Hydrate(Draw))
-import           Miso.Types (Component, Events)
+import           Miso.Runtime
+import           Miso.Types (Component(..), Events)
 import qualified Miso.FFI.Internal as FFI
+import           Miso.Lens
 -----------------------------------------------------------------------------
+import qualified Data.IntMap.Strict as IM
 import           Data.IORef
 import           Foreign
 import           Foreign.C.Types
@@ -68,17 +70,18 @@ reload
   :: IO ()
   -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-reload action = clear >> action
-  where
-    clear :: IO ()
-    clear = resetComponentState $ do
-      body_ <- jsg "document" ! ("body" :: MisoString)
-      setField body_ "innerHTML" ("" :: MisoString)
-      head_ <- jsg "document" ! ("head" :: MisoString)
-      setField head_ "innerHTML" ("" :: MisoString)
+reload action = resetComponentState clearPage >> action
 -----------------------------------------------------------------------------
 #ifdef WASM
--- | Live reloading.
+-- | Live reloading. Attempts to persist the working t'Component' state.
+--
+-- Some caveats, if you're changing fields in 'model' (add / remove / modifying a field), this
+-- will more than likely segfault. If you change the 'view' or 'update' functions
+-- it should be fine.
+--
+-- dmj: I recommend using 'reload' if you're changing the 'model' often and 'live'
+-- if you're adjusting the 'view' / 'update' function logic.
+--
 live
   :: (Eq parent, Eq model)
   => Component parent model action
@@ -92,15 +95,18 @@ live vcomp events = do
       -- Initialize the new ComponentState
       -- Overwrite new models w/ old models (t'Dynamic' diff them eventually ...)
 
+      -- Drop old stuff
+      clearPage
+
       -- Deref old state, update new state, set pointer in C heap.
       _oldState <- readIORef =<< deRefStablePtr =<< x_get
-      _ <- initialize events topLevelComponentId Draw False vcomp FFI.getBody
-      _newState <- readIORef components
-      -- Update current global 'components' with the results of oldstate
+      let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
+      let initialVComp = vcomp { model = oldModel }
+      atomicWriteIORef components _oldState
+      _ <- initialize events rootComponentId Draw False initialVComp FFI.getBody
 
-      -- TODO: Do the "swap" here.
-      diffModels _oldState _newState
-      -- update old state with new state...
+      -- don't forget to flush (native mobile needs this too)
+      FFI.flush
 
       -- Set static ptr to use new state
       x_store =<< newStablePtr components <* x_clear
@@ -109,8 +115,13 @@ live vcomp events = do
     else
       -- dmj: This means its initial load, just store the pointer.
       x_store =<< newStablePtr components
-  where
-    -- dmj: TODO implement, put old Component model into new Component model
-    diffModels _ _ = pure ()
 -----------------------------------------------------------------------------
 #endif
+-----------------------------------------------------------------------------
+clearPage :: IO ()
+clearPage = do
+  body_ <- jsg "document" ! ("body" :: MisoString)
+  setField body_ "innerHTML" ("" :: MisoString)
+  head_ <- jsg "document" ! ("head" :: MisoString)
+  setField head_ "innerHTML" ("" :: MisoString)
+-----------------------------------------------------------------------------
