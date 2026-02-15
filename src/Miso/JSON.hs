@@ -448,7 +448,16 @@ withNumber _        f (Number n) = f n
 withNumber expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
 typeMismatch :: MisoString -> Value -> Parser a
-typeMismatch expected _ = pfail ("typeMismatch: Expected " <> expected)
+typeMismatch expected actual =
+  pfail
+    ( "typeMismatch: Expected " <> expected <> " but encountered " <> case actual of
+        Object _ -> "Object"
+        Array _ -> "Array"
+        String _ -> "String"
+        Number _ -> "Number"
+        Bool _ -> "Boolean"
+        Null -> "Null"
+    )
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
