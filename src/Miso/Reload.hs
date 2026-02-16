@@ -20,12 +20,13 @@ module Miso.Reload
 #endif
   ) where
 -----------------------------------------------------------------------------
+import           Miso (startApp, Events, Component, ROOT)
 import           Miso.String (MisoString)
 import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
 #ifdef WASM
-import Miso
+import           Miso
 import           Miso.Runtime
 import           Miso.Types (Component(..), Events)
 import qualified Miso.FFI.Internal as FFI
@@ -68,10 +69,12 @@ foreign import ccall unsafe "x_clear"
 --
 -- @since 1.9.0.0
 reload
-  :: IO ()
+  :: Eq model
+  => Events
+  -> Component ROOT model action
   -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-reload action = resetComponentState clearPage >> action
+reload events vcomp = resetComponentState clearPage >> startApp events vcomp
 -----------------------------------------------------------------------------
 #ifdef WASM
 -- | Live reloading. Attempts to persist the working t'Component' state.
