@@ -41,7 +41,6 @@ import Miso.JSON (FromJSON, ToJSON)
 
 type Action = ()
 
-
 data Model = Model
     { valueA :: Int
     , valueB :: Int
@@ -56,17 +55,16 @@ valueBLens :: Lens Model Int
 valueBLens = lens valueB (\m x -> m { valueB = x })
 
 
-type AppModel = Model
-type AppComponent = Component Model AppModel Action
+type AppComponent = Component Model Model Action
 
 
-rootApp :: Int -> App AppModel Action
+rootApp :: Int -> App Model Action
 rootApp depth =
     (component initialModel update (rootView depth))
         { M.logLevel = M.DebugAll }
 
 
-rootView :: Int -> AppModel -> View AppModel Action
+rootView :: Int -> Model -> View Model Action
 rootView depth m =
     M.div_ []
     (
@@ -100,17 +98,17 @@ innerApp idx =
         }
 
 
-initialModel :: AppModel
+initialModel :: Model
 initialModel = Model 0 0
 
 
-update :: Action -> Effect a AppModel Action
+update :: Action -> Effect a Model Action
 update = const $ do
     io_ $ consoleLog "CLICKED"
     valueALens %= (+ 1)
 
 
-view :: Int -> AppModel -> View AppModel Action
+view :: Int -> Model -> View Model Action
 view 0 m = M.div_ []
     (
         M.button_
@@ -127,7 +125,7 @@ view idx m =
         )
 
 
-modelElems :: AppModel -> [ View AppModel Action ]
+modelElems :: Model -> [ View Model Action ]
 modelElems m =
     [ M.div_ []
         [ text (toMisoString $ show $ valueA m)

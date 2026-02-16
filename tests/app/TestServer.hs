@@ -56,7 +56,7 @@ import Test.QuickCheck
     , NonNegative (..)
     )
 import Miso.JSON (ToJSON, encode)
-import Control.Concurrent (forkIO, killThread)
+import Control.Concurrent (forkIO)
 import Network.HTTP.Client
     ( defaultManagerSettings
     , newManager
