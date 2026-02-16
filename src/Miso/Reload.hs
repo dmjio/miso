@@ -25,6 +25,7 @@ import           Miso.Runtime (resetComponentState)
 import           Miso.DSL (jsg, (!), setField)
 -----------------------------------------------------------------------------
 #ifdef WASM
+import Miso
 import           Miso.Runtime
 import           Miso.Types (Component(..), Events)
 import qualified Miso.FFI.Internal as FFI
@@ -83,11 +84,11 @@ reload action = resetComponentState clearPage >> action
 -- if you're adjusting the 'view' / 'update' function logic.
 --
 live
-  :: (Eq parent, Eq model)
-  => Component parent model action
-  -> Events
+  :: Eq model
+  => Events
+  -> Component ROOT model action
   -> IO ()
-live vcomp events = do
+live events vcomp = do
   exists <- x_exists
   if exists == 1
     then do
@@ -95,25 +96,28 @@ live vcomp events = do
       -- Initialize the new ComponentState
       -- Overwrite new models w/ old models (t'Dynamic' diff them eventually ...)
 
-      -- Drop old stuff
+      -- Drop old stuff (use context for this! so you can flush it out)
       clearPage
+      FFI.flush
 
       -- Deref old state, update new state, set pointer in C heap.
       _oldState <- readIORef =<< deRefStablePtr =<< x_get
       let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
-      let initialVComp = vcomp { model = oldModel }
-      atomicWriteIORef components _oldState
-      _ <- initialize events rootComponentId Draw False initialVComp FFI.getBody
+          initialVComp = vcomp { model = oldModel }
 
-      -- don't forget to flush (native mobile needs this too)
+      atomicWriteIORef components _oldState
+      -- dmj: ^ populate the component map with the old state
+
+      _ <- startApp events initialVComp
       FFI.flush
 
       -- Set static ptr to use new state
       x_store =<< newStablePtr components <* x_clear
 
       -- Set all model to dirty and call `renderComponents`.
-    else
-      -- dmj: This means its initial load, just store the pointer.
+    else do
+      -- dmj: This means its initial load, just set the pointer !
+      startApp events vcomp
       x_store =<< newStablePtr components
 -----------------------------------------------------------------------------
 #endif
