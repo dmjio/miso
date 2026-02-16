@@ -464,16 +464,18 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
       Diff.diff Nothing (Just vtree) _componentDOMRef
       atomicWriteIORef _componentVTree vtree
     Hydrate -> do
-      when isRoot $ do
-        hydrated <- Hydrate.hydrate logLevel _componentDOMRef vtree
-        if hydrated
-          then atomicWriteIORef _componentVTree vtree
-          else do
-            newTree <-
-              buildVTree events _componentParentId _componentId Draw
+      if isRoot
+        then do
+          hydrated <- Hydrate.hydrate logLevel _componentDOMRef vtree
+          if hydrated
+            then atomicWriteIORef _componentVTree vtree
+            else do
+              newTree <- buildVTree events _componentParentId _componentId Draw
                 _componentSink logLevel (view initializedModel)
-            Diff.diff Nothing (Just newTree) _componentDOMRef
-            liftIO (atomicWriteIORef _componentVTree newTree)
+              Diff.diff Nothing (Just newTree) _componentDOMRef
+              atomicWriteIORef _componentVTree newTree
+        else do
+          atomicWriteIORef _componentVTree vtree
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
