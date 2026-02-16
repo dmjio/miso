@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -16,6 +17,10 @@ module Miso.Reload
   ( -- ** Live reload
     reload
   ) where
+-----------------------------------------------------------------------------
+import           Control.Monad
+import           GHC.Conc.Sync (threadLabel)
+import           GHC.Conc (listThreads, killThread)
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
 import           Miso.Runtime (resetComponentState)
@@ -42,7 +47,16 @@ reload
   :: IO ()
   -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
   -> IO ()
-reload action = clear >> action
+reload action = do
+    clear
+    threads <- listThreads
+    forM_ threads $ \threadId -> do
+      threadLabel threadId >>= \case
+        Just "scheduler" ->
+          killThread threadId
+        _ -> pure ()
+
+    action
   where
     clear :: IO ()
     clear = resetComponentState $ do
