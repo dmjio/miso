@@ -26,7 +26,6 @@ module Miso
   , renderApp
     -- ** Component
   , Component
-  , startComponent
   , component
   , (+>)
   , mount_
@@ -136,24 +135,21 @@ miso events f = withJS $ do
   body <- FFI.getBody
   initialize events rootComponentId Hydrate isRoot vcomp (pure body)
 -----------------------------------------------------------------------------
--- | Synonym for 'startComponent'.
+-- | Synonym for 'startApp'.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- To get an t'IO' action that starts the application, use 'run' on the result of this function.
 --
 -- @
 -- main :: IO ()
 -- main = startApp defaultEvents app
 -- @
+--
 startApp :: Eq model => Events -> App model action -> IO ()
-startApp = startComponent
+startApp events vcomp = withJS (initComponent events vcomp)
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
 (🍜) = miso
-----------------------------------------------------------------------------
--- | Runs a miso application
-startComponent :: Eq model => Events -> Component ROOT model action -> IO ()
-startComponent events vcomp = withJS (initComponent events vcomp)
 ----------------------------------------------------------------------------
 -- | Runs a 'miso' application, but with a custom rendering engine.
 --
@@ -178,7 +174,7 @@ renderApp
 renderApp events renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
 ----------------------------------------------------------------------------
--- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
+-- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
   => Events
