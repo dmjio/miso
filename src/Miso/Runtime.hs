@@ -109,7 +109,10 @@ import qualified Data.IntMap.Strict as IM
 import           Data.IORef (IORef, newIORef, atomicModifyIORef', readIORef, atomicWriteIORef)
 import qualified Data.Sequence as S
 import           Data.Sequence (Seq)
-import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus, labelThread)
+#if __GLASGOW_HASKELL__ > 865
+import           GHC.Conc (labelThread)
+#endif
+import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
 #ifdef WASM
 import qualified Language.Haskell.TH as TH
 #endif
@@ -218,8 +221,11 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ mount _componentSink
   when isRoot $ do
-    flip labelThread "scheduler" =<<
-      forkIO scheduler
+#if __GLASGOW_HASKELL__ > 865
+    flip labelThread "scheduler" =<< forkIO scheduler
+#else
+    void (forkIO scheduler)
+#endif
   pure vcomp
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()

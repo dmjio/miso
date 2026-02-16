@@ -19,8 +19,10 @@ module Miso.Reload
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
+#if __GLASGOW_HASKELL__ > 865
 import           GHC.Conc.Sync (threadLabel)
 import           GHC.Conc (listThreads, killThread)
+#endif
 -----------------------------------------------------------------------------
 import           Miso.String (MisoString)
 import           Miso.Runtime (resetComponentState)
@@ -49,13 +51,14 @@ reload
   -> IO ()
 reload action = do
     clear
+#if __GLASGOW_HASKELL__ > 865
     threads <- listThreads
     forM_ threads $ \threadId -> do
       threadLabel threadId >>= \case
         Just "scheduler" ->
           killThread threadId
         _ -> pure ()
-
+#endif
     action
   where
     clear :: IO ()
