@@ -238,6 +238,9 @@ function drill(c) {
       return c.child.domRef;
   }
 }
+function bts() {
+  return __BACKGROUND__;
+}
 
 // ts/miso/dom.ts
 function diff(c, n, parent, context) {
@@ -1108,6 +1111,7 @@ var drawingContext = {
 
 // ts/index.ts
 globalThis["miso"] = {
+  bts,
   hydrationContext,
   eventContext,
   drawingContext,

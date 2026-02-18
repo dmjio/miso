@@ -56,7 +56,7 @@
   },
   "homepage": "https://haskell-miso.org",
   "devDependencies": {
-    "@happy-dom/global-registrator": "^17.5.6",
+    "@happy-dom/global-registrator": "latest",
     "prettier": "3.5.3",
     "@types/bun": "latest"
   },

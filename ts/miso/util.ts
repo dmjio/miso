@@ -298,3 +298,7 @@ export function drill<T>(c: VComp<T>): T {
       return c.child.domRef;
   }
 }
+
+export function bts () : boolean {
+  return __BACKGROUND__;
+}

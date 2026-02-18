@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE OverloadedStrings         #-}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wno-duplicate-exports #-}
 -----------------------------------------------------------------------------
@@ -197,5 +198,17 @@ withJS action = void $ do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
 #endif
+#ifdef GHCJS_NEW
+  FFI.consoleLog "withJS"
+  onBTS <- FFI.bts
+  if onBTS
+    then do
+      FFI.consoleLog "on bts"
+      void action
+    else do
+      FFI.consoleLog "on mts, bailing"
+      pure ()
+#else
   action
+#endif
 -----------------------------------------------------------------------------
