@@ -915,6 +915,10 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
+      let mounted = vtree.mount(node.parentNode);
+      vtree.componentId = mounted.componentId;
+      vtree.child = mounted.componentTree;
+      mounted.componentTree.parent = vtree;
       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
         return false;
       }

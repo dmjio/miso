@@ -132,8 +132,7 @@ import           Miso.Util
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
   vcomp <- f <$> getURI
-  body <- FFI.getBody
-  initialize events rootComponentId Hydrate isRoot vcomp (pure body)
+  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
 -----------------------------------------------------------------------------
 -- | Synonym for 'startApp'.
 --
