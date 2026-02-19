@@ -472,16 +472,20 @@ initialDraw initializedModel events hydrate isRoot Component {..} ComponentState
       Diff.diff Nothing (Just vtree) _componentDOMRef
       atomicWriteIORef _componentVTree vtree
     Hydrate -> do
-      when isRoot $ do
-        hydrated <- Hydrate.hydrate logLevel _componentDOMRef vtree
-        if hydrated
-          then atomicWriteIORef _componentVTree vtree
-          else do
-            newTree <-
-              buildVTree events _componentParentId _componentId Draw
-                _componentSink logLevel (view initializedModel)
-            Diff.diff Nothing (Just newTree) _componentDOMRef
-            liftIO (atomicWriteIORef _componentVTree newTree)
+      if isRoot
+        then do
+          hydrated <- Hydrate.hydrate logLevel _componentDOMRef vtree
+          if hydrated
+            then do
+              atomicWriteIORef _componentVTree vtree
+            else do
+              newTree <-
+                buildVTree events _componentParentId _componentId Draw
+                  _componentSink logLevel (view initializedModel)
+              Diff.diff Nothing (Just newTree) _componentDOMRef
+              liftIO (atomicWriteIORef _componentVTree newTree)
+        else
+          atomicWriteIORef _componentVTree vtree
 -----------------------------------------------------------------------------
 -- | Pulls the next Component for processing out of the queue, along with
 -- its events.
@@ -978,19 +982,15 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     vcomp <- create
 
     mountCallback <- do
-      if hydrate == Hydrate
-        then
-          toJSVal jsNull
-        else
-          syncCallback1' $ \parent_ -> do
-            ComponentState {..} <- initialize events_ vcompId Draw False app (pure parent_)
-            modifyComponent vcompId (children %= IS.insert _componentId)
-            vtree <- toJSVal =<< readIORef _componentVTree
-            FFI.set "parent" vcomp (Object vtree)
-            obj <- create
-            setProp "componentId" _componentId obj
-            setProp "componentTree" vtree obj
-            toJSVal obj
+      syncCallback1' $ \parent_ -> do
+        ComponentState {..} <- initialize events_ vcompId hydrate False app (pure parent_)
+        modifyComponent vcompId (children %= IS.insert _componentId)
+        vtree <- toJSVal =<< readIORef _componentVTree
+        FFI.set "parent" vcomp (Object vtree)
+        obj <- create
+        setProp "componentId" _componentId obj
+        setProp "componentTree" vtree obj
+        toJSVal obj
 
     unmountCallback <- toJSVal =<< do
       FFI.syncCallback1 $ \vcompId_ -> do
@@ -1001,24 +1001,12 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             forM_ (unmount app) (_componentSink componentState)
             unmountComponent componentState
 
-    case hydrate of
-      Hydrate -> do
-        -- Mock .domRef for use during hydration
-        domRef <- toJSVal =<< create
-        ComponentState {..} <- initialize events_ vcompId hydrate False app (pure domRef)
-        vtree <- toJSVal =<< liftIO (readIORef _componentVTree)
-        FFI.set "parent" vcomp (Object vtree)
-        vcompId_ <- toJSVal _componentId
-        FFI.set "componentId" vcompId_ vcomp
-        FFI.set "child" vtree vcomp
-      Draw -> do
-        FFI.set "child" jsNull vcomp
-
+    FFI.set "child" jsNull vcomp
     setAttrs vcomp attrs snk (logLevel app) events_
-    when (hydrate == Draw) (FFI.set "mount" mountCallback vcomp)
+    FFI.set "mount" mountCallback vcomp
     FFI.set "unmount" unmountCallback vcomp
     FFI.set "eventPropagation" (eventPropagation app) vcomp
-    flip (FFI.set "type") vcomp =<< toJSVal VCompType
+    FFI.set "type" VCompType vcomp
     pure (VTree vcomp)
   VNode ns tag attrs kids -> do
     vnode <- createNode "vnode" ns tag
