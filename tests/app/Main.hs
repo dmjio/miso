@@ -41,6 +41,7 @@ import qualified Miso.String as S
 import qualified Miso.Data.Map as MDM
 import qualified Miso.Data.Set as MDS
 import qualified Miso.Data.Array as Array
+import qualified Miso.Date as D
 import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
@@ -215,6 +216,34 @@ main = withJS $ do
         (`shouldBe` ["parrot", "anemone", "blue", "trumpet", "sturgeon" :: MisoString])
           =<< liftIO (Array.toList xs)
         (`shouldBe` ["angel", "clown" :: MisoString]) =<< liftIO (Array.toList ys)
+
+    describe "Miso.Date tests" $ do
+      it "Should set and get UTC components" $ do
+        date <- liftIO D.new
+        _ <- liftIO $ D.setUTCFullYear 2020 (Just 0) (Just 2) date
+        _ <- liftIO $ D.setUTCHours 3 (Just 4) (Just 5) (Just 6) date
+        (`shouldBe` 2020) =<< liftIO (D.getUTCFullYear date)
+        (`shouldBe` 0) =<< liftIO (D.getUTCMonth date)
+        (`shouldBe` 2) =<< liftIO (D.getUTCDate date)
+        (`shouldBe` 3) =<< liftIO (D.getUTCHours date)
+        (`shouldBe` 4) =<< liftIO (D.getUTCMinutes date)
+        (`shouldBe` 5) =<< liftIO (D.getUTCSeconds date)
+        (`shouldBe` 6) =<< liftIO (D.getUTCMilliseconds date)
+
+      it "Should set and get time in milliseconds" $ do
+        date <- liftIO D.new
+        _ <- liftIO $ D.setTime 0 date
+        (`shouldBe` 0.0) =<< liftIO (D.getTime date)
+        (`shouldBe` 0.0) =<< liftIO (D.valueOf date)
+
+      it "Should produce string conversions" $ do
+        date <- liftIO D.new
+        dateString <- liftIO (D.toDateString date)
+        isoString <- liftIO (D.toISOString date)
+        utcString <- liftIO (D.toUTCString date)
+        (`shouldSatisfy` (/= "")) dateString
+        (`shouldSatisfy` (/= "")) isoString
+        (`shouldSatisfy` (/= "")) utcString
 
     describe "Miso.JSON decodePure tests" $ do
       it "Should not decode \"foo\"" $ do
