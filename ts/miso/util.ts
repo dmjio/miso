@@ -1,4 +1,4 @@
-import { VTreeType, PRNG, VComp, VNode, VTree, Response } from './types';
+import { VTreeType, VComp, VNode, VTree, Response } from './types';
 
 /* current miso version */
 export const version: string = '1.9.0.0';

@@ -122,8 +122,6 @@ export type HydrationContext<T> = {
   getAttribute : (node: T, string) => string;
 };
 
-export type PRNG = (() => (number));
-
 export type ComponentContext = {
   mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
   unmountComponent : (componentId: ComponentId) => void,
