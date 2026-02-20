@@ -2,6 +2,7 @@
 module Miso.DSL.FFI where
 -----------------------------------------------------------------------------
 import           Data.Text (Text, pack, unpack)
+import           Data.Word (Word64)
 import           Text.Read (readMaybe)
 -----------------------------------------------------------------------------
 -- | A type that represents any JS value
@@ -18,6 +19,9 @@ toJSVal_Double = undefined
 -----------------------------------------------------------------------------
 toJSVal_Int :: Int -> IO JSVal
 toJSVal_Int = undefined
+-----------------------------------------------------------------------------
+toJSVal_Word64 :: Word64 -> IO JSVal
+toJSVal_Word64 = undefined
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = undefined
@@ -80,6 +84,9 @@ setField_ffi = undefined
 fromJSVal_Int :: JSVal -> IO (Maybe Int)
 fromJSVal_Int = undefined
 -----------------------------------------------------------------------------
+fromJSVal_Word64 :: JSVal -> IO (Maybe Word64)
+fromJSVal_Word64 = undefined
+-----------------------------------------------------------------------------
 fromJSVal_Double :: JSVal -> IO (Maybe Double)
 fromJSVal_Double  = undefined
 -----------------------------------------------------------------------------
@@ -131,6 +138,9 @@ fromJSVal_List = undefined
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Int :: JSVal -> IO Int
 fromJSValUnchecked_Int = undefined
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Word64 :: JSVal -> IO Word64
+fromJSValUnchecked_Word64 = undefined
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Double :: JSVal -> IO Double
 fromJSValUnchecked_Double = undefined

@@ -20,7 +20,6 @@ import {
    typeOf,
    mathRandom,
    getRandomValues,
-   splitmix32,
    getDOMRef
 } from './miso/util';
 
@@ -106,7 +105,6 @@ export {
   typeOf,
   mathRandom,
   getRandomValues,
-  splitmix32,
   delegateEvent,
   getDOMRef,
 

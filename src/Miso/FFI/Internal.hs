@@ -142,8 +142,6 @@ module Miso.FFI.Internal
    , updateRef
    -- * Inline JS
    , inline
-   -- * Randomness
-   , splitmix32
    -- * Math
    , mathRandom
    -- * Crypto
@@ -153,6 +151,7 @@ module Miso.FFI.Internal
 import           Control.Monad (void, forM_, (<=<), when)
 import           Data.Map.Strict (Map)
 import           Data.Maybe
+import           Data.Word (Word64)
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL
@@ -1020,11 +1019,6 @@ newEvent args = Event <$> new (jsg "Event") args
 newCustomEvent :: ToArgs args => args -> IO Event
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
--- | Uses the 'splitmix' function to generate a PRNG.
---
-splitmix32 :: Double -> IO JSVal
-splitmix32 x = jsg "miso" # "splitmix32" $ [x]
------------------------------------------------------------------------------
 -- | Uses the 'Math.random()' function.
 --
 mathRandom :: IO Double
@@ -1033,7 +1027,7 @@ mathRandom = fromJSValUnchecked =<< do
 -----------------------------------------------------------------------------
 -- | Uses the first element of 'crypto.getRandomValues()'.
 --
-getRandomValue :: IO Double
+getRandomValue :: IO Word64
 getRandomValue = fromJSValUnchecked =<< do
   jsg "miso" # "getRandomValues" $ ()
 -----------------------------------------------------------------------------

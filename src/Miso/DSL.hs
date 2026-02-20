@@ -89,6 +89,7 @@ import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           GHC.Generics
 import           Data.Kind
+import           Data.Word
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
@@ -184,6 +185,13 @@ instance {-# OVERLAPPABLE #-} FromJSVal a => FromJSVal [a] where
 -----------------------------------------------------------------------------
 instance FromJSVal [Char] where
   fromJSVal jsval_ = fmap unpack <$> fromJSVal jsval_
+-----------------------------------------------------------------------------
+instance FromJSVal Word64 where
+  fromJSVal = fromJSVal_Word64
+  fromJSValUnchecked = fromJSValUnchecked_Word64
+-----------------------------------------------------------------------------
+instance ToJSVal Word64 where
+  toJSVal = toJSVal_Word64
 -----------------------------------------------------------------------------
 instance ToJSVal [Char] where
   toJSVal = toJSVal . toMisoString

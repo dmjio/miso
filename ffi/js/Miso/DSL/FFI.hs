@@ -16,6 +16,7 @@ module Miso.DSL.FFI
   , toJSVal_Double
   , toJSVal_Float
   , toJSVal_Int
+  , toJSVal_Word64
   , toJSVal_List
   , toJSVal_JSString
   , toJSVal_Text
@@ -32,6 +33,8 @@ module Miso.DSL.FFI
   , fromJSValUnchecked_Float
   , fromJSVal_Int
   , fromJSValUnchecked_Int
+  , fromJSVal_Word64
+  , fromJSValUnchecked_Word64
   , fromJSVal_List
   , fromJSVal_JSString
   , fromJSVal_Maybe
@@ -274,6 +277,9 @@ toJSVal_Float = Marshal.toJSVal
 toJSVal_Text :: Text -> IO JSVal
 toJSVal_Text = Marshal.toJSVal
 -----------------------------------------------------------------------------
+toJSVal_Word64 :: Text -> IO JSVal
+toJSVal_Word64 = Marshal.toJSVal
+-----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text = Marshal.fromJSVal
 -----------------------------------------------------------------------------
@@ -291,6 +297,12 @@ fromJSVal_Float = Marshal.fromJSVal
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Float :: JSVal -> IO Float
 fromJSValUnchecked_Float = Marshal.fromJSValUnchecked
+-----------------------------------------------------------------------------
+fromJSVal_Word64 :: JSVal -> IO (Maybe Word64)
+fromJSVal_Word64 = Marshal.fromJSVal
+-----------------------------------------------------------------------------
+fromJSValUnchecked_Word64 :: JSVal -> IO Word64
+fromJSValUnchecked_Word64 = Marshal.fromJSValUnchecked
 -----------------------------------------------------------------------------
 asyncCallback :: IO () -> IO JSVal
 asyncCallback x = jsval <$> Callback.asyncCallback x
