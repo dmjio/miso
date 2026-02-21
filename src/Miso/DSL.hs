@@ -88,7 +88,6 @@ import           Control.Monad.Trans.Maybe
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           GHC.Generics
-import           Data.Kind
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
 import           Miso.DSL.FFI
@@ -98,40 +97,47 @@ import           Miso.String
 -- | A class for marshaling Haskell values into JS
 class ToJSVal a where
   toJSVal :: a -> IO JSVal
-  default toJSVal :: (Generic a, GToJSVal (Rep a)) => a -> IO JSVal
-  toJSVal x = do
-    o <- create
-    gToJSVal (from x) o
-    toJSVal o
+  default toJSVal :: (Generic a, GToJSVal (Rep a ())) => a -> IO JSVal
+  toJSVal x = gToJSVal False (from x :: Rep a ())
 -----------------------------------------------------------------------------
-class GToJSVal (f :: Type -> Type) where
-  gToJSVal :: f a -> Object -> IO ()
+class GToJSVal a where
+  gToJSVal :: Bool -> a -> IO JSVal
 -----------------------------------------------------------------------------
-instance GToJSVal a => GToJSVal (D1 i a) where
-  gToJSVal (M1 x) = gToJSVal x
+instance ToJSVal b => GToJSVal (K1 a b c) where
+  gToJSVal _ (K1 x) = toJSVal x
 -----------------------------------------------------------------------------
-instance GToJSVal a => GToJSVal (C1 i a) where
-  gToJSVal (M1 x) = gToJSVal x
+instance GToJSVal p => GToJSVal (Par1 p) where
+  gToJSVal b (Par1 p) = gToJSVal b p
 -----------------------------------------------------------------------------
-instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
-  gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
+instance GToJSVal (f p) => GToJSVal (Rec1 f p) where
+  gToJSVal b (Rec1 x) = gToJSVal b x
 -----------------------------------------------------------------------------
-instance (GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
-  gToJSVal = \case
-    L1 x -> gToJSVal x
-    R1 x -> gToJSVal x
+instance (GToJSVal (a p), GToJSVal (b p)) => GToJSVal ((a :+: b) p) where
+  gToJSVal _ (L1 x) = gToJSVal True x
+  gToJSVal _ (R1 x) = gToJSVal True x
 -----------------------------------------------------------------------------
-instance (ToJSVal a, Selector s) => GToJSVal (S1 s (K1 i a)) where
-  gToJSVal (M1 (K1 x)) o =
-    setField o fieldName =<< toJSVal x
-      where
-        fieldName = ms $ selName (undefined :: S1 s (K1 i a) ())
+instance (Datatype c, GToJSVal (a p)) => GToJSVal (M1 D c a p) where
+  gToJSVal b (M1 x) = gToJSVal b x
 -----------------------------------------------------------------------------
-instance GToJSVal U1 where
-  gToJSVal U1 _ = pure ()
+instance (Constructor c, GToJSVal (a p)) => GToJSVal (M1 C c a p) where
+  gToJSVal True m@(M1 x) = do
+    obj <- create
+    v   <- gToJSVal (conIsRecord m) x
+    setProp (ms $ conName m) v obj
+    toJSVal obj
+  gToJSVal _ m@(M1 x) = gToJSVal (conIsRecord m) x
 -----------------------------------------------------------------------------
-instance GToJSVal V1 where
-  gToJSVal _ _ = pure ()
+instance (GToJSVal (a p), GToJSVal (b p)) => GToJSVal ((a :*: b) p) where
+  gToJSVal b (x :*: y) = gToJSVal b x >> gToJSVal b y
+-----------------------------------------------------------------------------
+instance GToJSVal (a p) => GToJSVal (M1 S c a p) where
+  gToJSVal b (M1 x) = gToJSVal b x
+-----------------------------------------------------------------------------
+instance GToJSVal (U1 a) where
+  gToJSVal _ _ = pure jsNull
+-----------------------------------------------------------------------------
+instance GToJSVal (V1 a) where
+  gToJSVal _ _ = toJSVal True
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
@@ -200,43 +206,55 @@ instance FromJSVal Value where
 -- | A class for marshaling JS values into Haskell
 class FromJSVal a where
   fromJSVal :: JSVal -> IO (Maybe a)
-  default fromJSVal :: (Generic a, GFromJSVal (Rep a)) => JSVal -> IO (Maybe a)
-  fromJSVal x = fmap to <$> gFromJSVal (Object x)
+  default fromJSVal :: (Generic a, GFromJSVal (Rep a ())) => JSVal -> IO (Maybe a)
+  fromJSVal x = fmap to <$> (gFromJSVal False (Object x) :: IO (Maybe (Rep a ())))
   fromJSValUnchecked :: JSVal -> IO a
   fromJSValUnchecked x = do
     fromJSVal x >>= \case
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
-class GFromJSVal (f :: Type -> Type) where
-  gFromJSVal :: Object -> IO (Maybe (f a))
+class GFromJSVal f where
+  gFromJSVal :: Bool -> Object -> IO (Maybe f)
 -----------------------------------------------------------------------------
-instance GFromJSVal a => GFromJSVal (D1 i a) where
-  gFromJSVal o = fmap M1 <$> gFromJSVal o
+instance FromJSVal b => GFromJSVal (K1 a b c) where
+  gFromJSVal _ (Object r) = fmap K1 <$> fromJSVal r
 -----------------------------------------------------------------------------
-instance GFromJSVal a => GFromJSVal (C1 i a) where
-  gFromJSVal o = fmap M1 <$> gFromJSVal o
+instance GFromJSVal p => GFromJSVal (Par1 p) where
+  gFromJSVal b r = gFromJSVal b r
 -----------------------------------------------------------------------------
-instance GFromJSVal U1 where
-  gFromJSVal _ = pure (Just U1)
+instance GFromJSVal (f p) => GFromJSVal (Rec1 f p) where
+  gFromJSVal b r = gFromJSVal b r
 -----------------------------------------------------------------------------
-instance GFromJSVal V1 where
-  gFromJSVal _ = pure Nothing
+instance (GFromJSVal (a p), GFromJSVal (b p)) => GFromJSVal ((a :*: b) p) where
+  gFromJSVal b o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal b o) <*> MaybeT (gFromJSVal b o)
 -----------------------------------------------------------------------------
-instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
-  gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
+instance (GFromJSVal (a p), GFromJSVal (b p)) => GFromJSVal ((a :+: b) p) where
+  gFromJSVal _ r = do
+    l <- gFromJSVal True r
+    case l of
+      Just x  -> return (L1 <$> Just x)
+      Nothing -> fmap R1 <$> gFromJSVal True r
 -----------------------------------------------------------------------------
-instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
-  gFromJSVal o = do
-    x <- fmap L1 <$> gFromJSVal o
-    case x of
-      Nothing -> fmap R1 <$> gFromJSVal o
-      Just y -> pure (Just y)
+instance (Datatype c, GFromJSVal (a p)) => GFromJSVal (M1 D c a p) where
+  gFromJSVal b r = fmap M1 <$> gFromJSVal b r
 -----------------------------------------------------------------------------
-instance (FromJSVal a, Selector s) => GFromJSVal (S1 s (K1 i a)) where
-  gFromJSVal o = fmap (M1 . K1) <$> do fromJSVal =<< getProp (ms name) o
-    where
-      name = selName (undefined :: S1 s (K1 i a) ())
+instance forall c a p . (Constructor c, GFromJSVal (a p)) => GFromJSVal (M1 C c a p) where
+  gFromJSVal True r = do
+    r' <- getProp (ms (conName (undefined :: M1 C c a p))) r
+    isUndefined r' >>= \case
+      True -> return Nothing
+      False -> fmap M1 <$> gFromJSVal (conIsRecord (undefined :: M1 C c a p)) (Object r')
+  gFromJSVal _ r = fmap M1 <$> gFromJSVal (conIsRecord (undefined :: M1 C c a p)) r
+-----------------------------------------------------------------------------
+instance GFromJSVal (a p) => GFromJSVal (M1 S c a p) where
+  gFromJSVal b r = fmap M1 <$> gFromJSVal b r
+-----------------------------------------------------------------------------
+instance GFromJSVal (V1 p) where
+  gFromJSVal _ _ = return Nothing
+-----------------------------------------------------------------------------
+instance GFromJSVal (U1 p) where
+  gFromJSVal _ _ = return (Just U1)
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
@@ -509,11 +527,8 @@ instance ToObject JSVal where
 -- | A class for creating JS objects.
 class ToObject a where
   toObject :: a -> IO Object
-  default toObject :: (Generic a, GToJSVal (Rep a)) => a -> IO Object
-  toObject x = do
-    o <- create
-    gToJSVal (from x) o
-    pure o
+  default toObject :: (Generic a, GToJSVal (Rep a ())) => a -> IO Object
+  toObject x = Object <$> gToJSVal False (from x :: Rep a ())
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)
