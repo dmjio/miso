@@ -308,7 +308,7 @@ instance GFromJSON a => GFromJSON (C1 i a) where
 instance (GFromJSON a, GFromJSON b) => GFromJSON (a :*: b) where
   gParseJSON opts x = (:*:) <$> gParseJSON opts x <*> gParseJSON opts x
 ----------------------------------------------------------------------------
-instance (GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
+instance (TypeError ('Text "Sum types unsupported"), GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
   gParseJSON opts x = (L1 <$> gParseJSON opts x) <|> (R1 <$> gParseJSON opts x)
 ----------------------------------------------------------------------------
 instance GFromJSON U1 where
