@@ -140,7 +140,7 @@ miso events f = withJS $ do
 --
 -- @
 -- main :: IO ()
--- main = miso defaultEvents (\\uri -> app uri))
+-- main = prerendder defaultEvents app
 -- @
 prerender :: Eq model => Events -> App model action -> IO ()
 prerender events vcomp = withJS $ do
