@@ -135,7 +135,7 @@ emptyArray :: Value
 emptyArray = Array mempty
 ----------------------------------------------------------------------------
 (.:) :: FromJSON a => Object -> MisoString -> Parser a
-m .: k = maybe (pfail "key not found") parseJSON (M.lookup k m)
+m .: k = maybe (pfail ("Key not found: " <> k)) parseJSON (M.lookup k m)
 ----------------------------------------------------------------------------
 (.:?) :: FromJSON a => Object -> MisoString -> Parser (Maybe a)
 m .:? k = maybe (pure Nothing) parseJSON (M.lookup k m)
@@ -308,7 +308,7 @@ instance GFromJSON a => GFromJSON (C1 i a) where
 instance (GFromJSON a, GFromJSON b) => GFromJSON (a :*: b) where
   gParseJSON opts x = (:*:) <$> gParseJSON opts x <*> gParseJSON opts x
 ----------------------------------------------------------------------------
-instance (GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
+instance (TypeError ('Text "Sum types unsupported"), GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
   gParseJSON opts x = (L1 <$> gParseJSON opts x) <|> (R1 <$> gParseJSON opts x)
 ----------------------------------------------------------------------------
 instance GFromJSON U1 where
@@ -348,8 +348,8 @@ instance FromJSON Integer where
 ----------------------------------------------------------------------------
 instance FromJSON Natural where
   parseJSON = withNumber "Natural" parseNumber
-    where parseNumber d | d < 0 = pfail "cannot parse negative number as Natural"
-                        | isNaN d = pfail "cannot parse NaN as Natural"
+    where parseNumber d | d < 0 = pfail ("Cannot parse negative number as Natural: " <> ms d)
+                        | isNaN d = pfail ("Cannot parse NaN as Natural: " <> ms d)
                         | otherwise  = pure $ naturalFromInteger $ fromInteger $ round d 
 ----------------------------------------------------------------------------
 instance FromJSON Int where
@@ -425,7 +425,7 @@ instance FromJSON Char where
        | otherwise -> pfail ("expected Char, received: " <> x)
 ----------------------------------------------------------------------------
 instance FromJSON v => FromJSON (Map MisoString v) where
-  parseJSON = withObject "Map MisoString v" $ mapM parseJSON
+  parseJSON = withObject "FromJSON v => Map MisoString v" $ mapM parseJSON
 ----------------------------------------------------------------------------
 withBool :: MisoString -> (Bool -> Parser a) -> Value -> Parser a
 withBool _        f (Bool arr) = f arr
@@ -448,7 +448,16 @@ withNumber _        f (Number n) = f n
 withNumber expected _ v          = typeMismatch expected v
 ----------------------------------------------------------------------------
 typeMismatch :: MisoString -> Value -> Parser a
-typeMismatch expected _ = pfail ("expected " <> expected)
+typeMismatch expected actual =
+  pfail
+    ( "typeMismatch: Expected " <> expected <> " but encountered " <> case actual of
+        Object _ -> "Object"
+        Array _ -> "Array"
+        String _ -> "String"
+        Number _ -> "Number"
+        Bool _ -> "Boolean"
+        Null -> "Null"
+    )
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString

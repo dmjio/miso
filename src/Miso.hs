@@ -19,6 +19,7 @@ module Miso
   ( -- * API
     -- ** Miso
     miso
+  , prerender
   , (🍜)
     -- ** App
   , App
@@ -26,7 +27,6 @@ module Miso
   , renderApp
     -- ** Component
   , Component
-  , startComponent
   , component
   , (+>)
   , mount_
@@ -121,39 +121,49 @@ import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
+--
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
---
 -- @
 -- main :: IO ()
--- main = miso defaultEvents (\\uri -> ..))
+-- main = miso defaultEvents (\\uri -> app uri))
 -- @
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
   vcomp <- f <$> getURI
-  body <- FFI.getBody
-  initialize events rootComponentId Hydrate isRoot vcomp (pure body)
------------------------------------------------------------------------------
--- | Synonym for 'startComponent'.
+  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+----------------------------------------------------------------------------
+-- | Like 'miso', except discards the 'URI' argument.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- Use this function if you'd like to prerender, but not use navigation.
+--
+-- @
+-- main :: IO ()
+-- main = prerendder defaultEvents app
+-- @
+prerender :: Eq model => Events -> App model action -> IO ()
+prerender events vcomp = withJS $ do
+  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+-----------------------------------------------------------------------------
+-- | Like 'miso', except it does not perform page hydration.
+--
+-- This function draws your application on an empty <body>
+--
+-- You will most likely want to use this function for your application
+-- unless you are using prerendering.
 --
 -- @
 -- main :: IO ()
 -- main = startApp defaultEvents app
 -- @
+--
 startApp :: Eq model => Events -> App model action -> IO ()
-startApp = startComponent
+startApp events vcomp = withJS (initComponent events vcomp)
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
 (🍜) = miso
-----------------------------------------------------------------------------
--- | Runs a miso application
-startComponent :: Eq model => Events -> Component ROOT model action -> IO ()
-startComponent events vcomp = withJS (initComponent events vcomp)
 ----------------------------------------------------------------------------
 -- | Runs a 'miso' application, but with a custom rendering engine.
 --
@@ -161,7 +171,7 @@ startComponent events vcomp = withJS (initComponent events vcomp)
 -- JS object that implements the context interface per @ts\/miso\/context\/dom.ts@
 -- This is necessary for native support.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- It is expected to be run on an empty @<body>@
 --
 -- @
 -- main :: IO ()
@@ -178,7 +188,7 @@ renderApp
 renderApp events renderer vcomp =
   withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
 ----------------------------------------------------------------------------
--- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
+-- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
   => Events
