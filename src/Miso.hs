@@ -19,6 +19,7 @@ module Miso
   ( -- * API
     -- ** Miso
     miso
+  , prerender
   , (🍜)
     -- ** App
   , App
@@ -120,23 +121,37 @@ import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
+--
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
---
 -- @
 -- main :: IO ()
--- main = miso defaultEvents (\\uri -> ..))
+-- main = miso defaultEvents (\\uri -> app uri))
 -- @
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
   vcomp <- f <$> getURI
   initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
------------------------------------------------------------------------------
--- | Synonym for 'startApp'.
+----------------------------------------------------------------------------
+-- | Like 'miso', except discards the 'URI' argument.
 --
--- To get an t'IO' action that starts the application, use 'run' on the result of this function.
+-- Use this function if you'd like to prerender, but not use navigation.
+--
+-- @
+-- main :: IO ()
+-- main = miso defaultEvents (\\uri -> app uri))
+-- @
+prerender :: Eq model => Events -> App model action -> IO ()
+prerender events vcomp = withJS $ do
+  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+-----------------------------------------------------------------------------
+-- | Like 'miso', except it does not perform page hydration.
+--
+-- This function draws your application on an empty <body>
+--
+-- You will most likely want to use this function for your application
+-- unless you are using prerendering.
 --
 -- @
 -- main :: IO ()
@@ -156,7 +171,7 @@ startApp events vcomp = withJS (initComponent events vcomp)
 -- JS object that implements the context interface per @ts\/miso\/context\/dom.ts@
 -- This is necessary for native support.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- It is expected to be run on an empty @<body>@
 --
 -- @
 -- main :: IO ()
