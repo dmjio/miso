@@ -114,7 +114,7 @@ view_ 0 m = M.div_ []
         :
         modelElems m
     )
-view idx m =
+view_ idx m =
     M.div_ []
         ( modelElems m
         ++
