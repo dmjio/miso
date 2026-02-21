@@ -27,6 +27,9 @@ watch:
 serve:
 	http-server public
 
+repl: update
+	wasm32-wasi-cabal repl app -finteractive --repl-options='-fghci-browser -fghci-browser-port=8080'
+
 clean:
 	rm -rf ../dist-newstyle public
 
