@@ -51,6 +51,10 @@ common cpp
     cpp-options:
       -DBENCH
 
+  if flag(no-implicit-js)
+    cpp-options:
+      -DNO_IMPLICIT_JS
+
 common client
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(production)
@@ -94,6 +98,14 @@ flag template-haskell
     False
   description:
     Checks if template-haskell is enabled. If so, allows Miso.Lens.TH
+
+flag no-implicit-js
+  manual:
+    True
+  default:
+    False
+  description:
+    Disables withJS. User will import miso[.prod].ts manually on their page.
 
 library
   import:

@@ -201,15 +201,22 @@ initComponent events vcomp@Component {..} = do
 isRoot :: Bool
 isRoot = True
 ----------------------------------------------------------------------------
+withJS :: IO a -> IO ()
+#ifdef NO_IMPLICIT_JS
+withJS = void
+#else
+
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
-withJS :: IO a -> IO ()
+
 withJS action = void $ do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
 #endif
   action
+
+#endif
 -----------------------------------------------------------------------------
