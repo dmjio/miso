@@ -1,13 +1,10 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use <&>" #-}
 
 module HtmlGen where
 
-import GHC.Generics
 import Miso hiding (on, Src, Checked, Object)
 import Miso.Html.Element hiding (title_, data_)
 import Miso.Html.Property hiding (label_, form_)
@@ -44,7 +41,7 @@ data HtmlAttributeType
     | Value
     | Type
     | Checked
-    deriving (Eq, Generic, FromJSON, Show)
+    deriving (Eq, Show)
 
 instance ToJSON HtmlAttributeType where
     toJSON Class   = String "Class"
@@ -60,6 +57,21 @@ instance ToJSON HtmlAttributeType where
     toJSON Type    = String "Type"
     toJSON Checked = String "Checked"
 
+instance FromJSON HtmlAttributeType where
+    parseJSON (String "Class")   = pure Class
+    parseJSON (String "Id")      = pure Id
+    parseJSON (String "Title")   = pure Title
+    parseJSON (String "Colspan") = pure Colspan
+    parseJSON (String "Rowspan") = pure Rowspan
+    parseJSON (String "Method")  = pure Method
+    parseJSON (String "Action")  = pure Action
+    parseJSON (String "Alt")     = pure Alt
+    parseJSON (String "Src")     = pure Src
+    parseJSON (String "Value")   = pure Value
+    parseJSON (String "Type")    = pure Type
+    parseJSON (String "Checked") = pure Checked
+
+    parseJSON _ = fail "Expected JSON String for HtmlAttributeType deserialization"
 
 data ChildHavingHtmlTag
     = Div
@@ -97,7 +109,7 @@ data ChildHavingHtmlTag
     | Figure
     | Figcaption
     | A
-    deriving (Eq, Enum, Bounded, Generic, FromJSON, Show)
+    deriving (Eq, Enum, Bounded, Show)
 
 instance ToJSON ChildHavingHtmlTag where
     toJSON Div        = String "Div"
@@ -136,9 +148,44 @@ instance ToJSON ChildHavingHtmlTag where
     toJSON Figcaption = String "Figcaption"
     toJSON A          = String "A"
 
-instance Arbitrary ChildHavingHtmlTag where
-  arbitrary = chooseBoundedEnum
+instance FromJSON ChildHavingHtmlTag where
+    parseJSON (String "Div")        = pure Div
+    parseJSON (String "Span")       = pure Span
+    parseJSON (String "P")          = pure P
+    parseJSON (String "Pre")        = pure Pre
+    parseJSON (String "Ul")         = pure Ul
+    parseJSON (String "Ol")         = pure Ol
+    parseJSON (String "Li")         = pure Li
+    parseJSON (String "Section")    = pure Section
+    parseJSON (String "Header")     = pure Header
+    parseJSON (String "Footer")     = pure Footer
+    parseJSON (String "Nav")        = pure Nav
+    parseJSON (String "Article")    = pure Article
+    parseJSON (String "H1")         = pure H1
+    parseJSON (String "H2")         = pure H2
+    parseJSON (String "H3")         = pure H3
+    parseJSON (String "H4")         = pure H4
+    parseJSON (String "Strong")     = pure Strong
+    parseJSON (String "Em")         = pure Em
+    parseJSON (String "Table")      = pure Table
+    parseJSON (String "Thead")      = pure Thead
+    parseJSON (String "Tbody")      = pure Tbody
+    parseJSON (String "Tr")         = pure Tr
+    parseJSON (String "Td")         = pure Td
+    parseJSON (String "Th")         = pure Th
+    parseJSON (String "Form")       = pure Form
+    parseJSON (String "Label")      = pure Label
+    parseJSON (String "Button")     = pure Button
+    parseJSON (String "Fieldset")   = pure Fieldset
+    parseJSON (String "Legend")     = pure Legend
+    parseJSON (String "Dl")         = pure Dl
+    parseJSON (String "Dt")         = pure Dt
+    parseJSON (String "Dd")         = pure Dd
+    parseJSON (String "Figure")     = pure Figure
+    parseJSON (String "Figcaption") = pure Figcaption
+    parseJSON (String "A")          = pure A
 
+    parseJSON _ = fail "Expected JSON String for ChildHavingHtmlTag deserialization"
 
 data ChildlessHtmlTag
     = Hr
@@ -146,7 +193,7 @@ data ChildlessHtmlTag
     | Img
     | Input
     | Wbr
-    deriving (Eq, Enum, Bounded, Generic, FromJSON, Show)
+    deriving (Eq, Enum, Bounded, Show)
 
 instance ToJSON ChildlessHtmlTag where
     toJSON Hr     = String "Hr"
@@ -154,6 +201,15 @@ instance ToJSON ChildlessHtmlTag where
     toJSON Img    = String "Img"
     toJSON Input  = String "Input"
     toJSON Wbr    = String "Wbr"
+
+instance FromJSON ChildlessHtmlTag where
+    parseJSON (String "Hr")    = pure Hr
+    parseJSON (String "Br")    = pure Br
+    parseJSON (String "Img")   = pure Img
+    parseJSON (String "Input") = pure Input
+    parseJSON (String "Wbr")   = pure Wbr
+
+    parseJSON _ = fail "Expected JSON String for ChildlessHtmlTag deserialization"
 
 instance Arbitrary ChildlessHtmlTag where
   arbitrary = chooseBoundedEnum
