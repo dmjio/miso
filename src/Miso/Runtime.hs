@@ -322,7 +322,7 @@ propagate
   -> IntMap (ComponentState p m a)
   -> (IntMap (ComponentState p m a), ComponentIds)
 propagate vcompId vcomps =
-  let dfsState = execState synch (dfs vcomps vcompId)
+  let dfsState = execState sync (dfs vcomps vcompId)
   in (_state dfsState, _visited dfsState)
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
@@ -343,7 +343,7 @@ data DFS p m a
     -- ^ start of the traverse
   }
 -----------------------------------------------------------------------------
-type Synch p m a x = State (DFS p m a) x
+type Sync p m a x = State (DFS p m a) x
 -----------------------------------------------------------------------------
 visited :: Lens (DFS p m a) (ComponentIds)
 visited = lens _visited $ \r x -> r { _visited = x }
@@ -357,10 +357,10 @@ stack = lens _stack $ \r x -> r { _stack = x }
 triggeredComponent :: Lens (DFS p m a) ComponentId
 triggeredComponent = lens _triggeredComponent $ \r x -> r { _triggeredComponent = x }
 -----------------------------------------------------------------------------
-synch :: Synch p m a ()
-synch = mapM_ go =<< pop
+sync :: Sync p m a ()
+sync = mapM_ go =<< pop
   where
-    go :: ComponentState p m a -> Synch p m a ()
+    go :: ComponentState p m a -> Sync p m a ()
     go cs = do
       visited_ <- use visited
       let seen = IS.member (cs ^. componentId) visited_
@@ -370,13 +370,13 @@ synch = mapM_ go =<< pop
             propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
-        synch
+        sync
 -----------------------------------------------------------------------------
 propagateChildren
   :: forall p m a
    . ComponentState p m a
   -> ComponentIds
-  -> Synch p m a ()
+  -> Sync p m a ()
 propagateChildren currentState childComponents = do
   forM_ (IS.toList childComponents) $ \childId -> do
     triggeredComponent_ <- use triggeredComponent
@@ -397,7 +397,7 @@ propagateChildren currentState childComponents = do
       process
         :: ComponentState m child a
         -> Binding m child
-        -> Synch p m a (ComponentState m child a)
+        -> Sync p m a (ComponentState m child a)
       process childState = \case
         ParentToChild getCurrentField setChildField -> do
           let currentChildModel = childState ^. componentModel
@@ -416,7 +416,7 @@ propagateParent
   :: forall p m a
    . ComponentState p m a
   -> ComponentId
-  -> Synch p m a ()
+  -> Sync p m a ()
 propagateParent currentState parentId_ =
   IM.lookup parentId_ <$> use state >>= \case
     Nothing -> pure ()
@@ -434,7 +434,7 @@ propagateParent currentState parentId_ =
     process
       :: ComponentState x p a
       -> Binding p m
-      -> Synch p m a (ComponentState x p a)
+      -> Sync p m a (ComponentState x p a)
     process parentState = \case
       ChildToParent setParentField getCurrentField -> do
         let currentParentModel = parentState ^. componentModel
@@ -449,13 +449,13 @@ propagateParent currentState parentId_ =
       _ ->
         pure parentState
 -----------------------------------------------------------------------------
-markVisited :: ComponentId -> Synch p m a ()
+markVisited :: ComponentId -> Sync p m a ()
 markVisited vcompId = visited.at vcompId ?= ()
 -----------------------------------------------------------------------------
-visit :: ComponentId -> Synch p m a ()
+visit :: ComponentId -> Sync p m a ()
 visit vcompId = stack %= (vcompId:)
 -----------------------------------------------------------------------------
-pop :: Synch p m a (Maybe (ComponentState p m a))
+pop :: Sync p m a (Maybe (ComponentState p m a))
 pop = use stack >>= \case
   [] -> 
     pure Nothing
