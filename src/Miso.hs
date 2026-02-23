@@ -185,8 +185,9 @@ renderApp
   -> App model action
   -- ^ Component application
   -> IO ()
-renderApp events renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent events Draw vcomp)
+renderApp events renderer vcomp = do
+  FFI.setDrawingContext renderer
+  initComponent events Draw vcomp
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
