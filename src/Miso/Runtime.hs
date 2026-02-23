@@ -95,7 +95,7 @@ import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
+import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
@@ -144,6 +144,8 @@ import           Miso.Lens hiding (view)
 import           Miso.String (ToMisoString(..))
 import           Miso.Types
 import           Miso.Util
+
+import Debug.Trace (trace, traceM)
 -----------------------------------------------------------------------------
 -- | Helper function to abstract out initialization of t'Miso.Types.Component' between top-level API functions.
 initialize
@@ -202,7 +204,9 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
                         in propagate _componentId
                           (IM.insert _componentId (cs { _componentModel = n }) vcomps)
                     | otherwise = (vcomps, mempty)
-              in (newComps, n, ss <> sss, dirtySet <> newDirty)
+              -- in (newComps, n, ss <> sss, dirtySet <> newDirty)
+              in trace ("_componentApplyActions: newDirty=" <> show (IS.toList newDirty)) $
+                 (newComps, n, ss <> sss, dirtySet <> newDirty)
           ) (comps, model_, [], mempty) actions
 
   let vcomp = ComponentState
@@ -215,7 +219,9 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , ..
         }
 
-  registerComponent vcomp
+  --unless isRoot $ trace ("initialize calling registerComponent, isRoot: " <> show isRoot <> " _componentId: " <> show _componentId) $ registerComponent vcomp
+  trace ("initialize calling registerComponent, isRoot: " <> show isRoot <> " _componentId: " <> show _componentId) $
+          registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   initialDraw initializedModel events hydrate isRoot comp vcomp
@@ -269,25 +275,38 @@ scheduler =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
+      globalComps <- readIORef components
+      FFI.consoleLog $ "commit: vcompId=" <> toMisoString vcompId 
+             <> " GLOBAL components keys=" <> (toMisoString $ show $ IM.keys globalComps)
+             <> " size=" <> (toMisoString $ show $ IM.size globalComps)
+
+      -- (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
+      --   atomicModifyIORef' components $ \vcomps -> do
+      --     let cs@ComponentState {..} = vcomps IM.! vcompId
+      --     case _componentApplyActions events _componentModel vcomps of
+      --       (x, updatedModel, schedules, dirtySet) ->
+      --         (x, (updatedModel, schedules, dirtySet, cs))
+
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
           case _componentApplyActions events _componentModel vcomps of
-            (x, updatedModel, schedules, dirtySet) ->
-              (x, (updatedModel, schedules, dirtySet, cs))
+            (newComps, updatedModel, schedules, dirtySet) ->
+              -- FIX: newComps already has all models (action + bindings)
+              -- Just mark the triggered component as dirty, don't overwrite model
+              let finalComps = IM.adjust
+                  (\oldCs -> oldCs { _componentIsDirty = True })
+                  vcompId
+                  newComps
+              in (finalComps, (updatedModel, schedules, dirtySet, cs))
+
       forM_ schedules $ \case
         Schedule Async action ->
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
-      if _componentModelDirty _componentModel updatedModel
-        then do
-          modifyComponent _componentId $ do
-            isDirty .= True
-            componentModel .= updatedModel
-          pure dirtySet
-        else
-          pure mempty
+
+      pure dirtySet
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -320,13 +339,16 @@ propagate
   :: ComponentId
   -> IntMap (ComponentState p m a)
   -> (IntMap (ComponentState p m a), ComponentIds)
-propagate vcompId vcomps =
+propagate vcompId vcomps = trace (
+  "propagate: vcompId=" <> show vcompId 
+         <> " vcomps keys=" <> show (IM.keys vcomps)
+         <> " vcomps size=" <> show (IM.size vcomps) ) $
   let dfsState = execState synch (dfs vcomps vcompId)
   in (_state dfsState, _visited dfsState)
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
-dfs cs vcompId = DFS cs mempty (pure vcompId)
+dfs cs vcompId = DFS cs mempty (pure vcompId) (IS.singleton vcompId)
 -----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
@@ -338,6 +360,7 @@ data DFS p m a
     -- ^ visited set
   , _stack :: [ComponentId]
     -- ^ neighbors queue
+  , _actionModified :: ComponentIds
   }
 -----------------------------------------------------------------------------
 type Synch p m a x = State (DFS p m a) x
@@ -350,6 +373,9 @@ state = lens _state $ \r x -> r { _state = x }
 -----------------------------------------------------------------------------
 stack :: Lens (DFS p m a) [ComponentId]
 stack = lens _stack $ \r x -> r { _stack = x }
+-----------------------------------------------------------------------------
+actionModified :: Lens (DFS p m a) (ComponentIds)
+actionModified = lens _actionModified $ \r x -> r { _actionModified = x }
 -----------------------------------------------------------------------------
 synch :: Synch p m a ()
 synch = mapM_ go =<< pop
@@ -370,16 +396,20 @@ propagateChildren
   -> Synch p m a ()
 propagateChildren currentState childComponents = do
   forM_ (IS.toList childComponents) $ \childId -> do
-    childState <- unsafeCoerce (IM.! childId) <$> use state
-    updatedChild <- unsafeCoerce <$>
-      foldM process childState (childState ^. componentBindings)
-    let isChildDirty =
-          (_componentModelDirty childState)
-          (_componentModel childState)
-          (_componentModel updatedChild)
-    when isChildDirty $ do
-      state.at childId ?= updatedChild { _componentIsDirty = True }
-      visit childId
+    actionModified_ <- use actionModified
+
+    when (IS.notMember childId actionModified_) $ do
+      childState <- unsafeCoerce (IM.! childId) <$> use state
+      updatedChild <- unsafeCoerce <$>
+        foldM process childState (childState ^. componentBindings)
+      let isChildDirty =
+            (_componentModelDirty childState)
+            (_componentModel childState)
+            (_componentModel updatedChild)
+      when isChildDirty $ do
+        state.at childId ?= updatedChild { _componentIsDirty = True }
+        visit childId
+
     where
       process
         :: ComponentState m child a
@@ -404,18 +434,21 @@ propagateParent
    . ComponentState p m a
   -> ComponentId
   -> Synch p m a ()
-propagateParent currentState parentId_ =
-  IM.lookup parentId_ <$> use state >>= mapM_ \case
-    parentState -> do
+propagateParent currentState parentId_ = trace ("propagateParent: child=" <> show (currentState ^. componentId) <> " looking for parent=" <> show parentId_) $
+  IM.lookup parentId_ <$> use state >>= \case
+    Nothing -> trace "PROPAGATION STOPPED: Parent not found in state map!" $ pure ()
+    Just parentState -> do
       updatedParent <- unsafeCoerce <$>
         foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
       let isParentDirty =
             (_componentModelDirty parentState)
             (_componentModel parentState)
             (_componentModel updatedParent)
+      traceM $ "propagateParent: isParentDirty=" <> show isParentDirty
       when isParentDirty $ do
         state.at parentId_ ?= updatedParent { _componentIsDirty = True }
         visit parentId_
+        propagateParent updatedParent (updatedParent ^. parentId)
   where
     process
       :: ComponentState x p a
@@ -1085,9 +1118,15 @@ setAttrs vnode@(Object jval) attrs snk logLevel events =
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState parent model action -> m ()
-registerComponent componentState = liftIO $
+registerComponent componentState = liftIO $ do
+  FFI.consoleLog $ "registerComponent: id=" <> toMisoString (_componentId componentState)
+                 <> " parent=" <> toMisoString (show $ _componentParentId componentState)
   atomicModifyIORef' components $ \cs ->
     (IM.insert (_componentId componentState) componentState cs, ())
+  cs' <- readIORef components
+  FFI.consoleLog $ "registerComponent: AFTER - size=" 
+                 <> toMisoString (show $ IM.size cs')
+                 <> " keys=" <> toMisoString (show $ IM.keys cs')
 -----------------------------------------------------------------------------
 -- | Renders styles
 --
