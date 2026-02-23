@@ -186,17 +186,19 @@ renderApp
   -- ^ Component application
   -> IO ()
 renderApp events renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
+  withJS (FFI.setDrawingContext renderer >> initComponent events vcomp isRoot)
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
   => Events
   -> Component parent model action
+  -> Bool
+  -- ^ isRoot
   -> IO (ComponentState parent model action)
-initComponent events vcomp@Component {..} = do
-  root <- mountElement (getMountPoint mountPoint)
-  initialize events rootComponentId Draw isRoot vcomp (pure root)
+initComponent events vcomp@Component {..} root = do
+  m <- mountElement (getMountPoint mountPoint)
+  initialize events rootComponentId Draw root vcomp (pure m)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True

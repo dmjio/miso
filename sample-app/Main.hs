@@ -10,6 +10,9 @@ import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
 ----------------------------------------------------------------------------
+import           Control.Concurrent (threadDelay)
+import           Control.Monad (forever)
+----------------------------------------------------------------------------
 -- | Component model state
 data Model
   = Model
@@ -29,7 +32,7 @@ data Action
 -- | Entry point for a miso application
 main :: IO ()
 #ifdef INTERACTIVE
-main = reload (startApp defaultEvents app)
+main = live defaultEvents app
 #else
 main = startApp defaultEvents app
 #endif
@@ -43,7 +46,12 @@ foreign export javascript "hs_start" main :: IO ()
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
 app :: App Model Action
-app = component emptyModel updateModel viewModel
+app = (component emptyModel updateModel viewModel)
+  { subs = [ \sink -> forever $ do
+               threadDelay 100000
+               sink AddOne
+           ]
+  }
 ----------------------------------------------------------------------------
 -- | Empty application state
 emptyModel :: Model
