@@ -144,8 +144,7 @@ miso events f = withJS $ do
 -- main = prerendder defaultEvents app
 -- @
 prerender :: Eq model => Events -> App model action -> IO ()
-prerender events vcomp = withJS $ do
-  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -160,7 +159,7 @@ prerender events vcomp = withJS $ do
 -- @
 --
 startApp :: Eq model => Events -> App model action -> IO ()
-startApp events vcomp = withJS (initComponent events Draw vcomp)
+startApp events = initComponent events Draw
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
@@ -196,7 +195,7 @@ initComponent
   -> Hydrate
   -> Component parent model action
   -> IO ()
-initComponent events hydrate vcomp@Component {..} = do
+initComponent events hydrate vcomp@Component {..} = withJS $ do
   root <- mountElement (getMountPoint mountPoint)
   void $ initialize events rootComponentId hydrate isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
