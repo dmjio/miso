@@ -1,6 +1,6 @@
 import { diff } from '../miso/dom';
-import { delegate, undelegate } from '../miso/event';
-import { DOMRef, EventCapture } from '../miso/types';
+import { delegator } from '../miso/event';
+import { DOMRef, EventCapture, VNode } from '../miso/types';
 import { vnode, vcomp } from '../miso/smart';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { eventContext, drawingContext } from '../miso/context/dom';
@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe ('Event tests', () => {
 
-  test('Should delegate and undelegate button click', () => {
+  test('Should delegate button click', () => {
     var body = document.body;
     var count = 0;
     var events = {
@@ -63,7 +63,7 @@ describe ('Event tests', () => {
       cb(vtreeParent);
     };
     const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    delegator(body, delegatedEvents, getVTree, true, eventContext);
 
     /* initiate click event */
    (vtreeChild.domRef as HTMLElement).click();
@@ -71,8 +71,50 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(2);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should warn when clicking mount with no target handler (empty stack)', () => {
+    const body = document.body;
+    const parent = vnode({ tag: 'div', children: [vnode({ tag: 'span' })], events: { captures: {}, bubbles: {} } });
+    (parent.children[0] as any).parent = parent;
+    diff(null, parent, body, drawingContext);
+
+    const getVTree = (cb: any) => cb(parent);
+    const delegatedEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegatedEvents, getVTree, true, eventContext);
+
+    // Click on the mount itself to produce an empty stack in delegateEvent
+    (body as HTMLElement).click();
+
+  });
+
+  test('Should propagate to parent when target has no bubble handler', () => {
+    const body = document.body;
+    let count = 0;
+    const childEvents = { captures: {}, bubbles: {} };
+    const parentEvents = {
+      captures: {},
+      bubbles: {
+        click: {
+          runEvent: () => { count++; },
+          options: { preventDefault: false, stopPropagation: false }
+        }
+      }
+    };
+
+    const child = vnode({ tag: 'button', events: childEvents });
+    const parent = vnode({ children: [child], events: parentEvents });
+    (child as any).parent = parent;
+    diff(null, parent, body, drawingContext);
+
+    const getVTree = (cb: any) => cb(parent);
+    const delegateEvents: Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
+
+    (child.domRef as HTMLElement).click();
+
+    expect(count).toBe(1);
+
   });
 
 
@@ -99,12 +141,11 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
-        return f(0, child);
-      }
+      mount: (p) => {
+        diff(null, child, p, drawingContext);
+        return { componentId: 0, componentTree: child };
+      },
     });
 
     var parent = vnode({
@@ -113,12 +154,10 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
-      }
+      mount: (p) => {
+        diff(null, parent, p, drawingContext);
+        return { componentId: 1, componentTree: parent };
+      },
     });
 
     /* create hierarchy */
@@ -133,8 +172,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -142,8 +181,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(2);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should *not* propagate an event between components', () => {
@@ -169,12 +206,11 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: false,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
-        return f(0, child);
-      }
+      mount: (p) => {
+        diff(null, child, p, drawingContext);
+        return { componentId: 0, componentTree: child };
+      },
     });
 
     var parent = vnode({
@@ -183,12 +219,10 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
-      }
+      mount: (p) => {
+        diff(null, parent, p, drawingContext);
+        return { componentId: 1, componentTree: parent };
+      },
     });
 
     /* create hierarchy */
@@ -203,8 +237,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -212,8 +246,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(1);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should *not* propagate an event when stopPropagation is set', () => {
@@ -239,12 +271,11 @@ describe ('Event tests', () => {
     });
 
     var childVComp = vcomp({
-      children: [child],
       eventPropagation: true,
-      mount : function (vcomp, f) {
-        diff(null, child, vcomp.domRef, drawingContext);
-        return f(0, child);
-      }
+      mount: (p: DOMRef) => {
+        diff(null, child, p, drawingContext);
+        return { componentId: 0, componentTree: child as VNode<DOMRef> };
+      },
     });
 
     var parent = vnode({
@@ -253,17 +284,15 @@ describe ('Event tests', () => {
     });
 
     var parentVComp = vcomp({
-      events: events,
-      children: [parent],
-      mount : function (vcomp, f) {
-        diff(null, parent, vcomp.domRef, drawingContext);
-        return f(1, child);
-      }
+      mount: (p: DOMRef) => {
+        diff(null, parent, p, drawingContext);
+        return { componentId: 1, componentTree: parent as VNode<DOMRef> };
+      },
     });
 
     /* create hierarchy */
     child.parent = childVComp;
-    childVComp.parent = parent;
+    childVComp.parent = parent as VNode<DOMRef>;
     parent.parent = parentVComp;
 
     /* initial page draw */
@@ -273,8 +302,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parentVComp);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -282,8 +311,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(count).toEqual(1);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('Should call capture, bubble and target handlers in order', () => {
@@ -333,8 +360,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -342,8 +369,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1,1,2,2]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
 
@@ -394,8 +419,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -403,8 +428,6 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
   });
 
   test('If stopPropagation called during bubble phase, capture and target still get executed', () => {
@@ -454,8 +477,8 @@ describe ('Event tests', () => {
     var getVTree = (cb : any) => {
       cb(parent);
     };
-    const delegatedEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
-    delegate(body, delegatedEvents, getVTree, true, eventContext);
+    const delegateEvents : Array<EventCapture> = [{ name: 'click', capture: false }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
 
     /* initiate click event */
     (child.domRef as HTMLElement).click();
@@ -463,8 +486,82 @@ describe ('Event tests', () => {
     /* check results */
     expect(counts).toEqual([1,1,2]);
 
-    /* unmount delegation */
-    undelegate(document.body, delegatedEvents, getVTree, true, eventContext);
+  });
+
+  test('Should delegate events through recursively mounted components (vcomp -> vcomp -> vnode)', () => {
+    var body = document.body;
+    var count = 0;
+    var events = {
+      captures: {},
+      bubbles: {
+        click: {
+          runEvent: (e: Event, o: Node) => {
+            count++;
+          },
+          options: {
+            preventDefault: true,
+            stopPropagation: false,
+          },
+        }
+      }
+    };
+
+    // Innermost vnode with button that has click event
+    var innerNode = vnode({
+      tag: 'div',
+      children: [vnode({ tag: 'button', events })],
+      events
+    });
+
+    // Middle vcomp wrapping the vnode
+    var middleVComp = vcomp({
+      eventPropagation: true,
+      mount: (p) => {
+        diff(null, innerNode, p, drawingContext);
+        return { componentId: 1, componentTree: innerNode };
+      },
+    });
+
+    // Outer vcomp wrapping the middle vcomp
+    var outerVComp = vcomp({
+      eventPropagation: true,
+      mount: (p) => {
+        diff(null, middleVComp, p, drawingContext);
+        return { componentId: 0, componentTree: middleVComp };
+      },
+    });
+
+    // Set up parent hierarchy
+    const buttonNode = innerNode.children[0] as VNode<DOMRef>;
+    (buttonNode as any).parent = innerNode;
+    (innerNode as any).parent = middleVComp;
+    (middleVComp as any).parent = outerVComp;
+
+    /* initial page draw */
+    diff(null, outerVComp, document.body, drawingContext);
+
+    /* verify DOM structure is correct - recursively mounted components create the inner div */
+    expect(document.body.childNodes.length).toBeGreaterThanOrEqual(1);
+    const divElement = Array.from(document.body.childNodes).find(
+      node => (node as Element).tagName === 'DIV'
+    ) as Element;
+    expect(divElement).toBeDefined();
+    expect(divElement.tagName).toBe('DIV');
+
+    /* setup event delegation */
+    var getVTree = (cb: any) => {
+      cb(outerVComp);
+    };
+    const delegateEvents: Array<EventCapture> = [{ name: 'click', capture: true }];
+    delegator(body, delegateEvents, getVTree, true, eventContext);
+
+    /* initiate click event on the button inside nested components */
+    const button = buttonNode.domRef as HTMLElement;
+    button.click();
+
+    /* check results - event should propagate through the component hierarchy */
+    expect(count).toEqual(2);
+
   });
 
 });

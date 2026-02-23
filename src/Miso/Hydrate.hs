@@ -14,14 +14,14 @@ module Miso.Hydrate
   ( hydrate
   ) where
 -----------------------------------------------------------------------------
-import           Language.Javascript.JSaddle
------------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
+import           Miso.DSL
 -----------------------------------------------------------------------------
 -- | Hydration of a t'VTree'
-hydrate :: LogLevel -> DOMRef -> VTree -> JSM ()
+hydrate :: LogLevel -> DOMRef -> VTree -> IO Bool
 hydrate loggingLevel domRef vtree = do
   jval <- toJSVal vtree
-  FFI.hydrate (loggingLevel `elem` [DebugHydrate, DebugAll]) domRef jval
+  fromJSValUnchecked =<<
+    FFI.hydrate (loggingLevel `elem` [DebugHydrate, DebugAll]) domRef jval
 -----------------------------------------------------------------------------

@@ -1,5 +1,5 @@
-import { callCreated, diffAttrs } from './dom';
-import { DrawingContext, HydrationContext, VTree, VComp, VText, DOMRef, VTreeType } from './types';
+import { callCreated } from './dom';
+import { Mount, DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
@@ -14,64 +14,24 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
   return adjusted;
 }
 
-/* function to determine if <script> tags are present in `body` top-level
-   if so we work around them */
-function preamble(mountPoint: DOMRef | Text, context : DrawingContext<DOMRef>): Node {
-  /* this needs to be abstracted out for native as well ... at some point */
-  var mountChildIdx = 0,
-    node: ChildNode;
-  var root = context.getRoot();
-  if (!mountPoint) {
-    if (root.childNodes.length > 0) {
-        node = root.firstChild;
-    } else {
-      node = root.appendChild(context.createElement('div'));
-    }
-  } else if (mountPoint.childNodes.length === 0) {
-    node = mountPoint.appendChild(context.createElement('div'));
-  } else {
-    while (
-      mountPoint.childNodes[mountChildIdx] &&
-      (mountPoint.childNodes[mountChildIdx].nodeType === 3 ||
-        (mountPoint.childNodes[mountChildIdx] as Element).localName === 'script')
-    ) {
-      mountChildIdx++;
-    }
-    if (!mountPoint.childNodes[mountChildIdx]) {
-      node = root.appendChild(context.createElement('div'));
-    } else {
-      node = mountPoint.childNodes[mountChildIdx];
-    }
-  }
-  return node;
-}
-
 export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTree<DOMRef>, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
-  // If script tags are rendered first in body, skip them.
-  const node: Node = preamble(mountPoint, drawingContext);
+
+  /* hydration mountPoint must be the root */
+  if (!vtree || !mountPoint) return false;
+
+  /* Don't hydrate on text mountPoint */
+  if (mountPoint.nodeType === 3) return false;
 
   // begin walking the DOM, report the result
-    if (!walk(logLevel, vtree, node, context, drawingContext)) {
+  if (!walk(logLevel, vtree, context.firstChild(mountPoint as DOMRef), context, drawingContext)) {
     // If we failed to prerender because the structures were different, fallback to drawing
-    if (logLevel) {
-      console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
-    }
+      if (logLevel) {
+        console.warn('[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff');
+      }
+      while (context.firstChild(mountPoint as DOMRef))
+        drawingContext.removeChild(mountPoint as DOMRef, context.lastChild(mountPoint as DOMRef));
 
-    // Remove all children before rebuilding DOM
-    while (context.firstChild(node as DOMRef))
-      drawingContext.removeChild(node as DOMRef, context.lastChild(node as DOMRef));
-
-    (vtree.domRef as Node) = node;
-
-     switch (vtree.type) {
-         case VTreeType.VText:
-             break;
-         default:
-             diffAttrs(null, vtree, drawingContext);
-             break;
-     }
-
-    return false;
+     return false;
   } else {
     if (logLevel) {
       console.info('[DEBUG_HYDRATE] Successfully prerendered page');
@@ -79,6 +39,7 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
   }
   return true;
 }
+
 function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): void {
   if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
 }
@@ -117,7 +78,7 @@ function check(result: boolean, vtree: VTree<DOMRef>, context: HydrationContext<
       result = false;
     }
   } // if vnode / vcomp, must be the same
-  else {
+  else if (vtree.type === VTreeType.VNode) {
     // tags must be identical
     if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
       console.warn(
@@ -197,18 +158,31 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // There can thus be fewer DOM nodes than VDOM nodes.
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
-    case VTreeType.VComp:
-      (vtree as VComp<DOMRef>).domRef = node as DOMRef;
-      callCreated(vtree, drawingContext);
-      break;
+      case VTreeType.VComp:
+       let mounted: Mount<DOMRef> = vtree.mount (node.parentNode as DOMRef);
+       vtree.componentId = mounted.componentId;
+       vtree.child = mounted.componentTree;
+       mounted.componentTree.parent = vtree;
+       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
+          return false;
+       }
+       break;
     case VTreeType.VText:
-      (vtree as VText<DOMRef>).domRef = node as DOMRef;
+       if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
+         diagnoseError(logLevel, vtree, node);
+         return false;
+       }
+      vtree.domRef = node as DOMRef;
       break;
     case VTreeType.VNode:
+      if (node.nodeType !== 1) {
+         diagnoseError(logLevel, vtree, node);
+         return false;
+      }
       vtree.domRef = node as DOMRef;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       // Fire onCreated events as though the elements had just been created.
-      callCreated(vtree, drawingContext);
+      callCreated(node, vtree, drawingContext);
 
       for (var i = 0; i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
@@ -217,26 +191,11 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           diagnoseError(logLevel, vdomChild, domChild);
           return false;
         }
-        switch (vdomChild.type) {
-          case VTreeType.VText:
-            if (domChild.nodeType !== 3) {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            if (vdomChild.text === domChild.textContent) {
-              vdomChild.domRef = context.children(node as DOMRef)[i];
-            } else {
-              diagnoseError(logLevel, vdomChild, domChild);
-              return false;
-            }
-            break;
-          default:
-            if (domChild.nodeType !== 1) return false;
-            vdomChild.domRef = domChild as DOMRef;
-             walk(logLevel, vdomChild, domChild, context, drawingContext);
-            break;
+        if (!walk(logLevel, vdomChild, domChild, context, drawingContext)) {
+          return false;
         }
       }
+      break;
   }
   return true;
 }

@@ -36,9 +36,8 @@ module Miso.WebSocket
   , ArrayBuffer (..)
   ) where
 -----------------------------------------------------------------------------
-import           Data.Aeson
------------------------------------------------------------------------------
 import           Miso.Effect
+import           Miso.JSON
 import           Miso.Runtime
 import           Miso.String (MisoString)
 import           Miso.FFI (Blob(..), ArrayBuffer(..))

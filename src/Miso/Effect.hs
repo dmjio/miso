@@ -45,10 +45,14 @@ module Miso.Effect
   , noop
   , beforeAll
   , afterAll
-  , modifyAllJSM
-  -- * Internal
+  , modifyAllIO
+  -- *** Lens
+  , componentInfoDOMRef
+  , componentInfoParentId
+  , componentInfoId
+  -- *** Internal
   , runEffect
-  -- * Deprecated
+  -- *** Deprecated
   , scheduleIO
   , scheduleIO_
   , scheduleIOFor_
@@ -60,12 +64,10 @@ module Miso.Effect
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
 import           Data.Foldable (for_)
-import           Control.Monad.RWS ( RWS, put, tell, execRWS, censor)
-import           Language.Javascript.JSaddle (JSVal, JSM)
-#if __GLASGOW_HASKELL__ <= 881
-import qualified Control.Monad.Fail as Fail
-import           Data.Functor.Identity (Identity(..))
-#endif
+import           Control.Monad.RWS (RWS, put, tell, execRWS, censor)
+-----------------------------------------------------------------------------
+import           Miso.Lens
+import           Miso.DSL.FFI
 -----------------------------------------------------------------------------
 -- | Smart constructor for t'ComponentInfo'
 mkComponentInfo
@@ -83,10 +85,50 @@ mkComponentInfo = ComponentInfo
 -- @parent@ function, and using 'Miso.Property.prop'.
 data ComponentInfo parent
   = ComponentInfo
-  { _componentId :: ComponentId
-  , _componentParentId :: ComponentId
-  , _componentDOMRef :: DOMRef
+  { _componentInfoId :: ComponentId
+  , _componentInfoParentId :: ComponentId
+  , _componentInfoDOMRef :: DOMRef
   }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the t'ComponentId' from t'ComponentInfo'.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       compId <- view componentInfoId
+--       someAction compId
+-- @
+--
+-- @since 1.9.0.0
+componentInfoId :: Lens (ComponentInfo parent) ComponentId
+componentInfoId = lens _componentInfoId $ \r x -> r { _componentInfoId = x }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the parents's  t'ComponentId' from t'ComponentInfo'.
+--
+-- @
+--
+-- update = \case
+--   SomeAction -> do
+--     compParentId <- view componentParentId
+--     someAction compParentId
+-- @
+--
+-- @since 1.9.0.0
+componentInfoParentId :: Lens (ComponentInfo parent) ComponentId
+componentInfoParentId = lens _componentInfoParentId $ \r x -> r { _componentInfoParentId = x }
+-----------------------------------------------------------------------------
+-- | Lens for accessing the underlying t'Miso.Types.Component' t'DOMRef'.
+--
+-- @
+--   update = \case
+--     SomeAction -> do
+--       domRef <- view componentDOMRef
+--       someAction domRef
+-- @
+--
+-- @since 1.9.0.0
+componentInfoDOMRef :: Lens (ComponentInfo parent) DOMRef
+componentInfoDOMRef = lens _componentInfoDOMRef $ \r x -> r { _componentInfoDOMRef = x }
 -----------------------------------------------------------------------------
 -- | 'ComponentId' of the current t'Miso.Types.Component'
 type ComponentId = Int
@@ -95,28 +137,28 @@ type ComponentId = Int
 --
 -- The 'Sink' callback is used to dispatch actions which are then fed
 -- back into the 'Miso.Types.update' function.
-type Sub action = Sink action -> JSM ()
+type Sub action = Sink action -> IO ()
 -----------------------------------------------------------------------------
 -- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
-type Sink action = action -> JSM ()
+type Sink action = action -> IO ()
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
 infixl 0 <#
-(<#) :: model -> JSM action -> Effect parent model action
+(<#) :: model -> IO action -> Effect parent model action
 (<#) m action = put m >> tell [ async $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
-async :: (Sink action -> JSM ()) -> Schedule action
+async :: (Sink action -> IO ()) -> Schedule action
 async = Schedule Async
 -----------------------------------------------------------------------------
 -- | `Effect` smart constructor, flipped
 infixr 0 #>
-(#>) :: JSM action -> model -> Effect parent model action
+(#>) :: IO action -> model -> Effect parent model action
 (#>) = flip (<#)
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with multiple actions.
 --
 -- @since 1.9.0.0
-batch :: [JSM action] -> Effect parent model action
+batch :: [IO action] -> Effect parent model action
 batch actions = sequence_
   [ tell [ async $ \f -> f =<< action ]
   | action <- actions
@@ -125,7 +167,7 @@ batch actions = sequence_
 -- | Like @batch@ but actions are discarded
 --
 -- @since 1.9.0.0
-batch_ :: [JSM ()] -> Effect parent model action
+batch_ :: [IO ()] -> Effect parent model action
 batch_ actions = sequence_
   [ tell [ async (const action) ]
   | action <- actions
@@ -171,22 +213,16 @@ type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] m
 --
 -- All t'IO' is by default asynchronous, use the 'sync' function for synchronous
 -- execution. Beware 'sync' can block the render thread for a specific
--- 'Component'.
+-- t'Miso.Types.Component'.
 --
--- N.B. During 'Miso.Types.Component' unmounting, all effects are evaluated
+-- N.B. During t'Miso.Types.Component' unmounting, all effects are evaluated
 -- synchronously.
 --
 -- @since 1.9.0.0
-data Schedule action = Schedule Synchronicity (Sink action -> JSM ())
+data Schedule action = Schedule Synchronicity (Sink action -> IO ())
 -----------------------------------------------------------------------------
 -- | Type to represent a DOM reference
 type DOMRef = JSVal
------------------------------------------------------------------------------
-#if __GLASGOW_HASKELL__ <= 881
--- | @MonadFail@ instance for 'Identity'
-instance Fail.MonadFail Identity where
-  fail = error
-#endif
 -----------------------------------------------------------------------------
 -- | Internal function used to unwrap an @Effect@
 runEffect
@@ -207,13 +243,13 @@ mapSub f sub = \g -> sub (g . f)
 -- Please use this with caution because it will block the render thread.
 --
 -- @since 1.9.0.0
-sync :: JSM action -> Effect parent model action
+sync :: IO action -> Effect parent model action
 sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Like 'sync', except discards the result.
 --
 -- @since 1.9.0.0
-sync_ :: JSM () -> Effect parent model action
+sync_ :: IO () -> Effect parent model action
 sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
@@ -222,7 +258,7 @@ sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -- 'Control.Monad.Writer.Class.tell' from the @mtl@ library.
 --
 -- @since 1.9.0.0
-io :: JSM action -> Effect parent model action
+io :: IO action -> Effect parent model action
 io action = withSink (action >>=)
 -----------------------------------------------------------------------------
 -- | Like 'io' but doesn't cause an action to be dispatched to
@@ -231,10 +267,10 @@ io action = withSink (action >>=)
 -- This is handy for scheduling @IO@ computations where you don't care
 -- about their results or when they complete.
 --
--- Note: The result of @JSM a@ is discarded.
+-- Note: The result of @IO a@ is discarded.
 --
 -- @since 1.9.0.0
-io_ :: JSM a -> Effect parent model action
+io_ :: IO () -> Effect parent model action
 io_ action = withSink (\_ -> void action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
@@ -242,41 +278,41 @@ io_ action = withSink (\_ -> void action)
 -- This is handy for scheduling @IO@ computations that return a @Maybe@ value
 --
 -- @since 1.9.0.0
-for :: Foldable f => JSM (f action) -> Effect parent model action
+for :: Foldable f => IO (f action) -> Effect parent model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
--- | Performs the given JSM action before all JSM actions collected by the given
+-- | Performs the given IO action before all IO actions collected by the given
 -- effect.
 --
 -- Example usage:
 --
 -- > -- delays connecting a websocket by 100000 microseconds
 -- > beforeAll (liftIO $ threadDelay 100000) $ websocketConnectJSON OnConnect OnClose OnOpen OnError
-beforeAll :: JSM () -> Effect parent model action -> Effect parent model action
-beforeAll = modifyAllJSM . (*>)
+beforeAll :: IO () -> Effect parent model action -> Effect parent model action
+beforeAll = modifyAllIO . (*>)
 -----------------------------------------------------------------------------
--- | Performs the given JSM action after all JSM actions collected by the given
+-- | Performs the given IO action after all IO actions collected by the given
 -- effect.
 --
 -- Example usage:
 --
 -- > -- log that running the a websocket Effect completed
 -- > afterAll (consoleLog "Done running websocket effect") $ websocketConnectJSON OnConnect OnClose OnOpen OnError
-afterAll :: JSM () -> Effect parent model action -> Effect parent model action
-afterAll = modifyAllJSM . (<*)
+afterAll :: IO () -> Effect parent model action -> Effect parent model action
+afterAll = modifyAllIO . (<*)
 -----------------------------------------------------------------------------
--- | Modifies all JSM collected by the given Effect.
+-- | Modifies all IO collected by the given Effect.
 --
--- All 'JSM' expressions collected by 'Effect' can be evaluated either
+-- All 'IO' expressions collected by 'Effect' can be evaluated either
 -- synchronously or asynchronously (the default).
 --
--- This function can be used to adjoin additional actions to all 'JSM'
+-- This function can be used to adjoin additional actions to all 'IO'
 -- expressions in an 'Effect'. For examples see 'beforeAll' and 'afterAll'.
-modifyAllJSM
-  :: (JSM () -> JSM ())
+modifyAllIO
+  :: (IO () -> IO ())
   -> Effect parent model action
   -> Effect parent model action
-modifyAllJSM f = censor $ \actions ->
+modifyAllIO f = censor $ \actions ->
   [ Schedule x (f <$> action)
   | Schedule x action <- actions
   ]
@@ -292,7 +328,7 @@ modifyAllJSM f = censor $ \actions ->
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
 -- @since 1.9.0.0
-withSink :: (Sink action -> JSM ()) -> Effect parent model action
+withSink :: (Sink action -> IO ()) -> Effect parent model action
 withSink f = tell [ async f ]
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
@@ -310,27 +346,27 @@ issue action = tell [ async $ \f -> f action ]
 -----------------------------------------------------------------------------
 -- | See 'io'
 {-# DEPRECATED scheduleIO "Please use 'io' instead" #-}
-scheduleIO :: JSM action -> Effect parent model action
+scheduleIO :: IO action -> Effect parent model action
 scheduleIO = io
 -----------------------------------------------------------------------------
 -- | See 'io_'
 {-# DEPRECATED scheduleIO_ "Please use 'io_' instead" #-}
-scheduleIO_ :: JSM () -> Effect parent model action
+scheduleIO_ :: IO () -> Effect parent model action
 scheduleIO_ = io_
 -----------------------------------------------------------------------------
 -- | See 'for'
 {-# DEPRECATED scheduleIOFor_ "Please use 'for' instead" #-}
-scheduleIOFor_ :: Foldable f => JSM (f action) -> Effect parent model action
+scheduleIOFor_ :: Foldable f => IO (f action) -> Effect parent model action
 scheduleIOFor_ = for
 -----------------------------------------------------------------------------
 -- | See 'withSink'
 {-# DEPRECATED scheduleSub "Please use 'withSink' instead" #-}
-scheduleSub :: (Sink action -> JSM ()) -> Effect parent model action
+scheduleSub :: (Sink action -> IO ()) -> Effect parent model action
 scheduleSub = withSink
 -----------------------------------------------------------------------------
 -- | See 'withSink', 'put'
 {-# DEPRECATED effectSub "Please use 'put' and 'withSink' instead " #-}
-effectSub :: model -> (Sink action -> JSM ()) -> Effect parent model action
+effectSub :: model -> (Sink action -> IO ()) -> Effect parent model action
 effectSub m s = put m >> withSink s
 -----------------------------------------------------------------------------
 -- | See 'put'
@@ -340,7 +376,7 @@ noEff = put
 -----------------------------------------------------------------------------
 -- | See 'put', 'batch'
 {-# DEPRECATED batchEff "Please use 'put' and 'batch' instead " #-}
-batchEff :: model -> [JSM action] -> Effect parent model action
+batchEff :: model -> [IO action] -> Effect parent model action
 batchEff model actions = do
   put model
   batch actions

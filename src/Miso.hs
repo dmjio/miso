@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE QuasiQuotes               #-}
 {-# LANGUAGE NamedFieldPuns            #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TemplateHaskell           #-}
@@ -18,6 +19,7 @@ module Miso
   ( -- * API
     -- ** Miso
     miso
+  , prerender
   , (🍜)
     -- ** App
   , App
@@ -25,9 +27,9 @@ module Miso
   , renderApp
     -- ** Component
   , Component
-  , startComponent
   , component
   , (+>)
+  , mount_
     -- ** Sink
   , withSink
   , Sink
@@ -49,36 +51,44 @@ module Miso
   , sync
   , sync_
   , for
-    -- * Reactivity
+  -- ** JS file embedding
+#ifdef WASM
+  , evalFile
+#endif
+  , withJS
+    -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
-    -- * Types
-    -- | Core types for Miso applications.
-  , module Miso.Types
+    -- * DSL
+    -- | A JavaScript DSL for easy FFI interoperability
+  , module Miso.DSL
     -- * Effect
     -- | 'Effect', 'Sub', and 'Sink' types for defining update functions and subscriptions.
   , module Miso.Effect
     -- * Event
     -- | Functions for specifying component lifecycle events and event handlers.
   , module Miso.Event
-    -- * Property
-    -- | Construct custom properties on DOM elements.
-  , module Miso.Property
+    -- * Fetch
+    -- | Interface to the Fetch API for making HTTP requests.
+  , module Miso.Fetch
     -- * PubSub
     -- | Publish / Subscribe primitives for communication between components.
   , module Miso.PubSub
-    -- * Run
-    -- | Support for running and live-reloading of miso applications.
-  , module Miso.Run
+    -- * Property
+    -- | Construct custom properties on DOM elements.
+  , module Miso.Property
+    -- * Reload
+    -- | Support for clearing the page during live-reloading w/ WASM browser mode.
+  , module Miso.Reload
     -- * Subscriptions
     -- | Subscriptions for external events (mouse, keyboard, window, history, etc.).
   , module Miso.Subscription
     -- * Storage
     -- | Web Storage API (Local and Session storage) interface.
   , module Miso.Storage
-    -- * Fetch
-    -- | Interface to the Fetch API for making HTTP requests.
-  , module Miso.Fetch
+    -- * Types
+    -- | Core types for Miso applications.
+  , module Miso.Types
     -- * Util
     -- | Utility functions for views, parsing, and general purpose combinators.
   , module Miso.Util
@@ -91,27 +101,20 @@ module Miso
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-#ifndef GHCJS_BOTH
-#ifdef WASM
-import qualified Language.Javascript.JSaddle.Wasm.TH as JSaddle.Wasm.TH
-#else
-import           Data.FileEmbed (embedStringFile)
-import           Language.Javascript.JSaddle (eval)
-#endif
-#endif
 -----------------------------------------------------------------------------
 import           Miso.Binding
 import           Miso.Diff
+import           Miso.DSL
 import           Miso.Effect
 import           Miso.Event
 import           Miso.Fetch
 import           Miso.FFI
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Runtime
 import           Miso.Property
 import           Miso.PubSub
+import           Miso.Reload
 import           Miso.Router
-import           Miso.Run
+import           Miso.Runtime
 import           Miso.State
 import           Miso.Storage
 import           Miso.Subscription
@@ -119,39 +122,48 @@ import           Miso.Types
 import           Miso.Util
 ----------------------------------------------------------------------------
 -- | Runs an isomorphic @miso@ application.
+--
 -- Assumes the pre-rendered DOM is already present.
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
---
 -- @
 -- main :: IO ()
--- main = run (miso (\\uri -> ..))
+-- main = miso defaultEvents (\\uri -> app uri))
 -- @
-miso :: Eq model => (URI -> App model action) -> JSM ()
-miso f = withJS $ do
+miso :: Eq model => Events -> (URI -> App model action) -> IO ()
+miso events f = withJS $ do
   vcomp <- f <$> getURI
-  body <- FFI.getBody
-  initialize Hydrate isRoot vcomp (pure body)
------------------------------------------------------------------------------
--- | Synonym for 'startComponent'.
+  initComponent events Hydrate vcomp { mountPoint = Nothing }
+----------------------------------------------------------------------------
+-- | Like 'miso', except discards the 'URI' argument.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- Use this function if you'd like to prerender, but not use navigation.
 --
 -- @
 -- main :: IO ()
--- main = run (startApp app)
+-- main = prerendder defaultEvents app
 -- @
-startApp :: Eq model => App model action -> JSM ()
-startApp = startComponent
+prerender :: Eq model => Events -> App model action -> IO ()
+prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
+-----------------------------------------------------------------------------
+-- | Like 'miso', except it does not perform page hydration.
+--
+-- This function draws your application on an empty <body>
+--
+-- You will most likely want to use this function for your application
+-- unless you are using prerendering.
+--
+-- @
+-- main :: IO ()
+-- main = startApp defaultEvents app
+-- @
+--
+startApp :: Eq model => Events -> App model action -> IO ()
+startApp events = initComponent events Draw
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
-(🍜) :: Eq model => (URI -> App model action) -> JSM ()
+(🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
 (🍜) = miso
-----------------------------------------------------------------------------
--- | Runs a miso application
-startComponent :: Eq model => Component ROOT model action -> JSM ()
-startComponent vcomp = withJS (initComponent vcomp)
 ----------------------------------------------------------------------------
 -- | Runs a 'miso' application, but with a custom rendering engine.
 --
@@ -159,49 +171,55 @@ startComponent vcomp = withJS (initComponent vcomp)
 -- JS object that implements the context interface per @ts\/miso\/context\/dom.ts@
 -- This is necessary for native support.
 --
--- To get an IO action that starts the application, use 'run' on the result of this function.
+-- It is expected to be run on an empty @<body>@
 --
 -- @
 -- main :: IO ()
--- main = run (renderApp "my-context" app)
+-- main = renderApp defaultEvents "my-context" app
 -- @
 renderApp
   :: Eq model
-  => MisoString
+  => Events
+  -> MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
   -- ^ Component application
-  -> JSM ()
-renderApp renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent vcomp)
+  -> IO ()
+renderApp events renderer vcomp = do
+  FFI.setDrawingContext renderer
+  initComponent events Draw vcomp
 ----------------------------------------------------------------------------
--- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp' and 'startComponent'.
+-- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
-  => Component parent model action
-  -> JSM (ComponentState model action)
-initComponent vcomp@Component {..} = do
-  mount <- mountElement (getMountPoint mountPoint)
-  initialize Draw isRoot vcomp (pure mount)
+  => Events
+  -> Hydrate
+  -> Component parent model action
+  -> IO ()
+initComponent events hydrate vcomp@Component {..} = withJS $ do
+  root <- mountElement (getMountPoint mountPoint)
+  void $ initialize events rootComponentId hydrate isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True
 ----------------------------------------------------------------------------
+-- | Load miso's javascript.
+--
+-- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
+-- It's already invoked for you. This is a no-op w/ the JS backend.
+--
+-- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
+-- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
+--
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
--- | Used when compiling with jsaddle to make miso's JavaScript present in
--- the execution context.
-withJS :: JSM a -> JSM ()
-withJS action = void $ do
-#ifndef GHCJS_BOTH
+withJS :: IO a -> IO a
+withJS action = do
 #ifdef WASM
-  $(JSaddle.Wasm.TH.evalFile MISO_JS_PATH)
-#else
-  _ <- eval ($(embedStringFile MISO_JS_PATH) :: MisoString)
-#endif
+  $(evalFile MISO_JS_PATH)
 #endif
   action
 -----------------------------------------------------------------------------

@@ -26,10 +26,6 @@
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Miso uses this for FFI
-    jsaddle.url =
-      "github:ghcjs/jsaddle?rev=0fb7260ad02592546c9f180078d770256fb1f0f6";
-
     # Miso uses this compiling for WebAssembly
     ghc-wasm-meta.url =
       "gitlab:haskell-wasm/ghc-wasm-meta?host=gitlab.haskell.org";
@@ -109,6 +105,7 @@
                  http-server
                  cabal-install
                  tailwindcss_4
+                 ghciwatch
                ];
               shellHook = ''
                 function build () {
@@ -119,6 +116,13 @@
                 }
                 function update () {
                    wasm32-wasi-cabal update
+                }
+                function repl () {
+                   wasm32-wasi-cabal repl $1 -finteractive \
+                     --repl-options='-fghci-browser -fghci-browser-port=8080'
+                }
+                function repl-watch () {
+                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci-browser -fghci-browser-port=8080"'
                 }
               '';
             };
@@ -184,7 +188,6 @@
                  tailwindcss_4
               ];
             };
-
-        };
+          };
       });
 }

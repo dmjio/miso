@@ -23,16 +23,18 @@ module Miso.Html.Render
     ToHtml (..)
   ) where
 ----------------------------------------------------------------------------
-import           Data.Aeson
+import qualified Data.Set as S
+import           Data.Set (Set)
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
 import           Unsafe.Coerce (unsafeCoerce)
 #ifdef SSR
-import Control.Exception (SomeException, catch)
-import System.IO.Unsafe (unsafePerformIO)
+import           Control.Exception (SomeException, catch)
+import           System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
+import           Miso.JSON
 import           Miso.String hiding (intercalate)
 import qualified Miso.String as MS
 import           Miso.Types
@@ -60,6 +62,39 @@ intercalate sep (x:xs) =
   [ x
   , sep
   , intercalate sep xs
+  ]
+----------------------------------------------------------------------------
+booleanProperties :: Set MisoString
+booleanProperties = S.fromList
+  [ "allowfullscreen"
+  , "allowpaymentrequest"
+  , "allowusermedia"
+  , "async"
+  , "autofocus"
+  , "autoplay"
+  , "checked"
+  , "controls"
+  , "default"
+  , "defer"
+  , "disabled"
+  , "download"
+  , "formnovalidate"
+  , "hidden"
+  , "inert"
+  , "ismap"
+  , "itemscope"
+  , "loop"
+  , "multiple"
+  , "muted"
+  , "nomodule"
+  , "novalidate"
+  , "open"
+  , "playsinline"
+  , "readonly"
+  , "required"
+  , "reversed"
+  , "selected"
+  , "truespeed"
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
@@ -96,8 +131,8 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp ns tag attrs (SomeComponent vcomp)) =
-  renderBuilder (VNode ns tag attrs vkids)
+renderBuilder (VComp _ (SomeComponent vcomp)) =
+  foldMap renderBuilder vkids
     where
 #ifdef SSR
       vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
@@ -113,6 +148,16 @@ renderAttrs (ClassList classes) =
   , fromMisoString (MS.unwords classes)
   , stringUtf8 "\""
   ]
+renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
+  | S.member key booleanProperties, enabled = fromMisoString key
+  | S.member key booleanProperties, not enabled = mempty
+  | otherwise = mconcat
+      [ fromMisoString key
+      , stringUtf8 "=\""
+      , toHtmlFromJSON (Bool enabled)
+      , stringUtf8 "\""
+      ]
+renderAttrs (Property "key" _) = mempty
 renderAttrs (Property key value) =
   mconcat
   [ fromMisoString key

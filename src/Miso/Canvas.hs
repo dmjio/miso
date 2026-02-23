@@ -98,13 +98,10 @@ module Miso.Canvas
   , color
   ) where
 -----------------------------------------------------------------------------
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ReaderT, runReaderT, ask)
-import           Language.Javascript.JSaddle ( JSVal, (#), fromJSVal, MakeArgs (..)
-                                             , (<#), toJSVal, (!), fromJSValUnchecked
-                                             , liftJSM, FromJSVal, Object (..)
-                                             , ToJSVal, MakeObject, (<##)
-                                             )
 -----------------------------------------------------------------------------
+import           Miso.DSL hiding (call)
 import qualified Miso.FFI as FFI
 import           Miso.FFI (Image)
 import           Miso.Types
@@ -117,9 +114,9 @@ canvas_
   :: forall model action canvasState
    . (FromJSVal canvasState, ToJSVal canvasState)
   => [ Attribute action ]
-  -> (DOMRef -> JSM canvasState)
+  -> (DOMRef -> IO canvasState)
   -- ^ Init function, takes 'DOMRef' as arg, returns canvas init. state.
-  -> (canvasState -> JSM ())
+  -> (canvasState -> IO ())
   -- ^ Callback to render graphics using this canvas' context, takes init state as arg.
   -> View model action
 canvas_ attributes initialize_ draw_ = node HTML "canvas" attrs []
@@ -209,23 +206,25 @@ pattern_ :: Pattern -> StyleArg
 pattern_ = PatternArg
 -----------------------------------------------------------------------------
 -- | Renders a t'StyleArg' to a 'JSVal'
-renderStyleArg :: StyleArg -> JSM JSVal
-renderStyleArg (ColorArg c)    = toJSVal (renderColor c)
-renderStyleArg (GradientArg g) = toJSVal g
-renderStyleArg (PatternArg p)  = toJSVal p
+renderStyleArg :: StyleArg -> IO JSVal
+renderStyleArg = \case
+  ColorArg c -> toJSVal (renderColor c)
+  GradientArg g -> toJSVal g
+  PatternArg p -> toJSVal p
 -----------------------------------------------------------------------------
-instance MakeArgs StyleArg where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs StyleArg where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal StyleArg where
   toJSVal = renderStyleArg
 -----------------------------------------------------------------------------
 -- | Pretty-prints a t'PatternType' as 'Miso.String.MisoString'
 renderPattern :: PatternType -> MisoString
-renderPattern Repeat   = "repeat"
-renderPattern RepeatX  = "repeat-x"
-renderPattern RepeatY  = "repeat-y"
-renderPattern NoRepeat = "no-repeat"
+renderPattern = \case
+  Repeat -> "repeat"
+  RepeatX -> "repeat-x"
+  RepeatY -> "repeat-y"
+  NoRepeat -> "no-repeat"
 -----------------------------------------------------------------------------
 -- | [LineCap](https://www.w3schools.com/tags/canvas_linecap.asp)
 data LineCapType
@@ -234,49 +233,58 @@ data LineCapType
   | LineCapSquare
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs LineCapType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs LineCapType where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal LineCapType where
   toJSVal = toJSVal . renderLineCapType
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'LineCapType'
 renderLineCapType :: LineCapType -> MisoString
-renderLineCapType LineCapButt = "butt"
-renderLineCapType LineCapRound = "round"
-renderLineCapType LineCapSquare = "square"
+renderLineCapType = \case
+  LineCapButt -> "butt"
+  LineCapRound -> "round"
+  LineCapSquare -> "square"
 -----------------------------------------------------------------------------
 -- | [LineJoin](https://www.w3schools.com/tags/canvas_linejoin.asp)
-data LineJoinType = LineJoinBevel | LineJoinRound | LineJoinMiter
+data LineJoinType
+  = LineJoinBevel
+  | LineJoinRound
+  | LineJoinMiter
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs LineJoinType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs LineJoinType where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal LineJoinType where
   toJSVal = toJSVal . renderLineJoinType
 -----------------------------------------------------------------------------
 -- | Pretty-print a 'LineJoinType'
 renderLineJoinType :: LineJoinType -> MisoString
-renderLineJoinType LineJoinBevel = "bevel"
-renderLineJoinType LineJoinRound = "round"
-renderLineJoinType LineJoinMiter = "miter"
+renderLineJoinType = \case
+ LineJoinBevel -> "bevel"
+ LineJoinRound -> "round"
+ LineJoinMiter -> "miter"
 -----------------------------------------------------------------------------
 -- | Left-to-right, right-to-left, or inherit direction type.
-data DirectionType = LTR | RTL | Inherit
+data DirectionType
+  = LTR
+  | RTL
+  | Inherit
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs DirectionType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs DirectionType where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal DirectionType where
   toJSVal = toJSVal . renderDirectionType
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'DirectionType'
 renderDirectionType :: DirectionType -> MisoString
-renderDirectionType LTR = "ltr"
-renderDirectionType RTL = "rtl"
-renderDirectionType Inherit = "inherit"
+renderDirectionType = \case
+  LTR -> "ltr"
+  RTL -> "rtl"
+  Inherit -> "inherit"
 -----------------------------------------------------------------------------
 -- | Text alignment type
 data TextAlignType
@@ -287,19 +295,20 @@ data TextAlignType
   | TextAlignStart
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs TextAlignType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs TextAlignType where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal TextAlignType where
   toJSVal = toJSVal . renderTextAlignType
 -----------------------------------------------------------------------------
 -- | Pretty-print 'TextAlignType'
 renderTextAlignType :: TextAlignType -> MisoString
-renderTextAlignType TextAlignCenter = "center"
-renderTextAlignType TextAlignEnd    = "end"
-renderTextAlignType TextAlignLeft   = "left"
-renderTextAlignType TextAlignRight  = "right"
-renderTextAlignType TextAlignStart  = "start"
+renderTextAlignType = \case
+  TextAlignCenter -> "center"
+  TextAlignEnd -> "end"
+  TextAlignLeft -> "left"
+  TextAlignRight -> "right"
+  TextAlignStart -> "start"
 -----------------------------------------------------------------------------
 -- | TextBaselineType
 data TextBaselineType
@@ -311,20 +320,21 @@ data TextBaselineType
   | TextBaselineBottom
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs TextBaselineType where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs TextBaselineType where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal TextBaselineType where
   toJSVal = toJSVal . renderTextBaselineType
 -----------------------------------------------------------------------------
 -- | Pretty-printing for 'TextBaselineType'
 renderTextBaselineType :: TextBaselineType -> MisoString
-renderTextBaselineType TextBaselineAlphabetic = "alphabetic"
-renderTextBaselineType TextBaselineTop = "top"
-renderTextBaselineType TextBaselineHanging = "hanging"
-renderTextBaselineType TextBaselineMiddle = "middle"
-renderTextBaselineType TextBaselineIdeographic = "ideographic"
-renderTextBaselineType TextBaselineBottom = "bottom"
+renderTextBaselineType = \case
+  TextBaselineAlphabetic -> "alphabetic"
+  TextBaselineTop -> "top"
+  TextBaselineHanging -> "hanging"
+  TextBaselineMiddle -> "middle"
+  TextBaselineIdeographic -> "ideographic"
+  TextBaselineBottom -> "bottom"
 -----------------------------------------------------------------------------
 -- | CompositeOperation
 data CompositeOperation
@@ -341,25 +351,26 @@ data CompositeOperation
   | Xor
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance MakeArgs CompositeOperation where
-  makeArgs arg = (:[]) <$> toJSVal arg
+instance ToArgs CompositeOperation where
+  toArgs arg = (:[]) <$> toJSVal arg
 -----------------------------------------------------------------------------
 instance ToJSVal CompositeOperation where
   toJSVal = toJSVal . renderCompositeOperation
 -----------------------------------------------------------------------------
 -- | Pretty-print a 'CompositeOperation'
 renderCompositeOperation :: CompositeOperation -> MisoString
-renderCompositeOperation SourceOver      = "source-over"
-renderCompositeOperation SourceAtop      = "source-atop"
-renderCompositeOperation SourceIn        = "source-in"
-renderCompositeOperation SourceOut       = "source-out"
-renderCompositeOperation DestinationOver = "destination-over"
-renderCompositeOperation DestinationAtop = "destination-atop"
-renderCompositeOperation DestinationIn   = "destination-in"
-renderCompositeOperation DestinationOut  = "destination-out"
-renderCompositeOperation Lighter         = "lighter"
-renderCompositeOperation Copy            = "copy"
-renderCompositeOperation Xor             = "xor"
+renderCompositeOperation = \case
+  SourceOver -> "source-over"
+  SourceAtop -> "source-atop"
+  SourceIn -> "source-in"
+  SourceOut -> "source-out"
+  DestinationOver -> "destination-over"
+  DestinationAtop -> "destination-atop"
+  DestinationIn -> "destination-in"
+  DestinationOut -> "destination-out"
+  Lighter -> "lighter"
+  Copy -> "copy"
+  Xor -> "xor"
 -----------------------------------------------------------------------------
 -- | Type used to hold a canvas Pattern
 newtype Pattern = Pattern JSVal deriving (ToJSVal)
@@ -368,16 +379,16 @@ instance FromJSVal Pattern where
   fromJSVal = pure . pure . Pattern
 -----------------------------------------------------------------------------
 -- | Type used to hold a Gradient
-newtype Gradient = Gradient JSVal deriving (ToJSVal, MakeArgs)
+newtype Gradient = Gradient JSVal deriving (ToJSVal, ToArgs)
 -----------------------------------------------------------------------------
 instance FromJSVal Gradient where
   fromJSVal = pure . pure . Gradient
 -----------------------------------------------------------------------------
 -- | Type used to hold t'ImageData'
-newtype ImageData = ImageData JSVal deriving (ToJSVal, MakeObject)
+newtype ImageData = ImageData JSVal deriving (ToJSVal, ToObject)
 -----------------------------------------------------------------------------
-instance MakeArgs ImageData where
-  makeArgs args = (:[]) <$> toJSVal args
+instance ToArgs ImageData where
+  toArgs args = (:[]) <$> toJSVal args
 -----------------------------------------------------------------------------
 instance FromJSVal ImageData where
   fromJSVal = pure . pure . ImageData
@@ -388,10 +399,10 @@ type Coord = (Double, Double)
 -- | The canvas t'CanvasContext2D'
 type CanvasContext2D = JSVal
 -----------------------------------------------------------------------------
-call :: (FromJSVal a, MakeArgs args) => MisoString -> args -> Canvas a
+call :: (FromJSVal a, ToArgs args) => MisoString -> args -> Canvas a
 call name arg = do
   ctx <- ask
-  liftJSM $ fromJSValUnchecked =<< do
+  liftIO $ fromJSValUnchecked =<< do
     ctx # name $ arg
 -----------------------------------------------------------------------------
 -- | Property setter specialized to t'Canvas'.
@@ -401,13 +412,13 @@ call name arg = do
 -- globalCompositeOperation = set "globalCompositeOperation"
 -- @
 --
-set :: MakeArgs args => MisoString -> args -> Canvas ()
-set name arg = do
+set :: ToArgs args => MisoString -> args -> Canvas ()
+set name args = do
   ctx <- ask
-  liftJSM (ctx <# name $ makeArgs arg)
+  liftIO $ setField ctx name (toArgs args)
 -----------------------------------------------------------------------------
 -- | DSL for expressing operations on 'canvas_'
-type Canvas a = ReaderT CanvasContext2D JSM a
+type Canvas a = ReaderT CanvasContext2D IO a
 -----------------------------------------------------------------------------
 -- | [ctx.globalCompositeOperation = "source-over"](https://www.w3schools.com/tags/canvas_globalcompositeoperation.asp)
 globalCompositeOperation :: CompositeOperation -> Canvas ()
@@ -496,7 +507,7 @@ textBaseline = set "textBaseline"
 -- | [gradient.addColorStop(stop,color)](https://www.w3schools.com/tags/canvas_addcolorstop.asp)
 addColorStop :: (Double, Color) -> Gradient -> Canvas ()
 addColorStop args (Gradient g) = do
-  _ <- liftJSM $ g # ("addColorStop" :: MisoString) $ args
+  _ <- liftIO $ g # ("addColorStop" :: MisoString) $ args
   pure ()
 -----------------------------------------------------------------------------
 -- | [ctx.createLinearGradient(x0,y0,x1,y1)](https://www.w3schools.com/tags/canvas_createlineargradient.asp)
@@ -589,18 +600,18 @@ getImageData = call "getImageData"
 -----------------------------------------------------------------------------
 -- | [imageData.data\[index\] = 255](https://www.w3schools.com/tags/canvas_imagedata_data.asp)
 setImageData :: (ImageData, Int, Double) -> Canvas ()
-setImageData (imgData, index, value) = liftJSM $ do
+setImageData (imgData, index, value) = liftIO $ do
    o <- imgData ! ("data" :: MisoString)
    (o <## index) value
 -----------------------------------------------------------------------------
 -- | [imageData.height](https://www.w3schools.com/tags/canvas_imagedata_height.asp)
 height :: ImageData -> Canvas Double
-height (ImageData imgData) = liftJSM $ do
+height (ImageData imgData) = liftIO $ do
   fromJSValUnchecked =<< imgData ! ("height" :: MisoString)
 -----------------------------------------------------------------------------
 -- | [imageData.width](https://www.w3schools.com/tags/canvas_imagedata_width.asp)
 width :: ImageData -> Canvas Double
-width (ImageData imgData) = liftJSM $ do
+width (ImageData imgData) = liftIO $
   fromJSValUnchecked =<< imgData ! ("width" :: MisoString)
 -----------------------------------------------------------------------------
 -- | [ctx.putImageData(imageData,x,y)](https://www.w3schools.com/tags/canvas_putImageData.asp)

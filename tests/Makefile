@@ -6,7 +6,7 @@ update:
 	wasm32-wasi-cabal update
 
 build:
-	wasm32-wasi-cabal build
+	wasm32-wasi-cabal build component-tests
 	rm -rf public
 	cp -r static public
 	$(eval my_wasm=$(shell wasm32-wasi-cabal list-bin component-tests | tail -n 1))

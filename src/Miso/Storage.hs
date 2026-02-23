@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -----------------------------------------------------------------------------
 -- |
@@ -28,35 +29,31 @@ module Miso.Storage
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void)
-import           Data.Aeson (FromJSON(..), ToJSON, fromJSON)
-import qualified Data.Aeson as A
-import           Language.Javascript.JSaddle hiding (obj, val)
 -----------------------------------------------------------------------------
-import           Miso.FFI.Internal (jsonParse, jsonStringify)
-import           Miso.String (MisoString, ms)
+import           Miso.DSL
+import           Miso.JSON
+import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
 -- | Helper for retrieving either local or session storage.
 getStorageCommon
   :: FromJSON b
-  => (t -> JSM (Maybe JSVal))
+  => (t -> IO (Maybe JSVal))
   -> t
-  -> JSM (Either String b)
+  -> IO (Either MisoString b)
 getStorageCommon f key = do
   result <- f key
   case result of
     Nothing ->
       pure (Left "Not Found")
     Just v -> do
-      r <- jsonParse v
-      pure $ case fromJSON r of
-        A.Success x -> Right x
-        A.Error y -> Left y
+      s <- fromJSValUnchecked v
+      pure (eitherDecode s)
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
   :: FromJSON model
   => MisoString
-  -> JSM (Either String model)
+  -> IO (Either MisoString model)
 getSessionStorage =
   getStorageCommon $ \t -> do
     s <- sessionStorage
@@ -67,7 +64,7 @@ getSessionStorage =
 getLocalStorage
   :: FromJSON model
   => MisoString
-  -> JSM (Either String model)
+  -> IO (Either MisoString model)
 getLocalStorage = getStorageCommon $ \t -> do
     s <- localStorage
     r <- getItem s t
@@ -80,10 +77,10 @@ setLocalStorage
   :: ToJSON model
   => MisoString
   -> model
-  -> JSM ()
+  -> IO ()
 setLocalStorage key model = do
   s <- localStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in session storage.
 --
@@ -92,17 +89,17 @@ setSessionStorage
   :: ToJSON model
   => MisoString
   -> model
-  -> JSM ()
+  -> IO ()
 setSessionStorage key model = do
   s <- sessionStorage
-  setItem s key =<< fromJSValUnchecked =<< jsonStringify model
+  setItem s key (encode model)
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage.
 --
 -- @removeLocalStorage key@ removes the value of @key@.
 removeLocalStorage
   :: MisoString
-  -> JSM ()
+  -> IO ()
 removeLocalStorage key = do
   s <- localStorage
   removeItem s key
@@ -112,7 +109,7 @@ removeLocalStorage key = do
 -- @removeSessionStorage key@ removes the value of @key@.
 removeSessionStorage
   :: MisoString
-  -> JSM ()
+  -> IO ()
 removeSessionStorage key = do
   s <- sessionStorage
   removeItem s key
@@ -120,49 +117,49 @@ removeSessionStorage key = do
 -- | Clears local storage.
 --
 -- @clearLocalStorage@ removes all values from local storage.
-clearLocalStorage :: JSM ()
+clearLocalStorage :: IO ()
 clearLocalStorage = clear =<< localStorage
 -----------------------------------------------------------------------------
 -- | Clears session storage.
 --
 -- @clearSessionStorage@ removes all values from session storage.
-clearSessionStorage :: JSM ()
+clearSessionStorage :: IO ()
 clearSessionStorage = clear =<< sessionStorage
 -----------------------------------------------------------------------------
 -- | Returns the number of items in local storage.
 --
 -- @localStorageLength@ returns the count of items in local storage
-localStorageLength :: JSM Int
-localStorageLength = fromJSValUnchecked =<< localStorage ! (ms "length")
+localStorageLength :: IO Int
+localStorageLength = fromJSValUnchecked =<< localStorage ! "length"
 -----------------------------------------------------------------------------
 -- | Returns the number of items in session storage.
 --
 -- @sessionStorageLength@ returns the count of items in session storage
-sessionStorageLength :: JSM Int
-sessionStorageLength = fromJSValUnchecked =<< sessionStorage ! (ms "length")
+sessionStorageLength :: IO Int
+sessionStorageLength = fromJSValUnchecked =<< sessionStorage ! "length"
 -----------------------------------------------------------------------------
-localStorage :: JSM Storage
+localStorage :: IO Storage
 localStorage = Storage <$> (jsg "window" ! "localStorage")
 -----------------------------------------------------------------------------
-sessionStorage :: JSM Storage
+sessionStorage :: IO Storage
 sessionStorage = Storage <$> (jsg "window" ! "sessionStorage")
 -----------------------------------------------------------------------------
-getItem :: Storage -> MisoString -> JSM JSVal
+getItem :: Storage -> MisoString -> IO JSVal
 getItem (Storage s) key = s # "getItem" $ [key]
 -----------------------------------------------------------------------------
-removeItem :: Storage -> MisoString -> JSM ()
+removeItem :: Storage -> MisoString -> IO ()
 removeItem (Storage s) key = void $ s # "removeItem" $ [key]
 -----------------------------------------------------------------------------
-setItem :: Storage -> MisoString -> MisoString -> JSM ()
+setItem :: Storage -> MisoString -> MisoString -> IO ()
 setItem (Storage s) key val = do
   _ <- s # "setItem" $ (key, val)
   pure ()
 -----------------------------------------------------------------------------
-clear :: Storage -> JSM ()
+clear :: Storage -> IO ()
 clear (Storage s) = do
   _ <- s # "clear" $ ()
   pure ()
 -----------------------------------------------------------------------------
 newtype Storage = Storage JSVal
-  deriving (MakeObject, ToJSVal)
+  deriving (ToObject, ToJSVal)
 -----------------------------------------------------------------------------

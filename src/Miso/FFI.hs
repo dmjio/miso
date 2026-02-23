@@ -30,6 +30,7 @@ module Miso.FFI
   , getProperty
   , callFunction
   , castJSVal
+  , removeChild
     -- ** Styles
   , addStyle
   , addStyleSheet
@@ -42,13 +43,10 @@ module Miso.FFI
     -- ** Drawing
   , flush
   , setDrawingContext
-    -- ** JSON
-  , jsonStringify
-  , jsonParse
     -- ** Window
   , windowInnerWidth
   , windowInnerHeight
-  , reload
+  , locationReload
     -- ** Image
   , Image (..)
   , newImage
@@ -58,14 +56,12 @@ module Miso.FFI
   , toLocaleString
   , getSeconds
   , getMilliseconds
-    -- ** 'Miso.Types.Component'
-  , getParentComponentId
-  , getComponentId
     -- ** DOM Traversal
   , nextSibling
   , previousSibling
     -- ** Element
   , click
+  , setValue
     -- ** File Input
   , files
     -- ** Navigator
@@ -97,6 +93,14 @@ module Miso.FFI
   , Event (..)
   , eventPreventDefault
   , eventStopPropagation
+    -- ** Inline JS
+  , inline
+    -- ** Scroll
+  , scrollIntoView
+    -- ** SplitMix32
+  , splitmix32
+    -- ** Math.random()
+  , mathRandom
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

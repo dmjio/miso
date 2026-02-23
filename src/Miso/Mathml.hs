@@ -10,7 +10,7 @@
 -- Example usage:
 --
 -- @
--- xSquared :: View action
+-- xSquared :: View model action
 -- xSquared  =
 --     math_ []
 --         [ msup_ []

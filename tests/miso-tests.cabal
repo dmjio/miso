@@ -2,7 +2,7 @@ cabal-version:      2.2
 name:               miso-tests
 version:            0.1.0.0
 synopsis:           Integration tests for Haskell miso Components
-description:        An hspec-like library for testing miso Components w/ jsaddle
+description:        An hspec-like library for testing miso Components
 homepage:           https://haskell-miso.org
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -11,47 +11,58 @@ maintainer:         code@dmj.io
 copyright:          dmjio @ 2026
 category:           Web
 build-type:         Simple
-extra-doc-files:    CHANGELOG.md
-extra-source-files:
+
+flag interactive
+  default: False
+  manual: True
 
 common warnings
   ghc-options: -Wall
+
+common cpp
+  if impl(ghcjs) || arch(javascript)
+    cpp-options:
+      -DGHCJS_BOTH
+
+  if impl(ghcjs)
+    cpp-options:
+      -DGHCJS_OLD
+
+  elif arch(javascript)
+    cpp-options:
+      -DGHCJS_NEW
+
+  elif arch(wasm32)
+    cpp-options:
+      -DWASM
+  else
+    cpp-options:
+      -DVANILLA
 
 common options
   if arch(wasm32)
     ghc-options:
       -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start"
+
+  if flag (interactive)
     cpp-options:
-      -DWASM
+      -DINTERACTIVE
 
   if arch(javascript)
      ld-options:
        -sEXPORTED_RUNTIME_METHODS=HEAP8
 
-flag jsdom
-  manual:
-    True
-  default:
-    False
-  description:
-    Uses to indicate if jsdom should be used
-
 executable component-tests
   import:
-    options
+    options, cpp
   main-is:
     Main.hs
   build-depends:
-    base, miso, miso-tests, containers, mtl, jsaddle, stm
+    base, miso, miso-tests, containers, mtl, text
   hs-source-dirs:
     app
 
-  if flag (jsdom)
-    js-sources:
-      js/jsdom.js
-    cpp-options:
-      -DJSDOM
-  else
+  if arch(javascript) || impl(ghcjs)
     cpp-options:
       -DGHCJS_BROWSER
 
@@ -68,4 +79,4 @@ library
   exposed-modules:
     Miso.Test
   build-depends:
-    base, miso, containers, mtl, jsaddle, stm
+    base, miso, containers, mtl

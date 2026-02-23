@@ -46,7 +46,7 @@ module Miso.Html.Property
    , method_
    , multiple_
    , name_
-   , novalidate_
+   , noValidate_
    , pattern_
    , readonly_
    , required_
@@ -120,6 +120,7 @@ module Miso.Html.Property
    , frameborder_
    , scrolling_
    , tabindex_
+   , open_
    ) where
 -----------------------------------------------------------------------------
 import           Miso.Types
@@ -227,23 +228,27 @@ minlength_ = textProp "minlength"
 method_ :: MisoString -> Attribute action
 method_  = textProp "method"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/multiple>
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/multiple>
 multiple_ :: Bool -> Attribute action
 multiple_ = boolProp "multiple"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/novalidate>
-novalidate_ :: Bool -> Attribute action
-novalidate_      = boolProp "noValidate"
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/noValidate>
+noValidate_ :: Bool -> Attribute action
+noValidate_      = boolProp "noValidate"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/pattern>
 pattern_ :: MisoString -> Attribute action
 pattern_ = textProp "pattern"
 -----------------------------------------------------------------------------
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/details#open>
+open_ :: Bool -> Attribute action
+open_ = boolProp "open"
+-----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/readonly>
 readonly_ :: Bool -> Attribute action
 readonly_ = boolProp "readOnly"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/required>
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/required>
 required_ :: Bool -> Attribute action
 required_ = boolProp "required"
 -----------------------------------------------------------------------------
@@ -315,9 +320,9 @@ ping_  = textProp "ping"
 rel_ :: MisoString -> Attribute action
 rel_ = textProp "rel"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/ismap>
-ismap_ :: MisoString -> Attribute action
-ismap_ = textProp "ismap"
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/isMap>
+ismap_ :: Bool -> Attribute action
+ismap_ = boolProp "ismap"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/usemap>
 usemap_ :: MisoString -> Attribute action
@@ -427,9 +432,9 @@ seamless_ = textProp "seamless"
 srcdoc_ :: MisoString -> Attribute action
 srcdoc_  = textProp "srcdoc"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/reversed>
-reversed_ :: MisoString -> Attribute action
-reversed_ = textProp "reversed"
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/ol#reversed>
+reversed_ :: Bool -> Attribute action
+reversed_ = boolProp "reversed"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/align>
 align_ :: MisoString -> Attribute action
@@ -452,8 +457,8 @@ scope_ :: MisoString -> Attribute action
 scope_ = textProp "scope"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/async>
-async_ :: MisoString -> Attribute action
-async_ = textProp "async"
+async_ :: Bool -> Attribute action
+async_ = boolProp "async"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/charset>
 charset_ :: MisoString -> Attribute action
@@ -463,9 +468,9 @@ charset_ = textProp "charset"
 content_ :: MisoString -> Attribute action
 content_ = textProp "content"
 -----------------------------------------------------------------------------
--- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/defer>
-defer_ :: MisoString -> Attribute action
-defer_ = textProp "defer"
+-- | <https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement/defer>
+defer_ :: Bool -> Attribute action
+defer_ = boolProp "defer"
 -----------------------------------------------------------------------------
 -- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/httpEquiv>
 httpEquiv_ :: MisoString -> Attribute action
@@ -503,8 +508,7 @@ placeholder_ = textProp "placeholder"
 checked_ :: Bool -> Attribute action
 checked_ = boolProp "checked"
 -----------------------------------------------------------------------------
--- | Set "autofocus" property
--- <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autofocus>
+-- | <https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/autofocus>
 autofocus_ :: Bool -> Attribute action
 autofocus_ = boolProp "autofocus"
 -----------------------------------------------------------------------------

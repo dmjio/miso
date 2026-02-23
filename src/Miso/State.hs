@@ -15,7 +15,7 @@
 -- The @State@ 'Monad' works well with 'Control.Monad.State.Class.MonadState' lenses as seen in [Miso.Lens](https://haddocks.haskell-miso.org) and the [lens](https://hackage.haskell.org/package/lens) library.
 --
 -- @
--- updateModel :: Action -> Transition Model Action
+-- updateModel :: Action -> Effect parent Model Action
 -- updateModel (AddOne event) = do
 --   modify (+1)
 --   io_ (consoleLog "Added One!")
@@ -32,7 +32,9 @@ module Miso.State
   , gets
   , put
   , tell
+  , liftIO
   ) where
 ----------------------------------------------------------------------------
 import Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
+import Control.Monad.IO.Class (liftIO)
 ----------------------------------------------------------------------------

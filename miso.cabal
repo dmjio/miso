@@ -51,28 +51,7 @@ common cpp
     cpp-options:
       -DBENCH
 
-common jsaddle
-  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
-    build-depends:
-      jsaddle-warp < 0.10,
-      wai-middleware-static < 0.10,
-      wai < 3.3,
-      warp < 3.5,
-      websockets < 0.14
-
-  if !(impl(ghcjs) || arch(javascript))
-    build-depends:
-      file-embed < 0.1
-
-  if arch(wasm32)
-    build-depends:
-      jsaddle-wasm >= 0.1.2 && < 0.2
-
 common client
-  if impl(ghcjs) || arch(javascript)
-    build-depends:
-      ghcjs-base -any
-
   if impl(ghcjs) || arch(javascript) || arch(wasm32)
     if flag(production)
       js-sources:
@@ -118,7 +97,6 @@ flag template-haskell
 
 library
   import:
-    jsaddle,
     client,
     cpp
   default-language:
@@ -126,6 +104,7 @@ library
   other-modules:
     Miso.Delegate
     Miso.Diff
+    Miso.DSL.FFI
     Miso.Hydrate
     Miso.FFI.Internal
     Miso.Runtime
@@ -134,6 +113,11 @@ library
     Miso.Binding
     Miso.Canvas
     Miso.Concurrent
+    Miso.Date
+    Miso.Data.Map
+    Miso.Data.Set
+    Miso.Data.Array
+    Miso.DSL
     Miso.Effect
     Miso.Event
     Miso.Event.Decoder
@@ -146,17 +130,23 @@ library
     Miso.Html.Event
     Miso.Html.Property
     Miso.Html.Render
-    Miso.Runtime.Internal
+    Miso.JSON
+    Miso.JSON.Lexer
+    Miso.JSON.Parser
+    Miso.JSON.Types
     Miso.Lens
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property
     Miso.Media
     Miso.Navigator
+    Miso.Prelude
     Miso.Property
     Miso.PubSub
+    Miso.Random
     Miso.Router
-    Miso.Run
+    Miso.Reload
+    Miso.Runtime.Internal
     Miso.State
     Miso.Subscription
     Miso.Subscription.History
@@ -180,23 +170,47 @@ library
     Miso.Util.Parser
     Miso.WebSocket
 
+  -- FFI declarations
+  if arch(javascript) || impl(ghcjs)
+    hs-source-dirs:
+      ffi/js
+    build-depends:
+      ghcjs-base -any
+
+    if impl(ghcjs)
+      build-depends:
+        ghcjs-prim
+
+  elif arch(wasm32)
+    hs-source-dirs:
+      ffi/wasm
+    build-depends:
+      ghc-experimental,
+      template-haskell >= 2.21 && < 2.25
+    exposed-modules:
+      Miso.DSL.TH
+    other-modules:
+      Data.JSString
+  else
+    hs-source-dirs:
+      ffi/ghc
+
   if flag (template-haskell) && !impl(ghcjs)
     exposed-modules:
       Miso.Lens.TH
       Miso.String.QQ
+      Miso.FFI.QQ
     build-depends:
-      template-haskell >= 2.21 && < 2.24
+      template-haskell >= 2.21 && < 2.25
 
   ghc-options:
     -Wall
   hs-source-dirs:
     src
   build-depends:
-    aeson         < 2.3,
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,
-    jsaddle       < 0.10,
+    transformers  < 0.6.2.0,
     mtl           < 2.4,
-    text          < 2.2,
-    stm >= 2.4 && < 2.6
+    text          < 2.2

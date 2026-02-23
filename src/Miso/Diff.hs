@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -17,13 +18,12 @@ module Miso.Diff
   , mountElement
   ) where
 -----------------------------------------------------------------------------
-import           Language.Javascript.JSaddle (JSVal, Object(..), jsNull)
------------------------------------------------------------------------------
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types
+import           Miso.DSL
 -----------------------------------------------------------------------------
 -- | diffing / patching a given element
-diff :: Maybe VTree -> Maybe VTree -> JSVal -> JSM ()
+diff :: Maybe VTree -> Maybe VTree -> JSVal -> IO ()
 diff current new_ mountEl =
   case (current, new_) of
     (Nothing, Nothing) -> pure ()
@@ -38,7 +38,8 @@ diff current new_ mountEl =
       FFI.flush
 -----------------------------------------------------------------------------
 -- | return the configured mountPoint element or the body
-mountElement :: MisoString -> JSM JSVal
-mountElement "body" = FFI.getBody
-mountElement e = FFI.getElementById e
+mountElement :: MisoString -> IO JSVal
+mountElement = \case
+  "body" -> FFI.getBody
+  e -> FFI.getElementById e
 -----------------------------------------------------------------------------

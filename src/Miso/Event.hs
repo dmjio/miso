@@ -20,13 +20,6 @@ module Miso.Event
    , onWithOptions
    , Phase (..)
    -- *** Lifecycle events
-   , onMounted
-   , onMountedWith
-   , onBeforeMounted
-   , onUnmounted
-   , onUnmountedWith
-   , onBeforeUnmounted
-   , onBeforeUnmountedWith
    , onCreated
    , onCreatedWith
    , onBeforeCreated
@@ -40,9 +33,9 @@ module Miso.Event
 -----------------------------------------------------------------------------
 import           Control.Monad (when)
 import qualified Data.Map.Strict as M
-import           Data.Aeson.Types (parseEither)
-import           Language.Javascript.JSaddle
+import           Miso.JSON (parseEither)
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.Event.Decoder
 import           Miso.Event.Types
 import qualified Miso.FFI.Internal as FFI
@@ -116,7 +109,7 @@ onWithOptions phase options eventName Decoder{..} toAction =
     eventHandlerObject@(Object eo) <- create
     jsOptions <- toJSVal options
     decodeAtVal <- toJSVal decodeAt
-    cb <- FFI.syncCallback2 $ \e domRef -> do
+    cb <- FFI.asyncCallback2 $ \e domRef -> do
         Just v <- fromJSVal =<< FFI.eventJSON decodeAtVal e
         case parseEither decoder v of
           Left msg -> FFI.consoleError ("[EVENT DECODE ERROR]: " <> ms msg)
@@ -124,42 +117,6 @@ onWithOptions phase options eventName Decoder{..} toAction =
     FFI.set "runEvent" cb eventHandlerObject
     FFI.set "options" jsOptions eventHandlerObject
     FFI.set eventName eo (Object eventObj)
------------------------------------------------------------------------------
--- | @onMounted action@ is an event that gets called after the actual DOM
--- element is created.
---
--- @since 1.9.0.0
---
-onMounted :: action -> Attribute action
-onMounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onMounted" callback object
------------------------------------------------------------------------------
--- | @onMountedWith action@ is an event that gets called after the actual DOM
--- element is created. It returns the /componentId/ from the component.
--- Passes the 'DOMRef' to the action.
---
--- Use this or @onMounted@, but not both in the same @[Attribute action]@ list.
---
--- @since 1.9.0.0
---
-onMountedWith :: (DOMRef -> action) -> Attribute action
-onMountedWith action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback1 (sink . action)
-    FFI.set "onMounted" callback object
------------------------------------------------------------------------------
--- | @onBeforeMounted action@ is an event that gets called before the actual DOM
--- element is created.
---
--- @since 1.9.0.0
---
-onBeforeMounted :: action -> Attribute action
-onBeforeMounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onBeforeMounted" callback object
 -----------------------------------------------------------------------------
 -- | @onCreated action@ is an event that gets called after the actual DOM
 -- element is created.
@@ -192,52 +149,6 @@ onDestroyed action =
   On $ \sink (VTree object) _ _ -> do
     callback <- FFI.syncCallback (sink action)
     FFI.set "onDestroyed" callback object
------------------------------------------------------------------------------
--- | @onUnmounted action@ is an event that gets called after the DOM element
--- is removed from the DOM.
---
--- @since 1.9.0.0
---
-onUnmounted :: action -> Attribute action
-onUnmounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onUnmounted" callback object
------------------------------------------------------------------------------
--- | @onUnmountedWith action@ is an event that gets called after the DOM element
--- is removed from the DOM. Passes the 'DOMRef' to the action.
---
--- Use this or @onUnmounted@, but not both in the same @[Attribute action]@ list.
---
--- @since 1.9.0.0
---
-onUnmountedWith :: (DOMRef -> action) -> Attribute action
-onUnmountedWith action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback1 (sink . action)
-    FFI.set "onUnmounted" callback object
------------------------------------------------------------------------------
--- | @onBeforeUnmounted action@ is an event that gets called before the DOM element
--- is removed from the DOM.
---
--- @since 1.9.0.0
---
-onBeforeUnmounted :: action -> Attribute action
-onBeforeUnmounted action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback (sink action)
-    FFI.set "onBeforeUnmounted" callback object
------------------------------------------------------------------------------
--- | @onBeforeUnmountedWith@ is an event that gets called before the Component
--- unmounts and before the DOM element is removed from the DOM.
---
--- @since 1.9.0.0
---
-onBeforeUnmountedWith :: (DOMRef -> action) -> Attribute action
-onBeforeUnmountedWith action =
-  On $ \sink (VTree object) _ _ -> do
-    callback <- FFI.syncCallback1 (sink . action)
-    FFI.set "onBeforeUnmounted" callback object
 -----------------------------------------------------------------------------
 -- | @onBeforeDestroyed action@ is an event that gets called before the DOM element
 -- is removed from the DOM.

@@ -8,14 +8,23 @@ import
   , DOMRef
   , ComponentContext
   , VTree
+  , VTreeType
   } from '../types';
 
+import { drill } from '../util';
+import { delegator } from '../event';
+
 export const eventContext : EventContext<DOMRef> = {
-  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.addEventListener(event, listener, capture);
+  addEventListener : (mount: DOMRef, event: string, listener, capture: boolean) : void => {
+    mount.addEventListener(event, listener, capture);
   },
-  removeEventListener : (mount: DOMRef, event: string, listener, capture: boolean) => {
-      mount.removeEventListener(event, listener, capture);
+  delegator :
+     (mount: DOMRef,
+      events: Array<EventCapture>,
+      getVTree: ((callback: (vtree : VTree<DOMRef>) => void) => void),
+      debug: boolean,
+      ctx : EventContext<DOMRef>) : void => {
+    delegator(mount, events, getVTree, debug, ctx);
   },
   isEqual: (x: DOMRef, y: DOMRef) : boolean => {
     return x === y;
@@ -39,9 +48,9 @@ export const hydrationContext : HydrationContext<DOMRef> = {
     return node.lastChild as DOMRef;
   },
   getAttribute: (node: DOMRef, key: string) => {
-      if (key === 'class') return node.className;
-      if (key in node) return node[key];
-      return node.getAttribute(key);
+    if (key === 'class') return node.className;
+    if (key in node) return node[key];
+    return node.getAttribute(key);
   },
   getTag: (node: DOMRef) => {
     return node.nodeName;
@@ -68,7 +77,15 @@ export const componentContext : ComponentContext = {
 
 export const drawingContext : DrawingContext<DOMRef> = {
   nextSibling : (node: VTree<DOMRef>) => {
-    return node.domRef.nextSibling as DOMRef;
+    if (node.nextSibling) {
+      switch (node.nextSibling.type) {
+        case VTreeType.VComp:
+          return drill(node.nextSibling) as DOMRef;
+        default:
+          return node.nextSibling.domRef as DOMRef;
+      }
+    }
+    return null;
   },
   createTextNode : (s: string) => {
     return document.createTextNode(s) as any; // dmj: hrm
@@ -97,10 +114,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   insertBefore : (parent: DOMRef, child: DOMRef, node: DOMRef) => {
     return parent.insertBefore(child, node);
   },
-  swapDOMRefs : (a: DOMRef, b: DOMRef, p: DOMRef) => {
-    const tmp = a.nextSibling;
-    p.insertBefore(a, b);
-    p.insertBefore(b, tmp);
+  swapDOMRefs : (oLast: DOMRef, oFirst: DOMRef, p: DOMRef) => {
+    const tmp = oLast.nextSibling;
+    p.insertBefore(oLast, oFirst);
+    p.insertBefore(oFirst, tmp);
     return;
   },
   setInlineStyle: (cCss: CSS, nCss: CSS, node: DOMRef) => {
@@ -149,6 +166,10 @@ export const drawingContext : DrawingContext<DOMRef> = {
   },
   flush: (): void => {
     return;
+  },
+  /** @since 1.9.0.0 */
+  getHead : function () {
+    return document.head;
   },
   getRoot : function () {
     return document.body

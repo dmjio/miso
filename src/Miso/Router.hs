@@ -134,7 +134,6 @@ module Miso.Router
   , runRouter
   , routes
     -- ** Construction
-  , toQueryFlag
   , toQueryParam
   , toCapture
   , toPath
@@ -144,6 +143,9 @@ module Miso.Router
   , queryParam
   , capture
   , path
+    -- ** Lexing
+  , lexTokens
+  , tokensToURI
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.Map.Strict as M
@@ -205,9 +207,8 @@ instance KnownSymbol name => ToMisoString (QueryFlag name) where
 -----------------------------------------------------------------------------
 -- | A list of tokens are returned from a successful lex of a t'URI'
 data Token
-  = QueryParamTokens [(MisoString, MisoString)]
-  | QueryParamToken MisoString MisoString
-  | QueryFlagToken MisoString
+  = QueryParamTokens [(MisoString, Maybe MisoString)]
+  | QueryParamToken MisoString (Maybe MisoString)
   | CaptureOrPathToken MisoString
   | FragmentToken MisoString
   | IndexToken
@@ -215,11 +216,7 @@ data Token
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a 'QueryParamToken'
 toQueryParam :: ToMisoString s => MisoString -> s -> Token
-toQueryParam k v = QueryParamToken k (ms v)
------------------------------------------------------------------------------
--- | Smart constructor for building a 'QueryFlagToken'
-toQueryFlag :: MisoString -> Token
-toQueryFlag = QueryFlagToken
+toQueryParam k v = QueryParamToken k (Just (ms v))
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a capture variable
 toCapture :: ToMisoString string => string -> Token
@@ -243,15 +240,10 @@ tokensToURI tokens = URI
   , uriQueryString =
       M.unions
         [ case queryToken of
-            QueryFlagToken k ->
-              M.singleton k Nothing
             QueryParamTokens queryParams_ ->
-              M.fromList
-              [ (k, Just v)
-              | (k,v) <- queryParams_
-              ]
+              M.fromList queryParams_
             QueryParamToken k v ->
-              M.singleton k (pure v)
+              M.singleton k v
             _ ->
               mempty
         | queryToken <- filter isQuery tokens
@@ -263,7 +255,6 @@ tokensToURI tokens = URI
         FragmentToken{} -> True
         _ -> False
       isQuery = \case
-        QueryFlagToken{} -> True
         QueryParamToken{} -> True
         _ -> False
       isPathRelated = \case
@@ -274,15 +265,18 @@ tokensToURI tokens = URI
 instance ToMisoString Token where
   toMisoString = \case
     CaptureOrPathToken x -> "/" <> x
-    QueryFlagToken x -> "?" <> x
     FragmentToken x -> "#" <> x
     QueryParamTokens params ->
       "?" <> MS.intercalate "&"
-        [ key <> "=" <> value
+        [ case value of
+            Nothing -> key
+            Just v -> key <> "=" <> v
         | (key, value) <- params
         ]
-    QueryParamToken k v ->
+    QueryParamToken k (Just v) ->
       "?" <> k <> "=" <> v
+    QueryParamToken k Nothing ->
+      "?" <> k
     IndexToken -> "/"
 -----------------------------------------------------------------------------
 -- | An error that can occur during lexing / parsing of a URI into a user-defined
@@ -394,7 +388,7 @@ instance GRouter next => GRouter (D1 m next) where
   gFromRoute (M1 x) = gFromRoute x
   gRouteParser = M1 <$> gRouteParser
 -----------------------------------------------------------------------------
-instance (KnownSymbol name, GRouter next) => GRouter (C1 (MetaCons name x y) next) where
+instance (KnownSymbol name, GRouter next) => GRouter (C1 ('MetaCons name x y) next) where
   gFromRoute (M1 x) =
     case name of
       "index" -> [IndexToken]
@@ -428,10 +422,11 @@ instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (C
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, KnownSymbol param) =>
   GRouter (K1 m (QueryParam param a)) where
-    gFromRoute (K1 (QueryParam maybeParam)) =
+    gFromRoute (K1 (QueryParam maybeParam)) = do
+      let key = ms (symbolVal (Proxy @param))
       case maybeParam of
-        Nothing -> []
-        Just v -> pure $ QueryParamToken (ms (symbolVal (Proxy @param))) (ms v)
+        Nothing -> [QueryParamToken key Nothing]
+        Just v -> [QueryParamToken key (Just (ms v))]
     gRouteParser = K1 <$> queryParam
 -----------------------------------------------------------------------------
 -- | Query parameter parser from a route
@@ -450,7 +445,7 @@ queryParam = do
 -----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall flag m . KnownSymbol flag => GRouter (K1 m (QueryFlag flag)) where
   gFromRoute (K1 (QueryFlag specified))
-    | specified = [ QueryFlagToken flag ]
+    | specified = [ QueryParamToken flag Nothing ]
     | otherwise = []
         where
           flag = ms (symbolVal (Proxy @flag))
@@ -510,8 +505,7 @@ uriLexer = do
           ]
         x -> pure x
       lexer = msum
-        [ queryFlagLexer
-        , captureOrPathLexer
+        [ captureOrPathLexer
         , queryParamLexer
         , fragmentLexer
         , indexLexer
@@ -524,16 +518,15 @@ uriLexer = do
             fragmentLexer = do
               void (L.char '#')
               FragmentToken <$> fragment
-            queryFlagLexer = do
-              void (L.char '?')
-              QueryFlagToken <$> query
             queryParamLexer = QueryParamTokens <$> do
               void (L.char '?')
               sepBy (L.char '&') $ do
                 key <- query
-                void (L.char '=')
-                value <- query
-                pure (key, value)
+                maybeValue <-
+                  optional $ do
+                    void (L.char '=')
+                    query
+                pure (key, maybeValue)
 -----------------------------------------------------------------------------
 chars :: Lexer MisoString
 chars = MS.concat <$> some pchar
@@ -547,12 +540,10 @@ fragment = query
 query :: Lexer MisoString
 query = foldr (<|>) empty
   [ MS.concat <$> some pchar
-  , L.string "/"
-  , L.string "?"
   ]
 -----------------------------------------------------------------------------
 subDelims :: Lexer MisoString
-subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$&'()*+,;=" :: String)
+subDelims = fmap ms <$> L.satisfy $ \x -> x `elem` ("!$'()*+,;" :: String)
 -----------------------------------------------------------------------------
 unreserved :: Lexer MisoString
 unreserved = ms <$> do

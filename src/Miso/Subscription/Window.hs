@@ -21,12 +21,12 @@ module Miso.Subscription.Window
   ) where
 -----------------------------------------------------------------------------
 import           Control.Monad
-import           Language.Javascript.JSaddle
-import           Data.Aeson.Types (parseEither)
 -----------------------------------------------------------------------------
+import           Miso.DSL
 import           Miso.Event
 import           Miso.Effect
 import qualified Miso.FFI.Internal as FFI
+import           Miso.JSON hiding (Options, defaultOptions)
 import           Miso.String
 import           Miso.Subscription.Util
 import           Miso.Canvas (Coord)
