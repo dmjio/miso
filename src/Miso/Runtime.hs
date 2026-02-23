@@ -295,9 +295,9 @@ scheduler =
               -- FIX: newComps already has all models (action + bindings)
               -- Just mark the triggered component as dirty, don't overwrite model
               let finalComps = IM.adjust
-                  (\oldCs -> oldCs { _componentIsDirty = True })
-                  vcompId
-                  newComps
+                      (\oldCs -> oldCs { _componentIsDirty = True })
+                      vcompId
+                      newComps
               in (finalComps, (updatedModel, schedules, dirtySet, cs))
 
       forM_ schedules $ \case
@@ -387,6 +387,7 @@ synch = mapM_ go =<< pop
         propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
+        traceM $ "Sync Visited componentId: " <> show (cs ^. componentId)
         synch
 -----------------------------------------------------------------------------
 propagateChildren
@@ -438,8 +439,9 @@ propagateParent currentState parentId_ = trace ("propagateParent: child=" <> sho
   IM.lookup parentId_ <$> use state >>= \case
     Nothing -> trace "PROPAGATION STOPPED: Parent not found in state map!" $ pure ()
     Just parentState -> do
+      let bindings = currentState ^. componentBindings
       updatedParent <- unsafeCoerce <$>
-        foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
+        foldM process (unsafeCoerce parentState) bindings
       let isParentDirty =
             (_componentModelDirty parentState)
             (_componentModel parentState)
@@ -448,7 +450,9 @@ propagateParent currentState parentId_ = trace ("propagateParent: child=" <> sho
       when isParentDirty $ do
         state.at parentId_ ?= updatedParent { _componentIsDirty = True }
         visit parentId_
-        propagateParent updatedParent (updatedParent ^. parentId)
+        case bindings of
+            [ Bidirectional _ _ _ _] -> pure ()
+            _ -> propagateParent updatedParent (updatedParent ^. parentId)
   where
     process
       :: ComponentState x p a
