@@ -95,7 +95,7 @@ import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
 import           Control.Exception (SomeException, catch)
-import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM, unless)
+import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
 import           Miso.JSON (FromJSON, ToJSON, Result(..), fromJSON, toJSON)
@@ -219,7 +219,6 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , ..
         }
 
-  --unless isRoot $ trace ("initialize calling registerComponent, isRoot: " <> show isRoot <> " _componentId: " <> show _componentId) $ registerComponent vcomp
   trace ("initialize calling registerComponent, isRoot: " <> show isRoot <> " _componentId: " <> show _componentId) $
           registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
@@ -280,25 +279,25 @@ scheduler =
              <> " GLOBAL components keys=" <> (toMisoString $ show $ IM.keys globalComps)
              <> " size=" <> (toMisoString $ show $ IM.size globalComps)
 
-      -- (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
-      --   atomicModifyIORef' components $ \vcomps -> do
-      --     let cs@ComponentState {..} = vcomps IM.! vcompId
-      --     case _componentApplyActions events _componentModel vcomps of
-      --       (x, updatedModel, schedules, dirtySet) ->
-      --         (x, (updatedModel, schedules, dirtySet, cs))
-
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
           case _componentApplyActions events _componentModel vcomps of
-            (newComps, updatedModel, schedules, dirtySet) ->
-              -- FIX: newComps already has all models (action + bindings)
-              -- Just mark the triggered component as dirty, don't overwrite model
-              let finalComps = IM.adjust
-                      (\oldCs -> oldCs { _componentIsDirty = True })
-                      vcompId
-                      newComps
-              in (finalComps, (updatedModel, schedules, dirtySet, cs))
+            (x, updatedModel, schedules, dirtySet) ->
+              (x, (updatedModel, schedules, dirtySet, cs))
+
+      -- (schedules, dirtySet, ComponentState{..}) <- do
+      --   atomicModifyIORef' components $ \vcomps -> do
+      --     let cs@ComponentState {..} = vcomps IM.! vcompId
+      --     case _componentApplyActions events _componentModel vcomps of
+      --       (newComps, _, schedules, dirtySet) ->
+      --         -- FIX: newComps already has all models (action + bindings)
+      --         -- Just mark the triggered component as dirty, don't overwrite model
+      --         let finalComps = IM.adjust
+      --                 (\oldCs -> oldCs { _componentIsDirty = True })
+      --                 vcompId
+      --                 newComps
+      --         in (finalComps, (schedules, dirtySet, cs))
 
       forM_ schedules $ \case
         Schedule Async action ->
@@ -306,7 +305,16 @@ scheduler =
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
 
-      pure dirtySet
+
+      if _componentModelDirty _componentModel updatedModel
+        then do
+          modifyComponent _componentId $ do
+            isDirty .= True
+            componentModel .= updatedModel
+          pure dirtySet
+        else
+          pure mempty
+--      pure dirtySet
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
@@ -382,9 +390,12 @@ synch = mapM_ go =<< pop
   where
     go :: ComponentState p m a -> Synch p m a ()
     go cs = do
-      seen <- IS.member (cs ^. componentId) <$> use visited
+      visited_ <- use visited
+      let seen = IS.member (cs ^. componentId) visited_
       when (not seen) $ do
-        propagateParent cs (cs ^. parentId)
+        let parentSeen = IS.member (cs ^. parentId) visited_
+        when (not parentSeen) $
+            propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
         traceM $ "Sync Visited componentId: " <> show (cs ^. componentId)
@@ -439,9 +450,8 @@ propagateParent currentState parentId_ = trace ("propagateParent: child=" <> sho
   IM.lookup parentId_ <$> use state >>= \case
     Nothing -> trace "PROPAGATION STOPPED: Parent not found in state map!" $ pure ()
     Just parentState -> do
-      let bindings = currentState ^. componentBindings
       updatedParent <- unsafeCoerce <$>
-        foldM process (unsafeCoerce parentState) bindings
+        foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
       let isParentDirty =
             (_componentModelDirty parentState)
             (_componentModel parentState)
@@ -450,9 +460,6 @@ propagateParent currentState parentId_ = trace ("propagateParent: child=" <> sho
       when isParentDirty $ do
         state.at parentId_ ?= updatedParent { _componentIsDirty = True }
         visit parentId_
-        case bindings of
-            [ Bidirectional _ _ _ _] -> pure ()
-            _ -> propagateParent updatedParent (updatedParent ^. parentId)
   where
     process
       :: ComponentState x p a
