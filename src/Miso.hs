@@ -51,11 +51,11 @@ module Miso
   , sync
   , sync_
   , for
-#ifdef WASM
   -- ** JS file embedding
+#ifdef WASM
   , evalFile
-  , withJS
 #endif
+  , withJS
     -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
