@@ -53,6 +53,7 @@ module Miso
 #ifdef WASM
   -- ** JS file embedding
   , evalFile
+  , withJS
 #endif
     -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
@@ -132,7 +133,7 @@ import           Miso.Util
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
   vcomp <- f <$> getURI
-  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+  initComponent events Hydrate vcomp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Synonym for 'startApp'.
 --
@@ -144,7 +145,7 @@ miso events f = withJS $ do
 -- @
 --
 startApp :: Eq model => Events -> App model action -> IO ()
-startApp events vcomp = withJS (initComponent events vcomp)
+startApp events vcomp = withJS (initComponent events Draw vcomp)
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
@@ -171,17 +172,18 @@ renderApp
   -- ^ Component application
   -> IO ()
 renderApp events renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
+  withJS (FFI.setDrawingContext renderer >> initComponent events Draw vcomp)
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
   => Events
+  -> Hydrate
   -> Component parent model action
-  -> IO (ComponentState parent model action)
-initComponent events vcomp@Component {..} = do
+  -> IO ()
+initComponent events hydrate vcomp@Component {..} = do
   root <- mountElement (getMountPoint mountPoint)
-  initialize events rootComponentId Draw isRoot vcomp (pure root)
+  void $ initialize events rootComponentId hydrate isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True
@@ -191,8 +193,8 @@ isRoot = True
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
-withJS :: IO a -> IO ()
-withJS action = void $ do
+withJS :: IO a -> IO a
+withJS action = do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
 #endif
