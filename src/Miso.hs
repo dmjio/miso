@@ -203,6 +203,14 @@ initComponent events hydrate vcomp@Component {..} = do
 isRoot :: Bool
 isRoot = True
 ----------------------------------------------------------------------------
+-- | Load miso's javascript.
+--
+-- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
+-- It's already invoked for you. This is a no-op w/ the JS backend.
+--
+-- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
+-- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
+--
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else
