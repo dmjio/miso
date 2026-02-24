@@ -81,10 +81,7 @@ testComponent :: Component parent Int Action
 testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClick AddOne ] [ "click me " ]
   where
     update_ = \case
-      AddOne -> do
-        model <- get
-        io_ $ consoleLog $ "CLICK " <> toMisoString (show model)
-        this += 1
+      AddOne -> this += 1
 -----------------------------------------------------------------------------
 data Action = AddOne
   deriving (Show, Eq)
@@ -1017,8 +1014,6 @@ main = withJS $ do
         parentFieldNull `shouldBe` False
         parentFieldUndefined <- liftIO (isUndefined childParentField)
         parentFieldUndefined `shouldBe` False
-
------------------------------------------------------------------------------
 
       it "Should mount 1000 components" $ do
         liftIO $ startApp mempty $
