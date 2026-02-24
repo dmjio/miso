@@ -356,7 +356,7 @@ propagate vcompId vcomps = trace (
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
-dfs cs vcompId = DFS cs mempty (pure vcompId) (IS.singleton vcompId)
+dfs cs vcompId = DFS cs mempty (pure vcompId) vcompId
 -----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
@@ -368,7 +368,8 @@ data DFS p m a
     -- ^ visited set
   , _stack :: [ComponentId]
     -- ^ neighbors queue
-  , _actionModified :: ComponentIds
+  , _triggeredComponent :: ComponentId
+    -- ^ start of the traverse
   }
 -----------------------------------------------------------------------------
 type Synch p m a x = State (DFS p m a) x
@@ -382,8 +383,8 @@ state = lens _state $ \r x -> r { _state = x }
 stack :: Lens (DFS p m a) [ComponentId]
 stack = lens _stack $ \r x -> r { _stack = x }
 -----------------------------------------------------------------------------
-actionModified :: Lens (DFS p m a) (ComponentIds)
-actionModified = lens _actionModified $ \r x -> r { _actionModified = x }
+triggeredComponent :: Lens (DFS p m a) ComponentId
+triggeredComponent = lens _triggeredComponent $ \r x -> r { _triggeredComponent = x }
 -----------------------------------------------------------------------------
 synch :: Synch p m a ()
 synch = mapM_ go =<< pop
@@ -408,9 +409,9 @@ propagateChildren
   -> Synch p m a ()
 propagateChildren currentState childComponents = do
   forM_ (IS.toList childComponents) $ \childId -> do
-    actionModified_ <- use actionModified
+    triggeredComponent_ <- use triggeredComponent
 
-    when (IS.notMember childId actionModified_) $ do
+    when (childId /= triggeredComponent_) $ do
       childState <- unsafeCoerce (IM.! childId) <$> use state
       updatedChild <- unsafeCoerce <$>
         foldM process childState (childState ^. componentBindings)
