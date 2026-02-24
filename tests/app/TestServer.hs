@@ -153,7 +153,7 @@ instance ToHtml (IndexPageData model action) where
                 script_
                     [ language_ "javascript"
                     , src_ $ toMisoString href
-                    , defer_ "true"
+                    , defer_ True
                     ]
                     ""
 
