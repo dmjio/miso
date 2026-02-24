@@ -51,10 +51,11 @@ module Miso
   , sync
   , sync_
   , for
-#ifdef WASM
   -- ** JS file embedding
+#ifdef WASM
   , evalFile
 #endif
+  , withJS
     -- * Reactivity (Data bindings)
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
@@ -132,7 +133,7 @@ import           Miso.Util
 miso :: Eq model => Events -> (URI -> App model action) -> IO ()
 miso events f = withJS $ do
   vcomp <- f <$> getURI
-  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+  initComponent events Hydrate vcomp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'URI' argument.
 --
@@ -143,8 +144,7 @@ miso events f = withJS $ do
 -- main = prerendder defaultEvents app
 -- @
 prerender :: Eq model => Events -> App model action -> IO ()
-prerender events vcomp = withJS $ do
-  initialize events rootComponentId Hydrate isRoot vcomp FFI.getBody
+prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -159,7 +159,7 @@ prerender events vcomp = withJS $ do
 -- @
 --
 startApp :: Eq model => Events -> App model action -> IO ()
-startApp events vcomp = withJS (initComponent events vcomp)
+startApp events = initComponent events Draw
 -----------------------------------------------------------------------------
 -- | Alias for 'Miso.miso'.
 (🍜) :: Eq model => Events -> (URI -> App model action) -> IO ()
@@ -185,29 +185,39 @@ renderApp
   -> App model action
   -- ^ Component application
   -> IO ()
-renderApp events renderer vcomp =
-  withJS (FFI.setDrawingContext renderer >> initComponent events vcomp)
+renderApp events renderer vcomp = do
+  FFI.setDrawingContext renderer
+  initComponent events Draw vcomp
 ----------------------------------------------------------------------------
 -- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
 initComponent
   :: (Eq parent, Eq model)
   => Events
+  -> Hydrate
   -> Component parent model action
-  -> IO (ComponentState parent model action)
-initComponent events vcomp@Component {..} = do
+  -> IO ()
+initComponent events hydrate vcomp@Component {..} = withJS $ do
   root <- mountElement (getMountPoint mountPoint)
-  initialize events rootComponentId Draw isRoot vcomp (pure root)
+  void $ initialize events rootComponentId hydrate isRoot vcomp (pure root)
 ----------------------------------------------------------------------------
 isRoot :: Bool
 isRoot = True
 ----------------------------------------------------------------------------
+-- | Load miso's javascript.
+--
+-- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
+-- It's already invoked for you. This is a no-op w/ the JS backend.
+--
+-- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
+-- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
+--
 #ifdef PRODUCTION
 #define MISO_JS_PATH "js/miso.prod.js"
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
-withJS :: IO a -> IO ()
-withJS action = void $ do
+withJS :: IO a -> IO a
+withJS action = do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
 #endif

@@ -23,6 +23,8 @@ module Miso.Html.Render
     ToHtml (..)
   ) where
 ----------------------------------------------------------------------------
+import qualified Data.Set as S
+import           Data.Set (Set)
 import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Map.Strict as M
@@ -60,6 +62,39 @@ intercalate sep (x:xs) =
   [ x
   , sep
   , intercalate sep xs
+  ]
+----------------------------------------------------------------------------
+booleanProperties :: Set MisoString
+booleanProperties = S.fromList
+  [ "allowfullscreen"
+  , "allowpaymentrequest"
+  , "allowusermedia"
+  , "async"
+  , "autofocus"
+  , "autoplay"
+  , "checked"
+  , "controls"
+  , "default"
+  , "defer"
+  , "disabled"
+  , "download"
+  , "formnovalidate"
+  , "hidden"
+  , "inert"
+  , "ismap"
+  , "itemscope"
+  , "loop"
+  , "multiple"
+  , "muted"
+  , "nomodule"
+  , "novalidate"
+  , "open"
+  , "playsinline"
+  , "readonly"
+  , "required"
+  , "reversed"
+  , "selected"
+  , "truespeed"
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
@@ -113,6 +148,15 @@ renderAttrs (ClassList classes) =
   , fromMisoString (MS.unwords classes)
   , stringUtf8 "\""
   ]
+renderAttrs (Property key (Bool enabled)) -- dmj: account for boolean properties
+  | S.member key booleanProperties, enabled = fromMisoString key
+  | S.member key booleanProperties, not enabled = mempty
+  | otherwise = mconcat
+      [ fromMisoString key
+      , stringUtf8 "=\""
+      , toHtmlFromJSON (Bool enabled)
+      , stringUtf8 "\""
+      ]
 renderAttrs (Property "key" _) = mempty
 renderAttrs (Property key value) =
   mconcat
