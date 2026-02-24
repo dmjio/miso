@@ -1100,14 +1100,8 @@ setAttrs vnode@(Object jval) attrs snk logLevel events =
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState parent model action -> m ()
 registerComponent componentState = liftIO $ do
-  FFI.consoleLog $ "registerComponent: id=" <> toMisoString (_componentId componentState)
-                 <> " parent=" <> toMisoString (show $ _componentParentId componentState)
   atomicModifyIORef' components $ \cs ->
     (IM.insert (_componentId componentState) componentState cs, ())
-  cs' <- readIORef components
-  FFI.consoleLog $ "registerComponent: AFTER - size=" 
-                 <> toMisoString (show $ IM.size cs')
-                 <> " keys=" <> toMisoString (show $ IM.keys cs')
 -----------------------------------------------------------------------------
 -- | Renders styles
 --
