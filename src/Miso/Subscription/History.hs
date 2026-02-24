@@ -24,12 +24,8 @@ module Miso.Subscription.History
   , URI (..)
   ) where
 -----------------------------------------------------------------------------
-import           Control.Concurrent
 import           Control.Monad
-import           Control.Monad.IO.Class
-import           System.IO.Unsafe
 -----------------------------------------------------------------------------
-import           Miso.Concurrent
 import           Miso.DSL
 import qualified Miso.FFI.Internal as FFI
 import           Miso.String
@@ -37,17 +33,23 @@ import           Miso.Router
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
--- | Pushes a new URI onto the History stack.
+-- | Pushes a new URI onto the History stack. Also raises a `popstate` event.
 pushURI :: URI -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
-  liftIO (notify chan)
+  raisePopState
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack.
+-- | Replaces current URI on stack. Also raises a `popstate` event.
 replaceURI :: URI -> IO ()
 replaceURI uri = do
   replaceState (prettyURI uri)
-  liftIO (notify chan)
+  raisePopState
+-----------------------------------------------------------------------------
+raisePopState :: IO ()
+raisePopState = do
+  event <- new (jsg "PopStateEvent") ["popstate" :: MisoString]
+  window <- jsg "window"
+  void $ window # "dispatchEvent" $ [event]
 -----------------------------------------------------------------------------
 -- | Navigates backwards.
 back :: IO ()
@@ -61,24 +63,17 @@ forward = void $ getHistory # "forward" $ ()
 go :: Int -> IO ()
 go n = void $ getHistory # "go" $ [n]
 -----------------------------------------------------------------------------
-chan :: Waiter
-{-# NOINLINE chan #-}
-chan = unsafePerformIO waiter
------------------------------------------------------------------------------
--- | Subscription for @popstate@ events, from the History API.
+-- | Subscription for t'URI' changes, uses the History API.
+--
+-- This returns a new t'URI' whenever `go`, `back`, `forward`, `pushState`
+-- or `replaceState` have been called.
+--
 uriSub :: (URI -> action) -> Sub action
 uriSub f sink = createSub acquire release sink
   where
-    release (tid, cb) = do
-      FFI.windowRemoveEventListener "popstate" cb
-      killThread tid
-    acquire = do
-      tid <- forkIO . forever $ do
-        liftIO (wait chan)
-        sink . f =<< getURI
-      cb <- FFI.windowAddEventListener "popstate" $ \_ ->
-        sink . f =<< getURI
-      pure (tid, cb)
+    release = FFI.windowRemoveEventListener "popstate"
+    acquire = FFI.windowAddEventListener "popstate" $ \_ ->
+      (sink =<< f <$> getURI)
 -----------------------------------------------------------------------------
 -- | Subscription for @popstate@ events, from the History API, mapped
 -- to a user-defined 'Router'.
