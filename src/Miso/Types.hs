@@ -41,6 +41,7 @@ module Miso.Types
   , LogLevel      (..)
   , VTree         (..)
   , VTreeType     (..)
+  , CacheBust
   , MountPoint
   , DOMRef
   , ROOT
@@ -164,11 +165,11 @@ type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to \<head\> before the first draw
 --
--- > Href "http://domain.com/style.css"
+-- > Href "http://domain.com/style.css" (True :: CacheBust)
 -- > Style "body { background-color: red; }"
 --
 data CSS
-  = Href MisoString
+  = Href MisoString CacheBust
   -- ^ URL linking to hosted CSS
   | Style MisoString
   -- ^ Raw CSS content in a 'Miso.Html.Element.style_' tag
@@ -176,18 +177,24 @@ data CSS
   -- ^ CSS built with 'Miso.CSS'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Parameter used to indicate cache busting logic should be used.
+-- If 'True' this will append a timestamp to the query. This will force cache
+-- invalidation on the browser, causing a fetch of the resources.
+--
+type CacheBust = Bool
+-----------------------------------------------------------------------------
 -- | Allow users to express JS and append it to <head> before the first draw
 --
 -- This is meant to be useful in development only.
 --
 -- @
---   Src \"http:\/\/example.com\/script.js\"
+--   Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
 --   Script "alert(\"hi\");"
 --   ImportMap [ "key" =: "value" ]
 -- @
 --
 data JS
-  = Src MisoString
+  = Src MisoString CacheBust
   -- ^ URL linking to hosted JS
   | Script MisoString
   -- ^ Raw JS content that you would enter in a \<script\> tag
