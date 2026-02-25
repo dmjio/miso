@@ -583,7 +583,8 @@ addSrc url = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["script" :: MisoString]
-  _ <- link # "setAttribute" $ ["src", url]
+  ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+  _ <- link # "setAttribute" $ ["src", url <> "?v=" <> ms (ts :: Int) ]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
@@ -600,7 +601,8 @@ addStyleSheet url = do
   head_ <- getHead
   link <- context # "createElement" $ ["link" :: MisoString]
   _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
-  _ <- link # "setAttribute" $ ["href", url]
+  ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+  _ <- link # "setAttribute" $ ["href", url <> "?v=" <> ms (ts :: Int) ]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
