@@ -34,6 +34,10 @@ module Miso.FFI
     -- ** Styles
   , addStyle
   , addStyleSheet
+    -- * JS
+  , addSrc
+  , addScript
+  , addScriptImportMap
     -- ** Callbacks
   , syncCallback
   , syncCallback1
