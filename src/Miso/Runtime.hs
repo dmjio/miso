@@ -1097,7 +1097,7 @@ registerComponent componentState = liftIO $
 renderStyles :: [CSS] -> IO [DOMRef]
 renderStyles styles =
   forM styles $ \case
-    Href url -> FFI.addStyleSheet url
+    Href url cacheBust -> FFI.addStyleSheet url cacheBust
     Style css -> FFI.addStyle css
     Sheet sheet -> FFI.addStyle (renderStyleSheet sheet)
 -----------------------------------------------------------------------------
@@ -1109,8 +1109,8 @@ renderStyles styles =
 renderScripts :: [JS] -> IO [DOMRef]
 renderScripts scripts =
   forM scripts $ \case
-    Src src ->
-      FFI.addSrc src
+    Src src cacheBust ->
+      FFI.addSrc src cacheBust
     Script script ->
       FFI.addScript False script
     Module src ->

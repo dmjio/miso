@@ -578,13 +578,19 @@ addScriptImportMap impMap = do
 --
 -- > addSrc "https://example.com/script.js"
 --
-addSrc :: MisoString -> IO JSVal
-addSrc url = do
+addSrc :: MisoString -> Bool -> IO JSVal
+addSrc url cacheBust = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["script" :: MisoString]
-  ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
-  _ <- link # "setAttribute" $ ["src", url <> "?v=" <> ms (ts :: Int) ]
+  url_ <-
+    if cacheBust
+    then do
+      ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+      pure (url <> "?v=" <> ms (ts :: Int))
+    else
+      pure url
+  _ <- link # "setAttribute" $ ["src", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
@@ -595,14 +601,20 @@ addSrc url = do
 --
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
-addStyleSheet :: MisoString -> IO JSVal
-addStyleSheet url = do
+addStyleSheet :: MisoString -> Bool -> IO JSVal
+addStyleSheet url cacheBust  = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["link" :: MisoString]
   _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
-  ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
-  _ <- link # "setAttribute" $ ["href", url <> "?v=" <> ms (ts :: Int) ]
+  url_ <-
+    if cacheBust
+    then do
+      ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+      pure (url <> "?v=" <> ms (ts :: Int))
+    else
+      pure url
+  _ <- link # "setAttribute" $ ["href", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------

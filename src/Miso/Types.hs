@@ -168,13 +168,19 @@ type MountPoint = MisoString
 -- > Style "body { background-color: red; }"
 --
 data CSS
-  = Href MisoString
+  = Href MisoString CacheBust
   -- ^ URL linking to hosted CSS
   | Style MisoString
   -- ^ Raw CSS content in a 'Miso.Html.Element.style_' tag
   | Sheet StyleSheet
   -- ^ CSS built with 'Miso.CSS'
   deriving (Show, Eq)
+-----------------------------------------------------------------------------
+-- | Parameter used to indicate cache busting logic should be used.
+-- If 'True' this will append a timestamp to the query. This will force cache
+-- invalidation on the browser, causing a fetch of the resources.
+--
+type CacheBust = Bool
 -----------------------------------------------------------------------------
 -- | Allow users to express JS and append it to <head> before the first draw
 --
@@ -187,7 +193,7 @@ data CSS
 -- @
 --
 data JS
-  = Src MisoString
+  = Src MisoString CacheBust
   -- ^ URL linking to hosted JS
   | Script MisoString
   -- ^ Raw JS content that you would enter in a \<script\> tag
