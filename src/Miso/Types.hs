@@ -165,7 +165,7 @@ type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to \<head\> before the first draw
 --
--- > Href "http://domain.com/style.css"
+-- > Href "http://domain.com/style.css" (True :: CacheBust)
 -- > Style "body { background-color: red; }"
 --
 data CSS
@@ -188,7 +188,7 @@ type CacheBust = Bool
 -- This is meant to be useful in development only.
 --
 -- @
---   Src \"http:\/\/example.com\/script.js\"
+--   Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
 --   Script "alert(\"hi\");"
 --   ImportMap [ "key" =: "value" ]
 -- @
