@@ -583,13 +583,7 @@ addSrc url cacheBust = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["script" :: MisoString]
-  url_ <-
-    if cacheBust
-    then do
-      ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
-      pure (url <> "?v=" <> ms (ts :: Int))
-    else
-      pure url
+  url_ <- appendTimestamp url cacheBust
   _ <- link # "setAttribute" $ ["src", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
@@ -607,16 +601,19 @@ addStyleSheet url cacheBust  = do
   head_ <- getHead
   link <- context # "createElement" $ ["link" :: MisoString]
   _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
-  url_ <-
-    if cacheBust
-    then do
-      ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
-      pure (url <> "?v=" <> ms (ts :: Int))
-    else
-      pure url
+  url_ <- appendTimestamp url cacheBust 
   _ <- link # "setAttribute" $ ["href", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
+-----------------------------------------------------------------------------
+-- | Helper for cache busting
+appendTimestamp :: MisoString -> Bool -> IO MisoString
+appendTimestamp url = \case
+  True -> do
+    ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+    pure (url <> "?v=" <> ms (ts :: Double))
+  False ->
+    pure url
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --
