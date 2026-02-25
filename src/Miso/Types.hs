@@ -41,6 +41,7 @@ module Miso.Types
   , LogLevel      (..)
   , VTree         (..)
   , VTreeType     (..)
+  , CacheBust
   , MountPoint
   , DOMRef
   , ROOT
