@@ -848,6 +848,6 @@ foreign import javascript unsafe "return ($1).toString()"
 foreign import javascript unsafe "return ($1).toString()"
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------
-foreign import javascript unsafe "return ($1).toString()"
-  toString_Word :: Word -> JSString
+toString_Word :: Word -> JSString
+toString_Word = toJSString . show
 -----------------------------------------------------------------------------
