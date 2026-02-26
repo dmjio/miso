@@ -269,6 +269,7 @@ scheduler =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
+      globalComps <- readIORef components
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
@@ -321,12 +322,12 @@ propagate
   -> IntMap (ComponentState p m a)
   -> (IntMap (ComponentState p m a), ComponentIds)
 propagate vcompId vcomps =
-  let dfsState = execState synch (dfs vcomps vcompId)
+  let dfsState = execState sync (dfs vcomps vcompId)
   in (_state dfsState, _visited dfsState)
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
-dfs cs vcompId = DFS cs mempty (pure vcompId)
+dfs cs vcompId = DFS cs mempty (pure vcompId) vcompId
 -----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
@@ -338,9 +339,11 @@ data DFS p m a
     -- ^ visited set
   , _stack :: [ComponentId]
     -- ^ neighbors queue
+  , _triggeredComponent :: ComponentId
+    -- ^ start of the traverse
   }
 -----------------------------------------------------------------------------
-type Synch p m a x = State (DFS p m a) x
+type Sync p m a x = State (DFS p m a) x
 -----------------------------------------------------------------------------
 visited :: Lens (DFS p m a) (ComponentIds)
 visited = lens _visited $ \r x -> r { _visited = x }
@@ -351,40 +354,50 @@ state = lens _state $ \r x -> r { _state = x }
 stack :: Lens (DFS p m a) [ComponentId]
 stack = lens _stack $ \r x -> r { _stack = x }
 -----------------------------------------------------------------------------
-synch :: Synch p m a ()
-synch = mapM_ go =<< pop
+triggeredComponent :: Lens (DFS p m a) ComponentId
+triggeredComponent = lens _triggeredComponent $ \r x -> r { _triggeredComponent = x }
+-----------------------------------------------------------------------------
+sync :: Sync p m a ()
+sync = mapM_ go =<< pop
   where
-    go :: ComponentState p m a -> Synch p m a ()
+    go :: ComponentState p m a -> Sync p m a ()
     go cs = do
-      seen <- IS.member (cs ^. componentId) <$> use visited
+      visited_ <- use visited
+      let seen = IS.member (cs ^. componentId) visited_
       when (not seen) $ do
-        propagateParent cs (cs ^. parentId)
+        let parentSeen = IS.member (cs ^. parentId) visited_
+        when (not parentSeen) $
+            propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
-        synch
+        sync
 -----------------------------------------------------------------------------
 propagateChildren
   :: forall p m a
    . ComponentState p m a
   -> ComponentIds
-  -> Synch p m a ()
+  -> Sync p m a ()
 propagateChildren currentState childComponents = do
   forM_ (IS.toList childComponents) $ \childId -> do
-    childState <- unsafeCoerce (IM.! childId) <$> use state
-    updatedChild <- unsafeCoerce <$>
-      foldM process childState (childState ^. componentBindings)
-    let isChildDirty =
-          (_componentModelDirty childState)
-          (_componentModel childState)
-          (_componentModel updatedChild)
-    when isChildDirty $ do
-      state.at childId ?= updatedChild { _componentIsDirty = True }
-      visit childId
+    triggeredComponent_ <- use triggeredComponent
+
+    when (childId /= triggeredComponent_) $ do
+      childState <- unsafeCoerce (IM.! childId) <$> use state
+      updatedChild <- unsafeCoerce <$>
+        foldM process childState (childState ^. componentBindings)
+      let isChildDirty =
+            (_componentModelDirty childState)
+            (_componentModel childState)
+            (_componentModel updatedChild)
+      when isChildDirty $ do
+        state.at childId ?= updatedChild { _componentIsDirty = True }
+        visit childId
+
     where
       process
         :: ComponentState m child a
         -> Binding m child
-        -> Synch p m a (ComponentState m child a)
+        -> Sync p m a (ComponentState m child a)
       process childState = \case
         ParentToChild getCurrentField setChildField -> do
           let currentChildModel = childState ^. componentModel
@@ -403,10 +416,11 @@ propagateParent
   :: forall p m a
    . ComponentState p m a
   -> ComponentId
-  -> Synch p m a ()
+  -> Sync p m a ()
 propagateParent currentState parentId_ =
-  IM.lookup parentId_ <$> use state >>= mapM_ \case
-    parentState -> do
+  IM.lookup parentId_ <$> use state >>= \case
+    Nothing -> pure ()
+    Just parentState -> do
       updatedParent <- unsafeCoerce <$>
         foldM process (unsafeCoerce parentState) (currentState ^. componentBindings)
       let isParentDirty =
@@ -420,7 +434,7 @@ propagateParent currentState parentId_ =
     process
       :: ComponentState x p a
       -> Binding p m
-      -> Synch p m a (ComponentState x p a)
+      -> Sync p m a (ComponentState x p a)
     process parentState = \case
       ChildToParent setParentField getCurrentField -> do
         let currentParentModel = parentState ^. componentModel
@@ -435,13 +449,13 @@ propagateParent currentState parentId_ =
       _ ->
         pure parentState
 -----------------------------------------------------------------------------
-markVisited :: ComponentId -> Synch p m a ()
+markVisited :: ComponentId -> Sync p m a ()
 markVisited vcompId = visited.at vcompId ?= ()
 -----------------------------------------------------------------------------
-visit :: ComponentId -> Synch p m a ()
+visit :: ComponentId -> Sync p m a ()
 visit vcompId = stack %= (vcompId:)
 -----------------------------------------------------------------------------
-pop :: Synch p m a (Maybe (ComponentState p m a))
+pop :: Sync p m a (Maybe (ComponentState p m a))
 pop = use stack >>= \case
   [] -> 
     pure Nothing
@@ -1085,7 +1099,7 @@ setAttrs vnode@(Object jval) attrs snk logLevel events =
 -----------------------------------------------------------------------------
 -- | Registers components in the global state
 registerComponent :: MonadIO m => ComponentState parent model action -> m ()
-registerComponent componentState = liftIO $
+registerComponent componentState = liftIO $ do
   atomicModifyIORef' components $ \cs ->
     (IM.insert (_componentId componentState) componentState cs, ())
 -----------------------------------------------------------------------------
