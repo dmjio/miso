@@ -326,7 +326,7 @@ propagate vcompId vcomps =
 -----------------------------------------------------------------------------
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
-dfs cs vcompId = DFS cs mempty (pure vcompId)
+dfs cs vcompId = DFS cs mempty (pure vcompId) vcompId
 -----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
@@ -338,6 +338,8 @@ data DFS p m a
     -- ^ visited set
   , _stack :: [ComponentId]
     -- ^ neighbors queue
+  , _triggeredComponent :: ComponentId
+    -- ^ start of the traverse
   }
 -----------------------------------------------------------------------------
 type Synch p m a x = State (DFS p m a) x
@@ -351,14 +353,20 @@ state = lens _state $ \r x -> r { _state = x }
 stack :: Lens (DFS p m a) [ComponentId]
 stack = lens _stack $ \r x -> r { _stack = x }
 -----------------------------------------------------------------------------
+triggeredComponent :: Lens (DFS p m a) ComponentId
+triggeredComponent = lens _triggeredComponent $ \r x -> r { _triggeredComponent = x }
+-----------------------------------------------------------------------------
 synch :: Synch p m a ()
 synch = mapM_ go =<< pop
   where
     go :: ComponentState p m a -> Synch p m a ()
     go cs = do
-      seen <- IS.member (cs ^. componentId) <$> use visited
+      visited_ <- use visited
+      let seen = IS.member (cs ^. componentId) visited_
       when (not seen) $ do
-        propagateParent cs (cs ^. parentId)
+        let parentSeen = IS.member (cs ^. parentId) visited_
+        when (not parentSeen) $
+            propagateParent cs (cs ^. parentId)
         propagateChildren cs (cs ^. children)
         markVisited (cs ^. componentId)
         synch
@@ -370,16 +378,20 @@ propagateChildren
   -> Synch p m a ()
 propagateChildren currentState childComponents = do
   forM_ (IS.toList childComponents) $ \childId -> do
-    childState <- unsafeCoerce (IM.! childId) <$> use state
-    updatedChild <- unsafeCoerce <$>
-      foldM process childState (childState ^. componentBindings)
-    let isChildDirty =
-          (_componentModelDirty childState)
-          (_componentModel childState)
-          (_componentModel updatedChild)
-    when isChildDirty $ do
-      state.at childId ?= updatedChild { _componentIsDirty = True }
-      visit childId
+    triggeredComponent_ <- use triggeredComponent
+
+    when (childId /= triggeredComponent_) $ do
+      childState <- unsafeCoerce (IM.! childId) <$> use state
+      updatedChild <- unsafeCoerce <$>
+        foldM process childState (childState ^. componentBindings)
+      let isChildDirty =
+            (_componentModelDirty childState)
+            (_componentModel childState)
+            (_componentModel updatedChild)
+      when isChildDirty $ do
+        state.at childId ?= updatedChild { _componentIsDirty = True }
+        visit childId
+
     where
       process
         :: ComponentState m child a
