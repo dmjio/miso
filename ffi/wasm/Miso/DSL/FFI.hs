@@ -16,6 +16,7 @@ module Miso.DSL.FFI
   , toJSVal_Bool
   , toJSVal_Double
   , toJSVal_Float
+  , toJSVal_Word64
   , toJSVal_Int
   , toJSVal_List
   , toJSVal_JSString
@@ -33,6 +34,8 @@ module Miso.DSL.FFI
   , fromJSValUnchecked_Float
   , fromJSVal_Int
   , fromJSValUnchecked_Int
+  , fromJSVal_Word64
+  , fromJSValUnchecked_Word64
   , fromJSVal_List
   , fromJSValUnchecked_List
   , fromJSVal_JSString
@@ -76,6 +79,7 @@ module Miso.DSL.FFI
   , parseFloat
   ) where
 -----------------------------------------------------------------------------
+import           Data.Word (Word64)
 import           Data.Text (Text)
 import           Control.Monad
 import           Data.JSString (textFromJSString, textToJSString)
@@ -105,6 +109,11 @@ foreign import javascript unsafe
   """
   return $1
   """ toJSVal_Int :: Int -> IO JSVal
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """ toJSVal_Word64 :: Word64 -> IO JSVal
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List js = do
@@ -185,6 +194,12 @@ fromJSVal_Int x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Int x
+-----------------------------------------------------------------------------
+fromJSVal_Word64 :: JSVal -> IO (Maybe Word64)
+fromJSVal_Word64 x =
+  if isNullOrUndefined x
+    then pure Nothing
+    else Just <$> fromJSValUnchecked_Word64 x
 -----------------------------------------------------------------------------
 fromJSVal_Double :: JSVal -> IO (Maybe Double)
 fromJSVal_Double x =
@@ -370,6 +385,11 @@ foreign import javascript unsafe
   """
   return $1
   """ fromJSValUnchecked_Int :: JSVal -> IO Int
+-----------------------------------------------------------------------------
+foreign import javascript unsafe
+  """
+  return $1
+  """ fromJSValUnchecked_Word64 :: JSVal -> IO Word64
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """

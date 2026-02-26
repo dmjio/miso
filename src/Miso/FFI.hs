@@ -101,8 +101,6 @@ module Miso.FFI
   , inline
     -- ** Scroll
   , scrollIntoView
-    -- ** SplitMix32
-  , splitmix32
     -- ** Math.random()
   , mathRandom
   ) where
