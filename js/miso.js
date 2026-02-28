@@ -1000,13 +1000,13 @@ var hydrationContext = {
   }
 };
 var componentContext = {
-  mountComponent: function(events, componentId, model) {
+  mountComponent: function(componentId, model) {
     return;
   },
   unmountComponent: function(componentId) {
     return;
   },
-  modelHydration: function(model) {
+  modelHydration: function(componentId, model) {
     return;
   }
 };
@@ -1143,13 +1143,18 @@ globalThis["miso"] = {
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
     const events = globalThis[name]["eventContext"];
+    const components = globalThis[name]["componentContext"];
     if (!drawing) {
       console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
     }
     if (!events) {
       console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
     }
+    if (!components) {
+      console.error('Custom event delegation ("componentsContext") is not defined at globalThis[name].componentsContext', name);
+    }
     globalThis["miso"]["drawingContext"] = drawing;
     globalThis["miso"]["eventContext"] = events;
+    globalThis["miso"]["componentContext"] = components;
   }
 };
