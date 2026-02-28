@@ -1,6 +1,5 @@
 import {
   ComponentId,
-  EventCapture,
   DrawingContext,
   NodeId,
   CSS,
