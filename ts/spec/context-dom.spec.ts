@@ -156,7 +156,7 @@ describe('HydrationContext tests', () => {
 describe('ComponentContext tests', () => {
   test('Should call mountComponent without errors', () => {
     expect(() => {
-      componentContext.mountComponent([], 1, {});
+      componentContext.mountComponent(1, {});
     }).not.toThrow();
   });
 

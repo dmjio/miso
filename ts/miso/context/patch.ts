@@ -58,7 +58,7 @@ function areEqual(a: Object, b: Object) : boolean {
 }
 
 export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) {
+    mountComponent : function (componentId: ComponentId, model: Object) {
         let patch : MountComponent = {
             type: "mount",
             componentId: componentId,

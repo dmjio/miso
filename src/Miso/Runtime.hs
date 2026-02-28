@@ -190,6 +190,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
         liftIO (atomicWriteIORef _componentVTree newVTree)
+        FFI.flush
 
   let _componentApplyActions = \(actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
@@ -220,6 +221,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ mount _componentSink
+  FFI.mountComponent _componentId =<< toObject jsNull
   when isRoot $ do
 #if __GLASGOW_HASKELL__ > 865
     flip labelThread "scheduler" =<< forkIO scheduler
@@ -298,7 +300,9 @@ scheduler =
     renderComponents dirtySet = do
       forM_ (IS.toAscList dirtySet) $ \vcompId ->
         IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
-          when _componentIsDirty (_componentDraw _componentModel)
+          when _componentIsDirty $ do
+            _componentDraw _componentModel
+            FFI.modelHydration _componentId =<< toObject jsNull
           modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
@@ -950,6 +954,7 @@ unmountComponent cs@ComponentState {..} = do
   liftIO $ modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  FFI.unmountComponent _componentId
 -----------------------------------------------------------------------------
 resetComponentState :: IO () -> IO ()
 resetComponentState clear = do
