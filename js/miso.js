@@ -1151,7 +1151,7 @@ globalThis["miso"] = {
       console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
     }
     if (!components) {
-      console.error('Custom event delegation ("componentsContext") is not defined at globalThis[name].componentsContext', name);
+      console.error('Custom component context ("componentContext") is not defined at globalThis[name].componentContext', name);
     }
     globalThis["miso"]["drawingContext"] = drawing;
     globalThis["miso"]["eventContext"] = events;
