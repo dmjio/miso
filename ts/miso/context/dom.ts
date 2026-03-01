@@ -64,13 +64,13 @@ export const hydrationContext : HydrationContext<DOMRef> = {
 };
 
 export const componentContext : ComponentContext = {
-    mountComponent : function (events: Array<EventCapture>, componentId: ComponentId, model: Object) : void {
+    mountComponent : function (componentId: ComponentId, model: Object) : void {
         return;
     },
     unmountComponent : function (componentId: ComponentId) : void {
         return;
     },
-    modelHydration : function (model: Object) : void {
+    modelHydration : function (componentId: ComponentId, model: Object) : void {
         return;
     }
 };

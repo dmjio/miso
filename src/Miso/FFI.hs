@@ -105,6 +105,10 @@ module Miso.FFI
   , splitmix32
     -- ** Math.random()
   , mathRandom
+    -- ** Model
+  , mountComponent
+  , unmountComponent
+  , modelHydration
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

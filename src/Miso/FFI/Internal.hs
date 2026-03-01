@@ -56,6 +56,7 @@ module Miso.FFI.Internal
    , getDrawingContext
    , getHydrationContext
    , getEventContext
+   , getComponentContext
    , getElementById
    , removeChild
    , getHead
@@ -148,6 +149,10 @@ module Miso.FFI.Internal
    , mathRandom
    -- * Crypto
    , getRandomValue
+   -- * Model
+   , mountComponent
+   , unmountComponent
+   , modelHydration
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_, (<=<), when)
@@ -412,6 +417,14 @@ getEventContext = jsg "miso" ! "eventContext"
 --
 getHydrationContext :: IO JSVal
 getHydrationContext = jsg "miso" ! "hydrationContext"
+-----------------------------------------------------------------------------
+-- | Retrieves a reference to the Component context.
+--
+-- This is a miso specific construct used to provide an identical interface
+-- for both native (iOS / Android, etc.) and browser environments.
+--
+getComponentContext :: IO JSVal
+getComponentContext = jsg "miso" ! "componentContext"
 -----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
@@ -1047,4 +1060,22 @@ mathRandom = fromJSValUnchecked =<< do
 getRandomValue :: IO Double
 getRandomValue = fromJSValUnchecked =<< do
   jsg "miso" # "getRandomValues" $ ()
+-----------------------------------------------------------------------------
+-- | Abstract over model hydration
+modelHydration :: Int -> Object -> IO ()
+modelHydration vcompId model_ = do
+  comp <- getComponentContext
+  void $ comp # "modelHydration" $ (vcompId, model_)
+-----------------------------------------------------------------------------
+-- | Abstract over Component mounting
+mountComponent :: Int -> Object -> IO ()
+mountComponent vcompId model_ = do
+  comp <- getComponentContext
+  void $ comp # "mountComponent" $ (vcompId, model_)
+-----------------------------------------------------------------------------
+-- | Abstract over Component unmounting
+unmountComponent :: Int -> IO ()
+unmountComponent vcompId = do
+  comp <- getComponentContext
+  void $ comp # "unmountComponent" $ [vcompId]
 -----------------------------------------------------------------------------
