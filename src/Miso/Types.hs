@@ -35,7 +35,7 @@ module Miso.Types
   , View          (..)
   , Key           (..)
   , Attribute     (..)
-  , NS            (..)
+  , Namespace     (..)
   , CSS           (..)
   , JS            (..)
   , LogLevel      (..)
@@ -266,7 +266,7 @@ data LogLevel
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View model action
-  = VNode NS MisoString [Attribute action] [View model action]
+  = VNode Namespace MisoString [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
   | VComp [Attribute action] (SomeComponent model)
   deriving Functor
@@ -313,7 +313,7 @@ mount_
 mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
-data NS
+data Namespace
   = HTML
   -- ^ HTML Namespace
   | SVG
@@ -322,7 +322,7 @@ data NS
   -- ^ MATHML Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance ToJSVal NS where
+instance ToJSVal Namespace where
   toJSVal = \case
     SVG -> toJSVal ("svg" :: MisoString)
     HTML -> toJSVal ("html" :: MisoString)
@@ -425,7 +425,7 @@ newtype VTree = VTree { getTree :: Object }
 -- in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
 node
-  :: NS
+  :: Namespace
   -> MisoString
   -> [Attribute action]
   -> [View model action]
