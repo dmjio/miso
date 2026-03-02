@@ -1043,7 +1043,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
 -- Doesn't handle children
-createNode :: MisoString -> NS -> MisoString -> IO Object
+createNode :: MisoString -> Namespace -> MisoString -> IO Object
 createNode typ ns tag = do
   vnode <- create
   cssObj <- create
