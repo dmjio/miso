@@ -358,7 +358,7 @@
 --
 -- The 'Attribute' type allows us to define web handlers to map browser events to
 -- Haskell data types, along with specifying properties on DOM elements
--- (like @class@ and @id@). See [Miso.Html] for more information.
+-- (like @class@ and @id@). See 'Miso.Html' for more information.
 --
 -- @
 -- div_ [ id_ "some-id", className "some-class" ] [ ]
@@ -406,7 +406,7 @@
 --
 -- * PubSub / Topic
 --
--- We have added support for a publisher / subscriber model. See [Miso.PubSub] for more information.
+-- We have added support for a publisher / subscriber model. See 'Miso.PubSub' for more information.
 --
 -- = Subscriptions
 --
@@ -422,7 +422,7 @@
 --
 -- 'createSub' is a helper function for creating a 'Subscription' using the 'Control.Exception.bracket' pattern.
 -- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
--- please see the [Miso.Subscription] submodules. 'createSub' is only meant to be used in scenarios where
+-- please see the 'Miso.Subscription' submodules. 'createSub' is only meant to be used in scenarios where
 -- custom event listeners are used.
 --
 -- @
@@ -455,7 +455,7 @@
 --
 -- = (2D/3D) Canvas support
 --
---  Miso has full 2D and 3D canvas support. See the [Miso.Canvas] module and the [miso-canvas](https://github.com/haskell-miso/miso-canvas) example.
+--  Miso has full 2D and 3D canvas support. See the 'Miso.Canvas' module and the [miso-canvas](https://github.com/haskell-miso/miso-canvas) example.
 --
 -- = State management (Lens)
 --
@@ -463,11 +463,11 @@
 --
 -- = HTML
 --
--- Miso's 'View' can also be repurposed to render HTML. See the [Miso.Html.Render] module for the 'Miso.Html.Render.ToHtml' class.
+-- Miso's 'View' can also be repurposed to render HTML. See the 'Miso.Html.Render' module for the 'Miso.Html.Render.ToHtml' class.
 --
 -- = JavaScript EDSL
 --
--- Miso provides a Javascript DSL (inspired by [jsaddle](https://hackage.haskell.org/packages/jsaddle)) via [Miso.DSL].
+-- Miso provides a Javascript DSL (inspired by [jsaddle](https://hackage.haskell.org/packages/jsaddle)) via 'Miso.DSL'.
 -- See the t'ToJSVal' / t'FromJSVal' typeclasses when marshaling to and from Haskell to JavaScript. See also the 'Miso.DSL.jsg'
 -- function for accessing JavaScript objects that exist in the global scope.
 --
@@ -488,8 +488,8 @@
 --
 -- = Routing
 --
--- miso has its own [Miso.Router], that uses the browser's [History](https://developer.mozilla.org/en-US/docs/Web/API/History) API.
--- See [Miso.Router] for more information. The router is inspired by both servant and the web-routes package.
+-- miso has its own 'Miso.Router', that uses the browser's [History](https://developer.mozilla.org/en-US/docs/Web/API/History) API.
+-- See 'Miso.Router' for more information. The router is inspired by both servant and the web-routes package.
 --
 -- = MisoString
 --
@@ -733,7 +733,7 @@ startApp events = initComponent events Draw
 renderApp
   :: Eq model
   => Events
-  -- ^ Globally delegated Events
+  -- ^q Globally delegated Events
   -> MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
