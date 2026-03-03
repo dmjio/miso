@@ -146,7 +146,7 @@
 -- main = startApp defaultEvents counter { mount = Just Init }
 --
 -- update :: App model Action
--- update = \case
+-- update = \\case
 --   Init -> io_ (consoleLog "hello world!")
 -- @
 --
@@ -542,6 +542,11 @@
 -- @
 -- counter { logLevel = DebugAll }
 -- @
+--
+-- = Internals
+--
+-- Internally miso uses a global event queue and a scheduler to process all events raised by all 'Component' throughout the lifetime of
+-- an application. Events are processed in FIFO order, batched by the 'Component' that raised them.
 --
 -----------------------------------------------------------------------------
 module Miso
