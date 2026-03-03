@@ -16,8 +16,6 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- [Canvas Example](https://canvas.haskell-miso.org)
---
 ----------------------------------------------------------------------------
 module Miso.Canvas
   ( -- * Types
