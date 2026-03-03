@@ -15,13 +15,15 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- miso is a project for building user interfaces in the browser using Haskell.
+-- = Miso 🍜
+--
+-- @miso@ is a library for building user interface applications in Haskell.
 --
 -- It provides a React-like programming experience for a simple
 -- Haskell dialect that emphasizes @performance@, @purity@, @simplicity@ and
 -- @extensibility@.
 --
--- miso supports common areas that arise in web development:
+-- miso supports common areas that arise naturally in web development:
 --
 -- * __DOM manipulation__: @miso@ uses a virtual DOM diffing algorithm that is
 --   responsible for all DOM modifications and component mounting lifecycle events.
@@ -31,10 +33,12 @@
 --   to Haskell event handlers which cause application state changes. Internally @miso@ virtualizes both the 'capture' and 'bubble' phases of the
 --   browser when it performs event routing.
 --
--- * __Prerendering__: This is an optional feature. Prerendering copies the DOM
---   into the virtual DOM to avoid page redraws on initial page load and to
---   enhance search engine optimization. @miso@ provides its own HTML rendering (@Miso.Html.Render@) to facilitate
---   this on the server and the 'miso' function exists on the client to \"hydrate\"
+-- * __Prerendering__: Prerendering is a process where the server will send HTML
+--   to the client before the JavaScript (or Web Assembly) application bootstraps.
+--   Instead of performing an initial draw, the DOM pointers will be copied into the virtual DOM (if they are structurally equivalent).
+--   This is a process known as \"hydration\". This avoids unnecessary page redraws on initial page
+--   load and enhances search engine optimization. @miso@ provides its own HTML rendering
+--   ('Miso.Html.Render') to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
 --   the virtual DOM with the physical DOM.
 --
 -- * __Isolated components__: A 'Component' is an abstract concept that allows
@@ -46,7 +50,7 @@
 -- to allow a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
 -- (which allows miso to target mobile phone devices).
 --
--- * __Lifecycle hooks__: As 'Component' are mounted and unmounted, and virtual DOM nodes created and destroyed, it is possible to listen
+-- * __Lifecycle hooks__: As 'Component' are mounted / unmounted, and virtual DOM nodes created / destroyed, it is possible to listen
 -- for these lifecycle events and handle them in your application. This is commonly used for 'Component' communication and for third-party integration
 -- with JavaScript libraries.
 --
@@ -116,7 +120,7 @@
 --
 -- = Running your first t'Component'
 --
--- To run the counter 'Component' defined above the 'startApp' or 'miso' functions be used.
+-- The 'startApp' (or 'miso') functions be used to run the above t'Component'.
 --
 -- @
 -- main :: IO ()
@@ -230,7 +234,7 @@
 -- data Action = Highlight DOMRef
 --
 -- update :: Action -> Effect parent model Action
--- update = \case
+-- update = \\case
 --    Highlight domRef -> io_ $ do
 --       [js| hljs.highlight({domRef}) |]
 --
@@ -481,9 +485,8 @@
 -- {-# LANGUAGE QuasiQuotes #-}
 --
 -- import Miso.FFI.QQ (js)
--- update msg = \case
+-- update msg = \\case
 --   Log -> io_ [js| console.log(${msg}) |]
---
 -- @
 --
 -- = Routing
