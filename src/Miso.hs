@@ -17,11 +17,14 @@
 --
 -- = Miso 🍜
 --
--- @miso@ is a library for building user interface applications in Haskell.
+-- @miso@ is a library for building user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
 --
--- It provides a React-like programming experience for a simple
--- Haskell dialect that emphasizes @performance@, @purity@, @simplicity@ and
--- @extensibility@.
+-- It provides a React-like programming experience for a simple Haskell dialect that emphasizes
+--
+-- * @performance@
+-- * @purity@
+-- * @simplicity@
+-- * @extensibility@
 --
 -- miso supports common areas that arise naturally in web development:
 --
@@ -206,12 +209,12 @@
 --
 -- = 'Component' lifecycle hooks
 --
--- Components are mounted on the fly during diffing. All t'Component` are equipped with a `mount` and `unmount` function that can define a custom action that will be invoked when a lifecycle event occurs (Component creation / Component destruction).
+-- Components are mounted on the fly during diffing. All t'Component` are equipped with a `mount` and `unmount` hooks allow the defining of custom actions that will be processed in response to lifecycle events.
 --
 -- * 'Miso.Types.mount'
 -- * 'Miso.Types.unmount'
 --
--- = 'Node' lifecycle hooks
+-- = 'VNode' lifecycle hooks
 --
 -- Similar to t'Component' lifecycle hooks, all 'Miso.Types.VNode' also expose lifecycle hooks.
 --
@@ -295,7 +298,7 @@
 -- * 'node'
 -- * 'text'
 -- * 'component'
--- * @('+>')@ 
+-- * ('+>')
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
@@ -364,7 +367,7 @@
 -- This 'Monad' allows the mutation of @model@ over time in response to @action@.
 -- This also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
 --
--- *N.B.* 'IO' is never evaluated inside of 'Effect', it is only scheduled. There is no 'MonadIO' instance for 'Effect'.
+-- N.B. 'IO' is never evaluated inside of 'Effect', it is only scheduled. There is no 'MonadIO' instance for 'Effect'.
 --
 -- @
 -- type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
@@ -404,15 +407,16 @@
 -- The 'ComponentId' can be found in the 'Effect' monad. Using 'ask' will return a t'ComponentInfo'. The 'Component' receiving
 -- the message will find it in its 'mailbox'.
 --
+-- While not direct communcation, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+--
 -- * "Miso.PubSub"
 --
 -- miso has support for the publisher / subscriber concurrency pattern. See the "Miso.PubSub" module for more information.
 --
 -- * "Miso.Binding"
 --
--- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the child / parent relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
+-- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
 -- 
---
 -- = Subscriptions
 --
 -- A t'Sub' is any long-running operation that is external to a 'Component', but that can write
@@ -466,7 +470,7 @@
 --
 -- = State management (Lens)
 --
---  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @('+=')@) that work in the 'Effect' monad.
+--  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@ that work in the 'Effect' monad.
 --
 -- = HTML
 --
