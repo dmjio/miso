@@ -158,7 +158,10 @@ infixr 0 #>
 -- | Smart constructor for an 'Effect' with multiple actions.
 --
 -- @since 1.9.0.0
-batch :: [IO action] -> Effect parent model action
+batch
+  :: [IO action]
+  -- ^ Batch of 'IO' actions to execute
+  -> Effect parent model action
 batch actions = sequence_
   [ tell [ async $ \f -> f =<< action ]
   | action <- actions
@@ -243,13 +246,19 @@ mapSub f sub = \g -> sub (g . f)
 -- Please use this with caution because it will block the render thread.
 --
 -- @since 1.9.0.0
-sync :: IO action -> Effect parent model action
+sync
+  :: IO action
+  -- ^ 'IO' action to execute synchronously
+  -> Effect parent model action
 sync action = tell [ Schedule Sync $ \f -> f =<< action ]
 -----------------------------------------------------------------------------
 -- | Like 'sync', except discards the result.
 --
 -- @since 1.9.0.0
-sync_ :: IO () -> Effect parent model action
+sync_
+  :: IO ()
+  -- ^ 'IO' action to execute synchronously
+  -> Effect parent model action
 sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -----------------------------------------------------------------------------
 -- | Schedule a single 'IO' action for later execution.
@@ -258,7 +267,10 @@ sync_ action = tell [ Schedule Sync $ \_ -> action ]
 -- 'Control.Monad.Writer.Class.tell' from the @mtl@ library.
 --
 -- @since 1.9.0.0
-io :: IO action -> Effect parent model action
+io
+  :: IO action
+  -- ^ 'IO' action to execute asynchronously
+  -> Effect parent model action
 io action = withSink (action >>=)
 -----------------------------------------------------------------------------
 -- | Like 'io' but doesn't cause an action to be dispatched to
@@ -270,7 +282,10 @@ io action = withSink (action >>=)
 -- Note: The result of @IO a@ is discarded.
 --
 -- @since 1.9.0.0
-io_ :: IO () -> Effect parent model action
+io_
+  :: IO ()
+  -- ^ 'IO' action to execute asynchronously
+  -> Effect parent model action
 io_ action = withSink (\_ -> void action)
 -----------------------------------------------------------------------------
 -- | Like 'io' but generalized to any instance of 'Foldable'
@@ -278,7 +293,11 @@ io_ action = withSink (\_ -> void action)
 -- This is handy for scheduling @IO@ computations that return a @Maybe@ value
 --
 -- @since 1.9.0.0
-for :: Foldable f => IO (f action) -> Effect parent model action
+for
+  :: Foldable f
+  => IO (f action)
+  -- ^ @actions@ executed in batch.
+  -> Effect parent model action
 for actions = withSink $ \sink -> actions >>= flip for_ sink
 -----------------------------------------------------------------------------
 -- | Performs the given IO action before all IO actions collected by the given
@@ -328,7 +347,10 @@ modifyAllIO f = censor $ \actions ->
 -- > update FetchJSON = withSink $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
 --
 -- @since 1.9.0.0
-withSink :: (Sink action -> IO ()) -> Effect parent model action
+withSink
+  :: (Sink action -> IO ())
+  -- ^ Callback function that provides access to the underlying 'Sink'.
+  -> Effect parent model action
 withSink f = tell [ async f ]
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
@@ -337,11 +359,14 @@ withSink f = tell [ async f ]
 -- > type Model  = Int
 -- >
 -- > update :: Action -> Effect Model Action
--- > update = \case
+-- > update = \\case
 -- >   Click -> issue HelloWorld
 --
 -- @since 1.9.0.0
-issue :: action -> Effect parent model action
+issue
+  :: action
+  -- ^ @action@ to raise
+  -> Effect parent model action
 issue action = tell [ async $ \f -> f action ]
 -----------------------------------------------------------------------------
 -- | See 'io'

@@ -1146,7 +1146,9 @@ renderScripts scripts =
 startSub
   :: ToMisoString subKey
   => subKey
+  -- ^ The key used to track the 'Sub'
   -> Sub action
+  -- ^ The 'Sub'
   -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
@@ -1182,7 +1184,11 @@ startSub subKey sub = do
 -- @
 --
 -- @since 1.9.0.0
-stopSub :: ToMisoString subKey => subKey -> Effect parent model action
+stopSub
+  :: ToMisoString subKey
+  => subKey
+  -- ^ The key used to stop the 'Sub'
+  -> Effect parent model action
 stopSub subKey = do
   vcompId <- asks _componentInfoId
   io_ $ do
@@ -1206,7 +1212,9 @@ stopSub subKey = do
 mail
   :: ToJSON message
   => ComponentId
+  -- ^ 'ComponentId' to receive 'mail'
   -> message
+  -- ^ The message to send
   -> IO ()
 mail vcompId msg =
   IM.lookup vcompId <$> readIORef components >>= \case
@@ -1227,6 +1235,7 @@ mail vcompId msg =
 mailParent
   :: ToJSON message
   => message
+  -- ^ Message to send
   -> Effect parent model action
 mailParent msg = do
   ComponentInfo {..} <- ask
@@ -1248,20 +1257,27 @@ mailParent msg = do
 checkMail
   :: FromJSON value
   => (value -> action)
+  -- ^ Successful callback
   -> (MisoString -> action)
+  -- ^ Errorful callback
   -> Value
+  -- ^ The message received to parse.
   -> Maybe action
 checkMail successful errorful value =
   pure $ case fromJSON value of
     Success x -> successful x
     Error err -> errorful (ms err)
 -----------------------------------------------------------------------------
--- | Fetches the parent `model` from the child.
+-- | Fetches the parent `model` from the child (if @parent@ exists).
+--
+-- N.B. this is a no-op for 'ROOT'.
 --
 -- @since 1.9.0.0
 parent
   :: (parent -> action)
+  -- ^ Successful callback
   -> action
+  -- ^ Errorful callback
   -> Effect parent model action
 parent successful errorful = do
   ComponentInfo {..} <- ask
@@ -1284,6 +1300,7 @@ broadcast
   :: Eq model
   => ToJSON message
   => message
+  -- ^ Message to broadcast to all other 'Component'
   -> Effect parent model action
 broadcast msg = do
   ComponentInfo {..} <- ask
@@ -1784,7 +1801,10 @@ arrayBuffer = BUFFER
 #ifdef WASM
 -----------------------------------------------------------------------------
 -- | Like 'eval', but read the JS code to evaluate from a file.
-evalFile :: FilePath -> TH.Q TH.Exp
+evalFile
+  :: FilePath
+  -- ^ Path to JS file that will be converted into an FFI declaration.
+  -> TH.Q TH.Exp
 evalFile path = eval_ =<< TH.runIO (readFile path)
   where
     eval_ :: String -> TH.Q TH.Exp

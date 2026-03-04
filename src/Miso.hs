@@ -802,7 +802,10 @@ isRoot = True
 #else
 #define MISO_JS_PATH "js/miso.js"
 #endif
-withJS :: IO a -> IO a
+withJS
+  :: IO a
+  -- ^ 'IO' action to execute in between 'evalFile'
+  -> IO a
 withJS action = do
 #ifdef WASM
   $(evalFile MISO_JS_PATH)
