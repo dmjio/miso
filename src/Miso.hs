@@ -17,9 +17,9 @@
 --
 -- = Miso 🍜
 --
--- @miso@ is a library for building user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
+-- @miso@ is a library for building web and native user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
 --
--- It provides a React-like programming experience for a simple Haskell dialect that emphasizes
+-- It provides a [React](https://react.dev)-like programming experience for a simple [Haskell](https://haskell.org) dialect that emphasizes
 --
 -- * performance
 -- * purity
@@ -36,7 +36,7 @@
 --   to Haskell event handlers which cause application state changes. Internally @miso@
 --   virtualizes both the @capture@ and @bubble@ phases of the browser when it performs event routing.
 --
--- * __Prerendering__: Prerendering is a process where the server will send HTML
+-- * __Prerendering__: Prerendering is a process where the server delivers HTML
 --   to the client before the JavaScript (or Web Assembly) application bootstraps.
 --   Instead of performing an initial draw, the application will create and populate the virtual DOM from the actual DOM.
 --   This is a process known as \"hydration\". This avoids unnecessary page draws on initial page
@@ -44,12 +44,12 @@
 --   ("Miso.Html.Render") to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
 --   the virtual DOM with the DOM.
 --
--- * __Isolated components__: A 'Component' is an abstract type that allows
+-- * __Components__: A 'Component' is an abstract type that allows
 --   users to create reusable pieces of application functionality. A 'Component'
 --   contains user-defined state, logic for updating this state, and a function
 --   for creating UI templates from this user-defined state.
 --
--- * __Custom renderers__: The underlying DOM-operations are able to be abstracted. 
+-- * __Custom renderers__: The underlying DOM operations are able to be abstracted. 
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
 -- (which allows miso to target mobile phone devices).
 --
@@ -62,7 +62,7 @@
 -- = The Model-Update-View pattern
 --
 -- The core type of miso is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
--- MUV (model-update-view) interface. This is similar to a left-fold. Where the 'Component' @model@
+-- MUV (model-update-view) interface. This is similar to a left-fold, where the 'Component' @model@
 -- will be updated via a list of @action@ given a specific 'Miso.Types.update' function, and rendered via 'Miso.Types.view'.
 --
 -- * __model__: This can be any user-defined type in Haskell. An 'Eq' constraint
@@ -80,7 +80,7 @@
 -- = Your first t'Component'
 --
 -- To define a 'Component' the 'component' smart constructor can be used.
--- Below is an example of a counter component.
+-- Below is an example of a simple counter 'Component'.
 --
 -- @
 -- -----------------------------------------------------------------------------
@@ -133,12 +133,12 @@
 -- main = startApp defaultEvents counter
 -- @
 --
--- The 'startApp' function is what we recommend using first. It takes a list of events (which are globally delegated) and
--- a 'Component', sets up event listeners and performs the initial page draw. The 'startApp' function assumes that @\<body\>@ is empty (or contains @\<script\>@ that don't affect the application), and it will begin drawing the 'Component' 'View' from @\<body\>@.
+-- The 'startApp' function is what we recommend using first. It sets up event listeners and performs the initial page draw. 
+-- The 'startApp' function assumes that @\<body\>@ is empty, and it will begin drawing the 'Component' 'View' from @\<body\>@.
 --
 -- The 'miso' function (and also the 'prerender' function) assume that @\<body\>@ has already been populated by the results of the 'view' function.
 -- Instead of drawing, 'miso' will perform hydration.
--- If the structures do not match, 'miso' will fallback to drawing the page from scratch (clearing the contents of @\<body\>@ first).
+-- If the structures do not match 'miso' will fallback to drawing the page from scratch (clearing the contents of @\<body\>@ first).
 --
 -- It is possible to execute an initial action when a t'Component' is first mounted. See the 'mount' (and similarly 'unmount') hooks.
 --
@@ -157,7 +157,7 @@
 -- = 'Component' composition
 --
 -- As of @1.9@, @miso@ 'Component' can contain other 'Component'. This is
--- accomplished through the 'Component' mounting combinator @('+>')@. This combinator
+-- accomplished through the 'Component' mounting combinator ('+>'). This combinator
 -- is responsible for encoding a typed 'Component' hierarchy, allowing 'Component'
 -- type-safe read-only access to their @parent@ model state.
 --
@@ -181,14 +181,14 @@
 -- view x = div_ [ id_ "container" ] [ "counter" +> counter ]
 -- @
 --
--- You'll notice the @\"counter\"@ string was specified. This is a unique key
+-- You'll notice the @\"counter\"@ string was specified. This is a unique 'Key'
 -- to identify a 'Component' at runtime. These keys are very important when
 -- diffing two 'Component' together. When intentionally replacing 'Component' it is important
--- to specify a new key, otherwise the 'Component' will not be unmounted.
+-- to specify a new 'Key', otherwise the 'Component' will not be unmounted.
 --
 -- It is possible to mount a component using the 'mount_' function, which avoids specifying a 'key_', but this should only be used
--- when the user is certain they will not be diffing their 'Component' with another 'Component'. When in doubt, use the @('+>')@ combinator
--- and key your 'Component'.
+-- when the user is certain they will not be diffing their 'Component' with another 'Component'. When in doubt, use the ('+>') combinator
+-- and 'key_' your 'Component'.
 --
 -- Lastly, note also the signature of 'startApp'.
 --
@@ -212,7 +212,7 @@
 --
 -- = 'Component' lifecycle hooks
 --
--- Components are mounted on the fly during diffing. All t'Component` are equipped with a `mount` and `unmount` hooks allow the defining of custom actions that will be processed in response to lifecycle events.
+-- Components are mounted on the fly during diffing. All t'Component` are equipped with `mount` and `unmount` hooks. This allows the defining of custom actions that will be processed in response to lifecycle events.
 --
 -- * 'Miso.Types.mount'
 -- * 'Miso.Types.unmount'
@@ -226,7 +226,7 @@
 -- * 'Miso.Event.onBeforeDestroyed' / 'Miso.Event.onBeforeDestroyedWith'
 -- * 'Miso.Event.onDestroyed'
 --
--- This is convenient for initializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
+-- This is convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
 --
 -- @
 -- {-# LANGUAGE QuasiQuotes -#}
@@ -254,7 +254,7 @@
 --
 -- = 'Key'
 --
--- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and React).
+-- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and react).
 --
 -- * Keys are used to optimize child node list diffing.
 --
@@ -262,9 +262,9 @@
 --
 -- * Keys are used to compare two identical nodes.
 --
--- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the t'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
+-- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the 'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
 --
--- See the 'key_' property for usage (and smart constructors like 'textKey_' and @('+>')@ as well).
+-- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
 --
 -- @
 -- ul_
@@ -279,9 +279,9 @@
 -- = t'View' DSL
 --
 -- The 'View' type is the core type for templating a web page. It is similar to
--- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. It is
--- mutually recursive with the 'Component' type, which allows us to embed
--- 'Component' inside other 'Component'. This is how the Virtual DOM is constructed in Haskell.
+-- a [Rose tree](https://en.wikipedia.org/wiki/Rose_tree) data structure. This is how the Virtual DOM is constructed. It is
+-- mutually recursive with the 'Component' type (via the 'view' function), which allows us to embed
+-- 'Component' inside other 'Component'.
 --
 -- @
 -- data View model action
@@ -290,7 +290,7 @@
 --   | VComp [Attribute action] (SomeComponent model)
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The exisential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
 --
 -- @
 -- data SomeComponent parent
@@ -311,12 +311,12 @@
 --
 -- * Event Delegation
 --
--- All events are delegated through @\<body\>@. Miso supports both @capture@ and @bubble@ phases of browser events.
+-- By default all events are delegated through @\<body\>@. Miso supports both @capture@ and @bubble@ phases of browser events.
 -- Users can handle both phases in their applications.
 --
 -- * Using events
 --
--- Miso exposes a 'defaultEvents' 'Data.Map.Map' for convenience, these events are commonly used and listened for on @\<body\>@. They get routed through the 'View' to the virtual DOM node that raised the event. Other 'Event' 'Data.Map.Map' are exposed as conveniences. All events required by all 'Component' must combined together for use when running your application (e.g. @keyboardEvents <> touchEvents@).
+-- Miso exposes a 'defaultEvents' for convenience, these events are commonly used events and listened for on @\<body\>@. They get routed through the 'View' to the virtual DOM node that raised the event. Other 'Events' are exposed as conveniences (e.g. 'touchEvents'). All events required by all 'Component' must be combined together for use when running your application (e.g. @keyboardEvents <> touchEvents@).
 --
 -- @
 -- touchEvents :: Events
@@ -330,7 +330,7 @@
 --
 -- * Defining events
 --
--- Users can define their own events using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the the module "Miso.Html.Event" for many predefined events.
+-- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the the module "Miso.Html.Event" for many predefined events.
 --
 -- @
 -- onChangeWith :: (MisoString -> DOMRef -> action) -> Attribute action
@@ -353,14 +353,14 @@
 -- valueDecoder = Decoder {..}
 --   where
 --     decodeAt = DecodeTarget ["target"]
---     decoder = withObject "target" $ \o -> o .: "value"
+--     decoder = withObject "target" $ \\o -> o .: "value"
 -- @
 --
 -- = Attributes / Properties
 --
--- The 'Attribute' type allows us to define web handlers to map browser events to
+-- The 'Attribute' type allows us to define web handlers that map browser events to
 -- Haskell data types (e.g. 'Miso.Html.Event.onClick'), along with specifying properties on DOM elements
--- (like 'className' and 'id_'). See "Miso.Html" for more information.
+-- (like 'Miso.Html.Property.className' and 'Miso.Html.Property.id_'). See "Miso.Property" for more information.
 --
 -- @
 -- div_ [ id_ "some-id", className "some-class" ] [ ]
@@ -370,9 +370,9 @@
 --
 -- The 'Effect' type is a 'Control.Monad.RWS.Lazy.RWS'.
 -- This 'Monad' allows the mutation of @model@ over time in response to @action@.
--- This also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
---
--- N.B. 'IO' is never evaluated inside of 'Effect', it is only scheduled. There is no 'MonadIO' instance for 'Effect'.
+-- This also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler. 
+-- 'IO' is never evaluated inside of 'Effect', it is only scheduled. 
+-- There is no 'MonadIO' instance for 'Effect'.
 --
 -- @
 -- type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
@@ -386,7 +386,7 @@
 --   handlers to all 'IO' actions.
 --
 -- @
--- type Sink a => a -> IO ()
+-- type 'Sink' a => a -> IO ()
 -- @
 --
 -- The 'Sink' function allows one to write to the global event queue.
@@ -400,7 +400,7 @@
 --
 -- = 'Component' communication
 --
--- Components are able to communicate to each asynchronously via a message-passing system.
+-- 'Component' are able to communicate to each asynchronously via a message-passing system.
 -- The miso runtime exposes a few primitives to allow t'Component' communication.
 --
 -- * 'broadcast'
@@ -442,13 +442,6 @@
 -- The 'subs' field of 'Component' contains 'Sub' that exist for the lifetime of that 'Component'.
 -- When a 'Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
--- * 'Miso.Subscription.Util.createSub'
---
--- 'Miso.Subscription.Util.createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
--- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
--- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
--- custom event listeners are required (shown below).
---
 -- @
 -- onLineSub :: (Bool -> action) -> Sub action
 -- onLineSub f sink = createSub acquire release sink
@@ -478,6 +471,13 @@
 --
 --   data Action = Log
 -- @
+--
+-- * 'Miso.Subscription.Util.createSub'
+--
+-- 'Miso.Subscription.Util.createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
+-- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
+-- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
+-- custom event listeners are required (shown below).
 --
 -- = (2D/3D) Canvas support
 --
@@ -521,7 +521,7 @@
 --
 -- = Routing
 --
--- miso exposes its own internal router (in "Miso.Router"). See "Miso.Router" for more information. The router is inspired by both the [servant](https://hackage.haskell.org/package/servant) and the [web-routes](https://hackage.haskell.org/package/web-routes) package. The router has its own 'Sub' called 'Miso.Router.routerSub' meant for easy integration with the History API.
+-- miso exposes its own internal router. See "Miso.Router" for more information. The router is inspired by both the [servant](https://hackage.haskell.org/package/servant) and the [web-routes](https://hackage.haskell.org/package/web-routes) package. The router has its own 'Sub' called 'Miso.Router.routerSub' meant for easy integration with the History API.
 --
 -- = MisoString
 --
@@ -531,7 +531,7 @@
 -- t'MisoString' is a synonym for t'JSString' when using the JS / WASM backends. When using vanilla GHC
 -- it is t'Data.Text'. See "Miso.String" for more information.
 --
--- t'MisoString' is used in the "Miso.Util.Lexer" and "Miso.Util.Parser" modules, respectively.
+-- t'MisoString' is also used in the "Miso.Util.Lexer" and "Miso.Util.Parser" modules.
 --
 -- = JSON
 --
@@ -541,7 +541,7 @@
 --
 -- = Styles
 --
--- Miso prescribes no exact CSS style usage. It is up to the user's discretion on how best to handle styles in their application. Inline styles, external stylesheets and the "Miso.CSS" 'Miso.CSS.StyleSheet' DSL can all be used. See also [miso-ui](https://ui.haskell-miso.org) for an example of what is possible.
+-- Miso prescribes no exact CSS style usage. It is up to the user's discretion on how best to handle styles in their application. Inline styles, external stylesheets and the "Miso.CSS" DSL can all be used. See also [miso-ui](https://ui.haskell-miso.org) for an example of what is possible.
 --
 -- = Development
 --
