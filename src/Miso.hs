@@ -92,9 +92,9 @@
 -- import qualified Miso.Html.Event as HE
 -- import qualified Miso.Html.Property as HP
 -- -----------------------------------------------------------------------------
---                        * => The type of the parent Component 'model'
---                        |     * => The type of the current Component's 'model'
---                        |     |    * => The type of the action that updates the 'model'
+--                        * - The type of the parent Component 'model'
+--                        |     * - The type of the current Component's 'model'
+--                        |     |    * - The type of the action that updates the 'model'
 --                        |     |    |
 -- counter :: Component parent Int Action
 -- counter = component m u v
@@ -109,9 +109,9 @@
 --
 --     v :: Int -> View Int Action
 --     v x = H.div_
---       [ H.button_ [ HE.onClick Add ] [ "+" ]
+--       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
 --       , text (ms x)
---       , H.button_ [ H.onClick Subtract ] [ "-" ]
+--       , H.button_ [ HE.onClick Subtract, HP.id_ "subtract" ] [ "-" ]
 --       ]
 -- -----------------------------------------------------------------------------
 -- main :: IO ()
@@ -360,7 +360,7 @@
 --
 -- The 'Attribute' type allows us to define web handlers that map browser events to
 -- Haskell data types (e.g. 'Miso.Html.Event.onClick'), along with specifying properties on DOM elements
--- (like 'Miso.Html.Property.className' and 'Miso.Html.Property.id_'). See "Miso.Property" for more information.
+-- (like 'Miso.Html.Property.className' and 'Miso.Html.Property.id_'). See "Miso.Property" and "Miso.Html.Property" for more information.
 --
 -- @
 -- div_ [ id_ "some-id", className "some-class" ] [ ]
