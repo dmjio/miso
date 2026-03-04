@@ -79,6 +79,10 @@ Miso aims to [bridge the gap](https://wiki.haskell.org/The_JavaScript_Problem) b
 > [!Note]
 > [React-style Components](https://github.com/dmjio/miso/pull/766) are now added to `miso` as of version `1.9`. This has not yet been released, we recommend developing against `master` if you'd like to use latest features.
 
+## Docs 📚
+ 
+See the [Miso](https://haddocks.haskell-miso.org/miso/Miso.html) module.
+
 ## Quick start ⚡
 
 > [!TIP]
