@@ -57,6 +57,8 @@
 -- execute when a 'Component' mounts or unmounts. 'Miso.Event.onCreated' and 'Miso.Event.onDestroyed' are 'VNode' specific lifecycle hooks.
 -- These hooks are commonly used for 'Component' communication and for third-party integration with JavaScript libraries.
 --
+-- * __State management__: 'Component' @model@ state can be manipulated using "Miso.Lens" or "Miso.State" in response to application events.
+--
 -- = The Model-Update-View pattern
 --
 -- The core type of miso is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
@@ -181,7 +183,8 @@
 --
 -- You'll notice the @\"counter\"@ string was specified. This is a unique key
 -- to identify a 'Component' at runtime. These keys are very important when
--- diffing two components together.
+-- diffing two 'Component' together. When intentionally replacing 'Component' it is important
+-- to specify a new key, otherwise the 'Component' will not be unmounted.
 --
 -- It is possible to mount a component using the 'mount_' function, which avoids specifying a 'key_', but this should only be used
 -- when the user is certain they will not be diffing their 'Component' with another 'Component'. When in doubt, use the @('+>')@ combinator
@@ -249,20 +252,22 @@
 --   ]
 -- @
 --
--- == Keys
+-- = 'Key'
 --
 -- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and React).
 --
--- * 1) Keys are used to optimize child node list diffing.
+-- * Keys are used to optimize child node list diffing.
 --
 -- When two lists of elements are being diffed, as long as they all have unique keys, diffing large child lists will be much faster. This optimization automatically occurs when all the elements in a 'VNode' child list contain unique keys. Unless all 'View' nodes in a child list are keyed, this optimization will not fire.
 --
--- * 2) Keys are used to compare two identical nodes. If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the t'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
+-- * Keys are used to compare two identical nodes.
+--
+-- If two `VNode` are being compared (or two `VComp`) and their keys differ, the old node will be destroyed and a new one created. Otherwise, the underlying DOM node won't be removed, but its properties will be diffed. In the case of diffing two t'Component' (the t'VComp' case), if the keys differ, the 'unmount' phase will be triggered for the old 'VComp' and the 'mount' phase will be triggered for the new 'Component'. The underlying DOM reference will be replaced.
 --
 -- See the 'key_' property for usage (and smart constructors like 'textKey_' and @('+>')@ as well).
 --
 -- @
---   ul_
+-- ul_
 --   []
 --   [ li_ [ key_ "key-1" ] [ "a" ]
 --   , li_ [ key_ "key-2" ] [ "b" ]
@@ -355,7 +360,7 @@
 --
 -- The 'Attribute' type allows us to define web handlers to map browser events to
 -- Haskell data types (e.g. 'Miso.Html.Event.onClick'), along with specifying properties on DOM elements
--- (like @class@ and @id@). See 'Miso.Html' for more information.
+-- (like 'className' and 'id_'). See "Miso.Html" for more information.
 --
 -- @
 -- div_ [ id_ "some-id", className "some-class" ] [ ]
@@ -480,7 +485,7 @@
 --
 -- = State management (Lens)
 --
---  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@ that work in the 'Effect' monad.
+--  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@ that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
 --
 -- = HTML
 --
@@ -713,9 +718,9 @@ miso events f = withJS $ do
 prerender
   :: Eq model
   => Events
-  -- ^ Globally delegated Events
+  -- ^ Globally delegated 'Events'
   -> App model action
-  -- ^ Component application
+  -- ^ 'Component' application
   -> IO ()
 prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
@@ -734,9 +739,9 @@ prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothi
 startApp
   :: Eq model
   => Events
-  -- ^ Globally delegated Events
+  -- ^ Globally delegated 'Events'
   -> App model action
-  -- ^ Component application
+  -- ^ 'Component' application
   -> IO ()
 startApp events = initComponent events Draw
 -----------------------------------------------------------------------------
@@ -744,9 +749,9 @@ startApp events = initComponent events Draw
 (🍜)
   :: Eq model
   => Events
-  -- ^ Globally delegated Events
+  -- ^ Globally delegated 'Events'
   -> (URI -> App model action)
-  -- ^ Component application, with the current URI as an argument
+  -- ^ 'Component' application, with the current URI as an argument
   -> IO ()
 (🍜) = miso
 ----------------------------------------------------------------------------
@@ -765,11 +770,11 @@ startApp events = initComponent events Draw
 renderApp
   :: Eq model
   => Events
-  -- ^q Globally delegated Events
+  -- ^ Globally delegated 'Events'
   -> MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
-  -- ^ Component application
+  -- ^ 'Component' application
   -> IO ()
 renderApp events renderer vcomp = do
   FFI.setDrawingContext renderer

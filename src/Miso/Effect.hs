@@ -139,7 +139,7 @@ type ComponentId = Int
 -- back into the 'Miso.Types.update' function.
 type Sub action = Sink action -> IO ()
 -----------------------------------------------------------------------------
--- | Function to asynchronously dispatch actions to the 'Miso.Types.update' function.
+-- | Function to write to the global event queue for processing by the scheduler.
 type Sink action = action -> IO ()
 -----------------------------------------------------------------------------
 -- | Smart constructor for an 'Effect' with exactly one action.
