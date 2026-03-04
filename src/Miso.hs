@@ -25,47 +25,48 @@
 --
 -- miso supports common areas that arise naturally in web development:
 --
--- * __DOM manipulation__: @miso@ uses a virtual DOM diffing algorithm that is
---   responsible for all DOM modifications and component mounting lifecycle events.
+-- * __DOM manipulation__: @miso@ uses a virtual DOM with diffing algorithm that is
+--   responsible for all DOM modification and 'Component' lifecycle hooks.
 --
 -- * __Event delegation__: All event listeners are attached to a top-level element
---   (typically @<body>@). When raised, events are routed through the virtual DOM
---   to Haskell event handlers which cause application state changes. Internally @miso@ virtualizes both the 'capture' and 'bubble' phases of the
---   browser when it performs event routing.
+--   (typically @\<body\>@). When raised, events are routed through the virtual DOM
+--   to Haskell event handlers which cause application state changes. Internally @miso@
+--   virtualizes both the 'capture' and 'bubble' phases of the browser when it performs event routing.
 --
 -- * __Prerendering__: Prerendering is a process where the server will send HTML
 --   to the client before the JavaScript (or Web Assembly) application bootstraps.
---   Instead of performing an initial draw, the DOM pointers will be copied into the virtual DOM (if they are structurally equivalent).
+--   Instead of performing an initial draw, the application will create and populate the virtual DOM from the actual DOM.
 --   This is a process known as \"hydration\". This avoids unnecessary page redraws on initial page
 --   load and enhances search engine optimization. @miso@ provides its own HTML rendering
 --   ('Miso.Html.Render') to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
---   the virtual DOM with the physical DOM.
+--   the virtual DOM with the DOM.
 --
--- * __Isolated components__: A 'Component' is an abstract concept that allows
+-- * __Isolated components__: A 'Component' is an abstract type that allows
 --   users to create reusable pieces of application functionality. A 'Component'
 --   contains user-defined state, logic for updating this state, and a function
 --   for creating UI templates from this user-defined state.
 --
--- * __Custom renderers__: The underlying DOM-operations are able to be abstracted over
--- to allow a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
+-- * __Custom renderers__: The underlying DOM-operations are able to be abstracted. 
+-- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
 -- (which allows miso to target mobile phone devices).
 --
--- * __Lifecycle hooks__: As 'Component' are mounted / unmounted, and virtual DOM nodes created / destroyed, it is possible to listen
--- for these lifecycle events and handle them in your application. This is commonly used for 'Component' communication and for third-party integration
--- with JavaScript libraries.
+-- * __Lifecycle hooks__: 'Component' expose 'Miso.Types.mount' and 'Miso.Types.unmount' lifecycle hooks. This allow users to define custom logic that will
+-- execute when a 'Component' mounts or unmounts. 'Miso.Event.onCreated' and 'Miso.Event.onDestroyed' are 'VNode' specific lifecycle hooks.
+-- These hooks are commonly used for 'Component' communication and for third-party integration with JavaScript libraries.
 --
 -- = The Model-Update-View pattern
 --
--- The core type of the project is 'Component'. A 'Component' adheres to the [Elm](https://elm-lang.org)
--- MUV (model-update-view) pattern.
+-- The core type of the project is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
+-- MUV (model-update-view) pattern. This is similar to a left-fold. Where the 'Component' @model@
+-- will be updated via a list of @action@ for a specific 'Miso.Types.update' function, and rendered via 'Miso.Types.view'
 --
 -- * __model__: This can be any user-defined type in Haskell. An 'Eq' constraint
 --   is required. We recommend using the default derived 'Eq' instance.
 --
 -- * __update__: @'update' :: action -> 'Effect' parent model action@
 --   The 'update' function handles how the 'model' evolves over time in response
---   to events that are raised by the browser. This function takes any 'action',
---   optionally updating the 'model' and introducing 'IO' into the system.
+--   to events that are raised by the application. This function takes any @action@,
+--   updating the @model@ and optionally introducing 'IO' into the system.
 --
 -- * __view__: @'view' :: model -> 'View' model action@
 --   This is the templating function that is used to construct a new virtual DOM
@@ -120,7 +121,7 @@
 --
 -- = Running your first t'Component'
 --
--- The 'startApp' (or 'miso') functions be used to run the above t'Component'.
+-- The 'startApp' (or 'miso') functions are used to run the above t'Component'.
 --
 -- @
 -- main :: IO ()
@@ -128,17 +129,15 @@
 -- @
 --
 -- The 'startApp' function is what we recommend using first. It takes a list of events (which are globally delegated) and
--- a 'Component', and begins drawing on the screen and remains responsive to browser events defined in 'defaultEvents'.
+-- a 'Component', sets up event listeners and performs the initial page draw.
 --
--- The 'startApp' function assumes that <body> is empty (or contains @<script>@) that don't affect the application, and it will
--- begin drawing the 'Component' 'View' from @<body>@.
+-- The 'startApp' function assumes that @\<body\>@ is empty (or contains @\<script\>@) that don't affect the application, and it will
+-- begin drawing the 'Component' 'View' from @\<body\>@.
 --
--- The 'miso' function (and also the 'prerender' function) assume that @<body>@ has already been populated by the results of the 'view' function.
+-- The 'miso' function (and also the 'prerender' function) assume that @\<body\>@ has already been populated by the results of the 'view' function.
 -- Instead of drawing, 'miso' will traverse the DOM and Virtual DOM, copying the DOM references into the Virtual DOM, performing a structural equality check.
--- If the structures do not match, miso will fallback to drawing the page from scratch (clearing the contents of @<body>@ first).
+-- If the structures do not match, miso will fallback to drawing the page from scratch (clearing the contents of @\<body\>@ first).
 -- This process is done to avoid unnecessary page drawing (to avoid page blinks).
---
--- We recommend using 'startApp' first, and then adding support for 'miso' later as an optimization.
 --
 -- It is possible to execute an initial action when a t'Component' is first mounted. See the 'mount' (and similarly 'unmount') hooks.
 --
@@ -149,7 +148,7 @@
 -- main :: IO ()
 -- main = startApp defaultEvents counter { mount = Just Init }
 --
--- update :: App model Action
+-- update :: 'App' model Action
 -- update = \\case
 --   Init -> io_ (consoleLog "hello world!")
 -- @
@@ -195,7 +194,7 @@
 -- startApp :: Eq model => Events -> App model action -> IO ()
 -- @
 --
--- The 'App' type signature is a synonym for 'Component ROOT'
+-- The 'App' type signature is a synonym for 'Component' 'ROOT'
 --
 -- @
 -- type App model action = Component ROOT model action
@@ -213,17 +212,19 @@
 --
 -- Components are mounted on the fly during diffing. All t'Component` are equipped with a `mount` and `unmount` function that can define a custom action that will be invoked when a lifecycle event occurs (Component creation / Component destruction).
 --
--- * 'mount'
--- * 'unmount'
+-- * 'Miso.Types.mount'
+-- * 'Miso.Types.unmount'
 --
 -- = 'Node' lifecycle hooks
 --
--- Similar to t'Component' lifecycle hooks, all virtual DOM nodes expose. There are also `-with` variants that pass along the underlying 'DOMRef'. This is convenient for initializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
+-- Similar to t'Component' lifecycle hooks, all 'Miso.Types.VNode' also expose lifecycle hooks.
 --
--- * 'onBeforeCreated'
--- * 'onCreated' / 'onCreatedWith'
--- * 'onBeforeDestroyed' / 'onBeforeDestroyedWith'
--- * 'onDestroyed'
+-- * 'Miso.Event.onBeforeCreated'
+-- * 'Miso.Event.onCreated' / 'Miso.Event.onCreatedWith'
+-- * 'Miso.Event.onBeforeDestroyed' / 'Miso.Event.onBeforeDestroyedWith'
+-- * 'Miso.Event.onDestroyed'
+--
+-- This is convenient for initializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
 --
 -- @
 -- {-# LANGUAGE QuasiQuotes -#}
@@ -303,12 +304,12 @@
 --
 -- * Event Delegation (bubble / capture)
 --
--- All events are delegated through @<body>@. Miso supports both `capture` and `bubble` phases of browser events.
+-- All events are delegated through @\<body\>@. Miso supports both `capture` and `bubble` phases of browser events.
 -- Users can handle both phases in their applications.
 --
 -- * Using events
 --
--- Miso exposes the 'defaultEvents' map, these events are listened for on @<body>@ and get routed through the 'View'. There
+-- Miso exposes the 'defaultEvents' map, these events are listened for on @\<body\>@ and get routed through the 'View'. There
 -- are other default 'Event' maps that are exposed as conveniences. All events required by all 'Component' must
 -- union'd together for use when running your application.
 --
@@ -328,8 +329,6 @@
 -- many predefined events.
 --
 -- @
--- -----------------------------------------------------------------------------
--- -- | https://developer.mozilla.org/en-US/docs/Web/Events/change
 -- onChangeWith :: (MisoString -> DOMRef -> action) -> Attribute action
 -- onChangeWith = on "change" valueDecoder
 -- @
@@ -732,7 +731,7 @@ startApp events = initComponent events Draw
 -- JS object that implements the context interface per @ts\/miso\/context\/dom.ts@
 -- This is necessary for native support.
 --
--- It is expected to be run on an empty @<body>@
+-- It is expected to be run on an empty @\<body\>@
 --
 -- @
 -- main :: IO ()
