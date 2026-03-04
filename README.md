@@ -51,7 +51,6 @@
 - [Building examples](#building-examples)
 - [HTTP](#interacting-with-http-apis-)
 - [Coverage](#coverage-)
-- [Isomorphic](#isomorphic-%EF%B8%8F)
 - [Native](#native)
 - [Benchmarks](#benchmarks-%EF%B8%8F)
 - [Nix](#nix-)
@@ -352,13 +351,6 @@ All files                 |   93.50 |   92.28 |
  7598 expect() calls
 Ran 223 tests across 9 files. [497.00ms]
 ```
-
-## Isomorphic ☯️
-
-[Isomorphic javascript](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) is a technique for increased SEO, code-sharing and perceived page load times. It works in two parts. First, the server sends a pre-rendered HTML body to the client's browser. Second, after the client javascript application loads, the pointers of the pre-rendered DOM are copied into the virtual DOM (a process known as [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))), and the application proceeds as normal. All subsequent page navigation is handled locally by the client, while avoiding full-page postbacks.
-
-> [!NOTE]
-> The [miso](https://haddocks.haskell-miso.org/miso/Miso.html#v:miso) function is used to facilitate the pointer-copying behavior client-side.
 
 ## Native📱
 Miso supports the creation of iOS and Android applications via [LynxJS](https://lynxjs.org). See the [miso-lynx](https://github.com/haskell-miso/miso-lynx) repository for more information.
