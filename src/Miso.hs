@@ -21,10 +21,10 @@
 --
 -- It provides a React-like programming experience for a simple Haskell dialect that emphasizes
 --
--- * @performance@
--- * @purity@
--- * @simplicity@
--- * @extensibility@
+-- * performance
+-- * purity
+-- * simplicity
+-- * extensibility
 --
 -- miso supports common areas that arise naturally in web development:
 --
@@ -251,7 +251,7 @@
 --
 -- == Keys
 --
--- Virtual DOM nodes can be \"keyed\". Keys have multiple meanings in @miso@ (and React).
+-- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and React).
 --
 -- * 1) Keys are used to optimize child node list diffing.
 --
@@ -389,11 +389,11 @@
 -- * 'sync': Forces the scheduler to evaluate 'IO' synchronously. It is
 --   recommended to use the 'io' function by default, 'sync' *will* block the scheduler.
 --
--- Any 'MonadState' functions are allowed for use when manipulating @model@, 'Miso.State.get', 'Miso.State.put'. See "Miso.State".
--- The 'ComponentInfo' type provides access to the current 'Component' 'ComponentId' and its @parent@ 'ComponentId', and the parent 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on the physical DOM.
+-- Any 'MonadState' function is allowed for use when manipulating @model@, 'Miso.State.get', 'Miso.State.put', etc. See "Miso.State".
+-- The 'MonadReader' instances allows the retrieval of 'ComponentInfo' within 'Effect'.
+-- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
 --
---
--- = Component Communication
+-- = 'Component' communication
 --
 -- Components are able to communicate to each asynchronously via a message-passing system.
 -- The miso runtime exposes a few primitives to allow t'Component' communication.
@@ -424,12 +424,22 @@
 --
 -- * 'subs'
 --
+-- @
+-- main :: IO ()
+-- main = startApp defaultEvents app { subs = [ timerSub ] }
+--
+-- timerSub :: Sub Action
+-- timerSub sink = forever $ (threadDelay 100000) >> sink Log
+--
+-- data Action = Log
+-- @
+--
 -- The 'subs' field of 'Component' contains 'Sub' that exist for the lifetime of that 'Component'.
 -- When a 'Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
--- * 'createSub'
+-- * 'Miso.Subscription.Util.createSub'
 --
--- 'createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
+-- 'Miso.Subscription.Util.createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
 -- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
 -- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
 -- custom event listeners are required (shown below).
@@ -489,7 +499,7 @@
 --
 -- = QuasiQuotation (@inline-js@)
 --
--- Along with "Miso.DSL", a JavaScript QuasiQuoter is now included (See @Miso.FFI.QQ@). This makes it easy to
+-- Along with "Miso.DSL", a JavaScript QuasiQuoter is now included (See "Miso.FFI.QQ"). This makes it easy to
 -- integrate miso with any third-party JavaScript library. This bindings in scope can be used inside the QuasiQuoter, which
 -- will utilize their 'Miso.DSL.ToJSVal' instances. When returning values from the QuasiQuoter, the 'Miso.DSL.FromJSVal' instance will
 -- be used Haskell.
@@ -499,7 +509,8 @@
 -- {-# LANGUAGE QuasiQuotes #-}
 --
 -- import Miso.FFI.QQ (js)
--- update msg = \\case
+--
+-- update = \\case
 --   Log -> io_ [js| console.log(${msg}) |]
 -- @
 --
