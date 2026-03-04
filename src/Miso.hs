@@ -535,7 +535,7 @@
 --
 -- = JSON
 --
--- "Miso.JSON" is a [microaeson](https://hackage.haskell.org/packages/microaeson)
+-- "Miso.JSON" is a [microaeson](https://hackage.haskell.org/package/microaeson)
 -- implementation that uses t'MisoString'. This is done for performance reasons and to minimize the dependency burden. "Miso.JSON" is used
 -- in "Miso.Event.Decoder", "Miso.Fetch", "Miso.WebSocket" modules respectively.
 --
