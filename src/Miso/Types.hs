@@ -213,8 +213,11 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for t'Miso.Types.Component' with sane defaults.
 component
   :: model
+  -- ^ model
   -> (action -> Effect parent model action)
+  -- ^ update
   -> (model -> View model action)
+  -- ^ view
   -> Component parent model action
 component m u v = Component
   { model = m
@@ -289,7 +292,9 @@ data SomeComponent parent
 (+>)
   :: forall child model action a . Eq child
   => MisoString
+  -- ^ 'VComp' 'key_'
   -> Component model child action
+  -- ^ 'Component'
   -> View model a
 infixr 0 +>
 key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
@@ -309,6 +314,7 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 mount_
   :: Eq child
   => Component model child a
+  -- ^ 'Component' to mount
   -> View model action
 mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
@@ -596,7 +602,7 @@ data VTreeType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where
-  toJSVal = \case 
+  toJSVal = \case
     VCompType -> toJSVal (0 :: Int)
     VNodeType -> toJSVal (1 :: Int)
     VTextType -> toJSVal (2 :: Int)
