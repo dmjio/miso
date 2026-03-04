@@ -40,6 +40,7 @@
 
 ## Table of Contents
 - [History](#history-)
+- [Docs](#docs-)
 - [Quick Start](#quick-start-)
 - [Getting Started](#getting-started)
 - [Setup](#setup-%EF%B8%8F)
