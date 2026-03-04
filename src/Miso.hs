@@ -31,7 +31,7 @@
 -- * __Event delegation__: All event listeners are attached to a top-level element
 --   (typically @\<body\>@). When raised, events are routed through the virtual DOM
 --   to Haskell event handlers which cause application state changes. Internally @miso@
---   virtualizes both the 'capture' and 'bubble' phases of the browser when it performs event routing.
+--   virtualizes both the @capture@ and @bubble@ phases of the browser when it performs event routing.
 --
 -- * __Prerendering__: Prerendering is a process where the server will send HTML
 --   to the client before the JavaScript (or Web Assembly) application bootstraps.
@@ -302,14 +302,14 @@
 --
 -- = Events
 --
--- * Event Delegation (bubble / capture)
+-- * Event Delegation
 --
--- All events are delegated through @\<body\>@. Miso supports both `capture` and `bubble` phases of browser events.
+-- All events are delegated through @\<body\>@. Miso supports both @capture@ and @bubble@ phases of browser events.
 -- Users can handle both phases in their applications.
 --
 -- * Using events
 --
--- Miso exposes the 'defaultEvents' map, these events are listened for on @\<body\>@ and get routed through the 'View'. There
+-- Miso exposes the 'defaultEvents' 'Data.Map', these events are listened for on @\<body\>@ and get routed through the 'View'. There
 -- are other default 'Event' maps that are exposed as conveniences. All events required by all 'Component' must
 -- union'd together for use when running your application.
 --
@@ -325,7 +325,7 @@
 --
 -- * Defining events
 --
--- Users can define their own events using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the capture phase. See the 'Miso.Html.Event' for
+-- Users can define their own events using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the capture phase. See the the module "Miso.Html.Event" for
 -- many predefined events.
 --
 -- @
@@ -343,13 +343,10 @@
 -- data Decoder a
 --   = Decoder
 --   { decoder :: Value -> Parser a
---     -- ^ FromJSON-based Event decoder
 --   , decodeAt :: DecodeTarget
---     -- ^ Location in DOM of where to decode
 --   }
--- @
--- -----------------------------------------------------------------------------
--- -- | Retrieves "value" field in t'Decoder'
+--
+-- -- | Example of a custom decoder for the @value@ property of an event target.
 -- valueDecoder :: Decoder MisoString
 -- valueDecoder = Decoder {..}
 --   where
@@ -425,7 +422,7 @@
 --
 -- 'createSub' is a helper function for creating a 'Subscription' using the 'Control.Exception.bracket' pattern.
 -- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
--- please see the 'Miso.Subscription' submodules. 'createSub' is only meant to be used in scenarios where
+-- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
 -- custom event listeners are used.
 --
 -- @
