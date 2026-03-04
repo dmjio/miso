@@ -59,23 +59,23 @@
 --
 -- * __State management__: 'Component' @model@ state can be manipulated using "Miso.Lens" or "Miso.State" in response to application events.
 --
--- = The Model-Update-View pattern
+-- = The Model-View-Update pattern
 --
 -- The core type of miso is 'Component'. The 'Component' API adheres to the [Elm](https://elm-lang.org)
--- MUV (model-update-view) interface. This is similar to a left-fold, where the 'Component' @model@
+-- MVU (model-view-update) interface. This is similar to a left-fold, where the 'Component' @model@
 -- will be updated via a list of @action@ given a specific 'Miso.Types.update' function, and rendered via 'Miso.Types.view'.
 --
 -- * __model__: This can be any user-defined type in Haskell. An 'Eq' constraint
 --   is required. We recommend using the default derived 'Eq' instance.
 --
+-- * __view__: @'view' :: model -> 'View' model action@
+--   This is the templating function that is used to construct a new virtual DOM
+--   (or HTML if rendering on the server).
+--
 -- * __update__: @'update' :: action -> 'Effect' parent model action@
 --   The 'update' function handles how the 'model' evolves over time in response
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introducing 'IO' into the system.
---
--- * __view__: @'view' :: model -> 'View' model action@
---   This is the templating function that is used to construct a new virtual DOM
---   (or HTML if rendering on the server).
 --
 -- = Your first t'Component'
 --
@@ -92,9 +92,9 @@
 -- import qualified Miso.Html.Event as HE
 -- import qualified Miso.Html.Property as HP
 -- -----------------------------------------------------------------------------
---                        * => The type of the 'parent' Component 'model'
+--                        * => The type of the parent Component 'model'
 --                        |     * => The type of the current Component's 'model'
---                        |     |    * => The type of the 'action' that updates the 'model'
+--                        |     |    * => The type of the action that updates the 'model'
 --                        |     |    |
 -- counter :: Component parent Int Action
 -- counter = component m u v
