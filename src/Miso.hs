@@ -29,7 +29,7 @@
 --
 -- miso supports common areas that arise naturally in web development:
 --
--- * __DOM manipulation__: @miso@ uses a virtual DOM with diffing algorithm that is
+-- * __DOM manipulation__: @miso@ uses a [Virtual DOM](https://en.wikipedia.org/wiki/Virtual_DOM) with diffing algorithm that is
 --   responsible for all DOM modification and 'Component' lifecycle hooks.
 --
 -- * __Event delegation__: All event listeners are attached to a top-level element
