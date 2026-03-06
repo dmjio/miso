@@ -40,6 +40,7 @@ import {
     EventContext,
     DrawingContext,
     HydrationContext,
+    ComponentContext,
     NodeId,
     VTreeType,
     ComponentId,
@@ -81,6 +82,7 @@ export {
   EventContext,
   DrawingContext,
   HydrationContext,
+  ComponentContext,
   patchDrawingContext,
 
   /* Functions */
