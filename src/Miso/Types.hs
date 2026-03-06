@@ -41,6 +41,7 @@ module Miso.Types
   , LogLevel      (..)
   , VTree         (..)
   , VTreeType     (..)
+  , Tag
   , CacheBust
   , MountPoint
   , DOMRef
@@ -267,9 +268,16 @@ data LogLevel
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Tag type, (e.g. 'div_', 'p_')
+--
+-- Meant to indicate the type of element being created.
+-- Used as the first argument to @document.createElement@ for the web backend.
+--
+type Tag = MisoString
+-----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View model action
-  = VNode Namespace MisoString [Attribute action] [View model action]
+  = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
   | VComp [Attribute action] (SomeComponent model)
   deriving Functor
