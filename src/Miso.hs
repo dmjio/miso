@@ -25,6 +25,7 @@
 -- * purity
 -- * simplicity
 -- * extensibility
+-- * composability
 --
 -- miso supports common areas that arise naturally in web development:
 --
@@ -96,18 +97,18 @@
 --                        |     * - The type of the current Component's 'model'
 --                        |     |    * - The type of the action that updates the 'model'
 --                        |     |    |
--- counter :: Component parent Int Action
--- counter = component m u v
+-- counter :: 'Component' parent Int Action
+-- counter = 'component' m u v
 --   where
 --     m :: Int
 --     m = 0
 --
---     u :: Action -> Effect parent Int Action
+--     u :: Action -> 'Effect' parent Int Action
 --     u = \\case
 --       Add -> this += 1
 --       Subtract -> this -= 1
 --
---     v :: Int -> View Int Action
+--     v :: Int -> 'View' Int Action
 --     v x = H.div_
 --       [ H.button_ [ HE.onClick Add, HP.id_ "add" ] [ "+" ]
 --       , text (ms x)
@@ -115,7 +116,7 @@
 --       ]
 -- -----------------------------------------------------------------------------
 -- main :: IO ()
--- main = startApp defaultEvents counter
+-- main = 'startApp' 'defaultEvents' counter
 -- -----------------------------------------------------------------------------
 -- data Action
 --   = Add
@@ -130,7 +131,7 @@
 --
 -- @
 -- main :: IO ()
--- main = startApp defaultEvents counter
+-- main = 'startApp' 'defaultEvents' counter
 -- @
 --
 -- The 'startApp' function is what we recommend using first. It sets up event listeners and performs the initial page draw. 
@@ -147,16 +148,16 @@
 -- data Action = Init
 --
 -- main :: IO ()
--- main = startApp defaultEvents counter { mount = Just Init }
+-- main = 'startApp' 'defaultEvents' counter { mount = Just Init }
 --
 -- update :: 'App' model Action
 -- update = \\case
---   Init -> io_ (consoleLog "hello world!")
+--   Init -> 'io_' ('consoleLog' "hello world!")
 -- @
 --
 -- = 'Component' composition
 --
--- As of @1.9@, @miso@ 'Component' can contain other 'Component'. This is
+-- @miso@ 'Component' can contain other 'Component'. This is
 -- accomplished through the 'Component' mounting combinator ('+>'). This combinator
 -- is responsible for encoding a typed 'Component' hierarchy, allowing 'Component'
 -- type-safe read-only access to their @parent@ model state.
@@ -168,10 +169,10 @@
 -- @
 -- (+>)
 --   :: forall child model action a . Eq child
---   => MisoString
---   -> Component model child action
---   -> View model a
--- key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
+--   => 'MisoString'
+--   -> 'Component' model child action
+--   -> 'View' model a
+-- key +> vcomp = VComp [ Property "key" (toJSON key) ] ('SomeComponent' vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -254,6 +255,8 @@
 --
 -- = 'Key'
 --
+-- A 'Key' is a unique identifier use to optimize diffing.
+--
 -- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and react).
 --
 -- * Keys are used to optimize child node list diffing.
@@ -295,7 +298,7 @@
 -- @
 -- data SomeComponent parent
 --   = forall model action . Eq model
---   => SomeComponent (Component parent model action)
+--   => SomeComponent ('Component' parent model action)
 -- @
 --
 -- The smart constructors:
@@ -307,7 +310,7 @@
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
--- = Events
+-- = 'Events'
 --
 -- * Event Delegation
 --
@@ -328,7 +331,7 @@
 --   ]
 -- @
 --
--- * Defining events
+-- * Defining event handlers
 --
 -- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the the module "Miso.Html.Event" for many predefined events.
 --
@@ -337,7 +340,7 @@
 -- onChangeWith = on "change" valueDecoder
 -- @
 --
--- * 'Decoder'
+-- * Decoding events
 --
 -- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a 'Decoder'. Many common decoders are available for use in "Miso.Event.Decoder".
 --
@@ -523,7 +526,7 @@
 --
 -- miso exposes its own internal router. See "Miso.Router" for more information. The router is inspired by both the [servant](https://hackage.haskell.org/package/servant) and the [web-routes](https://hackage.haskell.org/package/web-routes) package. The router has its own 'Sub' called 'Miso.Router.routerSub' meant for easy integration with the History API.
 --
--- = MisoString
+-- = 'MisoString'
 --
 -- miso includes its own string type named t'MisoString'. This is the preferred string type to use
 -- in order to maximize application performance. Since strings are ubiquitous in applications we
