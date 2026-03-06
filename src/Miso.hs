@@ -270,12 +270,12 @@
 -- See the 'key_' property for usage (and smart constructors like 'textKey_' and ('+>') as well).
 --
 -- @
--- ul_
+-- 'ul_'
 --   []
---   [ li_ [ key_ "key-1" ] [ "a" ]
---   , li_ [ key_ "key-2" ] [ "b" ]
---   , "key-3" +> counter
---   , textKey "key-4" "text here"
+--   [ 'li_' [ 'key_' "key-1" ] [ "a" ]
+--   , 'li_' [ 'key_' "key-2" ] [ "b" ]
+--   , "key-3" '+>' counter
+--   , 'textKey' "key-4" "text here"
 --   ]
 -- @
 --
@@ -288,7 +288,7 @@
 --
 -- @
 -- data 'View' model action
---   = 'VNode' 'Namespace' 'MisoString' ['Attribute' action] ['View' model action]
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
 --   | 'VComp' ['Attribute' action] ('SomeComponent' model)
 -- @
@@ -403,7 +403,7 @@
 --
 -- = 'Component' communication
 --
--- 'Component' are able to communicate to each asynchronously via a message-passing system.
+-- 'Component' are able to communicate asynchronously via a message-passing system.
 -- The miso runtime exposes a few primitives to allow t'Component' communication.
 --
 -- * 'broadcast'
@@ -448,8 +448,8 @@
 -- When a 'Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
 -- @
--- onLineSub :: (Bool -> action) -> 'Sub' action
--- onLineSub f sink = createSub acquire release sink
+-- 'onLineSub' :: (Bool -> action) -> 'Sub' action
+-- 'onLineSub' f sink = 'createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
 --       FFI.windowRemoveEventListener "online" cb1
@@ -467,12 +467,12 @@
 --
 -- @
 --   update = \\case
---     StartTimer -> startSub ("timer" :: MisoString) timerSub
---     StopTimer -> stopSub "timer"
---     Log -> io_ (consoleLog "log")
+--     StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
+--     StopTimer -> 'stopSub' "timer"
+--     Log -> 'io_' ('consoleLog' "log")
 --       where
---         timerSub :: Sub Action
---         timerSub sink = forever $ (threadDelay 100000) >> sink Log
+--         timerSub :: 'Sub' Action
+--         timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
 --
 --   data Action = Log
 -- @
@@ -486,11 +486,11 @@
 --
 -- = (2D/3D) Canvas support
 --
---  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
+--  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
 --
 -- = 'State' management ('Lens')
 --
---  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@ that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
+--  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@) that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
 --
 -- = HTML
 --
@@ -520,7 +520,7 @@
 --
 -- import Miso.FFI.QQ ('js')
 --
--- update :: Action -> Effect parent model Action
+-- update :: Action -> 'Effect' parent model Action
 -- update = \\case
 --   Log -> io_ [js| console.log(${msg}) |]
 --
