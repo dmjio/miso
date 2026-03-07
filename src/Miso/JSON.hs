@@ -314,7 +314,7 @@ instance (TypeError ('Text "Sum types unsupported"), GFromJSON a, GFromJSON b) =
 instance GFromJSON U1 where
   gParseJSON _ _ = pure U1
 ----------------------------------------------------------------------------
-instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
+instance {-# OVERLAPPABLE #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
   gParseJSON opts = \case
     Object o ->
       M1 . K1 <$> o .: ms field
@@ -322,6 +322,15 @@ instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
       M1 . K1 <$> parseJSON v
     where
       field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
+----------------------------------------------------------------------------
+instance {-# OVERLAPPING #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (Maybe a))) where
+  gParseJSON opts = \case
+    Object o ->
+      M1 . K1 <$> o .:? ms field
+    v ->
+      M1 . K1 <$> parseJSON v
+    where
+      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
