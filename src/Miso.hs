@@ -234,6 +234,7 @@
 -- {-# LANGUAGE MultilineStrings -#}
 --
 -- import Miso
+-- import Miso.FFI.QQ (js)
 --
 -- data Action = Highlight DOMRef
 --
@@ -436,10 +437,10 @@
 --
 -- @
 -- main :: IO ()
--- main = startApp defaultEvents app { subs = [ timerSub ] }
+-- main = 'startApp' 'defaultEvents' app { 'subs' = [ timerSub ] }
 --
--- timerSub :: Sub Action
--- timerSub sink = forever $ (threadDelay 100000) >> sink Log
+-- timerSub :: 'Sub' Action
+-- timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
 --
 -- data Action = Log
 -- @
@@ -522,9 +523,9 @@
 --
 -- update :: Action -> 'Effect' parent model Action
 -- update = \\case
---   Log -> io_ [js| console.log(${msg}) |]
+--   Log msg -> io_ [js| console.log(${msg}) |]
 --
--- data Action = Log
+-- data Action = Log MisoString
 -- @
 --
 -- = Routing
