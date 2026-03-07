@@ -106,18 +106,6 @@ data Person = Person { name :: MisoString, age :: Int }
 getAge :: Person -> IO Int
 getAge = inline "return age;"
 ----------------------------------------------------------------------------
-#ifdef PRODUCTION
-#define MISO_JS_PATH "../js/miso.prod.js"
-#else
-#define MISO_JS_PATH "../js/miso.js"
-#endif
-withJS :: IO a -> IO ()
-withJS action = void $ do
-#ifdef WASM
-  $(evalFile MISO_JS_PATH)
-#endif
-  action
------------------------------------------------------------------------------
 #ifndef GHCJS_OLD
 factorial :: Int -> IO Int
 factorial n = [js|

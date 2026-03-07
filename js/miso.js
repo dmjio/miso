@@ -915,6 +915,10 @@ function check(result, vtree, context, drawingContext) {
 function walk(logLevel, vtree, node, context, drawingContext) {
   switch (vtree.type) {
     case 0 /* VComp */:
+      let mounted = vtree.mount(node.parentNode);
+      vtree.componentId = mounted.componentId;
+      vtree.child = mounted.componentTree;
+      mounted.componentTree.parent = vtree;
       if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
         return false;
       }
@@ -996,13 +1000,13 @@ var hydrationContext = {
   }
 };
 var componentContext = {
-  mountComponent: function(events, componentId, model) {
+  mountComponent: function(componentId, model) {
     return;
   },
   unmountComponent: function(componentId) {
     return;
   },
-  modelHydration: function(model) {
+  modelHydration: function(componentId, model) {
     return;
   }
 };
@@ -1139,13 +1143,18 @@ globalThis["miso"] = {
   setDrawingContext: function(name) {
     const drawing = globalThis[name]["drawingContext"];
     const events = globalThis[name]["eventContext"];
+    const components = globalThis[name]["componentContext"];
     if (!drawing) {
       console.error('Custom rendering engine ("drawingContext") is not defined at globalThis[name].drawingContext', name);
     }
     if (!events) {
       console.error('Custom event delegation ("eventContext") is not defined at globalThis[name].eventContext', name);
     }
+    if (!components) {
+      console.error('Custom component context ("componentContext") is not defined at globalThis[name].componentContext', name);
+    }
     globalThis["miso"]["drawingContext"] = drawing;
     globalThis["miso"]["eventContext"] = events;
+    globalThis["miso"]["componentContext"] = components;
   }
 };

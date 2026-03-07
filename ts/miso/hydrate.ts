@@ -1,5 +1,5 @@
 import { callCreated } from './dom';
-import { DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
+import { Mount, DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
 function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>> {
@@ -159,6 +159,10 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
   // We handle this in collapseSiblingTextNodes
   switch (vtree.type) {
       case VTreeType.VComp:
+       let mounted: Mount<DOMRef> = vtree.mount (node.parentNode as DOMRef);
+       vtree.componentId = mounted.componentId;
+       vtree.child = mounted.componentTree;
+       mounted.componentTree.parent = vtree;
        if (!walk(logLevel, vtree.child, node, context, drawingContext)) {
           return false;
        }

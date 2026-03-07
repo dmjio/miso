@@ -1,7 +1,7 @@
 /* imports */
 import { hydrate, integrityCheck } from '../miso/hydrate';
 import { vnode, vtext, vcomp } from '../miso/smart';
-import { VText, VNode, DOMRef, VComp } from '../miso/types';
+import { Mount, VText, VNode, DOMRef, VComp } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { hydrationContext, drawingContext } from '../miso/context/dom';
 
@@ -304,15 +304,15 @@ describe ("Hydration tests", () => {
     expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
-  test('Should not call mountComponent when hydrating VComp', () => {
+  test('Should call mountComponent when hydrating VComp', () => {
     const txt = document.createTextNode('component content');
     const div = document.createElement('div');
     div.appendChild(txt);
     document.body.appendChild(div);
 
     let mountCalled = false;
-    let componentId: any = null;
-    let componentTree: any = null;
+    let componentId: any = 1;
+    let componentTree: any = vnode({});
 
     const comp = vcomp<DOMRef>({
       key: 'test-comp',
@@ -320,7 +320,7 @@ describe ("Hydration tests", () => {
       child: vnode({ children: [vtext<DOMRef>('component content')] }),
       mount: (_parent: any) => {
         mountCalled = true;
-        return { componentId, componentTree } as any;
+        return { componentId, componentTree } as Mount<DOMRef>;
       },
       unmount: () => {},
     }) as VComp<DOMRef>;
@@ -328,7 +328,7 @@ describe ("Hydration tests", () => {
     const result = hydrate(false, document.body, comp, hydrationContext, drawingContext);
 
     expect(result).toBe(true);
-    expect(mountCalled).toBe(false);
+    expect(mountCalled).toBe(true);
     expect(comp.componentId).toBe(1);
     expect(comp.child).toBeTruthy();
   });

@@ -1,4 +1,6 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP #-}
+-----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Subscription.Util
 -- Copyright   :  (C) 2016-2025 David M. Johnson
@@ -12,8 +14,9 @@ module Miso.Subscription.Util
      createSub
    ) where
 ----------------------------------------------------------------------------
+import           Control.Concurrent (threadDelay)
+import           Control.Monad (forever)
 import           Control.Exception (bracket)
-import           Control.Concurrent.MVar (newEmptyMVar, takeMVar)
 -----------------------------------------------------------------------------
 import           Miso.Effect
 -----------------------------------------------------------------------------
@@ -24,7 +27,9 @@ createSub
   -> (a -> IO b)
   -- ^ Release resource
   -> Sub action
-createSub acquire release = \_ -> do
-  mvar <- newEmptyMVar
-  bracket acquire release (\_ -> takeMVar mvar)
+createSub acquire release = \_ ->
+  bracket acquire release (\_ -> forever (threadDelay (secs 10000)))
+    where
+      secs :: Int -> Int
+      secs = (*1000000)
 ----------------------------------------------------------------------------

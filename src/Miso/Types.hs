@@ -35,12 +35,14 @@ module Miso.Types
   , View          (..)
   , Key           (..)
   , Attribute     (..)
-  , NS            (..)
+  , Namespace     (..)
   , CSS           (..)
   , JS            (..)
   , LogLevel      (..)
   , VTree         (..)
   , VTreeType     (..)
+  , Tag
+  , CacheBust
   , MountPoint
   , DOMRef
   , ROOT
@@ -164,11 +166,11 @@ type MountPoint = MisoString
 -----------------------------------------------------------------------------
 -- | Allow users to express CSS and append it to \<head\> before the first draw
 --
--- > Href "http://domain.com/style.css"
+-- > Href "http://domain.com/style.css" (True :: CacheBust)
 -- > Style "body { background-color: red; }"
 --
 data CSS
-  = Href MisoString
+  = Href MisoString CacheBust
   -- ^ URL linking to hosted CSS
   | Style MisoString
   -- ^ Raw CSS content in a 'Miso.Html.Element.style_' tag
@@ -176,18 +178,24 @@ data CSS
   -- ^ CSS built with 'Miso.CSS'
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Parameter used to indicate cache busting logic should be used.
+-- If 'True' this will append a timestamp to the query. This will force cache
+-- invalidation on the browser, causing a fetch of the resources.
+--
+type CacheBust = Bool
+-----------------------------------------------------------------------------
 -- | Allow users to express JS and append it to <head> before the first draw
 --
 -- This is meant to be useful in development only.
 --
 -- @
---   Src \"http:\/\/example.com\/script.js\"
+--   Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
 --   Script "alert(\"hi\");"
 --   ImportMap [ "key" =: "value" ]
 -- @
 --
 data JS
-  = Src MisoString
+  = Src MisoString CacheBust
   -- ^ URL linking to hosted JS
   | Script MisoString
   -- ^ Raw JS content that you would enter in a \<script\> tag
@@ -206,8 +214,11 @@ getMountPoint = fromMaybe "body"
 -- | Smart constructor for t'Miso.Types.Component' with sane defaults.
 component
   :: model
+  -- ^ model
   -> (action -> Effect parent model action)
+  -- ^ update
   -> (model -> View model action)
+  -- ^ view
   -> Component parent model action
 component m u v = Component
   { model = m
@@ -257,9 +268,16 @@ data LogLevel
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
+-- | Tag type, (e.g. 'div_', 'p_')
+--
+-- Meant to indicate the type of element being created.
+-- Used as the first argument to @document.createElement@ for the web backend.
+--
+type Tag = MisoString
+-----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
 data View model action
-  = VNode NS MisoString [Attribute action] [View model action]
+  = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
   | VComp [Attribute action] (SomeComponent model)
   deriving Functor
@@ -282,7 +300,9 @@ data SomeComponent parent
 (+>)
   :: forall child model action a . Eq child
   => MisoString
+  -- ^ 'VComp' 'key_'
   -> Component model child action
+  -- ^ 'Component'
   -> View model a
 infixr 0 +>
 key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
@@ -302,11 +322,12 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 mount_
   :: Eq child
   => Component model child a
+  -- ^ 'Component' to mount
   -> View model action
 mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
-data NS
+data Namespace
   = HTML
   -- ^ HTML Namespace
   | SVG
@@ -315,7 +336,7 @@ data NS
   -- ^ MATHML Namespace
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-instance ToJSVal NS where
+instance ToJSVal Namespace where
   toJSVal = \case
     SVG -> toJSVal ("svg" :: MisoString)
     HTML -> toJSVal ("html" :: MisoString)
@@ -418,7 +439,7 @@ newtype VTree = VTree { getTree :: Object }
 -- in the namespace @ns@. All @attrs@ are called when
 -- the node is created and its children are initialized to @children@.
 node
-  :: NS
+  :: Namespace
   -> MisoString
   -> [Attribute action]
   -> [View model action]
@@ -589,7 +610,7 @@ data VTreeType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where
-  toJSVal = \case 
+  toJSVal = \case
     VCompType -> toJSVal (0 :: Int)
     VNodeType -> toJSVal (1 :: Int)
     VTextType -> toJSVal (2 :: Int)

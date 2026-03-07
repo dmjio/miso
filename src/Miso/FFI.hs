@@ -34,6 +34,10 @@ module Miso.FFI
     -- ** Styles
   , addStyle
   , addStyleSheet
+    -- * JS
+  , addSrc
+  , addScript
+  , addScriptImportMap
     -- ** Callbacks
   , syncCallback
   , syncCallback1
@@ -101,6 +105,10 @@ module Miso.FFI
   , splitmix32
     -- ** Math.random()
   , mathRandom
+    -- ** Model
+  , mountComponent
+  , unmountComponent
+  , modelHydration
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

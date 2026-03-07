@@ -125,9 +125,9 @@ export type HydrationContext<T> = {
 export type PRNG = (() => (number));
 
 export type ComponentContext = {
-  mountComponent : (events: Array<EventCapture>, componentId: ComponentId, model: Object) => void,
-  unmountComponent : (componentId: ComponentId) => void,
+  mountComponent : (componentId: ComponentId, model: Object) => void,
   modelHydration : (componentId: ComponentId, model: Object) => void
+  unmountComponent : (componentId: ComponentId) => void,
 }
 
 export type DrawingContext<T> = {

@@ -11,7 +11,11 @@
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE CPP                  #-}
+#if __GLASGOW_HASKELL__ <= 865
+{-# LANGUAGE UndecidableInstances #-}
+#endif
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.DSL
@@ -88,6 +92,7 @@ import           Control.Monad.Trans.Maybe
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           GHC.Generics
+import           GHC.TypeLits
 import           Data.Kind
 import           Prelude hiding ((!!))
 -----------------------------------------------------------------------------
@@ -116,7 +121,7 @@ instance GToJSVal a => GToJSVal (C1 i a) where
 instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
   gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
 -----------------------------------------------------------------------------
-instance (GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
+instance (TypeError ('Text "Sum types unsupported"), GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
   gToJSVal = \case
     L1 x -> gToJSVal x
     R1 x -> gToJSVal x
@@ -226,7 +231,7 @@ instance GFromJSVal V1 where
 instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
   gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
 -----------------------------------------------------------------------------
-instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
+instance (TypeError ('Text "Sum types unsupported"), GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
   gFromJSVal o = do
     x <- fmap L1 <$> gFromJSVal o
     case x of
