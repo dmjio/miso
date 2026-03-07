@@ -83,11 +83,13 @@ module Miso.Runtime
   , componentId
   , modifyComponent
   , resetComponentState
+  , componentModel
   -- ** Scheduler
   , scheduler
 #ifdef WASM
   , evalFile
 #endif
+  , topLevelComponentId
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
@@ -166,7 +168,14 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) -> action
+      (Hydrate, Just m) -> m
+      (Draw, _) -> do
+        IM.lookup _componentId <$> readIORef components >>= \case
+          Nothing ->
+            pure model
+          Just cs ->
+            -- hot reload scenario, let it flow
+            pure (cs ^. componentModel)
       _ -> pure model
   _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   _componentDOMRef <- getComponentMountPoint
