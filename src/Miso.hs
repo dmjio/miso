@@ -45,10 +45,10 @@
 --   ("Miso.Html.Render") to render HTML on the server and the 'miso' function exists on the client to \"hydrate\"
 --   the virtual DOM with the DOM.
 --
--- * __Components__: A 'Component' is an abstract type that allows
---   users to create reusable pieces of application functionality. A 'Component'
+-- * __Components__: A 'Component' can be considered an instance of a @miso@ application. A 'Component'
 --   contains user-defined state, logic for updating this state, and a function
---   for creating UI templates from this user-defined state.
+--   for creating UI templates from this user-defined state. 'Component' can nest other 'Component' because @miso@
+--   is defined recursively.
 --
 -- * __Custom renderers__: The underlying DOM operations are able to be abstracted. 
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
@@ -241,7 +241,7 @@
 -- update :: Action -> 'Effect' parent model Action
 -- update = \\case
 --   Highlight domRef -> 'io_' $ do
---     ['js'| hljs.highlight({domRef}) |]
+--     ['js'| hljs.highlight(${domRef}) |]
 --
 -- view :: model -> 'View' model Action
 -- view x =
@@ -256,7 +256,7 @@
 --
 -- = 'Key'
 --
--- A 'Key' is a unique identifier use to optimize diffing.
+-- A 'Key' is a unique identifier used to optimize diffing.
 --
 -- Virtual DOM nodes can be \"keyed\" (See 'key_'). Keys have multiple meanings in @miso@ (and react).
 --
@@ -404,6 +404,8 @@
 --
 -- = 'Component' communication
 --
+-- == Asynchronous communication
+--
 -- 'Component' are able to communicate asynchronously via a message-passing system.
 -- The miso runtime exposes a few primitives to allow t'Component' communication.
 --
@@ -420,13 +422,15 @@
 --
 -- miso has support for the publisher / subscriber concurrency pattern. See the "Miso.PubSub" module for more information.
 --
+-- == Synchronous communication
+--
 -- * "Miso.Binding"
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
 -- 
 -- * 'parent'
 --
--- While not direct communcation, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+-- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
 --
 -- = Subscriptions
 --
