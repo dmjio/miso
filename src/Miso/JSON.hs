@@ -212,7 +212,10 @@ instance ToJSON Char where
 instance ToJSON Bool where
   toJSON = Bool
 ----------------------------------------------------------------------------
-instance ToJSON a => ToJSON [a] where
+instance {-# OVERLAPPING #-} ToJSON String where
+  toJSON = toJSON . MS.pack
+----------------------------------------------------------------------------
+instance {-# OVERLAPPABLE #-} ToJSON a => ToJSON [a] where
   toJSON = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
 instance ToJSON v => ToJSON (M.Map MisoString v) where
@@ -341,7 +344,10 @@ instance FromJSON Bool where
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
 ----------------------------------------------------------------------------
-instance FromJSON a => FromJSON [a] where
+instance {-# OVERLAPPING #-} FromJSON String where
+  parseJSON = withText "String" (pure . MS.unpack)
+----------------------------------------------------------------------------
+instance {-# OVERLAPPABLE #-} FromJSON a => FromJSON [a] where
   parseJSON = withArray "[a]" (mapM parseJSON)
 ----------------------------------------------------------------------------
 instance FromJSON Double where
