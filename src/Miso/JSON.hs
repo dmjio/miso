@@ -106,7 +106,6 @@ import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
 import           GHC.Generics
-import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, singleton, pack)
@@ -116,6 +115,7 @@ import qualified Miso.JSON.Parser as Parser
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
+import           System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 infixr 8 .=
@@ -605,6 +605,15 @@ jsonParse :: MisoString -> IO JSVal
 jsonParse _ = error "jsonParse: not implemented"
 #endif
 -----------------------------------------------------------------------------
+#ifdef VANILLA
+eitherDecode :: FromJSON a => MisoString -> Either MisoString a
+eitherDecode string =
+  case Parser.decodePure string of
+    Left s ->
+      Left (pack s)
+    Right v ->
+      parseEither parseJSON v
+#else
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
 eitherDecode string = unsafePerformIO $ do
   (jsonParse string >>= fromJSVal_Value) >>= \case
@@ -614,6 +623,7 @@ eitherDecode string = unsafePerformIO $ do
       pure (case fromJSON result of
         Success x -> Right x
         Error err -> Left err)
+#endif
 ----------------------------------------------------------------------------
 fromJSON :: FromJSON a => Value -> Result a
 fromJSON value =
