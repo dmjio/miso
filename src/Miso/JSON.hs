@@ -101,7 +101,7 @@ import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
-import           GHC.Natural (naturalToInteger, naturalFromInteger)
+import           GHC.Natural (naturalToInteger, naturalFromInteger )
 import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
