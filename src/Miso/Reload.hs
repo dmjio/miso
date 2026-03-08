@@ -29,15 +29,14 @@ import           GHC.Conc (listThreads, killThread)
 #endif
 -----------------------------------------------------------------------------
 #ifdef WASM
-import           Miso.Runtime.Internal (evalFile)
-#else
-import           Miso.Runtime (resetComponentState)
+import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
 import           Miso.Types (Component(..), Events)
 import           Miso.String (MisoString)
-import           Miso.Runtime (initialize, rootComponentId, Hydrate(..))
+import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, resetComponentState, Hydrate(..))
+import           Miso.Runtime.Internal (components)
 -----------------------------------------------------------------------------
 #ifdef WASM
 import           Miso.Lens
@@ -98,7 +97,7 @@ reload events vcomp = do
           killThread threadId
         _ -> pure ()
 #endif
-    void (initialize events rootComponentId Draw True vcomp FFI.getBody)
+    initComponent events Draw vcomp
 -----------------------------------------------------------------------------
 #ifdef WASM
 -- | Live reloading. Attempts to persist the working t'Component' state.
@@ -153,7 +152,7 @@ live events vcomp = do
       -- This means it is initial load, just store the pointer.
       $(evalFile MISO_JS_PATH)
       x_store =<< newStablePtr components
-      void (initComponent events Draw initialVComp)
+      void (initComponent events Draw vcomp)
 -----------------------------------------------------------------------------
 #endif
 -----------------------------------------------------------------------------

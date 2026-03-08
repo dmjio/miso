@@ -117,10 +117,6 @@ import           Data.Sequence (Seq)
 import           GHC.Conc (labelThread)
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
-#ifdef WASM
-import qualified Language.Haskell.TH as TH
-import           Miso.Runtime.Internal (evalTH)
-#endif
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -135,7 +131,7 @@ import           Miso.Delegate (delegator)
 import qualified Miso.Diff as Diff
 import           Miso.DSL
 #ifdef WASM
-import           Miso.DSL.TH
+import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.Effect
   ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
@@ -228,6 +224,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , ..
         }
 
+  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
   initialDraw initializedModel events hydrate isRoot comp vcomp
@@ -1811,8 +1808,7 @@ initComponent
   -> IO ()
 initComponent events hydrate vcomp@Component {..} = withJS $ do
   root <- Diff.mountElement (getMountPoint mountPoint)
-  ComponentState {..} <- initialize events rootComponentId hydrate True vcomp (pure root)
-  delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll])
+  void $ initialize events rootComponentId hydrate True vcomp (pure root)
 #if __GLASGOW_HASKELL__ > 865
   flip labelThread "scheduler" =<< forkIO scheduler
 #else

@@ -5,7 +5,7 @@
 -----------------------------------------------------------------------------
 module Miso.DSL.TH (evalTH) where
 -----------------------------------------------------------------------------
-import Control.Exception (evaluate)
+import Control.Exception
 import Language.Haskell.TH qualified as TH
 import Language.Haskell.TH.Syntax qualified as TH
 -----------------------------------------------------------------------------

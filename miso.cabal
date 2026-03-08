@@ -192,6 +192,7 @@ library
       template-haskell >= 2.21 && < 2.25
     exposed-modules:
       Miso.DSL.TH
+      Miso.DSL.TH.File
     other-modules:
       Data.JSString
   else
