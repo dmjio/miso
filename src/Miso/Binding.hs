@@ -26,7 +26,7 @@
 -- one t'Component' is marked as dirty, another t'Component' will also potentially will be marked as
 -- dirty if they are connected along an edge ('Binding').
 --
--- See the [miso-reactive](https:://github.com/haskell-miso/miso-reactive) project for more information.
+-- See the [miso-reactive](https://github.com/haskell-miso/miso-reactive) project for more information.
 --
 ----------------------------------------------------------------------------
 module Miso.Binding
