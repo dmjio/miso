@@ -83,11 +83,15 @@ module Miso.Runtime
   , componentId
   , modifyComponent
   , resetComponentState
+  , componentModel
   -- ** Scheduler
   , scheduler
 #ifdef WASM
   , evalFile
 #endif
+  , topLevelComponentId
+  , initComponent
+  , withJS
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
@@ -113,9 +117,6 @@ import           Data.Sequence (Seq)
 import           GHC.Conc (labelThread)
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
-#ifdef WASM
-import qualified Language.Haskell.TH as TH
-#endif
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -130,7 +131,7 @@ import           Miso.Delegate (delegator)
 import qualified Miso.Diff as Diff
 import           Miso.DSL
 #ifdef WASM
-import           Miso.DSL.TH
+import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.Effect
   ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
@@ -166,7 +167,14 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) -> action
+      (Hydrate, Just m) -> m
+      (Draw, _) -> do
+        IM.lookup _componentId <$> readIORef components >>= \case
+          Nothing ->
+            pure model
+          Just cs ->
+            -- hot reload scenario, let it flow
+            pure (cs ^. componentModel)
       _ -> pure model
   _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   _componentDOMRef <- getComponentMountPoint
@@ -216,18 +224,12 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , ..
         }
 
+  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
-  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ mount _componentSink
   FFI.mountComponent _componentId =<< toObject jsNull
-  when isRoot $ do
-#if __GLASGOW_HASKELL__ > 865
-    flip labelThread "scheduler" =<< forkIO scheduler
-#else
-    void (forkIO scheduler)
-#endif
   pure vcomp
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
@@ -1798,17 +1800,41 @@ blob = BLOB
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
-#ifdef WASM
------------------------------------------------------------------------------
--- | Like 'eval', but read the JS code to evaluate from a file.
-evalFile
-  :: FilePath
-  -- ^ Path to JS file that will be converted into an FFI declaration.
-  -> TH.Q TH.Exp
-evalFile path = eval_ =<< TH.runIO (readFile path)
-  where
-    eval_ :: String -> TH.Q TH.Exp
-    eval_ chunk = [| $(Miso.DSL.TH.evalTH chunk []) :: IO () |]
------------------------------------------------------------------------------
+initComponent
+  :: (Eq parent, Eq model)
+  => Events
+  -> Hydrate
+  -> Component parent model action
+  -> IO ()
+initComponent events hydrate vcomp@Component {..} = withJS $ do
+  root <- Diff.mountElement (getMountPoint mountPoint)
+  void $ initialize events rootComponentId hydrate True vcomp (pure root)
+#if __GLASGOW_HASKELL__ > 865
+  flip labelThread "scheduler" =<< forkIO scheduler
+#else
+  void (forkIO scheduler)
 #endif
+----------------------------------------------------------------------------
+-- | Load miso's javascript.
+--
+-- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
+-- It's already invoked for you. This is a no-op w/ the JS backend.
+--
+-- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
+-- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
+--
+#ifdef PRODUCTION
+#define MISO_JS_PATH "js/miso.prod.js"
+#else
+#define MISO_JS_PATH "js/miso.js"
+#endif
+withJS
+  :: IO a
+  -- ^ 'IO' action to execute in between 'evalFile'
+  -> IO a
+withJS action = do
+#ifdef WASM
+  $(evalFile MISO_JS_PATH)
+#endif
+  action
 -----------------------------------------------------------------------------

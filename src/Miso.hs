@@ -679,10 +679,7 @@ module Miso
   , module Miso.State
   ) where
 -----------------------------------------------------------------------------
-import           Control.Monad (void)
------------------------------------------------------------------------------
 import           Miso.Binding
-import           Miso.Diff
 import           Miso.DSL
 import           Miso.Effect
 import           Miso.Event
@@ -716,7 +713,7 @@ miso
   -> (URI -> App model action)
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
-miso events f = withJS $ do
+miso events f = do
   vcomp <- f <$> getURI
   initComponent events Hydrate vcomp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
@@ -793,40 +790,3 @@ renderApp events renderer vcomp = do
   FFI.setDrawingContext renderer
   initComponent events Draw vcomp
 ----------------------------------------------------------------------------
--- | Top-level t'Miso.Types.Component' initialization helper for 'renderApp'.
-initComponent
-  :: (Eq parent, Eq model)
-  => Events
-  -> Hydrate
-  -> Component parent model action
-  -> IO ()
-initComponent events hydrate vcomp@Component {..} = withJS $ do
-  root <- mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate isRoot vcomp (pure root)
-----------------------------------------------------------------------------
-isRoot :: Bool
-isRoot = True
-----------------------------------------------------------------------------
--- | Load miso's javascript.
---
--- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
--- It's already invoked for you. This is a no-op w/ the JS backend.
---
--- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
--- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
---
-#ifdef PRODUCTION
-#define MISO_JS_PATH "js/miso.prod.js"
-#else
-#define MISO_JS_PATH "js/miso.js"
-#endif
-withJS
-  :: IO a
-  -- ^ 'IO' action to execute in between 'evalFile'
-  -> IO a
-withJS action = do
-#ifdef WASM
-  $(evalFile MISO_JS_PATH)
-#endif
-  action
------------------------------------------------------------------------------

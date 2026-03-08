@@ -182,6 +182,9 @@ library
         ghcjs-prim
 
   elif arch(wasm32)
+    -- Live reload (meant for WASM or Vanilla)
+    c-sources:
+      cbits/foreign.c
     hs-source-dirs:
       ffi/wasm
     build-depends:
@@ -189,6 +192,7 @@ library
       template-haskell >= 2.21 && < 2.25
     exposed-modules:
       Miso.DSL.TH
+      Miso.DSL.TH.File
     other-modules:
       Data.JSString
   else
