@@ -11,6 +11,7 @@ let
          (hasSuffix ".yaml" baseName) ||
          (hasSuffix ".cabal" baseName) ||
          (hasSuffix ".css" baseName) ||
+         (hasSuffix ".c" baseName) ||
          (hasSuffix ".html" baseName) ||
          (hasSuffix ".png" baseName) ||
          (hasSuffix ".js" baseName) ||
