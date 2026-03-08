@@ -1,6 +1,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -27,22 +28,25 @@ import           GHC.Conc.Sync (threadLabel)
 import           GHC.Conc (listThreads, killThread)
 #endif
 -----------------------------------------------------------------------------
-import           Miso.String (MisoString)
+#ifdef WASM
+import           Miso.Runtime.Internal (evalFile)
+#else
 import           Miso.Runtime (resetComponentState)
-import           Miso.DSL (jsg, (!), setField)
+#endif
+import           Miso.DSL ((!), jsg, setField)
+import qualified Miso.FFI.Internal as FFI
+import           Miso.Types (Component(..), Events)
+import           Miso.String (MisoString)
+import           Miso.Runtime (initialize, rootComponentId, Hydrate(..))
 -----------------------------------------------------------------------------
 #ifdef WASM
-import           Miso.Runtime
-import           Miso.Types (Component(..), Events)
-import qualified Miso.FFI.Internal as FFI
 import           Miso.Lens
 -----------------------------------------------------------------------------
 import qualified Data.IntMap.Strict as IM
 import           Data.IORef
-import           Foreign
+import           Foreign hiding (void)
 import           Foreign.C.Types
 -----------------------------------------------------------------------------
--- | Foreign imports using t'StablePtr'
 foreign import ccall unsafe "x_store"
   x_store :: StablePtr a -> IO ()
 -----------------------------------------------------------------------------
@@ -56,6 +60,9 @@ foreign import ccall unsafe "x_clear"
   x_clear :: IO ()
 -----------------------------------------------------------------------------
 #endif
+-----------------------------------------------------------------------------
+#define MISO_JS_PATH "js/miso.js"
+-----------------------------------------------------------------------------
 -- | Clears the <body> and <head> on each reload.
 --
 -- Meant to be used with WASM browser mode.
@@ -74,12 +81,15 @@ foreign import ccall unsafe "x_clear"
 --
 -- @since 1.9.0.0
 reload
-  :: IO ()
-  -- ^ An t'IO' action typically created using 'Miso.miso' or 'Miso.startApp'
+  :: (Eq parent, Eq model)
+  => Events
+  -> Component parent model action
   -> IO ()
-reload action = resetComponentState clearPage >> action
-reload action = do
-    clearPage
+reload events vcomp = do
+#ifdef WASM
+    $(evalFile MISO_JS_PATH)
+#endif
+    resetComponentState clearPage
 #if __GLASGOW_HASKELL__ > 865
     threads <- listThreads
     forM_ threads $ \threadId -> do
@@ -88,51 +98,62 @@ reload action = do
           killThread threadId
         _ -> pure ()
 #endif
-    action
+    void (initialize events rootComponentId Draw True vcomp FFI.getBody)
 -----------------------------------------------------------------------------
 #ifdef WASM
 -- | Live reloading. Attempts to persist the working t'Component' state.
 --
 -- Some caveats, if you're changing fields in 'model' (add / remove / modifying a field), this
 -- will more than likely segfault. If you change the 'view' or 'update' functions
--- it should be fine.
+-- it should be fine. Schema changes to 'model' are currently unsupported.
 --
 -- dmj: I recommend using 'reload' if you're changing the 'model' often and 'live'
 -- if you're adjusting the 'view' / 'update' function logic.
 --
 live
   :: (Eq parent, Eq model)
-  => Component parent model action
-  -> Events
+  => Events
+  -> Component parent model action
   -> IO ()
-live vcomp events = do
+live events vcomp = do
   exists <- x_exists
   if exists == 1
     then do
-      -- dmj: Read the original ComponentState
-      -- Initialize the new ComponentState
-      -- Overwrite new models w/ old models (t'Dynamic' diff them eventually ...)
-
-      -- Drop old stuff
+      threads <- listThreads
+      forM_ threads $ \threadId -> do
+        threadLabel threadId >>= \case
+          Just "scheduler" ->
+            killThread threadId
+          _ -> pure ()
+      -- clearPage (perform this with the context)
       clearPage
 
       -- Deref old state, update new state, set pointer in C heap.
       _oldState <- readIORef =<< deRefStablePtr =<< x_get
+
       let oldModel = (_oldState IM.! topLevelComponentId) ^. componentModel
-      let initialVComp = vcomp { model = oldModel }
+          initialVComp = vcomp { model = oldModel }
+
+      -- Overwrite new components state with old components state
       atomicWriteIORef components _oldState
-      _ <- initialize events rootComponentId Draw False initialVComp FFI.getBody
+
+      -- Perform initial draw, this will fetch the model (only) from old component state
+      -- and overwrite the old state with the new state for everything else.
+      initComponent events Draw initialVComp
+
+      -- initialize events rootComponentId Draw True initialVComp FFI.getBody
 
       -- don't forget to flush (native mobile needs this too)
       FFI.flush
 
-      -- Set static ptr to use new state
-      x_store =<< newStablePtr components <* x_clear
-
-      -- Set all model to dirty and call `renderComponents`.
-    else
-      -- dmj: This means its initial load, just store the pointer.
+      -- Clear and set static ptr to use new state
+      x_clear
       x_store =<< newStablePtr components
+    else do
+      -- This means it is initial load, just store the pointer.
+      $(evalFile MISO_JS_PATH)
+      x_store =<< newStablePtr components
+      void (initComponent events Draw initialVComp)
 -----------------------------------------------------------------------------
 #endif
 -----------------------------------------------------------------------------
