@@ -635,7 +635,7 @@ module Miso
   , evalFile
 #endif
   , withJS
-    -- * Reactivity (Data bindings)
+    -- * Bindings
     -- | Primitives for synchronizing parent and child models.
   , module Miso.Binding
     -- * DSL
