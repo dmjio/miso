@@ -59,7 +59,7 @@ import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Component(..), Events)
+import           Miso.Types (Component(..), Events, App)
 import           Miso.String (MisoString)
 import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, resetComponentState, Hydrate(..))
 import           Miso.Runtime.Internal (components)
@@ -102,9 +102,9 @@ foreign import ccall unsafe "x_clear"
 --
 -- @since 1.9.0.0
 reload
-  :: (Eq parent, Eq model)
+  :: Eq model
   => Events
-  -> Component parent model action
+  -> App model action
   -> IO ()
 reload events vcomp = do
 #ifdef WASM
@@ -140,9 +140,9 @@ reload events vcomp = do
 --
 -- @since 1.9.0.0
 live
-  :: (Eq parent, Eq model)
+  :: Eq model
   => Events
-  -> Component parent model action
+  -> App model action
   -> IO ()
 live events vcomp = do
   exists <- x_exists
