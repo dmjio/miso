@@ -12,10 +12,38 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Support for live-reload of miso applications.
+-- Support for live reloading of miso applications.
+--
+-- = Live Reload
+--
+-- This module exposes two functions meant to be used during interactive
+-- development with GHC WASM browser mode, 'live' and 'reload'.
+--
+-- == Reload
+--
+-- Use 'reload' if you'd like to redraw the page on each file change, resetting
+-- the working application state.
+--
+-- @
+-- main :: IO ()
+-- main = 'reload' 'defaultEvents' app
+-- @
+--
+-- == Live
+--
+-- Use 'live' if you'd like to persist the working application state (all 'Component' 'model')
+-- between GHCi reloads. This only works if you do not alter the 'model' schema (e.g. add, remove, change a field's type).
+--
+-- @
+-- main :: IO ()
+-- main = 'live' 'defaultEvents' app
+-- @
+--
+-- See the [miso-sampler](https://github.com/haskell-miso/miso-sampler) for example usage.
+--
 ----------------------------------------------------------------------------
 module Miso.Reload
-  ( -- ** Live reload
+  ( -- ** Functions
     reload
   , live
   ) where
@@ -57,21 +85,20 @@ foreign import ccall unsafe "x_clear"
 -----------------------------------------------------------------------------
 #define MISO_JS_PATH "js/miso.js"
 -----------------------------------------------------------------------------
--- | Clears the <body> and <head> on each reload.
+-- | Clears the \<body\> and \<head\> on each 'reload'.
 --
 -- Meant to be used with WASM browser mode.
 --
--- This function executes an t'IO' action, clearing both the body and head
--- of the current page in the process.
---
 -- @
 -- main :: IO ()
--- main = reload (startApp defaultEvents app)
+-- main = 'reload' 'defaultEvents' app
 -- @
 --
 -- N.B. This also resets the internal 'component' state. This means all currently
 -- mounted components become unmounted and t'ComponentId' are reset to their
 -- original form factory.
+--
+-- If you'd like to preserve application state between calls to GHCi `:r`, see 'live'.
 --
 -- @since 1.9.0.0
 reload
@@ -94,15 +121,24 @@ reload events vcomp = do
 #endif
     initComponent events Draw vcomp
 -----------------------------------------------------------------------------
--- | Live reloading. Attempts to persist the working t'Component' state.
+-- | Live reloading. Persists all t'Component' `model` between successive GHCi reloads.
 --
--- Some caveats, if you're changing fields in 'model' (add / remove / modifying a field), this
+-- This means application state should persist between GHCi reloads 
+--
+-- Schema changes to 'model' are currently unsupported. If you're 
+-- changing fields in 'model' (adding, removing, changing a field's type), this
 -- will more than likely segfault. If you change the 'view' or 'update' functions
--- it should be fine. Schema changes to 'model' are currently unsupported.
+-- it will be fine. 
 --
--- dmj: I recommend using 'reload' if you're changing the 'model' often and 'live'
+-- Use 'reload' if you're changing the 'model' frequently and 'live'
 -- if you're adjusting the 'view' / 'update' function logic.
 --
+-- @
+-- main :: IO ()
+-- main = 'live' 'defaultEvents' app
+-- @
+--
+-- @since 1.9.0.0
 live
   :: (Eq parent, Eq model)
   => Events
@@ -132,13 +168,11 @@ live events vcomp = do
       -- Overwrite new components state with old components state
       atomicWriteIORef components _oldState
 
-      -- Perform initial draw, this will fetch the model (only) from old component state
+      -- Perform initial draw, this will fetch the model from the old component state
       -- and overwrite the old state with the new state for everything else.
       initComponent events Draw initialVComp
-
-      -- initialize events rootComponentId Draw True initialVComp FFI.getBody
-
-      -- don't forget to flush (native mobile needs this too)
+      
+      -- Don't forget to flush (native mobile needs this too)
       FFI.flush
 
       -- Clear and set static ptr to use new state
