@@ -50,7 +50,7 @@
 --   for creating UI templates from this user-defined state. 'Component' can nest other 'Component' because @miso@
 --   is defined recursively.
 --
--- * __Custom renderers__: The underlying DOM operations are able to be abstracted. 
+-- * __Custom renderers__: The underlying DOM operations are able to be abstracted.
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
 -- (which allows miso to target mobile phone devices).
 --
@@ -134,7 +134,7 @@
 -- main = 'startApp' 'defaultEvents' counter
 -- @
 --
--- The 'startApp' function is what we recommend using first. It sets up event listeners and performs the initial page draw. 
+-- The 'startApp' function is what we recommend using first. It sets up event listeners and performs the initial page draw.
 -- The 'startApp' function assumes that @\<body\>@ is empty, and it will begin drawing the 'Component' 'View' from @\<body\>@.
 --
 -- The 'miso' function (and also the 'prerender' function) assume that @\<body\>@ has already been populated by the results of the 'view' function.
@@ -372,33 +372,48 @@
 --
 -- = 'Effect'
 --
--- The 'Effect' type is a 'Control.Monad.RWS.Lazy.RWS'.
--- This 'Monad' allows the mutation of @model@ over time in response to @action@.
--- This also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler. 
--- 'IO' is never evaluated inside of 'Effect', it is only scheduled. 
+-- The 'Effect' type is used to mutate the @model@ over time in response to @action@.
+-- This allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
+--
+-- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
 -- There is no 'MonadIO' instance for 'Effect'.
+--
+-- The 'Effect' type is defined as a 'RWS'.
 --
 -- @
 -- type 'Effect' parent model action = 'RWS' ('ComponentInfo' parent) ['Schedule' action] model ()
 -- @
 --
--- The core primitives for working inside of 'Effect' are:
+-- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
 --
--- * 'withSink': The core function (from which all other combinators are defined)
+-- == Asynchronous 'IO'
+--
+-- * 'io': Used to introduce asynchronous 'io' into the system, see also the 'io_' variant.
+--
+-- * 'withSink': The core function (from which most other combinators are defined)
 --   that gives users access to the underlying event 'Sink'. This also allows us to
 --   introduce 'IO' into the system. The @miso@ scheduler attaches exception
 --   handlers to all 'IO' actions.
+--
+-- * For maximum flexibility, the 'MonadWriter' instance ('tell') can be used to schedule 'IO' (see the 'withSink' implementation).
+--
+-- == Synchronous 'IO'
+--
+-- * 'sync': Forces the scheduler to evaluate 'IO' synchronously. It is
+--   recommended to use the 'io' function by default, 'sync' *will* block the scheduler.
+--
+-- == 'Sink'
 --
 -- @
 -- type 'Sink' a => a -> 'IO' ()
 -- @
 --
--- The 'Sink' function allows one to write to the global event queue.
+-- The 'Sink' function allows one to write any @action@ to the global event queue.
 --
--- * 'sync': Forces the scheduler to evaluate 'IO' synchronously. It is
---   recommended to use the 'io' function by default, 'sync' *will* block the scheduler.
+-- == Managing 'model' state.
 --
 -- Any 'MonadState' function is allowed for use when manipulating @model@, 'Miso.State.get', 'Miso.State.put', etc. See "Miso.State".
+--
 -- The 'MonadReader' instances allows the retrieval of 'ComponentInfo' within 'Effect'.
 -- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
 --
@@ -427,7 +442,7 @@
 -- * "Miso.Binding"
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
--- 
+--
 -- * 'parent'
 --
 -- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
