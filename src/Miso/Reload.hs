@@ -59,7 +59,7 @@ import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.DSL ((!), jsg, setField)
 import qualified Miso.FFI.Internal as FFI
-import           Miso.Types (Component(..), Events)
+import           Miso.Types (Component(..), Events, App)
 import           Miso.String (MisoString)
 import           Miso.Runtime (componentModel, initComponent, topLevelComponentId, resetComponentState, Hydrate(..))
 import           Miso.Runtime.Internal (components)
