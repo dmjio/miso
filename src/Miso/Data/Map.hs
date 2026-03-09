@@ -4,7 +4,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Data.Map
--- Copyright   :  (C) 2016-2025 David M. Johnson (@dmjio)
+-- Copyright   :  (C) 2016-2026 David M. Johnson (@dmjio)
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
