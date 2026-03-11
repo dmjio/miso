@@ -34,6 +34,7 @@ import Prelude hiding (fail)
 import Control.Monad.Fail (MonadFail (..))
 #endif
 ----------------------------------------------------------------------------
+-- | Core JSON value type.
 data Value
   = Number Double
   | Bool Bool
@@ -46,10 +47,13 @@ data Value
 instance IsString Value where
   fromString = String . fromString
 ----------------------------------------------------------------------------
+-- | A JSON object key/value pair.
 type Pair = (MisoString, Value)
 ----------------------------------------------------------------------------
+-- | A JSON object represented as a map.
 type Object = Map MisoString Value
 ----------------------------------------------------------------------------
+-- | Result type for JSON parsing and conversion.
 data Result a
   = Success a
   | Error MisoString

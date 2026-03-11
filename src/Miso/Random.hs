@@ -39,23 +39,23 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Miso.DSL
 import qualified Miso.FFI.Internal as FFI
 -----------------------------------------------------------------------------
--- | t'StdGen' holds a JS t'Function'.
+-- | @StdGen@ holds a JS function.
 newtype StdGen = StdGen Function
 -----------------------------------------------------------------------------
 -- | An initial 'Seed' value, useful for simulations or reproducing test failures
 type Seed = Int
 -----------------------------------------------------------------------------
--- | Like 'Miso.Random.newStdGen' but takes a t'Seed' as an argument and is pure.
+-- | Like 'Miso.Random.newStdGen' but takes a seed as an argument and is pure.
 mkStdGen :: Seed -> StdGen
 mkStdGen seed = StdGen $ Function $ unsafePerformIO $ FFI.splitmix32 (fromIntegral seed)
 -----------------------------------------------------------------------------
--- | Create a new t'StdGen', defaulting to a random t'Seed'.
+-- | Create a new generator, defaulting to a random seed.
 newStdGen :: IO StdGen
 newStdGen = do
   seed <- FFI.getRandomValue
   StdGen . Function <$> FFI.splitmix32 seed
 -----------------------------------------------------------------------------
--- | Get the next t'StdGen', extracting the value, useful with t'State'.
+-- | Get the next generator, extracting the value, useful with @State@.
 next :: StdGen -> (Double, StdGen)
 next (StdGen func) = unsafePerformIO $ do
   result <- apply func ()

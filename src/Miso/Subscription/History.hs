@@ -33,13 +33,13 @@ import           Miso.Router
 import           Miso.Effect (Sub)
 import           Miso.Subscription.Util
 -----------------------------------------------------------------------------
--- | Pushes a new URI onto the History stack. Also raises a `popstate` event.
+-- | Pushes a new URI onto the History stack. Also raises a @popstate@ event.
 pushURI :: URI -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
 -----------------------------------------------------------------------------
--- | Replaces current URI on stack. Also raises a `popstate` event.
+-- | Replaces current URI on stack. Also raises a @popstate@ event.
 replaceURI :: URI -> IO ()
 replaceURI uri = do
   replaceState (prettyURI uri)

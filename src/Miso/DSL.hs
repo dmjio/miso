@@ -109,6 +109,7 @@ class ToJSVal a where
     gToJSVal (from x) o
     toJSVal o
 -----------------------------------------------------------------------------
+-- | Generic helper for building JS objects from records.
 class GToJSVal (f :: Type -> Type) where
   gToJSVal :: f a -> Object -> IO ()
 -----------------------------------------------------------------------------
@@ -213,6 +214,7 @@ class FromJSVal a where
       Nothing -> error "fromJSValUnchecked: failure"
       Just y -> pure y
 -----------------------------------------------------------------------------
+-- | Generic helper for decoding JS objects into records.
 class GFromJSVal (f :: Type -> Type) where
   gFromJSVal :: Object -> IO (Maybe (f a))
 -----------------------------------------------------------------------------
@@ -428,6 +430,7 @@ infixr 2 #
   args' <- toJSVal =<< toArgs args
   invokeFunction func o' args'
 -----------------------------------------------------------------------------
+-- | Apply a JS function to arguments, returning a decoded result.
 apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
 apply (Function func) args = do
   o <- toJSVal global
@@ -447,7 +450,7 @@ create :: IO Object
 create = Object <$> create_ffi
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object' populated with key-value pairs specified
--- in the list. Meant for use with 'inline' JS functionality.
+-- in the list. Meant for use with @inline@ JS functionality.
 --
 -- @
 -- update = \case

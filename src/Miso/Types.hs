@@ -268,7 +268,7 @@ data LogLevel
   -- ^ Logs on all of the above
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
--- | Tag type, (e.g. 'div_', 'p_')
+-- | Tag type, (e.g. @div_@, @p_@)
 --
 -- Meant to indicate the type of element being created.
 -- Used as the first argument to @document.createElement@ for the web backend.
@@ -300,9 +300,9 @@ data SomeComponent parent
 (+>)
   :: forall child model action a . Eq child
   => MisoString
-  -- ^ 'VComp' 'key_'
+  -- ^ 'VComp' @key_@
   -> Component model child action
-  -- ^ 'Component'
+  -- ^ Component
   -> View model a
 infixr 0 +>
 key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
@@ -322,7 +322,7 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 mount_
   :: Eq child
   => Component model child a
-  -- ^ 'Component' to mount
+  -- ^ Component to mount
   -> View model action
 mount_ vcomp = VComp [] (SomeComponent vcomp)
 -----------------------------------------------------------------------------

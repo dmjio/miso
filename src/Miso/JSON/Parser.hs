@@ -75,6 +75,7 @@ value = oneOf
   , Null <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Pure JSON decoder using the lexer and parser.
 decodePure :: MisoString -> Either String Value
 decodePure = first show
   . either (Left . LexicalError) (parse value . fst)

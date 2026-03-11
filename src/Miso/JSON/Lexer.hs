@@ -34,6 +34,7 @@ import           Miso.Util.Lexer hiding (string', token)
 import Control.Applicative (liftA2)
 #endif
 ----------------------------------------------------------------------------
+-- | Lexical tokens produced by the JSON lexer.
 data Token
   = TokenPunctuator Char
   | TokenNumber Double
@@ -104,6 +105,7 @@ token = oneOf
   , TokenNull <$ null
   ]
 ----------------------------------------------------------------------------
+-- | Tokenize a JSON document.
 tokens :: Lexer [Token]
 tokens = some (many whitespace *> token)
 ----------------------------------------------------------------------------

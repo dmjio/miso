@@ -352,7 +352,7 @@ updateRef jsval1 jsval2 = do
 -- logNameGetAge :: Person -> IO Int
 -- logNameGetAge = inline
 --   """
---   console.log('name', name);
+--   console.log("name", name);
 --   return age;
 --   """
 --

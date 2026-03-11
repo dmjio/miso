@@ -79,9 +79,10 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (MisoString)
 -----------------------------------------------------------------------------
+-- | Wrapper for a JavaScript Date object.
 newtype Date = Date JSVal deriving (FromJSVal, ToJSVal, ToObject, Eq)
 -----------------------------------------------------------------------------
--- | Constructs a new JS [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) in t'IO'.
+-- | Constructs a new JS [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) in @IO@.
 --
 new :: IO Date
 new = Date <$> DSL.new (jsg "Date") ([] :: [JSVal])

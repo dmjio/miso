@@ -95,9 +95,11 @@ isUndefined_ffi = undefined
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = undefined
 -----------------------------------------------------------------------------
+-- | Request a JS animation frame with a callback.
 requestAnimationFrame :: JSVal -> IO Int
 requestAnimationFrame = undefined
 -----------------------------------------------------------------------------
+-- | Cancel a previously requested animation frame.
 cancelAnimationFrame :: Int -> IO ()
 cancelAnimationFrame = undefined
 -----------------------------------------------------------------------------

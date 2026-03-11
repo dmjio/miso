@@ -19,10 +19,10 @@
 --
 -- miso includes an experimental feature that allows fields of different models to be synchronized
 -- against each another in response to model changes. See 'Miso.Binding'. Note this feature is
--- experimental, it is recommended to use asynchronous Component communication (like 'broadcast') by default.
+-- experimental, it is recommended to use asynchronous component communication (like @broadcast@) by default.
 --
 -- This module exposes combinators to construct a 'Binding' which holds two lenses that will alter
--- t'Component' model state along the parent-child relationship using a 'Lens'. Practically, this means when
+-- component model state along the parent-child relationship using a lens. Practically, this means when
 -- one t'Component' is marked as dirty, another t'Component' will also potentially will be marked as
 -- dirty if they are connected along an edge ('Binding').
 --

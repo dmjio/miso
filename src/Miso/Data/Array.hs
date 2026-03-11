@@ -52,20 +52,21 @@ import qualified Miso.DSL as DSL
 import           Miso.FFI (callFunction)
 import           Miso.String (ms, unpack)
 -----------------------------------------------------------------------------
+-- | Mutable JavaScript array wrapper.
 newtype Array value = Array JSVal deriving (FromJSVal, ToJSVal, ToObject)
 -----------------------------------------------------------------------------
--- | Constructs a new JS [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) in t'IO'.
+-- | Constructs a new JS [Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) in @IO@.
 --
 new :: IO (Array value)
 new = Array <$> DSL.new (jsg "Array") ([] :: [JSVal])
 -----------------------------------------------------------------------------
--- | Inserts a value into the t'Array' by value.
+-- | Inserts a value into the array.
 insert :: ToJSVal value => Int -> value -> Array value -> IO ()
 insert key value (Array m) = do
   _ <- (DSL.Object m) DSL.<## key $ value
   pure ()
 -----------------------------------------------------------------------------
--- | Inserts a value into the t'Array' by value.
+-- | Pushes a value to the end of the array.
 push :: ToJSVal value => value -> Array value -> IO ()
 push value (Array m) = do
   _ <- callFunction m "push" [value]
@@ -84,15 +85,15 @@ lookup key m = DSL.fromJSValUnchecked =<< m DSL.!! key
     Just value ->
       pure value
 -----------------------------------------------------------------------------
--- | Return the size of t'Array'.
+-- | Return the size of the array.
 size :: Array value -> IO Int
 size (Array m) = DSL.fromJSValUnchecked =<< m ! "length"
 -----------------------------------------------------------------------------
--- | Return the null of t'Array'.
+-- | Return whether the array is empty.
 null :: Array value -> IO Bool
 null m = (== 0) <$> size m
 -----------------------------------------------------------------------------
--- | Checks existence of 'value' in t'Array', returns t'Bool.
+-- | Checks existence of @value@ in the array, returns @Bool@.
 member :: ToJSVal value => value -> Array value -> IO Bool
 member value (Array m) = DSL.fromJSValUnchecked =<< callFunction m "includes" =<< DSL.toJSVal value
 -----------------------------------------------------------------------------
@@ -104,7 +105,7 @@ splice start deleteCount xs (Array m) = do
   args <- mapM DSL.toJSVal xs
   Array <$> do callFunction m "splice" $ [s,d] ++ args
 -----------------------------------------------------------------------------
--- | Construct a t'Array' from a list of value value pairs.
+-- | Construct an array from a list of values.
 fromList :: ToJSVal value => [value] -> IO (Array value)
 fromList xs = do
   m <- new
@@ -112,7 +113,7 @@ fromList xs = do
     insert k v m
   pure m
 -----------------------------------------------------------------------------
--- | Converts an t'Array' to a list.
+-- | Converts an array to a list.
 toList :: FromJSVal value => Array value -> IO [value]
 toList m = do
   len <- subtract 1 <$> size m

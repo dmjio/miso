@@ -787,37 +787,47 @@ lens
   -> Lens record field
 lens getter setter = Lens getter (flip setter)
 ----------------------------------------------------------------------------
+-- | A simple prism type for partial matches.
 data Prism s a
   = Prism
   { _up :: a -> s
   , _down :: s -> Maybe a
   }
 ----------------------------------------------------------------------------
+-- | Review a value through a @Prism@.
 review :: Prism s a -> a -> s
 review = _up
 ----------------------------------------------------------------------------
+-- | Preview a value from a @Prism@ in a reader context.
 preview :: MonadReader r m => Prism r a -> m (Maybe a)
 preview = asks . preview
 ----------------------------------------------------------------------------
+-- | Preview a value from a @Prism@ in a state context.
 preuse :: MonadState s m => Prism s a -> m (Maybe a)
 preuse = gets . preview
 ----------------------------------------------------------------------------
+-- | Prism focusing on the 'Left' constructor.
 _Left :: Prism (Either a b) a
 _Left = prism Left $ either Just (const Nothing)
 ----------------------------------------------------------------------------
+-- | Prism focusing on the 'Right' constructor.
 _Right :: Prism (Either a b) b
 _Right = prism Right (either (const Nothing) Just)
 ----------------------------------------------------------------------------
+-- | Prism focusing on the 'Just' constructor.
 _Just :: Prism (Maybe a) a
 _Just = prism Just Prelude.id
 ----------------------------------------------------------------------------
+-- | Prism focusing on the 'Nothing' constructor.
 _Nothing :: Prism (Maybe a) a
 _Nothing = prism (const Nothing) Prelude.id
 ----------------------------------------------------------------------------
 infixl 8 ^?
-(^?) :: s -> Prism s a -> Maybe a 
+-- | Preview a value using an infix operator.
+(^?) :: s -> Prism s a -> Maybe a
 (^?) = flip preview
 ----------------------------------------------------------------------------
+-- | Construct a @Prism@ from review and preview functions.
 prism :: (a -> s) -> (s -> Maybe a) -> Prism s a
 prism = Prism
 ----------------------------------------------------------------------------

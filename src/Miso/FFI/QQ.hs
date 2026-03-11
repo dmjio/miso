@@ -89,7 +89,7 @@ extQ f g a = maybe (f a) g (cast a)
 withString :: (Quote m, Typeable a) => a -> Maybe (m Exp)
 withString a = liftString <$> cast a
 ----------------------------------------------------------------------------
--- | Use `isPrefixOf` as you traverse the string in lex order and do a replace
+-- | Use `MS.isPrefixOf` as you traverse the string in lex order and do a replace
 formatVars :: MisoString -> [(MisoString, MisoString)] -> MisoString
 formatVars s [] = s
 formatVars s table@((var,key):xs) =

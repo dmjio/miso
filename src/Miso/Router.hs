@@ -565,6 +565,7 @@ pctEncoded = do
 hexDig :: Lexer Char
 hexDig = L.satisfy C.isHexDigit
 -----------------------------------------------------------------------------
+-- | Lex a URI into router tokens.
 lexTokens :: MisoString -> Either L.LexerError [Token]
 lexTokens input =
   case L.runLexer uriLexer (L.mkStream input) of

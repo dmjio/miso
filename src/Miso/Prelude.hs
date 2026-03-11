@@ -39,9 +39,28 @@ module Miso.Prelude
   ( module Miso
   , module Prelude
   , (.)
+  , Bool
+  , Ordering
+  , even
+  , odd
   ) where
 ----------------------------------------------------------------------------
 import Control.Category ((.))
-import Prelude hiding ((.), (!!))
+import Prelude hiding ((.), (!!), Bool, Ordering, even, odd)
+import qualified Prelude as P
 import Miso
 ----------------------------------------------------------------------------
+-- | Boolean type.
+type Bool = P.Bool
+
+-- | Ordering type.
+type Ordering = P.Ordering
+
+-- | Test whether a number is even.
+even :: P.Integral a => a -> Bool
+even = P.even
+
+-- | Test whether a number is odd.
+odd :: P.Integral a => a -> Bool
+odd = P.odd
+

@@ -50,7 +50,7 @@
 --   for creating UI templates from this user-defined state. 'Component' can nest other 'Component' because @miso@
 --   is defined recursively.
 --
--- * __Custom renderers__: The underlying DOM operations are able to be abstracted.
+-- * __Custom renderers__: The underlying DOM operations are able to be abstracted. 
 -- This allows a custom rendering engine to be used. This is seen in the [miso-lynx](https://github.com/haskell-miso/miso-lynx) project
 -- (which allows miso to target mobile phone devices).
 --
@@ -73,15 +73,15 @@
 --   This is the templating function that is used to construct a new virtual DOM
 --   (or HTML if rendering on the server).
 --
--- * __update__: @'update' :: action -> 'Effect' parent model action@
---   The 'update' function handles how the 'model' evolves over time in response
+-- * __update__: @update :: action -> Effect parent model action@
+--   The @update@ function handles how the @model@ evolves over time in response
 --   to events that are raised by the application. This function takes any @action@,
 --   updating the @model@ and optionally introducing 'IO' into the system.
 --
 -- = Your first t'Component'
 --
--- To define a 'Component' the 'component' smart constructor can be used.
--- Below is an example of a simple counter 'Component'.
+-- To define a component, the @component@ smart constructor can be used.
+-- Below is an example of a simple counter component.
 --
 -- @
 -- -----------------------------------------------------------------------------
@@ -105,8 +105,8 @@
 --
 --     u :: Action -> 'Effect' parent Int Action
 --     u = \\case
---       Add -> 'this' += 1
---       Subtract -> 'this' -= 1
+--       Add -> this += 1
+--       Subtract -> this -= 1
 --
 --     v :: Int -> 'View' Int Action
 --     v x = H.div_
@@ -116,7 +116,7 @@
 --       ]
 -- -----------------------------------------------------------------------------
 -- main :: IO ()
--- main = 'startApp' 'defaultEvents' counter
+-- main = startApp defaultEvents counter
 -- -----------------------------------------------------------------------------
 -- data Action
 --   = Add
@@ -127,15 +127,15 @@
 --
 -- = Running your first t'Component'
 --
--- The 'startApp' (or 'miso') functions are used to run the above t'Component'.
+-- The @startApp@ (or @miso@) functions are used to run the above component.
 --
 -- @
 -- main :: IO ()
--- main = 'startApp' 'defaultEvents' counter
+-- main = startApp defaultEvents counter
 -- @
 --
--- The 'startApp' function is what we recommend using first. It sets up event listeners and performs the initial page draw.
--- The 'startApp' function assumes that @\<body\>@ is empty, and it will begin drawing the 'Component' 'View' from @\<body\>@.
+-- The @startApp@ function is what we recommend using first. It sets up event listeners and performs the initial page draw.
+-- The @startApp@ function assumes that @\<body\>@ is empty, and it will begin drawing the component view from @\<body\>@.
 --
 -- The 'miso' function (and also the 'prerender' function) assume that @\<body\>@ has already been populated by the results of the 'view' function.
 -- Instead of drawing, 'miso' will perform hydration.
@@ -148,11 +148,11 @@
 -- data Action = Init
 --
 -- main :: IO ()
--- main = 'startApp' 'defaultEvents' counter { 'mount' = Just Init }
+-- main = startApp defaultEvents counter { mount = Just Init }
 --
 -- update :: 'App' model Action
 -- update = \\case
---   Init -> 'io_' ('consoleLog' "hello world!")
+--   Init -> io_ (consoleLog "hello world!")
 -- @
 --
 -- = 'Component' composition
@@ -172,14 +172,14 @@
 --   => 'MisoString'
 --   -> 'Component' model child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' [ 'Property' "key" ('toJSON' key) ] ('SomeComponent' vcomp)
+-- key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
 --
 -- @
 -- view :: Int -> 'View' Int action
--- view x = 'div_' [ 'id_' "container" ] [ "counter" '+>' counter ]
+-- view x = div_ [ id_ "container" ] [ "counter" +> counter ]
 -- @
 --
 -- You'll notice the @\"counter\"@ string was specified. This is a unique 'Key'
@@ -189,7 +189,7 @@
 --
 -- It is possible to mount a component using the 'mount_' function, which avoids specifying a 'key_', but this should only be used
 -- when the user is certain they will not be diffing their 'Component' with another 'Component'. When in doubt, use the ('+>') combinator
--- and 'key_' your 'Component'.
+-- and use @key_@ for your component.
 --
 -- Lastly, note also the signature of 'startApp'.
 --
@@ -197,10 +197,10 @@
 -- 'startApp' :: 'Eq' model => 'Events' -> 'App' model action -> IO ()
 -- @
 --
--- The 'App' type signature is a synonym for 'Component' 'ROOT'
+-- The @App@ type signature is a synonym for @Component ROOT@.
 --
 -- @
--- type 'App' model action = 'Component' 'ROOT' model action
+-- type App model action = Component ROOT model action
 -- @
 --
 -- 'ROOT' is a type tag that encodes a 'Component' as top-level. Which means it has no @parent@, hence we mark @parent@ as 'ROOT'.
@@ -337,27 +337,27 @@
 -- Users can define their own event handlers using the 'Miso.Event.on' combinator. By default this will define an event in the 'Miso.Event.Types.BUBBLE' phase. See 'Miso.Event.onCapture' for handling events during the 'Miso.Event.Types.CAPTURE' phase. See the the module "Miso.Html.Event" for many predefined events.
 --
 -- @
--- 'onChangeWith' :: ('MisoString' -> 'DOMRef' -> action) -> 'Attribute' action
--- 'onChangeWith' = 'on' "change" 'valueDecoder'
+-- onChangeWith :: (MisoString -> DOMRef -> action) -> Attribute action
+-- onChangeWith = on "change" valueDecoder
 -- @
 --
 -- * Decoding events
 --
--- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a 'Decoder'. Many common decoders are available for use in "Miso.Event.Decoder".
+-- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a decoder. Many common decoders are available for use in "Miso.Event.Decoder".
 --
 -- @
--- data 'Decoder' a
---   = 'Decoder'
---   { 'decoder' :: 'Value' -> 'Parser' a
---   , 'decodeAt' :: 'DecodeTarget'
+-- data Decoder a
+--   = Decoder
+--   { decoder :: Value -> Parser a
+--   , decodeAt :: DecodeTarget
 --   }
 --
--- -- | Example of a custom 'Decoder' for the @value@ property of an event target.
--- 'valueDecoder' :: 'Decoder' 'MisoString'
+-- -- | Example of a custom decoder for the @value@ property of an event target.
+-- valueDecoder :: Decoder MisoString
 -- 'valueDecoder' = Decoder {..}
 --   where
---     decodeAt = 'DecodeTarget' ["target"]
---     decoder = 'withObject' "target" $ \\o -> o .: "value"
+--     decodeAt = DecodeTarget ["target"]
+--     decoder = withObject "target" $ \o -> o .: "value"
 -- @
 --
 -- = Attributes / Properties
@@ -367,55 +367,40 @@
 -- (like 'Miso.Html.Property.className' and 'Miso.Html.Property.id_'). See "Miso.Property" and "Miso.Html.Property" for more information.
 --
 -- @
--- 'div_' [ 'id_' "some-id", 'className' "some-class" ] [ ]
+-- div_ [ id_ "some-id", className "some-class" ] [ ]
 -- @
 --
 -- = 'Effect'
 --
--- The 'Effect' type is used to mutate the @model@ over time in response to @action@.
--- This allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
---
--- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
--- There is no 'MonadIO' instance for 'Effect'.
---
--- The 'Effect' type is defined as a 'RWS'.
+-- The @Effect@ type is a @Control.Monad.RWS.Lazy.RWS@.
+-- This 'Monad' allows the mutation of @model@ over time in response to @action@.
+-- This also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler. 
+-- 'IO' is never evaluated inside of 'Effect', it is only scheduled. 
+-- There is no @MonadIO@ instance for @Effect@.
 --
 -- @
--- type 'Effect' parent model action = 'RWS' ('ComponentInfo' parent) ['Schedule' action] model ()
+-- type Effect parent model action = RWS (ComponentInfo parent) [Schedule action] model ()
 -- @
 --
--- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
+-- The core primitives for working inside of 'Effect' are:
 --
--- == Asynchronous 'IO'
---
--- * 'io': Used to introduce asynchronous 'io' into the system, see also the 'io_' variant.
---
--- * 'withSink': The core function (from which most other combinators are defined)
+-- * 'withSink': The core function (from which all other combinators are defined)
 --   that gives users access to the underlying event 'Sink'. This also allows us to
 --   introduce 'IO' into the system. The @miso@ scheduler attaches exception
 --   handlers to all 'IO' actions.
---
--- * For maximum flexibility, the 'MonadWriter' instance ('tell') can be used to schedule 'IO' (see the 'withSink' implementation).
---
--- == Synchronous 'IO'
---
--- * 'sync': Forces the scheduler to evaluate 'IO' synchronously. It is
---   recommended to use the 'io' function by default, 'sync' *will* block the scheduler.
---
--- == 'Sink'
 --
 -- @
 -- type 'Sink' a => a -> 'IO' ()
 -- @
 --
--- The 'Sink' function allows one to write any @action@ to the global event queue.
+-- The 'Sink' function allows one to write to the global event queue.
 --
--- == Managing 'model' state.
+-- * 'sync': Forces the scheduler to evaluate 'IO' synchronously. It is
+--   recommended to use the 'io' function by default, 'sync' *will* block the scheduler.
 --
--- Any 'MonadState' function is allowed for use when manipulating @model@, 'Miso.State.get', 'Miso.State.put', etc. See "Miso.State".
---
--- The 'MonadReader' instances allows the retrieval of 'ComponentInfo' within 'Effect'.
--- 'ComponentInfo' provides the current 'ComponentId' the @parent@ 'ComponentId', and the 'DOMRef' ('_componentDOMRef') that the 'Component' is mounted on.
+-- Any @MonadState@ function is allowed for use when manipulating @model@, @Miso.State.get@, @Miso.State.put@, etc. See "Miso.State".
+-- The @MonadReader@ instance allows retrieval of @ComponentInfo@ within @Effect@.
+-- @ComponentInfo@ provides the current @ComponentId@, parent @ComponentId@, and the @DOMRef@ (@_componentDOMRef@) that the component is mounted on.
 --
 -- = 'Component' communication
 --
@@ -424,13 +409,13 @@
 -- 'Component' are able to communicate asynchronously via a message-passing system.
 -- The miso runtime exposes a few primitives to allow t'Component' communication.
 --
--- * 'broadcast'
+-- * @broadcast@
 -- * 'mail'
 -- * 'mailParent'
 --
 -- All t'Component' have a 'mailbox' that can receive messages (as t'Miso.JSON.Value') from other t'Component'.
--- This is meant to be used with the 'checkMail' function. The 'mail' function allows a 'Component' to send a specific message (as 'Value') to another t'Component' via its t'ComponentId'.
--- The 'ComponentId' can be found in the 'Effect' monad. Using 'ask' will return a t'ComponentInfo'. The 'Component' receiving
+-- This is meant to be used with the @checkMail@ function. The @mail@ function allows a component to send a specific message (as @Value@) to another component via its @ComponentId@.
+-- The @ComponentId@ can be found in the @Effect@ monad. Using @ask@ returns @ComponentInfo@. The receiving component
 -- the message will find it in its 'mailbox'.
 --
 -- * "Miso.PubSub"
@@ -442,10 +427,10 @@
 -- * "Miso.Binding"
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
+-- 
+-- * @parent@
 --
--- * 'parent'
---
--- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+-- While not direct communication, a component can receive read-only access to its @parent@ state via @parent@.
 --
 -- = Subscriptions
 --
@@ -456,10 +441,10 @@
 --
 -- @
 -- main :: IO ()
--- main = 'startApp' 'defaultEvents' app { 'subs' = [ timerSub ] }
+-- main = startApp defaultEvents app { subs = [ timerSub ] }
 --
 -- timerSub :: 'Sub' Action
--- timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+-- timerSub sink = forever $ (threadDelay 100000) >> sink Log
 --
 -- data Action = Log
 -- @
@@ -468,8 +453,8 @@
 -- When a 'Component' unmounts, these 'Sub' will be stopped, and their resources finalized.
 --
 -- @
--- 'onLineSub' :: (Bool -> action) -> 'Sub' action
--- 'onLineSub' f sink = 'createSub' acquire release sink
+-- onLineSub :: (Bool -> action) -> Sub action
+-- onLineSub f sink = createSub acquire release sink
 --   where
 --     release (cb1, cb2) = do
 --       FFI.windowRemoveEventListener "online" cb1
@@ -489,17 +474,17 @@
 --   update = \\case
 --     StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
 --     StopTimer -> 'stopSub' "timer"
---     Log -> 'io_' ('consoleLog' "log")
+--     Log -> io_ (consoleLog "log")
 --       where
 --         timerSub :: 'Sub' Action
---         timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+--         timerSub sink = forever $ (threadDelay 100000) >> sink Log
 --
 --   data Action = Log
 -- @
 --
 -- * 'Miso.Subscription.Util.createSub'
 --
--- 'Miso.Subscription.Util.createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
+-- @Miso.Subscription.Util.createSub@ is a helper function for creating a @Sub@ using the @Control.Exception.bracket@ pattern.
 -- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
 -- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
 -- custom event listeners are required (shown below).
@@ -577,8 +562,8 @@
 -- the page when the 'Component' mounts. This is a convenience only meant to be used in development. We recommend guarding the usage behind a flag.
 --
 -- @
--- main :: 'IO' ()
--- main = 'startApp' 'defaultEvents' counter
+-- main :: IO ()
+-- main = startApp defaultEvents counter
 --  where
 --    app = counter
 -- #ifdef INTERACTIVE
@@ -592,15 +577,15 @@
 --
 -- = Debugging
 --
--- Sometimes things can go wrong. Common errors like using `onClick` but not listening for the the 'click' event are common.
--- These are errors that cannot be caught statically. These can be detected by enabling 'DebugAll'. Currently, debugging event delegation
+-- Sometimes things can go wrong. Common errors like using @onClick@ but not listening for the @click@ event are common.
+-- These are errors that cannot be caught statically. These can be detected by enabling @DebugAll@. Currently, debugging event delegation
 -- and page hydration is supported.
 --
--- * 'DebugHydrate'
--- * 'DebugEvents'
+-- * @DebugHydrate@
+-- * @DebugEvents@
 --
 -- @
--- counter { 'logLevel' = 'DebugAll' }
+-- counter { logLevel = DebugAll }
 -- @
 --
 -- = Internals
@@ -718,8 +703,8 @@ import           Miso.Util
 -- Always mounts to \<body\>. Copies page into the virtual DOM.
 --
 -- @
--- main :: 'IO' ()
--- main = 'miso' 'defaultEvents' (\\uri -> app uri))
+-- main :: IO ()
+-- main = miso defaultEvents (\\uri -> app uri))
 -- @
 miso
   :: Eq model
@@ -732,20 +717,20 @@ miso events f = do
   vcomp <- f <$> getURI
   initComponent events Hydrate vcomp { mountPoint = Nothing }
 ----------------------------------------------------------------------------
--- | Like 'miso', except discards the 'URI' argument.
+-- | Like 'miso', except discards the URI argument.
 --
 -- Use this function if you'd like to prerender, but not use navigation.
 --
 -- @
--- main :: 'IO' ()
--- main = 'prerender' 'defaultEvents' app
+-- main :: IO ()
+-- main = prerender defaultEvents app
 -- @
 prerender
   :: Eq model
   => Events
-  -- ^ Globally delegated 'Events'
+  -- ^ Globally delegated events
   -> App model action
-  -- ^ 'Component' application
+  -- ^ Component application
   -> IO ()
 prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
@@ -757,16 +742,16 @@ prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothi
 -- unless you are using prerendering.
 --
 -- @
--- main :: 'IO' ()
--- main = 'startApp' 'defaultEvents' app
+-- main :: IO ()
+-- main = startApp defaultEvents app
 -- @
 --
 startApp
   :: Eq model
   => Events
-  -- ^ Globally delegated 'Events'
+  -- ^ Globally delegated events
   -> App model action
-  -- ^ 'Component' application
+  -- ^ Component application
   -> IO ()
 startApp events = initComponent events Draw
 -----------------------------------------------------------------------------
@@ -774,9 +759,9 @@ startApp events = initComponent events Draw
 (🍜)
   :: Eq model
   => Events
-  -- ^ Globally delegated 'Events'
+  -- ^ Globally delegated events
   -> (URI -> App model action)
-  -- ^ 'Component' application, with the current URI as an argument
+  -- ^ Component application, with the current URI as an argument
   -> IO ()
 (🍜) = miso
 ----------------------------------------------------------------------------
@@ -790,16 +775,16 @@ startApp events = initComponent events Draw
 --
 -- @
 -- main :: IO ()
--- main = 'renderApp' 'defaultEvents' "my-context" app
+-- main = renderApp defaultEvents "my-context" app
 -- @
 renderApp
   :: Eq model
   => Events
-  -- ^ Globally delegated 'Events'
+  -- ^ Globally delegated events
   -> MisoString
   -- ^ Name of the JS object that contains the drawing context
   -> App model action
-  -- ^ 'Component' application
+  -- ^ Component application
   -> IO ()
 renderApp events renderer vcomp = do
   FFI.setDrawingContext renderer
