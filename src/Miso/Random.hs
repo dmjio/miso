@@ -25,6 +25,7 @@ module Miso.Random
   , next
   , replicateRM
   , getStdGen
+  , setStdGen
     -- ** Globals
   , globalStdGen
   ) where
@@ -70,6 +71,10 @@ globalStdGen = unsafePerformIO $ do
 -- | Read the `globalStdGen`
 getStdGen :: IO StdGen
 getStdGen = readIORef globalStdGen
+-----------------------------------------------------------------------------
+-- | Set the `globalStdGen`
+setStdGen :: StdGen -> IO ()
+setStdGen = atomicWriteIORef globalStdGen
 -----------------------------------------------------------------------------
 -- | Generate n amount of random numbers. Uses the global PRNG 'globalStdGen'.
 --
