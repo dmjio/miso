@@ -261,7 +261,7 @@ instance FromJSON HTML where
                                    <*> o .: "attrs"
                                    <*> o .: "children"
 
-            "Voidelem" -> VoidElem <$> o .: "tag"
+            "VoidElem" -> VoidElem <$> o .: "tag"
                                    <*> o .: "attrs"
 
             "UserSuppliedElement" -> pure UserSuppliedElement
@@ -414,11 +414,12 @@ vt Wbr = wbr_
 
 
 genHtml :: Gen HTML
-genHtml = sized $ \n -> genSubtree n (elements safeBlockTags)
+genHtml = sized $ \n -> genSubtree n False (elements safeBlockTags)
 
 
-genSubtree :: Int -> Gen ChildHavingHtmlTag -> Gen HTML
-genSubtree depth gen
+genSubtree :: Int -> Bool -> Gen ChildHavingHtmlTag -> Gen HTML
+genSubtree depth genSiblings gen
+  | depth <= 1 && genSiblings = genLeaf
   | depth <= 1 = return UserSuppliedElement
   | otherwise = do
         nonVoidTag <- gen
@@ -429,7 +430,7 @@ genSubtree depth gen
                 siblingAttrs <- getAttributeGen siblingTag
                 siblingContent <-
                     if elem siblingTag tagRequiresChildren then
-                        genSubtree 2 (nextGenerator siblingTag)
+                        genSubtree 2 True (nextGenerator siblingTag)
                     else
                         genLeaf
                 return $ Elem siblingTag siblingAttrs [ siblingContent ]
@@ -437,7 +438,7 @@ genSubtree depth gen
         attrs <- getAttributeGen nonVoidTag
 
         let j = if elem nonVoidTag tagRequiresChildren then 0 else 1
-        children <- genSubtree (depth - j) (nextGenerator nonVoidTag)
+        children <- genSubtree (depth - j) False (nextGenerator nonVoidTag)
 
         return $ Elem nonVoidTag attrs $ siblings ++ [ children ]
 

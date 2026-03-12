@@ -28,8 +28,11 @@ import Miso
     , Component
     , toMisoString
     , mount_
+    , io
     , io_
     , consoleLog
+    , MisoString
+    , fromMisoString
     )
 import qualified Miso as M
 import qualified Miso.Html as M
@@ -38,8 +41,14 @@ import Miso.Lens (Lens, lens, (%=))
 import Miso.Binding ((-->), (<--))
 import GHC.Generics
 import Miso.JSON (FromJSON, ToJSON)
+import Miso.DSL ((#), (!))
 
-type Action = ()
+data Action
+    = Initialize
+    | ClickButtons
+    | Assert
+    | OnClick
+    | AddB
 
 data Model = Model
     { valueA :: Int
@@ -60,8 +69,10 @@ type AppComponent = Component Model Model Action
 
 rootApp :: Int -> App Model Action
 rootApp depth =
-    (component initialModel update (rootView depth))
-        { M.logLevel = M.DebugAll }
+    (component initialModel update (rootView 3))
+        { M.logLevel = M.DebugAll
+        , M.mount = Just Initialize
+        }
 
 
 rootView :: Int -> Model -> View Model Action
@@ -69,11 +80,16 @@ rootView depth m =
     M.div_ []
     (
         M.button_
-            [ M.id_ "CLICKME"
-            , M.onClick ()
+            [ M.id_ "assert"
+            , M.onClick Assert
+            ]
+            [ text "Assert" ]
+        : M.button_
+            [ M.id_ "CLICKME_CLICKME"
+            , M.onClick OnClick
             ]
             [ text "Click Me" ]
-        : modelElems m
+        : modelElems (-1) m
         ++ [ mount_ $ innerApp depth ]
     )
 
@@ -102,35 +118,99 @@ initialModel :: Model
 initialModel = Model 0 0
 
 
+clickById :: MisoString -> IO ()
+clickById elemId = do
+    e <- M.getElementById elemId
+    _ <- e # ("click" :: MisoString) $ ([] :: [ MisoString ])
+    pure ()
+
+
+getTextContent :: MisoString -> IO (Maybe MisoString)
+getTextContent elemId = do
+    e <- M.getElementById elemId
+    e ! "textContent" >>= M.fromJSVal
+
+
 update :: Action -> Effect a Model Action
-update = const $ do
+update OnClick = do
     io_ $ consoleLog "CLICKED"
     valueALens %= (+ 1)
+
+update AddB = do
+    io_ $ consoleLog "CLICKED B"
+    valueBLens %= (+ 1)
+
+update Initialize = io $ do
+    consoleLog "TestBindingsApp INITALIZE"
+    return ClickButtons
+
+update ClickButtons = io_ $ do
+    consoleLog "TestBindingsApp ClickButtons"
+    clickById "CLICKME_CLICKME"
+    clickById "click_innermost"
+    clickById "assert"
+
+update Assert = io_ $ do
+    mValueA0Text <- getTextContent "valueA-0"
+    mValueB0Text <- getTextContent "valueB-0"
+
+    let
+        result = do
+            valueA0Text <- mValueA0Text
+            valueB0Text <- mValueB0Text
+
+            let valueA0 = read $ fromMisoString valueA0Text
+                valueB0 = read $ fromMisoString valueB0Text
+
+            return $ (valueA0, valueB0) == (expectedA, expectedB)
+
+    case result of
+        Just True ->
+            consoleLog "SUCCESS"
+        x -> do
+            consoleLog "ERROR - TestBindingsApp Assertion FAIL"
+            consoleLog $ toMisoString $ show x
+
+    where
+        expectedA = 1 :: Int
+        expectedB = 2 :: Int
 
 
 view :: Int -> Model -> View Model Action
 view 0 m = M.div_ []
     (
         M.button_
-            [ M.onClick () ]
+            [ M.onClick OnClick
+            , M.id_ "click_innermost"
+            ]
             [ text "Clickme (innermost)" ]
         :
-        modelElems m
+        modelElems 0 m
     )
+
 view idx m =
     M.div_ []
-        ( modelElems m
-        ++
-        [ mount_ $ innerApp (idx - 1) ]
+        ( M.button_ [ M.onClick OnClick ] [ text "add a" ]
+        : M.button_ [ M.onClick AddB ] [ text "add b" ]
+        : modelElems idx m ++ [ mount_ $ innerApp (idx - 1) ]
         )
 
 
-modelElems :: Model -> [ View Model Action ]
-modelElems m =
+modelElems :: Int -> Model -> [ View Model Action ]
+modelElems i m =
     [ M.div_ []
-        [ text (toMisoString $ show $ valueA m)
+        [ M.span_ [] [ "a:" ]
+        , M.span_
+            [ M.id_ ("valueA-" <> toMisoString j) ]
+            [ text (toMisoString $ show $ valueA m) ]
         ]
     , M.div_ []
-        [ text (toMisoString $ show $ valueB m)
+        [ M.span_ [] [ "b:" ]
+        , M.span_
+            [ M.id_ ("valueB-" <> toMisoString j) ]
+            [ text (toMisoString $ show $ valueB m) ]
         ]
     ]
+
+    where
+        j = i + 1

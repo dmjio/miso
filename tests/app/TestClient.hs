@@ -24,6 +24,9 @@ import qualified TestApp as App
 import qualified TestBindingsApp as AppB
 import TestTypes
 
+import HtmlGen
+import qualified Miso.JSON as MJ
+
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
@@ -69,6 +72,29 @@ getScriptContents className = do
 
 main :: IO ()
 main = do
+    -- let
+    --     html  = Elem Ol [(Title,"IQb")] []
+    --     html' = (MJ.eitherDecode $ MJ.encode html) :: Either MisoString HTML
+
+    -- consoleLog $ MJ.encode html
+    -- consoleLog $ toMisoString $ show $ (Right html) == html'
+
+    -- case html' of
+    --     Left s -> consoleLog s
+    --     Right _ -> consoleLog "html encode/decode sanity test successfull"
+
+    let
+        str  = "\9707a\40653\\\1366\128577\1312\8378\12441" :: MisoString
+        str' = (MJ.eitherDecode $ MJ.encode str) :: Either MisoString MisoString
+
+    consoleLog $ MJ.encode str
+    consoleLog $ toMisoString $ show $ (Right str) == str'
+
+    case str' of
+        Left s -> consoleLog s
+        Right _ -> consoleLog "str encode/decode sanity test successfull"
+
+
     consoleLog "Hello World"
 
     rawTestData <- getScriptContents "initial-data"
