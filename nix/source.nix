@@ -54,6 +54,7 @@ in
     repo = "servant-miso-router";
     rev = "0c828e0ba30ee7a446ce8999288b32b7f6425dd1";
     sha256 = "sha256-2Vkheb2iNDFWNAToO+r8rMY3OAA6LlUtgxiCWRm0wAY=";
+  };
 
   ghcjs-base = fetchFromGitHub {
     owner = "ghcjs";
