@@ -93,14 +93,13 @@ rec {
     until curl -sf "http://localhost:$PW_API_PORT/ready"; do sleep 0.1; done
     echo "Playwright server ready, asking it to start test."
     curl --fail "http://localhost:$PW_API_PORT/test?port=8061&wait=true"
-    exit_code=$?
+    kill $HTTP_SERVER_PID
     PORT=8062 \
       PLAYWRIGHT_PORT=$PW_API_PORT \
       STATIC_DIR="${miso-tests}/bin/integration-tests-client.jsexe/" \
       BACKEND=GHCJS \
       ${miso-tests-ghc}/bin/integration-tests-server
     exit_code=$?
-    kill $HTTP_SERVER_PID
     kill $PLAYWRIGHT_SERVER_PID
     exit "$exit_code"
   '';
@@ -125,13 +124,13 @@ rec {
     until curl -sf "http://localhost:$PW_API_PORT/ready"; do sleep 0.1; done
     echo "Playwright server ready, asking it to start test."
     curl --fail "http://localhost:$PW_API_PORT/test?port=8061&wait=true"
+    kill $HTTP_SERVER_PID
     PORT=8062 \
       PLAYWRIGHT_PORT=$PW_API_PORT \
       STATIC_DIR=./public \
       BACKEND=WASM \
       ${miso-tests-ghc}/bin/integration-tests-server
     exit_code=$?
-    kill $HTTP_SERVER_PID
     kill $PLAYWRIGHT_SERVER_PID
     exit "$exit_code"
   '';
