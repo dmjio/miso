@@ -19,7 +19,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Runtime
--- Copyright   :  (C) 2016-2025 David M. Johnson
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
@@ -83,11 +83,15 @@ module Miso.Runtime
   , componentId
   , modifyComponent
   , resetComponentState
+  , componentModel
   -- ** Scheduler
   , scheduler
 #ifdef WASM
   , evalFile
 #endif
+  , topLevelComponentId
+  , initComponent
+  , withJS
   ) where
 -----------------------------------------------------------------------------
 import qualified Data.IntSet as IS
@@ -113,9 +117,6 @@ import           Data.Sequence (Seq)
 import           GHC.Conc (labelThread)
 #endif
 import           GHC.Conc (ThreadStatus(ThreadDied, ThreadFinished), threadStatus)
-#ifdef WASM
-import qualified Language.Haskell.TH as TH
-#endif
 import           Prelude hiding ((.))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Mem.StableName (makeStableName)
@@ -130,7 +131,7 @@ import           Miso.Delegate (delegator)
 import qualified Miso.Diff as Diff
 import           Miso.DSL
 #ifdef WASM
-import           Miso.DSL.TH
+import           Miso.DSL.TH.File (evalFile)
 #endif
 import           Miso.Effect
   ( ComponentInfo(..), Sub, Sink, Effect, Schedule(..), runEffect
@@ -166,7 +167,14 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
 
   initializedModel <-
     case (hydrate, hydrateModel) of
-      (Hydrate, Just action) -> action
+      (Hydrate, Just m) -> m
+      (Draw, _) -> do
+        IM.lookup _componentId <$> readIORef components >>= \case
+          Nothing ->
+            pure model
+          Just cs ->
+            -- hot reload scenario, let it flow
+            pure (cs ^. componentModel)
       _ -> pure model
   _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   _componentDOMRef <- getComponentMountPoint
@@ -190,6 +198,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         Diff.diff (Just oldVTree) (Just newVTree) _componentDOMRef
         FFI.updateRef oldVTree newVTree
         liftIO (atomicWriteIORef _componentVTree newVTree)
+        FFI.flush
 
   let _componentApplyActions = \(actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
@@ -215,17 +224,12 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , ..
         }
 
+  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomp
   initSubs subs _componentSubThreads _componentSink
-  when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   initialDraw initializedModel events hydrate isRoot comp vcomp
   forM_ mount _componentSink
-  when isRoot $ do
-#if __GLASGOW_HASKELL__ > 865
-    flip labelThread "scheduler" =<< forkIO scheduler
-#else
-    void (forkIO scheduler)
-#endif
+  FFI.mountComponent _componentId =<< toObject jsNull
   pure vcomp
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
@@ -299,7 +303,9 @@ scheduler =
     renderComponents dirtySet = do
       forM_ (IS.toAscList dirtySet) $ \vcompId ->
         IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
-          when _componentIsDirty (_componentDraw _componentModel)
+          when _componentIsDirty $ do
+            _componentDraw _componentModel
+            FFI.modelHydration _componentId =<< toObject jsNull
           modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
@@ -964,6 +970,7 @@ unmountComponent cs@ComponentState {..} = do
   liftIO $ modifyComponent _componentParentId $ do
     children.at _componentId .= Nothing
   liftIO $ atomicModifyIORef' components $ \m -> (IM.delete _componentId m, ())
+  FFI.unmountComponent _componentId
 -----------------------------------------------------------------------------
 resetComponentState :: IO () -> IO ()
 resetComponentState clear = do
@@ -1052,7 +1059,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
 -- Doesn't handle children
-createNode :: MisoString -> NS -> MisoString -> IO Object
+createNode :: MisoString -> Namespace -> MisoString -> IO Object
 createNode typ ns tag = do
   vnode <- create
   cssObj <- create
@@ -1111,7 +1118,7 @@ registerComponent componentState = liftIO $ do
 renderStyles :: [CSS] -> IO [DOMRef]
 renderStyles styles =
   forM styles $ \case
-    Href url -> FFI.addStyleSheet url
+    Href url cacheBust -> FFI.addStyleSheet url cacheBust
     Style css -> FFI.addStyle css
     Sheet sheet -> FFI.addStyle (renderStyleSheet sheet)
 -----------------------------------------------------------------------------
@@ -1123,8 +1130,8 @@ renderStyles styles =
 renderScripts :: [JS] -> IO [DOMRef]
 renderScripts scripts =
   forM scripts $ \case
-    Src src ->
-      FFI.addSrc src
+    Src src cacheBust ->
+      FFI.addSrc src cacheBust
     Script script ->
       FFI.addScript False script
     Module src ->
@@ -1155,7 +1162,9 @@ renderScripts scripts =
 startSub
   :: ToMisoString subKey
   => subKey
+  -- ^ The key used to track the 'Sub'
   -> Sub action
+  -- ^ The 'Sub'
   -> Effect parent model action
 startSub subKey sub = do
   ComponentInfo {..} <- ask
@@ -1191,7 +1200,11 @@ startSub subKey sub = do
 -- @
 --
 -- @since 1.9.0.0
-stopSub :: ToMisoString subKey => subKey -> Effect parent model action
+stopSub
+  :: ToMisoString subKey
+  => subKey
+  -- ^ The key used to stop the 'Sub'
+  -> Effect parent model action
 stopSub subKey = do
   vcompId <- asks _componentInfoId
   io_ $ do
@@ -1215,7 +1228,9 @@ stopSub subKey = do
 mail
   :: ToJSON message
   => ComponentId
+  -- ^ 'ComponentId' to receive 'mail'
   -> message
+  -- ^ The message to send
   -> IO ()
 mail vcompId msg =
   IM.lookup vcompId <$> readIORef components >>= \case
@@ -1236,6 +1251,7 @@ mail vcompId msg =
 mailParent
   :: ToJSON message
   => message
+  -- ^ Message to send
   -> Effect parent model action
 mailParent msg = do
   ComponentInfo {..} <- ask
@@ -1257,20 +1273,27 @@ mailParent msg = do
 checkMail
   :: FromJSON value
   => (value -> action)
+  -- ^ Successful callback
   -> (MisoString -> action)
+  -- ^ Errorful callback
   -> Value
+  -- ^ The message received to parse.
   -> Maybe action
 checkMail successful errorful value =
   pure $ case fromJSON value of
     Success x -> successful x
     Error err -> errorful (ms err)
 -----------------------------------------------------------------------------
--- | Fetches the parent `model` from the child.
+-- | Fetches the parent `model` from the child (if @parent@ exists).
+--
+-- N.B. this is a no-op for 'ROOT'.
 --
 -- @since 1.9.0.0
 parent
   :: (parent -> action)
+  -- ^ Successful callback
   -> action
+  -- ^ Errorful callback
   -> Effect parent model action
 parent successful errorful = do
   ComponentInfo {..} <- ask
@@ -1293,6 +1316,7 @@ broadcast
   :: Eq model
   => ToJSON message
   => message
+  -- ^ Message to broadcast to all other 'Component'
   -> Effect parent model action
 broadcast msg = do
   ComponentInfo {..} <- ask
@@ -1790,14 +1814,41 @@ blob = BLOB
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
-#ifdef WASM
------------------------------------------------------------------------------
--- | Like 'eval', but read the JS code to evaluate from a file.
-evalFile :: FilePath -> TH.Q TH.Exp
-evalFile path = eval_ =<< TH.runIO (readFile path)
-  where
-    eval_ :: String -> TH.Q TH.Exp
-    eval_ chunk = [| $(Miso.DSL.TH.evalTH chunk []) :: IO () |]
------------------------------------------------------------------------------
+initComponent
+  :: (Eq parent, Eq model)
+  => Events
+  -> Hydrate
+  -> Component parent model action
+  -> IO ()
+initComponent events hydrate vcomp@Component {..} = withJS $ do
+  root <- Diff.mountElement (getMountPoint mountPoint)
+  void $ initialize events rootComponentId hydrate True vcomp (pure root)
+#if __GLASGOW_HASKELL__ > 865
+  flip labelThread "scheduler" =<< forkIO scheduler
+#else
+  void (forkIO scheduler)
 #endif
+----------------------------------------------------------------------------
+-- | Load miso's javascript.
+--
+-- You don't need to use this function if you're compiling w/ WASM and using `miso` or `startApp`.
+-- It's already invoked for you. This is a no-op w/ the JS backend.
+--
+-- If you need access to `Miso.FFI` to call functions from `miso.js`, but you're not
+-- using `startApp` or `miso`, you'll need to call this function (w/ WASM only).
+--
+#ifdef PRODUCTION
+#define MISO_JS_PATH "js/miso.prod.js"
+#else
+#define MISO_JS_PATH "js/miso.js"
+#endif
+withJS
+  :: IO a
+  -- ^ 'IO' action to execute in between 'evalFile'
+  -> IO a
+withJS action = do
+#ifdef WASM
+  $(evalFile MISO_JS_PATH)
+#endif
+  action
 -----------------------------------------------------------------------------

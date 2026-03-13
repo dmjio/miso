@@ -11,7 +11,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI.Internal
--- Copyright   :  (C) 2016-2025 David M. Johnson
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
@@ -56,6 +56,7 @@ module Miso.FFI.Internal
    , getDrawingContext
    , getHydrationContext
    , getEventContext
+   , getComponentContext
    , getElementById
    , removeChild
    , getHead
@@ -148,6 +149,10 @@ module Miso.FFI.Internal
    , mathRandom
    -- * Crypto
    , getRandomValue
+   -- * Model
+   , mountComponent
+   , unmountComponent
+   , modelHydration
    ) where
 -----------------------------------------------------------------------------
 import           Control.Monad (void, forM_, (<=<), when)
@@ -413,6 +418,14 @@ getEventContext = jsg "miso" ! "eventContext"
 getHydrationContext :: IO JSVal
 getHydrationContext = jsg "miso" ! "hydrationContext"
 -----------------------------------------------------------------------------
+-- | Retrieves a reference to the Component context.
+--
+-- This is a miso specific construct used to provide an identical interface
+-- for both native (iOS / Android, etc.) and browser environments.
+--
+getComponentContext :: IO JSVal
+getComponentContext = jsg "miso" ! "componentContext"
+-----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
 -- the specified string.
 --
@@ -578,12 +591,13 @@ addScriptImportMap impMap = do
 --
 -- > addSrc "https://example.com/script.js"
 --
-addSrc :: MisoString -> IO JSVal
-addSrc url = do
+addSrc :: MisoString -> Bool -> IO JSVal
+addSrc url cacheBust = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["script" :: MisoString]
-  _ <- link # "setAttribute" $ ["src", url]
+  url_ <- appendTimestamp url cacheBust
+  _ <- link # "setAttribute" $ ["src", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
 -----------------------------------------------------------------------------
@@ -594,15 +608,25 @@ addSrc url = do
 --
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
-addStyleSheet :: MisoString -> IO JSVal
-addStyleSheet url = do
+addStyleSheet :: MisoString -> Bool -> IO JSVal
+addStyleSheet url cacheBust  = do
   context <- getDrawingContext
   head_ <- getHead
   link <- context # "createElement" $ ["link" :: MisoString]
   _ <- link # "setAttribute" $ ["rel","stylesheet" :: MisoString]
-  _ <- link # "setAttribute" $ ["href", url]
+  url_ <- appendTimestamp url cacheBust 
+  _ <- link # "setAttribute" $ ["href", url_ ]
   void $ context # "appendChild" $ (head_, link)
   pure link
+-----------------------------------------------------------------------------
+-- | Helper for cache busting
+appendTimestamp :: MisoString -> Bool -> IO MisoString
+appendTimestamp url = \case
+  True -> do
+    ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
+    pure (url <> "?v=" <> ms (ts :: Double))
+  False ->
+    pure url
 -----------------------------------------------------------------------------
 -- | Retrieve JSON via Fetch API
 --
@@ -1036,4 +1060,22 @@ mathRandom = fromJSValUnchecked =<< do
 getRandomValue :: IO Double
 getRandomValue = fromJSValUnchecked =<< do
   jsg "miso" # "getRandomValues" $ ()
+-----------------------------------------------------------------------------
+-- | Abstract over model hydration
+modelHydration :: Int -> Object -> IO ()
+modelHydration vcompId model_ = do
+  comp <- getComponentContext
+  void $ comp # "modelHydration" $ (vcompId, model_)
+-----------------------------------------------------------------------------
+-- | Abstract over Component mounting
+mountComponent :: Int -> Object -> IO ()
+mountComponent vcompId model_ = do
+  comp <- getComponentContext
+  void $ comp # "mountComponent" $ (vcompId, model_)
+-----------------------------------------------------------------------------
+-- | Abstract over Component unmounting
+unmountComponent :: Int -> IO ()
+unmountComponent vcompId = do
+  comp <- getComponentContext
+  void $ comp # "unmountComponent" $ [vcompId]
 -----------------------------------------------------------------------------

@@ -9,13 +9,25 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.Binding
--- Copyright   :  (C) 2016-2025 David M. Johnson
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Primitives for synchronizing parent and child models.
+-- = Data Bindings
+--
+-- miso includes an experimental feature that allows fields of different models to be synchronized
+-- against each another in response to model changes. See 'Miso.Binding'. Note this feature is
+-- experimental, it is recommended to use asynchronous Component communication (like 'broadcast') by default.
+--
+-- This module exposes combinators to construct a 'Binding' which holds two lenses that will alter
+-- t'Component' model state along the parent-child relationship using a 'Lens'. Practically, this means when
+-- one t'Component' is marked as dirty, another t'Component' will also potentially will be marked as
+-- dirty if they are connected along an edge ('Binding').
+--
+-- See the [miso-reactive](https://github.com/haskell-miso/miso-reactive) project for more information.
+--
 ----------------------------------------------------------------------------
 module Miso.Binding
   ( -- ** Types

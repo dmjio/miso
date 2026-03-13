@@ -1,5 +1,6 @@
 import { diff } from './miso/dom';
-import { eventJSON, delegateEvent } from './miso/event';
+import { eventJSON, delegateEvent, delegator } from './miso/event';
+import { eventContext, drawingContext } from './miso/context/dom';
 import { hydrate, integrityCheck } from './miso/hydrate';
 
 import {
@@ -40,6 +41,7 @@ import {
     EventContext,
     DrawingContext,
     HydrationContext,
+    ComponentContext,
     NodeId,
     VTreeType,
     ComponentId,
@@ -81,10 +83,14 @@ export {
   EventContext,
   DrawingContext,
   HydrationContext,
+  ComponentContext,
   patchDrawingContext,
 
   /* Functions */
+  eventContext,
+  drawingContext,
   diff,
+  delegator,
   hydrate,
   version,
   callBlur,

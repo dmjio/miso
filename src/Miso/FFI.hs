@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.FFI
--- Copyright   :  (C) 2016-2025 David M. Johnson
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
@@ -34,6 +34,10 @@ module Miso.FFI
     -- ** Styles
   , addStyle
   , addStyleSheet
+    -- * JS
+  , addSrc
+  , addScript
+  , addScriptImportMap
     -- ** Callbacks
   , syncCallback
   , syncCallback1
@@ -101,6 +105,10 @@ module Miso.FFI
   , splitmix32
     -- ** Math.random()
   , mathRandom
+    -- ** Model
+  , mountComponent
+  , unmountComponent
+  , modelHydration
   ) where
 -----------------------------------------------------------------------------
 import           Miso.FFI.Internal

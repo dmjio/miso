@@ -5,12 +5,12 @@
 -----------------------------------------------------------------------------
 module Miso.DSL.TH (evalTH) where
 -----------------------------------------------------------------------------
-import Control.Exception (evaluate)
+import Control.Exception
 import Language.Haskell.TH qualified as TH
 import Language.Haskell.TH.Syntax qualified as TH
 -----------------------------------------------------------------------------
 -- | This is from @amesgen. It's a workaround until we can have proper
--- support for js-sources. It constructs a 
+-- support for js-sources. It constructs an FFI declaration to import @miso.js@.
 --
 evalTH :: String -> [TH.Q TH.Type] -> TH.Q TH.Exp
 evalTH jsChunk argTys = do
@@ -20,7 +20,7 @@ evalTH jsChunk argTys = do
         TH.ForeignD $
           TH.ImportF
             TH.JavaScript
-            TH.Safe
+            TH.Unsafe
             jsChunk
             ffiImportName
             sig

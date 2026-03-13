@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Miso.JSON
--- Copyright   :  (C) 2016-2025 David M. Johnson
+-- Copyright   :  (C) 2016-2026 David M. Johnson
 -- License     :  BSD3-style (see the file LICENSE)
 -- Maintainer  :  David M. Johnson <code@dmj.io>
 -- Stability   :  experimental
@@ -106,7 +106,6 @@ import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
 import           GHC.Generics
-import           System.IO.Unsafe (unsafePerformIO)
 ----------------------------------------------------------------------------
 import           Miso.DSL.FFI
 import           Miso.String (FromMisoString, ToMisoString, MisoString, ms, singleton, pack)
@@ -116,6 +115,7 @@ import qualified Miso.JSON.Parser as Parser
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
+import           System.IO.Unsafe (unsafePerformIO)
 #endif
 ----------------------------------------------------------------------------
 infixr 8 .=
@@ -212,7 +212,10 @@ instance ToJSON Char where
 instance ToJSON Bool where
   toJSON = Bool
 ----------------------------------------------------------------------------
-instance ToJSON a => ToJSON [a] where
+instance {-# OVERLAPPING #-} ToJSON String where
+  toJSON = toJSON . MS.pack
+----------------------------------------------------------------------------
+instance {-# OVERLAPPABLE #-} ToJSON a => ToJSON [a] where
   toJSON = Array . Prelude.map toJSON
 ----------------------------------------------------------------------------
 instance ToJSON v => ToJSON (M.Map MisoString v) where
@@ -314,7 +317,7 @@ instance (TypeError ('Text "Sum types unsupported"), GFromJSON a, GFromJSON b) =
 instance GFromJSON U1 where
   gParseJSON _ _ = pure U1
 ----------------------------------------------------------------------------
-instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
+instance {-# OVERLAPPABLE #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
   gParseJSON opts = \case
     Object o ->
       M1 . K1 <$> o .: ms field
@@ -322,6 +325,15 @@ instance (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
       M1 . K1 <$> parseJSON v
     where
       field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
+----------------------------------------------------------------------------
+instance {-# OVERLAPPING #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (Maybe a))) where
+  gParseJSON opts = \case
+    Object o ->
+      M1 . K1 <$> o .:? ms field
+    v ->
+      M1 . K1 <$> parseJSON v
+    where
+      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
@@ -332,7 +344,10 @@ instance FromJSON Bool where
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
 ----------------------------------------------------------------------------
-instance FromJSON a => FromJSON [a] where
+instance {-# OVERLAPPING #-} FromJSON String where
+  parseJSON = withText "String" (pure . MS.unpack)
+----------------------------------------------------------------------------
+instance {-# OVERLAPPABLE #-} FromJSON a => FromJSON [a] where
   parseJSON = withArray "[a]" (mapM parseJSON)
 ----------------------------------------------------------------------------
 instance FromJSON Double where
@@ -590,6 +605,15 @@ jsonParse :: MisoString -> IO JSVal
 jsonParse _ = error "jsonParse: not implemented"
 #endif
 -----------------------------------------------------------------------------
+#ifdef VANILLA
+eitherDecode :: FromJSON a => MisoString -> Either MisoString a
+eitherDecode string =
+  case Parser.decodePure string of
+    Left s ->
+      Left (pack s)
+    Right v ->
+      parseEither parseJSON v
+#else
 eitherDecode :: FromJSON a => MisoString -> Either MisoString a
 eitherDecode string = unsafePerformIO $ do
   (jsonParse string >>= fromJSVal_Value) >>= \case
@@ -599,6 +623,7 @@ eitherDecode string = unsafePerformIO $ do
       pure (case fromJSON result of
         Success x -> Right x
         Error err -> Left err)
+#endif
 ----------------------------------------------------------------------------
 fromJSON :: FromJSON a => Value -> Result a
 fromJSON value =

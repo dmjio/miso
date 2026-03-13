@@ -60,7 +60,7 @@ function mkVNode<T>() : VNode<T> {
     domRef: null,
     tag: 'div',
     key: null,
-    events: {},
+    events: { captures: {}, bubbles: {} },
     onDestroyed: () => {},
     onBeforeDestroyed: () => {},
     onCreated: () => {},
