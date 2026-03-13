@@ -101,7 +101,7 @@ import           Data.Char
 import qualified Data.Map.Strict as M
 import           Data.Map.Strict (Map)
 import           Data.Int
-import           GHC.Natural (naturalToInteger, naturalFromInteger)
+import           GHC.Natural (naturalToInteger, naturalFromInteger )
 import           GHC.TypeLits
 import           Data.Kind
 import           Data.Word
@@ -116,7 +116,10 @@ import qualified Miso.JSON.Parser as Parser
 #ifndef VANILLA
 import           Control.Monad.Trans.Maybe
 import           System.IO.Unsafe (unsafePerformIO)
+#else
+import           Numeric (showHex)
 #endif
+
 ----------------------------------------------------------------------------
 infixr 8 .=
 (.=) :: ToJSON v => MisoString -> v -> Pair
@@ -485,10 +488,37 @@ encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 instance FromMisoString Value where
   fromMisoStringEither = Parser.decodePure
 ----------------------------------------------------------------------------
+#ifdef VANILLA
+-- | Escape special characters in a string for JSON serialization
+-- Handles: \, ", and all JSON control characters per RFC 8259
+escapeJSONString :: MisoString -> MisoString
+escapeJSONString = MS.concatMap escapeChar
+  where
+    escapeChar :: Char -> MisoString
+    escapeChar '\\' = "\\\\"   -- Backslash
+    escapeChar '"'  = "\\\""   -- Double quote
+    escapeChar '\b' = "\\b"    -- Backspace
+    escapeChar '\f' = "\\f"    -- Form feed
+    escapeChar '\n' = "\\n"    -- Newline
+    escapeChar '\r' = "\\r"    -- Carriage return
+    escapeChar '\t' = "\\t"    -- Tab
+    escapeChar c
+      | isControl c = ms ("\\u" <> padHex (ord c))  -- Other control chars as \uXXXX
+      | otherwise   = singleton c
+
+    padHex :: Int -> MisoString
+    padHex n = MS.pack $ replicate (4 - length h) '0' ++ h
+      where h = showHex n ""
+----------------------------------------------------------------------------
+#endif
 instance ToMisoString Value where
   toMisoString = \case
     String s ->
+#ifdef VANILLA
+      "\"" <> escapeJSONString s <> "\""
+#else
       "\"" <> s <> "\""
+#endif
     Number n ->
       ms n
     Null ->
@@ -501,7 +531,11 @@ instance ToMisoString Value where
       "false"
     Object o ->
       "{" <>
+#ifdef VANILLA
+        MS.intercalate "," [ "\"" <> escapeJSONString k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
+#else
         MS.intercalate "," [ "\"" <> k <> "\"" <> ":" <> ms v | (k,v) <- M.toList o ]
+#endif
       <> "}"
 ----------------------------------------------------------------------------
 #ifdef VANILLA

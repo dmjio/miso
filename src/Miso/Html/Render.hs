@@ -107,7 +107,7 @@ renderBuilder (VNode ns tag attrs children) = mconcat
   , mconcat [ " " <> intercalate " " (renderAttrs <$> attrs)
             | not (Prelude.null attrs)
             ]
-  , if tag `elem` selfClosing then "/>" else ">"
+  , ">"
   , mconcat
     [ mconcat
       [ foldMap renderBuilder (collapseSiblingTextNodes children)
