@@ -559,6 +559,8 @@
 -- t'MisoString' is a synonym for t'JSString' when using the JS / WASM backends. When using vanilla GHC
 -- it is t'Data.Text'. See "Miso.String" for more information.
 --
+-- For string conversions see the 'ms', 'fromMisoString' functions and 'ToMisoString' / 'FromMisoString' classes.
+--
 -- t'MisoString' is also used in the "Miso.Util.Lexer" and "Miso.Util.Parser" modules.
 --
 -- = JSON
