@@ -628,8 +628,13 @@ module Miso
     -- ** Component
   , Component (..)
   , component
+  , vcomp
   , (+>)
   , mount_
+    -- ** View
+  , vcomp
+  , vnode
+  , vtext
     -- ** Sink
   , withSink
   , Sink
