@@ -56,6 +56,7 @@ module Miso.Types
   -- ** Smart Constructors
   , emptyURI
   , component
+  , vcomp
   , (-->)
   , (<--)
   , (<-->)
@@ -73,7 +74,9 @@ module Miso.Types
   , prettyQueryString
   -- *** Combinators
   , node
+  , vnode
   , text
+  , vtext
   , text_
   , textRaw
   , textKey
@@ -236,6 +239,17 @@ component m u v = Component
   , mount = Nothing
   , unmount = Nothing
   }
+-----------------------------------------------------------------------------
+-- | Synonym for 'component'
+vcomp
+  :: model
+  -- ^ model
+  -> (action -> Effect parent model action)
+  -- ^ update
+  -> (model -> View model action)
+  -- ^ view
+  -> Component parent model action
+vcomp = component  
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
 --
@@ -446,6 +460,18 @@ node
   -> View model action
 node = VNode
 -----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VNode'.
+--
+-- synonym for 'node'
+--
+vnode
+  :: Namespace
+  -> MisoString
+  -> [Attribute action]
+  -> [View model action]
+  -> View model action
+vnode = node
+-----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
 #ifdef SSR
@@ -453,6 +479,10 @@ text = VText Nothing . htmlEncode
 #else
 text = VText Nothing
 #endif
+-----------------------------------------------------------------------------
+-- | Synonym for 'text'
+vtext :: MisoString -> View model action
+vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --
