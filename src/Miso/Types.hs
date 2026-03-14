@@ -73,7 +73,9 @@ module Miso.Types
   , prettyQueryString
   -- *** Combinators
   , node
+  , vnode
   , text
+  , vtext
   , text_
   , textRaw
   , textKey
@@ -446,6 +448,18 @@ node
   -> View model action
 node = VNode
 -----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VNode'.
+--
+-- synonym for 'node'
+--
+vnode
+  :: Namespace
+  -> MisoString
+  -> [Attribute action]
+  -> [View model action]
+  -> View model action
+vnode = node
+-----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
 #ifdef SSR
@@ -453,6 +467,10 @@ text = VText Nothing . htmlEncode
 #else
 text = VText Nothing
 #endif
+-----------------------------------------------------------------------------
+-- | Synonym for 'text'
+vtext :: MisoString -> View model action
+vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --
