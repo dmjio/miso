@@ -227,7 +227,7 @@
 -- * 'Miso.Event.onBeforeDestroyed' / 'Miso.Event.onBeforeDestroyedWith'
 -- * 'Miso.Event.onDestroyed'
 --
--- This is convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
+-- These are convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
 --
 -- @
 -- {-# LANGUAGE QuasiQuotes -#}
@@ -253,6 +253,8 @@
 --     """
 --   ]
 -- @
+--
+-- As a convention, the @*with@ variant of 'VNode' lifecycle hooks (e.g. 'Miso.Event.onCreatedWith') provide the target 'DOMRef' in the callback function (shown above).
 --
 -- = 'Key'
 --
@@ -340,6 +342,8 @@
 -- 'onChangeWith' :: ('MisoString' -> 'DOMRef' -> action) -> 'Attribute' action
 -- 'onChangeWith' = 'on' "change" 'valueDecoder'
 -- @
+--
+-- The @*with@ variant of events (e.g. 'Miso.Event.onChangeWith') provides the target 'DOMRef' in the callback function.
 --
 -- * Decoding events
 --
