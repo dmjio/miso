@@ -98,7 +98,7 @@
 --                        |     |    * - The type of the action that updates the 'model'
 --                        |     |    |
 -- counter :: 'Component' parent Int Action
--- counter = 'component' m u v
+-- counter = 'vcomp' m u v
 --   where
 --     m :: Int
 --     m = 0
@@ -306,9 +306,9 @@
 --
 -- The smart constructors:
 --
--- * 'node'
--- * 'text'
--- * 'component'
+-- * 'node' ('vnode')
+-- * 'text' ('vtext')
+-- * 'component' ('vcomp')
 -- * ('+>')
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
