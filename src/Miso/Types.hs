@@ -56,6 +56,7 @@ module Miso.Types
   -- ** Smart Constructors
   , emptyURI
   , component
+  , vcomp
   , (-->)
   , (<--)
   , (<-->)
@@ -238,6 +239,17 @@ component m u v = Component
   , mount = Nothing
   , unmount = Nothing
   }
+-----------------------------------------------------------------------------
+-- | Synonym for 'component'
+vcomp
+  :: model
+  -- ^ model
+  -> (action -> Effect parent model action)
+  -- ^ update
+  -> (model -> View model action)
+  -- ^ view
+  -> Component parent model action
+vcomp = component  
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
 --
