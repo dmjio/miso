@@ -48,7 +48,9 @@ module Miso.JSON
   , (.!=)
     -- * Encoding and decoding
   , encode
+  , encodePure
   , decode
+  , Parser.decodePure
     -- * Prism-style parsers
   , withObject
   , withText
@@ -479,11 +481,19 @@ typeMismatch expected actual =
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
-encode = ms . toJSON
+encode = encodePure
 #else
 encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 #endif
+----------------------------------------------------------------------------
+-- | Relies on the pure implementation of JSON parsing / serialization.
+--
+-- This can be used on the server or the client, it is more efficient to
+-- use 'encode' on the client (since it relies on @JSON.stringify()@).
+--
+encodePure :: ToJSON a => a -> MisoString
+encodePure = ms . toJSON
 ----------------------------------------------------------------------------
 instance FromMisoString Value where
   fromMisoStringEither = Parser.decodePure
