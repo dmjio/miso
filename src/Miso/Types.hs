@@ -319,7 +319,7 @@ data SomeComponent parent
   -- ^ 'Component'
   -> View model a
 infixr 0 +>
-key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
+key +> comp = VComp [ Property "key" (toJSON key) ] (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -338,7 +338,7 @@ mount_
   => Component model child a
   -- ^ 'Component' to mount
   -> View model action
-mount_ vcomp = VComp [] (SomeComponent vcomp)
+mount_ comp = VComp [] (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace

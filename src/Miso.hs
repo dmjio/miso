@@ -740,8 +740,8 @@ miso
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
 miso events f = do
-  vcomp <- f <$> getURI
-  initComponent events Hydrate vcomp { mountPoint = Nothing }
+  vcomp_ <- f <$> getURI
+  initComponent events Hydrate vcomp_ { mountPoint = Nothing }
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'URI' argument.
 --
@@ -758,7 +758,7 @@ prerender
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
+prerender events comp = initComponent events Hydrate comp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -812,7 +812,7 @@ renderApp
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-renderApp events renderer vcomp = do
+renderApp events renderer comp = do
   FFI.setDrawingContext renderer
-  initComponent events Draw vcomp
+  initComponent events Draw comp
 ----------------------------------------------------------------------------
