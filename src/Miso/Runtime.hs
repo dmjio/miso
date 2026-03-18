@@ -985,7 +985,7 @@ buildVTree
   -> View model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp attrs (SomeComponent app) -> do
+  VComp maybeKey (SomeComponent app) -> do
     vcomp_ <- create
 
     mountCallback <- do
@@ -1009,8 +1009,7 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             unmountComponent componentState
 
     FFI.set "child" jsNull vcomp_
-    let key = [ Property "key" (toJSON v) | Just v <- pure attrs ]
-    setAttrs vcomp_ key snk (logLevel app) events_
+    forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
     FFI.set "mount" mountCallback vcomp_
     FFI.set "unmount" unmountCallback vcomp_
     FFI.set "eventPropagation" (eventPropagation app) vcomp_
