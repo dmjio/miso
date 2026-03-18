@@ -1009,7 +1009,8 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             unmountComponent componentState
 
     FFI.set "child" jsNull vcomp_
-    setAttrs vcomp_ attrs snk (logLevel app) events_
+    let key = [ Property "key" (toJSON v) | Just v <- pure attrs ]
+    setAttrs vcomp_ key snk (logLevel app) events_
     FFI.set "mount" mountCallback vcomp_
     FFI.set "unmount" unmountCallback vcomp_
     FFI.set "eventPropagation" (eventPropagation app) vcomp_

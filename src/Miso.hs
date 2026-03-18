@@ -306,9 +306,9 @@
 --
 -- The smart constructors:
 --
--- * 'node' ('vnode')
--- * 'text' ('vtext')
--- * 'component' ('vcomp')
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
 -- * ('+>')
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".

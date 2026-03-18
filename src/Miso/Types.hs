@@ -293,7 +293,7 @@ type Tag = MisoString
 data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
-  | VComp [Attribute action] (SomeComponent model)
+  | VComp (Maybe Key) (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -319,7 +319,7 @@ data SomeComponent parent
   -- ^ 'Component'
   -> View model a
 infixr 0 +>
-key +> comp = VComp [ Property "key" (toJSON key) ] (SomeComponent comp)
+key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -338,7 +338,7 @@ mount_
   => Component model child a
   -- ^ 'Component' to mount
   -> View model action
-mount_ comp = VComp [] (SomeComponent comp)
+mount_ comp = VComp Nothing (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
