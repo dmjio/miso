@@ -47,6 +47,7 @@ import           Miso.DSL
 import           Miso.FFI.QQ (js)
 #endif
 import           Miso.Lens
+import           Miso.Storage
 import           Miso.Test
 import           Miso.Html
 import           Miso.JSON.Parser (decodePure)
@@ -125,6 +126,33 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Storage tests" $ do
+      it "Should get and set in localStorage" $ do
+        (`shouldBe` 0) =<< liftIO localStorageLength
+        liftIO (setLocalStorage "key1" "value1")
+        (`shouldBe` (Just "value1")) =<< liftIO (getLocalStorage "key1")
+        liftIO (setLocalStorage "key2" "value2")
+        (`shouldBe` (Just "value2")) =<< liftIO (getLocalStorage "key2")
+        (`shouldBe` Nothing) =<< liftIO (getLocalStorage "key3")
+        (`shouldBe` 2) =<< liftIO localStorageLength
+        liftIO (removeLocalStorage "key2")
+        (`shouldBe` Nothing) =<< liftIO (getLocalStorage "key2")
+        liftIO clearLocalStorage
+        (`shouldBe` 0) =<< liftIO localStorageLength
+
+      it "Should get and set in sessionStorage" $ do
+        (`shouldBe` 0) =<< liftIO sessionStorageLength
+        liftIO (setSessionStorage "key1" "value1")
+        (`shouldBe` (Just "value1")) =<< liftIO (getSessionStorage "key1")
+        liftIO (setSessionStorage "key2" "value2")
+        (`shouldBe` (Just "value2")) =<< liftIO (getSessionStorage "key2")
+        (`shouldBe` Nothing) =<< liftIO (getSessionStorage "key3")
+        (`shouldBe` 2) =<< liftIO sessionStorageLength
+        liftIO (removeSessionStorage "key2")
+        (`shouldBe` Nothing) =<< liftIO (getSessionStorage "key2")
+        liftIO clearSessionStorage
+        (`shouldBe` 0) =<< liftIO sessionStorageLength
+
     describe "Miso.Data.Array tests" $ do
       it "Should create a new array" $ do
         (`shouldBe` 0) =<< liftIO (Array.size =<< (Array.new :: IO (Array.Array Int)))
@@ -559,9 +587,9 @@ main = withJS $ do
         S.compareLength "" (-1) `shouldBe`
           T.compareLength "" (-1)
         S.compareLength "foo" 0 `shouldBe`
-          T.compareLength "foo" 0 
+          T.compareLength "foo" 0
         S.compareLength "foo" 2 `shouldBe`
-          T.compareLength "foo" 2 
+          T.compareLength "foo" 2
         S.compareLength "foo" 4 `shouldBe`
           T.compareLength "foo" 4
 

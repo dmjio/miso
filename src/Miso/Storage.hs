@@ -31,68 +31,43 @@ module Miso.Storage
 import           Control.Monad (void)
 -----------------------------------------------------------------------------
 import           Miso.DSL
-import           Miso.JSON
 import           Miso.String (MisoString)
------------------------------------------------------------------------------
--- | Helper for retrieving either local or session storage.
-getStorageCommon
-  :: FromJSON b
-  => (t -> IO (Maybe JSVal))
-  -> t
-  -> IO (Either MisoString b)
-getStorageCommon f key = do
-  result <- f key
-  case result of
-    Nothing ->
-      pure (Left "Not Found")
-    Just v -> do
-      s <- fromJSValUnchecked v
-      pure (eitherDecode s)
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in session storage.
 getSessionStorage
-  :: FromJSON model
-  => MisoString
-  -> IO (Either MisoString model)
-getSessionStorage =
-  getStorageCommon $ \t -> do
-    s <- sessionStorage
-    r <- getItem s t
-    fromJSVal r
+  :: MisoString
+  -> IO (Maybe MisoString)
+getSessionStorage key = do
+  fromJSValUnchecked =<< flip getItem key =<< sessionStorage
 -----------------------------------------------------------------------------
 -- | Retrieves a value stored under the given key in local storage.
 getLocalStorage
-  :: FromJSON model
-  => MisoString
-  -> IO (Either MisoString model)
-getLocalStorage = getStorageCommon $ \t -> do
-    s <- localStorage
-    r <- getItem s t
-    fromJSVal r
+  :: MisoString
+  -> IO (Maybe MisoString)
+getLocalStorage key =
+  fromJSValUnchecked =<< flip getItem key =<< localStorage
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in local storage.
 --
 -- @setLocalStorage key value@ sets the value of @key@ to @value@.
 setLocalStorage
-  :: ToJSON model
-  => MisoString
-  -> model
+  :: MisoString
+  -> MisoString
   -> IO ()
-setLocalStorage key model = do
+setLocalStorage key value = do
   s <- localStorage
-  setItem s key (encode model)
+  setItem s key value
 -----------------------------------------------------------------------------
 -- | Sets the value of a key in session storage.
 --
 -- @setSessionStorage key value@ sets the value of @key@ to @value@.
 setSessionStorage
-  :: ToJSON model
-  => MisoString
-  -> model
+  :: MisoString
+  -> MisoString
   -> IO ()
-setSessionStorage key model = do
+setSessionStorage key value = do
   s <- sessionStorage
-  setItem s key (encode model)
+  setItem s key value
 -----------------------------------------------------------------------------
 -- | Removes an item from local storage.
 --
