@@ -172,7 +172,7 @@
 --   => 'MisoString'
 --   -> 'Component' model child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' [ 'Property' "key" ('toJSON' key) ] ('SomeComponent' vcomp)
+-- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
