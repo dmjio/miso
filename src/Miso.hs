@@ -172,7 +172,7 @@
 --   => 'MisoString'
 --   -> 'Component' model child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' [ 'Property' "key" ('toJSON' key) ] ('SomeComponent' vcomp)
+-- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -293,7 +293,7 @@
 -- data 'View' model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' ['Attribute' action] ('SomeComponent' model)
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
 -- @
 --
 -- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
@@ -306,9 +306,9 @@
 --
 -- The smart constructors:
 --
--- * 'node' ('vnode')
--- * 'text' ('vtext')
--- * 'component' ('vcomp')
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
 -- * ('+>')
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
