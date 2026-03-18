@@ -131,13 +131,13 @@ renderBuilder (VNode ns tag attrs children) = mconcat
               , ns == MATHML
               ]
 
-renderBuilder (VComp _ (SomeComponent vcomp)) =
+renderBuilder (VComp _ (SomeComponent vcomp_)) =
   foldMap renderBuilder vkids
     where
 #ifdef SSR
-      vkids = [ unsafeCoerce $ (view vcomp) $ getInitialComponentModel vcomp ]
+      vkids = [ unsafeCoerce $ (view vcomp_) $ getInitialComponentModel vcomp_ ]
 #else
-      vkids = [ unsafeCoerce $ (view vcomp) (model vcomp) ]
+      vkids = [ unsafeCoerce $ (view vcomp_) (model vcomp_) ]
 #endif
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
