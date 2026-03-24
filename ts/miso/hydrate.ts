@@ -43,25 +43,6 @@ export function hydrate(logLevel: boolean, mountPoint: DOMRef | Text, vtree: VTr
 function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): void {
   if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
 }
-// https://stackoverflow.com/questions/11068240/what-is-the-most-efficient-way-to-parse-a-css-color-in-javascript
-function parseColor(input: string): number[] {
-  if (input.substr(0, 1) == '#') {
-    const collen = (input.length - 1) / 3;
-    const fact = [17, 1, 0.062272][collen - 1];
-    return [
-      Math.round(parseInt(input.substr(1, collen), 16) * fact),
-      Math.round(parseInt(input.substr(1 + collen, collen), 16) * fact),
-      Math.round(parseInt(input.substr(1 + 2 * collen, collen), 16) * fact),
-    ];
-  } else
-    return input
-      .split('(')[1]
-      .split(')')[0]
-      .split(',')
-      .map((x: string) => {
-        return +x;
-      });
-}
 
 function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
   // This is slightly more complicated than one might expect since
