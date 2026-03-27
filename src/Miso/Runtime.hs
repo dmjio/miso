@@ -98,7 +98,7 @@ import qualified Data.IntSet as IS
 import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
-import           Control.Exception (SomeException, catch)
+import           Control.Exception (SomeException, catch, evaluate)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
@@ -925,7 +925,7 @@ drain ComponentState {..} = do
              -- dmj: process all actions synchronously during unmount
              Schedule _ action ->
                action _componentSink
-                 `catch` (\(_ :: SomeException) -> pure ())
+                 `catch` (\(e :: SomeException) -> void (evaluate e))
              -- dmj: Don't recurse on drain, we only fire-off the last set
              -- of events for 'onBeforeUnmounted' hooks. The queue will
              -- ignore the rest of these.
