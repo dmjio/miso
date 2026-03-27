@@ -15,7 +15,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- = Miso 🍜
+-- = miso 🍜
 --
 -- @miso@ is a library for building web and native user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
 --
@@ -377,7 +377,7 @@
 -- = 'Effect'
 --
 -- The 'Effect' type is used to mutate the @model@ over time in response to @action@.
--- This allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
+-- 'Effect' also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
 --
 -- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
 -- There is no 'MonadIO' instance for 'Effect'.
@@ -387,6 +387,10 @@
 -- @
 -- type 'Effect' parent model action = 'RWS' ('ComponentInfo' parent) ['Schedule' action] model ()
 -- @
+--
+-- * The 'Control.Monad.Reader' portion of 'Effect' is 'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
+-- * The 'Control.Monad.Writer' portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a 'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
+-- * The 'Control.Monad.State' portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the 'Control.Monad.State.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
 --
 -- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
 --
@@ -534,7 +538,7 @@
 -- = QuasiQuotation (@inline-js@)
 --
 -- Along with "Miso.DSL", a JavaScript QuasiQuoter is now included (See "Miso.FFI.QQ"). This makes it easy to
--- integrate miso with any third-party JavaScript library. This bindings in scope can be used inside the QuasiQuoter, which
+-- integrate miso with any third-party JavaScript library. The bindings in scope can be used inside the QuasiQuoter, which
 -- will utilize their 'Miso.DSL.ToJSVal' instances. When returning values from the QuasiQuoter, the 'Miso.DSL.FromJSVal' instance will
 -- be used Haskell.
 --

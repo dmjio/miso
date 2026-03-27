@@ -26,6 +26,7 @@
 ----------------------------------------------------------------------------
 module Miso.State
   ( ask
+  , asks
   , modify
   , modify'
   , get
@@ -35,6 +36,6 @@ module Miso.State
   , liftIO
   ) where
 ----------------------------------------------------------------------------
-import Control.Monad.RWS (get, gets, modify, modify', tell, put, ask)
+import Control.Monad.RWS (get, gets, modify, modify', tell, put, ask, asks)
 import Control.Monad.IO.Class (liftIO)
 ----------------------------------------------------------------------------
