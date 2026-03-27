@@ -923,7 +923,9 @@ drain ComponentState {..} = do
          (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
-             Schedule _ action -> action _componentSink
+             Schedule _ action ->
+               action _componentSink
+                 `catch` (\(_ :: SomeException) -> pure ())
              -- dmj: Don't recurse on drain, we only fire-off the last set
              -- of events for 'onBeforeUnmounted' hooks. The queue will
              -- ignore the rest of these.
