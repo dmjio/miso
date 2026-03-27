@@ -54,7 +54,15 @@ common options
 
 executable component-tests
   import:
-    options, cpp
+    warnings,
+    options,
+    cpp
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: True
+  else
+    buildable: False
+
   main-is:
     Main.hs
   build-depends:
@@ -64,8 +72,84 @@ executable component-tests
 
   if arch(javascript) || impl(ghcjs)
     cpp-options:
-      -DGHCJS_BROWSER
+      -dghcjs_browser
 
+  default-language:
+    Haskell2010
+
+executable integration-tests-client
+  import:
+    warnings,
+    options,
+    cpp
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: True
+  else
+    buildable: False
+
+  hs-source-dirs:
+    app
+
+  build-depends:
+    base,
+    text,
+    miso,
+    QuickCheck,
+    hashable,
+    lens
+
+  main-is:
+    TestClient.hs
+
+  other-modules:    
+    TestApp
+    HtmlGen
+    TestBindingsApp
+    TestTypes
+
+  default-language:
+    Haskell2010
+
+executable integration-tests-server
+  import:
+    warnings,
+    cpp
+
+  if impl(ghcjs) || arch(javascript) || arch(wasm32)
+    buildable: False
+  else
+    buildable: True
+
+  main-is:
+    TestServer.hs
+
+  other-modules:    
+    TestApp
+    HtmlGen
+    TestBindingsApp
+    TestTypes
+
+  build-depends:
+    base,
+    text,
+    miso,
+    warp,
+    wai-extra,
+    wai,
+    servant,
+    servant-server,
+    servant-miso-router,
+    servant-miso-html,
+    directory,
+    QuickCheck,
+    hashable,
+    http-client,
+    http-types,
+    bytestring,
+    network
+  hs-source-dirs:
+    app
   default-language:
     Haskell2010
 
