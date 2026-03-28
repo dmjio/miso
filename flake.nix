@@ -21,7 +21,7 @@
     # Miso's nixpkgs hash, this is used for acquiring the GHCJS-9122 backend
     # and native backend
     nixpkgs.url =
-      "github:nixos/nixpkgs?rev=9e2e8a7878573d312db421d69e071690ec34e98c";
+      "github:nixos/nixpkgs?rev=c4fbd818f0007468c1ea412f5d5b657403a50f8b";
 
     # Some light utils
     flake-utils.url = "github:numtide/flake-utils";
