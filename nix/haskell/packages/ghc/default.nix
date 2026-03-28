@@ -15,6 +15,9 @@ self: super:
   /* examples */
   sample-app = self.callCabal2nix "app" source.sample-app {};
 
+  /* hls */
+  haskell-language-server = self.callCabal2nix "haskell-language-server" source.haskell-language-server {};
+
   /* cruft */
   crypton = dontCheck super.crypton;
   ghcid = doJailbreak super.ghcid;
