@@ -50,11 +50,4 @@ in
     sha256 = "0az7xdvd5irsf4x18dgz8aqymrk01bxzmjwhwrmbqmi8kdp1dfb4";
   };
 
-  haskell-language-server = fetchFromGitHub {
-    owner = "haskell";
-    repo = "haskell-language-server";
-    rev = "d744a66a853c287e671e06e62f2a58dd8e7a86d9";
-    sha256 = "sha256-Y4XVuyJZnZ++u+wSHlz7xnN9+nk29csahnXDC0QMiGM=";
-  };
-
 }
