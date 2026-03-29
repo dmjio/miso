@@ -451,9 +451,11 @@
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
 --
+-- == Parent access
+--
 -- * 'parent'
 --
--- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+-- While not direct communication, a 'Component' can asynchronously receive read-only access to its @parent@ state via the 'parent' function.
 --
 -- = Subscriptions
 --
