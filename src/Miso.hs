@@ -496,15 +496,15 @@
 -- when a user logs in). The 'startSub' and 'stopSub' functions facilitate dynamic 'Sub' creation / removal.
 --
 -- @
---   update = \\case
---     StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
---     StopTimer -> 'stopSub' "timer"
---     Log -> 'io_' ('consoleLog' "log")
---       where
---         timerSub :: 'Sub' Action
---         timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+-- update = \\case
+--   StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
+--   StopTimer -> 'stopSub' "timer"
+--   Log -> 'io_' ('consoleLog' "log")
+--     where
+--       timerSub :: 'Sub' Action
+--       timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
 --
---   data Action = Log
+-- data Action = Log
 -- @
 --
 -- * 'Miso.Subscription.Util.createSub'
