@@ -392,7 +392,7 @@
 -- * The 'Control.Monad.Writer' portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a 'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
 -- * The 'Control.Monad.State' portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the 'Control.Monad.State.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
 --
--- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
+-- 'IO' can be performed either synchronously or asynchronously. By default all 'IO' is asynchronous
 --
 -- == Asynchronous 'IO'
 --
