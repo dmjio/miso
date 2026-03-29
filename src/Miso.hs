@@ -479,7 +479,7 @@
 --
 -- @
 -- 'onLineSub' :: (Bool -> action) -> 'Sub' action
--- 'onLineSub' f sink = 'createSub' acquire release sink
+-- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
 --       FFI.windowRemoveEventListener "online" cb1
@@ -502,7 +502,7 @@
 --   Log -> 'io_' ('consoleLog' "log")
 --     where
 --       timerSub :: 'Sub' Action
---       timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+--       timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
 -- data Action = Log
 -- @
@@ -518,7 +518,7 @@
 --
 --  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
 --
--- = 'State' management ('Lens')
+-- = 'Control.Monad.State.State' management
 --
 --  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@) that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
 --
