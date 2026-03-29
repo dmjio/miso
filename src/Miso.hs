@@ -392,7 +392,7 @@
 -- * The 'Control.Monad.Writer' portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a 'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
 -- * The 'Control.Monad.State' portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the 'Control.Monad.State.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
 --
--- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
+-- 'IO' can be performed either synchronously or asynchronously. By default all 'IO' is asynchronous
 --
 -- == Asynchronous 'IO'
 --
@@ -451,9 +451,11 @@
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
 --
+-- == Parent access
+--
 -- * 'parent'
 --
--- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+-- While not direct communication, a 'Component' can asynchronously receive read-only access to its @parent@ state via the 'parent' function.
 --
 -- = Subscriptions
 --
@@ -477,7 +479,7 @@
 --
 -- @
 -- 'onLineSub' :: (Bool -> action) -> 'Sub' action
--- 'onLineSub' f sink = 'createSub' acquire release sink
+-- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
 --       FFI.windowRemoveEventListener "online" cb1
@@ -494,15 +496,15 @@
 -- when a user logs in). The 'startSub' and 'stopSub' functions facilitate dynamic 'Sub' creation / removal.
 --
 -- @
---   update = \\case
---     StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
---     StopTimer -> 'stopSub' "timer"
---     Log -> 'io_' ('consoleLog' "log")
---       where
---         timerSub :: 'Sub' Action
---         timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+-- update = \\case
+--   StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
+--   StopTimer -> 'stopSub' "timer"
+--   Log -> 'io_' ('consoleLog' "log")
+--     where
+--       timerSub :: 'Sub' Action
+--       timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
---   data Action = Log
+-- data Action = Log
 -- @
 --
 -- * 'Miso.Subscription.Util.createSub'
@@ -516,7 +518,7 @@
 --
 --  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
 --
--- = 'State' management ('Lens')
+-- = 'Control.Monad.State.State' management
 --
 --  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@) that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
 --

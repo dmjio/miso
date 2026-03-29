@@ -192,11 +192,13 @@ type CacheBust = Bool
 -- This is meant to be useful in development only.
 --
 -- @
---   Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
---   Script "alert(\"hi\");"
---   ImportMap [ "key" =: "value" ]
+-- Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
+-- Script "alert(\"hi\");"
+-- ImportMap [ "key" =: "value" ]
+-- Module "console.log(\"hi\");"
 -- @
 --
+-- @since 1.9.0.0
 data JS
   = Src MisoString CacheBust
   -- ^ URL linking to hosted JS
@@ -306,8 +308,8 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   "component-id" +> component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
+-- "component-id" +> component model noop $ \\m ->
+--   div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
@@ -328,8 +330,8 @@ key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- @
---   mount_ $ component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
+-- mount_ $ component model noop $ \\m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
@@ -462,7 +464,7 @@ node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
--- synonym for 'node'
+-- Synonym for 'node'
 --
 vnode
   :: Namespace
