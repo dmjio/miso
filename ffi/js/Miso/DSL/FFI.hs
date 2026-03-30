@@ -99,8 +99,9 @@ foreign import javascript safe
 #endif
   eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
-instance Eq JSVal where (==) = eq
-{-# INLINE (==) #-}
+instance Eq JSVal where
+  (==) = eq
+  {-# INLINE (==) #-}
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
 toJSVal_Bool = Marshal.toJSVal

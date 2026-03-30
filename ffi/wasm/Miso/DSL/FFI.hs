@@ -88,8 +88,9 @@ foreign import javascript unsafe
   return $1 === $2;
   """ eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
-instance Eq JSVal where (==) = eq
-{-# INLINE (==) #-}
+instance Eq JSVal where
+  (==) = eq
+  {-# INLINE (==) #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
