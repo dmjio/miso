@@ -114,50 +114,64 @@ class GToJSVal (f :: Type -> Type) where
 -----------------------------------------------------------------------------
 instance GToJSVal a => GToJSVal (D1 i a) where
   gToJSVal (M1 x) = gToJSVal x
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance GToJSVal a => GToJSVal (C1 i a) where
   gToJSVal (M1 x) = gToJSVal x
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance (GToJSVal a, GToJSVal b) => GToJSVal (a :*: b) where
   gToJSVal (x :*: y) o = gToJSVal x o >> gToJSVal y o
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance (TypeError ('Text "Sum types unsupported"), GToJSVal a, GToJSVal b) => GToJSVal (a :+: b) where
   gToJSVal = \case
     L1 x -> gToJSVal x
     R1 x -> gToJSVal x
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, Selector s) => GToJSVal (S1 s (K1 i a)) where
   gToJSVal (M1 (K1 x)) o =
     setField o fieldName =<< toJSVal x
       where
         fieldName = ms $ selName (undefined :: S1 s (K1 i a) ())
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance GToJSVal U1 where
   gToJSVal U1 _ = pure ()
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance GToJSVal V1 where
   gToJSVal _ _ = pure ()
+  {-# INLINE gToJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Bool where
   toJSVal = toJSVal_Bool
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Double where
   toJSVal = toJSVal_Double
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Float where
   toJSVal = toJSVal_Float
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal (IO a) where
   toJSVal action = toJSVal =<< action
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal () where
   toJSVal () = pure jsNull
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Char where
   toJSVal = toJSVal_Char
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Int where
   toJSVal = toJSVal_Int
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal (Map MisoString a) where
   toJSVal map_ = do
@@ -165,6 +179,7 @@ instance ToJSVal a => ToJSVal (Map MisoString a) where
     forM_ (M.toList map_) $ \(k,v) ->
       setField o k =<< toJSVal v
     toJSVal o
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal a => FromJSVal (Map MisoString a) where
   fromJSVal o = pure <$> do foldM populate M.empty =<< listProps (Object o)
@@ -172,35 +187,44 @@ instance FromJSVal a => FromJSVal (Map MisoString a) where
       populate m k = do
         v <- fromJSValUnchecked =<< getProp k (Object o)
         pure (M.insert k v m)
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (Map MisoString a) where
   toObject x = Object <$> toJSVal x
+  {-# INLINE toObject #-}
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToJSVal (Maybe a) where
   toJSVal = \case
     Nothing -> pure jsNull
     Just x -> toJSVal x
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance {-# OVERLAPPABLE #-} FromJSVal a => FromJSVal [a] where
   fromJSVal jsval_ = do
     fromJSVal_List jsval_ >>= \case
       Nothing -> pure Nothing
       Just xs -> sequence <$> mapM fromJSVal xs
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal [Char] where
   fromJSVal jsval_ = fmap unpack <$> fromJSVal jsval_
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal [Char] where
   toJSVal = toJSVal . toMisoString
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance {-# OVERLAPPABLE #-} ToJSVal a => ToJSVal [a] where
   toJSVal = toJSVal_List <=< mapM toJSVal
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal JSVal where
   toJSVal = pure
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Value where
   fromJSVal = fromJSVal_Value
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 -- | A class for marshaling JS values into Haskell
 class FromJSVal a where
@@ -218,18 +242,23 @@ class GFromJSVal (f :: Type -> Type) where
 -----------------------------------------------------------------------------
 instance GFromJSVal a => GFromJSVal (D1 i a) where
   gFromJSVal o = fmap M1 <$> gFromJSVal o
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance GFromJSVal a => GFromJSVal (C1 i a) where
   gFromJSVal o = fmap M1 <$> gFromJSVal o
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance GFromJSVal U1 where
   gFromJSVal _ = pure (Just U1)
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance GFromJSVal V1 where
   gFromJSVal _ = pure Nothing
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance (GFromJSVal a, GFromJSVal b) => GFromJSVal (a :*: b) where
   gFromJSVal o = runMaybeT $ (:*:) <$> MaybeT (gFromJSVal o) <*> MaybeT (gFromJSVal o)
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance (TypeError ('Text "Sum types unsupported"), GFromJSVal a, GFromJSVal b) => GFromJSVal (a :+: b) where
   gFromJSVal o = do
@@ -237,52 +266,69 @@ instance (TypeError ('Text "Sum types unsupported"), GFromJSVal a, GFromJSVal b)
     case x of
       Nothing -> fmap R1 <$> gFromJSVal o
       Just y -> pure (Just y)
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance (FromJSVal a, Selector s) => GFromJSVal (S1 s (K1 i a)) where
   gFromJSVal o = fmap (M1 . K1) <$> do fromJSVal =<< getProp (ms name) o
     where
       name = selName (undefined :: S1 s (K1 i a) ())
+  {-# INLINE gFromJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Int where
   fromJSVal = fromJSVal_Int
   fromJSValUnchecked = fromJSValUnchecked_Int
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Char where
   fromJSVal = fromJSVal_Char
   fromJSValUnchecked = fromJSValUnchecked_Char
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Float where
   fromJSVal = fromJSVal_Float
   fromJSValUnchecked = fromJSValUnchecked_Float
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Double where
   fromJSVal = fromJSVal_Double
   fromJSValUnchecked = fromJSValUnchecked_Double
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Text where
   fromJSVal = fromJSVal_Text
   fromJSValUnchecked = fromJSValUnchecked_Text
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance ToObject Object where
   toObject = pure
+  {-# INLINE toObject #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Value where
   toJSVal = toJSVal_Value
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance ToJSVal Text where
   toJSVal = toJSVal_Text
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal () where
   fromJSVal _ = pure (Just ())
     -- if isUndefined_ffi x || isNull_ffi x
     --   then pure (Just ())
     --   else pure Nothing
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b) => ToJSVal (a,b) where
   toJSVal (y,z) = do
     y_ <- toJSVal y
     z_ <- toJSVal z
     toJSVal_List [ y_, z_ ]
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b, ToJSVal c) => ToJSVal (a,b,c) where
   toJSVal (x,y,z) = do
@@ -290,6 +336,7 @@ instance (ToJSVal a, ToJSVal b, ToJSVal c) => ToJSVal (a,b,c) where
     y_ <- toJSVal y
     z_ <- toJSVal z
     toJSVal_List [ x_, y_, z_ ]
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d) => ToJSVal (a,b,c,d) where
   toJSVal (w,x,y,z) = do
@@ -298,6 +345,7 @@ instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d) => ToJSVal (a,b,c,d) where
     y_ <- toJSVal y
     z_ <- toJSVal z
     toJSVal_List [ w_, x_, y_, z_ ]
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e) => ToJSVal (a,b,c,d,e) where
   toJSVal (v,w,x,y,z) = do
@@ -307,6 +355,7 @@ instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e) => ToJSVal (a,b
     y_ <- toJSVal y
     z_ <- toJSVal z
     toJSVal_List [ v_, w_, x_, y_, z_ ]
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e, ToJSVal f) => ToJSVal (a,b,c,d,e,f) where
   toJSVal (u,v,w,x,y,z) = do
@@ -317,22 +366,27 @@ instance (ToJSVal a, ToJSVal b, ToJSVal c, ToJSVal d, ToJSVal e, ToJSVal f) => T
     y_ <- toJSVal y
     z_ <- toJSVal z
     toJSVal_List [ u_, v_, w_, x_, y_, z_ ]
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 -- | Retrieves a field from globalThis
 jsg :: MisoString -> IO JSVal
 jsg key = global ! key
+{-# INLINABLE jsg #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with a specified argument list
 jsgf :: ToArgs args => MisoString -> args -> IO JSVal
 jsgf name = global # name
+{-# INLINABLE jsgf #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with no argument
 jsg0 :: MisoString -> IO JSVal
 jsg0 name = jsgf name ([] :: [JSVal])
+{-# INLINABLE jsg0 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 1 argument
 jsg1 :: ToJSVal arg => MisoString -> arg -> IO JSVal
 jsg1 name arg = jsgf name [arg]
+{-# INLINABLE jsg1 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 2 arguments
 jsg2 :: (ToJSVal arg1, ToJSVal arg2) => MisoString -> arg1 -> arg2 -> IO JSVal
@@ -340,6 +394,7 @@ jsg2 name arg1 arg2 = do
   arg1_ <- toJSVal arg1
   arg2_ <- toJSVal arg2
   jsgf name [arg1_, arg2_]
+{-# INLINABLE jsg2 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 3 arguments
 jsg3 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3)
@@ -353,6 +408,7 @@ jsg3 name arg1 arg2 arg3 = do
   arg2_ <- toJSVal arg2
   arg3_ <- toJSVal arg3
   jsgf name [arg1_, arg2_, arg3_]
+{-# INLINABLE jsg3 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 4 arguments
 jsg4 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4)
@@ -368,6 +424,7 @@ jsg4 name arg1 arg2 arg3 arg4 = do
   arg3_ <- toJSVal arg3
   arg4_ <- toJSVal arg4
   jsgf name [arg1_, arg2_, arg3_, arg4_]
+{-# INLINABLE jsg4 #-}
 -----------------------------------------------------------------------------
 -- | Invokes a function with 5 arguments
 jsg5 :: (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5)
@@ -385,6 +442,7 @@ jsg5 name arg1 arg2 arg3 arg4 arg5 = do
   arg4_ <- toJSVal arg4
   arg5_ <- toJSVal arg5
   jsgf name [arg1_, arg2_, arg3_, arg4_, arg5_]
+{-# INLINABLE jsg5 #-}
 -----------------------------------------------------------------------------
 -- | Sets a field on an Object at a specified field
 setField :: (ToObject o, ToJSVal v) => o -> MisoString -> v -> IO ()
@@ -392,6 +450,7 @@ setField o k v = do
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
   setProp_ffi k v' o'
+{-# INLINABLE setField #-}
 -----------------------------------------------------------------------------
 -- | Sets a field on an Object at a specified index
 infixr 1 <##
@@ -400,16 +459,19 @@ infixr 1 <##
   o' <- toJSVal =<< toObject o
   v' <- toJSVal v
   setPropIndex_ffi k v' o'
+{-# INLINABLE (<##) #-}
 -----------------------------------------------------------------------------
 -- | Retrieves a property from an Object
 (!) :: ToObject o => o -> MisoString -> IO JSVal
 (!) = flip getProp
+{-# INLINABLE (!) #-}
 -----------------------------------------------------------------------------
 -- | Lists the properties on a JS Object.
 listProps :: Object -> IO [MisoString]
 listProps (Object jsval) = do
   keys <- fromJSValUnchecked =<< listProps_ffi jsval
   forM keys fromJSValUnchecked
+{-# INLINABLE listProps #-}
 -----------------------------------------------------------------------------
 -- | Calls a JS function on an t'Object' at a field with specified arguments.
 call :: (ToObject obj, ToObject this, ToArgs args) => obj -> this -> args -> IO JSVal
@@ -418,6 +480,7 @@ call o this args = do
   this' <- toJSVal =<< toObject this
   args' <- toJSVal =<< toArgs args
   invokeFunction o' this' args'
+{-# INLINABLE call #-}
 -----------------------------------------------------------------------------
 -- | Calls a JS function on an t'Object' at a field with specified arguments.
 infixr 2 #
@@ -427,6 +490,7 @@ infixr 2 #
   func <- getProp_ffi k o'
   args' <- toJSVal =<< toArgs args
   invokeFunction func o' args'
+{-# INLINABLE (#) #-}
 -----------------------------------------------------------------------------
 apply :: (FromJSVal a, ToArgs args) => Function -> args -> IO a
 apply (Function func) args = do
@@ -434,6 +498,7 @@ apply (Function func) args = do
   fromJSValUnchecked =<< do
     invokeFunction func o =<<
       toJSVal (toArgs args)
+{-# INLINABLE apply #-}
 -----------------------------------------------------------------------------
 -- | Instantiates a new JS t'Object'.
 new :: (ToObject constructor, ToArgs args) => constructor -> args -> IO JSVal
@@ -441,10 +506,12 @@ new constr args = do
   obj <- toJSVal =<< toObject constr
   argv <- toJSVal =<< toArgs args
   new_ffi obj argv
+{-# INLINABLE new #-}
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object'
 create :: IO Object
 create = Object <$> create_ffi
+{-# INLINABLE create #-}
 -----------------------------------------------------------------------------
 -- | Creates a new JS t'Object' populated with key-value pairs specified
 -- in the list. Meant for use with 'inline' JS functionality.
@@ -463,14 +530,17 @@ createWith kvs = do
   forM_ kvs $ \(k,v) ->
     flip (setProp k) o =<< toJSVal v
   pure o
+{-# INLINABLE createWith #-}
 -----------------------------------------------------------------------------
 -- | Sets a property on a JS t'Object'
 setProp :: ToJSVal val => MisoString -> val -> Object -> IO ()
 setProp k v (Object o) = flip (setProp_ffi k) o =<< toJSVal v
+{-# INLINABLE setProp #-}
 -----------------------------------------------------------------------------
 -- | Retrieves a property from a JS t'Object'
 getProp :: ToObject o => MisoString -> o -> IO JSVal
 getProp k v = getProp_ffi k =<< toJSVal (toObject v)
+{-# INLINABLE getProp #-}
 -----------------------------------------------------------------------------
 -- | Dynamically evaluates a JS string. See [eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval)
 --
@@ -481,13 +551,17 @@ getProp k v = getProp_ffi k =<< toJSVal (toObject v)
 --
 eval :: MisoString -> IO JSVal
 eval = eval_ffi
+{-# INLINABLE eval #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Bool where
   fromJSVal = fromJSVal_Bool
   fromJSValUnchecked = fromJSValUnchecked_Bool
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 instance FromJSVal JSVal where
   fromJSVal = pure . Just
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal a => FromJSVal (Maybe a) where
   fromJSVal x = fromJSVal_Maybe x >>= \case
@@ -497,6 +571,8 @@ instance FromJSVal a => FromJSVal (Maybe a) where
   fromJSValUnchecked x = fromJSValUnchecked_Maybe x >>= \case
     Nothing -> pure Nothing
     Just y -> Just <$> fromJSValUnchecked y
+  {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSValUnchecked #-}
 -----------------------------------------------------------------------------
 -- | A class for creating arguments to a JS function
 class ToArgs args where
@@ -504,12 +580,15 @@ class ToArgs args where
 -----------------------------------------------------------------------------
 instance ToArgs Double where
   toArgs x = (:[]) <$> toJSVal x
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToArgs JSVal where
   toArgs val = pure [val]
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToObject JSVal where
   toObject = pure . Object
+  {-# INLINE toObject #-}
 -----------------------------------------------------------------------------
 -- | A class for creating JS objects.
 class ToObject a where
@@ -522,47 +601,59 @@ class ToObject a where
 -----------------------------------------------------------------------------
 instance ToJSVal a => ToObject (IO a) where
   toObject action = Object <$> (toJSVal =<< action)
+  {-# INLINE toObject #-}
 -----------------------------------------------------------------------------
 instance ToArgs MisoString where
   toArgs arg = (:[]) <$> toJSVal arg
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 #ifndef VANILLA
 ----------------------------------------------------------------------------
 instance ToJSVal MisoString where
   toJSVal = toJSVal_JSString
+  {-# INLINE toJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal MisoString where
   fromJSVal = fromJSVal_JSString
+  {-# INLINE fromJSVal #-}
 ----------------------------------------------------------------------------
 #endif
 ----------------------------------------------------------------------------
 instance ToJSVal arg => ToArgs [arg] where
     toArgs = mapM toJSVal
+    {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance ToArgs () where
   toArgs _ = pure []
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance ToArgs Int where
   toArgs k = (:[]) <$> toJSVal k
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToArgs Function where
   toArgs k = (:[]) <$> toJSVal k
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToArgs Bool where
   toArgs k = (:[]) <$> toJSVal k
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToArgs Object where
   toArgs k = (:[]) <$> toJSVal k
+  {-# INLINE toArgs #-}
 -----------------------------------------------------------------------------
 instance ToArgs args => ToArgs (Maybe args) where
   toArgs (Just args) = toArgs args
   toArgs Nothing     = pure []
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2) => ToArgs (arg1, arg2) where
   toArgs (arg1, arg2) = do
     rarg1 <- toJSVal arg1
     rarg2 <- toJSVal arg2
     return [rarg1, rarg2]
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3) => ToArgs (arg1, arg2, arg3) where
   toArgs (arg1, arg2, arg3) = do
@@ -570,6 +661,7 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3) => ToArgs (arg1, arg2, arg3)
     rarg2 <- toJSVal arg2
     rarg3 <- toJSVal arg3
     return [rarg1, rarg2, rarg3]
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4) => ToArgs (arg1, arg2, arg3, arg4) where
   toArgs (arg1, arg2, arg3, arg4) = do
@@ -578,6 +670,7 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4) => ToArgs (arg
     rarg3 <- toJSVal arg3
     rarg4 <- toJSVal arg4
     return [rarg1, rarg2, rarg3, rarg4]
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5) => ToArgs (arg1, arg2, arg3, arg4, arg5) where
   toArgs (arg1, arg2, arg3, arg4, arg5) = do
@@ -587,6 +680,7 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5) 
     rarg4 <- toJSVal arg4
     rarg5 <- toJSVal arg5
     return [rarg1, rarg2, rarg3, rarg4, rarg5]
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, ToJSVal arg6) => ToArgs (arg1, arg2, arg3, arg4, arg5, arg6) where
   toArgs (arg1, arg2, arg3, arg4, arg5, arg6) = do
@@ -597,28 +691,35 @@ instance (ToJSVal arg1, ToJSVal arg2, ToJSVal arg3, ToJSVal arg4, ToJSVal arg5, 
     rarg5 <- toJSVal arg5
     rarg6 <- toJSVal arg6
     return [rarg1, rarg2, rarg3, rarg4, rarg5, rarg6]
+  {-# INLINE toArgs #-}
 ----------------------------------------------------------------------------
 -- | Frees references to a callback
 freeFunction :: Function -> IO ()
 freeFunction (Function x) = freeFunction_ffi x
+{-# INLINABLE freeFunction #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Function where
   fromJSVal = pure . Just . Function
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 instance FromJSVal Object where
   fromJSVal = pure . Just . Object
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 -- | Lookup a property based on its index
 (!!) :: ToObject object => object -> Int -> IO JSVal
 (!!) o k = getPropIndex_ffi k =<< toJSVal =<< toObject o
+{-# INLINABLE (!!) #-}
 -----------------------------------------------------------------------------
 -- | Checks if a t'JSVal' is undefined
 isUndefined :: ToJSVal val => val -> IO Bool
 isUndefined val = isUndefined_ffi <$> toJSVal val
+{-# INLINABLE isUndefined #-}
 -----------------------------------------------------------------------------
 -- | Checks if a t'JSVal' is null
 isNull :: ToJSVal val => val -> IO Bool
 isNull val = isNull_ffi <$> toJSVal val
+{-# INLINABLE isNull #-}
 -----------------------------------------------------------------------------
 -- | A JS Object
 newtype Object = Object { unObject :: JSVal } deriving newtype (ToJSVal, Eq)
@@ -628,25 +729,25 @@ newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal, E
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
     fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c) => FromJSVal (a,b,c) where
     fromJSVal r = runMaybeT $ (,,) <$> jf r 0 <*> jf r 1 <*> jf r 2
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d) => FromJSVal (a,b,c,d) where
     fromJSVal r = runMaybeT $ (,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e) => FromJSVal (a,b,c,d,e) where
     fromJSVal r = runMaybeT $ (,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f) => FromJSVal (a,b,c,d,e,f) where
     fromJSVal r = runMaybeT $ (,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g) => FromJSVal (a,b,c,d,e,f,g) where
     fromJSVal r = runMaybeT $ (,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g, FromJSVal h) => FromJSVal (a,b,c,d,e,f,g,h) where
     fromJSVal r = runMaybeT $ (,,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6 <*> jf r 7
-    {-# INLINE fromJSVal #-}
+  {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 jf :: FromJSVal a => JSVal -> Int -> MaybeT IO a
 jf r n = MaybeT $ do

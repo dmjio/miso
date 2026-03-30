@@ -89,6 +89,7 @@ foreign import javascript unsafe
   """ eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
 instance Eq JSVal where (==) = eq
+{-# INLINE (==) #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -111,6 +112,7 @@ toJSVal_List js = do
   arr <- newArray
   forM_ js (pushArray arr)
   pure arr
+{-# INLINE toJSVal_List #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -149,48 +151,57 @@ fromJSVal_Char x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Char x
+{-# INLINE fromJSVal_Char #-}
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString (JSString jsval) = pure jsval
+{-# INLINE toJSVal_JSString #-}
 -----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Text x
+{-# INLINE fromJSVal_Text #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Text :: JSVal -> IO Text
 fromJSValUnchecked_Text t =
   pure $ textFromJSString (JSString t)
+{-# INLINE fromJSValUnchecked_Text #-}
 -----------------------------------------------------------------------------
 toJSVal_Text :: Text -> IO JSVal
 toJSVal_Text t =
   case textToJSString t of
     JSString jsval -> pure jsval
+{-# INLINE toJSVal_Text #-}
 -----------------------------------------------------------------------------
 fromJSVal_Float :: JSVal -> IO (Maybe Float)
 fromJSVal_Float x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Float x
+{-# INLINE fromJSVal_Float #-}
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Bool x
+{-# INLINE fromJSVal_Bool #-}
 -----------------------------------------------------------------------------
 fromJSVal_Int :: JSVal -> IO (Maybe Int)
 fromJSVal_Int x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Int x
+{-# INLINE fromJSVal_Int #-}
 -----------------------------------------------------------------------------
 fromJSVal_Double :: JSVal -> IO (Maybe Double)
 fromJSVal_Double x =
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> fromJSValUnchecked_Double x
+{-# INLINE fromJSVal_Double #-}
 -----------------------------------------------------------------------------
 fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
 fromJSVal_List x = do
@@ -201,22 +212,26 @@ fromJSVal_List x = do
       if not arrayLike
         then pure Nothing
         else Just <$> fromJSValUnchecked_List x
+{-# INLINE fromJSVal_List #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_List :: JSVal -> IO [JSVal]
 fromJSValUnchecked_List x = do
    len <- length x
    forM [ 0 .. len - 1 ] (flip getPropIndex_ffi x)
+{-# INLINE fromJSValUnchecked_List #-}
 -----------------------------------------------------------------------------
 fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
 fromJSVal_JSString x = do
   if isNullOrUndefined x
     then pure Nothing
     else Just <$> jsstringFromJSVal x
+{-# INLINE fromJSVal_JSString #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe "return $1" jsstringFromJSVal :: JSVal -> IO JSString
 -----------------------------------------------------------------------------
 isNullOrUndefined :: JSVal -> Bool
 isNullOrUndefined x = isNull_ffi x || isUndefined_ffi x
+{-# INLINE isNullOrUndefined #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -392,6 +407,7 @@ foreign import javascript unsafe "return $2[$1]"
 -----------------------------------------------------------------------------
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi = freeJSVal
+{-# INLINE freeFunction_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -418,12 +434,14 @@ fromJSVal_Maybe jsval = do
   if isNullOrUndefined jsval
     then pure (Just Nothing)
     else pure $ Just (Just jsval)
+{-# INLINE fromJSVal_Maybe #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Maybe :: JSVal -> IO (Maybe JSVal)
 fromJSValUnchecked_Maybe jsval = do
   if isNullOrUndefined jsval
     then pure Nothing
     else pure (Just jsval)
+{-# INLINE fromJSValUnchecked_Maybe #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -433,12 +451,14 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 parseWord :: JSString -> Maybe Word
 parseWord string = fromIntegral <$> parseInt string
+{-# INLINE parseWord #-}
 -----------------------------------------------------------------------------
 parseInt :: JSString -> Maybe Int
 parseInt string = do
   case parseInt_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just (round double)
+{-# INLINE parseInt #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -451,7 +471,9 @@ parseDouble string = do
   case parseDouble_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just double
+{-# INLINE parseDouble #-}
 -----------------------------------------------------------------------------
 parseFloat :: JSString -> Maybe Float
 parseFloat string = realToFrac <$> parseDouble string
+{-# INLINE parseFloat #-}
 -----------------------------------------------------------------------------

@@ -100,21 +100,27 @@ foreign import javascript safe
   eq :: JSVal -> JSVal -> Bool
 -----------------------------------------------------------------------------
 instance Eq JSVal where (==) = eq
+{-# INLINE (==) #-}
 -----------------------------------------------------------------------------
 toJSVal_Bool :: Bool -> IO JSVal
 toJSVal_Bool = Marshal.toJSVal
+{-# INLINE toJSVal_Bool #-}
 -----------------------------------------------------------------------------
 toJSVal_Double :: Double -> IO JSVal
 toJSVal_Double = Marshal.toJSVal
+{-# INLINE toJSVal_Double #-}
 -----------------------------------------------------------------------------
 toJSVal_Int :: Int -> IO JSVal
 toJSVal_Int = Marshal.toJSVal
+{-# INLINE toJSVal_Int #-}
 -----------------------------------------------------------------------------
 toJSVal_List :: [JSVal] -> IO JSVal
 toJSVal_List = Marshal.toJSVal
+{-# INLINE toJSVal_List #-}
 -----------------------------------------------------------------------------
 fromJSVal_Bool :: JSVal -> IO (Maybe Bool)
 fromJSVal_Bool = Marshal.fromJSVal
+{-# INLINE fromJSVal_Bool #-}
 -----------------------------------------------------------------------------
 foreign import javascript safe
 #ifdef GHCJS_NEW
@@ -165,9 +171,11 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 fromJSVal_Int :: JSVal -> IO (Maybe Int)
 fromJSVal_Int = Marshal.fromJSVal
+{-# INLINE fromJSVal_Int #-}
 -----------------------------------------------------------------------------
 fromJSVal_Double :: JSVal -> IO (Maybe Double)
 fromJSVal_Double  = Marshal.fromJSVal
+{-# INLINE fromJSVal_Double #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
@@ -179,12 +187,15 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 isNull_ffi :: JSVal -> Bool
 isNull_ffi = isNull
+{-# INLINE isNull_ffi #-}
 -----------------------------------------------------------------------------
 isUndefined_ffi :: JSVal -> Bool
 isUndefined_ffi = isUndefined
+{-# INLINE isUndefined_ffi #-}
 -----------------------------------------------------------------------------
 freeFunction_ffi :: JSVal -> IO ()
 freeFunction_ffi _ = pure ()
+{-# INLINE freeFunction_ffi #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
@@ -204,15 +215,19 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 toJSVal_JSString :: JSString -> IO JSVal
 toJSVal_JSString = Marshal.toJSVal
+{-# INLINE toJSVal_JSString #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Maybe :: JSVal -> IO (Maybe JSVal)
 fromJSValUnchecked_Maybe = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Maybe #-}
 -----------------------------------------------------------------------------
 fromJSVal_Maybe :: JSVal -> IO (Maybe (Maybe JSVal))
 fromJSVal_Maybe = Marshal.fromJSVal
+{-# INLINE fromJSVal_Maybe #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Bool :: JSVal -> IO Bool
 fromJSValUnchecked_Bool = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Bool #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
@@ -255,69 +270,94 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 fromJSVal_List :: JSVal -> IO (Maybe [JSVal])
 fromJSVal_List = Marshal.fromJSVal
+{-# INLINE fromJSVal_List #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Int :: JSVal -> IO Int
 fromJSValUnchecked_Int = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Int #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Double :: JSVal -> IO Double
 fromJSValUnchecked_Double = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Double #-}
 -----------------------------------------------------------------------------
 fromJSVal_JSString :: JSVal -> IO (Maybe JSString)
 fromJSVal_JSString = Marshal.fromJSVal
+{-# INLINE fromJSVal_JSString #-}
 -----------------------------------------------------------------------------
 toJSVal_Char :: Char -> IO JSVal
 toJSVal_Char = Marshal.toJSVal
+{-# INLINE toJSVal_Char #-}
 -----------------------------------------------------------------------------
 toJSVal_Float :: Float -> IO JSVal
 toJSVal_Float = Marshal.toJSVal
+{-# INLINE toJSVal_Float #-}
 -----------------------------------------------------------------------------
 toJSVal_Text :: Text -> IO JSVal
 toJSVal_Text = Marshal.toJSVal
+{-# INLINE toJSVal_Text #-}
 -----------------------------------------------------------------------------
 fromJSVal_Text :: JSVal -> IO (Maybe Text)
 fromJSVal_Text = Marshal.fromJSVal
+{-# INLINE fromJSVal_Text #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Text :: JSVal -> IO Text
 fromJSValUnchecked_Text = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Text #-}
 -----------------------------------------------------------------------------
 fromJSVal_Char :: JSVal -> IO (Maybe Char)
 fromJSVal_Char = Marshal.fromJSVal
+{-# INLINE fromJSVal_Char #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Char :: JSVal -> IO Char
 fromJSValUnchecked_Char = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Char #-}
 -----------------------------------------------------------------------------
 fromJSVal_Float :: JSVal -> IO (Maybe Float)
 fromJSVal_Float = Marshal.fromJSVal
+{-# INLINE fromJSVal_Float #-}
 -----------------------------------------------------------------------------
 fromJSValUnchecked_Float :: JSVal -> IO Float
 fromJSValUnchecked_Float = Marshal.fromJSValUnchecked
+{-# INLINE fromJSValUnchecked_Float #-}
 -----------------------------------------------------------------------------
 asyncCallback :: IO () -> IO JSVal
 asyncCallback x = jsval <$> Callback.asyncCallback x
+{-# INLINE asyncCallback #-}
 asyncCallback1 :: (JSVal -> IO ()) -> IO JSVal
 asyncCallback1 x = jsval <$> Callback.asyncCallback1 x
+{-# INLINE asyncCallback1 #-}
 asyncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
 asyncCallback2 x = jsval <$> Callback.asyncCallback2 x
+{-# INLINE asyncCallback2 #-}
 asyncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
 asyncCallback3 x = jsval <$> Callback.asyncCallback3 x
+{-# INLINE asyncCallback3 #-}
 -----------------------------------------------------------------------------
 syncCallback :: IO () -> IO JSVal
 syncCallback x = jsval <$> Callback.syncCallback Callback.ThrowWouldBlock x
+{-# INLINE syncCallback #-}
 syncCallback1 :: (JSVal -> IO ()) -> IO JSVal
 syncCallback1 x = jsval <$> Callback.syncCallback1 Callback.ThrowWouldBlock x
+{-# INLINE syncCallback1 #-}
 syncCallback2 :: (JSVal -> JSVal -> IO ()) -> IO JSVal
 syncCallback2 x = jsval <$> Callback.syncCallback2 Callback.ThrowWouldBlock x
+{-# INLINE syncCallback2 #-}
 syncCallback3 :: (JSVal -> JSVal -> JSVal -> IO ()) -> IO JSVal
 syncCallback3 x = jsval <$> Callback.syncCallback3 Callback.ThrowWouldBlock x
+{-# INLINE syncCallback3 #-}
 -----------------------------------------------------------------------------
 syncCallback' :: IO JSVal -> IO JSVal
 syncCallback' x = jsval <$> Callback.syncCallback' x
+{-# INLINE syncCallback' #-}
 syncCallback1' :: (JSVal -> IO JSVal) -> IO JSVal
 syncCallback1' x = jsval <$> Callback.syncCallback1' x
+{-# INLINE syncCallback1' #-}
 syncCallback2' :: (JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback2' x = jsval <$> Callback.syncCallback2' x
+{-# INLINE syncCallback2' #-}
 syncCallback3' :: (JSVal -> JSVal -> JSVal -> IO JSVal) -> IO JSVal
 syncCallback3' x = jsval <$> Callback.syncCallback3' x
+{-# INLINE syncCallback3' #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
@@ -329,12 +369,14 @@ foreign import javascript unsafe
 -----------------------------------------------------------------------------
 parseWord :: JSString -> Maybe Word
 parseWord string = fromIntegral <$> parseInt string
+{-# INLINE parseWord #-}
 -----------------------------------------------------------------------------
 parseInt :: JSString -> Maybe Int
 parseInt string =
   case parseInt_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just (round double)
+{-# INLINE parseInt #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
@@ -349,9 +391,11 @@ parseDouble string =
   case parseDouble_Unchecked string of
     double | isNaN double -> Nothing
            | otherwise -> Just double
+{-# INLINE parseDouble #-}
 -----------------------------------------------------------------------------
 parseFloat :: JSString -> Maybe Float
 parseFloat string = realToFrac <$> parseDouble string
+{-# INLINE parseFloat #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
 #if GHCJS_NEW
