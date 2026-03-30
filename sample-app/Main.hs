@@ -9,7 +9,7 @@ import           Miso
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
-import            Miso.Reload
+import           Miso.Reload
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -36,10 +36,8 @@ main = startApp defaultEvents app
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
-#ifdef WASM
 #ifndef INTERACTIVE
-foreign export javascript "hs_start" main :: IO ()
-#endif
+entryPoint $ Just "hs_start"
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
