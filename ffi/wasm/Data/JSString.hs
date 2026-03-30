@@ -153,12 +153,12 @@ import           Prelude
          )
 -----------------------------------------------------------------------------
 pack :: String -> JSString
-pack = toJSString
 {-# INLINE pack #-}
+pack = toJSString
 -----------------------------------------------------------------------------
 empty :: JSString
-empty = mempty
 {-# INLINE empty #-}
+empty = mempty
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -171,14 +171,14 @@ foreign import javascript unsafe
   """ snoc :: JSString -> Char -> JSString
 -----------------------------------------------------------------------------
 append :: JSString -> JSString -> JSString
-append = mappend
 {-# INLINE append #-}
+append = mappend
 -----------------------------------------------------------------------------
 unsnoc :: JSString -> Maybe (JSString, Char) 
+{-# INLINE unsnoc #-}
 unsnoc s
   | 0 <- length s = Nothing
   | otherwise = Just (init s, last s)
-{-# INLINE unsnoc #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -193,16 +193,16 @@ foreign import javascript unsafe
   """ init :: JSString -> JSString
 -----------------------------------------------------------------------------
 compareLength :: JSString -> Int -> Ordering
-compareLength str = compare (length str)
 {-# INLINE compareLength #-}
+compareLength str = compare (length str)
 -----------------------------------------------------------------------------
 map :: (Char -> Char) -> JSString -> JSString
+{-# INLINE map #-}
 map f s =
   case uncons s of
     Nothing -> mempty
     Just (c, next) ->
       f c `cons` map f next
-{-# INLINE map #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -213,8 +213,8 @@ foreign import javascript unsafe
   """ intersperse :: Char -> JSString -> JSString
 -----------------------------------------------------------------------------
 transpose :: [JSString] -> [JSString]
-transpose = fmap toJSString . List.transpose . fmap fromJSString
 {-# INLINE transpose #-}
+transpose = fmap toJSString . List.transpose . fmap fromJSString
 -----------------------------------------------------------------------------
 -- | Reverses a t'Miso.String.MisoString'
 --
@@ -233,8 +233,8 @@ foreign import javascript unsafe
   """ replace :: JSString -> JSString -> JSString -> JSString
 -----------------------------------------------------------------------------
 toCaseFold :: JSString -> JSString
-toCaseFold = textToJSString . T.toCaseFold . textFromJSString
 {-# INLINE toCaseFold #-}
+toCaseFold = textToJSString . T.toCaseFold . textFromJSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -247,8 +247,8 @@ foreign import javascript unsafe
   """ toUpper :: JSString -> JSString
 -----------------------------------------------------------------------------
 toTitle :: JSString -> JSString
-toTitle = textToJSString . T.toTitle . textFromJSString
 {-# INLINE toTitle #-}
+toTitle = textToJSString . T.toTitle . textFromJSString
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -290,52 +290,52 @@ foreign import javascript unsafe
   """ center :: Int -> Char -> JSString -> JSString
 -----------------------------------------------------------------------------
 foldl :: (a -> Char -> a) -> a -> JSString -> a
+{-# INLINE foldl #-}
 foldl f x ys =
   case uncons ys of
     Nothing -> x
     Just (c, next) -> foldl f (f x c) next
-{-# INLINE foldl #-}
 -----------------------------------------------------------------------------
 foldl1 :: (Char -> Char -> Char) -> JSString -> Char
+{-# INLINE foldl1 #-}
 foldl1 f xs =
   case uncons xs of
     Nothing -> error "foldl1: empty string"
     Just (c,next) ->
       foldl f c next
-{-# INLINE foldl1 #-}
 -----------------------------------------------------------------------------
 foldr :: (Char -> a -> a) -> a -> JSString -> a
+{-# INLINE foldr #-}
 foldr f x ys =
   case uncons ys of
     Nothing -> x
     Just (c, next) ->
       f c (foldr f x next)
-{-# INLINE foldr #-}
 -----------------------------------------------------------------------------
 foldr1 :: (Char -> Char -> Char) -> JSString -> Char
+{-# INLINE foldr1 #-}
 foldr1 f ys =
   case uncons ys of
     Nothing -> error "foldr1: empty string"
     Just (c, next)
       | length next == 0 -> c
       | otherwise -> f c (foldr1 f next)
-{-# INLINE foldr1 #-}
 -----------------------------------------------------------------------------
 any :: (Char -> Bool) -> JSString -> Bool
+{-# INLINE any #-}
 any f str =
   case uncons str of
     Nothing -> False
     Just (c, next) ->
       f c || any f next
-{-# INLINE any #-}
 -----------------------------------------------------------------------------
 all :: (Char -> Bool) -> JSString -> Bool
+{-# INLINE all #-}
 all f str =
   case uncons str of
     Nothing -> True
     Just (c, next) ->
       f c && all f next
-{-# INLINE all #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -364,22 +364,23 @@ foreign import javascript unsafe
   """ minimum :: JSString -> Char
 -----------------------------------------------------------------------------
 scanl :: (Char -> Char -> Char) -> Char -> JSString -> JSString
+{-# INLINE scanl #-}
 scanl f x ys =
   case uncons ys of
     Nothing -> singleton x
     Just (c, next) ->
       x `cons` scanl f (f x c) next
-{-# INLINE scanl #-}
 -----------------------------------------------------------------------------
 scanl1 :: (Char -> Char -> Char) -> JSString -> JSString
+{-# INLINE scanl1 #-}
 scanl1 f ys =
   case uncons ys of
     Nothing -> mempty
     Just (c, next) ->
       scanl f c next 
-{-# INLINE scanl1 #-}
 -----------------------------------------------------------------------------
 scanr :: (Char -> Char -> Char) -> Char -> JSString -> JSString
+{-# INLINE scanr #-}
 scanr f q0 ys = 
   case uncons ys of
     Nothing -> singleton q0
@@ -389,9 +390,9 @@ scanr f q0 ys =
           let qs = q `cons` qss
           f x q `cons` qs
         Nothing -> error "scanr: impossible" 
-{-# INLINE scanr #-}
 -----------------------------------------------------------------------------
 scanr1 :: (Char -> Char -> Char) -> JSString -> JSString
+{-# INLINE scanr1 #-}
 scanr1 f ys = 
   case uncons ys of
     Nothing -> mempty
@@ -401,18 +402,18 @@ scanr1 f ys =
           case uncons (scanr1 f xs) of
             Just (q, qss) -> f x q `cons` (q `cons` qss)
             Nothing -> error "scanr: impossible" 
-{-# INLINE scanr1 #-}
 -----------------------------------------------------------------------------
 mapAccumL :: (a -> Char -> (a, Char)) -> a -> JSString -> (a, JSString)
+{-# INLINE mapAccumL #-}
 mapAccumL f x str =
   case uncons str of
     Nothing -> (x, str)
     Just (c, next) -> do
       let (a, c') = f x c
       cons c' <$> mapAccumL f a next
-{-# INLINE mapAccumL #-}
 -----------------------------------------------------------------------------
 mapAccumR :: (a -> Char -> (a, Char)) -> a -> JSString -> (a, JSString)
+{-# INLINE mapAccumR #-}
 mapAccumR f x str =
   case uncons str of
     Nothing -> (x, str)
@@ -421,17 +422,17 @@ mapAccumR f x str =
         (a, qs) ->
           case f a c of
             (a', k) -> (a', k `cons` qs)
-{-# INLINE mapAccumR #-}
 -----------------------------------------------------------------------------
 unfoldr :: (a -> Maybe (Char, a)) -> a -> JSString
+{-# INLINE unfoldr #-}
 unfoldr f x = do
   case f x of
     Nothing -> mempty
     Just (c, y) ->
       c `cons` unfoldr f y
-{-# INLINE unfoldr #-}
 -----------------------------------------------------------------------------
 unfoldrN :: Int -> (a -> Maybe (Char, a)) -> a -> JSString
+{-# INLINE unfoldrN #-}
 unfoldrN n f seed = go seed mempty
   where
     go x acc
@@ -440,7 +441,6 @@ unfoldrN n f seed = go seed mempty
           case f x of
             Nothing -> mempty
             Just (c,y) -> go y (c `cons` acc)
-{-# INLINE unfoldrN #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -461,6 +461,7 @@ foreign import javascript unsafe
   """ dropEnd :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 takeWhile :: (Char -> Bool) -> JSString -> JSString
+{-# INLINE takeWhile #-}
 takeWhile f xs =
   case uncons xs of
     Nothing -> mempty
@@ -468,13 +469,13 @@ takeWhile f xs =
       if f c
         then c `cons` takeWhile f next
         else mempty
-{-# INLINE takeWhile #-}
 -----------------------------------------------------------------------------
 takeWhileEnd :: (Char -> Bool) -> JSString -> JSString
-takeWhileEnd f = reverse . takeWhile f . reverse
 {-# INLINE takeWhileEnd #-}
+takeWhileEnd f = reverse . takeWhile f . reverse
 -----------------------------------------------------------------------------
 dropWhile :: (Char -> Bool) -> JSString -> JSString
+{-# INLINE dropWhile #-}
 dropWhile f xs =
   case uncons xs of
     Nothing -> xs
@@ -482,15 +483,14 @@ dropWhile f xs =
       if f c
         then dropWhile f next
         else xs
-{-# INLINE dropWhile #-}
 -----------------------------------------------------------------------------
 dropWhileEnd :: (Char -> Bool) -> JSString -> JSString
-dropWhileEnd f = reverse . dropWhile f . reverse
 {-# INLINE dropWhileEnd #-}
+dropWhileEnd f = reverse . dropWhile f . reverse
 -----------------------------------------------------------------------------
 dropAround :: (Char -> Bool) -> JSString -> JSString
-dropAround f = dropWhile f . dropWhileEnd f
 {-# INLINE dropAround #-}
+dropAround f = dropWhile f . dropWhileEnd f
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -508,10 +508,11 @@ foreign import javascript unsafe
   """ stripEnd :: JSString -> JSString
 -----------------------------------------------------------------------------
 splitAt :: Int -> JSString -> (JSString, JSString)
-splitAt n xs = (take n xs, drop n xs)
 {-# INLINE splitAt #-}
+splitAt n xs = (take n xs, drop n xs)
 -----------------------------------------------------------------------------
 breakOn :: JSString -> JSString -> (JSString, JSString)
+{-# INLINE breakOn #-}
 breakOn n _ | 0 <- length n = error "breakOn: empty needle"
 breakOn needle haystack = go (mempty, haystack)
   where
@@ -523,9 +524,9 @@ breakOn needle haystack = go (mempty, haystack)
             Nothing -> (acc, stack)
             Just (c,next) ->
               go (acc `snoc` c, next)
-{-# INLINE breakOn #-}
 -----------------------------------------------------------------------------
 breakOnEnd :: JSString -> JSString -> (JSString, JSString)
+{-# INLINE breakOnEnd #-}
 breakOnEnd n _ | 0 <- length n = error "breakOnEnd: empty needle"
 breakOnEnd needle haystack = go (mempty, haystack)
   where
@@ -537,9 +538,9 @@ breakOnEnd needle haystack = go (mempty, haystack)
             Nothing -> (stack, acc)
             Just (next, c) ->
               go (c `cons` acc, next)
-{-# INLINE breakOnEnd #-}
 -----------------------------------------------------------------------------
 break :: (Char -> Bool) -> JSString -> (JSString, JSString)
+{-# INLINE break #-}
 break f s = go (mempty, s)
   where
     go (failed, rest) =
@@ -549,40 +550,40 @@ break f s = go (mempty, s)
           if f c
             then (failed, c `cons` next)
             else go (failed `snoc` c, next)
-{-# INLINE break #-}
 -----------------------------------------------------------------------------
 span :: (Char -> Bool) -> JSString -> (JSString, JSString)
-span f s = (takeWhile f s, dropWhile f s)
 {-# INLINE span #-}
+span f s = (takeWhile f s, dropWhile f s)
 -----------------------------------------------------------------------------
 group :: JSString -> [JSString]
-group = groupBy (==)
 {-# INLINE group #-}
+group = groupBy (==)
 -----------------------------------------------------------------------------
 groupBy :: (Char -> Char -> Bool) -> JSString -> [JSString]
+{-# INLINE groupBy #-}
 groupBy eq s' =
   case uncons s' of
     Nothing -> []
     Just (c, next) -> do
       let (ys, zs) = span (eq c) next
       (c `cons` ys) : groupBy eq zs
-{-# INLINE groupBy #-}
 -----------------------------------------------------------------------------
 inits :: JSString -> [JSString]
+{-# INLINE inits #-}
 inits s = 
   case unsnoc s of
     Nothing -> [""]
     Just (next, _) -> inits next <> [s]
-{-# INLINE inits #-}
 -----------------------------------------------------------------------------
 tails :: JSString -> [JSString]
+{-# INLINE tails #-}
 tails s =
   case uncons s of
     Nothing -> [""]
     Just (_, next) -> s : tails next
-{-# INLINE tails #-}
 -----------------------------------------------------------------------------
 splitOn :: JSString -> JSString -> [JSString]
+{-# INLINE splitOn #-}
 splitOn prefix _ | 0 <- length prefix = error "splitOn: empty prefix"
 splitOn prefix str = go str mempty
   where
@@ -595,9 +596,9 @@ splitOn prefix str = go str mempty
             Nothing -> [acc]
             Just (c,next) ->
               go next (acc `snoc` c)
-{-# INLINE splitOn #-}
 -----------------------------------------------------------------------------
 split :: (Char -> Bool) -> JSString -> [JSString]
+{-# INLINE split #-}
 split f = go
   where
     go str | 0 <- length str = [empty]
@@ -606,9 +607,9 @@ split f = go
         found = takeWhile (not . f) str
         next = drop 1 (dropWhile (not . f) str)
       found : go next
-{-# INLINE split #-}
 -----------------------------------------------------------------------------
 chunksOf :: Int -> JSString -> [JSString]
+{-# INLINE chunksOf #-}
 chunksOf 0 _ = []
 chunksOf n s =
   case (take n s, drop n s) of
@@ -616,13 +617,13 @@ chunksOf n s =
       if length tl == 0
         then [hd]
         else hd : chunksOf n tl
-{-# INLINE chunksOf #-}
 -----------------------------------------------------------------------------
 lines :: JSString -> [JSString]
-lines = splitOn "\n"
 {-# INLINE lines #-}
+lines = splitOn "\n"
 -----------------------------------------------------------------------------
 words :: JSString -> [JSString]
+{-# INLINE words #-}
 words s = go (strip s)
   where
     go xs | length xs == 0 = []
@@ -630,11 +631,10 @@ words s = go (strip s)
       let next = dropWhile (==' ') xs
       let payload = takeWhile (/=' ') next
       payload : go (drop (length payload) next)
-{-# INLINE words #-}
 -----------------------------------------------------------------------------
 unwords :: [JSString] -> JSString
-unwords = intercalate " "
 {-# INLINE unwords #-}
+unwords = intercalate " "
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -647,18 +647,19 @@ foreign import javascript unsafe
   """ isInfixOf :: JSString -> JSString -> Bool
 -----------------------------------------------------------------------------
 stripPrefix :: JSString -> JSString -> Maybe JSString
+{-# INLINE stripPrefix #-}
 stripPrefix prefix string
   | not (prefix `isPrefixOf` string) = Nothing
   | otherwise = Just (drop (length prefix) string)
-{-# INLINE stripPrefix #-}
 -----------------------------------------------------------------------------
 stripSuffix :: JSString -> JSString -> Maybe JSString
+{-# INLINE stripSuffix #-}
 stripSuffix suffix string
   | not (suffix `isSuffixOf` string) = Nothing
   | otherwise = Just (dropEnd (length suffix) string)
-{-# INLINE stripSuffix #-}
 -----------------------------------------------------------------------------
 commonPrefixes :: JSString -> JSString -> Maybe (JSString, JSString, JSString)
+{-# INLINE commonPrefixes #-}
 commonPrefixes ls rs | length ls == 0 || length rs == 0 = Nothing
 commonPrefixes ls' rs' = go mempty ls' rs'
   where
@@ -672,9 +673,9 @@ commonPrefixes ls' rs' = go mempty ls' rs'
                 then Nothing
                 else Just (acc, l `cons` lss, r `cons` rss)
         _ -> Nothing
-{-# INLINE commonPrefixes #-}
 -----------------------------------------------------------------------------
 filter :: (Char -> Bool) -> JSString -> JSString
+{-# INLINE filter #-}
 filter f xs =
   case uncons xs of
     Nothing -> mempty
@@ -682,22 +683,21 @@ filter f xs =
       if f c
         then c `cons` filter f next
         else filter f next
-{-# INLINE filter #-}
 -----------------------------------------------------------------------------
 -- breakOnAll :: JSString -> JSString -> [(JSString, JSString)]
 -- breakOnAll = error "TODO: implement breakOnAll"
 -----------------------------------------------------------------------------
 find :: (Char -> Bool) -> JSString -> Maybe Char
+{-# INLINE find #-}
 find f xs = do
   (c,next) <- uncons xs
   if f c
     then pure c
     else find f next
-{-# INLINE find #-}
 -----------------------------------------------------------------------------
 partition :: (Char -> Bool) -> JSString -> (JSString, JSString)
-partition f xs = (filter f xs, filter (not . f) xs)
 {-# INLINE partition #-}
+partition f xs = (filter f xs, filter (not . f) xs)
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -722,20 +722,20 @@ foreign import javascript unsafe
   """ count :: JSString -> JSString -> Int
 -----------------------------------------------------------------------------
 zip :: JSString -> JSString -> [(Char,Char)]
+{-# INLINE zip #-}
 zip l r =
   case (uncons l, uncons r) of
     (Just (l',ls), Just (r',rs)) ->
       (l',r') : zip ls rs
     _ -> []
-{-# INLINE zip #-}
 -----------------------------------------------------------------------------
 zipWith :: (Char -> Char -> Char) -> JSString -> JSString -> JSString
+{-# INLINE zipWith #-}
 zipWith f l r =
   case (uncons l, uncons r) of
     (Just (l', ls), Just (r', rs)) ->
       f l' r' `cons` zipWith f ls rs
     _ -> mempty
-{-# INLINE zipWith #-}
 -----------------------------------------------------------------------------
 newtype JSUint8Array = JSUint8Array JSVal
 -----------------------------------------------------------------------------
@@ -752,6 +752,7 @@ foreign import javascript unsafe "(new TextDecoder('utf-8', {fatal: true})).deco
   js_to_str :: Ptr a -> Int -> IO JSString
 -----------------------------------------------------------------------------
 textFromJSString :: JSString -> Text
+{-# INLINE textFromJSString #-}
 textFromJSString str = unsafeDupablePerformIO $ do
   buf <- js_str_encode str
   I# len# <- js_buf_len buf
@@ -760,14 +761,13 @@ textFromJSString str = unsafeDupablePerformIO $ do
       (# s2, _ #) -> case unIO (freeJSVal (coerce buf)) s2 of
         (# s3, _ #) -> case unsafeFreezeByteArray# mba# s3 of
           (# s4, ba# #) -> (# s4, Text (ByteArray ba#) 0 (I# len#) #)
-{-# INLINE textFromJSString #-}
 -----------------------------------------------------------------------------
 textToJSString :: Text -> JSString
+{-# INLINE textToJSString #-}
 textToJSString (Text (ByteArray ba#) (I# off#) (I# len#)) = unsafeDupablePerformIO $
   IO $ \s0 -> case newPinnedByteArray# len# s0 of
     (# s1, mba# #) -> case copyByteArray# ba# off# mba# 0# len# s1 of
       s2 -> keepAlive# mba# s2 $ unIO $ js_to_str (Ptr (mutableByteArrayContents# mba#)) $ I# len#
-{-# INLINE textToJSString #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -781,13 +781,13 @@ foreign import javascript unsafe
   """ drop :: Int -> JSString -> JSString
 -----------------------------------------------------------------------------
 foldl' :: (a -> Char -> a) -> a -> JSString -> a
+{-# INLINE foldl' #-}
 foldl' f x ys =
   case uncons ys of
     Nothing -> x
     Just (c, next) -> do
       let !z = f x c
       foldl' f z next
-{-# INLINE foldl' #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -816,21 +816,21 @@ foreign import javascript unsafe
   """ tail :: JSString -> JSString
 -----------------------------------------------------------------------------
 uncons :: JSString -> Maybe (Char, JSString)
+{-# INLINE uncons #-}
 uncons str
   | 0 <- length str = Nothing
   | otherwise = Just (head str, tail str)
-{-# INLINE uncons #-}
 -----------------------------------------------------------------------------
 unpack :: JSString -> String
-unpack = fromJSString
 {-# INLINE unpack #-}
+unpack = fromJSString
 -----------------------------------------------------------------------------
 intercalate :: JSString -> [JSString] -> JSString
+{-# INLINE intercalate #-}
 intercalate sep = \case
   [] -> mempty
   [x] -> x
   (x:xs) -> x <> sep <> intercalate sep xs
-{-# INLINE intercalate #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -840,19 +840,19 @@ foreign import javascript unsafe
   """ jsstringOrd :: JSString -> JSString -> Int
 -----------------------------------------------------------------------------
 concat :: [JSString] -> JSString
-concat = mconcat
 {-# INLINE concat #-}
+concat = mconcat
 -----------------------------------------------------------------------------
 concatMap :: (Char -> JSString) -> JSString -> JSString
+{-# INLINE concatMap #-}
 concatMap f str =
   case uncons str of
     Nothing -> mempty
     Just (c, next) -> f c <> concatMap f next
-  {-# INLINE concatMap #-}
 -----------------------------------------------------------------------------
 unlines :: [JSString] -> JSString
+{-# INLINE unlines #-}
 unlines ks = concat [ snoc k '\n' | k <- ks ]
-  {-# INLINE unlines #-}
 -----------------------------------------------------------------------------
 foreign import javascript unsafe
   """
@@ -915,6 +915,6 @@ foreign import javascript unsafe "return ($1).toString()"
   toString_Float :: Float -> JSString
 -----------------------------------------------------------------------------
 toString_Word :: Word -> JSString
-toString_Word = toJSString . show
 {-# INLINE toString_Word #-}
+toString_Word = toJSString . show
 -----------------------------------------------------------------------------
