@@ -729,25 +729,25 @@ newtype Function = Function { unFunction :: JSVal } deriving newtype (ToJSVal, E
 -----------------------------------------------------------------------------
 instance (FromJSVal a, FromJSVal b) => FromJSVal (a,b) where
     fromJSVal r = runMaybeT $ (,) <$> jf r 0 <*> jf r 1
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c) => FromJSVal (a,b,c) where
     fromJSVal r = runMaybeT $ (,,) <$> jf r 0 <*> jf r 1 <*> jf r 2
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d) => FromJSVal (a,b,c,d) where
     fromJSVal r = runMaybeT $ (,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e) => FromJSVal (a,b,c,d,e) where
     fromJSVal r = runMaybeT $ (,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f) => FromJSVal (a,b,c,d,e,f) where
     fromJSVal r = runMaybeT $ (,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g) => FromJSVal (a,b,c,d,e,f,g) where
     fromJSVal r = runMaybeT $ (,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJSVal f, FromJSVal g, FromJSVal h) => FromJSVal (a,b,c,d,e,f,g,h) where
     fromJSVal r = runMaybeT $ (,,,,,,,) <$> jf r 0 <*> jf r 1 <*> jf r 2 <*> jf r 3 <*> jf r 4 <*> jf r 5 <*> jf r 6 <*> jf r 7
-  {-# INLINE fromJSVal #-}
+    {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 jf :: FromJSVal a => JSVal -> Int -> MaybeT IO a
 jf r n = MaybeT $ do
