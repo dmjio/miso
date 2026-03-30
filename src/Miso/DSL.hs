@@ -750,6 +750,7 @@ instance (FromJSVal a, FromJSVal b, FromJSVal c, FromJSVal d, FromJSVal e, FromJ
     {-# INLINE fromJSVal #-}
 -----------------------------------------------------------------------------
 jf :: FromJSVal a => JSVal -> Int -> MaybeT IO a
+{-# INLINE jf #-}
 jf r n = MaybeT $ do
   x <- getPropIndex_ffi n r
   if isUndefined_ffi r
