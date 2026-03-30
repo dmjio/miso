@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE TemplateHaskell   #-}
 ----------------------------------------------------------------------------
 module Main where
 ----------------------------------------------------------------------------
@@ -12,7 +13,7 @@ import           Miso.Lens
 import           Miso.Reload
 ----------------------------------------------------------------------------
 -- | Component model state
-data Model
+newtype Model
   = Model
   { _counter :: Int
   } deriving (Show, Eq)
@@ -36,8 +37,10 @@ main = startApp defaultEvents app
 #endif
 ----------------------------------------------------------------------------
 -- | WASM export, required when compiling w/ the WASM backend.
+#if __GLASGOW_HASKELL__ >= 865
 #ifndef INTERACTIVE
 entryPoint $ Just "hs_start"
+#endif
 #endif
 ----------------------------------------------------------------------------
 -- | `component` takes as arguments the initial model, update function, view function
