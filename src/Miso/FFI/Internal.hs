@@ -165,7 +165,7 @@ import           Miso.String
 -----------------------------------------------------------------------------
 -- | Set property on object
 set :: ToJSVal v => MisoString -> v -> Object -> IO ()
-{-# INLINE set #-}
+{-# INLINABLE set #-}
 set k v o = do
   v' <- toJSVal v
   setProp (fromMisoString k) v' o
@@ -176,7 +176,7 @@ set k v o = do
 --
 -- > Just (value :: String) <- fromJSVal =<< getProperty domRef "value"
 getProperty :: JSVal -> MisoString -> IO JSVal
-{-# INLINE getProperty #-}
+{-# INLINABLE getProperty #-}
 getProperty = (!)
 -----------------------------------------------------------------------------
 -- | Calls a function on a 'JSVal'
@@ -186,12 +186,12 @@ getProperty = (!)
 -- > callFunction domRef "focus" ()
 -- > callFunction domRef "setSelectionRange" (0, 3, "none")
 callFunction :: (ToArgs args) => JSVal -> MisoString -> args -> IO JSVal
-{-# INLINE callFunction #-}
+{-# INLINABLE callFunction #-}
 callFunction = (#)
 -----------------------------------------------------------------------------
 -- | Marshalling of 'JSVal', useful for 'getProperty'
 castJSVal :: (FromJSVal a) => JSVal -> IO (Maybe a)
-{-# INLINE castJSVal #-}
+{-# INLINABLE castJSVal #-}
 castJSVal = fromJSVal
 -----------------------------------------------------------------------------
 -- | Register an event listener on given target.
@@ -204,7 +204,7 @@ addEventListener
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
   -> IO Function
-{-# INLINE addEventListener #-}
+{-# INLINABLE addEventListener #-}
 addEventListener self name cb = do
 #ifdef GHCJS_BOTH
   cb_ <- Function <$> syncCallback1 cb
@@ -224,7 +224,7 @@ removeEventListener
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
   -> IO ()
-{-# INLINE removeEventListener #-}
+{-# INLINABLE removeEventListener #-}
 removeEventListener self name cb =
   void $ self # "removeEventListener" $ (name, cb)
 -----------------------------------------------------------------------------
@@ -236,7 +236,7 @@ windowRemoveEventListener
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
   -> IO ()
-{-# INLINE windowRemoveEventListener #-}
+{-# INLINABLE windowRemoveEventListener #-}
 windowRemoveEventListener name cb = do
   win <- jsg "window"
   removeEventListener win name cb
@@ -249,21 +249,21 @@ windowAddEventListener
   -- ^ Callback which will be called when the event occurs,
   -- the event will be passed to it as a parameter.
   -> IO Function
-{-# INLINE windowAddEventListener #-}
+{-# INLINABLE windowAddEventListener #-}
 windowAddEventListener name cb = do
   win <- jsg "window"
   addEventListener win name cb
 -----------------------------------------------------------------------------
 -- | Stop propagation of events
 eventStopPropagation :: JSVal -> IO ()
-{-# INLINE eventStopPropagation #-}
+{-# INLINABLE eventStopPropagation #-}
 eventStopPropagation e = do
   _ <- e # "stopPropagation" $ ()
   pure ()
 -----------------------------------------------------------------------------
 -- | Prevent default event behavior
 eventPreventDefault :: JSVal -> IO ()
-{-# INLINE eventPreventDefault #-}
+{-# INLINABLE eventPreventDefault #-}
 eventPreventDefault e = do
   _ <- e # "preventDefault" $ ()
   pure ()
@@ -273,7 +273,7 @@ eventPreventDefault e = do
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerHeight>
 windowInnerHeight :: IO Int
-{-# INLINE windowInnerHeight #-}
+{-# INLINABLE windowInnerHeight #-}
 windowInnerHeight = fromJSValUnchecked =<< jsg "window" ! "innerHeight"
 -----------------------------------------------------------------------------
 -- | Retrieves the width (in pixels) of the browser window viewport including
@@ -281,7 +281,7 @@ windowInnerHeight = fromJSValUnchecked =<< jsg "window" ! "innerHeight"
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth>
 windowInnerWidth :: IO Int
-{-# INLINE windowInnerWidth #-}
+{-# INLINABLE windowInnerWidth #-}
 windowInnerWidth =
   fromJSValUnchecked =<< jsg "window" ! "innerWidth"
 -----------------------------------------------------------------------------
@@ -289,7 +289,7 @@ windowInnerWidth =
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Performance/now>
 now :: IO Double
-{-# INLINE now #-}
+{-# INLINABLE now #-}
 now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 -----------------------------------------------------------------------------
 -- | Outputs a message to the web console
@@ -298,7 +298,7 @@ now = fromJSValUnchecked =<< (jsg "performance" # "now" $ ())
 --
 -- Console logging of JavaScript strings.
 consoleLog :: MisoString -> IO ()
-{-# INLINE consoleLog #-}
+{-# INLINABLE consoleLog #-}
 consoleLog v = do
   _ <- jsg "console" # "log" $ [ms v]
   pure ()
@@ -309,7 +309,7 @@ consoleLog v = do
 --
 -- Console logging of JavaScript strings.
 consoleWarn :: MisoString -> IO ()
-{-# INLINE consoleWarn #-}
+{-# INLINABLE consoleWarn #-}
 consoleWarn v = do
   _ <- jsg "console" # "warn" $ [ms v]
   pure ()
@@ -320,14 +320,14 @@ consoleWarn v = do
 --
 -- Console logging of JavaScript strings.
 consoleError :: MisoString -> IO ()
-{-# INLINE consoleError #-}
+{-# INLINABLE consoleError #-}
 consoleError v = do
   _ <- jsg "console" # "error" $ [ms v]
   pure ()
 -----------------------------------------------------------------------------
 -- | Console-logging of JSVal
 consoleLog' :: ToArgs a => a -> IO ()
-{-# INLINE consoleLog' #-}
+{-# INLINABLE consoleLog' #-}
 consoleLog' args' = do
   args <- toArgs args'
   _ <- jsg "console" # "log" $ args
@@ -339,7 +339,7 @@ eventJSON
     :: JSVal -- ^ decodeAt :: [JSString]
     -> JSVal -- ^ object with impure references to the DOM
     -> IO JSVal
-{-# INLINE eventJSON #-}
+{-# INLINABLE eventJSON #-}
 eventJSON x y = do
   moduleMiso <- jsg "miso"
   moduleMiso # "eventJSON" $ [x,y]
@@ -350,7 +350,7 @@ updateRef
     => val
     -> val
     -> IO ()
-{-# INLINE updateRef #-}
+{-# INLINABLE updateRef #-}
 updateRef jsval1 jsval2 = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "updateRef" $ (jsval1, jsval2)
@@ -382,7 +382,7 @@ inline
     => MisoString
     -> object
     -> IO return
-{-# INLINE inline #-}
+{-# INLINABLE inline #-}
 inline code o = do
   moduleMiso <- jsg "miso"
   Object obj <- toObject o
@@ -396,7 +396,7 @@ populateClass
     -> [MisoString]
     -- ^ classes
     -> IO ()
-{-# INLINE populateClass #-}
+{-# INLINABLE populateClass #-}
 populateClass domRef classes = do
   moduleMiso <- jsg "miso"
   void $ moduleMiso # "populateClass" $ (domRef, classes)
@@ -405,7 +405,7 @@ populateClass domRef classes = do
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/body>
 getBody :: IO JSVal
-{-# INLINE getBody #-}
+{-# INLINABLE getBody #-}
 getBody = do
   ctx <- getDrawingContext
   ctx # "getRoot" $ ()
@@ -414,7 +414,7 @@ getBody = do
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document>
 getDocument :: IO JSVal
-{-# INLINE getDocument #-}
+{-# INLINABLE getDocument #-}
 getDocument = jsg "document"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the drawing context.
@@ -423,7 +423,7 @@ getDocument = jsg "document"
 -- for both native (iOS / Android, etc.) and browser environments.
 --
 getDrawingContext :: IO JSVal
-{-# INLINE getDrawingContext #-}
+{-# INLINABLE getDrawingContext #-}
 getDrawingContext = jsg "miso" ! "drawingContext"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the event context.
@@ -432,7 +432,7 @@ getDrawingContext = jsg "miso" ! "drawingContext"
 -- for both native (iOS / Android, etc.) and browser environments.
 --
 getEventContext :: IO JSVal
-{-# INLINE getEventContext #-}
+{-# INLINABLE getEventContext #-}
 getEventContext = jsg "miso" ! "eventContext"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the hydration context.
@@ -441,7 +441,7 @@ getEventContext = jsg "miso" ! "eventContext"
 -- for both native (iOS / Android, etc.) and browser environments.
 --
 getHydrationContext :: IO JSVal
-{-# INLINE getHydrationContext #-}
+{-# INLINABLE getHydrationContext #-}
 getHydrationContext = jsg "miso" ! "hydrationContext"
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the Component context.
@@ -450,7 +450,7 @@ getHydrationContext = jsg "miso" ! "hydrationContext"
 -- for both native (iOS / Android, etc.) and browser environments.
 --
 getComponentContext :: IO JSVal
-{-# INLINE getComponentContext #-}
+{-# INLINABLE getComponentContext #-}
 getComponentContext = jsg "miso" ! "componentContext"
 -----------------------------------------------------------------------------
 -- | Returns an Element object representing the element whose id property matches
@@ -458,7 +458,7 @@ getComponentContext = jsg "miso" ! "componentContext"
 --
 -- See <https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById>
 getElementById :: MisoString -> IO JSVal
-{-# INLINE getElementById #-}
+{-# INLINABLE getElementById #-}
 getElementById e = getDocument # "getElementById" $ [e]
 -----------------------------------------------------------------------------
 -- | Retrieves a reference to the renderer's "head" mount.
@@ -469,7 +469,7 @@ getElementById e = getDocument # "getElementById" $ [e]
 --
 -- @since 1.9.0.0
 getHead :: IO JSVal
-{-# INLINE getHead #-}
+{-# INLINABLE getHead #-}
 getHead = do
   context <- getDrawingContext
   context # "getHead" $ ()
@@ -480,7 +480,7 @@ getHead = do
 --
 -- @since 1.9.0.0
 removeChild :: JSVal -> JSVal -> IO ()
-{-# INLINE removeChild #-}
+{-# INLINABLE removeChild #-}
 removeChild parent child = do
   context <- getDrawingContext
   void $ context # "removeChild" $ (parent, child)
@@ -494,7 +494,7 @@ diff
   -> JSVal
   -- ^ parent node
   -> IO ()
-{-# INLINE diff #-}
+{-# INLINABLE diff #-}
 diff (Object a) (Object b) c = do
   moduleMiso <- jsg "miso"
   context <- getDrawingContext
@@ -502,7 +502,7 @@ diff (Object a) (Object b) c = do
 -----------------------------------------------------------------------------
 -- | Initialize event delegation from a mount point.
 delegator :: JSVal -> JSVal -> Bool -> IO JSVal -> IO ()
-{-# INLINE delegator #-}
+{-# INLINABLE delegator #-}
 delegator mountPoint events debug getVTree = do
   ctx <- getEventContext
 #ifdef WASM
@@ -519,7 +519,7 @@ delegator mountPoint events debug getVTree = do
 -- See [hydration](https://en.wikipedia.org/wiki/Hydration_(web_development))
 --
 hydrate :: Bool -> JSVal -> JSVal -> IO JSVal
-{-# INLINE hydrate #-}
+{-# INLINABLE hydrate #-}
 hydrate logLevel mountPoint vtree = do
   ll <- toJSVal logLevel
   drawingContext <- getDrawingContext
@@ -531,33 +531,33 @@ hydrate logLevel mountPoint vtree = do
 --
 -- Analogous to @document.getElementById(id).focus()@.
 focus :: MisoString -> IO ()
-{-# INLINE focus #-}
+{-# INLINABLE focus #-}
 focus x = void $ jsg "miso" # "callFocus" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.getElementById(id).blur()@
 blur :: MisoString -> IO ()
-{-# INLINE blur #-}
+{-# INLINABLE blur #-}
 blur x = void $ jsg "miso" # "callBlur" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.querySelector('#' + id).select()@.
 select :: MisoString -> IO ()
-{-# INLINE select #-}
+{-# INLINABLE select #-}
 select x = void $ jsg "miso" # "callSelect" $ (x, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Fails silently if the element is not found.
 --
 -- Analogous to @document.querySelector('#' + id).setSelectionRange(start, end, \'none\')@.
 setSelectionRange :: MisoString -> Int -> Int -> IO ()
-{-# INLINE setSelectionRange #-}
+{-# INLINABLE setSelectionRange #-}
 setSelectionRange x start end = void $ jsg "miso" # "callSetSelectionRange" $ (x, start, end, 50 :: Int)
 -----------------------------------------------------------------------------
 -- | Calls @document.getElementById(id).scrollIntoView()@
 scrollIntoView :: MisoString -> IO ()
-{-# INLINE scrollIntoView #-}
+{-# INLINABLE scrollIntoView #-}
 scrollIntoView elId = do
   el <- jsg "document" # "getElementById" $ [elId]
   _ <- el # "scrollIntoView" $ ()
@@ -565,12 +565,12 @@ scrollIntoView elId = do
 -----------------------------------------------------------------------------
 -- | Calls the @alert()@ function.
 alert :: MisoString -> IO ()
-{-# INLINE alert #-}
+{-# INLINABLE alert #-}
 alert a = () <$ jsg1 "alert" a
 -----------------------------------------------------------------------------
 -- | Calls the @location.reload()@ function.
 locationReload :: IO ()
-{-# INLINE locationReload #-}
+{-# INLINABLE locationReload #-}
 locationReload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.style_' element containing CSS to 'Miso.Html.Element.head_'
@@ -580,7 +580,7 @@ locationReload = void $ jsg "location" # "reload" $ ([] :: [MisoString])
 -- > <head><style>body { background-color: green; }</style></head>
 --
 addStyle :: MisoString -> IO JSVal
-{-# INLINE addStyle #-}
+{-# INLINABLE addStyle #-}
 addStyle css = do
   context <- getDrawingContext
   head_ <- getHead
@@ -594,7 +594,7 @@ addStyle css = do
 -- > addScript False "function () { alert('hi'); }"
 --
 addScript :: Bool -> MisoString -> IO JSVal
-{-# INLINE addScript #-}
+{-# INLINABLE addScript #-}
 addScript useModule js_ = do
   context <- getDrawingContext
   head_ <- getHead
@@ -613,7 +613,7 @@ addScript useModule js_ = do
 -- @
 --
 setValue :: JSVal -> MisoString -> IO ()
-{-# INLINE setValue #-}
+{-# INLINABLE setValue #-}
 setValue domRef value = setField domRef "value" value
 -----------------------------------------------------------------------------
 -- | Appends a 'Miso.Html.Element.script_' element containing a JS import map.
@@ -621,7 +621,7 @@ setValue domRef value = setField domRef "value" value
 -- > addScript "{ \"import\" : { \"three\" : \"url\" } }"
 --
 addScriptImportMap :: MisoString -> IO JSVal
-{-# INLINE addScriptImportMap #-}
+{-# INLINABLE addScriptImportMap #-}
 addScriptImportMap impMap = do
   context <- getDrawingContext
   head_ <- getHead
@@ -636,7 +636,7 @@ addScriptImportMap impMap = do
 -- > addSrc "https://example.com/script.js"
 --
 addSrc :: MisoString -> Bool -> IO JSVal
-{-# INLINE addSrc #-}
+{-# INLINABLE addSrc #-}
 addSrc url cacheBust = do
   context <- getDrawingContext
   head_ <- getHead
@@ -654,7 +654,7 @@ addSrc url cacheBust = do
 -- > <head><link href="https://cdn.jsdelivr.net/npm/todomvc-common@1.0.5/base.min.css" ref="stylesheet"></head>
 --
 addStyleSheet :: MisoString -> Bool -> IO JSVal
-{-# INLINE addStyleSheet #-}
+{-# INLINABLE addStyleSheet #-}
 addStyleSheet url cacheBust  = do
   context <- getDrawingContext
   head_ <- getHead
@@ -667,7 +667,7 @@ addStyleSheet url cacheBust  = do
 -----------------------------------------------------------------------------
 -- | Helper for cache busting
 appendTimestamp :: MisoString -> Bool -> IO MisoString
-{-# INLINE appendTimestamp #-}
+{-# INLINABLE appendTimestamp #-}
 appendTimestamp url = \case
   True -> do
     ts <- fromJSValUnchecked =<< do jsg "Date" # "now" $ ()
@@ -698,7 +698,7 @@ fetch
   -> CONTENT_TYPE
   -- ^ content type
   -> IO ()
-{-# INLINE fetch #-}
+{-# INLINABLE fetch #-}
 fetch url method maybeBody requestHeaders successful errorful type_ = do
   successful_ <- toJSVal =<< asyncCallback1 (successful <=< fromJSValUnchecked)
   errorful_ <- toJSVal =<< asyncCallback1 (errorful <=< fromJSValUnchecked)
@@ -753,7 +753,7 @@ instance ToJSVal CONTENT_TYPE where
 -- | Flush is used to force a draw of the render tree. This is currently
 -- only used when targeting platforms other than the browser (like mobile).
 flush :: IO ()
-{-# INLINE flush #-}
+{-# INLINABLE flush #-}
 flush = do
   context <- getDrawingContext
   void $ context # "flush" $ ([] :: [JSVal])
@@ -768,7 +768,7 @@ instance FromJSVal Image where
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a t'Image' w/ 'Miso.Html.Property.src_' 'Miso.Types.Attribute'.
 newImage :: MisoString -> IO Image
-{-# INLINE newImage #-}
+{-# INLINABLE newImage #-}
 newImage url = do
   img <- new (jsg "Image") ([] :: [MisoString])
   setField img "src" url
@@ -778,7 +778,7 @@ newImage url = do
 -- by implementing their own Context, and exporting it to the global scope. This
 -- opens the door to different rendering engines, ala [miso-lynx](https://github.com/haskell-miso/miso-lynx).
 setDrawingContext :: MisoString -> IO ()
-{-# INLINE setDrawingContext #-}
+{-# INLINABLE setDrawingContext #-}
 setDrawingContext rendererName =
   void $ jsg "miso" # "setDrawingContext" $ [rendererName]
 -----------------------------------------------------------------------------
@@ -788,25 +788,25 @@ newtype Date = Date JSVal
 -----------------------------------------------------------------------------
 -- | Smart constructor for a t'Date'
 newDate :: IO Date
-{-# INLINE newDate #-}
+{-# INLINABLE newDate #-}
 newDate = Date <$> new (jsg "Date") ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Date conversion function to produce a locale
 toLocaleString :: Date -> IO MisoString
-{-# INLINE toLocaleString #-}
+{-# INLINABLE toLocaleString #-}
 toLocaleString date = fromJSValUnchecked =<< do
   date # "toLocaleString" $ ()
 -----------------------------------------------------------------------------
 -- | Retrieves current milliseconds from t'Date'
 getMilliseconds :: Date -> IO Double
-{-# INLINE getMilliseconds #-}
+{-# INLINABLE getMilliseconds #-}
 getMilliseconds date =
   fromJSValUnchecked =<< do
     date # "getMilliseconds" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Retrieves current seconds from t'Date'
 getSeconds :: Date -> IO Double
-{-# INLINE getSeconds #-}
+{-# INLINABLE getSeconds #-}
 getSeconds date =
   fromJSValUnchecked =<< do
     date # "getSeconds" $ ([] :: [MisoString])
@@ -815,14 +815,14 @@ getSeconds date =
 --
 -- @since 1.9.0.0
 nextSibling :: JSVal -> IO JSVal
-{-# INLINE nextSibling #-}
+{-# INLINABLE nextSibling #-}
 nextSibling domRef = domRef ! "nextSibling"
 -----------------------------------------------------------------------------
 -- | Fetch previous sibling DOM node
 --
 -- @since 1.9.0.0
 previousSibling :: JSVal -> IO JSVal
-{-# INLINE previousSibling #-}
+{-# INLINABLE previousSibling #-}
 previousSibling domRef = domRef ! "previousSibling"
 -----------------------------------------------------------------------------
 -- | When working with @\<input type="file"\>@, this is useful for
@@ -839,7 +839,7 @@ previousSibling domRef = domRef ! "previousSibling"
 --
 -- @since 1.9.0.0
 files :: JSVal -> IO [JSVal]
-{-# INLINE files #-}
+{-# INLINABLE files #-}
 files domRef = fromJSValUnchecked =<< domRef ! "files"
 -----------------------------------------------------------------------------
 -- | Simulates a click event
@@ -848,7 +848,7 @@ files domRef = fromJSValUnchecked =<< domRef ! "files"
 --
 -- @since 1.9.0.0
 click :: () -> JSVal -> IO ()
-{-# INLINE click #-}
+{-# INLINABLE click #-}
 click () domRef = void $ domRef # "click" $ ([] :: [MisoString])
 -----------------------------------------------------------------------------
 -- | Get Camera on user's device
@@ -865,7 +865,7 @@ getUserMedia
   -> (JSVal -> IO ())
   -- ^ errorful
   -> IO ()
-{-# INLINE getUserMedia #-}
+{-# INLINABLE getUserMedia #-}
 getUserMedia video audio successful errorful = do
   params <- create
   set "video" video params
@@ -889,7 +889,7 @@ copyClipboard
   -> (JSVal -> IO ())
   -- ^ errorful
   -> IO ()
-{-# INLINE copyClipboard #-}
+{-# INLINABLE copyClipboard #-}
 copyClipboard txt successful errorful = do
   clipboard <- jsg "navigator" ! "clipboard"
   promise <- clipboard # "writeText" $ [txt]
@@ -910,7 +910,7 @@ websocketConnect
   -> (JSVal -> IO ())
   -> Bool
   -> IO JSVal
-{-# INLINE websocketConnect #-}
+{-# INLINABLE websocketConnect #-}
 websocketConnect
   url onOpen onClose
   onMessageText onMessageJSON
@@ -941,12 +941,12 @@ websocketConnect
     withMaybe (Just f) = asyncCallback1 f
 -----------------------------------------------------------------------------
 websocketClose :: JSVal -> IO ()
-{-# INLINE websocketClose #-}
+{-# INLINABLE websocketClose #-}
 websocketClose websocket = void $ do
   jsg "miso" # "websocketClose" $ [websocket]
 -----------------------------------------------------------------------------
 websocketSend :: JSVal -> JSVal -> IO ()
-{-# INLINE websocketSend #-}
+{-# INLINABLE websocketSend #-}
 websocketSend websocket message = void $ do
   jsg "miso" # "websocketSend" $ [websocket, message]
 -----------------------------------------------------------------------------
@@ -958,7 +958,7 @@ eventSourceConnect
   -> (JSVal -> IO ())
   -> Bool
   -> IO JSVal
-{-# INLINE eventSourceConnect #-}
+{-# INLINABLE eventSourceConnect #-}
 eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
   onOpen_ <- asyncCallback onOpen
   onMessageText_ <- withMaybe onMessageText
@@ -972,7 +972,7 @@ eventSourceConnect url onOpen onMessageText onMessageJSON onError textOnly = do
       withMaybe (Just f) = toJSVal =<< asyncCallback1 f
 -----------------------------------------------------------------------------
 eventSourceClose :: JSVal -> IO ()
-{-# INLINE eventSourceClose #-}
+{-# INLINABLE eventSourceClose #-}
 eventSourceClose eventSource = void $ do
   jsg "miso" # "eventSourceClose" $ [eventSource]
 -----------------------------------------------------------------------------
@@ -981,7 +981,7 @@ eventSourceClose eventSource = void $ do
 -- See [navigator.onLine](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/onLine)
 --
 isOnLine :: IO Bool
-{-# INLINE isOnLine #-}
+{-# INLINABLE isOnLine #-}
 isOnLine = fromJSValUnchecked =<< jsg "navigator" ! "onLine"
 -----------------------------------------------------------------------------
 -- | [Blob](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
@@ -1009,7 +1009,7 @@ newtype ArrayBuffer = ArrayBuffer JSVal
   deriving (Eq, ToJSVal)
 -----------------------------------------------------------------------------
 geolocation :: (JSVal -> IO ()) -> (JSVal -> IO ()) -> IO ()
-{-# INLINE geolocation #-}
+{-# INLINABLE geolocation #-}
 geolocation successful errorful = do
   geo <- jsg "navigator" ! "geolocation"
   cb1 <- asyncCallback1 successful
@@ -1050,7 +1050,7 @@ instance FromJSVal URLSearchParams where
 -----------------------------------------------------------------------------
 -- | Smart constructor for building a t'FileReader'
 newFileReader :: IO FileReader
-{-# INLINE newFileReader #-}
+{-# INLINABLE newFileReader #-}
 newFileReader = do
   reader <- new (jsg "FileReader") ([] :: [MisoString])
   pure (FileReader reader)
@@ -1098,7 +1098,7 @@ instance FromJSVal Event where
 -- @
 --
 dispatchEvent :: Event -> IO ()
-{-# INLINE dispatchEvent #-}
+{-# INLINABLE dispatchEvent #-}
 dispatchEvent event = do
   doc <- getDocument
   _ <- doc # "dispatchEvent" $ [event]
@@ -1113,7 +1113,7 @@ dispatchEvent event = do
 -- @
 --
 newEvent :: ToArgs args => args -> IO Event
-{-# INLINE newEvent #-}
+{-# INLINABLE newEvent #-}
 newEvent args = Event <$> new (jsg "Event") args
 -----------------------------------------------------------------------------
 -- | Creates a new [Event](https://developer.mozilla.org/en-US/docs/Web/API/Event/CustomEvent)
@@ -1125,46 +1125,46 @@ newEvent args = Event <$> new (jsg "Event") args
 -- @
 --
 newCustomEvent :: ToArgs args => args -> IO Event
-{-# INLINE newCustomEvent #-}
+{-# INLINABLE newCustomEvent #-}
 newCustomEvent args = Event <$> new (jsg "CustomEvent") args
 -----------------------------------------------------------------------------
 -- | Uses the 'splitmix' function to generate a PRNG.
 --
 splitmix32 :: Double -> IO JSVal
-{-# INLINE splitmix32 #-}
+{-# INLINABLE splitmix32 #-}
 splitmix32 x = jsg "miso" # "splitmix32" $ [x]
 -----------------------------------------------------------------------------
 -- | Uses the 'Math.random()' function.
 --
 mathRandom :: IO Double
-{-# INLINE mathRandom #-}
+{-# INLINABLE mathRandom #-}
 mathRandom = fromJSValUnchecked =<< do
   jsg "miso" # "mathRandom" $ ()
 -----------------------------------------------------------------------------
 -- | Uses the first element of 'crypto.getRandomValues()'.
 --
 getRandomValue :: IO Double
-{-# INLINE getRandomValue #-}
+{-# INLINABLE getRandomValue #-}
 getRandomValue = fromJSValUnchecked =<< do
   jsg "miso" # "getRandomValues" $ ()
 -----------------------------------------------------------------------------
 -- | Abstract over model hydration
 modelHydration :: Int -> Object -> IO ()
-{-# INLINE modelHydration #-}
+{-# INLINABLE modelHydration #-}
 modelHydration vcompId model_ = do
   comp <- getComponentContext
   void $ comp # "modelHydration" $ (vcompId, model_)
 -----------------------------------------------------------------------------
 -- | Abstract over Component mounting
 mountComponent :: Int -> Object -> IO ()
-{-# INLINE mountComponent #-}
+{-# INLINABLE mountComponent #-}
 mountComponent vcompId model_ = do
   comp <- getComponentContext
   void $ comp # "mountComponent" $ (vcompId, model_)
 -----------------------------------------------------------------------------
 -- | Abstract over Component unmounting
 unmountComponent :: Int -> IO ()
-{-# INLINE unmountComponent #-}
+{-# INLINABLE unmountComponent #-}
 unmountComponent vcompId = do
   comp <- getComponentContext
   void $ comp # "unmountComponent" $ [vcompId]
