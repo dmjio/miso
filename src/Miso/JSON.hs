@@ -106,6 +106,10 @@ import           Data.Int
 import           GHC.Natural (naturalToInteger, naturalFromInteger)
 import           GHC.TypeLits
 import           Data.Kind
+#ifndef VANILLA
+import qualified Data.Text as T
+#endif
+import qualified Data.Text.Lazy as LT
 import           Data.Word
 import           GHC.Generics
 ----------------------------------------------------------------------------
@@ -348,6 +352,24 @@ instance FromJSON Bool where
 ----------------------------------------------------------------------------
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
+----------------------------------------------------------------------------
+#ifndef VANILLA
+instance FromJSON T.Text where
+  parseJSON = withText "Text" go
+    where
+      go s =
+        case MS.fromMisoStringEither s of
+          Right lt -> pure lt
+          Left e -> fail e
+#endif
+----------------------------------------------------------------------------
+instance FromJSON LT.Text where
+  parseJSON = withText "LText" go
+    where
+      go s =
+        case MS.fromMisoStringEither s of
+          Right lt -> pure lt
+          Left e -> fail e
 ----------------------------------------------------------------------------
 instance {-# OVERLAPPING #-} FromJSON String where
   parseJSON = withText "String" (pure . MS.unpack)
