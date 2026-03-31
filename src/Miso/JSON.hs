@@ -340,6 +340,11 @@ instance {-# OVERLAPPING #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (
     where
       field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
 ----------------------------------------------------------------------------
+#ifndef VANILLA
+instance FromJSON Text where
+  parseJSON = withText "Text" (pure . MS.unpack)
+#endif
+----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
 ----------------------------------------------------------------------------
