@@ -115,8 +115,8 @@ data Component parent model action
 #else
   , hydrateModel :: Maybe (IO model)
 #endif
-  -- ^ Action to load component state, such as reading data from page.
-  --   The resulting model is only used during initial hydration, not on remounts.
+  -- ^ Optional 'IO' to load component 'model' state, such as reading data from page.
+  --   The resulting 'model' is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Updates model, optionally providing effects.
   , view :: model -> View model action
