@@ -247,6 +247,14 @@ instance (ToJSON a,ToJSON b,ToJSON c, ToJSON d) => ToJSON (a,b,c,d) where
 instance ToJSON MisoString where
   toJSON = String
 ----------------------------------------------------------------------------
+#ifndef VANILLA
+instance ToJSON T.Text where
+  toJSON = toJSON . ms
+#endif
+----------------------------------------------------------------------------
+instance ToJSON LT.Text where
+  toJSON = toJSON . ms
+----------------------------------------------------------------------------
 instance ToJSON Float where
   toJSON = Number . realToFrac
 ----------------------------------------------------------------------------
