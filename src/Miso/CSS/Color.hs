@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 module Miso.CSS.Color
   ( -- *** Types
-    Color (RGB, RGBA, HSL, HSLA, Hex)
+    Color (RGB, RGBA, HSL, HSLA, OKLCH, OKLCHA, Hex)
     -- *** Smart constructor
   , rgba
   , rgb
@@ -351,7 +351,7 @@ oklch = OKLCH
 -- >>> renderColor (oklcha 40.1 0.123 0.123 0.5)
 -- "oklcha(40.1% 0.123 0.123 / 0.5)"
 --
-oklcha :: Double -> Double -> Double -> Color
+oklcha :: Double -> Double -> Double -> Double -> Color
 oklcha = OKLCHA
 -----------------------------------------------------------------------------
 -- | Smart constructor for the 'transparent' color
