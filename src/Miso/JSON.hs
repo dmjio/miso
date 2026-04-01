@@ -368,7 +368,7 @@ instance FromJSON T.Text where
       go s =
         case MS.fromMisoStringEither s of
           Right lt -> pure lt
-          Left e -> fail e
+          Left e -> pfail $ ms e
 #endif
 ----------------------------------------------------------------------------
 instance FromJSON LT.Text where
@@ -377,7 +377,7 @@ instance FromJSON LT.Text where
       go s =
         case MS.fromMisoStringEither s of
           Right lt -> pure lt
-          Left e -> fail e
+          Left e -> pfail $ ms e
 ----------------------------------------------------------------------------
 instance {-# OVERLAPPING #-} FromJSON String where
   parseJSON = withText "String" (pure . MS.unpack)
