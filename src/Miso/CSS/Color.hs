@@ -23,6 +23,8 @@ module Miso.CSS.Color
   , rgb
   , hsl
   , hsla
+  , oklch
+  , oklcha
   , hex
   , var
     -- *** Render
@@ -201,6 +203,10 @@ data Color
   -- ^ Hexadecimal representation of a color. See [here](https://www.w3schools.com/colors/colors_hexadecimal.asp)
   | VarColor MisoString
   -- ^ A CSS variable
+  | OKLCH Double Double Double
+  -- ^ Lightness, Chroma, Hue. See [oklch](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value/oklch).
+  | OKLCHA Double Double Double Double
+  -- ^ Lightness, Chroma, Hue, Alpha. See [oklhc](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value/oklch).
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 -- | 'IsLabel' instance on 'Color'
@@ -267,6 +273,20 @@ renderColor (HSL h s l) = "hsl(" <> values <> ")"
       , MS.ms s
       , MS.ms l
       ]
+renderColor (OKLCH l c h) = "oklch(" <> values <> ")"
+  where
+    values = MS.intercalate " "
+      [ MS.ms l <> "%"
+      , MS.ms c
+      , MS.ms h
+      ]
+renderColor (OKLCHA l c h a) = "oklch(" <> values <> ")"
+  where
+    values = MS.intercalate " "
+      [ MS.ms l <> "%"
+      , MS.ms c
+      , MS.ms h
+      ] <> " / " <> MS.ms a
 renderColor (Hex s) = "#" <> s
 renderColor (VarColor n) = "var(--" <> n <> ")"
 -----------------------------------------------------------------------------
@@ -317,6 +337,22 @@ hsla = HSLA
 --
 hex :: MisoString -> Color
 hex = Hex
+-----------------------------------------------------------------------------
+-- | Smart constructor for an 'OKLCH' 'Color'
+--
+-- >>> renderColor (oklch 40.1 0.123 0.123)
+-- "oklch(40.1% 0.123 0.123)"
+--
+oklch :: Double -> Double -> Double -> Color
+oklch = OKLCH
+-----------------------------------------------------------------------------
+-- | Smart constructor for an 'OKLCH' 'Color' with alpha transparency
+--
+-- >>> renderColor (oklcha 40.1 0.123 0.123 0.5)
+-- "oklcha(40.1% 0.123 0.123 / 0.5)"
+--
+oklcha :: Double -> Double -> Double -> Color
+oklcha = OKLCHA
 -----------------------------------------------------------------------------
 -- | Smart constructor for the 'transparent' color
 --
