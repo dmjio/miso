@@ -620,6 +620,41 @@
 -- Internally miso uses a global event queue and a scheduler to process all events raised by 'Component' throughout the lifetime of
 -- an application. Events are processed in FIFO order, batched by the 'Component' that raised them.
 --
+-- = Prerendering
+--
+-- Prerendering is the process of delivering HTML from a web server before the client loads and performs any drawing to the page. In miso it comes in two flavors, static
+-- or dynamic prerendering. Static prerendering assumes no model state needs to be shared between the server and client. Dynamic uses 'hydrateModel' to share @model@ state.
+--
+-- == Static prerendering
+--
+-- miso provides the 'prerender' and 'miso' functions to facilitate static prerendering. Any page can be generated from a miso 'View' using the 'Miso.Render.toHtml' instance.
+--
+-- A simple example of static prerendering would be an @index.html@ page with some HTML
+--
+-- @
+-- echo "<html><head><//head><body>hello world<//body>" > index.html
+-- @
+--
+-- And a miso application that looks like:
+--
+-- @
+-- main :: IO ()
+-- main = prerender defaultEvents $ (vcomp () noop $ \() -> "hello world") { logLevel = DebugPrerender }
+-- @
+--
+-- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below
+--
+-- > [DEBUG_HYDRATE] Successfully prerendered page
+--
+-- See the [Haskell miso](https://haskell-miso.org) website console for an example usage of static prerendering with 'miso' and [miso-ui](https://ui.haskell-miso.org) for 'prerender' usage.
+--
+-- == Dynamic prerendering
+--
+-- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydateModel' function should be specified inside the t'Component'.
+-- The SSR flag (`-fssr`) must be specified when using this feature.
+--
+-- 'hydrateModel' is used to load initial data into a Component's 'model' that is necessary for hydration.
+--
 -----------------------------------------------------------------------------
 module Miso
   ( -- * API
