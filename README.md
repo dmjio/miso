@@ -94,7 +94,7 @@ See the [Miso](https://haddocks.haskell-miso.org/miso/Miso.html) module.
 curl -L https://nixos.org/nix/install | sh
 
 # Enable flakes
-echo 'experimental-features = nix-command flakes' >> ~/.config/nix/config.nix
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 
 # Clone, build and host
 git clone https://github.com/haskell-miso/miso-sampler && cd miso-sampler
