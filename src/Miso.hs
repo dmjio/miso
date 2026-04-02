@@ -653,6 +653,8 @@
 -- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydateModel' function should be specified inside the t'Component'.
 -- The SSR flag (`-fssr`) must be specified when using this feature.
 --
+-- 'hydrateModel' is used to load initial data into a Component's 'model' that is necessary for hydration.
+--
 -----------------------------------------------------------------------------
 module Miso
   ( -- * API
