@@ -87,11 +87,11 @@ testComponent = component (0 :: Int) update_ $ \_ -> button_ [ id_ "foo", onClic
 data Action = AddOne
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
-#ifdef WASM
+
 #ifndef INTERACTIVE
-foreign export javascript "hs_start" main :: IO ()
+entryPoint $ Just "hs_start"
 #endif
-#endif
+
 -----------------------------------------------------------------------------
 data Route
   = Index
