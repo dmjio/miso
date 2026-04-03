@@ -216,6 +216,6 @@ library
     base          < 5,
     bytestring    < 0.13,
     containers    < 0.9,
-    transformers  < 0.6.2.0,
+    transformers  < 0.7,
     mtl           < 2.4,
     text          < 2.2
