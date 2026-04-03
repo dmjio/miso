@@ -1260,7 +1260,7 @@ mailChildren
   -> Effect parent model action
 mailChildren msg = do
   ComponentInfo {..} <- ask
-  io_ $ forM_ _componentChildrenIds $ \childId -> mail childId msg
+  io_ $ forM_ _componentChildren $ \childId -> mail childId msg
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
