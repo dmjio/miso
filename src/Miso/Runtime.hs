@@ -1246,10 +1246,10 @@ mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
 -----------------------------------------------------------------------------
--- | Send any @ToJSON message => message@ to the parent's t'Miso.Types.Component' mailbox
+-- | Send any @ToJSON message => message@ to the children's t'Miso.Types.Component' mailbox
 --
 -- @
--- mailParent ("test message" :: MisoString) :: Effect parent model action
+-- mailChildren ("test message" :: MisoString) :: Effect parent model action
 -- @
 --
 -- @since 1.9.0.0
@@ -1260,7 +1260,7 @@ mailChildren
   -> Effect parent model action
 mailChildren msg = do
   ComponentInfo {..} <- ask
-  io_ $ forM_ (flip mail msg) _componentChildrenIds
+  io_ $ forM_ _componentChildrenIds $ \childId -> mail childId msg
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
