@@ -684,6 +684,7 @@ module Miso
   , checkMail
   , parent
   , mailParent
+  , mailChildren
   , broadcast
     -- ** Subscriptions
   , startSub
