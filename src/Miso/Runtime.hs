@@ -50,6 +50,7 @@ module Miso.Runtime
   , broadcast
   , parent
   , mailParent
+  , mailChildren
   -- ** WebSocket
   , websocketConnect
   , websocketConnectJSON
