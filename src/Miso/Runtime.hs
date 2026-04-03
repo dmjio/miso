@@ -1260,7 +1260,9 @@ mailChildren
   -> Effect parent model action
 mailChildren msg = do
   ComponentInfo {..} <- ask
-  io_ $ forM_ (IS.toList _componentChildren) $ \childId -> mail childId msg
+  io_ $ do
+    ComponentState {..} <- (IM.! _componentInfoId) <$> readIORef components
+    forM_ (IS.toList _componentChildren) (flip mail msg)
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
