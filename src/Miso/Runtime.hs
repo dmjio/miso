@@ -50,6 +50,7 @@ module Miso.Runtime
   , broadcast
   , parent
   , mailParent
+  , mailChildren
   -- ** WebSocket
   , websocketConnect
   , websocketConnectJSON
@@ -1244,6 +1245,24 @@ mailParent
 mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
+-----------------------------------------------------------------------------
+-- | Send any @ToJSON message => message@ to the children's t'Miso.Types.Component' mailbox
+--
+-- @
+-- mailChildren ("test message" :: MisoString) :: Effect parent model action
+-- @
+--
+-- @since 1.9.0.0
+mailChildren
+  :: ToJSON message
+  => message
+  -- ^ Message to send
+  -> Effect parent model action
+mailChildren msg = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    ComponentState {..} <- (IM.! _componentInfoId) <$> readIORef components
+    forM_ (IS.toList _componentChildren) (flip mail msg)
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
