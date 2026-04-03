@@ -632,14 +632,14 @@
 -- A simple example of static prerendering would be an @index.html@ page with some HTML
 --
 -- @
--- echo "<html><head><//head><body>hello world<//body>" > index.html
+-- echo "\<html\>\<head\>\<\/head\>\<body\>hello world\<\/body\>" > index.html
 -- @
 --
 -- And a miso application that looks like:
 --
 -- @
 -- main :: IO ()
--- main = prerender defaultEvents $ (vcomp () noop $ \() -> "hello world") { logLevel = DebugPrerender }
+-- main = 'prerender' 'defaultEvents' $ ('vcomp' () 'noop' $ \\() -> "hello world") { 'logLevel' = 'DebugPrerender' }
 -- @
 --
 -- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below
