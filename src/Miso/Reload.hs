@@ -71,16 +71,16 @@ import           Data.IORef
 import           Foreign hiding (void)
 import           Foreign.C.Types
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "x_store"
+foreign import ccall unsafe "miso_x_store"
   x_store :: StablePtr a -> IO ()
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "x_get"
+foreign import ccall unsafe "miso_x_get"
   x_get :: IO (StablePtr a)
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "x_exists"
+foreign import ccall unsafe "miso_x_exists"
   x_exists :: IO CInt
 -----------------------------------------------------------------------------
-foreign import ccall unsafe "x_clear"
+foreign import ccall unsafe "miso_x_clear"
   x_clear :: IO ()
 -----------------------------------------------------------------------------
 #define MISO_JS_PATH "js/miso.js"
