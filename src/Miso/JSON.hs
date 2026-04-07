@@ -559,8 +559,9 @@ instance ToMisoString Value where
 #else
       "\"" <> s <> "\""
 #endif
-    Number n ->
-      ms n
+    Number n
+      | (_ :: Int, 0.0) <- properFraction n -> ms (floor n :: Int)
+      | otherwise -> ms n
     Null ->
       "null"
     Array xs ->
