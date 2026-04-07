@@ -274,7 +274,6 @@ scheduler =
     -- | Apply the actions across the model, evaluate async and sync IO.
     commit :: ComponentId -> [action] -> IO ComponentIds
     commit vcompId events = do
-      globalComps <- readIORef components
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
