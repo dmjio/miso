@@ -107,11 +107,7 @@ data Component parent model action
   = Component
   { model :: model
   -- ^ Initial model
-#ifdef SSR
   , hydrateModel :: Maybe (IO model)
-#else
-  , hydrateModel :: Maybe (IO model)
-#endif
   -- ^ Action to load component state, such as reading data from page.
   --   The resulting model is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
