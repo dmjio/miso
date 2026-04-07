@@ -435,6 +435,12 @@ instance {-# OVERLAPS #-} (FromMisoString a, ToMisoString a) => GRouter (K1 m (C
   gFromRoute (K1 x) = pure $ CaptureOrPathToken (ms x)
   gRouteParser = K1 <$> capture
 -----------------------------------------------------------------------------
+instance {-# OVERLAPS #-} KnownSymbol frag => GRouter (K1 m (Fragment frag)) where
+  gFromRoute (K1 x) = pure $ FragmentToken (ms x)
+  gRouteParser = K1 Fragment <$ fragment frag
+    where
+      frag = ms (symbolVal (Proxy :: Proxy frag))
+-----------------------------------------------------------------------------
 instance {-# OVERLAPS #-} forall param m a . (ToMisoString a, FromMisoString a, KnownSymbol param) =>
   GRouter (K1 m (QueryParam param a)) where
     gFromRoute (K1 (QueryParam maybeParam)) = do
