@@ -50,6 +50,7 @@ module Miso.Runtime
   , broadcast
   , parent
   , mailParent
+  , mailChildren
   -- ** WebSocket
   , websocketConnect
   , websocketConnectJSON
@@ -98,7 +99,7 @@ import qualified Data.IntSet as IS
 import           Data.IntSet (IntSet)
 import           Control.Category ((.))
 import           Control.Concurrent
-import           Control.Exception (SomeException, catch)
+import           Control.Exception (SomeException, catch, evaluate)
 import           Control.Monad (forM, forM_, when, void, (<=<), zipWithM_, forever, foldM)
 import           Control.Monad.Reader (ask, asks)
 import           Control.Monad.State hiding (state)
@@ -214,7 +215,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
               in (newComps, n, ss <> sss, dirtySet <> newDirty)
           ) (comps, model_, [], mempty) actions
 
-  let vcomp = ComponentState
+  let vcomponent = ComponentState
         { _componentEvents = events
         , _componentMailbox = mailbox
         , _componentBindings = bindings
@@ -225,12 +226,12 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         }
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
-  registerComponent vcomp
+  registerComponent vcomponent
   initSubs subs _componentSubThreads _componentSink
-  initialDraw initializedModel events hydrate isRoot comp vcomp
+  initialDraw initializedModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
   FFI.mountComponent _componentId =<< toObject jsNull
-  pure vcomp
+  pure vcomponent
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
 initSubs subs_ _componentSubThreads _componentSink = do
@@ -320,8 +321,8 @@ modifyComponent vcompId go = liftIO $ do
     case IM.lookup vcompId vcomps of
       Nothing ->
         (vcomps, ())
-      Just vcomp ->
-        (IM.insert vcompId (execState go vcomp) vcomps, ())
+      Just comp ->
+        (IM.insert vcompId (execState go comp) vcomps, ())
 ----------------------------------------------------------------------------
 propagate
   :: ComponentId
@@ -937,7 +938,9 @@ drain ComponentState {..} = do
          (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
-             Schedule _ action -> action _componentSink
+             Schedule _ action ->
+               action _componentSink
+                 `catch` (\(e :: SomeException) -> void (evaluate e))
              -- dmj: Don't recurse on drain, we only fire-off the last set
              -- of events for 'onBeforeUnmounted' hooks. The queue will
              -- ignore the rest of these.
@@ -952,9 +955,9 @@ unloadScripts ComponentState {..} = do
 -- | Helper to drop all lifecycle and mounting hooks if defined.
 freeLifecycleHooks :: ComponentState parent model action -> IO ()
 freeLifecycleHooks ComponentState {..} = do
-  VTree (Object vcomp) <- liftIO (readIORef _componentVTree)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("mount" :: MisoString)
-  mapM_ freeFunction =<< fromJSVal =<< vcomp ! ("unmount" :: MisoString)
+  VTree (Object comp) <- liftIO (readIORef _componentVTree)
+  mapM_ freeFunction =<< fromJSVal =<< comp ! ("mount" :: MisoString)
+  mapM_ freeFunction =<< fromJSVal =<< comp ! ("unmount" :: MisoString)
 -----------------------------------------------------------------------------
 -- | Helper function for cleanly destroying a t'Miso.Types.Component'
 unmountComponent
@@ -999,15 +1002,15 @@ buildVTree
   -> View model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
-  VComp attrs (SomeComponent app) -> do
-    vcomp <- create
+  VComp maybeKey (SomeComponent app) -> do
+    vcomp_ <- create
 
     mountCallback <- do
       syncCallback1' $ \parent_ -> do
         ComponentState {..} <- initialize events_ vcompId hydrate False app (pure parent_)
         modifyComponent vcompId (children %= IS.insert _componentId)
         vtree <- toJSVal =<< readIORef _componentVTree
-        FFI.set "parent" vcomp (Object vtree)
+        FFI.set "parent" vcomp_ (Object vtree)
         obj <- create
         setProp "componentId" _componentId obj
         setProp "componentTree" vtree obj
@@ -1022,20 +1025,20 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
             forM_ (unmount app) (_componentSink componentState)
             unmountComponent componentState
 
-    FFI.set "child" jsNull vcomp
-    setAttrs vcomp attrs snk (logLevel app) events_
-    FFI.set "mount" mountCallback vcomp
-    FFI.set "unmount" unmountCallback vcomp
-    FFI.set "eventPropagation" (eventPropagation app) vcomp
-    FFI.set "type" VCompType vcomp
-    pure (VTree vcomp)
+    FFI.set "child" jsNull vcomp_
+    forM_ maybeKey (\key -> FFI.set "key" key vcomp_)
+    FFI.set "mount" mountCallback vcomp_
+    FFI.set "unmount" unmountCallback vcomp_
+    FFI.set "eventPropagation" (eventPropagation app) vcomp_
+    FFI.set "type" VCompType vcomp_
+    pure (VTree vcomp_)
   VNode ns tag attrs kids -> do
-    vnode <- createNode "vnode" ns tag
-    setAttrs vnode attrs snk logLevel_ events_
-    vchildren <- toJSVal =<< procreate vnode
-    flip (FFI.set "children") vnode vchildren
-    flip (FFI.set "type") vnode =<< toJSVal VNodeType
-    pure (VTree vnode)
+    vnode_ <- createNode "vnode" ns tag
+    setAttrs vnode_ attrs snk logLevel_ events_
+    vchildren <- toJSVal =<< procreate vnode_
+    flip (FFI.set "children") vnode_ vchildren
+    flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
+    pure (VTree vnode_)
       where
         procreate parentVTree = do
           kidsViews <- forM kids $ \kid -> do
@@ -1061,21 +1064,21 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
 -- Doesn't handle children
 createNode :: MisoString -> Namespace -> MisoString -> IO Object
 createNode typ ns tag = do
-  vnode <- create
+  vnode_ <- create
   cssObj <- create
   propsObj <- create
   eventsObj <- create
   captures <- create
   bubbles <- create
-  FFI.set "css" cssObj vnode
-  FFI.set "type" typ vnode
-  FFI.set "props" propsObj vnode
-  FFI.set "events" eventsObj vnode
+  FFI.set "css" cssObj vnode_
+  FFI.set "type" typ vnode_
+  FFI.set "props" propsObj vnode_
+  FFI.set "events" eventsObj vnode_
   FFI.set "captures" captures eventsObj
   FFI.set "bubbles" bubbles eventsObj
-  FFI.set "ns" ns vnode
-  FFI.set "tag" tag vnode
-  pure vnode
+  FFI.set "ns" ns vnode_
+  FFI.set "tag" tag vnode_
+  pure vnode_
 -----------------------------------------------------------------------------
 -- | Helper function for populating "props" and "css" fields on a virtual
 -- DOM node
@@ -1086,21 +1089,21 @@ setAttrs
   -> LogLevel
   -> Events
   -> IO ()
-setAttrs vnode@(Object jval) attrs snk logLevel events =
+setAttrs vnode_@(Object jval) attrs snk logLevel events =
   forM_ attrs $ \case
     Property "key" v -> do
       value <- toJSVal v
-      FFI.set "key" value vnode
+      FFI.set "key" value vnode_
     ClassList classes ->
       FFI.populateClass jval classes
     Property k v -> do
       value <- toJSVal v
-      o <- getProp "props" vnode
+      o <- getProp "props" vnode_
       FFI.set k value (Object o)
     On callback ->
-      callback snk (VTree vnode) logLevel events
+      callback snk (VTree vnode_) logLevel events
     Styles styles -> do
-      cssObj <- getProp "css" vnode
+      cssObj <- getProp "css" vnode_
       forM_ (M.toList styles) $ \(k,v) -> do
         FFI.set k v (Object cssObj)
 -----------------------------------------------------------------------------
@@ -1256,6 +1259,24 @@ mailParent
 mailParent msg = do
   ComponentInfo {..} <- ask
   io_ (mail _componentInfoParentId msg)
+-----------------------------------------------------------------------------
+-- | Send any @ToJSON message => message@ to the children's t'Miso.Types.Component' mailbox
+--
+-- @
+-- mailChildren ("test message" :: MisoString) :: Effect parent model action
+-- @
+--
+-- @since 1.9.0.0
+mailChildren
+  :: ToJSON message
+  => message
+  -- ^ Message to send
+  -> Effect parent model action
+mailChildren msg = do
+  ComponentInfo {..} <- ask
+  io_ $ do
+    ComponentState {..} <- (IM.! _componentInfoId) <$> readIORef components
+    forM_ (IS.toList _componentChildren) (flip mail msg)
 ----------------------------------------------------------------------------
 -- | Helper function for processing @Mail@ from 'mail'.
 --
@@ -1820,9 +1841,9 @@ initComponent
   -> Hydrate
   -> Component parent model action
   -> IO ()
-initComponent events hydrate vcomp@Component {..} = withJS $ do
+initComponent events hydrate vcomp_@Component {..} = withJS $ do
   root <- Diff.mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate True vcomp (pure root)
+  void $ initialize events rootComponentId hydrate True vcomp_ (pure root)
 #if __GLASGOW_HASKELL__ > 865
   flip labelThread "scheduler" =<< forkIO scheduler
 #else

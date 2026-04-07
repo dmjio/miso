@@ -15,7 +15,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- = Miso 🍜
+-- = miso 🍜
 --
 -- @miso@ is a library for building web and native user interface applications in Haskell. See the [GitHub group](https://github.com/haskell-miso).
 --
@@ -98,7 +98,7 @@
 --                        |     |    * - The type of the action that updates the 'model'
 --                        |     |    |
 -- counter :: 'Component' parent Int Action
--- counter = 'component' m u v
+-- counter = 'vcomp' m u v
 --   where
 --     m :: Int
 --     m = 0
@@ -172,7 +172,7 @@
 --   => 'MisoString'
 --   -> 'Component' model child action
 --   -> 'View' model a
--- key '+>' vcomp = 'VComp' [ 'Property' "key" ('toJSON' key) ] ('SomeComponent' vcomp)
+-- key '+>' vcomp = 'VComp' (Just (toKey key)) ('SomeComponent' vcomp)
 -- @
 --
 -- Practically, using this combinator looks like:
@@ -227,7 +227,7 @@
 -- * 'Miso.Event.onBeforeDestroyed' / 'Miso.Event.onBeforeDestroyedWith'
 -- * 'Miso.Event.onDestroyed'
 --
--- This is convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
+-- These are convenient for initializing and deinitializing third-party libraries (as seen below with [highlight.js](https://highlightjs.org/))
 --
 -- @
 -- {-# LANGUAGE QuasiQuotes -#}
@@ -253,6 +253,8 @@
 --     """
 --   ]
 -- @
+--
+-- As a convention, the @*with@ variant of 'VNode' lifecycle hooks (e.g. 'Miso.Event.onCreatedWith') provide the target 'DOMRef' in the callback function (shown above).
 --
 -- = 'Key'
 --
@@ -291,7 +293,7 @@
 -- data 'View' model action
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
---   | 'VComp' ['Attribute' action] ('SomeComponent' model)
+--   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
 -- @
 --
 -- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
@@ -304,9 +306,9 @@
 --
 -- The smart constructors:
 --
--- * 'node'
--- * 'text'
--- * 'component'
+-- * 'node', 'vnode'
+-- * 'text', 'vtext'
+-- * 'component', 'vcomp'
 -- * ('+>')
 --
 -- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
@@ -341,6 +343,8 @@
 -- 'onChangeWith' = 'on' "change" 'valueDecoder'
 -- @
 --
+-- The @*with@ variant of events (e.g. 'Miso.Event.onChangeWith') provides the target 'DOMRef' in the callback function.
+--
 -- * Decoding events
 --
 -- After an event has been raised, one can extract information from the event for use in their application. This is accomplished through a 'Decoder'. Many common decoders are available for use in "Miso.Event.Decoder".
@@ -373,7 +377,7 @@
 -- = 'Effect'
 --
 -- The 'Effect' type is used to mutate the @model@ over time in response to @action@.
--- This allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
+-- 'Effect' also allows 'IO' to be scheduled for evaluation by the @miso@ scheduler.
 --
 -- Note: 'IO' is never evaluated inside of 'Effect', it is only scheduled.
 -- There is no 'MonadIO' instance for 'Effect'.
@@ -384,7 +388,11 @@
 -- type 'Effect' parent model action = 'RWS' ('ComponentInfo' parent) ['Schedule' action] model ()
 -- @
 --
--- 'IO' can be performed either synchronoulsy or asynchronously. By default all 'IO' is asynchronous
+-- * The 'Control.Monad.Reader' portion of 'Effect' is 'ComponentInfo'. 'ask', 'asks', 'Miso.Lens.view' can be used to access its fields.
+-- * The 'Control.Monad.Writer' portion of 'Effect' is used to schedule t'IO' actions. 'tell' can be used to create a 'Schedule' for an 'IO' action that is executed according to 'Synchronicity'. See also 'withSink' for usage.
+-- * The 'Control.Monad.State' portion of 'Effect' is used to manipulate the @model@. 'get', 'put', 'modify', and the 'Control.Monad.State.MonadState' lenses in t'Miso.Lens.Lens' can be used to modify the @model@.
+--
+-- 'IO' can be performed either synchronously or asynchronously. By default all 'IO' is asynchronous
 --
 -- == Asynchronous 'IO'
 --
@@ -443,9 +451,11 @@
 --
 -- Experimental support for data bindings (where 'Component' model can synchronize fields via a 'Miso.Lens.Lens' in response to model differences along the parent-child relationship). See the "Miso.Binding" module for more information, and the [miso-reactive](https://github.com/haskell-miso/miso-reactive) example. *Warning*: This is still considered experimental.
 --
+-- == Parent access
+--
 -- * 'parent'
 --
--- While not direct communication, a 'Component' can receive read-only access to its @parent@ state via the 'parent' function.
+-- While not direct communication, a 'Component' can asynchronously receive read-only access to its @parent@ state via the 'parent' function.
 --
 -- = Subscriptions
 --
@@ -469,7 +479,7 @@
 --
 -- @
 -- 'onLineSub' :: (Bool -> action) -> 'Sub' action
--- 'onLineSub' f sink = 'createSub' acquire release sink
+-- 'onLineSub' f sink = 'Miso.Subscription.Util.createSub' acquire release sink
 --   where
 --     release (cb1, cb2) = do
 --       FFI.windowRemoveEventListener "online" cb1
@@ -486,15 +496,15 @@
 -- when a user logs in). The 'startSub' and 'stopSub' functions facilitate dynamic 'Sub' creation / removal.
 --
 -- @
---   update = \\case
---     StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
---     StopTimer -> 'stopSub' "timer"
---     Log -> 'io_' ('consoleLog' "log")
---       where
---         timerSub :: 'Sub' Action
---         timerSub sink = 'forever' $ ('threadDelay' 100000) >> sink Log
+-- update = \\case
+--   StartTimer -> 'startSub' ("timer" :: MisoString) timerSub
+--   StopTimer -> 'stopSub' "timer"
+--   Log -> 'io_' ('consoleLog' "log")
+--     where
+--       timerSub :: 'Sub' Action
+--       timerSub sink = 'Control.Monad.forever' $ ('Control.Concurrent.threadDelay' 100000) >> sink Log
 --
---   data Action = Log
+-- data Action = Log
 -- @
 --
 -- * 'Miso.Subscription.Util.createSub'
@@ -508,7 +518,7 @@
 --
 --  Miso has full 2D and 3D canvas support. See the "Miso.Canvas" module, the [miso-canvas](https://github.com/haskell-miso/miso-canvas2d) example, along with the [three-miso](https://github.com/haskell-miso/three-miso) package.
 --
--- = 'State' management ('Lens')
+-- = 'Control.Monad.State.State' management
 --
 --  A simple 'Miso.Lens.Lens' implementation is included with miso, this was done for convenience, to minimize dependencies, reduce payload size, and provide a simpler interface. See "Miso.Lens". This is a simple lens formulation that exposes many common 'MonadState' lenses (e.g. @'+='@) that work in the 'Effect' monad. "Miso.Lens" is not required for use, any lens library will also work with miso.
 --
@@ -530,7 +540,7 @@
 -- = QuasiQuotation (@inline-js@)
 --
 -- Along with "Miso.DSL", a JavaScript QuasiQuoter is now included (See "Miso.FFI.QQ"). This makes it easy to
--- integrate miso with any third-party JavaScript library. This bindings in scope can be used inside the QuasiQuoter, which
+-- integrate miso with any third-party JavaScript library. The bindings in scope can be used inside the QuasiQuoter, which
 -- will utilize their 'Miso.DSL.ToJSVal' instances. When returning values from the QuasiQuoter, the 'Miso.DSL.FromJSVal' instance will
 -- be used Haskell.
 --
@@ -558,6 +568,8 @@
 -- want to minimize the copying of these strings between the JS and Haskell heaps. t'MisoString' accomplishes this.
 -- t'MisoString' is a synonym for t'JSString' when using the JS / WASM backends. When using vanilla GHC
 -- it is t'Data.Text'. See "Miso.String" for more information.
+--
+-- For string conversions see the 'ms', 'fromMisoString' functions and 'ToMisoString' / 'FromMisoString' classes.
 --
 -- t'MisoString' is also used in the "Miso.Util.Lexer" and "Miso.Util.Parser" modules.
 --
@@ -608,6 +620,41 @@
 -- Internally miso uses a global event queue and a scheduler to process all events raised by 'Component' throughout the lifetime of
 -- an application. Events are processed in FIFO order, batched by the 'Component' that raised them.
 --
+-- = Prerendering
+--
+-- Prerendering is the process of delivering HTML from a web server before the client loads and performs any drawing to the page. In miso it comes in two flavors, static
+-- or dynamic prerendering. Static prerendering assumes no model state needs to be shared between the server and client. Dynamic uses 'hydrateModel' to share @model@ state.
+--
+-- == Static prerendering
+--
+-- miso provides the 'prerender' and 'miso' functions to facilitate static prerendering. Any page can be generated from a miso 'View' using the 'Miso.Render.toHtml' instance.
+--
+-- A simple example of static prerendering would be an @index.html@ page with some HTML
+--
+-- @
+-- echo "\<html\>\<head\>\<\/head\>\<body\>hello world\<\/body\>" > index.html
+-- @
+--
+-- And a miso application that looks like:
+--
+-- @
+-- main :: IO ()
+-- main = 'prerender' 'defaultEvents' $ ('vcomp' () 'noop' $ \\() -> "hello world") { 'logLevel' = 'DebugPrerender' }
+-- @
+--
+-- Assuming the JS / WASM payload and @index.html@ are delivered together from the web server, the console should output below
+--
+-- > [DEBUG_HYDRATE] Successfully prerendered page
+--
+-- See the [Haskell miso](https://haskell-miso.org) website console for an example usage of static prerendering with 'miso' and [miso-ui](https://ui.haskell-miso.org) for 'prerender' usage.
+--
+-- == Dynamic prerendering
+--
+-- More advanced usage of prerendering entails sharing the @model@ between the server and client. In such scenarios the 'hydateModel' function should be specified inside the t'Component'.
+-- The SSR flag (`-fssr`) must be specified when using this feature.
+--
+-- 'hydrateModel' is used to load initial data into a Component's 'model' that is necessary for hydration.
+--
 -----------------------------------------------------------------------------
 module Miso
   ( -- * API
@@ -622,8 +669,13 @@ module Miso
     -- ** Component
   , Component (..)
   , component
+  , vcomp
   , (+>)
   , mount_
+    -- ** View
+  , vcomp
+  , vnode
+  , vtext
     -- ** Sink
   , withSink
   , Sink
@@ -632,6 +684,7 @@ module Miso
   , checkMail
   , parent
   , mailParent
+  , mailChildren
   , broadcast
     -- ** Subscriptions
   , startSub
@@ -729,8 +782,8 @@ miso
   -- ^ The Component application, with the current URI as an argument
   -> IO ()
 miso events f = do
-  vcomp <- f <$> getURI
-  initComponent events Hydrate vcomp { mountPoint = Nothing }
+  vcomp_ <- f <$> getURI
+  initComponent events Hydrate vcomp_ { mountPoint = Nothing }
 ----------------------------------------------------------------------------
 -- | Like 'miso', except discards the 'URI' argument.
 --
@@ -747,7 +800,7 @@ prerender
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-prerender events vcomp = initComponent events Hydrate vcomp { mountPoint = Nothing }
+prerender events comp = initComponent events Hydrate comp { mountPoint = Nothing }
 -----------------------------------------------------------------------------
 -- | Like 'miso', except it does not perform page hydration.
 --
@@ -801,7 +854,7 @@ renderApp
   -> App model action
   -- ^ 'Component' application
   -> IO ()
-renderApp events renderer vcomp = do
+renderApp events renderer comp = do
   FFI.setDrawingContext renderer
-  initComponent events Draw vcomp
+  initComponent events Draw comp
 ----------------------------------------------------------------------------

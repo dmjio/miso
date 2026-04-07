@@ -69,6 +69,8 @@ executable component-tests
     base, miso, miso-tests, containers, mtl, text
   hs-source-dirs:
     app
+  ghc-options:
+    -funbox-strict-fields -O2 -ferror-spans -fspecialise-aggressively -Wall
 
   if arch(javascript) || impl(ghcjs)
     cpp-options:

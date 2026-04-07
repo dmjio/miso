@@ -56,6 +56,7 @@ module Miso.Types
   -- ** Smart Constructors
   , emptyURI
   , component
+  , vcomp
   , (-->)
   , (<--)
   , (<-->)
@@ -73,7 +74,9 @@ module Miso.Types
   , prettyQueryString
   -- *** Combinators
   , node
+  , vnode
   , text
+  , vtext
   , text_
   , textRaw
   , textKey
@@ -108,8 +111,8 @@ data Component parent model action
   { model :: model
   -- ^ Initial model
   , hydrateModel :: Maybe (IO model)
-  -- ^ Action to load component state, such as reading data from page.
-  --   The resulting model is only used during initial hydration, not on remounts.
+  -- ^ Optional 'IO' to load component 'model' state, such as reading data from page.
+  --   The resulting 'model' is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Updates model, optionally providing effects.
   , view :: model -> View model action
@@ -185,11 +188,13 @@ type CacheBust = Bool
 -- This is meant to be useful in development only.
 --
 -- @
---   Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
---   Script "alert(\"hi\");"
---   ImportMap [ "key" =: "value" ]
+-- Src \"http:\/\/example.com\/script.js\" (False :: CacheBust)
+-- Script "alert(\"hi\");"
+-- ImportMap [ "key" =: "value" ]
+-- Module "console.log(\"hi\");"
 -- @
 --
+-- @since 1.9.0.0
 data JS
   = Src MisoString CacheBust
   -- ^ URL linking to hosted JS
@@ -233,6 +238,17 @@ component m u v = Component
   , unmount = Nothing
   }
 -----------------------------------------------------------------------------
+-- | Synonym for 'component'
+vcomp
+  :: model
+  -- ^ model
+  -> (action -> Effect parent model action)
+  -- ^ update
+  -> (model -> View model action)
+  -- ^ view
+  -> Component parent model action
+vcomp = component  
+-----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
 --
 -- The 'ROOT' type is for disallowing a top-level mounted t'Miso.Types.Component' access
@@ -275,7 +291,7 @@ type Tag = MisoString
 data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
-  | VComp [Attribute action] (SomeComponent model)
+  | VComp (Maybe Key) (SomeComponent model)
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -288,8 +304,8 @@ data SomeComponent parent
 -- Used in the @view@ function to mount a t'Miso.Types.Component' on any 'VNode'.
 --
 -- @
---   "component-id" +> component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
+-- "component-id" +> component model noop $ \\m ->
+--   div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
@@ -301,7 +317,7 @@ data SomeComponent parent
   -- ^ 'Component'
   -> View model a
 infixr 0 +>
-key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
+key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator.
 --
@@ -310,8 +326,8 @@ key +> vcomp = VComp [ Property "key" (toJSON key) ] (SomeComponent vcomp)
 -- the two t'Miso.Types.Component', to ensure unmounting and mounting occurs.
 --
 -- @
---   mount_ $ component model noop $ \\m ->
---     div_ [ id_ "foo" ] [ text (ms m) ]
+-- mount_ $ component model noop $ \\m ->
+--  div_ [ id_ "foo" ] [ text (ms m) ]
 -- @
 --
 -- @since 1.9.0.0
@@ -320,7 +336,7 @@ mount_
   => Component model child a
   -- ^ 'Component' to mount
   -> View model action
-mount_ vcomp = VComp [] (SomeComponent vcomp)
+mount_ comp = VComp Nothing (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
 data Namespace
@@ -442,6 +458,18 @@ node
   -> View model action
 node = VNode
 -----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VNode'.
+--
+-- Synonym for 'node'
+--
+vnode
+  :: Namespace
+  -> MisoString
+  -> [Attribute action]
+  -> [View model action]
+  -> View model action
+vnode = node
+-----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
 text :: MisoString -> View model action
 #ifdef SSR
@@ -449,6 +477,10 @@ text = VText Nothing . htmlEncode
 #else
 text = VText Nothing
 #endif
+-----------------------------------------------------------------------------
+-- | Synonym for 'text'
+vtext :: MisoString -> View model action
+vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --

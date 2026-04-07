@@ -94,7 +94,7 @@ See the [Miso](https://haddocks.haskell-miso.org/miso/Miso.html) module.
 curl -L https://nixos.org/nix/install | sh
 
 # Enable flakes
-echo 'experimental-features = nix-command flakes' >> ~/.config/nix/config.nix
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
 
 # Clone, build and host
 git clone https://github.com/haskell-miso/miso-sampler && cd miso-sampler
@@ -205,8 +205,8 @@ app = component 0 updateModel viewModel
 -- | Updates model, optionally introduces side effects
 updateModel :: Action -> Effect parent Int Action
 updateModel = \case
-  AddOne        -> this += 1
-  SubtractOne   -> this -= 1
+  AddOne -> this += 1
+  SubtractOne -> this -= 1
   SayHelloWorld -> io_ $ do
     alert "Hello World"
     consoleLog "Hello World"
@@ -218,7 +218,7 @@ viewModel x =
     [ P.className "counter"
     ]
     [ H.button_ [ H.onClick AddOne ] [ text "+" ]
-    , text $ ms (x ^. counter)
+    , text (ms x)
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
     , H.br_ []
     , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
@@ -252,7 +252,7 @@ See the [DeepWiki](https://deepwiki.com/dmjio/miso) entry to explore the source 
 
 ## Architecture
 
-For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/dmjio/miso/blob/master/haskell-miso.org/haskell-miso.cabal#L24-L32).
+For constructing client and server applications, we recommend using one `cabal` file with two executable sections, where the `buildable` attribute set is contingent on the compiler. An example of this layout is [here](https://github.com/haskell-miso/haskell-miso.org/blob/master/haskell-miso.cabal).
 
 > [!TIP]
 > For more information on how to use `nix` with a `client`/`server` setup, see the [nix scripts](https://github.com/haskell-miso/haskell-miso.org/blob/master/default.nix) for [https://haskell-miso.org](https://haskell-miso.org).

@@ -296,10 +296,12 @@ for actions = withSink $ \sink -> actions >>= flip for_ sink
 -- | Performs the given 'IO' action before all IO actions collected by the given
 -- effect.
 --
--- Example usage:
+-- @
+-- -- delays connecting a websocket by 100000 microseconds
+-- beforeAll (liftIO $ threadDelay 100000) $ websocketConnectJSON OnConnect OnClose OnOpen OnError
+-- @
 --
--- > -- delays connecting a websocket by 100000 microseconds
--- > beforeAll (liftIO $ threadDelay 100000) $ websocketConnectJSON OnConnect OnClose OnOpen OnError
+-- @since 1.9.0.0
 beforeAll :: IO () -> Effect parent model action -> Effect parent model action
 beforeAll = modifyAllIO . (*>)
 -----------------------------------------------------------------------------
@@ -336,7 +338,9 @@ modifyAllIO f = censor $ \actions ->
 -- widget which has an associated callback. The callback can then call the sink
 -- to turn events into actions.
 --
--- > 'update' FetchJSON = 'withSink' $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+-- @
+-- 'update' FetchJSON = 'withSink' $ \sink -> getJSON (sink . ReceivedJSON) (sink . HandleError)
+-- @
 --
 -- @since 1.9.0.0
 withSink
@@ -347,12 +351,14 @@ withSink f = tell [ async f ]
 -----------------------------------------------------------------------------
 -- | Issue a new @action@ to be processed by 'Miso.Types.update'.
 --
--- > data Action = HelloWorld
--- > type Model  = Int
--- >
--- > 'update' :: Action -> 'Effect' parent Model Action
--- > 'update' = \\case
--- >   Click -> 'issue' HelloWorld
+-- @
+-- data Action = HelloWorld
+-- type Model  = Int
+--
+-- 'update' :: Action -> 'Effect' parent Model Action
+-- 'update' = \\case
+--   Click -> 'issue' HelloWorld
+-- @
 --
 -- @since 1.9.0.0
 issue

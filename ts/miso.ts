@@ -1,7 +1,7 @@
 import { diff } from './miso/dom';
 import { eventJSON, delegateEvent, delegator } from './miso/event';
 import { eventContext, drawingContext } from './miso/context/dom';
-import { hydrate, integrityCheck } from './miso/hydrate';
+import { hydrate } from './miso/hydrate';
 
 import {
    version,
@@ -99,7 +99,6 @@ export {
   callSetSelectionRange,
   eventJSON,
   fetchCore,
-  integrityCheck,
   websocketConnect,
   websocketClose,
   websocketSend,

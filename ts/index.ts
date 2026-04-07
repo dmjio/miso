@@ -8,7 +8,6 @@ import {
   callSetSelectionRange,
   eventJSON,
   fetchCore,
-  integrityCheck,
   eventSourceConnect,
   eventSourceClose,
   websocketConnect,
@@ -58,7 +57,6 @@ globalThis['miso'] = {
     getRandomValues,
     splitmix32,
     populateClass,
-    integrityCheck,
     delegateEvent,
     delegator : eventContext.delegator,
     setDrawingContext : function (name) {

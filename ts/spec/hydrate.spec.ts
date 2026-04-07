@@ -1,5 +1,5 @@
 /* imports */
-import { hydrate, integrityCheck } from '../miso/hydrate';
+import { hydrate } from '../miso/hydrate';
 import { vnode, vtext, vcomp } from '../miso/smart';
 import { Mount, VText, VNode, DOMRef, VComp } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
@@ -108,7 +108,6 @@ describe ("Hydration tests", () => {
     child.appendChild(misoTxt);
     var tree = vnode<DOMRef>({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
   });
 
   test('Should fail integrity check on bad tag', () => {
@@ -118,9 +117,6 @@ describe ("Hydration tests", () => {
     child.appendChild(misoTxt);
     var tree = vnode<DOMRef>({ children: [vtext('foo')] });
     expect(hydrate(false, document.body, tree, hydrationContext, drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.tag = 'lol';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on bad tag in hydrate w/ logging enabled', () => {
@@ -141,9 +137,7 @@ describe ("Hydration tests", () => {
       children: [vtext('foo')],
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
     (tree.children[0] as VText<DOMRef>).text = 'oops';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing child lengths', () => {
@@ -155,9 +149,6 @@ describe ("Hydration tests", () => {
       children: [vtext('foo')],
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.children = [];
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles', () => {
@@ -171,9 +162,6 @@ describe ("Hydration tests", () => {
       css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.css['backgroundColor'] = 'green';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing styles, for color', () => {
@@ -188,9 +176,6 @@ describe ("Hydration tests", () => {
       css: { 'backgroundColor': 'red', color: '#cccccc' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.css['color'] = '#dddddd';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing props', () => {
@@ -206,9 +191,6 @@ describe ("Hydration tests", () => {
       css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.props['class'] = 'something-else';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on differing height / width', () => {
@@ -227,10 +209,6 @@ describe ("Hydration tests", () => {
       css: { 'backgroundColor': 'red' },
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.props['height'] = '200';
-    tree.props['width'] = '200';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on random property (title)', () => {
@@ -244,9 +222,6 @@ describe ("Hydration tests", () => {
       children: [vtext('foo')],
     });
     expect(hydrate(false, document.body, tree, hydrationContext,drawingContext)).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.props['title'] = 'woz';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on href', () => {
@@ -264,9 +239,6 @@ describe ("Hydration tests", () => {
     });
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    tree.props['href'] = 'notgoogle.com';
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on vtext domRef', () => {
@@ -284,9 +256,6 @@ describe ("Hydration tests", () => {
     });
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
-    (tree.children[0] as VNode<DOMRef>).domRef = document.createElement('div');
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should fail integrity check on unknown property test', () => {
@@ -301,7 +270,6 @@ describe ("Hydration tests", () => {
     });
     const result = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(result).toEqual(true);
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(false);
   });
 
   test('Should call mountComponent when hydrating VComp', () => {
@@ -429,8 +397,6 @@ describe ("Hydration tests", () => {
 
     const hydrated = hydrate(false, document.body, tree, hydrationContext, drawingContext);
     expect(hydrated).toBe(true);      
-
-    expect(integrityCheck(tree, hydrationContext, drawingContext)).toBe(true);
   });
 
   test('Should successfully walk and hydrate VComp in DOM', () => {
@@ -472,5 +438,4 @@ describe ("Hydration tests", () => {
     expect(result).toBe(true);
     expect(tree.domRef).toBeDefined();
   });
-
 });

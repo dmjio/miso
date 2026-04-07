@@ -16,6 +16,7 @@ module Miso.Subscription.History
     -- *** Functions
   , getURI
   , pushURI
+  , pushRoute
   , replaceURI
   , back
   , forward
@@ -38,6 +39,13 @@ pushURI :: URI -> IO ()
 pushURI uri = do
   pushState (prettyURI uri)
   raisePopState
+-----------------------------------------------------------------------------
+-- | Pushes a new 'Route' onto the History stack. Also raises a `popstate` event.
+--
+-- Converts the t'Route' to a t'URI' internally.
+--
+pushRoute :: Router route => route -> IO ()
+pushRoute = pushURI . toURI
 -----------------------------------------------------------------------------
 -- | Replaces current URI on stack. Also raises a `popstate` event.
 replaceURI :: URI -> IO ()

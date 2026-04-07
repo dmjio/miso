@@ -993,81 +993,6 @@ function diagnoseError(logLevel, vtree, node) {
   if (logLevel)
     console.warn("[DEBUG_HYDRATE] VTree differed from node", vtree, node);
 }
-function parseColor(input) {
-  if (input.substr(0, 1) == "#") {
-    const collen = (input.length - 1) / 3;
-    const fact = [17, 1, 0.062272][collen - 1];
-    return [
-      Math.round(parseInt(input.substr(1, collen), 16) * fact),
-      Math.round(parseInt(input.substr(1 + collen, collen), 16) * fact),
-      Math.round(parseInt(input.substr(1 + 2 * collen, collen), 16) * fact)
-    ];
-  } else
-    return input.split("(")[1].split(")")[0].split(",").map((x) => {
-      return +x;
-    });
-}
-function integrityCheck(vtree, context, drawingContext2) {
-  return check(true, vtree, context, drawingContext2);
-}
-function check(result, vtree, context, drawingContext2) {
-  if (vtree.type == 2 /* VText */) {
-    if (context.getTag(vtree.domRef) !== "#text") {
-      console.warn("VText domRef not a TEXT_NODE", vtree);
-      result = false;
-    } else if (vtree.text !== context.getTextContent(vtree.domRef)) {
-      console.warn("VText node content differs", vtree);
-      result = false;
-    }
-  } else if (vtree.type === 1 /* VNode */) {
-    if (vtree.tag.toUpperCase() !== context.getTag(vtree.domRef).toUpperCase()) {
-      console.warn("Integrity check failed, tags differ", vtree.tag.toUpperCase(), context.getTag(vtree.domRef));
-      result = false;
-    }
-    if ("children" in vtree && vtree.children.length !== context.children(vtree.domRef).length) {
-      console.warn("Integrity check failed, children lengths differ", vtree, vtree.children, context.children(vtree.domRef));
-      result = false;
-    }
-    for (const key in vtree.props) {
-      if (key === "href" || key === "src") {
-        const absolute = window.location.origin + "/" + vtree.props[key], url = context.getAttribute(vtree.domRef, key), relative = vtree.props[key];
-        if (absolute !== url && relative !== url && relative + "/" !== url && absolute + "/" !== url) {
-          console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
-          result = false;
-        }
-      } else if (key === "height" || key === "width") {
-        if (parseFloat(vtree.props[key]) !== parseFloat(context.getAttribute(vtree.domRef, key))) {
-          console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
-          result = false;
-        }
-      } else if (key === "class" || key === "className") {
-        if (vtree.props[key] !== context.getAttribute(vtree.domRef, "class")) {
-          console.warn("Property class differs", vtree.props[key], context.getAttribute(vtree.domRef, "class"));
-          result = false;
-        }
-      } else if (vtree.props[key] !== context.getAttribute(vtree.domRef, key)) {
-        console.warn("Property " + key + " differs", vtree.props[key], context.getAttribute(vtree.domRef, key));
-        result = false;
-      }
-    }
-    for (const key in vtree.css) {
-      if (key === "color") {
-        if (parseColor(context.getInlineStyle(vtree.domRef, key)).toString() !== parseColor(vtree.css[key]).toString()) {
-          console.warn("Style " + key + " differs", vtree.css[key], context.getInlineStyle(vtree.domRef, key));
-          result = false;
-        }
-      } else if (vtree.css[key] !== context.getInlineStyle(vtree.domRef, key)) {
-        console.warn("Style " + key + " differs", vtree.css[key], context.getInlineStyle(vtree.domRef, key));
-        result = false;
-      }
-    }
-    for (const child of vtree.children) {
-      const value = check(result, child, context, drawingContext2);
-      result = result && value;
-    }
-  }
-  return result;
-}
 function walk(logLevel, vtree, node, context, drawingContext2) {
   switch (vtree.type) {
     case 0 /* VComp */:
@@ -1137,7 +1062,6 @@ globalThis["miso"] = {
   getRandomValues,
   splitmix32,
   populateClass,
-  integrityCheck,
   delegateEvent,
   delegator: eventContext.delegator,
   setDrawingContext: function(name) {

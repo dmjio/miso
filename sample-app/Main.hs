@@ -9,6 +9,7 @@ import           Miso
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
+import            Miso.Reload
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -29,7 +30,7 @@ data Action
 -- | Entry point for a miso application
 main :: IO ()
 #ifdef INTERACTIVE
-main = reload (startApp defaultEvents app)
+main = live defaultEvents app
 #else
 main = startApp defaultEvents app
 #endif

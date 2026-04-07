@@ -48,7 +48,9 @@ module Miso.JSON
   , (.!=)
     -- * Encoding and decoding
   , encode
+  , encodePure
   , decode
+  , Parser.decodePure
     -- * Prism-style parsers
   , withObject
   , withText
@@ -104,6 +106,10 @@ import           Data.Int
 import           GHC.Natural (naturalToInteger, naturalFromInteger )
 import           GHC.TypeLits
 import           Data.Kind
+#ifndef VANILLA
+import qualified Data.Text as T
+#endif
+import qualified Data.Text.Lazy as LT
 import           Data.Word
 import           GHC.Generics
 ----------------------------------------------------------------------------
@@ -241,6 +247,14 @@ instance (ToJSON a,ToJSON b,ToJSON c, ToJSON d) => ToJSON (a,b,c,d) where
 instance ToJSON MisoString where
   toJSON = String
 ----------------------------------------------------------------------------
+#ifndef VANILLA
+instance ToJSON T.Text where
+  toJSON = toJSON . ms
+#endif
+----------------------------------------------------------------------------
+instance ToJSON LT.Text where
+  toJSON = toJSON . ms
+----------------------------------------------------------------------------
 instance ToJSON Float where
   toJSON = Number . realToFrac
 ----------------------------------------------------------------------------
@@ -346,6 +360,24 @@ instance FromJSON Bool where
 ----------------------------------------------------------------------------
 instance FromJSON MisoString where
   parseJSON = withText "MisoString" pure
+----------------------------------------------------------------------------
+#ifndef VANILLA
+instance FromJSON T.Text where
+  parseJSON = withText "Text" go
+    where
+      go s =
+        case MS.fromMisoStringEither s of
+          Right lt -> pure lt
+          Left e -> pfail $ ms e
+#endif
+----------------------------------------------------------------------------
+instance FromJSON LT.Text where
+  parseJSON = withText "LText" go
+    where
+      go s =
+        case MS.fromMisoStringEither s of
+          Right lt -> pure lt
+          Left e -> pfail $ ms e
 ----------------------------------------------------------------------------
 instance {-# OVERLAPPING #-} FromJSON String where
   parseJSON = withText "String" (pure . MS.unpack)
@@ -479,11 +511,19 @@ typeMismatch expected actual =
 ----------------------------------------------------------------------------
 #ifdef VANILLA
 encode :: ToJSON a => a -> MisoString
-encode = ms . toJSON
+encode = encodePure
 #else
 encode :: ToJSON a => a -> MisoString
 encode x = unsafePerformIO $ jsonStringify =<< toJSVal_Value (toJSON x)
 #endif
+----------------------------------------------------------------------------
+-- | Relies on the pure implementation of JSON parsing / serialization.
+--
+-- This can be used on the server or the client, it is more efficient to
+-- use 'encode' on the client (since it relies on @JSON.stringify()@).
+--
+encodePure :: ToJSON a => a -> MisoString
+encodePure = ms . toJSON
 ----------------------------------------------------------------------------
 instance FromMisoString Value where
   fromMisoStringEither = Parser.decodePure
@@ -519,8 +559,9 @@ instance ToMisoString Value where
 #else
       "\"" <> s <> "\""
 #endif
-    Number n ->
-      ms n
+    Number n
+      | (_ :: Int, 0.0) <- properFraction n -> ms (floor n :: Int)
+      | otherwise -> ms n
     Null ->
       "null"
     Array xs ->
