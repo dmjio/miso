@@ -122,6 +122,7 @@ module Miso.Router
   , Path (..)
   , QueryParam (..)
   , QueryFlag (..)
+  , Fragment (..)
   , Token (..)
   , URI (..)
     -- ** Errors
@@ -143,6 +144,7 @@ module Miso.Router
   , queryParam
   , capture
   , path
+  , fragment
     -- ** Lexing
   , lexTokens
   , tokensToURI
@@ -185,6 +187,13 @@ newtype QueryFlag (path :: Symbol) = QueryFlag Bool
 -- | Type used for representing query parameters
 newtype QueryParam (path :: Symbol) a = QueryParam (Maybe a)
   deriving stock (Eq, Show)
+-----------------------------------------------------------------------------
+-- | Type used for representing fragments
+data Fragment (path :: Symbol) = Fragment
+  deriving stock (Eq, Show)
+-----------------------------------------------------------------------------
+instance (KnownSymbol frag) => ToMisoString (Fragment frag) where
+  toMisoString Fragment = "#" <> ms (symbolVal (Proxy @frag))
 -----------------------------------------------------------------------------
 instance (ToMisoString a, KnownSymbol path) => ToMisoString (QueryParam path a) where
   toMisoString (QueryParam maybeVal) =
@@ -312,6 +321,12 @@ index specified = do
   IndexToken <- indexToken
   when (specified /= "index") (fail "index")
   pure "/"
+-----------------------------------------------------------------------------
+fragment :: MisoString -> RouteParser MisoString
+fragment specified = do
+  FragmentToken frag <- indexToken
+  when (specified /= frag) (fail "fragment")
+  pure frag
 -----------------------------------------------------------------------------
 -- | URI parsing
 parseURI :: MisoString -> Either MisoString URI
@@ -517,7 +532,7 @@ uriLexer = do
               CaptureOrPathToken <$> chars
             fragmentLexer = do
               void (L.char '#')
-              FragmentToken <$> fragment
+              FragmentToken <$> query
             queryParamLexer = QueryParamTokens <$> do
               void (L.char '?')
               sepBy (L.char '&') $ do
@@ -533,9 +548,6 @@ chars = MS.concat <$> some pchar
 -----------------------------------------------------------------------------
 pchar :: Lexer MisoString
 pchar = unreserved <|> pctEncoded <|> subDelims <|> L.string ":" <|> L.string "@"
------------------------------------------------------------------------------
-fragment :: Lexer MisoString
-fragment = query
 -----------------------------------------------------------------------------
 query :: Lexer MisoString
 query = foldr (<|>) empty
