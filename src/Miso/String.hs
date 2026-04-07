@@ -123,9 +123,7 @@ instance ToMisoString Float where
   toMisoString = toString_Double . realToFrac
 ----------------------------------------------------------------------------
 instance ToMisoString Double where
-  toMisoString x
-    | isWhole x = toMisoString ((round x) :: Int)
-    | otherwise = toString_Double x
+  toMisoString = toString_Double
 ----------------------------------------------------------------------------
 instance ToMisoString Int where
   toMisoString = toString_Int
@@ -188,6 +186,3 @@ instance FromMisoString Float where
       Nothing -> Left ("fromMisoString Float: could not parse " <> unpack string)
       Just x -> Right x
 ----------------------------------------------------------------------------
--- | Returns True if the Double represents a whole number
-isWhole :: Double -> Bool
-isWhole x = let (_, frac) = properFraction x in frac == 0
