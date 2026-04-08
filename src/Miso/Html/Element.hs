@@ -147,6 +147,7 @@ module Miso.Html.Element
     , svg_
     ) where
 -----------------------------------------------------------------------------
+import           Miso.Property
 import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
@@ -510,7 +511,7 @@ textarea_ :: [Attribute action] -> MisoString -> View model action
 #ifdef VANILLA
 textarea_ attrs txt = nodeHtml "textarea" attrs [ text txt ] 
 #else
-textarea_ attrs txt = nodeHtml "textarea" (value_ txt : attrs) []
+textarea_ attrs txt = nodeHtml "textarea" (textProp "value" txt : attrs) []
 #endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
