@@ -1,4 +1,5 @@
 -----------------------------------------------------------------------------
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -146,6 +147,7 @@ module Miso.Html.Element
     , svg_
     ) where
 -----------------------------------------------------------------------------
+import           Miso.Property
 import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
@@ -496,8 +498,21 @@ option_ :: [Attribute action] -> [View model action] -> View model action
 option_ = nodeHtml "option"
 -----------------------------------------------------------------------------
 -- | [\<textarea\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
-textarea_ :: [Attribute action] -> View model action
-textarea_ = flip (nodeHtml "textarea") []
+--
+-- @
+-- textarea_ [ id_ "txt" ] 
+--    """
+--    text goes here
+--    """
+-- @
+--
+-- @since 1.9.0.0
+textarea_ :: [Attribute action] -> MisoString -> View model action
+#ifdef VANILLA
+textarea_ attrs txt = nodeHtml "textarea" attrs [ text txt ] 
+#else
+textarea_ attrs txt = nodeHtml "textarea" (textProp "value" txt : attrs) []
+#endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
 sub_ :: [Attribute action] -> [View model action] -> View model action
