@@ -98,9 +98,9 @@
           # WASM shell
           wasm =
             pkgs.mkShell {
-              name = "The miso ${system} GHC WASM 9.12.2 shell";
+              name = "The miso ${system} GHC WASM 9.14 shell";
               packages = with pkgs; [
-                 inputs.ghc-wasm-meta.packages.${system}.all_9_12
+                 inputs.ghc-wasm-meta.packages.${system}.all_9_14
                  gnumake bun
                  http-server
                  cabal-install
