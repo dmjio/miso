@@ -556,7 +556,7 @@ textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
 --
 -- @
 -- view :: Bool -> View model action
--- view danger = optionalAttrs textarea_ [ id_ "txt" ] danger [ class_ "danger" ] ["child"]
+-- view danger = optionalAttrs div_ [ id_ "some-div" ] danger [ class_ "danger" ] ["child"]
 -- @
 --
 -- @since 1.9.0.0
