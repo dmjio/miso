@@ -508,9 +508,9 @@ option_ = nodeHtml "option"
 -- @since 1.9.0.0
 textarea_ :: [Attribute action] -> MisoString -> View model action
 #ifdef VANILLA
-textarea attrs txt = node HTML attrs [ text txt ] 
+textarea_ attrs txt = nodeHtml "textarea" attrs [ text txt ] 
 #else
-textarea attrs txt = node HTML (value_ txt : attrs) []
+textarea_ attrs txt = nodeHtml "textarea" (value_ txt : attrs) []
 #endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
