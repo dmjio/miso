@@ -496,8 +496,8 @@ option_ :: [Attribute action] -> [View model action] -> View model action
 option_ = nodeHtml "option"
 -----------------------------------------------------------------------------
 -- | [\<textarea\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
-textarea_ :: [Attribute action] -> [View model action] -> View model action
-textarea_ = nodeHtml "textarea"
+textarea_ :: [Attribute action] -> View model action
+textarea_ = flip (nodeHtml "textarea") []
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
 sub_ :: [Attribute action] -> [View model action] -> View model action
