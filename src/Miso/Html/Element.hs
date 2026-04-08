@@ -496,8 +496,21 @@ option_ :: [Attribute action] -> [View model action] -> View model action
 option_ = nodeHtml "option"
 -----------------------------------------------------------------------------
 -- | [\<textarea\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
-textarea_ :: [Attribute action] -> View model action
-textarea_ = flip (nodeHtml "textarea") []
+--
+-- @
+-- textarea_ [ id_ "txt" ] 
+--    """
+--    text goes here
+--    """
+-- @
+--
+-- @since 1.9.0.0
+textarea_ :: [Attribute action] -> MisoString -> View model action
+#ifdef VANILLA
+textarea attrs txt = node HTML attrs [ text txt ] 
+#else
+textarea attrs txt = node HTML (value_ txt : attrs) []
+#endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
 sub_ :: [Attribute action] -> [View model action] -> View model action
