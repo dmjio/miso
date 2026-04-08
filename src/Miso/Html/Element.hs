@@ -597,14 +597,14 @@ meta_ = flip (nodeHtml "meta") []
 -- | [\<area\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/area)
 --
 -- @since 1.9.0.0
-area_ :: [Attribute action] -> [View model action] -> View model action
-area_ = nodeHtml "area"
+area_ :: [Attribute action] -> View model action
+area_ = flip (nodeHtml "area") []
 -----------------------------------------------------------------------------
 -- | [\<base\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/base)
 --
 -- @since 1.9.0.0
-base_ :: [Attribute action] -> [View model action] -> View model action
-base_ = nodeHtml "base"
+base_ :: [Attribute action] -> View model action
+base_ = flip (nodeHtml "base") []
 -----------------------------------------------------------------------------
 -- | [\<data\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/data)
 --
