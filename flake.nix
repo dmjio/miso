@@ -96,6 +96,38 @@
             };
 
           # WASM shell
+          wasm-latest =
+            pkgs.mkShell {
+              name = "The miso ${system} GHC HEAD WASM shell";
+              packages = with pkgs; [
+                 inputs.ghc-wasm-meta.packages.${system}.all_gmp
+                 gnumake bun
+                 http-server
+                 cabal-install
+                 tailwindcss_4
+                 ghciwatch
+               ];
+              shellHook = ''
+                function build () {
+                   wasm32-wasi-cabal build $1
+                }
+                function clean () {
+                   wasm32-wasi-cabal clean
+                }
+                function update () {
+                   wasm32-wasi-cabal update
+                }
+                function repl () {
+                   wasm32-wasi-cabal repl $1 -finteractive \
+                     --repl-options='-fghci-browser -fghci-browser-port=8080'
+                }
+                function repl-watch () {
+                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci$
+                }
+              '';
+            };
+
+          # WASM shell
           wasm =
             pkgs.mkShell {
               name = "The miso ${system} GHC WASM 9.14 shell";
