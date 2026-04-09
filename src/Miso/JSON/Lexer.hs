@@ -17,12 +17,13 @@
 ----------------------------------------------------------------------------
 module Miso.JSON.Lexer (Token (..), tokens) where
 ----------------------------------------------------------------------------
-import           Control.Applicative (optional, Alternative (some, many))
+import           Control.Applicative (Alternative (some, many), optional)
+import           Control.Monad (replicateM)
 import           Data.Char (isHexDigit, chr, isSpace)
 import           Data.Foldable (Foldable (fold))
 import           Data.Functor (void)
 import           Data.Ix (Ix (inRange))
-import           Data.Maybe (catMaybes, listToMaybe)
+import           Data.Maybe (catMaybes)
 import           Numeric (readHex)
 import           Prelude hiding (null)
 ----------------------------------------------------------------------------
@@ -66,7 +67,8 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
       , escapedCharacter
       ]
     hexDigit = satisfy isHexDigit
-    escapedCharacter = char '\\' *> oneOf
+    escaped = (char '\\' *>)
+    escapedCharacter = escaped $ oneOf
       [ char '"'
       , char '\\'
       , char '/'
@@ -75,16 +77,26 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
       , '\n' <$ char 'n'
       , '\r' <$ char 'r'
       , '\t' <$ char 't'
-      , do
-          a <- hexDigit
-          b <- hexDigit
-          c <- hexDigit
-          d <- hexDigit
-          maybe oops (pure . chr . fst)
-              . listToMaybe
-              . readHex
-              $ [a, b, c, d]
+      , unicodeHexQuad >>= \high -> do
+          if inRange highSurrogateRange high
+            then do
+              low <- escaped unicodeHexQuad
+              if inRange lowSurrogateRange low
+                then
+                  pure . chr . sum $
+                    [ (high - fst highSurrogateRange) * 0x400
+                    , low - fst lowSurrogateRange
+                    , 0x10000
+                    ]
+                else oops
+            else
+              pure $ chr high
       ]
+    highSurrogateRange = (0xD800, 0xDBFF)
+    lowSurrogateRange = (0xDC00, 0xDFFF)
+    unicodeHexQuad = char 'u' *> do
+        [(num, "")] <- readHex <$> replicateM 4 hexDigit
+        pure num
 ----------------------------------------------------------------------------
 null :: Lexer ()
 null = void (string "null")

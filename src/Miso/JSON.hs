@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 #if __GLASGOW_HASKELL__ <= 865
@@ -560,7 +561,7 @@ instance ToMisoString Value where
       "\"" <> s <> "\""
 #endif
     Number n
-      | (_ :: Int, 0.0) <- properFraction n -> ms (floor n :: Int)
+      | (i, 0.0) <- properFraction n -> ms @Int i
       | otherwise -> ms n
     Null ->
       "null"
