@@ -76,7 +76,7 @@
 -- * __update__: @'update' :: action -> 'Effect' parent model action@
 --   The 'update' function handles how the 'model' evolves over time in response
 --   to events that are raised by the application. This function takes any @action@,
---   updating the @model@ and optionally introducing 'IO' into the system.
+--   updating the @model@ and optionally introduces 'IO' into the system.
 --
 -- = Your first t'Component'
 --
@@ -416,7 +416,7 @@
 -- type 'Sink' a => a -> 'IO' ()
 -- @
 --
--- The 'Sink' function allows one to write any @action@ to the global event queue.
+-- The 'Sink' function allows one to write any @action@ to the global event queue. See 'withSink' for more information.
 --
 -- == Managing 'model' state.
 --
@@ -512,7 +512,7 @@
 -- 'Miso.Subscription.Util.createSub' is a helper function for creating a 'Sub' using the 'Control.Exception.bracket' pattern.
 -- This ensures that event listeners can be unregistered when a 'Component' unmounts. For example usage
 -- please see the "Miso.Subscription" sub modules. 'createSub' is only meant to be used in scenarios where
--- custom event listeners are required (shown below).
+-- custom event listeners are required.
 --
 -- = (2D/3D) Canvas support
 --
