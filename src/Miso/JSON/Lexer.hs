@@ -18,7 +18,7 @@
 module Miso.JSON.Lexer (Token (..), tokens) where
 ----------------------------------------------------------------------------
 import           Control.Applicative (optional, Alternative (some, many))
-import           Data.Char (isHexDigit, chr, isSpace, digitToInt)
+import           Data.Char (isHexDigit, chr, isSpace)
 import           Data.Foldable (Foldable (fold))
 import           Data.Functor (void)
 import           Data.Ix (Ix (inRange))
@@ -66,7 +66,6 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
       , escapedCharacter
       ]
     hexDigit = satisfy isHexDigit
-
     escapedCharacter = char '\\' *> oneOf
       [ char '"'
       , char '\\'
@@ -76,31 +75,16 @@ string' = char '"' *> (toMisoString <$> many character) <* char '"'
       , '\n' <$ char 'n'
       , '\r' <$ char 'r'
       , '\t' <$ char 't'
-      , char 'u' *> parseUnicode
+      , do
+          a <- hexDigit
+          b <- hexDigit
+          c <- hexDigit
+          d <- hexDigit
+          maybe oops (pure . chr . fst)
+              . listToMaybe
+              . readHex
+              $ [a, b, c, d]
       ]
-
-    parseUnicode :: Lexer Char
-    parseUnicode = do
-      code <- readHex4
-      -- Check for high surrogate
-      if code >= 0xD800 && code <= 0xDBFF
-        then do
-          void $ char '\\'
-          void $ char 'u'
-          low <- readHex4
-          -- Validate low surrogate
-          if low >= 0xDC00 && low <= 0xDFFF
-            then pure $ chr $ 0x10000 + (code - 0xD800) * 0x400 + (low - 0xDC00)
-            else oops  -- ✅ Use your custom error handler
-        else pure $ chr code
-
-    readHex4 :: Lexer Int
-    readHex4 = do
-      h1 <- hexDigit
-      h2 <- hexDigit
-      h3 <- hexDigit
-      h4 <- hexDigit
-      pure $ digitToInt h1 * 4096 + digitToInt h2 * 256 + digitToInt h3 * 16 + digitToInt h4
 ----------------------------------------------------------------------------
 null :: Lexer ()
 null = void (string "null")
