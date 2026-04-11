@@ -105,7 +105,7 @@ async function executeTestCore(page, port, timeout) {
     try {
       await page.goto(`http://127.0.0.1:${port}`, {
         timeout: timeout - 1000,
-        waitUntil: 'load'
+        waitUntil: 'domcontentloaded'
       });
     } catch (navError) {
       if (!testCompleted) {
