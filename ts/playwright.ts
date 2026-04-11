@@ -10,6 +10,8 @@ let isShuttingDown = false;
 let isReady = false;
 const TEST_TIMEOUT = 10000;
 const WAIT_TIMEOUT = 15000;
+const NAVIGATION_RETRY_COUNT = 3;  // Max retries for navigation errors
+const NAVIGATION_RETRY_DELAY = 30; // Delay between retries (ms)
 
 // ======================
 // READINESS MANAGEMENT
@@ -75,6 +77,12 @@ async function executeTestCore(page, port, timeout) {
       console.log(text);
       if (text === '[DEBUG_HYDRATE] Could not copy DOM into virtual DOM, falling back to diff') {
           text = 'ERROR';
+      } else if (text.startsWith("Failed to load resource")) {
+        page.removeListener('console', consoleHandler);
+        resolve({
+            status: "NAVIGATION_ERROR",
+            error: text
+        });
       }
       
       if (text === 'SUCCESS' || text === 'ERROR') {
@@ -136,20 +144,50 @@ async function runTestInBackground(port) {
 
 async function runTestAndWait(port) {
   let page;
-  try {
-    page = await browser.newPage();
-    console.log(`[PORT ${port}] ⏳ Synchronous test started`);
-    
-    const result = await executeTestCore(page, port, WAIT_TIMEOUT);
-    
-    await safePageClose(page, port, 'synchronous_test');
-    console.log(`[PORT ${port}] ✅ Synchronous test completed with: ${result.status}`);
-    return result;
-  } catch (e) {
-    console.error(`[PORT ${port}] ❌ Synchronous test failed:`, e.message);
-    if (page) await safePageClose(page, port, 'sync_error');
-    throw e;
+  let lastResult;
+  
+  for (let attempt = 1; attempt <= NAVIGATION_RETRY_COUNT; attempt++) {
+    try {
+      page = await browser.newPage();
+      console.log(`[PORT ${port}] ⏳ Synchronous test started (attempt ${attempt}/${NAVIGATION_RETRY_COUNT})`);
+      
+      const result = await executeTestCore(page, port, WAIT_TIMEOUT);
+      lastResult = result;
+      
+      // ✅ Success or non-navigation error - don't retry
+      if (result.status === 'SUCCESS' || result.status === 'ERROR' || result.status === 'TIMEOUT') {
+        await safePageClose(page, port, 'synchronous_test');
+        console.log(`[PORT ${port}] ✅ Synchronous test completed with: ${result.status}`);
+        return result;
+      }
+      
+      // 🔄 NAVIGATION_ERROR - retry if we have attempts left
+      if (result.status === 'NAVIGATION_ERROR') {
+        await safePageClose(page, port, 'navigation_retry');
+        console.log(`[PORT ${port}] ⚠️ Navigation error (attempt ${attempt}/${NAVIGATION_RETRY_COUNT}): ${result.error}`);
+        
+        if (attempt < NAVIGATION_RETRY_COUNT) {
+          console.log(`[PORT ${port}] 🔄 Retrying in ${NAVIGATION_RETRY_DELAY}ms...`);
+          await new Promise(resolve => setTimeout(resolve, NAVIGATION_RETRY_DELAY));
+          continue; // Retry the loop
+        }
+      }
+      
+      // Exhausted retries
+      break;
+      
+    } catch (e) {
+      console.error(`[PORT ${port}] ❌ Synchronous test failed (attempt ${attempt}):`, e.message);
+      lastResult = { status: 'SERVER_ERROR', error: e.message };
+      if (page) await safePageClose(page, port, 'sync_error');
+      // Don't retry on unexpected exceptions - likely a browser/setup issue
+      break;
+    }
   }
+  
+  // All retries exhausted or non-retryable error
+  console.log(`[PORT ${port}] ❌ All navigation retry attempts exhausted`);
+  throw new Error(lastResult?.error || 'Navigation failed after retries');
 }
 
 async function safePageClose(page, port, reason) {
