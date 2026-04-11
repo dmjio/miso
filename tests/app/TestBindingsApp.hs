@@ -69,7 +69,7 @@ type AppComponent = Component Model Model Action
 
 rootApp :: Int -> App Model Action
 rootApp depth =
-    (component initialModel update (rootView 3))
+    (component initialModel update (rootView depth))
         { M.logLevel = M.DebugAll
         , M.mount = Just Initialize
         }
