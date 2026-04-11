@@ -13,7 +13,9 @@ const options = { debug: false };
 const wasi = new WASI(args, env, fds, options);
 
 const instance_exports = {};
-const { instance } = await WebAssembly.instantiateStreaming(fetch("/static/integration-client.wasm"), {
+const wasm_response = await fetch("/static/integration-client.wasm");
+const wasm_bytes = await wasm_response.arrayBuffer();
+const { instance } = await WebAssembly.instantiate(wasm_bytes, {
   wasi_snapshot_preview1: wasi.wasiImport,
   ghc_wasm_jsffi: ghc_wasm_jsffi(instance_exports),
 });
