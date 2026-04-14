@@ -171,12 +171,10 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
       (Hydrate, Just m) -> m
       (Draw, _) -> do
         IM.lookup _componentId <$> readIORef components >>= \case
-          Nothing ->
-            pure model
-          Just cs ->
-            -- hot reload scenario, let it flow
-            pure (cs ^. componentModel)
-      _ -> pure model
+          Nothing -> applyParentBindings _componentParentId model bindings
+          Just cs -> pure (cs ^. componentModel)
+      _ -> applyParentBindings _componentParentId model bindings
+
   _componentScripts <- (++) <$> renderScripts scripts <*> renderStyles styles
   _componentDOMRef <- getComponentMountPoint
   _componentIsDirty <- pure False
@@ -334,6 +332,24 @@ propagate vcompId vcomps =
 -- | Create an empty DFS state
 dfs :: IntMap (ComponentState p m a) -> ComponentId -> DFS p m a
 dfs cs vcompId = DFS cs mempty (pure vcompId) vcompId
+-----------------------------------------------------------------------------
+-- | Applies ParentToChild & Bidirectional bindings from the parent's current model
+--   to the child's initial model. Safe to call during mount.
+applyParentBindings
+  :: ComponentId
+  -> model
+  -> [Binding parent model]
+  -> IO model
+applyParentBindings pId mdl bindings = do
+  mParent <- IM.lookup pId <$> readIORef components
+  pure $ case mParent of
+    Nothing -> mdl
+    Just parentState ->
+      foldr (applyBinding parentState) mdl bindings
+  where
+    applyBinding parentState (ParentToChild from into) acc = into (from (parentState ^. componentModel)) acc
+    applyBinding parentState (Bidirectional from _ _ into) acc = into (from (parentState ^. componentModel)) acc
+    applyBinding _ _ acc = acc
 -----------------------------------------------------------------------------
 type ComponentIds = IntSet
 -----------------------------------------------------------------------------
