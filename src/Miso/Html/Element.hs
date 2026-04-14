@@ -1,5 +1,6 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE CPP               #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
@@ -147,7 +148,9 @@ module Miso.Html.Element
     , svg_
     ) where
 -----------------------------------------------------------------------------
+#ifdef VANILLA
 import           Miso.Property
+#endif
 import           Miso.Types
 -----------------------------------------------------------------------------
 import           Miso.Svg.Element (svg_)
@@ -500,18 +503,21 @@ option_ = nodeHtml "option"
 -- | [\<textarea\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/textarea)
 --
 -- @
--- textarea_ [ id_ "txt" ] 
---    """
---    text goes here
---    """
+-- textarea_ [ id_ "txt", P.value_ (model ^. txt) ]
 -- @
 --
+-- When compiling on the server, this combinator will render HTML as \<textarea\>text\<\/textarea\>.
+--
 -- @since 1.9.0.0
-textarea_ :: [Attribute action] -> MisoString -> View model action
+textarea_ :: [Attribute action] -> View model action
 #ifdef VANILLA
-textarea_ attrs txt = nodeHtml "textarea" attrs [ text txt ] 
+textarea_ attrs = nodeHtml "textarea" newAttrs [ text x | Property "value" x <- attrs ]
+  where
+    newAttrs = filter attrs <&> \case
+      Property "value" _ -> False
+      _ -> True
 #else
-textarea_ attrs txt = nodeHtml "textarea" (textProp "value" txt : attrs) []
+textarea_ = flip (nodeHtml "textarea") []
 #endif
 -----------------------------------------------------------------------------
 -- | [\<sub\>](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/sub)
