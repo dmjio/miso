@@ -149,7 +149,7 @@ module Miso.Html.Element
     ) where
 -----------------------------------------------------------------------------
 #ifdef VANILLA
-import           Miso.Property
+import           Miso.JSON (Value(String))
 #endif
 import           Miso.Types
 -----------------------------------------------------------------------------
@@ -511,11 +511,13 @@ option_ = nodeHtml "option"
 -- @since 1.9.0.0
 textarea_ :: [Attribute action] -> View model action
 #ifdef VANILLA
-textarea_ attrs = nodeHtml "textarea" newAttrs [ text x | Property "value" x <- attrs ]
-  where
-    newAttrs = filter attrs <&> \case
-      Property "value" _ -> False
-      _ -> True
+textarea_ attrs = nodeHtml "textarea" newAttrs
+  [ text x
+  | Property "value" (String x) <- attrs
+  ] where
+      newAttrs = flip filter attrs $ \case
+        Property "value" _ -> False
+        _ -> True
 #else
 textarea_ = flip (nodeHtml "textarea") []
 #endif
