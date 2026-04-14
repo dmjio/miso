@@ -69,6 +69,7 @@ module Miso.Types
   -- ** Utils
   , getMountPoint
   , optionalAttrs
+  , optionalVoidAttrs
   , optionalChildren
   , prettyURI
   , prettyQueryString
@@ -570,6 +571,27 @@ optionalAttrs
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
     VNode ns name _ _ -> do
+      let newAttrs = concat [ opts | condition ] ++ attrs
+      VNode ns name newAttrs kids
+    x -> x
+-----------------------------------------------------------------------------
+-- | Utility function to make it easy to specify conditional attributes for void elements.
+--
+-- @
+-- view :: Bool -> View model action
+-- view shouldClear = optionalVoidAttrs textarea_ [ value_ "" ] shouldClear [ id_ "text-area-id" ]
+-- @
+--
+-- @since 1.9.0.0
+optionalVoidAttrs
+  :: ([Attribute action] -> View model action)
+  -> [Attribute action] -- ^ Attributes to be added unconditionally
+  -> Bool -- ^ A condition
+  -> [Attribute action] -- ^ Additional attributes to add if the condition is True
+  -> View model action
+optionalVoidAttrs element attrs condition opts =
+  case element attrs of
+    VNode ns name _ kids -> do
       let newAttrs = concat [ opts | condition ] ++ attrs
       VNode ns name newAttrs kids
     x -> x
