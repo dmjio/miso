@@ -111,6 +111,7 @@ library
   exposed-modules:
     Miso
     Miso.Binding
+    Miso.Boot
     Miso.Canvas
     Miso.Concurrent
     Miso.Date
