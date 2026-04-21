@@ -184,7 +184,6 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
   _componentSubThreads <- liftIO (newIORef M.empty)
 
   frame <- newEmptyMVar :: IO (MVar Double)
-  _componentModel <- liftIO (pure initializedModel)
   _componentMailbox <- pure S.empty
 
   rAFCallback <-
@@ -222,16 +221,61 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , _componentTopics = mempty
         , _componentModelDirty = modelCheck
         , _componentChildren = mempty
+        , _componentModel = initializedModel
         , ..
         }
 
   when isRoot (delegator _componentDOMRef _componentVTree events (logLevel `elem` [DebugEvents, DebugAll]))
   registerComponent vcomponent
+
+  -- Inherit bindings state (if applicable)
+  _componentModel <- inheritParentBindings _componentParentId initializedModel bindings
+  modifyComponent _componentId (componentModel .= _componentModel)
+
   initSubs subs _componentSubThreads _componentSink
-  initialDraw initializedModel events hydrate isRoot comp vcomponent
+  initialDraw _componentModel events hydrate isRoot comp vcomponent
   forM_ mount _componentSink
   FFI.mountComponent _componentId =<< toObject jsNull
   pure vcomponent
+-----------------------------------------------------------------------------
+inheritParentBindings
+  :: ComponentId
+  -- ^ ParentId
+  -> child
+  -- ^ Child model
+  -> [ Binding parent child ]
+  -> IO child
+inheritParentBindings compParentId childModel bindings = do
+  inheritChildBindings compParentId childModel bindings
+  foldM (\m -> \case
+            ParentToChild getParentField setChildField -> do
+              ComponentState {..} <- (IM.! compParentId) <$> readIORef components
+              pure (setChildField (getParentField _componentModel) m)
+            _ -> pure m
+        ) childModel bindings
+-----------------------------------------------------------------------------
+inheritChildBindings
+  :: ComponentId
+  -- ^ ParentId
+  -> child
+  -- ^ Child component
+  -> [ Binding parent child ]
+  -> IO ()
+inheritChildBindings compParentId childState bindings = do
+  forM_ bindings $ \case
+     ChildToParent setParentField getChildField -> do
+       modifyComponent compParentId $ do
+         componentModel %= setParentField (getChildField childState)
+         isDirty .= True
+     _ -> do
+       pure ()
+  when (any isChildToParent bindings) $ do
+    renderComponents (IS.singleton compParentId)
+  where
+    isChildToParent :: Binding parent model -> Bool
+    isChildToParent = \case
+      ChildToParent {} -> True
+      _ -> False
 -----------------------------------------------------------------------------
 initSubs :: [Sub action] -> IORef (Map MisoString ThreadId) -> Sink action -> IO ()
 initSubs subs_ _componentSubThreads _componentSink = do
@@ -293,20 +337,20 @@ scheduler =
           pure dirtySet
         else
           pure mempty
-    -----------------------------------------------------------------------------
-    -- | Perform a top-down rendering of the 'Component' tree.
-    --
-    -- We lookup the components each time to account for unmounting.
-    -- Reset the dirty bit if a render occurs
-    --
-    renderComponents :: ComponentIds -> IO ()
-    renderComponents dirtySet = do
-      forM_ (IS.toAscList dirtySet) $ \vcompId ->
-        IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
-          when _componentIsDirty $ do
-            _componentDraw _componentModel
-            FFI.modelHydration _componentId =<< toObject jsNull
-          modifyComponent _componentId (isDirty .= False)
+-----------------------------------------------------------------------------
+-- | Perform a top-down rendering of the 'Component' tree.
+--
+-- We lookup the components each time to account for unmounting.
+-- Reset the dirty bit if a render occurs
+--
+renderComponents :: ComponentIds -> IO ()
+renderComponents dirtySet = do
+  forM_ (IS.toAscList dirtySet) $ \vcompId ->
+    IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
+      when _componentIsDirty $ do
+        _componentDraw _componentModel
+        FFI.modelHydration _componentId =<< toObject jsNull
+      modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
 -- | Modify a single t'Component p m a' at a t'ComponentId'.
 --
@@ -450,7 +494,7 @@ visit vcompId = stack %= (vcompId:)
 -----------------------------------------------------------------------------
 pop :: Synch p m a (Maybe (ComponentState p m a))
 pop = use stack >>= \case
-  [] -> 
+  [] ->
     pure Nothing
   x : xs -> do
     stack .= xs
@@ -1527,7 +1571,7 @@ websocketClose :: WebSocket -> Effect parent model action
 websocketClose socketId = do
   ComponentInfo {..} <- ask
   io_ $ do
-    result <- 
+    result <-
       atomicModifyIORef' websocketConnections $ \imap ->
         dropWebSocket _componentInfoId socketId imap =:
           getWebSocket _componentInfoId socketId imap
