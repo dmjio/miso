@@ -126,6 +126,7 @@ import           Text.Printf
 #endif
 import           Unsafe.Coerce (unsafeCoerce)
 -----------------------------------------------------------------------------
+import           Miso.Binding (Precedence(..))
 import           Miso.Concurrent (Waiter(..), waiter)
 import           Miso.CSS (renderStyleSheet)
 import           Miso.Delegate (delegator)
@@ -251,6 +252,9 @@ inheritParentBindings compParentId childModel bindings = do
             ParentToChild getParentField setChildField -> do
               ComponentState {..} <- (IM.! compParentId) <$> readIORef components
               pure (setChildField (getParentField _componentModel) m)
+            Bidirectional Parent getParentField _ _ setChildField -> do
+              ComponentState {..} <- (IM.! compParentId) <$> readIORef components
+              pure (setChildField (getParentField _componentModel) m)
             _ -> pure m
         ) childModel bindings
 -----------------------------------------------------------------------------
@@ -264,6 +268,10 @@ inheritChildBindings
 inheritChildBindings compParentId childState bindings = do
   forM_ bindings $ \case
      ChildToParent setParentField getChildField -> do
+       modifyComponent compParentId $ do
+         componentModel %= setParentField (getChildField childState)
+         isDirty .= True
+     Bidirectional Child _ setParentField getChildField _ -> do
        modifyComponent compParentId $ do
          componentModel %= setParentField (getChildField childState)
          isDirty .= True
@@ -442,7 +450,7 @@ propagateChildren currentState childComponents = do
               currentFieldValue = getCurrentField (currentState ^. componentModel)
               updatedChildModel = setChildField currentFieldValue currentChildModel
           pure (childState & componentModel .~ updatedChildModel)
-        Bidirectional getCurrentField _ _ setChildField -> do
+        Bidirectional _ getCurrentField _ _ setChildField -> do
           let currentChildModel = _componentModel childState
               currentFieldValue = getCurrentField (currentState ^. componentModel)
               updatedChildModel = setChildField currentFieldValue currentChildModel
@@ -478,7 +486,7 @@ propagateParent currentState parentId_ =
             currentFieldValue = getCurrentField (currentState ^. componentModel)
             updatedParentModel = setParentField currentFieldValue currentParentModel
         pure (parentState & componentModel .~ updatedParentModel)
-      Bidirectional _ setParentField getCurrentField _ -> do
+      Bidirectional _ _ setParentField getCurrentField _ -> do
         let currentParentModel = parentState ^. componentModel
             currentFieldValue = getCurrentField (currentState ^. componentModel)
             updatedParentModel = setParentField currentFieldValue currentParentModel

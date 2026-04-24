@@ -32,11 +32,16 @@
 module Miso.Binding
   ( -- ** Types
     Binding (..)
+  , Precedence (..)
     -- ** Combinators
   , (<-->)
+  , (<<-->)
+  , (<-->>)
   , (<--)
   , (-->)
   , (<--->)
+  , (<<--->)
+  , (<--->>)
   , (<---)
   , (--->)
   ) where
@@ -62,7 +67,12 @@ import Miso.Lens (Lens, Lens', LensCore(..))
 data Binding parent child
   = forall field . ParentToChild (parent -> field) (field -> child -> child)
   | forall field . ChildToParent (field -> parent -> parent) (child -> field)
-  | forall field . Bidirectional (parent -> field) (field -> parent -> parent) (child -> field) (field -> child -> child)
+  | forall field . Bidirectional Precedence (parent -> field) (field -> parent -> parent) (child -> field) (field -> child -> child)
+-----------------------------------------------------------------------------
+-- | Data type used to express if the Child state should take precendence
+-- over the parent state during 'Component' mount.
+data Precedence = Child | Parent
+  deriving (Eq, Show)
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a parent field to a child field
 --
@@ -85,7 +95,7 @@ parent <-- child = ChildToParent (_set parent) (_get child)
 -- @since 1.9.0.0
 infix 0 <-->
 (<-->) :: Lens parent field -> Lens child field -> Binding parent child
-p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
+p <--> c = Bidirectional Parent (_get p) (_set p) (_get c) (_set c)
 -----------------------------------------------------------------------------
 -- | Bidirectionally binds a child field to a parent field, using @Lens'@
 --
@@ -94,10 +104,34 @@ p <--> c = Bidirectional (_get p) (_set p) (_get c) (_set c)
 -- @since 1.9.0.0
 infix 0 <--->
 (<--->) :: Lens' parent field -> Lens' child field -> Binding parent child
-p <---> c = Bidirectional (get_ p) (set_ p) (get_ c) (set_ c)
+p <---> c = Bidirectional Parent (get_ p) (set_ p) (get_ c) (set_ c)
   where
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
+-----------------------------------------------------------------------------
+-- | Like '<--->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+--
+-- @since 1.10.0.0
+(<--->>)
+  :: Lens' parent field
+  -> Lens' child field
+  -> Binding parent child
+l <--->> r =
+  case l <---> r of
+    Bidirectional _ w x y z -> Bidirectional Parent w x y z
+    _ -> error "impossible"
+-----------------------------------------------------------------------------
+-- | Like '<--->' but biases to inherit 'Child' state on 'Component' 'mount'.
+--
+-- @since 1.10.0.0
+(<<--->)
+  :: Lens' parent field
+  -> Lens' child field
+  -> Binding parent child
+l <<---> r =
+  case l <---> r of
+    Bidirectional _ w x y z -> Bidirectional Child w x y z
+    _ -> error "impossible"
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a parent field to a child field, for van Laarhoven
 -- style @Lens'@
@@ -109,6 +143,30 @@ p ---> c = ParentToChild (get_ p) (set_ c)
   where
     get_ lens_ record = getConst (lens_ Const record)
     set_ lens_ field = runIdentity . lens_ (\_ -> Identity field)
+-----------------------------------------------------------------------------
+-- | Like '<-->' but biases to inherit 'Parent' state on 'Component' 'mount'.
+--
+-- @since 1.10.0.0
+(<-->>)
+  :: Lens parent field
+  -> Lens child field
+  -> Binding parent child
+l <-->> r =
+  case l <--> r of
+    Bidirectional _ w x y z -> Bidirectional Parent w x y z
+    _ -> error "impossible"
+-----------------------------------------------------------------------------
+-- | Like '<-->' but biases to inherit 'Child' state on 'Component' 'mount'.
+--
+-- @since 1.10.0.0
+(<<-->)
+  :: Lens parent field
+  -> Lens child field
+  -> Binding parent child
+l <<--> r =
+  case l <--> r of
+    Bidirectional _ w x y z -> Bidirectional Child w x y z
+    _ -> error "impossible"
 -----------------------------------------------------------------------------
 -- | Unidirectionally binds a child field to a parent field, for van Laarhoven
 -- style @Lens'@
