@@ -3,6 +3,7 @@
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -311,10 +312,9 @@ data View parent model action
 -- |
 props
   :: forall field parent a model action . HasField field parent a
-  => Proxy field
-  -> (a -> View parent model action)
+  => (a -> View parent model action)
   -> View parent model action
-props Proxy = VProp (getField @field @parent @a)
+props = VProp (getField @field @parent @a)
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent
