@@ -44,14 +44,14 @@ class ToHtml a where
   toHtml :: a -> L.ByteString
 ----------------------------------------------------------------------------
 -- | Render a @Miso.Types.View@ to a @L.ByteString@
-instance ToHtml (Miso.Types.View m a) where
+instance ToHtml (View p m a) where
   toHtml = renderView
 ----------------------------------------------------------------------------
 -- | Render a @[Miso.Types.View]@ to a @L.ByteString@
-instance ToHtml [Miso.Types.View m a] where
+instance ToHtml [View p m a] where
   toHtml = foldMap renderView
 ----------------------------------------------------------------------------
-renderView :: View m a -> L.ByteString
+renderView :: View p m a -> L.ByteString
 renderView = toLazyByteString . renderBuilder
 ----------------------------------------------------------------------------
 intercalate :: Builder -> [Builder] -> Builder
@@ -97,7 +97,9 @@ booleanProperties = S.fromList
   , "truespeed"
   ]
 ----------------------------------------------------------------------------
-renderBuilder :: Miso.Types.View m a -> Builder
+renderBuilder :: View p m a -> Builder
+renderBuilder (VProp _ _) =
+  error "todo implement"
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"
@@ -185,7 +187,7 @@ renderAttrs (Styles styles) =
 -- | The browser can't distinguish between multiple text nodes
 -- and a single text node. So it will always parse a single text node
 -- this means we must collapse adjacent text nodes during hydration.
-collapseSiblingTextNodes :: [View m a] -> [View m a]
+collapseSiblingTextNodes :: [View p m a] -> [View p m a]
 collapseSiblingTextNodes [] = []
 collapseSiblingTextNodes (VText _ x : VText k y : xs) =
   collapseSiblingTextNodes (VText k (x <> y) : xs)
