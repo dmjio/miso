@@ -93,13 +93,13 @@ module Miso.Types
   , ms
   ) where
 -----------------------------------------------------------------------------
-import           Data.Proxy (Proxy(..))
 import qualified Data.Map.Strict as M
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.Generics
 import           GHC.Records
+import           GHC.TypeLits (Symbol)
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
@@ -311,7 +311,7 @@ data View parent model action
 -----------------------------------------------------------------------------
 -- |
 props
-  :: forall field parent a model action . HasField field parent a
+  :: forall (field :: Symbol) parent a model action . HasField field parent a
   => (a -> View parent model action)
   -> View parent model action
 props = VProp (getField @field @parent @a)
