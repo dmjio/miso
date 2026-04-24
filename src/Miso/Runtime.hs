@@ -222,6 +222,7 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , _componentTopics = mempty
         , _componentModelDirty = modelCheck
         , _componentChildren = mempty
+        , _componentUseProps = useProps
         , _componentModel = initializedModel
         , ..
         }
@@ -337,12 +338,21 @@ scheduler =
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
+
+      childrenToRender <- IS.unions <$> do
+        forM (IS.toList _componentChildren) $ \childId -> do
+          IM.lookup childId <$> readIORef components >>= \case
+            Just child | Miso.Runtime._componentUseProps child -> do
+                           modifyComponent childId (isDirty .= True)
+                           pure (IS.singleton childId)
+            _ -> pure mempty
+
       if _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure dirtySet
+          pure (dirtySet <> childrenToRender)
         else
           pure mempty
 -----------------------------------------------------------------------------
@@ -707,6 +717,7 @@ data ComponentState parent model action
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
+  , _componentUseProps :: Bool
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -1037,7 +1048,7 @@ buildVTree
   -> Hydrate
   -> Sink action
   -> LogLevel
-  -> View model action
+  -> View parent model action
   -> IO VTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
   VComp maybeKey (SomeComponent app) -> do
@@ -1096,6 +1107,10 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
+  VProp getParentField display -> do
+    ComponentState {..} <- (IM.! parentId_) <$> readIORef components
+    buildVTree events_ parentId_ vcompId hydrate snk logLevel_ $
+      display (getParentField _componentModel)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
