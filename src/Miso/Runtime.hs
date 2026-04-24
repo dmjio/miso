@@ -286,14 +286,23 @@ scheduler =
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
-      if _componentModelDirty _componentModel updatedModel || _componentUseProps
+
+      childrenToRender <- IS.unions <$> do
+        forM (IS.toList _componentChildren) $ \childId -> do
+          IM.lookup childId <$> readIORef components >>= \case
+            Just child | Miso.Runtime._componentUseProps child -> do
+                           modifyComponent childId (isDirty .= True)
+                           pure (IS.singleton childId)
+            _ -> pure mempty
+
+      if _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure dirtySet
+          pure (dirtySet <> childrenToRender)
         else
-          pure mempty
+          pure childrenToRender
     -----------------------------------------------------------------------------
     -- | Perform a top-down rendering of the 'Component' tree.
     --
