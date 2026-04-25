@@ -156,11 +156,12 @@ initialize
   -> Hydrate
   -> Bool
   -- ^ Is the root node being rendered?
+  -> Maybe Key
   -> Component parent model action
   -> IO DOMRef
   -- ^ Callback function is used for obtaining the t'Miso.Types.Component' 'DOMRef'.
   -> IO (ComponentState parent model action)
-initialize events _componentParentId hydrate isRoot comp@Component {..} getComponentMountPoint = do
+initialize events _componentParentId hydrate isRoot maybeKey comp@Component {..} getComponentMountPoint = do
   _componentId <- freshComponentId
   let
     _componentSink = \action -> liftIO $ do
@@ -191,8 +192,8 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
     asyncCallback1 $ \jsval -> do
       putMVar frame =<< fromJSValUnchecked jsval
 
-  let _componentDraw = \newModel -> do
-        newVTree <- buildVTree events _componentParentId _componentId Draw _componentSink logLevel (view newModel)
+  let _componentDraw = \latestViewFn newModel -> do
+        newVTree <- buildVTree events _componentParentId _componentId Draw _componentSink logLevel (latestViewFn newModel)
         oldVTree <- liftIO (readIORef _componentVTree)
         _frame <- requestAnimationFrame rAFCallback
         _timestamp :: Double <- takeMVar frame
@@ -201,10 +202,10 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         liftIO (atomicWriteIORef _componentVTree newVTree)
         FFI.flush
 
-  let _componentApplyActions = \(actions :: [action]) model_ comps -> do
+  let _componentApplyActions = \latestUpdateFn (actions :: [action]) model_ comps -> do
         let info = ComponentInfo _componentId _componentParentId _componentDOMRef
         List.foldl' (\(vcomps, m, ss, dirtySet) a ->
-          case runEffect (update a) info m of
+          case runEffect (latestUpdateFn a) info m of
             (n, sss) ->
               let (newComps, newDirty)
                     | modelCheck m n =
@@ -223,6 +224,10 @@ initialize events _componentParentId hydrate isRoot comp@Component {..} getCompo
         , _componentModelDirty = modelCheck
         , _componentChildren = mempty
         , _componentModel = initializedModel
+        , _componentKey = maybeKey
+        , _componentView = view
+        , _componentUpdate = update
+        , _componentReactiveRendering = reactiveRendering
         , ..
         }
 
@@ -329,7 +334,7 @@ scheduler =
       (updatedModel, schedules, dirtySet, ComponentState{..}) <- do
         atomicModifyIORef' components $ \vcomps -> do
           let cs@ComponentState {..} = vcomps IM.! vcompId
-          case _componentApplyActions events _componentModel vcomps of
+          case _componentApplyActions _componentUpdate events _componentModel vcomps of
             (x, updatedModel, schedules, dirtySet) ->
               (x, (updatedModel, schedules, dirtySet, cs))
       forM_ schedules $ \case
@@ -337,12 +342,24 @@ scheduler =
           evalScheduled Async (action _componentSink)
         Schedule Sync action ->
           evalScheduled Sync (action _componentSink)
+      let findDescendantsToRender ids =
+            fmap IS.unions . forM (IS.toList ids) $ \childId -> do
+              allComponents <- readIORef components
+              case IM.lookup childId allComponents of
+                Just (ComponentState{_componentChildren, _componentReactiveRendering})
+                  | _componentReactiveRendering -> do
+                    modifyComponent childId (isDirty .= True)
+                    let grandchildren = _componentChildren
+                    furtherDescendants <- findDescendantsToRender grandchildren
+                    pure (IS.insert childId furtherDescendants)
+                _ -> pure mempty
+      descendantsToRender <- findDescendantsToRender _componentChildren
       if _componentModelDirty _componentModel updatedModel
         then do
           modifyComponent _componentId $ do
             isDirty .= True
             componentModel .= updatedModel
-          pure dirtySet
+          pure (dirtySet <> descendantsToRender)
         else
           pure mempty
 -----------------------------------------------------------------------------
@@ -356,7 +373,7 @@ renderComponents dirtySet = do
   forM_ (IS.toAscList dirtySet) $ \vcompId ->
     IM.lookup vcompId <$> liftIO (readIORef components) >>= mapM \ComponentState {..} -> do
       when _componentIsDirty $ do
-        _componentDraw _componentModel
+        _componentDraw _componentView _componentModel
         FFI.modelHydration _componentId =<< toObject jsNull
       modifyComponent _componentId (isDirty .= False)
 -----------------------------------------------------------------------------
@@ -654,6 +671,12 @@ componentTopics = lens _componentTopics $ \record field -> record { _componentTo
 isDirty :: Lens (ComponentState parent model action) Bool
 isDirty = lens _componentIsDirty $ \record field -> record { _componentIsDirty = field }
 -----------------------------------------------------------------------------
+componentView :: Lens (ComponentState parent model action) (model -> View model action)
+componentView = lens _componentView $ \record field -> record { _componentView = field }
+-----------------------------------------------------------------------------
+componentUpdate :: Lens (ComponentState parent model action) (action -> Effect parent model action)
+componentUpdate = lens _componentUpdate $ \record field -> record { _componentUpdate = field }
+-----------------------------------------------------------------------------
 componentModel :: Lens (ComponentState parent model action) model
 componentModel = lens _componentModel $ \record field -> record { _componentModel = field }
 -----------------------------------------------------------------------------
@@ -672,6 +695,7 @@ data ComponentState parent model action
   = ComponentState
   { _componentId :: ComponentId
   -- ^ The ID of the current t'Miso.Types.Component'
+  , _componentKey :: Maybe Key
   , _componentParentId :: ComponentId
   -- ^ The ID of the t'Miso.Types.Component''s parent
   , _componentSubThreads :: IORef (Map MisoString ThreadId)
@@ -684,6 +708,10 @@ data ComponentState parent model action
   -- ^ t'Miso.Types.Component' t'Sink' used to enter events into the system
   , _componentModel :: model
   -- ^ t'Miso.Types.Component' state
+  , _componentView :: model -> View model action
+  -- ^ component view function, updated on re-renders in case dependencies change
+  , _componentUpdate :: action -> Effect parent model action
+  -- ^ component update function, updated on re-renders in case dependencies change
   , _componentIsDirty :: Bool
   -- ^ Indicator if t'Miso.Types.Component' needs to be drawn
   , _componentScripts :: [DOMRef]
@@ -694,12 +722,13 @@ data ComponentState parent model action
   -- ^ Declarative bindings between t'Miso.Types.Component' 'model'.
   , _componentMailbox :: Value -> Maybe action
   -- ^ Mailbox for asynchronous t'Miso.Types.Component' communication
-  , _componentDraw :: model -> IO ()
+  , _componentDraw :: (model -> View model action) -> model -> IO ()
   -- ^ Helper function for t'Miso.Types.Component' rendering
   , _componentModelDirty :: model -> model -> Bool
   -- ^ Model diffing
   , _componentApplyActions
-      :: [action]
+    :: (action -> Effect parent model action)
+      -> [action]
       -> model
       -> IntMap (ComponentState parent model action)
       -> (IntMap (ComponentState parent model action), model, [Schedule action], ComponentIds)
@@ -707,6 +736,7 @@ data ComponentState parent model action
   , _componentTopics :: Map MisoString (Value -> IO ())
   -- ^ t'Miso.Types.Component' topics using for Pub Sub async communication.
   , _componentChildren :: ComponentIds
+  , _componentReactiveRendering :: Bool
   }
 -----------------------------------------------------------------------------
 -- | A @Topic@ represents a place to send and receive messages. @Topic@ is used to facilitate
@@ -972,7 +1002,7 @@ drain ComponentState {..} = do
     [] -> pure ()
     actions -> do
        vcomps <- readIORef components
-       case _componentApplyActions actions _componentModel vcomps of
+       case _componentApplyActions _componentUpdate actions _componentModel vcomps of
          (newVComps, _, schedules, _) -> do
            forM_ schedules $ \case
              -- dmj: process all actions synchronously during unmount
@@ -1042,10 +1072,23 @@ buildVTree
 buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
   VComp maybeKey (SomeComponent app) -> do
     vcomp_ <- create
+    case maybeKey of
+      Just key -> do
+        maybeMountedChildId <- findChildByKey vcompId key
+        case maybeMountedChildId of
+          Just mountedChildId -> do
+            childCompState <- (IM.! mountedChildId) <$> readIORef components
+            when (_componentReactiveRendering childCompState) $
+              modifyComponent mountedChildId $ do
+                componentView .= view app
+                componentUpdate .= update app
+                isDirty .= True
+          Nothing -> pure ()
+      Nothing -> pure ()
 
     mountCallback <- do
       syncCallback1' $ \parent_ -> do
-        ComponentState {..} <- initialize events_ vcompId hydrate False app (pure parent_)
+        ComponentState {..} <- initialize events_ vcompId hydrate False maybeKey app (pure parent_)
         modifyComponent vcompId (children %= IS.insert _componentId)
         vtree <- toJSVal =<< readIORef _componentVTree
         FFI.set "parent" vcomp_ (Object vtree)
@@ -1096,6 +1139,19 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
+-----------------------------------------------------------------------------
+findChildByKey :: ComponentId -> Key -> IO (Maybe ComponentId)
+findChildByKey parentComponentId key = do
+  comps <- readIORef components
+  case IM.lookup parentComponentId comps of
+    Nothing -> pure Nothing
+    Just ComponentState {_componentChildren} ->
+      pure $ listToMaybe
+        [ childId
+        | childId <- IS.toList _componentChildren
+        , Just cs <- [IM.lookup childId comps]
+        , _componentKey cs == Just key
+        ]
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)
@@ -1873,6 +1929,7 @@ blob = BLOB
 arrayBuffer :: ArrayBuffer -> Payload value
 arrayBuffer = BUFFER
 -----------------------------------------------------------------------------
+-- | Note this currently doesn't support VComp keys and is only meant to be used for the root component
 initComponent
   :: (Eq parent, Eq model)
   => Events
@@ -1881,7 +1938,7 @@ initComponent
   -> IO ()
 initComponent events hydrate vcomp_@Component {..} = withJS $ do
   root <- Diff.mountElement (getMountPoint mountPoint)
-  void $ initialize events rootComponentId hydrate True vcomp_ (pure root)
+  void $ initialize events rootComponentId hydrate True Nothing vcomp_ (pure root)
 #if __GLASGOW_HASKELL__ > 865
   flip labelThread "scheduler" =<< forkIO scheduler
 #else
