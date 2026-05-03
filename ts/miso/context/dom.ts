@@ -81,6 +81,8 @@ export const drawingContext : DrawingContext<DOMRef> = {
       switch (node.nextSibling.type) {
         case VTreeType.VComp:
           return drill(node.nextSibling) as DOMRef;
+        case VTreeType.VFrag: /* dmj: head guaranteed to exist */
+          return drill(node.nextSibling) as DOMRef;
         default:
           return node.nextSibling.domRef as DOMRef;
       }

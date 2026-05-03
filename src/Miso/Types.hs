@@ -79,6 +79,9 @@ module Miso.Types
   , text
   , vtext
   , text_
+  , vfrag
+  , fragment_
+  , (++>)
   , textRaw
   , textKey
   , textKey_
@@ -297,6 +300,7 @@ data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
   | VComp (Maybe Key) (SomeComponent model)
+  | VFrag (Maybe Key) [View model action]
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -449,6 +453,36 @@ instance IsString (View model action) where
 --   Not meant to be constructed directly, see t'Miso.Types.View' instead.
 newtype VTree = VTree { getTree :: Object }
   deriving newtype (ToObject, ToJSVal)
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VFrag'.
+--
+-- See React's [fragment](https://react.dev/reference/react/Fragment).
+--
+-- @frag children@ creates a new 'VFrag'. Fragments can be keyed as well. See '++>'.
+--
+fragment_
+  :: [View model action]
+  -> View model action
+fragment_ = VFrag Nothing
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VFrag'.
+--
+-- Synonym for 'fragment'.
+--
+vfrag
+  :: [View model action]
+  -> View model action
+vfrag = fragment_
+-----------------------------------------------------------------------------
+-- | Create a new 'Miso.Types.VFrag'.
+--
+-- Synonym for 'vfrag', but uses a 'Key'. 
+--
+(++>)
+  :: MisoString
+  -> [View model action]
+  -> View model action
+k ++> v = VFrag (Just (toKey k)) v
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
 --
@@ -661,6 +695,7 @@ data VTreeType
   = VCompType
   | VNodeType
   | VTextType
+  | VFragType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where
@@ -668,4 +703,5 @@ instance ToJSVal VTreeType where
     VCompType -> toJSVal (0 :: Int)
     VNodeType -> toJSVal (1 :: Int)
     VTextType -> toJSVal (2 :: Int)
+    VFragType -> toJSVal (3 :: Int)
 -----------------------------------------------------------------------------

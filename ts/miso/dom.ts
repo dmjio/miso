@@ -1,4 +1,4 @@
-import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, VFrag, Props, VTreeType, OP } from './types';
 import { getDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
@@ -25,6 +25,11 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
         } else {
           replace(c, n, parent, context);
         }
+    }
+    else if (c.type === VTreeType.VFrag && n.type === VTreeType.VFrag) {
+      if (n.key !== c.key) {
+        replace(c, n, parent, context);
+      }
     }
     else
       replace(c, n, parent, context);
@@ -82,19 +87,26 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 // ** recursive calls to hooks
-function callDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
+function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
   callDestroyed(c);
   switch (c.type) {
     case VTreeType.VNode:
       for (const child of c.children) {
-        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp) {
+        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp || child.type === VTreeType.VFrag) {
+           callDestroyedRecursive(child);
+        }
+      }
+      break;
+    case VTreeType.VFrag:
+      for (const child of c.children) {
+        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp || child.type === VTreeType.VFrag) {
            callDestroyedRecursive(child);
         }
       }
       break;
     case VTreeType.VComp:
       if (c.child) {
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
+        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp || c.child.type === VTreeType.VFrag)
           callDestroyedRecursive(c.child);
       }
       break;
@@ -118,10 +130,16 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   }
 }
 
-function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
+function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
   callBeforeDestroyed(c);
   switch (c.type) {
     case VTreeType.VNode:
+      for (const child of c.children) {
+         if (child.type === VTreeType.VText) continue;
+         callBeforeDestroyedRecursive(child);
+      }
+      break;
+    case VTreeType.VFrag:
       for (const child of c.children) {
          if (child.type === VTreeType.VText) continue;
          callBeforeDestroyedRecursive(child);

@@ -294,9 +294,10 @@
 --   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
 --   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
+--   | 'VFrag' (Maybe 'Key') ['View' model action]
 -- @
 --
--- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
+-- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' and 'VFrag' constructors are abstract and do not contain references to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.
 --
 -- @
 -- data 'SomeComponent' parent
@@ -310,8 +311,10 @@
 -- * 'text', 'vtext'
 -- * 'component', 'vcomp'
 -- * ('+>')
+-- * 'fragment_', 'vfrag'
+-- * ('++>')
 --
--- are used to build 'VNode', 'VText' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
+-- are used to build 'VNode', 'VText', 'VFrag' and 'VComp' respectively. A list of all the smart constructors defined in terms of 'node' (e.g. 'Miso.Html.Element.div_') can be found in "Miso.Html.Element".
 --
 -- = 'Events'
 --

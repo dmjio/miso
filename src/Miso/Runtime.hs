@@ -1073,22 +1073,10 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
   VNode ns tag attrs kids -> do
     vnode_ <- createNode "vnode" ns tag
     setAttrs vnode_ attrs snk logLevel_ events_
-    vchildren <- toJSVal =<< procreate vnode_
+    vchildren <- toJSVal =<< procreate vnode_ events_ parentId_ vcompId hydrate snk logLevel_ kids
     flip (FFI.set "children") vnode_ vchildren
     flip (FFI.set "type") vnode_ =<< toJSVal VNodeType
     pure (VTree vnode_)
-      where
-        procreate parentVTree = do
-          kidsViews <- forM kids $ \kid -> do
-            VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
-            FFI.set "parent" parentVTree child
-            pure child
-          setNextSibling kidsViews
-          pure kidsViews
-            where
-              setNextSibling xs =
-                zipWithM_ (flip setField "nextSibling")
-                  xs (drop 1 xs)
   VText key t -> do
     vtree <- create
     flip (FFI.set "type") vtree =<< toJSVal VTextType
@@ -1096,6 +1084,37 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     FFI.set "ns" ("text" :: MisoString) vtree
     FFI.set "text" t vtree
     pure (VTree vtree)
+  VFrag key kids -> do
+    vtree <- create
+    flip (FFI.set "type") vtree =<< toJSVal VFragType
+    forM_ key $ \k -> FFI.set "key" (ms k) vtree
+    vchildren <- toJSVal =<< procreate vtree events_ parentId_ vcompId hydrate snk logLevel_ kids
+    flip (FFI.set "children") vtree vchildren
+    pure (VTree vtree)
+-----------------------------------------------------------------------------
+-- | Helper function for use in VFrag / VNode cases
+procreate
+  :: (Eq model, ToJSVal parent)
+  => parent
+  -> Events
+  -> ComponentId
+  -> ComponentId
+  -> Hydrate
+  -> Sink action
+  -> LogLevel
+  -> [View model action]
+  -> IO [Object]
+procreate parentVTree events_ parentId_ vcompId hydrate snk logLevel_ kids = do
+  kidsViews <- forM kids $ \kid -> do
+    VTree child <- buildVTree events_ parentId_ vcompId hydrate snk logLevel_ kid
+    FFI.set "parent" parentVTree child
+    pure child
+  setNextSibling kidsViews
+  pure kidsViews
+    where
+      setNextSibling xs =
+        zipWithM_ (flip setField "nextSibling")
+          xs (drop 1 xs)
 -----------------------------------------------------------------------------
 -- | @createNode@
 -- A helper function for constructing a vtree (used for @vcomp@ and @vnode@)

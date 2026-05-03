@@ -98,6 +98,7 @@ booleanProperties = S.fromList
   ]
 ----------------------------------------------------------------------------
 renderBuilder :: Miso.Types.View m a -> Builder
+renderBuilder (VFrag _ vkids) = foldMap renderBuilder vkids
 renderBuilder (VText _ "")    = fromMisoString " "
 renderBuilder (VText _ s)     = fromMisoString s
 renderBuilder (VNode _ "doctype" [] []) = "<!doctype html>"

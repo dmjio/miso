@@ -284,7 +284,7 @@ export function getDOMRef<T>(tree: VTree<T>): T {
     case VTreeType.VComp:
       return drill(tree);
     default:
-      return tree.domRef;
+      return (tree.domRef as VNode<T>);
   }
 }
 
@@ -295,6 +295,6 @@ export function drill<T>(c: VComp<T>): T {
     case VTreeType.VComp:
       return drill (c.child)
     default:
-      return c.child.domRef;
+      return (c.child as VNode<T>).domRef;
   }
 }

@@ -74,4 +74,3 @@ export function patch<T> (context: DrawingContext<T>, patch: PATCH, runtime: Run
         break;
   }
 }
-
