@@ -48,10 +48,10 @@ instance (GSet name typ f) => GSet name typ (D1 x f) where
   gSet v (M1 f) = M1 $ gSet @name v f
   {-# INLINE gSet #-}
 
-instance {-# OVERLAPPING #-} GSet name typ (S1 (MetaSel ('Just name) b c d) (Rec0 typ)) where
+instance {-# OVERLAPPING #-} GSet name typ (S1 ('MetaSel ('Just name) b c d) (Rec0 typ)) where
   gSet v (M1 (K1 _)) = M1 (K1 v)
 
-instance {-# OVERLAPPABLE #-} GSet name typ (S1 (MetaSel ('Just anotherName) b c d) x) where
+instance {-# OVERLAPPABLE #-} GSet name typ (S1 ('MetaSel ('Just anotherName) b c d) x) where
   gSet _ f = f
   {-# INLINE gSet #-}
 
