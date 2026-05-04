@@ -122,7 +122,7 @@
                      --repl-options='-fghci-browser -fghci-browser-port=8080'
                 }
                 function repl-watch () {
-                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci$
+                   ghciwatch --after-startup-ghci :main --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci$
                 }
               '';
             };
@@ -154,7 +154,7 @@
                      --repl-options='-fghci-browser -fghci-browser-port=8080'
                 }
                 function repl-watch () {
-                   ghciwatch --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci-browser -fghci-browser-port=8080"'
+                   ghciwatch --after-startup-ghci :main --after-reload-ghci :main --watch . --debounce 50ms --command 'wasm32-wasi-cabal repl app -finteractive --repl-options="-fghci-browser -fghci-browser-port=8080"'
                 }
               '';
             };
