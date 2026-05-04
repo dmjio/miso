@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Miso.Lens.Generic where
+module Miso.Lens.Generic () where
 
 import Data.Kind (Constraint, Type)
 import GHC.Generics (C1, D1, Generic (..), K1 (..), M1 (..), Meta (..), Rec0, S1, U1, V1, (:*:) (..), (:+:) (..))
