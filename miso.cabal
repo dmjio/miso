@@ -135,6 +135,7 @@ library
     Miso.JSON.Parser
     Miso.JSON.Types
     Miso.Lens
+    Miso.Lens.Generic
     Miso.Mathml
     Miso.Mathml.Element
     Miso.Mathml.Property
