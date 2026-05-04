@@ -17,8 +17,7 @@ import Data.Kind (Constraint, Type)
 import GHC.Generics (C1, D1, Generic (..), K1 (..), M1 (..), Meta (..), Rec0, S1, U1, V1, (:*:) (..), (:+:) (..))
 import GHC.OverloadedLabels (IsLabel (..))
 import GHC.Records (HasField (..))
-import GHC.TypeError (ErrorMessage (..), TypeError)
-import GHC.TypeLits (Symbol)
+import GHC.TypeLits (ErrorMessage (..), Symbol, TypeError)
 import Miso.Lens (Lens, lens)
 
 instance
@@ -28,7 +27,6 @@ instance
   fromLabel :: (HasField name s a, Generic s, GSet name a (Rep s)) => Lens s a
   fromLabel = lens (getField @name) (\s v -> to . gSet @name v . from $ s)
   {-# INLINE fromLabel #-}
-
 
 class GSet (name :: Symbol) typ f where
   gSet :: typ -> f x -> f x
@@ -42,16 +40,13 @@ instance (GSet name typ a, GSet name typ b) => GSet name typ (a :+: b) where
   gSet v (R1 r) = R1 $ gSet @name v r
   {-# INLINE gSet #-}
 
-
 instance (GSet name typ f) => GSet name typ (C1 x f) where
   gSet v (M1 f) = M1 $ gSet @name v f
   {-# INLINE gSet #-}
 
-
 instance (GSet name typ f) => GSet name typ (D1 x f) where
   gSet v (M1 f) = M1 $ gSet @name v f
   {-# INLINE gSet #-}
-
 
 instance {-# OVERLAPPING #-} GSet name typ (S1 (MetaSel ('Just name) b c d) (Rec0 typ)) where
   gSet v (M1 (K1 _)) = M1 (K1 v)
@@ -59,7 +54,6 @@ instance {-# OVERLAPPING #-} GSet name typ (S1 (MetaSel ('Just name) b c d) (Rec
 instance {-# OVERLAPPABLE #-} GSet name typ (S1 (MetaSel ('Just anotherName) b c d) x) where
   gSet _ f = f
   {-# INLINE gSet #-}
-
 
 type family ErrorCheck (name :: Symbol) r a (res :: Maybe Type) :: Constraint where
   ErrorCheck _ _ _ ('Just _) = ()
