@@ -66,6 +66,8 @@ module Miso.Types
   -- ** Component mounting
   , (+>)
   , mount_
+  -- ** Key combinators
+  , keyed
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -303,6 +305,29 @@ data View model action
 data SomeComponent parent
    = forall model action . Eq model
   => SomeComponent (Component parent model action)
+-----------------------------------------------------------------------------
+-- | Like '+>' but operates on any 'View', not just 'Component'.
+--
+-- This appends a 'Key' to any 'View'.
+--
+-- @
+-- keyed "key" ("some text" :: View model action)
+-- keyed "key" $ div_ [ id_ "container" ] [ "content" ]
+-- keyed "key" (mount_ calendarComponent)
+-- @
+--
+-- @since 1.10.0.0
+keyed
+  :: MisoString
+  -> View model action
+  -> View model action
+keyed key = \case
+    VText _ txt ->
+      VText (Just (Key key)) txt
+    VComp _ comp ->
+      VComp (Just (Key key)) comp
+    VNode ns tag attrs kids ->
+      VNode ns tag (Property "key" (toJSON key) : attrs) kids
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator
 --
