@@ -67,7 +67,6 @@ module Miso.Types
   , (+>)
   , mount_
   -- ** Key combinators
-  , (++>)
   , keyed
   -- ** Utils
   , getMountPoint
@@ -329,18 +328,6 @@ keyed key = \case
       VComp (Just (Key key)) comp
     VNode ns tag attrs kids ->
       VNode ns tag (Property "key" (toJSON key) : attrs) kids
------------------------------------------------------------------------------
--- | Infix form of 'keyed'.
---
--- @
--- "key" ++> ("some text" :: View model action)
--- "key" ++> div_ [ id_ "container" ] [ "content" ]
--- "key" ++> (mount_ calendarComponent)
--- @
---
-infixr 0 ++>
-(++>) :: MisoString -> View model action -> View model action
-(++>) = keyed
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator
 --
