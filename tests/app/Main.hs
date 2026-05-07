@@ -46,6 +46,7 @@ import           Miso.DSL
 #ifndef GHCJS_OLD
 import           Miso.FFI.QQ (js)
 #endif
+import           Miso.Lens.Generic
 import           Miso.Lens
 import           Miso.Storage
 import           Miso.Test
@@ -126,6 +127,12 @@ square n = [js|
 main :: IO ()
 main = withJS $ do
   runTests $ beforeEach clearBody $ afterEach clearComponentState $ do
+    describe "Miso.Lens.Generic tests" $ do
+      it "Should update field generically" $ do
+        let john = Person "john" 30
+        (john ^. field @"name") `shouldBe` "john"
+        let bob = john & field @"name" .~ "bob"
+        (bob ^. field @"name") `shouldBe` "bob"
     describe "Miso.Storage tests" $ do
       it "Should get and set in localStorage" $ do
         (`shouldBe` 0) =<< liftIO localStorageLength
