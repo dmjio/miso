@@ -445,12 +445,6 @@ If you'd like to support this project financially, be it through requesting feat
 
 Become a [financial contributor](https://opencollective.com/miso/contribute) and help us sustain our project and community. We are very grateful and thankful for our individual sponsors.
 
-  - Moses Tschanz
-  - [@MaxGabriel](https://github.com/MaxGabriel)
-  - [@maybetonyfu](https://github.com/maybetonyfu)
-  - [@jhrcek](https://github.com/jhrcek)
-  - etc.
-
 <a href="https://opencollective.com/miso"><img src="https://opencollective.com/miso/individuals.svg?width=890"></a>
 
 ## Organizations
