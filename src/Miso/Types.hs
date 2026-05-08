@@ -68,6 +68,9 @@ module Miso.Types
   , mount_
   -- ** Key combinators
   , keyed
+  -- ** Fragment combinators
+  , fragment
+  , fragment_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -299,6 +302,7 @@ data View model action
   = VNode Namespace Tag [Attribute action] [View model action]
   | VText (Maybe Key) MisoString
   | VComp (Maybe Key) (SomeComponent model)
+  | VFrag (Maybe Key) [View model action]
   deriving Functor
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
@@ -326,8 +330,25 @@ keyed key = \case
       VText (Just (Key key)) txt
     VComp _ comp ->
       VComp (Just (Key key)) comp
+    VFrag _ kids ->
+      VFrag (Just (Key key)) kids
     VNode ns tag attrs kids ->
       VNode ns tag (Property "key" (toJSON key) : attrs) kids
+-----------------------------------------------------------------------------
+-- | Create a fragment (keyless).
+--
+-- A fragment groups multiple sibling 'View' nodes without introducing
+-- an extra DOM element.
+--
+-- @since 1.10.0.0
+fragment :: [View model action] -> View model action
+fragment = VFrag Nothing
+-----------------------------------------------------------------------------
+-- | Like 'fragment', but keyed for efficient diffing.
+--
+-- @since 1.10.0.0
+fragment_ :: MisoString -> [View model action] -> View model action
+fragment_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | t'Miso.Types.Component' mounting combinator
 --
@@ -686,6 +707,7 @@ data VTreeType
   = VCompType
   | VNodeType
   | VTextType
+  | VFragType
   deriving (Show, Eq)
 -----------------------------------------------------------------------------
 instance ToJSVal VTreeType where
@@ -693,4 +715,5 @@ instance ToJSVal VTreeType where
     VCompType -> toJSVal (0 :: Int)
     VNodeType -> toJSVal (1 :: Int)
     VTextType -> toJSVal (2 :: Int)
+    VFragType -> toJSVal (3 :: Int)
 -----------------------------------------------------------------------------

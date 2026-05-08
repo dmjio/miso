@@ -139,6 +139,7 @@ renderBuilder (VComp _ (SomeComponent vcomp_)) =
 #else
       vkids = [ unsafeCoerce $ (view vcomp_) (model vcomp_) ]
 #endif
+renderBuilder (VFrag _ kids) = foldMap renderBuilder kids
 ----------------------------------------------------------------------------
 renderAttrs :: Attribute action -> Builder
 renderAttrs (ClassList classes) =

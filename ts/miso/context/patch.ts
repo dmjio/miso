@@ -93,6 +93,8 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
         case VTreeType.VComp:
           const drilled = drill (node.nextSibling);
           return drilled ? drilled : null;
+        case VTreeType.VFrag:
+          return drill(node.nextSibling);
         default:
           return node.nextSibling.domRef as NodeId;
       }

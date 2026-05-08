@@ -80,6 +80,13 @@ export function delegateEvent <T> (
       if (obj.type === VTreeType.VText) {
         return;
       }
+      else if (obj.type === VTreeType.VFrag) {
+        // Walk into whichever child's subtree contains the target
+        for (const child of obj.children) {
+          delegateEvent(event, child, stack, debug, context);
+        }
+        return;
+      }
       else if (obj.type === VTreeType.VComp) {
         if (!obj.child) {
           if (debug) {
@@ -121,6 +128,11 @@ export function delegateEvent <T> (
       if (obj.child) {
         delegateEvent(event, obj.child, stack, debug, context);
       }
+    } else if (obj.type === VTreeType.VFrag) {
+      /* VFrag doesn't have events directly, delegate into children */
+      for (const child of obj.children) {
+        delegateEvent(event, child, stack, debug, context);
+      }
     } else if (obj.type === VTreeType.VNode) {
     /* captures run first */
       const eventCaptureObj: EventObject<T> = obj.events.captures[event.type];
@@ -160,6 +172,10 @@ function propagateWhileAble<T>(vtree: VTree<T>, event: Event): void {
     switch (vtree.type) {
       case VTreeType.VText:
         /* impossible case */
+        break;
+      case VTreeType.VFrag:
+        /* Propagate through fragment to its parent */
+        vtree = vtree.parent;
         break;
       case VTreeType.VNode:
         const eventObj = vtree.events.bubbles[event.type];

@@ -1228,6 +1228,38 @@ describe('DOM tests', () => {
     expect(comp.child).toBeTruthy();
   });
 
+  test('Should handle VComp creation with OP.INSERT_BEFORE (keyed insert into list)', () => {
+    // [ span(k1), span(k3) ] -> [ span(k1), comp(k2), span(k3) ]
+    // comp(k2) is new and must be inserted before span(k3) via OP.INSERT_BEFORE
+    const old = vnode<DOMRef>({ tag: 'div', children: [
+      vnodeKeyed<DOMRef>('k1', { tag: 'span' }),
+      vnodeKeyed<DOMRef>('k3', { tag: 'span' }),
+    ]});
+    diff<DOMRef>(null, old, document.body, drawingContext);
+
+    let mounted = false;
+    const comp = vcomp<DOMRef>({
+      key: 'k2',
+      mount: (parent) => {
+        mounted = true;
+        const vn = vnode<DOMRef>({ tag: 'em' });
+        diff<DOMRef>(null, vn, parent, drawingContext);
+        return { componentId: 99 as any, componentTree: vn };
+      },
+    });
+    const next = vnode<DOMRef>({ tag: 'div', children: [
+      vnodeKeyed<DOMRef>('k1', { tag: 'span' }),
+      comp,
+      vnodeKeyed<DOMRef>('k3', { tag: 'span' }),
+    ]});
+    diff<DOMRef>(old, next, document.body, drawingContext);
+
+    expect(mounted).toBe(true);
+    const div = document.body.firstChild as Element;
+    expect(div.children.length).toBe(3);
+    expect(div.children[1].tagName.toLowerCase()).toBe('em');
+  });
+
   test('Should handle nested VComp with final VNode', () => {
     let outerMounted = false;
     

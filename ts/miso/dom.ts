@@ -1,5 +1,5 @@
-import { Class, Mount, DrawingContext, CSS, VNode, VText, VComp, VTree, Props, VTreeType, OP } from './types';
-import { getDOMRef } from './util';
+import { Class, Mount, DrawingContext, CSS, VNode, VFrag, VText, VComp, VTree, Props, VTreeType, OP } from './types';
+import { getDOMRef, forEachDOMRef, getFirstDOMRef, getLastDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -17,6 +17,13 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
           return;
         }
         replace(c, n, parent, context);
+    }
+    else if (c.type === VTreeType.VFrag && n.type === VTreeType.VFrag) {
+        if (n.key === c.key) {
+          diffChildren(c.children, n.children, parent, context);
+        } else {
+          replace(c, n, parent, context);
+        }
     }
     else if (c.type === VTreeType.VNode && n.type === VTreeType.VNode) {
         if (n.tag === c.tag && n.key === c.key) {
@@ -38,6 +45,19 @@ function diffVText<T>(c: VText<T>, n: VText<T>, context : DrawingContext<T>): vo
 
 // replace everything function
 function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContext<T>): void {
+  // VFrag spans multiple DOM nodes — destroy all, then create n at the same position
+  if (c.type === VTreeType.VFrag) {
+    const anchor = c.children.length > 0
+      ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
+      : null;
+    destroy(c, parent, context);
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+    return;
+  }
   // step1 : prepare to delete, unmount things
   switch (c.type) {
       case VTreeType.VText:
@@ -65,6 +85,9 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
   switch (c.type) {
       case VTreeType.VText:
           break;
+      case VTreeType.VFrag:
+          for (const child of c.children) destroy(child, parent, context);
+          return;
       default:
           callBeforeDestroyedRecursive(c);
           break;
@@ -82,19 +105,24 @@ function destroy<T>(c: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 // ** recursive calls to hooks
-function callDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
-  callDestroyed(c);
+function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
+  if (c.type === VTreeType.VFrag) {
+    for (const child of c.children)
+      if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+    return;
+  }
+  callDestroyed(c as VNode<T> | VComp<T>);
   switch (c.type) {
     case VTreeType.VNode:
       for (const child of c.children) {
-        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp) {
+        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp || child.type === VTreeType.VFrag) {
            callDestroyedRecursive(child);
         }
       }
       break;
     case VTreeType.VComp:
       if (c.child) {
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
+        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp || c.child.type === VTreeType.VFrag)
           callDestroyedRecursive(c.child);
       }
       break;
@@ -118,18 +146,23 @@ function callBeforeDestroyed<T>(c: VNode<T> | VComp<T>): void {
   }
 }
 
-function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T>): void {
-  callBeforeDestroyed(c);
+function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
+  if (c.type === VTreeType.VFrag) {
+    for (const child of c.children)
+      if (child.type !== VTreeType.VText) callBeforeDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
+    return;
+  }
+  callBeforeDestroyed(c as VNode<T> | VComp<T>);
   switch (c.type) {
     case VTreeType.VNode:
       for (const child of c.children) {
          if (child.type === VTreeType.VText) continue;
-         callBeforeDestroyedRecursive(child);
+         callBeforeDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
       }
       break;
     case VTreeType.VComp:
       if (c.child) { 
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp)
+        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp || c.child.type === VTreeType.VFrag)
           callBeforeDestroyedRecursive(c.child);
       }
       break;
@@ -289,6 +322,14 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
           break;
       }
       break;
+    case VTreeType.VFrag:
+      for (const child of n.children) {
+        createElement(parent, OP.INSERT_BEFORE, replacing, child, context);
+      }
+      if (op === OP.REPLACE && replacing) {
+        context.removeChild(parent, replacing);
+      }
+      break;
     case VTreeType.VComp:
       mountComponent(parent, op, replacing, n as VComp<T>, context);
       break;
@@ -350,11 +391,18 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
-  context.insertBefore(parent, getDOMRef(n), o ? getDOMRef(o) : null);
-} 
+  const anchor = o ? getDOMRef(o) : null;
+  forEachDOMRef(n, ref => context.insertBefore(parent, ref, anchor));
+}
 
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
-  context.swapDOMRefs(getDOMRef(oLast), getDOMRef(oFirst), parent);
+  // Snapshot where oLast currently ends (before we move anything)
+  const tmp = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
+  const anchor = getFirstDOMRef(oFirst);
+  // Move all of oLast before oFirst's first node
+  forEachDOMRef(oLast, ref => context.insertBefore(parent, ref, anchor));
+  // Move all of oFirst to where oLast used to end
+  forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, tmp));
 }
 
 /* Child reconciliation algorithm, inspired by kivi and Bobril */

@@ -1,5 +1,5 @@
 /* smart constructors for VTree */
-import { Mount, VText, VTree, VNode, VComp, VTreeType } from './types';
+import { Mount, VText, VTree, VNode, VComp, VFrag, VTreeType } from './types';
 
 /* vtext factory */
 export function vtext<T>(input: string) : VText<T> {
@@ -26,6 +26,21 @@ export function vnode<T>(props: Partial<VNode<T>>): VNode<T> {
 
 export function vcomp<T>(props: Partial<VComp<T>>): VComp<T> {
   return union(mkVComp<T>(), props);
+}
+
+/* vfrag factory */
+export function vfrag<T>(children: Array<VTree<T>>, key?: string): VFrag<T> {
+  return {
+    type: VTreeType.VFrag,
+    key: key ?? null,
+    children,
+    parent: null,
+    nextSibling: null,
+  };
+}
+
+export function vfragKeyed<T>(key: string, children: Array<VTree<T>>): VFrag<T> {
+  return vfrag(children, key);
 }
 
 /* set union */

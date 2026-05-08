@@ -59,6 +59,17 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
           return false;
        }
        break;
+    case VTreeType.VFrag:
+      // A fragment maps to consecutive sibling DOM nodes, one per child
+      for (const child of vtree.children) {
+        if (!node) {
+          diagnoseError(logLevel, child, null);
+          return false;
+        }
+        if (!walk(logLevel, child, node, context, drawingContext)) return false;
+        node = node.nextSibling as Node;
+      }
+      break;
     case VTreeType.VText:
        if (node.nodeType !== 3 || vtree.text.trim() !== node.textContent.trim()) {
          diagnoseError(logLevel, vtree, node);

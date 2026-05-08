@@ -13,7 +13,8 @@ export type ComponentId = number;
 export enum VTreeType {
   VComp = 0,
   VNode = 1,
-  VText = 2
+  VText = 2,
+  VFrag = 3
 }
 
 export enum OP {
@@ -72,13 +73,21 @@ export type VText<T> = {
   nextSibling: VTree<T>;
 };
 
-export type Parent<T> = VNode<T> | VComp<T>;
+export type VFrag<T> = {
+  type: VTreeType.VFrag;
+  key: string;
+  children: Array<VTree<T>>;
+  parent: Parent<T>;
+  nextSibling: VTree<T> | null;
+};
+
+export type Parent<T> = VNode<T> | VComp<T> | VFrag<T>;
 
 export type NodeId = {
   nodeId: number;
 }
 
-export type VTree<T> = VComp<T> | VNode<T> | VText<T>;
+export type VTree<T> = VComp<T> | VNode<T> | VText<T> | VFrag<T>;
 
 export type EventObject<T> = {
    options: Options;
