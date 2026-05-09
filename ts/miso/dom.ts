@@ -374,14 +374,13 @@ function mountComponent<T>(parent: T, op : OP, replacing: T | null, n: VComp<T>,
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== VTreeType.VComp) {
-    // Handle DOM placement for non-VComp child nodes
-    const childDomRef = getDOMRef(mounted.componentTree);
     if (op === OP.REPLACE && replacing) {
-      context.replaceChild(parent, childDomRef, replacing);
+      forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
+      context.removeChild(parent, replacing);
     } else if (op === OP.INSERT_BEFORE) {
-      context.insertBefore(parent, childDomRef, replacing);
+      forEachDOMRef(mounted.componentTree, ref => context.insertBefore(parent, ref, replacing));
     }
-      // For OP.APPEND, this happens naturally in mount()
+    // OP.APPEND: mount() already appended in order
   }
 }
 

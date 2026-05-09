@@ -687,4 +687,29 @@ describe('VComp with VFrag root', () => {
     expect(document.body.children[0].tagName.toLowerCase()).toBe('p');
   });
 
+  test('VComp with VFrag root inserted before a sibling places all fragment children in correct position', () => {
+    // Render a div with [ "before", comp(root=frag["x","y"]), "after" ].
+    // The comp is diffed via INSERT_BEFORE (anchor = "after" text node).
+    // All of x and y must appear between "before" and "after", not at the end.
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 4, componentTree: frag };
+      },
+    });
+    const before = vtext<DOMRef>('before');
+    const after = vtext<DOMRef>('after');
+    const parent = vnode<DOMRef>({ tag: 'div', children: [before, comp, after] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    // Expected order: before | x | y | after  (4 child nodes)
+    expect(div.childNodes.length).toBe(4);
+    expect(div.childNodes[0].textContent).toBe('before');
+    expect(div.childNodes[1].textContent).toBe('x');
+    expect(div.childNodes[2].textContent).toBe('y');
+    expect(div.childNodes[3].textContent).toBe('after');
+  });
+
 });
