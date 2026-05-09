@@ -1101,12 +1101,12 @@ buildVTree events_ parentId_ vcompId hydrate snk logLevel_ = \case
     pure (VTree vtree)
   VFrag _ [] -> pure (VTree (Object jsNull))
   VFrag maybeKey kids -> do
-    vfrag_ <- create
-    FFI.set "type" VFragType vfrag_
-    forM_ maybeKey $ \(Key k) -> FFI.set "key" k vfrag_
-    vchildren <- toJSVal =<< procreateFragChildren vfrag_
-    FFI.set "children" vchildren vfrag_
-    pure (VTree vfrag_)
+    frag <- create
+    FFI.set "type" VFragType frag
+    forM_ maybeKey $ \(Key k) -> FFI.set "key" k frag
+    vchildren <- toJSVal =<< procreateFragChildren frag
+    FFI.set "children" vchildren frag
+    pure (VTree frag)
       where
         procreateFragChildren parentVTree = do
           kidsViews <- foldM buildKid [] kids
