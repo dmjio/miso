@@ -265,12 +265,6 @@ function getLastDOMRef(tree) {
       return tree.domRef;
   }
 }
-function getDOMRef(tree) {
-  return getFirstDOMRef(tree);
-}
-function drill(c) {
-  return getFirstDOMRef(c);
-}
 
 // ts/miso/dom.ts
 function diff(c, n, parent, context) {
@@ -331,7 +325,7 @@ function replace(c, n, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  createElement(parent, 1 /* REPLACE */, getDOMRef(c), n, context);
+  createElement(parent, 1 /* REPLACE */, getFirstDOMRef(c), n, context);
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -611,7 +605,7 @@ function create(n, parent, context) {
   createElement(parent, 0 /* APPEND */, null, n, context);
 }
 function insertBefore(parent, n, o, context) {
-  const anchor = o ? getDOMRef(o) : null;
+  const anchor = o ? getFirstDOMRef(o) : null;
   forEachDOMRef(n, (ref) => context.insertBefore(parent, ref, anchor));
 }
 function swapDOMRef(oLast, oFirst, parent, context) {
@@ -677,7 +671,7 @@ function syncChildren(os, ns, parent, context) {
         insertBefore(parent, node, os[oldFirstIndex], context);
         newFirstIndex++;
       } else {
-        createElement(parent, 2 /* INSERT_BEFORE */, getDOMRef(oFirst), nFirst, context);
+        createElement(parent, 2 /* INSERT_BEFORE */, getFirstDOMRef(oFirst), nFirst, context);
         os.splice(oldFirstIndex++, 0, nFirst);
         newFirstIndex++;
         oldLastIndex++;
@@ -769,7 +763,7 @@ function delegateEvent(event, obj, stack, debug, context) {
         }
         stack.splice(0, 1);
         for (const child of obj.children) {
-          if (context.isEqual(getDOMRef(child), stack[0])) {
+          if (context.isEqual(getFirstDOMRef(child), stack[0])) {
             delegateEvent(event, child, stack, debug, context);
           }
         }
@@ -947,7 +941,7 @@ var drawingContext = {
       switch (node.nextSibling.type) {
         case 0 /* VComp */:
         case 3 /* VFrag */:
-          return drill(node.nextSibling);
+          return getFirstDOMRef(node.nextSibling);
         default:
           return node.nextSibling.domRef;
       }
