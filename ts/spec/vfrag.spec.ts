@@ -712,4 +712,30 @@ describe('VComp with VFrag root', () => {
     expect(div.childNodes[3].textContent).toBe('after');
   });
 
+  test('destroying a VComp whose root is VFrag removes all fragment children from the DOM', () => {
+    // Render [ "before", comp(root=frag["p","q","r"]), "after" ] then destroy the comp.
+    // All 3 fragment DOM nodes must be removed, leaving only the two surrounding text nodes.
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([vtext('p'), vtext('q'), vtext('r')]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 5, componentTree: frag };
+      },
+      unmount: (_id) => {},
+    });
+    const before = vtext<DOMRef>('before');
+    const after = vtext<DOMRef>('after');
+    const parent = vnode<DOMRef>({ tag: 'div', children: [before, comp, after] });
+    diff(null, parent, document.body, drawingContext);
+
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(5); // before, p, q, r, after
+
+    // Destroy the component — all 3 fragment nodes must go, leaving before + after
+    diff(comp, null, div as unknown as DOMRef, drawingContext);
+    expect(div.childNodes.length).toBe(2);
+    expect(div.childNodes[0].textContent).toBe('before');
+    expect(div.childNodes[1].textContent).toBe('after');
+  });
+
 });
