@@ -114,17 +114,12 @@ function callDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): void {
   callDestroyed(c as VNode<T> | VComp<T>);
   switch (c.type) {
     case VTreeType.VNode:
-      for (const child of c.children) {
-        if (child.type === VTreeType.VNode || child.type === VTreeType.VComp || child.type === VTreeType.VFrag) {
-           callDestroyedRecursive(child);
-        }
-      }
+      for (const child of c.children)
+        if (child.type !== VTreeType.VText) callDestroyedRecursive(child as VNode<T> | VComp<T> | VFrag<T>);
       break;
     case VTreeType.VComp:
-      if (c.child) {
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp || c.child.type === VTreeType.VFrag)
-          callDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== VTreeType.VText)
+        callDestroyedRecursive(c.child as VNode<T> | VComp<T> | VFrag<T>);
       break;
   }
 }
@@ -161,10 +156,8 @@ function callBeforeDestroyedRecursive<T>(c: VNode<T> | VComp<T> | VFrag<T>): voi
       }
       break;
     case VTreeType.VComp:
-      if (c.child) { 
-        if (c.child.type === VTreeType.VNode || c.child.type === VTreeType.VComp || c.child.type === VTreeType.VFrag)
-          callBeforeDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== VTreeType.VText)
+        callBeforeDestroyedRecursive(c.child as VNode<T> | VComp<T> | VFrag<T>);
       break;
   }
 }

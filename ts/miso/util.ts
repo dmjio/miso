@@ -278,34 +278,6 @@ export function mathRandom() : number {
   return Math.random();
 }
 
-export function getDOMRef<T>(tree: VTree<T>): T {
-  switch (tree.type) {
-    case VTreeType.VComp:
-    case VTreeType.VFrag:
-      return drill(tree);
-    default:
-      return tree.domRef;
-  }
-}
-
-// Returns the first DOM ref reachable from a VComp or VFrag, drilling
-// through nested VComps and VFrags until a concrete DOM node is found.
-export function drill<T>(c: VComp<T> | VFrag<T>): T {
-  if (c.type === VTreeType.VFrag) {
-    if (!c.children || c.children.length === 0)
-      throw new Error("'drill' called on an empty VFrag. This should never happen: empty fragments are removed in Haskell.");
-    return getDOMRef(c.children[0]);
-  }
-  if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
-  switch (c.child.type) {
-    case VTreeType.VComp:
-    case VTreeType.VFrag:
-      return drill(c.child);
-    default:
-      return c.child.domRef;
-  }
-}
-
 // Zero-allocation traversal: calls cb once per concrete DOM node.
 export function forEachDOMRef<T>(tree: VTree<T>, cb: (ref: T) => void): void {
   switch (tree.type) {
@@ -352,3 +324,7 @@ export function getLastDOMRef<T>(tree: VTree<T>): T {
       return tree.domRef;
   }
 }
+
+// Aliases — getDOMRef and drill are both equivalent to getFirstDOMRef.
+export function getDOMRef<T>(tree: VTree<T>): T { return getFirstDOMRef(tree); }
+export function drill<T>(c: VComp<T> | VFrag<T>): T { return getFirstDOMRef(c); }
