@@ -71,6 +71,8 @@ module Miso.Types
   -- ** Fragment combinators
   , fragment
   , fragment_
+  , vfrag
+  , vfrag_
   -- ** Utils
   , getMountPoint
   , optionalAttrs
@@ -340,9 +342,26 @@ keyed key = \case
 -- A fragment groups multiple sibling 'View' nodes without introducing
 -- an extra DOM element.
 --
+-- Synonym for `fragment'
+--
+-- @since 1.10.0.0
+vfrag :: [View model action] -> View model action
+vfrag = fragment
+-----------------------------------------------------------------------------
+-- | Create a fragment (keyless).
+--
+-- A fragment groups multiple sibling 'View' nodes without introducing
+-- an extra DOM element.
+--
 -- @since 1.10.0.0
 fragment :: [View model action] -> View model action
 fragment = VFrag Nothing
+-----------------------------------------------------------------------------
+-- | Like 'fragment', but keyed for efficient diffing.
+--
+-- @since 1.10.0.0
+vfrag_ :: MisoString -> [View model action] -> View model action
+vfrag_ key = VFrag (Just (Key key))
 -----------------------------------------------------------------------------
 -- | Like 'fragment', but keyed for efficient diffing.
 --
