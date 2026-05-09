@@ -763,8 +763,9 @@ function delegateEvent(event, obj, stack, debug, context) {
         }
         stack.splice(0, 1);
         for (const child of obj.children) {
-          if (context.isEqual(getFirstDOMRef(child), stack[0])) {
+          if (containsDOMRef(child, stack[0], context)) {
             delegateEvent(event, child, stack, debug, context);
+            return;
           }
         }
       }
@@ -867,6 +868,14 @@ function eventJSON(at, obj) {
     }
   }
   return newObj;
+}
+function containsDOMRef(vtree, target, context) {
+  let found = false;
+  forEachDOMRef(vtree, (ref) => {
+    if (context.isEqual(ref, target))
+      found = true;
+  });
+  return found;
 }
 function getAllPropertyNames(obj) {
   var props = {}, i = 0;

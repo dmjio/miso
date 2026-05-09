@@ -1,5 +1,5 @@
 import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
-import { getFirstDOMRef } from './util';
+import { getFirstDOMRef, forEachDOMRef } from './util';
 
 /* event delegation algorithm */
 export function delegator<T> (
@@ -114,8 +114,9 @@ export function delegateEvent <T> (
           }
           stack.splice(0,1);
           for (const child of obj.children) {
-            if (context.isEqual(getFirstDOMRef(child), stack[0])) {
+            if (containsDOMRef(child, stack[0], context)) {
               delegateEvent(event, child, stack, debug, context);
+              return;
             }
           }
         }
@@ -242,6 +243,12 @@ export function eventJSON(at: string | Array<string>, obj: any): Object[] {
     }
   }
   return newObj;
+}
+/* Returns true if target is among the DOM refs owned by vtree (handles VFrag/VComp) */
+function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>): boolean {
+  let found = false;
+  forEachDOMRef(vtree, ref => { if (context.isEqual(ref, target)) found = true; });
+  return found;
 }
 /* get static and dynamic properties */
 function getAllPropertyNames(obj: Event): Object {
