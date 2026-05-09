@@ -305,6 +305,40 @@
 --   => 'SomeComponent' ('Component' parent model action)
 -- @
 --
+-- = t'VFrag' — Fragment nodes
+--
+-- 'VFrag' is a /grouping/ constructor that renders a list of sibling 'View' nodes into the DOM
+-- without introducing any wrapper element. It is similar to React's @\<Fragment\>@ or @\<\>\<\/\>@
+-- syntax, and to @DocumentFragment@ in the browser DOM API.
+--
+-- @
+-- -- Renders two \<li\> elements as direct siblings, no enclosing element
+-- 'fragment' [ 'li_' [] [ 'text' "Item A" ], 'li_' [] [ 'text' "Item B" ] ]
+-- @
+--
+-- A 'VFrag' may optionally carry a 'Key'. Keyed fragments participate in the same
+-- reconciliation algorithm as keyed 'VNode' and 'VText' nodes, allowing the virtual
+-- DOM differ to identify, reorder, and reuse groups of siblings efficiently.
+--
+-- @
+-- -- Keyed fragment — survives reordering without full teardown\/remount
+-- 'vfrag_' "my-key" [ 'li_' [] [ 'text' "A" ], 'li_' [] [ 'text' "B" ] ]
+-- @
+--
+-- Fragments may be nested — a 'VFrag' child may itself be a 'VFrag'. The differ
+-- recurses into nested fragments and still produces a flat sequence of sibling DOM
+-- nodes, so nesting carries no runtime cost beyond the extra 'View' allocation.
+--
+-- Empty fragments (@'fragment' []@) are stripped from the virtual DOM tree in the
+-- Haskell layer before they reach the JavaScript differ and are therefore a no-op.
+--
+-- The smart constructors for 'VFrag' are:
+--
+-- * 'fragment'   — unkeyed fragment
+-- * 'vfrag'      — unkeyed fragment (alias)
+-- * 'fragment_'  — keyed fragment
+-- * 'vfrag_'     — keyed fragment (alias, infix-friendly: @\"key\" \`vfrag_\` [...]@)
+--
 -- The smart constructors:
 --
 -- * 'node', 'vnode'
