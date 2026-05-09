@@ -1,5 +1,5 @@
 import { Class, Mount, DrawingContext, CSS, VNode, VFrag, VText, VComp, VTree, Props, VTreeType, OP } from './types';
-import { getDOMRef, forEachDOMRef, getFirstDOMRef, getLastDOMRef } from './util';
+import { forEachDOMRef, getFirstDOMRef, getLastDOMRef } from './util';
 
 /* virtual-dom diffing algorithm, applies patches as detected */
 export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingContext<T>): void {
@@ -67,7 +67,7 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
           break;
   }
 
-  createElement(parent, OP.REPLACE, getDOMRef(c), n, context);
+  createElement(parent, OP.REPLACE, getFirstDOMRef(c), n, context);
 
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
@@ -383,7 +383,7 @@ function create<T>(n: VTree<T>, parent: T, context: DrawingContext<T>): void {
 }
 
 function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: DrawingContext<T>): void {
-  const anchor = o ? getDOMRef(o) : null;
+  const anchor = o ? getFirstDOMRef(o) : null;
   forEachDOMRef(n, ref => context.insertBefore(parent, ref, anchor));
 }
 
@@ -549,7 +549,7 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         -> [ b e a j   ] <- new children
              ^
         */ else {
-            createElement(parent, OP.INSERT_BEFORE, getDOMRef(oFirst), nFirst, context);
+            createElement(parent, OP.INSERT_BEFORE, getFirstDOMRef(oFirst), nFirst, context);
             os.splice(oldFirstIndex++, 0, nFirst);
             newFirstIndex++;
             oldLastIndex++;

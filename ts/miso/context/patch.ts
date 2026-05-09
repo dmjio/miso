@@ -27,7 +27,7 @@ import {
   RemoveClass,
 } from '../types';
 
-import { drill } from '../util';
+import { getFirstDOMRef } from '../util';
 
 /*
 
@@ -94,7 +94,7 @@ export const patchDrawingContext : DrawingContext<NodeId> = {
           const drilled = drill (node.nextSibling);
           return drilled ? drilled : null;
         case VTreeType.VFrag:
-          return drill(node.nextSibling);
+          return getFirstDOMRef(node.nextSibling);
         default:
           return node.nextSibling.domRef as NodeId;
       }

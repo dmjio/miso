@@ -325,6 +325,5 @@ export function getLastDOMRef<T>(tree: VTree<T>): T {
   }
 }
 
-// Aliases — getDOMRef and drill are both equivalent to getFirstDOMRef.
+// Alias — kept for backwards-compatible public API.
 export function getDOMRef<T>(tree: VTree<T>): T { return getFirstDOMRef(tree); }
-export function drill<T>(c: VComp<T> | VFrag<T>): T { return getFirstDOMRef(c); }
