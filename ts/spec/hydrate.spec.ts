@@ -1,7 +1,7 @@
 /* imports */
 import { hydrate } from '../miso/hydrate';
 import { vnode, vtext, vcomp, vfrag } from '../miso/smart';
-import { Mount, VText, VNode, VFrag, DOMRef, VComp } from '../miso/types';
+import { Mount, VText, VNode, DOMRef, VComp } from '../miso/types';
 import { test, expect, describe, afterEach, beforeAll } from 'bun:test';
 import { hydrationContext, drawingContext } from '../miso/context/dom';
 

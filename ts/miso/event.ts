@@ -1,5 +1,5 @@
 import { EventContext, VTree, EventCapture, EventObject, Options, VTreeType } from './types';
-import { getFirstDOMRef, forEachDOMRef } from './util';
+import { forEachDOMRef } from './util';
 
 /* event delegation algorithm */
 export function delegator<T> (
