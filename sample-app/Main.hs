@@ -9,7 +9,7 @@ import           Miso
 import qualified Miso.Html as H
 import qualified Miso.Html.Property as P
 import           Miso.Lens
-import            Miso.Reload
+import           Miso.Reload
 ----------------------------------------------------------------------------
 -- | Component model state
 data Model
@@ -58,7 +58,7 @@ updateModel = \case
   SayHelloWorld -> io_ (consoleLog "Hello world")
 ----------------------------------------------------------------------------
 -- | Constructs a virtual DOM from a model
-viewModel :: Model -> View Model Action
+viewModel :: Model -> View parent Model Action
 viewModel x =
   H.div_
     [ P.className "counter"

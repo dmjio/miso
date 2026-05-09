@@ -290,10 +290,11 @@
 -- 'Component' inside other 'Component'.
 --
 -- @
--- data 'View' model action
---   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' model action]
+-- data 'View' parent model action
+--   = 'VNode' 'Namespace' 'Tag' ['Attribute' action] ['View' parent model action]
 --   | 'VText' (Maybe 'Key') 'MisoString'
 --   | 'VComp' (Maybe 'Key') ('SomeComponent' model)
+--   | 'VProp' (parent -> field)
 -- @
 --
 -- 'VNode' and 'VText' have a one-to-one mapping from the virtual DOM to the physical DOM. The 'VComp' constructor is abstract and does not contain a reference to the physical DOM. The existential type of 'SomeComponent' is defined recursively in terms of 'View' and is what allows us to embed other polymorphic 'Component'.

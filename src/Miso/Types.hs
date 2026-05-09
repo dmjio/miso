@@ -3,9 +3,11 @@
 {-# LANGUAGE ExistentialQuantification  #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE DeriveGeneric              #-}
@@ -84,6 +86,7 @@ module Miso.Types
   , textRaw
   , textKey
   , textKey_
+  , props
   , htmlEncode
   -- *** MisoString
   , MisoString
@@ -97,6 +100,8 @@ import           Data.Maybe (fromMaybe, isJust)
 import           Data.String (IsString, fromString)
 import qualified Data.Text as T
 import           GHC.Generics
+import           GHC.Records
+import           GHC.TypeLits (Symbol)
 import           Prelude
 -----------------------------------------------------------------------------
 import           Miso.Binding ((<--), (-->), (<-->), (<---), (--->), (<--->), Binding(..))
@@ -122,7 +127,7 @@ data Component parent model action
   --   The resulting 'model' is only used during initial hydration, not on remounts.
   , update :: action -> Effect parent model action
   -- ^ Updates model, optionally providing effects.
-  , view :: model -> View model action
+  , view :: model -> View parent model action
   -- ^ Draws 'View'
   , subs :: [ Sub action ]
   -- ^ Subscriptions to run during application lifetime
@@ -165,6 +170,10 @@ data Component parent model action
   -- ^ action to execute during t'Miso.Types.Component' unmount phase.
   --
   -- @since 1.9.0.0
+  , useProps :: Bool
+  -- ^ boolean to determine if React-style "props" should be used
+  --
+  -- @since 1.10.0.0
   }
 -----------------------------------------------------------------------------
 -- | @mountPoint@ for t'Miso.Types.Component', e.g "body"
@@ -225,7 +234,7 @@ component
   -- ^ model
   -> (action -> Effect parent model action)
   -- ^ update
-  -> (model -> View model action)
+  -> (model -> View parent model action)
   -- ^ view
   -> Component parent model action
 component m u v = Component
@@ -243,6 +252,7 @@ component m u v = Component
   , eventPropagation = False
   , mount = Nothing
   , unmount = Nothing
+  , useProps = False
   }
 -----------------------------------------------------------------------------
 -- | Synonym for 'component'
@@ -251,10 +261,10 @@ vcomp
   -- ^ model
   -> (action -> Effect parent model action)
   -- ^ update
-  -> (model -> View model action)
+  -> (model -> View parent model action)
   -- ^ view
   -> Component parent model action
-vcomp = component  
+vcomp = component
 -----------------------------------------------------------------------------
 -- | A top-level t'Miso.Types.Component' can have no @parent@.
 --
@@ -295,11 +305,18 @@ data LogLevel
 type Tag = MisoString
 -----------------------------------------------------------------------------
 -- | Core type for constructing a virtual DOM in Haskell
-data View model action
-  = VNode Namespace Tag [Attribute action] [View model action]
+data View parent model action
+  = VNode Namespace Tag [Attribute action] [View parent model action]
   | VText (Maybe Key) MisoString
   | VComp (Maybe Key) (SomeComponent model)
-  deriving Functor
+  | forall field . VProp (parent -> field) (field -> View parent model action)
+-----------------------------------------------------------------------------
+-- |
+props
+  :: forall (field :: Symbol) parent a model action . HasField field parent a
+  => (a -> View parent model action)
+  -> View parent model action
+props = VProp (getField @field @parent @a)
 -----------------------------------------------------------------------------
 -- | Existential wrapper allowing nesting of t'Miso.Types.Component' in t'Miso.Types.Component'
 data SomeComponent parent
@@ -340,12 +357,12 @@ keyed key = \case
 --
 -- @since 1.9.0.0
 (+>)
-  :: forall child model action a . Eq child
+  :: forall parent child model action a . Eq child
   => MisoString
   -- ^ 'VComp' 'key_'
   -> Component model child action
   -- ^ 'Component'
-  -> View model a
+  -> View parent model a
 infixr 0 +>
 key +> comp = VComp (Just (toKey key)) (SomeComponent comp)
 -----------------------------------------------------------------------------
@@ -365,7 +382,7 @@ mount_
   :: Eq child
   => Component model child a
   -- ^ 'Component' to mount
-  -> View model action
+  -> View parent model action
 mount_ comp = VComp Nothing (SomeComponent comp)
 -----------------------------------------------------------------------------
 -- | DOM element namespace.
@@ -466,7 +483,7 @@ instance Show (Attribute action) where
         ]
 -----------------------------------------------------------------------------
 -- | 'IsString' instance
-instance IsString (View model action) where
+instance IsString (View parent model action) where
   fromString = VText Nothing . fromString
 -----------------------------------------------------------------------------
 -- | Virtual DOM implemented as a JavaScript t'Object'.
@@ -484,8 +501,8 @@ node
   :: Namespace
   -> MisoString
   -> [Attribute action]
-  -> [View model action]
-  -> View model action
+  -> [View parent model action]
+  -> View parent model action
 node = VNode
 -----------------------------------------------------------------------------
 -- | Create a new 'Miso.Types.VNode'.
@@ -496,12 +513,12 @@ vnode
   :: Namespace
   -> MisoString
   -> [Attribute action]
-  -> [View model action]
-  -> View model action
+  -> [View parent model action]
+  -> View parent model action
 vnode = node
 -----------------------------------------------------------------------------
 -- | Create a new v'VText' with the given content.
-text :: MisoString -> View model action
+text :: MisoString -> View parent model action
 #ifdef SSR
 text = VText Nothing . htmlEncode
 #else
@@ -509,14 +526,14 @@ text = VText Nothing
 #endif
 -----------------------------------------------------------------------------
 -- | Synonym for 'text'
-vtext :: MisoString -> View model action
+vtext :: MisoString -> View parent model action
 vtext = text
 ----------------------------------------------------------------------------
 -- | Create a new v'VText', not subject to HTML escaping.
 --
 -- Like 'text', except will not escape HTML when used on the server.
 --
-textRaw :: MisoString -> View model action
+textRaw :: MisoString -> View parent model action
 textRaw = VText Nothing
 ----------------------------------------------------------------------------
 -- |
@@ -539,7 +556,7 @@ htmlEncode = MS.concatMap $ \case
 -- | Create a new v'VText' containing concatenation of the given strings.
 --
 -- @
---   view :: View model action
+--   view :: View parent model action
 --   view = div_
 --     [ className "container" ]
 --     [ text_
@@ -553,46 +570,46 @@ htmlEncode = MS.concatMap $ \case
 --
 -- A single additional space is added between elements.
 --
-text_ :: [MisoString] -> View model action
+text_ :: [MisoString] -> View parent model action
 text_ = VText Nothing . MS.intercalate " "
 -----------------------------------------------------------------------------
 -- | Like 'text', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View model action
+-- view :: model -> View parent model action
 -- view = \x -> div_ [] [ textKey (1 :: Int) "text here" ]
 -- @
 --
 -- @since 1.9.0.0
-textKey :: ToKey key => key -> MisoString -> View model action
+textKey :: ToKey key => key -> MisoString -> View parent model action
 textKey k = VText (Just (toKey k))
 -----------------------------------------------------------------------------
 -- | Like 'text_', but allow the node to be keyed for efficient diffing.
 --
 -- @
--- view :: model -> View model action
+-- view :: model -> View parent model action
 -- view = \x -> div_ [] [ textKey_ (1 :: Int) [ "text", "goes", "here" ] ]
 -- @
 --
 -- @since 1.9.0.0
-textKey_ :: ToKey key => key -> [MisoString] -> View model action
+textKey_ :: ToKey key => key -> [MisoString] -> View parent model action
 textKey_ k xs = VText (Just (toKey k)) (MS.intercalate " " xs)
 -----------------------------------------------------------------------------
 -- | Utility function to make it easy to specify conditional attributes
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View parent model action
 -- view danger = optionalAttrs div_ [ id_ "some-div" ] danger [ class_ "danger" ] ["child"]
 -- @
 --
 -- @since 1.9.0.0
 optionalAttrs
-  :: ([Attribute action] -> [View model action] -> View model action)
+  :: ([Attribute action] -> [View parent model action] -> View parent model action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute action] -- ^ Additional attributes to add if the condition is True
-  -> [View model action] -- ^ Children
-  -> View model action
+  -> [View parent model action] -- ^ Children
+  -> View parent model action
 optionalAttrs element attrs condition opts kids =
   case element attrs kids of
     VNode ns name _ _ -> do
@@ -603,17 +620,17 @@ optionalAttrs element attrs condition opts kids =
 -- | Utility function to make it easy to specify conditional attributes for void elements.
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View parent model action
 -- view shouldClear = optionalVoidAttrs textarea_ [ value_ "" ] shouldClear [ id_ "text-area-id" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalVoidAttrs
-  :: ([Attribute action] -> View model action)
+  :: ([Attribute action] -> View parent model action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
   -> Bool -- ^ A condition
   -> [Attribute action] -- ^ Additional attributes to add if the condition is True
-  -> View model action
+  -> View parent model action
 optionalVoidAttrs element attrs condition opts =
   case element attrs of
     VNode ns name _ kids -> do
@@ -624,18 +641,18 @@ optionalVoidAttrs element attrs condition opts =
 -- | Conditionally adds children.
 --
 -- @
--- view :: Bool -> View model action
+-- view :: Bool -> View parent model action
 -- view withChild = optionalChildren div_ [ id_ "txt" ] [] withChild [ "foo" ]
 -- @
 --
 -- @since 1.9.0.0
 optionalChildren
-  :: ([Attribute action] -> [View model action] -> View model action)
+  :: ([Attribute action] -> [View parent model action] -> View parent model action)
   -> [Attribute action] -- ^ Attributes to be added unconditionally
-  -> [View model action] -- ^ Children to be added unconditionally
+  -> [View parent model action] -- ^ Children to be added unconditionally
   -> Bool -- ^ A condition
-  -> [View model action] -- ^ Additional children to add if the condition is True
-  -> View model action
+  -> [View parent model action] -- ^ Additional children to add if the condition is True
+  -> View parent model action
 optionalChildren element attrs kids condition opts =
   case element attrs kids of
     VNode ns name _ _ -> do
