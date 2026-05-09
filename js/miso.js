@@ -220,31 +220,6 @@ function getRandomValues() {
 function mathRandom() {
   return Math.random();
 }
-function getDOMRef(tree) {
-  switch (tree.type) {
-    case 0 /* VComp */:
-    case 3 /* VFrag */:
-      return drill(tree);
-    default:
-      return tree.domRef;
-  }
-}
-function drill(c) {
-  if (c.type === 3 /* VFrag */) {
-    if (!c.children || c.children.length === 0)
-      throw new Error("'drill' called on an empty VFrag. This should never happen: empty fragments are normalised to null in Haskell.");
-    return getDOMRef(c.children[0]);
-  }
-  if (!c.child)
-    throw new Error("'drill' called on an unmounted Component. This should never happen, please make an issue.");
-  switch (c.child.type) {
-    case 0 /* VComp */:
-    case 3 /* VFrag */:
-      return drill(c.child);
-    default:
-      return c.child.domRef;
-  }
-}
 function forEachDOMRef(tree, cb) {
   switch (tree.type) {
     case 3 /* VFrag */:
@@ -289,6 +264,12 @@ function getLastDOMRef(tree) {
     default:
       return tree.domRef;
   }
+}
+function getDOMRef(tree) {
+  return getFirstDOMRef(tree);
+}
+function drill(c) {
+  return getFirstDOMRef(c);
 }
 
 // ts/miso/dom.ts
@@ -371,7 +352,7 @@ function destroy(c, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  context.removeChild(parent, getDOMRef(c));
+  forEachDOMRef(c, (ref) => context.removeChild(parent, ref));
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -390,17 +371,13 @@ function callDestroyedRecursive(c) {
   callDestroyed(c);
   switch (c.type) {
     case 1 /* VNode */:
-      for (const child of c.children) {
-        if (child.type === 1 /* VNode */ || child.type === 0 /* VComp */ || child.type === 3 /* VFrag */) {
+      for (const child of c.children)
+        if (child.type !== 2 /* VText */)
           callDestroyedRecursive(child);
-        }
-      }
       break;
     case 0 /* VComp */:
-      if (c.child) {
-        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */ || c.child.type === 3 /* VFrag */)
-          callDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== 2 /* VText */)
+        callDestroyedRecursive(c.child);
       break;
   }
 }
@@ -439,10 +416,8 @@ function callBeforeDestroyedRecursive(c) {
       }
       break;
     case 0 /* VComp */:
-      if (c.child) {
-        if (c.child.type === 1 /* VNode */ || c.child.type === 0 /* VComp */ || c.child.type === 3 /* VFrag */)
-          callBeforeDestroyedRecursive(c.child);
-      }
+      if (c.child && c.child.type !== 2 /* VText */)
+        callBeforeDestroyedRecursive(c.child);
       break;
   }
 }
@@ -624,11 +599,11 @@ function mountComponent(parent, op, replacing, n, context) {
   n.child = mounted.componentTree;
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== 0 /* VComp */) {
-    const childDomRef = getDOMRef(mounted.componentTree);
     if (op === 1 /* REPLACE */ && replacing) {
-      context.replaceChild(parent, childDomRef, replacing);
+      forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
+      context.removeChild(parent, replacing);
     } else if (op === 2 /* INSERT_BEFORE */) {
-      context.insertBefore(parent, childDomRef, replacing);
+      forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
     }
   }
 }
