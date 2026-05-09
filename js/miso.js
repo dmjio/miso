@@ -179,7 +179,7 @@ function updateRef(current, latest) {
   if (!current.parent) {
     return;
   }
-  latest.nextSibling = current.nextSibling ? null : current.nextSibling;
+  latest.nextSibling = current.nextSibling;
   latest.parent = current.parent;
   current.parent.child = latest;
 }

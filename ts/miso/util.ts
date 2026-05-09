@@ -224,7 +224,7 @@ export function updateRef <T> (current: VTree<T> , latest: VTree<T>) : void {
   if (!(current.parent)) {
      return; // at root, do nothing
   }
-  latest.nextSibling = current.nextSibling ? null : current.nextSibling;
+  latest.nextSibling = current.nextSibling;
   latest.parent = current.parent;
   // invariant, parent is always VComp<T>, safe cast
   (current.parent as VComp<T>).child = latest;
