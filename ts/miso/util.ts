@@ -293,7 +293,7 @@ export function getDOMRef<T>(tree: VTree<T>): T {
 export function drill<T>(c: VComp<T> | VFrag<T>): T {
   if (c.type === VTreeType.VFrag) {
     if (!c.children || c.children.length === 0)
-      throw new Error("'drill' called on an empty VFrag. This should never happen: empty fragments are normalised to null in Haskell.");
+      throw new Error("'drill' called on an empty VFrag. This should never happen: empty fragments are removed in Haskell.");
     return getDOMRef(c.children[0]);
   }
   if (!c.child) throw new Error ("'drill' called on an unmounted Component. This should never happen, please make an issue.");
