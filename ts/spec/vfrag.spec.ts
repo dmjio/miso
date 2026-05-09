@@ -738,4 +738,16 @@ describe('VComp with VFrag root', () => {
     expect(div.childNodes[1].textContent).toBe('after');
   });
 
+  test('VComp that mounts an empty VFrag does not throw', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const frag = vfrag<DOMRef>([]);
+        diff(null, frag, p, drawingContext);
+        return { componentId: 6, componentTree: frag };
+      },
+    });
+    expect(() => diff(null, comp, document.body, drawingContext)).not.toThrow();
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
 });
