@@ -477,7 +477,7 @@ function diffProps(cProps, nProps, node, isSvg, context) {
     }
   }
   for (const n in nProps) {
-    if (cProps && cProps[n])
+    if (cProps && n in cProps)
       continue;
     newProp = nProps[n];
     if (isSvg) {
@@ -646,7 +646,8 @@ function syncChildren(os, ns, parent, context) {
       diff(os[oldFirstIndex++], ns[newFirstIndex++], parent, context);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oFirst.key === nLast.key) {
-      insertBefore(parent, oFirst, oLast.nextSibling, context);
+      const afterOLast = getLastDOMRef(oLast).nextSibling;
+      forEachDOMRef(oFirst, (ref) => context.insertBefore(parent, ref, afterOLast));
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
     } else if (oLast.key === nFirst.key) {
@@ -870,12 +871,17 @@ function eventJSON(at, obj) {
   return newObj;
 }
 function containsDOMRef(vtree, target, context) {
-  let found = false;
-  forEachDOMRef(vtree, (ref) => {
-    if (context.isEqual(ref, target))
-      found = true;
-  });
-  return found;
+  switch (vtree.type) {
+    case 3 /* VFrag */:
+      for (const child of vtree.children)
+        if (containsDOMRef(child, target, context))
+          return true;
+      return false;
+    case 0 /* VComp */:
+      return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
+    default:
+      return context.isEqual(vtree.domRef, target);
+  }
 }
 function getAllPropertyNames(obj) {
   var props = {}, i = 0;
