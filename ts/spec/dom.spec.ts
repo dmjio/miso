@@ -1232,8 +1232,8 @@ describe('DOM tests', () => {
     // [ span(k1), span(k3) ] -> [ span(k1), comp(k2), span(k3) ]
     // comp(k2) is new and must be inserted before span(k3) via OP.INSERT_BEFORE
     const old = vnode<DOMRef>({ tag: 'div', children: [
-      vnodeKeyed<DOMRef>('k1', { tag: 'span' }),
-      vnodeKeyed<DOMRef>('k3', { tag: 'span' }),
+      vnodeKeyed<DOMRef>('span', 'k1'),
+      vnodeKeyed<DOMRef>('span', 'k3'),
     ]});
     diff<DOMRef>(null, old, document.body, drawingContext);
 
@@ -1248,9 +1248,9 @@ describe('DOM tests', () => {
       },
     });
     const next = vnode<DOMRef>({ tag: 'div', children: [
-      vnodeKeyed<DOMRef>('k1', { tag: 'span' }),
+      vnodeKeyed<DOMRef>('span', 'k1'),
       comp,
-      vnodeKeyed<DOMRef>('k3', { tag: 'span' }),
+      vnodeKeyed<DOMRef>('span', 'k3'),
     ]});
     diff<DOMRef>(old, next, document.body, drawingContext);
 
