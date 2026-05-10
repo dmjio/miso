@@ -594,8 +594,12 @@ function mountComponent(parent, op, replacing, n, context) {
   mounted.componentTree.parent = n;
   if (mounted.componentTree.type !== 0 /* VComp */) {
     if (op === 1 /* REPLACE */ && replacing) {
-      forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
-      context.removeChild(parent, replacing);
+      if (mounted.componentTree.type === 3 /* VFrag */) {
+        forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
+        context.removeChild(parent, replacing);
+      } else {
+        context.replaceChild(parent, getFirstDOMRef(mounted.componentTree), replacing);
+      }
     } else if (op === 2 /* INSERT_BEFORE */) {
       forEachDOMRef(mounted.componentTree, (ref) => context.insertBefore(parent, ref, replacing));
     }
