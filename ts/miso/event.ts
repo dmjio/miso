@@ -246,9 +246,16 @@ export function eventJSON(at: string | Array<string>, obj: any): Object[] {
 }
 /* Returns true if target is among the DOM refs owned by vtree (handles VFrag/VComp) */
 function containsDOMRef<T>(vtree: VTree<T>, target: T, context: EventContext<T>): boolean {
-  let found = false;
-  forEachDOMRef(vtree, ref => { if (context.isEqual(ref, target)) found = true; });
-  return found;
+  switch (vtree.type) {
+    case VTreeType.VFrag:
+      for (const child of vtree.children)
+        if (containsDOMRef(child, target, context)) return true;
+      return false;
+    case VTreeType.VComp:
+      return vtree.child ? containsDOMRef(vtree.child, target, context) : false;
+    default:
+      return context.isEqual(vtree.domRef, target);
+  }
 }
 /* get static and dynamic properties */
 function getAllPropertyNames(obj: Event): Object {
