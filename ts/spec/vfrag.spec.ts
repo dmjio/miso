@@ -990,3 +990,285 @@ describe('VFrag — keyed delete all children', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Stress test: mixed keyed children — VFrags of size 1/2/3, VComps with
+// VFrag roots, and plain text nodes — reordered across multiple diffs.
+// ---------------------------------------------------------------------------
+
+describe('VFrag — stress: mixed keyed reordering', () => {
+
+  // Helper: build a DOM-mounting VComp whose root is a VFrag of text nodes.
+  let compIdCounter = 100;
+  function makeFragComp(texts: string[]) {
+    const id = compIdCounter++;
+    return vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>(texts.map(t => vtext<DOMRef>(t)));
+        diff(null, inner, p, drawingContext);
+        return { componentId: id, componentTree: inner };
+      },
+      unmount: (_id) => {},
+    });
+  }
+
+  // Returns text content of all direct children of the first div.
+  function texts(): string[] {
+    const div = document.body.firstChild as Element;
+    return Array.from(div.childNodes).map(n => n.textContent ?? '');
+  }
+
+  // Build keyed items from a spec list.
+  // Each item is: { key, kind: 'frag1'|'frag2'|'frag3'|'comp1'|'comp2'|'comp3'|'text' }
+  type ItemSpec = { key: string; kind: string };
+
+  function buildItem(spec: ItemSpec) {
+    switch (spec.kind) {
+      case 'frag1': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`)]);
+      case 'frag2': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`), vtext(`${spec.key}-b`)]);
+      case 'frag3': return vfragKeyed<DOMRef>(spec.key, [vtext(`${spec.key}-a`), vtext(`${spec.key}-b`), vtext(`${spec.key}-c`)]);
+      case 'comp1': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`])]);
+      case 'comp2': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`, `${spec.key}-y`])]);
+      case 'comp3': return vfragKeyed<DOMRef>(spec.key, [makeFragComp([`${spec.key}-x`, `${spec.key}-y`, `${spec.key}-z`])]);
+      case 'text':  return vtextKeyed(`${spec.key}-t`, spec.key) as any as VText<DOMRef>;
+      default: throw new Error('unknown kind');
+    }
+  }
+
+  function expectedTexts(specs: ItemSpec[]): string[] {
+    return specs.flatMap(s => {
+      switch (s.kind) {
+        case 'frag1': return [`${s.key}-a`];
+        case 'frag2': return [`${s.key}-a`, `${s.key}-b`];
+        case 'frag3': return [`${s.key}-a`, `${s.key}-b`, `${s.key}-c`];
+        case 'comp1': return [`${s.key}-x`];
+        case 'comp2': return [`${s.key}-x`, `${s.key}-y`];
+        case 'comp3': return [`${s.key}-x`, `${s.key}-y`, `${s.key}-z`];
+        case 'text':  return [`${s.key}-t`];
+        default: return [];
+      }
+    });
+  }
+
+  function buildRoot(specs: ItemSpec[]) {
+    return vnode<DOMRef>({ tag: 'div', children: specs.map(buildItem) });
+  }
+
+  // ── Test 1: initial render then full reversal ────────────────────────────
+  test('full reversal of 5 mixed keyed children', () => {
+    const order1: ItemSpec[] = [
+      { key: 'A', kind: 'frag3'  },
+      { key: 'B', kind: 'comp2'  },
+      { key: 'C', kind: 'text'   },
+      { key: 'D', kind: 'frag1'  },
+      { key: 'E', kind: 'comp3'  },
+    ];
+    const v1 = buildRoot(order1);
+    diff(null, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(order1));
+
+    const order2 = [...order1].reverse();
+    const v2 = buildRoot(order2);
+    diff(v1, v2, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(order2));
+  });
+
+  // ── Test 2: 3 shuffles in a row ──────────────────────────────────────────
+  test('three successive shuffles of 6 mixed items', () => {
+    const base: ItemSpec[] = [
+      { key: 'P', kind: 'frag1' },
+      { key: 'Q', kind: 'frag2' },
+      { key: 'R', kind: 'frag3' },
+      { key: 'S', kind: 'comp1' },
+      { key: 'T', kind: 'comp2' },
+      { key: 'U', kind: 'text'  },
+    ];
+
+    const shuffle1: ItemSpec[] = [base[3], base[0], base[5], base[2], base[1], base[4]]; // S P U R Q T
+    const shuffle2: ItemSpec[] = [base[5], base[4], base[3], base[2], base[1], base[0]]; // U T S R Q P
+    const shuffle3: ItemSpec[] = [base[1], base[3], base[0], base[5], base[4], base[2]]; // Q S P U T R
+
+    const v0 = buildRoot(base);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(base));
+
+    const v1 = buildRoot(shuffle1);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle1));
+
+    const v2 = buildRoot(shuffle2);
+    diff(v1, v2, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle2));
+
+    const v3 = buildRoot(shuffle3);
+    diff(v2, v3, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(shuffle3));
+  });
+
+  // ── Test 3: interleave inserts and deletes while reordering ─────────────
+  test('insert, delete and reorder simultaneously', () => {
+    // Initial: A(frag2) B(comp1) C(frag3) D(text)
+    const v0specs: ItemSpec[] = [
+      { key: 'A', kind: 'frag2' },
+      { key: 'B', kind: 'comp1' },
+      { key: 'C', kind: 'frag3' },
+      { key: 'D', kind: 'text'  },
+    ];
+    const v0 = buildRoot(v0specs);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v0specs));
+
+    // Next: C(frag3) NEW-X(frag1) A(frag2) NEW-Y(comp3)  — B and D removed
+    const v1specs: ItemSpec[] = [
+      { key: 'C', kind: 'frag3' },
+      { key: 'X', kind: 'frag1' },
+      { key: 'A', kind: 'frag2' },
+      { key: 'Y', kind: 'comp3' },
+    ];
+    const v1 = buildRoot(v1specs);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v1specs));
+  });
+
+  // ── Test 4: fragment changing size while other items reorder ─────────────
+  test('items reorder while a VFrag grows and another shrinks', () => {
+    // Initial: A(frag1) B(frag3) C(comp2) D(text)
+    const v0specs: ItemSpec[] = [
+      { key: 'A', kind: 'frag1' },
+      { key: 'B', kind: 'frag3' },
+      { key: 'C', kind: 'comp2' },
+      { key: 'D', kind: 'text'  },
+    ];
+    const v0 = buildRoot(v0specs);
+    diff(null, v0, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v0specs));
+
+    // Next: D(text) C(comp2) B(frag1 — shrank) A(frag3 — grew)
+    const v1specs: ItemSpec[] = [
+      { key: 'D', kind: 'text'  },
+      { key: 'C', kind: 'comp2' },
+      { key: 'B', kind: 'frag1' },  // was frag3, now frag1
+      { key: 'A', kind: 'frag3' },  // was frag1, now frag3
+    ];
+    const v1 = buildRoot(v1specs);
+    diff(v0, v1, document.body, drawingContext);
+    expect(texts()).toEqual(expectedTexts(v1specs));
+  });
+
+  // ── Test 5: two VComps with VFrag roots rotate around a plain text node ──
+  test('two VComp+VFrag siblings rotate around a text sentinel', () => {
+    //  Round 1: compA(3)  "mid"  compB(2)
+    //  Round 2: compB(2)  "mid"  compA(3)
+    //  Round 3: "mid"  compA(3)  compB(2)
+
+    const mkA = () => vfragKeyed<DOMRef>('CA', [makeFragComp(['a1', 'a2', 'a3'])]);
+    const mkB = () => vfragKeyed<DOMRef>('CB', [makeFragComp(['b1', 'b2'])]);
+    const mkM = () => vtextKeyed('mid', 'M') as any as VText<DOMRef>;
+
+    const r1 = vnode<DOMRef>({ tag: 'div', children: [mkA(), mkM(), mkB()] });
+    diff(null, r1, document.body, drawingContext);
+    expect(texts()).toEqual(['a1', 'a2', 'a3', 'mid', 'b1', 'b2']);
+
+    const r2 = vnode<DOMRef>({ tag: 'div', children: [mkB(), mkM(), mkA()] });
+    diff(r1, r2, document.body, drawingContext);
+    expect(texts()).toEqual(['b1', 'b2', 'mid', 'a1', 'a2', 'a3']);
+
+    const r3 = vnode<DOMRef>({ tag: 'div', children: [mkM(), mkA(), mkB()] });
+    diff(r2, r3, document.body, drawingContext);
+    expect(texts()).toEqual(['mid', 'a1', 'a2', 'a3', 'b1', 'b2']);
+  });
+
+  // ── Test 6: nested VFrag keyed children reorder inside an outer keyed VFrag
+  test('outer keyed VFrag contains inner keyed VFrags that themselves reorder', () => {
+    // outer["O"] = [ inner["I1"](frag2), inner["I2"](frag3), inner["I3"](frag1) ]
+    const mkOuter = (order: Array<[string, string]>) =>
+      vfragKeyed<DOMRef>('O', order.map(([k, kind]) => buildItem({ key: k, kind })));
+
+    const o1 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I1','frag2'], ['I2','frag3'], ['I3','frag1']]),
+    ]});
+    diff(null, o1, document.body, drawingContext);
+    expect(texts()).toEqual(['I1-a','I1-b','I2-a','I2-b','I2-c','I3-a']);
+
+    // reverse inner order
+    const o2 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I3','frag1'], ['I2','frag3'], ['I1','frag2']]),
+    ]});
+    diff(o1, o2, document.body, drawingContext);
+    expect(texts()).toEqual(['I3-a','I2-a','I2-b','I2-c','I1-a','I1-b']);
+
+    // rotate: I2 I3 I1
+    const o3 = vnode<DOMRef>({ tag: 'div', children: [
+      mkOuter([['I2','frag3'], ['I3','frag1'], ['I1','frag2']]),
+    ]});
+    diff(o2, o3, document.body, drawingContext);
+    expect(texts()).toEqual(['I2-a','I2-b','I2-c','I3-a','I1-a','I1-b']);
+  });
+
+  // ── Test 7: event on a button inside a VComp+VFrag that moves position ───
+  test('button in VComp+VFrag fires click after the comp is repositioned', () => {
+    let clickCount = 0;
+    const makeClickComp = (key: string) => vfragKeyed<DOMRef>(key, [
+      vcomp<DOMRef>({
+        mount: (p) => {
+          const btn = vnode<DOMRef>({
+            tag: 'button',
+            events: {
+              captures: {},
+              bubbles: {
+                click: {
+                  options: { preventDefault: false, stopPropagation: false },
+                  runEvent: () => { clickCount++; },
+                },
+              },
+            },
+          });
+          const inner = vfrag<DOMRef>([btn]);
+          btn.parent = inner as any;
+          diff(null, inner, p, drawingContext);
+          return { componentId: compIdCounter++, componentTree: inner };
+        },
+        unmount: (_id) => {},
+      }),
+    ]);
+
+    const before = vfragKeyed<DOMRef>('BEF', [vtext('before')]);
+    const after  = vfragKeyed<DOMRef>('AFT', [vtext('after')]);
+
+    // Mount into an explicit wrapper so the delegator listener lives on the
+    // wrapper element (not document.body). afterEach clears innerHTML, which
+    // removes the wrapper and its listeners — no cross-test leakage.
+    const wrapper = document.createElement('div');
+    document.body.appendChild(wrapper);
+
+    // Round 1: [ BEF, CLICK_COMP, AFT ]
+    const clickComp1 = makeClickComp('CC');
+    const r1 = vnode<DOMRef>({ tag: 'div', children: [before, clickComp1, after] });
+    diff(null, r1, wrapper as unknown as DOMRef, drawingContext);
+
+    const div = wrapper.firstChild as Element;
+    const events: Array<EventCapture> = [{ name: 'click', capture: false }];
+
+    // Register the delegator ONCE on the wrapper with a mutable root reference.
+    // The delegator must be on an ancestor of r1's DOM node so that
+    // buildTargetToElement produces stack=[div, btn] (length 2), letting
+    // the stack.length>1 branch on the VNode(div) recurse into its VFrag children.
+    let currentRoot: typeof r1 = r1;
+    delegator<DOMRef>(wrapper as unknown as DOMRef, events, (cb) => cb(currentRoot), false, eventContext);
+
+    let btn1 = div.querySelector('button') as HTMLElement;
+    btn1.click();
+    expect(clickCount).toBe(1);
+
+    // Round 2: [ CLICK_COMP, BEF, AFT ]  — comp moves to front
+    const clickComp2 = makeClickComp('CC');
+    const r2 = vnode<DOMRef>({ tag: 'div', children: [clickComp2, before, after] });
+    diff(r1, r2, wrapper as unknown as DOMRef, drawingContext);
+    currentRoot = r2;
+
+    let btn2 = div.querySelector('button') as HTMLElement;
+    btn2.click();
+    expect(clickCount).toBe(2);
+  });
+
+});
