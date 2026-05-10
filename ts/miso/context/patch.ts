@@ -5,7 +5,6 @@ import {
   CSS,
   ComponentContext,
   VTree,
-  VTreeType,
   PATCH,
   CreateTextNode,
   CreateElement,
@@ -89,15 +88,7 @@ export const componentContext : ComponentContext = {
 export const patchDrawingContext : DrawingContext<NodeId> = {
   nextSibling : (node: VTree<NodeId>) => {
     if (node.nextSibling) {
-      switch (node.nextSibling.type) {
-        case VTreeType.VComp:
-          const drilled = drill (node.nextSibling);
-          return drilled ? drilled : null;
-        case VTreeType.VFrag:
-          return getFirstDOMRef(node.nextSibling);
-        default:
-          return node.nextSibling.domRef as NodeId;
-      }
+      return getFirstDOMRef(node.nextSibling);
     }
   },
   createTextNode : (value : string) => {

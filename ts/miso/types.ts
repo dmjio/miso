@@ -26,7 +26,7 @@ export enum OP {
 export type VComp<T> = {
   type: VTreeType.VComp;
   child: VTree<T>;
-  // used w/ drill to get domRef.
+  // set post-mounting via getFirstDOMRef
   componentId?: ComponentId;
   // ^ set post-mounting
   key: string;
