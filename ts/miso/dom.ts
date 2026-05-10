@@ -240,7 +240,7 @@ function diffProps<T extends Object>(cProps: Props, nProps: Props, node: T, isSv
   /* add remaining */
   for (const n in nProps) {
     /* Only add new properties, skip (continue) if they already exist in current property map */
-    if (cProps && cProps[n]) continue;
+    if (cProps && n in cProps) continue;
     newProp = nProps[n];
     if (isSvg) {
       if (n === 'href') {
