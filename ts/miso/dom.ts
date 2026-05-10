@@ -480,7 +480,8 @@ function syncChildren<T>(os: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, co
         and now we happy path */
     else if (oFirst.key === nLast.key) {
       /* insertAfter */
-      insertBefore(parent, oFirst, oLast.nextSibling, context);
+      const afterOLast = (getLastDOMRef(oLast) as unknown as Node).nextSibling as unknown as T | null;
+      forEachDOMRef(oFirst, ref => context.insertBefore(parent, ref, afterOLast));
       /* swap positions in old vdom */
       os.splice(oldLastIndex, 0, os.splice(oldFirstIndex, 1)[0]);
       diff(os[oldLastIndex--], ns[newLastIndex--], parent, context);
