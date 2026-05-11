@@ -393,7 +393,7 @@ function insertBefore<T>(parent: T, n: VTree<T>, o: VTree<T> | null, context: Dr
 
 function swapDOMRef<T>(oLast: VTree<T>, oFirst: VTree<T>, parent: T, context: DrawingContext<T>): void {
   // dmj: Optimization to use 'swapDOMRefs' if the two nodes being operated on are either VNode or VText.
-  if ((oLast.type === VTreeType.VNode || oLast.type === VTreeType.VText) && ((oFirst.type === VTreeType.VNode || oFirst.type === VTreeType.VText))) {
+  if ((oLast.type === VTreeType.VNode || oLast.type === VTreeType.VText) && (oFirst.type === VTreeType.VNode || oFirst.type === VTreeType.VText)) {
     context.swapDOMRefs (getFirstDOMRef(oLast), getFirstDOMRef(oFirst), parent);
     return;
   }
