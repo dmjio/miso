@@ -287,7 +287,8 @@ function diff(c, n, parent, context) {
     replace(c, n, parent, context);
   } else if (c.type === 3 /* VFrag */ && n.type === 3 /* VFrag */) {
     if (n.key === c.key) {
-      diffChildren(c.children, n.children, parent, context);
+      const endAnchor = c.children.length > 0 ? getLastDOMRef(c).nextSibling : null;
+      diffChildren(c.children, n.children, parent, context, endAnchor);
     } else {
       replace(c, n, parent, context);
     }
@@ -325,7 +326,19 @@ function replace(c, n, parent, context) {
       callBeforeDestroyedRecursive(c);
       break;
   }
-  createElement(parent, 1 /* REPLACE */, getFirstDOMRef(c), n, context);
+  const firstRef = getFirstDOMRef(c);
+  const lastRef = getLastDOMRef(c);
+  if (firstRef !== lastRef) {
+    const anchor = lastRef.nextSibling;
+    forEachDOMRef(c, (ref) => context.removeChild(parent, ref));
+    if (anchor) {
+      createElement(parent, 2 /* INSERT_BEFORE */, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+  } else {
+    createElement(parent, 1 /* REPLACE */, firstRef, n, context);
+  }
   switch (c.type) {
     case 2 /* VText */:
       break;
@@ -511,12 +524,22 @@ function shouldSync(cs, ns) {
   }
   return true;
 }
-function diffChildren(cs, ns, parent, context) {
+function diffChildren(cs, ns, parent, context, endAnchor = null) {
   if (shouldSync(cs, ns)) {
     syncChildren(cs, ns, parent, context);
   } else {
-    for (let i = 0;i < Math.max(ns.length, cs.length); i++)
-      diff(cs[i], ns[i], parent, context);
+    for (let i = 0;i < Math.max(ns.length, cs.length); i++) {
+      const c = cs[i], n = ns[i];
+      if (!c && n) {
+        if (endAnchor) {
+          createElement(parent, 2 /* INSERT_BEFORE */, endAnchor, n, context);
+        } else {
+          create(n, parent, context);
+        }
+      } else {
+        diff(c, n, parent, context);
+      }
+    }
   }
 }
 function populateDomRef(c, context) {

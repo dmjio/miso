@@ -20,7 +20,12 @@ export function diff<T>(c: VTree<T>, n: VTree<T>, parent: T, context: DrawingCon
     }
     else if (c.type === VTreeType.VFrag && n.type === VTreeType.VFrag) {
         if (n.key === c.key) {
-          diffChildren(c.children, n.children, parent, context);
+          // Snapshot the DOM anchor *before* any mutations so growing the VFrag
+          // inserts new nodes at the correct position (before the following sibling).
+          const endAnchor = c.children.length > 0
+            ? (getLastDOMRef(c) as unknown as Node).nextSibling as unknown as T | null
+            : null;
+          diffChildren(c.children, n.children, parent, context, endAnchor);
         } else {
           replace(c, n, parent, context);
         }
@@ -67,7 +72,22 @@ function replace<T>(c: VTree<T>, n: VTree<T>, parent: T, context : DrawingContex
           break;
   }
 
-  createElement(parent, OP.REPLACE, getFirstDOMRef(c), n, context);
+  // For VComp whose child spans multiple DOM nodes (e.g. VFrag child), we must
+  // remove ALL old DOM refs, not just the first one, before inserting new nodes.
+  const firstRef = getFirstDOMRef(c);
+  const lastRef  = getLastDOMRef(c);
+  if ((firstRef as unknown as Node) !== (lastRef as unknown as Node)) {
+    // Multi-DOM node: anchor-based insert-then-remove
+    const anchor = (lastRef as unknown as Node).nextSibling as unknown as T | null;
+    forEachDOMRef(c, ref => context.removeChild(parent, ref));
+    if (anchor) {
+      createElement(parent, OP.INSERT_BEFORE, anchor, n, context);
+    } else {
+      create(n, parent, context);
+    }
+  } else {
+    createElement(parent, OP.REPLACE, firstRef, n, context);
+  }
 
   // step 3: call destroyed hooks, call created hooks
   switch (c.type) {
@@ -275,12 +295,24 @@ function shouldSync<T> (cs: Array<VTree<T>>, ns: Array<VTree<T>>) {
     return true;
 }
 
-function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>): void {
+function diffChildren<T>(cs: Array<VTree<T>>, ns: Array<VTree<T>>, parent: T, context: DrawingContext<T>, endAnchor: T | null = null): void {
   if (shouldSync(cs,ns)) {
     syncChildren(cs, ns, parent, context);
   } else {
-    for (let i = 0; i < Math.max (ns.length, cs.length); i++)
-      diff(cs[i], ns[i], parent, context);
+    for (let i = 0; i < Math.max(ns.length, cs.length); i++) {
+      const c = cs[i], n = ns[i];
+      if (!c && n) {
+        // When growing a VFrag, use the stored endAnchor so new nodes land in
+        // the right position (before the VFrag's following DOM sibling).
+        if (endAnchor) {
+          createElement(parent, OP.INSERT_BEFORE, endAnchor, n, context);
+        } else {
+          create(n, parent, context);
+        }
+      } else {
+        diff(c, n, parent, context);
+      }
+    }
   }
 }
 
