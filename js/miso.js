@@ -1136,7 +1136,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
         }
         if (!walk(logLevel, child, node, context, drawingContext2))
           return false;
-        node = node.nextSibling;
+        node = getLastDOMRef(child).nextSibling;
       }
       break;
     case 2 /* VText */:
@@ -1154,16 +1154,17 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
       vtree.domRef = node;
       vtree.children = collapseSiblingTextNodes(vtree.children);
       callCreated(node, vtree, drawingContext2);
+      let domCursor = node.firstChild;
       for (var i = 0;i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
-        const domChild = node.childNodes[i];
-        if (!domChild) {
-          diagnoseError(logLevel, vdomChild, domChild);
+        if (!domCursor) {
+          diagnoseError(logLevel, vdomChild, null);
           return false;
         }
-        if (!walk(logLevel, vdomChild, domChild, context, drawingContext2)) {
+        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2)) {
           return false;
         }
+        domCursor = getLastDOMRef(vdomChild).nextSibling;
       }
       break;
   }

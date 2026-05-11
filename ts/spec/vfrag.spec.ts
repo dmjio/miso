@@ -612,6 +612,94 @@ describe('VFrag — hydration', () => {
     expect(result).toBe(false);
   });
 
+  // Bug H1 regression: nested VFrag — inner VFrag spans 2 DOM nodes but
+  // the outer loop must advance past both, not just 1.
+  test('hydrates nested VFrag (Bug H1 regression)', () => {
+    document.body.appendChild(document.createTextNode('a'));
+    document.body.appendChild(document.createTextNode('b'));
+    document.body.appendChild(document.createTextNode('c'));
+
+    // outer VFrag [ innerVFrag[a, b], VText(c) ]
+    const inner = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    const outer = vfrag<DOMRef>([inner, vtext('c')]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((inner.children[0] as VText<DOMRef>).domRef.textContent).toBe('a');
+    expect((inner.children[1] as VText<DOMRef>).domRef.textContent).toBe('b');
+    expect((outer.children[1] as VText<DOMRef>).domRef.textContent).toBe('c');
+  });
+
+  // Bug H1 regression: VComp with VFrag root inside an outer VFrag —
+  // the VComp occupies 2 DOM nodes but outer loop must advance past both.
+  test('hydrates VFrag containing VComp with VFrag root (Bug H1 regression)', () => {
+    document.body.appendChild(document.createTextNode('x'));
+    document.body.appendChild(document.createTextNode('y'));
+    document.body.appendChild(document.createTextNode('z'));
+
+    let innerFrag: any;
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        innerFrag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        return { componentId: 60 as any, componentTree: innerFrag };
+      },
+      unmount: () => {},
+    });
+    const outer = vfrag<DOMRef>([comp, vtext('z')]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('x');
+    expect((innerFrag.children[1] as VText<DOMRef>).domRef.textContent).toBe('y');
+    expect((outer.children[1] as VText<DOMRef>).domRef.textContent).toBe('z');
+  });
+
+  // Bug H2 regression: VNode with a VFrag child — VFrag spans 2 childNodes
+  // but the walk used childNodes[i] by vtree index, skipping nodes.
+  test('hydrates VNode whose children include a VFrag (Bug H2 regression)', () => {
+    const div = document.createElement('div');
+    div.appendChild(document.createElement('span'));
+    div.appendChild(document.createElement('em'));
+    div.appendChild(document.createElement('p'));
+    document.body.appendChild(div);
+
+    // VNode(div) [ VFrag[span, em], p ]
+    const innerFrag = vfrag<DOMRef>([
+      vnode<DOMRef>({ tag: 'span' }),
+      vnode<DOMRef>({ tag: 'em' }),
+    ]);
+    const pNode = vnode<DOMRef>({ tag: 'p' });
+    const vtree = vnode<DOMRef>({ tag: 'div', children: [innerFrag, pNode] });
+    const result = hydrate(false, document.body, vtree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((innerFrag.children[0] as VNode<DOMRef>).domRef).toBe(div.childNodes[0] as unknown as DOMRef);
+    expect((innerFrag.children[1] as VNode<DOMRef>).domRef).toBe(div.childNodes[1] as unknown as DOMRef);
+    expect(pNode.domRef).toBe(div.childNodes[2] as unknown as DOMRef);
+  });
+
+  // Bug H2 regression: VNode with VComp(VFrag root) child followed by sibling
+  test('hydrates VNode with VComp(VFrag root) child followed by sibling (Bug H2 regression)', () => {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode('p'));
+    div.appendChild(document.createTextNode('q'));
+    div.appendChild(document.createElement('hr'));
+    document.body.appendChild(div);
+
+    let innerFrag: any;
+    const comp = vcomp<DOMRef>({
+      mount: (_p) => {
+        innerFrag = vfrag<DOMRef>([vtext('p'), vtext('q')]);
+        return { componentId: 61 as any, componentTree: innerFrag };
+      },
+      unmount: () => {},
+    });
+    const hr = vnode<DOMRef>({ tag: 'hr' });
+    const vtree = vnode<DOMRef>({ tag: 'div', children: [comp, hr] });
+    const result = hydrate(false, document.body, vtree, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('p');
+    expect((innerFrag.children[1] as VText<DOMRef>).domRef.textContent).toBe('q');
+    expect(hr.domRef).toBe(div.childNodes[2] as unknown as DOMRef);
+  });
+
 });
 
 // ---------------------------------------------------------------------------

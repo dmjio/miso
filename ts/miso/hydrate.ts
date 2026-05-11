@@ -1,4 +1,5 @@
 import { callCreated } from './dom';
+import { getLastDOMRef } from './util';
 import { Mount, DrawingContext, HydrationContext, VTree, VText, DOMRef, VTreeType } from './types';
 
 /* prerendering / hydration / isomorphic support */
@@ -60,14 +61,16 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
        }
        break;
     case VTreeType.VFrag:
-      // A fragment maps to consecutive sibling DOM nodes, one per child
+      // A fragment maps to consecutive sibling DOM nodes, one per child.
+      // Each child may occupy >1 DOM node (nested VFrag, VComp with VFrag root),
+      // so advance via getLastDOMRef after the walk rather than +1.
       for (const child of vtree.children) {
         if (!node) {
           diagnoseError(logLevel, child, null);
           return false;
         }
         if (!walk(logLevel, child, node, context, drawingContext)) return false;
-        node = node.nextSibling as Node;
+        node = (getLastDOMRef(child) as unknown as Node).nextSibling as Node;
       }
       break;
     case VTreeType.VText:
@@ -87,16 +90,19 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
       // Fire onCreated events as though the elements had just been created.
       callCreated(node, vtree, drawingContext);
 
+      // Use a DOM cursor rather than a numeric index: a VFrag child spans
+      // multiple childNodes so the vtree index and DOM index diverge.
+      let domCursor: Node = node.firstChild;
       for (var i = 0; i < vtree.children.length; i++) {
         const vdomChild = vtree.children[i];
-        const domChild = node.childNodes[i];
-        if (!domChild) {
-          diagnoseError(logLevel, vdomChild, domChild);
+        if (!domCursor) {
+          diagnoseError(logLevel, vdomChild, null);
           return false;
         }
-        if (!walk(logLevel, vdomChild, domChild, context, drawingContext)) {
+        if (!walk(logLevel, vdomChild, domCursor, context, drawingContext)) {
           return false;
         }
+        domCursor = (getLastDOMRef(vdomChild) as unknown as Node).nextSibling as Node;
       }
       break;
   }
