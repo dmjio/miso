@@ -613,6 +613,10 @@ function insertBefore(parent, n, o, context) {
   forEachDOMRef(n, (ref) => context.insertBefore(parent, ref, anchor));
 }
 function swapDOMRef(oLast, oFirst, parent, context) {
+  if ((oLast.type === 1 /* VNode */ || oLast.type === 2 /* VText */) && (oFirst.type === 1 /* VNode */ || oFirst.type === 2 /* VText */)) {
+    context.swapDOMRefs(getFirstDOMRef(oLast), getFirstDOMRef(oFirst), parent);
+    return;
+  }
   const tmp = getLastDOMRef(oLast).nextSibling;
   const anchor = getFirstDOMRef(oFirst);
   forEachDOMRef(oLast, (ref) => context.insertBefore(parent, ref, anchor));
