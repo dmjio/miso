@@ -391,6 +391,57 @@ describe('VFrag — DOM diffing (replace with other types)', () => {
     expect(document.body.textContent).toBe('hello');
   });
 
+  test('replaces VText with VFrag', () => {
+    const c = vtext<DOMRef>('hello');
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+
+    const n = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    diff<DOMRef>(c, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes[0].textContent).toBe('x');
+    expect(document.body.childNodes[1].textContent).toBe('y');
+  });
+
+  test('replaces VComp (VNode root) with VFrag', () => {
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'em' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 50 as any, componentTree: n };
+      },
+      unmount: () => {},
+    });
+    diff<DOMRef>(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('em');
+
+    const n = vfrag<DOMRef>([vtext('a'), vtext('b'), vtext('c')]);
+    diff<DOMRef>(comp, n, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3);
+    expect(document.body.childNodes[0].textContent).toBe('a');
+    expect(document.body.childNodes[1].textContent).toBe('b');
+    expect(document.body.childNodes[2].textContent).toBe('c');
+  });
+
+  test('replaces VFrag with VComp (VNode root)', () => {
+    const c = vfrag<DOMRef>([vtext('a'), vtext('b')]);
+    diff<DOMRef>(null, c, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(2);
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const n = vnode<DOMRef>({ tag: 'span' });
+        diff(null, n, p, drawingContext);
+        return { componentId: 51 as any, componentTree: n };
+      },
+      unmount: () => {},
+    });
+    diff<DOMRef>(c, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('span');
+  });
+
   test('replaces VFrag with VNode preserves position when followed by a sibling', () => {
     // [ frag[a,b], span ] -> [ div, span ]
     // Without the anchor fix, div would be appended after span.
