@@ -8,11 +8,10 @@
 {-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
-#if __GLASGOW_HASKELL__ <= 865
 {-# LANGUAGE UndecidableInstances       #-}
-#endif
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 -----------------------------------------------------------------------------
@@ -83,8 +82,13 @@ module Miso.JSON
   , defaultOptions
   -- * Generics
   , GToJSON (..)
-  , genericToJSON
+  , GToFields (..)
+  , GToJSONSum (..)
+  , Fields (..)
   , GFromJSON (..)
+  , GFromFields (..)
+  , GFromJSONSum (..)
+  , genericToJSON
   , genericParseJSON
   -- * Modifiers
   , camelTo2
@@ -162,7 +166,7 @@ class ToJSON a where
   toJSON = genericToJSON defaultOptions
 ----------------------------------------------------------------------------
 genericToJSON :: (Generic a, GToJSON (Rep a)) => Options -> a -> Value
-genericToJSON opts = object . gToJSON opts [] . from
+genericToJSON opts = gToJSON opts . from
 ----------------------------------------------------------------------------
 data Options
   = Options
@@ -181,34 +185,108 @@ camelTo2 c = Prelude.map toLower . go2 . go1
           go2 (l:u:xs) | isLower l && isUpper u = l : c : u : go2 xs
           go2 (x:xs) = x : go2 xs
 ----------------------------------------------------------------------------
+-- | Intermediate representation of a constructor's fields after encoding.
+--
+-- 'RecordFields' is produced when every selector has a name (record syntax);
+-- 'PositionalFields' is produced for all other constructors.
+data Fields
+  = RecordFields   [(MisoString, Value)]
+  -- ^ Named fields (record constructor)
+  | PositionalFields [Value]
+  -- ^ Positional fields (non-record constructor)
+----------------------------------------------------------------------------
+combineFields :: Fields -> Fields -> Fields
+combineFields (RecordFields   xs) (RecordFields   ys) = RecordFields   (xs <> ys)
+combineFields (PositionalFields xs) (PositionalFields ys) = PositionalFields (xs <> ys)
+combineFields _ _ = PositionalFields []  -- mixed; shouldn't occur in valid GHC Generics
+----------------------------------------------------------------------------
+-- | Collect a constructor's fields into 'Fields'.
+class GToFields (f :: Type -> Type) where
+  gToFields :: Options -> f a -> Fields
+----------------------------------------------------------------------------
+instance GToFields U1 where
+  gToFields _ _ = PositionalFields []
+----------------------------------------------------------------------------
+instance GToFields V1 where
+  gToFields _ v = v `seq` PositionalFields []
+----------------------------------------------------------------------------
+instance (GToFields f, GToFields g) => GToFields (f :*: g) where
+  gToFields opts (x :*: y) = combineFields (gToFields opts x) (gToFields opts y)
+----------------------------------------------------------------------------
+instance (Selector m, GToFields f) => GToFields (S1 m f) where
+  gToFields opts s@(M1 x) =
+    let n = selName s
+    in if null n
+       then gToFields opts x
+       else case gToFields opts x of
+              PositionalFields [v] -> RecordFields [(ms (fieldLabelModifier opts n), v)]
+              fs                   -> fs  -- shouldn't happen
+----------------------------------------------------------------------------
+instance ToJSON a => GToFields (K1 r a) where
+  gToFields _ (K1 x) = PositionalFields [toJSON x]
+----------------------------------------------------------------------------
+-- | Encode a single-constructor (product) type. No tag is added.
+--
+-- * Record:       @{"field1": v, ...}@
+-- * 0 fields:     @[]@
+-- * 1 field:      the value itself (unwrapped, like a newtype)
+-- * 2+ fields:    @[v1, v2, ...]@
+encodeProduct :: Fields -> Value
+encodeProduct = \case
+  RecordFields   kvs  -> Object (M.fromList kvs)
+  PositionalFields []  -> Array []
+  PositionalFields [v] -> v
+  PositionalFields vs  -> Array vs
+----------------------------------------------------------------------------
+-- | Encode a sum constructor. Adds a @\"tag\"@ key.
+--
+-- * Record:       @{\"tag\": \"C\", \"field1\": v, ...}@
+-- * 0 fields:     @{\"tag\": \"C\"}@
+-- * 1 field:      @{\"tag\": \"C\", \"contents\": v}@
+-- * 2+ fields:    @{\"tag\": \"C\", \"contents\": [v1, v2, ...]}@
+encodeTaggedCon :: MisoString -> Fields -> Value
+encodeTaggedCon tag = \case
+  RecordFields   kvs  -> Object (M.fromList (("tag", String tag) : kvs))
+  PositionalFields []  -> Object (M.singleton "tag" (String tag))
+  PositionalFields [v] -> object [("tag", String tag), ("contents", v)]
+  PositionalFields vs  -> object [("tag", String tag), ("contents", Array vs)]
+----------------------------------------------------------------------------
+-- | Top-level generic encoding class.
+--
+-- Encoding rules match aeson's default @TaggedObject \"tag\" \"contents\"@
+-- (with @allNullaryToStringTag = False@):
+--
+-- * Single-constructor record:          @{\"field1\": v1, ...}@
+-- * Single-constructor positional:      @v@ (1 field), @[v1,v2,...]@ (n>1), @[]@ (0)
+-- * Sum record constructor:             @{\"tag\": \"C\", \"field1\": v1, ...}@
+-- * Sum nullary constructor:            @{\"tag\": \"C\"}@
+-- * Sum positional constructor:         @{\"tag\": \"C\", \"contents\": v}@ or @[...]@
 class GToJSON (f :: Type -> Type) where
-  gToJSON :: Options -> [Pair] -> f a -> [Pair]
+  gToJSON :: Options -> f a -> Value
 ----------------------------------------------------------------------------
-instance GToJSON a => GToJSON (D1 i a) where
-  gToJSON opts acc (M1 x) = gToJSON opts acc x
+instance GToJSONRep f => GToJSON (D1 m f) where
+  gToJSON opts (M1 x) = gToJSONRep opts x
 ----------------------------------------------------------------------------
-instance GToJSON a => GToJSON (C1 i a) where
-  gToJSON opts acc (M1 x) = gToJSON opts acc x
+-- Internal: dispatches single-constructor vs sum at the child of D1.
+class GToJSONRep (f :: Type -> Type) where
+  gToJSONRep :: Options -> f a -> Value
+-- Single constructor: no tag
+instance GToFields f => GToJSONRep (C1 m f) where
+  gToJSONRep opts (M1 x) = encodeProduct (gToFields opts x)
+-- Sum: each branch tagged
+instance (GToJSONSum f, GToJSONSum g) => GToJSONRep (f :+: g) where
+  gToJSONRep opts x = gToJSONSum opts x
 ----------------------------------------------------------------------------
-instance (GToJSON a, GToJSON b) => GToJSON (a :*: b) where
-  gToJSON opts acc (x :*: y) = gToJSON opts acc x <> gToJSON opts acc y
+-- | Encode sum constructors with a @\"tag\"@ key.
+class GToJSONSum (f :: Type -> Type) where
+  gToJSONSum :: Options -> f a -> Value
 ----------------------------------------------------------------------------
-instance (TypeError ('Text "Sum types unsupported"), GToJSON a, GToJSON b) => GToJSON (a :+: b) where
-  gToJSON opts acc = \case
-    L1 x -> gToJSON opts acc x
-    R1 x -> gToJSON opts acc x
+instance (GToJSONSum f, GToJSONSum g) => GToJSONSum (f :+: g) where
+  gToJSONSum opts (L1 x) = gToJSONSum opts x
+  gToJSONSum opts (R1 x) = gToJSONSum opts x
 ----------------------------------------------------------------------------
-instance GToJSON U1 where
-  gToJSON _ acc U1 = acc
-----------------------------------------------------------------------------
-instance GToJSON V1 where
-  gToJSON _ acc _ = acc
-----------------------------------------------------------------------------
-instance (Selector s, ToJSON a) => GToJSON (S1 s (K1 i a)) where
-  gToJSON opts acc (M1 (K1 x)) = ms field .= toJSON x : acc
-    where
-      field :: String
-      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
+instance (Constructor m, GToFields f) => GToJSONSum (C1 m f) where
+  gToJSONSum opts c@(M1 x) = encodeTaggedCon (ms (conName c)) (gToFields opts x)
 ----------------------------------------------------------------------------
 instance ToJSON () where
   toJSON () = Array []
@@ -314,44 +392,127 @@ class FromJSON a where
   default parseJSON :: (Generic a, GFromJSON (Rep a)) => Value -> Parser a
   parseJSON = genericParseJSON defaultOptions
 ----------------------------------------------------------------------------
+-- | Top-level generic decoding class. Symmetric with 'GToJSON'.
+--
+-- Decoding rules match aeson's default @TaggedObject \"tag\" \"contents\"@
+-- (with @allNullaryToStringTag = False@).
 class GFromJSON (f :: Type -> Type) where
   gParseJSON :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
 genericParseJSON :: (Generic a, GFromJSON (Rep a)) => Options -> Value -> Parser a
 genericParseJSON opts value = to <$> gParseJSON opts value
 ----------------------------------------------------------------------------
-instance GFromJSON a => GFromJSON (D1 i a) where
-  gParseJSON opts x = M1 <$> gParseJSON opts x
+instance GFromJSONRep f => GFromJSON (D1 m f) where
+  gParseJSON opts v = M1 <$> gFromJSONRep opts v
 ----------------------------------------------------------------------------
-instance GFromJSON a => GFromJSON (C1 i a) where
-  gParseJSON opts x = M1 <$> gParseJSON opts x
+-- Internal: dispatches single-constructor vs sum at the child of D1.
+class GFromJSONRep (f :: Type -> Type) where
+  gFromJSONRep :: Options -> Value -> Parser (f a)
+-- Single constructor
+instance GFromFields f => GFromJSONRep (C1 m f) where
+  gFromJSONRep opts v = M1 <$> parseProd opts v
+-- Sum type
+instance (GFromJSONSum f, GFromJSONSum g) => GFromJSONRep (f :+: g) where
+  gFromJSONRep opts v = gFromJSONSum opts v
 ----------------------------------------------------------------------------
-instance (GFromJSON a, GFromJSON b) => GFromJSON (a :*: b) where
-  gParseJSON opts x = (:*:) <$> gParseJSON opts x <*> gParseJSON opts x
+-- | Parse sum constructors, trying each branch left-to-right.
+class GFromJSONSum (f :: Type -> Type) where
+  gFromJSONSum :: Options -> Value -> Parser (f a)
 ----------------------------------------------------------------------------
-instance (TypeError ('Text "Sum types unsupported"), GFromJSON a, GFromJSON b) => GFromJSON (a :+: b) where
-  gParseJSON opts x = (L1 <$> gParseJSON opts x) <|> (R1 <$> gParseJSON opts x)
+instance (GFromJSONSum f, GFromJSONSum g) => GFromJSONSum (f :+: g) where
+  gFromJSONSum opts v = (L1 <$> gFromJSONSum opts v) <|> (R1 <$> gFromJSONSum opts v)
 ----------------------------------------------------------------------------
-instance GFromJSON U1 where
-  gParseJSON _ _ = pure U1
+instance (Constructor m, GFromFields f) => GFromJSONSum (C1 m f) where
+  gFromJSONSum opts v = M1 <$> parseTaggedCon tag opts v
+    where tag = ms (conName (undefined :: C1 m f a))
 ----------------------------------------------------------------------------
-instance {-# OVERLAPPABLE #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i a)) where
-  gParseJSON opts = \case
-    Object o ->
-      M1 . K1 <$> o .: ms field
-    v ->
-      M1 . K1 <$> parseJSON v
-    where
-      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i a) ())
+-- | Parse a single-constructor (product) type from a 'Value'.
+parseProd :: forall f a. GFromFields f => Options -> Value -> Parser (f a)
+parseProd opts v
+  | gIsRecord @f = withObject "generic record" (gFromRecord opts) v
+  | otherwise    = case v of
+      Array vs -> gFromPositional opts vs
+      _        -> gFromPositional opts [v]  -- single-field shorthand
 ----------------------------------------------------------------------------
-instance {-# OVERLAPPING #-} (Selector s, FromJSON a) => GFromJSON (S1 s (K1 i (Maybe a))) where
-  gParseJSON opts = \case
-    Object o ->
-      M1 . K1 <$> o .:? ms field
-    v ->
-      M1 . K1 <$> parseJSON v
-    where
-      field = fieldLabelModifier opts $ selName (undefined :: S1 s (K1 i (Maybe a)) ())
+-- | Parse a tagged sum constructor from an Object envelope.
+parseTaggedCon :: forall f a. GFromFields f => MisoString -> Options -> Value -> Parser (f a)
+parseTaggedCon tag opts = \case
+  Object o -> do
+    t <- case M.lookup "tag" o of
+           Just (String t) -> pure t
+           Just _          -> pfail "\"tag\" field is not a string"
+           Nothing         -> pfail "missing \"tag\" field"
+    if t /= tag
+      then pfail ("expected tag " <> ms (show tag) <> ", got " <> ms (show t))
+      else if gIsRecord @f
+           then gFromRecord opts o
+           else case M.lookup "contents" o of
+                  Just (Array vs) -> gFromPositional opts vs
+                  Just single     -> gFromPositional opts [single]
+                  Nothing         -> gFromPositional opts []
+  _ -> pfail ("expected JSON object for constructor " <> ms (show tag))
+----------------------------------------------------------------------------
+-- | Field-level decoder. Knows whether the constructor is a record and
+-- how many fields it has; can decode from a JSON 'Object' (record mode)
+-- or a positional '[Value]' list.
+class GFromFields (f :: Type -> Type) where
+  -- | Is this a record constructor (all selectors have names)?
+  gIsRecord      :: Bool
+  -- | Number of fields.
+  gFieldCount    :: Int
+  -- | Decode from a JSON 'Object' (record mode: look up by field name).
+  gFromRecord    :: Options -> Object -> Parser (f a)
+  -- | Decode from a positional list of 'Value'.
+  gFromPositional :: Options -> [Value] -> Parser (f a)
+----------------------------------------------------------------------------
+instance GFromFields U1 where
+  gIsRecord       = False
+  gFieldCount     = 0
+  gFromRecord   _ _ = pure U1
+  gFromPositional _ _ = pure U1
+----------------------------------------------------------------------------
+instance GFromFields V1 where
+  gIsRecord       = False
+  gFieldCount     = 0
+  gFromRecord   _ _ = pfail "V1"
+  gFromPositional _ _ = pfail "V1"
+----------------------------------------------------------------------------
+instance (GFromFields f, GFromFields g) => GFromFields (f :*: g) where
+  gIsRecord       = gIsRecord @f
+  gFieldCount     = gFieldCount @f + gFieldCount @g
+  gFromRecord opts o =
+    (:*:) <$> gFromRecord opts o
+          <*> gFromRecord opts o
+  gFromPositional opts vs =
+    let n = gFieldCount @f
+    in (:*:) <$> gFromPositional opts (take n vs)
+             <*> gFromPositional opts (drop n vs)
+----------------------------------------------------------------------------
+-- | Selector with a 'Maybe' field: uses '.:?' so missing keys decode as Nothing.
+instance {-# OVERLAPPING #-} (Selector m, FromJSON a)
+    => GFromFields (S1 m (K1 r (Maybe a))) where
+  gIsRecord       = not (null name)
+    where name = selName (undefined :: S1 m (K1 r (Maybe a)) ())
+  gFieldCount     = 1
+  gFromRecord opts o =
+    M1 . K1 <$> o .:? ms (fieldLabelModifier opts
+                    (selName (undefined :: S1 m (K1 r (Maybe a)) ())))
+  gFromPositional _ vs = case vs of
+    (v:_) -> M1 . K1 <$> parseJSON v
+    []    -> pure (M1 (K1 Nothing))
+----------------------------------------------------------------------------
+-- | General selector.
+instance {-# OVERLAPPABLE #-} (Selector m, FromJSON a)
+    => GFromFields (S1 m (K1 r a)) where
+  gIsRecord       = not (null name)
+    where name = selName (undefined :: S1 m (K1 r a) ())
+  gFieldCount     = 1
+  gFromRecord opts o =
+    M1 . K1 <$> o .: ms (fieldLabelModifier opts
+                    (selName (undefined :: S1 m (K1 r a) ())))
+  gFromPositional _ vs = case vs of
+    (v:_) -> M1 . K1 <$> parseJSON v
+    []    -> pfail "gFromPositional: unexpected end of fields"
 ----------------------------------------------------------------------------
 instance FromJSON Value where
   parseJSON = pure
