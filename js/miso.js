@@ -1092,6 +1092,11 @@ function collapseSiblingTextNodes(vs) {
     }
     adjusted[++ax] = vs[ix];
   }
+  for (const v of adjusted) {
+    if (v.type === 3 /* VFrag */) {
+      v.children = collapseSiblingTextNodes(v.children);
+    }
+  }
   return adjusted;
 }
 function hydrate(logLevel, mountPoint, vtree, context, drawingContext2) {
@@ -1117,6 +1122,9 @@ function diagnoseError(logLevel, vtree, node) {
   if (logLevel)
     console.warn("[DEBUG_HYDRATE] VTree differed from node", vtree, node);
 }
+function nextAfter(tree) {
+  return getLastDOMRef(tree).nextSibling;
+}
 function walk(logLevel, vtree, node, context, drawingContext2) {
   switch (vtree.type) {
     case 0 /* VComp */:
@@ -1129,6 +1137,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
       }
       break;
     case 3 /* VFrag */:
+      vtree.children = collapseSiblingTextNodes(vtree.children);
       for (const child of vtree.children) {
         if (!node) {
           diagnoseError(logLevel, child, null);
@@ -1136,7 +1145,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
         }
         if (!walk(logLevel, child, node, context, drawingContext2))
           return false;
-        node = getLastDOMRef(child).nextSibling;
+        node = nextAfter(child);
       }
       break;
     case 2 /* VText */:
@@ -1164,7 +1173,7 @@ function walk(logLevel, vtree, node, context, drawingContext2) {
         if (!walk(logLevel, vdomChild, domCursor, context, drawingContext2)) {
           return false;
         }
-        domCursor = getLastDOMRef(vdomChild).nextSibling;
+        domCursor = nextAfter(vdomChild);
       }
       break;
   }

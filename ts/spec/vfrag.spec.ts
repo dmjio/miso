@@ -629,14 +629,14 @@ describe('VFrag — empty fragment edge cases', () => {
 describe('VFrag — hydration', () => {
 
   test('hydrates fragment of text nodes from pre-rendered DOM', () => {
-    document.body.appendChild(document.createTextNode('hello'));
-    document.body.appendChild(document.createTextNode(' world'));
+    // SSR renders VFrag [VText "hello", VText " world"] as "hello world" → one text node.
+    document.body.appendChild(document.createTextNode('hello world'));
 
     const frag = vfrag<DOMRef>([vtext('hello'), vtext(' world')]);
     const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('hello');
-    expect((frag.children[1] as VText<DOMRef>).domRef.textContent).toBe(' world');
+    // collapseSiblingTextNodes merges children; [0] owns the single DOM text node.
+    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('hello world');
   });
 
   test('hydrates fragment of element nodes', () => {
@@ -663,44 +663,92 @@ describe('VFrag — hydration', () => {
     expect(result).toBe(false);
   });
 
-  // Bug H1 regression: nested VFrag — inner VFrag spans 2 DOM nodes but
-  // the outer loop must advance past both, not just 1.
-  test('hydrates nested VFrag (Bug H1 regression)', () => {
-    document.body.appendChild(document.createTextNode('a'));
-    document.body.appendChild(document.createTextNode('b'));
+  // collapseSiblingTextNodes recursion: inner VFrag has consecutive VText children.
+  // SSR: outer VFrag renders as "ab" (one text node) + "c" (one text node).
+  // collapseSiblingTextNodes must recurse into the inner VFrag to collapse
+  // [VText "a", VText "b"] → [VText "ab"] before walk tries to match DOM nodes.
+  test('hydrates nested VFrag whose inner VFrag has consecutive VText children (collapse recursion)', () => {
+    // SSR: inner VFrag [VText "a", VText "b"] → "ab" (1 text node); outer sibling VText "c" → 1 text node.
+    document.body.appendChild(document.createTextNode('ab'));
     document.body.appendChild(document.createTextNode('c'));
 
-    // outer VFrag [ innerVFrag[a, b], VText(c) ]
     const inner = vfrag<DOMRef>([vtext('a'), vtext('b')]);
     const outer = vfrag<DOMRef>([inner, vtext('c')]);
     const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect((inner.children[0] as VText<DOMRef>).domRef.textContent).toBe('a');
-    expect((inner.children[1] as VText<DOMRef>).domRef.textContent).toBe('b');
+    // inner.children collapsed to 1 node owning the 'ab' text node
+    expect(inner.children.length).toBe(1);
+    expect((inner.children[0] as VText<DOMRef>).domRef.textContent).toBe('ab');
+    // outer.children[1] (VText 'c') owns the second text node
     expect((outer.children[1] as VText<DOMRef>).domRef.textContent).toBe('c');
+  });
+
+  // collapseSiblingTextNodes recursion 3 levels deep: L3 has [VText "x", VText "y"],
+  // L2 wraps L3, L1 wraps L2 + VText "z".
+  // SSR: L3 → "xy" (1 text node), L1 sibling → "z" (1 text node).
+  // collapseSiblingTextNodes must recurse all the way into L3 to collapse it.
+  test('hydrates 3-level deeply nested VFrag of VText (collapse recursion depth)', () => {
+    document.body.appendChild(document.createTextNode('xy'));
+    document.body.appendChild(document.createTextNode('z'));
+
+    const l3 = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const l2 = vfrag<DOMRef>([l3]);
+    const l1 = vfrag<DOMRef>([l2, vtext('z')]);
+    const result = hydrate(false, document.body, l1, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    // l3 collapsed to 1 child owning the 'xy' text node
+    expect(l3.children.length).toBe(1);
+    expect((l3.children[0] as VText<DOMRef>).domRef.textContent).toBe('xy');
+    // l1's second child owns 'z'
+    expect((l1.children[1] as VText<DOMRef>).domRef.textContent).toBe('z');
+  });
+
+  // Bug H1 regression: nested VFrag — inner VFrag spans 2 DOM nodes but
+  // the outer loop must advance past both, not just 1.
+  // Use element nodes so SSR text-merging doesn't obscure cursor arithmetic.
+  test('hydrates nested VFrag (Bug H1 regression)', () => {
+    const s1 = document.createElement('span');
+    const s2 = document.createElement('em');
+    const s3 = document.createElement('p');
+    document.body.appendChild(s1);
+    document.body.appendChild(s2);
+    document.body.appendChild(s3);
+
+    // outer VFrag [ innerVFrag[span, em], p ]
+    const inner = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'span' }), vnode<DOMRef>({ tag: 'em' })]);
+    const outer = vfrag<DOMRef>([inner, vnode<DOMRef>({ tag: 'p' })]);
+    const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
+    expect(result).toBe(true);
+    expect((inner.children[0] as VNode<DOMRef>).domRef).toBe(s1 as unknown as DOMRef);
+    expect((inner.children[1] as VNode<DOMRef>).domRef).toBe(s2 as unknown as DOMRef);
+    expect((outer.children[1] as VNode<DOMRef>).domRef).toBe(s3 as unknown as DOMRef);
   });
 
   // Bug H1 regression: VComp with VFrag root inside an outer VFrag —
   // the VComp occupies 2 DOM nodes but outer loop must advance past both.
+  // Use element nodes so SSR text-merging doesn't obscure cursor arithmetic.
   test('hydrates VFrag containing VComp with VFrag root (Bug H1 regression)', () => {
-    document.body.appendChild(document.createTextNode('x'));
-    document.body.appendChild(document.createTextNode('y'));
-    document.body.appendChild(document.createTextNode('z'));
+    const s1 = document.createElement('span');
+    const s2 = document.createElement('em');
+    const s3 = document.createElement('p');
+    document.body.appendChild(s1);
+    document.body.appendChild(s2);
+    document.body.appendChild(s3);
 
     let innerFrag: any;
     const comp = vcomp<DOMRef>({
       mount: (_p) => {
-        innerFrag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+        innerFrag = vfrag<DOMRef>([vnode<DOMRef>({ tag: 'span' }), vnode<DOMRef>({ tag: 'em' })]);
         return { componentId: 60 as any, componentTree: innerFrag };
       },
       unmount: () => {},
     });
-    const outer = vfrag<DOMRef>([comp, vtext('z')]);
+    const outer = vfrag<DOMRef>([comp, vnode<DOMRef>({ tag: 'p' })]);
     const result = hydrate(false, document.body, outer, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('x');
-    expect((innerFrag.children[1] as VText<DOMRef>).domRef.textContent).toBe('y');
-    expect((outer.children[1] as VText<DOMRef>).domRef.textContent).toBe('z');
+    expect((innerFrag.children[0] as VNode<DOMRef>).domRef).toBe(s1 as unknown as DOMRef);
+    expect((innerFrag.children[1] as VNode<DOMRef>).domRef).toBe(s2 as unknown as DOMRef);
+    expect((outer.children[1] as VNode<DOMRef>).domRef).toBe(s3 as unknown as DOMRef);
   });
 
   // Bug H2 regression: VNode with a VFrag child — VFrag spans 2 childNodes
@@ -726,11 +774,11 @@ describe('VFrag — hydration', () => {
     expect(pNode.domRef).toBe(div.childNodes[2] as unknown as DOMRef);
   });
 
-  // Bug H2 regression: VNode with VComp(VFrag root) child followed by sibling
+  // Bug H2 regression: VNode with VComp(VFrag root) child followed by sibling.
+  // SSR renders VFrag[VText "p", VText "q"] as "pq" → one text node inside div.
   test('hydrates VNode with VComp(VFrag root) child followed by sibling (Bug H2 regression)', () => {
     const div = document.createElement('div');
-    div.appendChild(document.createTextNode('p'));
-    div.appendChild(document.createTextNode('q'));
+    div.appendChild(document.createTextNode('pq'));
     div.appendChild(document.createElement('hr'));
     document.body.appendChild(div);
 
@@ -746,9 +794,9 @@ describe('VFrag — hydration', () => {
     const vtree = vnode<DOMRef>({ tag: 'div', children: [comp, hr] });
     const result = hydrate(false, document.body, vtree, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('p');
-    expect((innerFrag.children[1] as VText<DOMRef>).domRef.textContent).toBe('q');
-    expect(hr.domRef).toBe(div.childNodes[2] as unknown as DOMRef);
+    // innerFrag children collapsed to [VText('pq')]; it owns the single text node.
+    expect((innerFrag.children[0] as VText<DOMRef>).domRef.textContent).toBe('pq');
+    expect(hr.domRef).toBe(div.childNodes[1] as unknown as DOMRef);
   });
 
 });
@@ -1719,9 +1767,8 @@ describe('VFrag — event stopPropagation at VComp barrier', () => {
 describe('VFrag — hydration of VComp with VFrag root', () => {
 
   test('hydrates VComp whose mount returns a VFrag of text nodes', () => {
-    // Pre-render two text nodes into the DOM
-    document.body.appendChild(document.createTextNode('hello'));
-    document.body.appendChild(document.createTextNode(' world'));
+    // SSR renders VFrag [VText "hello", VText " world"] as "hello world" → one text node.
+    document.body.appendChild(document.createTextNode('hello world'));
 
     const comp = vcomp<DOMRef>({
       mount: (_p) => {
@@ -1733,7 +1780,7 @@ describe('VFrag — hydration of VComp with VFrag root', () => {
 
     const ok = hydrate(false, document.body, comp, hydrationContext, drawingContext);
     expect(ok).toBe(true);
-    expect(document.body.childNodes.length).toBe(2);
+    expect(document.body.childNodes.length).toBe(1);
   });
 
   test('hydrates VComp whose mount returns a VFrag of element nodes', () => {

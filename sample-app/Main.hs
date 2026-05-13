@@ -68,5 +68,16 @@ viewModel x =
     , H.button_ [ H.onClick SubtractOne ] [ text "-" ]
     , H.br_ []
     , H.button_ [ H.onClick SayHelloWorld ] [ text "Alert Hello World!" ]
+    , H.br_ []
+    , fragment (letterRows (x ^. counter))
     ]
+----------------------------------------------------------------------------
+-- | For each i in [1..n], produce a keyed VFrag row of i copies of the i-th letter.
+-- e.g. n=3 → [ frag['a'], frag['b','b'], frag['c','c','c'] ]
+letterRows :: Int -> [View Model Action]
+letterRows n =
+  [ fragment_ (ms i) (replicate i (text (ms [letter])) ++ [H.br_ []])
+  | i <- [1..n]
+  , let letter = toEnum (fromEnum 'a' + i - 1) :: Char
+  ]
 ----------------------------------------------------------------------------

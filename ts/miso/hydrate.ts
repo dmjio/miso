@@ -12,6 +12,13 @@ function collapseSiblingTextNodes(vs: Array<VTree<DOMRef>>): Array<VTree<DOMRef>
     }
     adjusted[++ax] = vs[ix];
   }
+  // Recursively collapse inside any VFrag children: SSR's foldMap concatenates
+  // text nodes at every nesting level, so nested VFrags need the same treatment.
+  for (const v of adjusted) {
+    if (v.type === VTreeType.VFrag) {
+      v.children = collapseSiblingTextNodes(v.children);
+    }
+  }
   return adjusted;
 }
 
@@ -45,6 +52,11 @@ function diagnoseError(logLevel: boolean, vtree: VTree<DOMRef>, node: Node): voi
   if (logLevel) console.warn('[DEBUG_HYDRATE] VTree differed from node', vtree, node);
 }
 
+// Advance past all DOM nodes owned by `tree` and return the next sibling.
+function nextAfter(tree: VTree<DOMRef>): Node {
+  return (getLastDOMRef(tree) as unknown as Node).nextSibling as Node;
+}
+
 function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: HydrationContext<DOMRef>, drawingContext: DrawingContext<DOMRef>): boolean {
   // This is slightly more complicated than one might expect since
   // browsers will collapse consecutive text nodes into a single text node.
@@ -63,14 +75,17 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
     case VTreeType.VFrag:
       // A fragment maps to consecutive sibling DOM nodes, one per child.
       // Each child may occupy >1 DOM node (nested VFrag, VComp with VFrag root),
-      // so advance via getLastDOMRef after the walk rather than +1.
+      // so advance via nextAfter rather than +1.
+      // Collapse adjacent VText children: SSR (foldMap renderBuilder) concatenates
+      // consecutive text into one string, which the browser parses as one text node.
+      vtree.children = collapseSiblingTextNodes(vtree.children);
       for (const child of vtree.children) {
         if (!node) {
           diagnoseError(logLevel, child, null);
           return false;
         }
         if (!walk(logLevel, child, node, context, drawingContext)) return false;
-        node = (getLastDOMRef(child) as unknown as Node).nextSibling as Node;
+        node = nextAfter(child);
       }
       break;
     case VTreeType.VText:
@@ -102,7 +117,7 @@ function walk(logLevel: boolean, vtree: VTree<DOMRef>, node: Node, context: Hydr
         if (!walk(logLevel, vdomChild, domCursor, context, drawingContext)) {
           return false;
         }
-        domCursor = (getLastDOMRef(vdomChild) as unknown as Node).nextSibling as Node;
+        domCursor = nextAfter(vdomChild);
       }
       break;
   }

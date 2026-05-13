@@ -348,6 +348,8 @@ function createElement<T>(parent : T, op: OP, replacing : T | null, n: VTree<T>,
       }
       break;
     case VTreeType.VFrag:
+      // INSERT_BEFORE with null anchor degrades to appendChild, so this handles
+      // OP.APPEND, OP.INSERT_BEFORE, and OP.REPLACE (remove old node after inserting).
       for (const child of n.children) {
         createElement(parent, OP.INSERT_BEFORE, replacing, child, context);
       }

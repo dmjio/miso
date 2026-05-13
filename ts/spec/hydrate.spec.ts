@@ -440,14 +440,14 @@ describe ("Hydration tests", () => {
   });
 
   test('Should hydrate a VFrag of text nodes at the top level', () => {
-    document.body.appendChild(document.createTextNode('foo'));
-    document.body.appendChild(document.createTextNode('bar'));
+    // SSR renders VFrag [VText "foo", VText "bar"] as "foobar" → one text node.
+    document.body.appendChild(document.createTextNode('foobar'));
 
     const frag = vfrag<DOMRef>([vtext('foo'), vtext('bar')]);
     const result = hydrate(false, document.body, frag, hydrationContext, drawingContext);
     expect(result).toBe(true);
-    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('foo');
-    expect((frag.children[1] as VText<DOMRef>).domRef.textContent).toBe('bar');
+    // After collapseSiblingTextNodes, children[0] is the merged VText('foobar').
+    expect((frag.children[0] as VText<DOMRef>).domRef.textContent).toBe('foobar');
   });
 
   test('Should hydrate a VFrag of element nodes nested inside a VNode', () => {
