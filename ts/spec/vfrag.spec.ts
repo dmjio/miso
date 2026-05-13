@@ -462,6 +462,26 @@ describe('VFrag — DOM diffing (replace with other types)', () => {
     expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
   });
 
+  // dom.ts replace() line 84: VFrag is replaced at the top level (body) with a
+  // following sibling present — the anchor path (INSERT_BEFORE) must be taken,
+  // not the tail-append path, so the new node lands before the sibling.
+  test('replaces top-level VFrag with VNode when a sibling follows (anchor INSERT_BEFORE path)', () => {
+    const frag = vfrag<DOMRef>([vtext('x'), vtext('y')]);
+    const sibling = vnode<DOMRef>({ tag: 'span' });
+    // Mount both directly on body so frag is replaced at the top level.
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    diff<DOMRef>(null, sibling, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(3); // 'x','y',<span>
+
+    const next = vnode<DOMRef>({ tag: 'p' });
+    diff<DOMRef>(frag, next, document.body, drawingContext);
+
+    // <p> must appear before <span>, not after it.
+    expect(document.body.childNodes.length).toBe(2);
+    expect((document.body.childNodes[0] as Element).tagName.toLowerCase()).toBe('p');
+    expect((document.body.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
 });
 
 describe('VFrag — DOM removal', () => {
@@ -1546,6 +1566,38 @@ describe('VFrag — replace with VComp and VComp(VFrag root) replace with VFrag'
     expect(div.childNodes.length).toBe(2);
     expect((div.childNodes[0] as Element).tagName.toLowerCase()).toBe('em');
     expect((div.childNodes[1] as Element).tagName.toLowerCase()).toBe('span');
+  });
+
+  // dom.ts mountComponent() lines 406-407: OP.REPLACE where the mounted
+  // component tree is a VFrag — all fragment DOM nodes must be inserted before
+  // the replaced node, then the replaced node removed.
+  test('VComp with VFrag root replaces an existing VNode via OP.REPLACE (mountComponent anchor path)', () => {
+    // Start with a single <em> inside a <div>, then replace it with a VComp
+    // whose root is a VFrag of two text nodes.
+    const old = vnode<DOMRef>({ tag: 'em' });
+    const wrapper = vnode<DOMRef>({ tag: 'div', children: [old] });
+    diff<DOMRef>(null, wrapper, document.body, drawingContext);
+    const div = document.body.firstChild as Element;
+    expect(div.childNodes.length).toBe(1);
+
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const inner = vfrag<DOMRef>([vtext('hello'), vtext(' world')]);
+        // OP.REPLACE is handled by mountComponent internally; mount() receives
+        // the parent element and the Haskell side appends children via diff.
+        diff<DOMRef>(null, inner, p, drawingContext);
+        return { componentId: 99 as any, componentTree: inner };
+      },
+      unmount: () => {},
+    });
+
+    const newWrapper = vnode<DOMRef>({ tag: 'div', children: [comp] });
+    diff<DOMRef>(wrapper, newWrapper, document.body, drawingContext);
+
+    // The VFrag's two text nodes must have replaced the <em>.
+    expect(div.childNodes.length).toBe(2);
+    expect(div.childNodes[0].textContent).toBe('hello');
+    expect(div.childNodes[1].textContent).toBe(' world');
   });
 
 });
