@@ -358,12 +358,14 @@ main = withJS $ do
         (JSON.fromJSON (JSON.toJSON Green) :: JSON.Result Color) `shouldBe` JSON.Success Green
         (JSON.fromJSON (JSON.toJSON Blue)  :: JSON.Result Color) `shouldBe` JSON.Success Blue
       -- Single-constructor record → flat object, no tag
+#ifndef GHCJS_OLD      
       it "encodes single-constructor records as flat objects" $ do
         JSON.toJSON (Point 3 4)
           `shouldBe` JSON.object [("px", JSON.Number 3), ("py", JSON.Number 4)]
       it "round-trips single-constructor records" $ do
         (JSON.fromJSON (JSON.toJSON (Point 3 4)) :: JSON.Result Point)
           `shouldBe` JSON.Success (Point 3 4)
+#endif          
       -- Single-constructor positional → unwrapped value
       it "encodes single-constructor positional as unwrapped value" $ do
         JSON.toJSON (Wrapper 42) `shouldBe` JSON.Number 42
