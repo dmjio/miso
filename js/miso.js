@@ -770,7 +770,10 @@ function delegateEvent(event, obj, stack, debug, context) {
       return;
     } else if (obj.type === 3 /* VFrag */) {
       for (const child of obj.children) {
-        delegateEvent(event, child, stack, debug, context);
+        if (containsDOMRef(child, stack[0], context)) {
+          delegateEvent(event, child, stack, debug, context);
+          return;
+        }
       }
       return;
     } else if (obj.type === 0 /* VComp */) {

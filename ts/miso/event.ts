@@ -80,9 +80,14 @@ export function delegateEvent <T> (
         return;
       }
       else if (obj.type === VTreeType.VFrag) {
-        // Walk into whichever child's subtree contains the target
+        // Walk into whichever child's subtree contains the target.
+        // Guard with containsDOMRef before recursing so we don't mutate the
+        // shared stack array for siblings that don't contain the target.
         for (const child of obj.children) {
-          delegateEvent(event, child, stack, debug, context);
+          if (containsDOMRef(child, stack[0], context)) {
+            delegateEvent(event, child, stack, debug, context);
+            return;
+          }
         }
         return;
       }
