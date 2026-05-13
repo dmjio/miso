@@ -2010,6 +2010,42 @@ describe('VFrag — lifecycle hooks fire for children', () => {
     expect(destroyed).toBe(true);
   });
 
+  test('onDestroyed fires for VNode inside VComp with VFrag root when VComp is destroyed', () => {
+    let destroyed = false;
+    const inner = vnode<DOMRef>({ tag: 'span', onDestroyed: () => { destroyed = true; } });
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const fragRoot = vfrag<DOMRef>([inner]);
+        diff(null, fragRoot, p, drawingContext);
+        return { componentId: 60 as any, componentTree: fragRoot };
+      },
+      unmount: (_id) => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    diff(comp, null, document.body, drawingContext);
+    expect(destroyed).toBe(true);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('callDestroyedRecursive reaches VNode nested inside VComp VFrag root replaced by another node', () => {
+    let destroyed = false;
+    const inner = vnode<DOMRef>({ tag: 'em', onDestroyed: () => { destroyed = true; } });
+    const comp = vcomp<DOMRef>({
+      mount: (p) => {
+        const fragRoot = vfrag<DOMRef>([inner]);
+        diff(null, fragRoot, p, drawingContext);
+        return { componentId: 61 as any, componentTree: fragRoot };
+      },
+      unmount: (_id) => {},
+    });
+    diff(null, comp, document.body, drawingContext);
+    const replacement = vnode<DOMRef>({ tag: 'div' });
+    diff(comp, replacement, document.body, drawingContext);
+    expect(destroyed).toBe(true);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('div');
+  });
+
 });
 
 // ---------------------------------------------------------------------------
@@ -2070,6 +2106,44 @@ describe('VFrag — mixed-type child change within unkeyed diff', () => {
     const root3 = vnode<DOMRef>({ tag: 'div', children: [frag3, vnode<DOMRef>({ tag: 'span' })] });
     diff(root2, root3, document.body, drawingContext);
     expect([...div.childNodes].map(n => n.textContent ?? '')).toEqual(['a','b','c','']);
+  });
+
+});
+
+// ── onBeforeDestroyed fires for VNode children of VFrag ───────────────────────
+
+describe('VFrag — onBeforeDestroyed fires for children', () => {
+
+  test('onBeforeDestroyed fires on VNode child when VFrag is destroyed', () => {
+    let fired = false;
+    const child = vnode<DOMRef>({ tag: 'span', onBeforeDestroyed: () => { fired = true; } });
+    const frag  = vfrag<DOMRef>([child]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    expect(document.body.childNodes.length).toBe(1);
+    diff<DOMRef>(frag, null, document.body, drawingContext);
+    expect(fired).toBe(true);
+    expect(document.body.childNodes.length).toBe(0);
+  });
+
+  test('onBeforeDestroyed fires on VNode child when VFrag is replaced', () => {
+    let fired = false;
+    const child = vnode<DOMRef>({ tag: 'p', onBeforeDestroyed: () => { fired = true; } });
+    const frag  = vfrag<DOMRef>([child]);
+    diff<DOMRef>(null, frag, document.body, drawingContext);
+    const replacement = vnode<DOMRef>({ tag: 'div' });
+    diff<DOMRef>(frag, replacement, document.body, drawingContext);
+    expect(fired).toBe(true);
+    expect((document.body.firstChild as Element).tagName.toLowerCase()).toBe('div');
+  });
+
+  test('onBeforeDestroyed fires on nested VNode inside nested VFrag', () => {
+    let fired = false;
+    const inner = vnode<DOMRef>({ tag: 'em', onBeforeDestroyed: () => { fired = true; } });
+    const innerFrag = vfrag<DOMRef>([inner]);
+    const outerFrag = vfrag<DOMRef>([innerFrag]);
+    diff<DOMRef>(null, outerFrag, document.body, drawingContext);
+    diff<DOMRef>(outerFrag, null, document.body, drawingContext);
+    expect(fired).toBe(true);
   });
 
 });
