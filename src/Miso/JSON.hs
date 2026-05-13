@@ -214,8 +214,8 @@ instance (GToFields f, GToFields g) => GToFields (f :*: g) where
   gToFields opts (x :*: y) = combineFields (gToFields opts x) (gToFields opts y)
 ----------------------------------------------------------------------------
 instance (Selector m, GToFields f) => GToFields (S1 m f) where
-  gToFields opts s@(M1 x) =
-    let n = selName s
+  gToFields opts (M1 x) =
+    let n = selName (undefined :: S1 m f ())
     in if null n
        then gToFields opts x
        else case gToFields opts x of
