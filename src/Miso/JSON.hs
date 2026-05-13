@@ -233,7 +233,7 @@ instance (GToFields f, GToFields g) => GToFields (f :*: g) where
 ----------------------------------------------------------------------------
 instance (Selector m, GToFields f) => GToFields (S1 m f) where
   gToFields opts (M1 x) =
-    let n = selName (undefined :: S1 m f ())
+    let n = selName (M1 undefined :: S1 m f ())
     in if null n
        then gToFields opts x
        else case gToFields opts x of
@@ -249,7 +249,7 @@ instance ToJSON a => GToFields (K1 r a) where
 instance {-# OVERLAPPING #-} (Selector m, ToJSON a)
     => GToFields (S1 m (K1 r (Maybe a))) where
   gToFields opts (M1 (K1 mx)) =
-    let n   = selName (undefined :: S1 m (K1 r (Maybe a)) ())
+    let n   = selName (M1 undefined :: S1 m (K1 r (Maybe a)) ())
         key = ms (fieldLabelModifier opts n)
     in if null n
        then PositionalFields [toJSON mx]
@@ -597,11 +597,11 @@ instance (GFromFields f, GFromFields g) => GFromFields (f :*: g) where
 instance {-# OVERLAPPING #-} (Selector m, FromJSON a)
     => GFromFields (S1 m (K1 r (Maybe a))) where
   gIsRecord       = not (null name)
-    where name = selName (undefined :: S1 m (K1 r (Maybe a)) ())
+    where name = selName (M1 undefined :: S1 m (K1 r (Maybe a)) ())
   gFieldCount     = 1
   gFromRecord opts o =
     M1 . K1 <$> o .:? ms (fieldLabelModifier opts
-                    (selName (undefined :: S1 m (K1 r (Maybe a)) ())))
+                    (selName (M1 undefined :: S1 m (K1 r (Maybe a)) ())))
   gFromPositional _ vs = case vs of
     (v:_) -> M1 . K1 <$> parseJSON v
     []    -> pure (M1 (K1 Nothing))
@@ -610,11 +610,11 @@ instance {-# OVERLAPPING #-} (Selector m, FromJSON a)
 instance {-# OVERLAPPABLE #-} (Selector m, FromJSON a)
     => GFromFields (S1 m (K1 r a)) where
   gIsRecord       = not (null name)
-    where name = selName (undefined :: S1 m (K1 r a) ())
+    where name = selName (M1 undefined :: S1 m (K1 r a) ())
   gFieldCount     = 1
   gFromRecord opts o =
     M1 . K1 <$> o .: ms (fieldLabelModifier opts
-                    (selName (undefined :: S1 m (K1 r a) ())))
+                    (selName (M1 undefined :: S1 m (K1 r a) ())))
   gFromPositional _ vs = case vs of
     (v:_) -> M1 . K1 <$> parseJSON v
     []    -> pfail "gFromPositional: unexpected end of fields"
